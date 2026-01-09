@@ -1,9 +1,45 @@
+<header class="navbar-header">
+    <div class="navbar-container">
+        <div class="navbar-brand">
+            <a href="/" class="logo-link">
+                <img src="assets/logo/logo.png" alt="Reactome Pathway Database" class="logo-image" />
+            </a>
+        </div>
 
-<nav>
-    <a routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page">
-        Home
-    </a>
-    <a routerLink="/documentation" routerLinkActive="active" ariaCurrentWhenActive="page">
-        Documentation
-    </a>
-</nav>
+        <nav class="navbar-nav">
+            <ul class="nav-list">
+                <li *ngFor="let option of navOptions" class="nav-item" [class.active]="activeDropdown === option.label">
+                    <div class="nav-link-wrapper">
+                        <a *ngIf="!option['dropdown-links'] || option['dropdown-links'].length === 0" 
+                           [routerLink]="option.link" 
+                           class="nav-link"
+                           (click)="closeDropdown()">
+                            {{ option.label }}
+                        </a>
+                        <button *ngIf="option['dropdown-links'] && option['dropdown-links'].length > 0"
+                                class="nav-link nav-dropdown-toggle"
+                                (click)="toggleDropdown(option.label)"
+                                [attr.aria-expanded]="activeDropdown === option.label">
+                            {{ option.label }}
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                    </div>
+
+                    <div *ngIf="option['dropdown-links'] && option['dropdown-links'].length > 0"
+                         class="dropdown-menu"
+                         [class.show]="activeDropdown === option.label">
+                        <ul class="dropdown-list">
+                            <li *ngFor="let link of option['dropdown-links']" class="dropdown-item">
+                                <a [routerLink]="link.link" 
+                                   class="dropdown-link"
+                                   (click)="closeDropdown()">
+                                    {{ link.label }}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</header>

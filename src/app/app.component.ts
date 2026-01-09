@@ -4,6 +4,7 @@ import { NavigationBarComponent } from "./navigation-bar/navigation-bar.componen
 
 @Component({
   selector: 'app-root',
+  // standalone: true,
   imports: [RouterOutlet, RouterLinkWithHref, RouterLinkActive, NavigationBarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
