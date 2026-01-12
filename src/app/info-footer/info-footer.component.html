@@ -1,0 +1,25 @@
+<div class="info-footer-container">
+  <footer class="info-footer-wrapper">
+    <ul *ngFor="let option of navOptions" class="info-footer-list">
+      <li class="info-option-item">
+        <div class="info-link-container">
+          <a [routerLink]="option.link" class="info-option-link">
+            {{ option.label }}
+          </a>
+        </div>
+      </li>
+      <li *ngFor="let link of option['dropdown-links']" class="info-suboption-item">
+        <div
+          *ngIf="
+            option['dropdown-links'] && option['dropdown-links'].length > 0
+          "
+            class="info-link-container"
+        >
+          <a [routerLink]="link.link" class="info-suboption-link">
+            {{ link.label }}
+          </a>
+        </div>
+      </li>
+    </ul>
+  </footer>
+</div>

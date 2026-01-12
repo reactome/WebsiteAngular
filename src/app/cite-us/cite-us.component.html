@@ -1,0 +1,8 @@
+<a class="cite-button" (click)="showModal = true" (mouseenter)="showText = true" (mouseleave)="showText = false">
+    <p class="cite-icon" *ngIf="showText === false" >Imagine an Icon</p>
+    <span class="cite-text" *ngIf="showText === true"> Cite Us!</span>
+</a>
+<div class="cite-modal" *ngIf="showModal === true">
+    MODAL YEAH!
+    <button class="cite-close-button" (click)="showModal = false">X</button>
+</div>

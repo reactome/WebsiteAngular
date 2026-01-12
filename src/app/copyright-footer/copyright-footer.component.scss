@@ -1,0 +1,24 @@
+.copyright-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    padding: 12px 24px;
+    gap: 16px;
+}
+
+.copyright {
+    flex-direction: row; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 4px;
+}
+
+.socials {
+    flex-direction: row; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 4px;
+}

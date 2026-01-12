@@ -1,18 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
-interface NavLink {
-  label: string;
-  link: string;
-}
-
-interface NavOption {
-  label: string;
-  link: string;
-  icon?: string;
-  'dropdown-links'?: NavLink[];
-}
+import NavOption from '../types/nav-option';
 
 @Component({
   standalone: true,
@@ -31,13 +20,24 @@ export class NavigationBarComponent implements OnInit {
 
   loadNavOptions() {
     // Load nav options from the JSON file
-    import('./nav-options.json').then((data) => {
+    import('../config/nav-options.json').then((data) => {
       this.navOptions = data.default;
     });
   }
 
   toggleDropdown(label: string) {
     this.activeDropdown = this.activeDropdown === label ? null : label;
+  }
+
+  showDropdown(label: string) {
+    const option = this.navOptions.find(opt => opt.label === label);
+    if (option && option['dropdown-links'] && option['dropdown-links'].length > 0) {
+      this.activeDropdown = label;
+    }
+  }
+
+  hideDropdown() {
+    this.activeDropdown = null;
   }
 
   closeDropdown() {
