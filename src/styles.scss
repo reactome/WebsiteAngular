@@ -1,1 +1,13 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles entrypoint */
+@use 'ngx-reactome-style/index' as reactome;
+@use 'ngx-reactome-style/theme-colors' as colors;
+@use 'ngx-reactome-style/variables' as vars;
+
+/* Apply the library's Material-based theme to :root and body */
+@include reactome.theme();
+
+
+body {
+
+}
+

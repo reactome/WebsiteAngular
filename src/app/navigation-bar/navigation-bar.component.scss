@@ -1,10 +1,12 @@
+@use 'ngx-reactome-style/theme-colors' as colors;
+
 .navbar-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e7e7e7;
   position: sticky;
   top: 0;
+  width: 100%;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-container {
@@ -31,7 +33,7 @@
 
 .logo-image {
   height: 50px;
-  width: auto;
+  width:min-content;
   display: block;
 }
 
