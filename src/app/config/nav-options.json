@@ -2,7 +2,7 @@
   {
     "label": "About",
     "link": "/",
-    "icon": "i-circle",
+    "icon": "info",
     "dropdown-links": [
         {
             "label": "What is Reactome?",
@@ -65,7 +65,7 @@
   {
     "label": "Content",
     "link": "/",
-    "icon": "i-circle",
+    "icon": "dvr",
     "dropdown-links": [
         {
             "label": "Table of Contents",
@@ -96,7 +96,7 @@
   {
     "label": "Docs",
     "link": "/documentation",
-    "icon": "i-circle",
+    "icon": "school",
     "dropdown-links": [
         {
             "label": "Userguide",
@@ -139,7 +139,7 @@
   {
     "label": "Tools",
     "link": "/",
-    "icon": "i-circle",
+    "icon": "perm_data_setting",
     "dropdown-links": [
         {
             "label": "Pathway Browser",
@@ -182,7 +182,7 @@
   {
     "label": "Community",
     "link": "/community",
-     "icon": "i-circle",
+     "icon": "contacts",
     "dropdown-links": [
          {
             "label": "Contribute Pathway Knowledge",
@@ -219,7 +219,7 @@
     ]
   },
   {
-    "icon": "i-circle",
+    "icon": "cloud_download",
     "label": "Download",
     "link": "/download-data",
     "dropdown-links": [

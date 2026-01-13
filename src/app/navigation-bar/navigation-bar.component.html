@@ -1,64 +1,64 @@
 <header class="navbar-header">
-  <div class="navbar-container">
-    <div class="navbar-brand">
-      <a href="/" class="logo-link">
-        <img
-          src="assets/logo/logo.png"
-          alt="Reactome Pathway Database"
-          class="logo-image"
-        />
-      </a>
-    </div>
-
-    <nav class="navbar-nav">
-      <ul class="nav-list">
-        <li
-          *ngFor="let option of navOptions"
-          class="nav-item"
-          [class.active]="activeDropdown === option.label"
-          (mouseenter)="showDropdown(option.label)"
-          (mouseleave)="hideDropdown()"
-        >
-          <div class="nav-link-wrapper">
-            <a
-              [routerLink]="option.link"
-              class="nav-link"
-              [class.has-dropdown]="
-                option['dropdown-links'] && option['dropdown-links'].length > 0
-              "
-            >
-              {{ option.label }}
-              <span
-                *ngIf="
-                  option['dropdown-links'] &&
-                  option['dropdown-links'].length > 0
-                "
-                class="dropdown-arrow"
-                >▼</span
-              >
-            </a>
-          </div>
-
-          <div
-            *ngIf="
+  <div class="navbar-logo">
+    <a href="/" class="logo-link">
+      <img
+        src="assets/logo/logo.png"
+        alt="Reactome Pathway Database"
+        class="logo-image"
+      />
+    </a>
+  </div>
+  <nav class="navbar-nav">
+    <ul class="nav-list">
+      <li
+        *ngFor="let option of navOptions"
+        class="nav-item"
+        [class.active]="activeDropdown === option.label"
+        (mouseenter)="showDropdown(option.label)"
+        (mouseleave)="hideDropdown()"
+      >
+        <div class="nav-link-wrapper">
+          <a
+            [routerLink]="option.link"
+            class="nav-link"
+            [class.has-dropdown]="
               option['dropdown-links'] && option['dropdown-links'].length > 0
             "
-            class="dropdown-menu"
-            [class.show]="activeDropdown === option.label"
           >
-            <ul class="dropdown-list">
-              <li
-                *ngFor="let link of option['dropdown-links']"
-                class="dropdown-item"
-              >
-                <a [routerLink]="link.link" class="dropdown-link">
-                  {{ link.label }}
-                </a>
-              </li>
-            </ul>
-          </div>
-        </li>
-      </ul>
-    </nav>
-  </div>
+            <mat-icon>
+              {{ option.icon }}
+            </mat-icon>
+            {{ option.label }}
+            <span
+              *ngIf="
+                option['dropdown-links'] && option['dropdown-links'].length > 0
+              "
+              class="dropdown-arrow"
+            >
+              ▼
+            </span>
+          </a>
+        </div>
+
+        <div
+          *ngIf="
+            option['dropdown-links'] && option['dropdown-links'].length > 0
+          "
+          class="dropdown-menu"
+          [class.show]="activeDropdown === option.label"
+        >
+          <ul class="dropdown-list">
+            <li
+              *ngFor="let link of option['dropdown-links']"
+              class="dropdown-item"
+            >
+              <a [routerLink]="link.link" class="dropdown-link">
+                {{ link.label }}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </nav>
 </header>
