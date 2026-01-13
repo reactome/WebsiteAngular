@@ -2,7 +2,7 @@
 // Variables
 $spacing-unit: 16px;
 $border-radius: 8px;
-$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+$shadow: 0 2px 8px var(--shadow);
 $transition: all 0.3s ease;
 
 // Main container
