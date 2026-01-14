@@ -1,10 +1,11 @@
 $header-height: 65px;
 $nav-height: 55px;
 $nav-item-height: 30px;
+$shadow: rgba(0, 0, 0, 0.1);
 
 .navbar-header {
-  border-bottom: 1px solid var(--outline);
-  box-shadow: 0 2px 4px var(--shadow);
+  // border-bottom: 1px solid var(--outline);
+  // box-shadow: 0 2px 4px $shadow;
   background-color: var(--on-primary);
   position: sticky;
   top: 0;
@@ -105,9 +106,9 @@ $nav-item-height: 30px;
   top: $nav-item-height + 8px;
   left: 0;
   background-color: var(--on-primary);
-  border: 1px solid var(--outline);
+  // border: 1px solid var(--outline);
   min-width: 220px;
-  box-shadow: 0 8px 16px var(--shadow);
+  box-shadow: 0 8px 16px $shadow;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);

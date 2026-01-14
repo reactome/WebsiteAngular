@@ -8,11 +8,12 @@ import { HomeStatsComponent } from "./home-stats/home-stats.component";
 import { HomeHelpComponent } from "./home-help/home-help.component";
 import { HomeApiDataComponent } from "./home-api-data/home-api-data.component";
 import { HomeRelatedComponent } from "./home-related/home-related.component";
+import { TileComponent } from "../reactome-components/tile/tile.component";
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [SearchBarComponent, HomeShortcutsComponent, HomeSpotlightComponent, HomeWhyReactomeComponent, HomeLatestNewsComponent, HomeStatsComponent, HomeHelpComponent, HomeApiDataComponent, HomeRelatedComponent],
+  imports: [SearchBarComponent, HomeShortcutsComponent, HomeSpotlightComponent, HomeWhyReactomeComponent, HomeLatestNewsComponent, HomeStatsComponent, HomeHelpComponent, HomeApiDataComponent, HomeRelatedComponent, TileComponent],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss'
 })

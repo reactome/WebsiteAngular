@@ -2,170 +2,134 @@
 // Variables
 $spacing-unit: 16px;
 $border-radius: 8px;
-$shadow: 0 2px 8px var(--shadow);
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 $transition: all 0.3s ease;
 
 // Main container
 :host {
   display: block;
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 $spacing-unit;
+  background-image: url('../../assets/reactome/bg-fireworks-colour.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  padding: $spacing-unit;
+  gap: $spacing-unit;
 }
 
 // Search tile - hero section
 .home-search-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-unit * 2;
-  padding: $spacing-unit * 4 $spacing-unit * 2;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--tertiary) 100%);
-  border-radius: $border-radius;
-  color: white;
-  text-align: center;
-  margin-bottom: $spacing-unit * 3;
-  box-shadow: $shadow;
-
-  span {
-    font-size: 28px;
-    font-weight: 500;
-    margin: 0;
-  }
-
-  @media (max-width: 768px) {
-    padding: $spacing-unit * 2 $spacing-unit;
-
-    span {
-      font-size: 20px;
-    }
-  }
 }
 
 // New pathway tile
 .new-pathway-tile {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-unit;
-  padding: $spacing-unit * 2;
-  background-color: var(--surface-container);
-  border: 2px solid var(--primary);
-  border-radius: $border-radius;
-  margin-bottom: $spacing-unit * 3;
-  box-shadow: $shadow;
+//   display: flex;
+//   flex-direction: column;
+//   gap: $spacing-unit;
+//   padding: $spacing-unit * 2;
+//   background-color: var(--surface-container);
+//   border: 2px solid var(--primary);
+//   border-radius: $border-radius;
+//   margin-bottom: $spacing-unit * 3;
+//   box-shadow: $shadow;
 
-  span {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--on-surface);
+//   span {
+//     font-size: 14px;
+//     line-height: 1.6;
+//     color: var(--on-surface);
 
-    a {
-      color: var(--primary);
-      text-decoration: underline;
-      transition: $transition;
+//     a {
+//       color: var(--primary);
+//       text-decoration: underline;
+//       transition: $transition;
 
-      &:hover {
-        color: var(--tertiary);
-      }
-    }
-  }
+//       &:hover {
+//         color: var(--tertiary);
+//       }
+//     }
+//   }
 
-  .pathway-tile-button {
-    align-self: flex-start;
-    padding: $spacing-unit $spacing-unit * 2;
-    background-color: var(--primary);
-    color: white;
-    border: none;
-    border-radius: $border-radius;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: $transition;
-    box-shadow: $shadow;
+//   .pathway-tile-button {
+//     align-self: flex-start;
+//     padding: $spacing-unit $spacing-unit * 2;
+//     background-color: var(--primary);
+//     color: white;
+//     border: none;
+//     border-radius: $border-radius;
+//     font-size: 14px;
+//     font-weight: 500;
+//     cursor: pointer;
+//     transition: $transition;
+//     box-shadow: $shadow;
 
-    &:hover {
-      background-color: var(--tertiary);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+//     &:hover {
+//       background-color: var(--tertiary);
+//       transform: translateY(-2px);
+//       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+//     }
 
-    &:active {
-      transform: translateY(0);
-    }
-  }
+//     &:active {
+//       transform: translateY(0);
+//     }
+//   }
 
-  @media (max-width: 768px) {
-    padding: $spacing-unit;
+//   @media (max-width: 768px) {
+//     padding: $spacing-unit;
 
-    span {
-      font-size: 13px;
-    }
-  }
+//     span {
+//       font-size: 13px;
+//     }
+//   }
 }
 
 // Shortcut tiles
 .home-shortcut-tile {
-  margin-bottom: $spacing-unit * 3;
+//   margin-bottom: $spacing-unit * 3;
 }
 
 // Spotlight tile
 .home-spotlight-tile {
-  margin-bottom: $spacing-unit * 3;
+//   margin-bottom: $spacing-unit * 3;
 }
 
 // Why Reactome and Latest News section
 .home-why-latest-tile {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-unit * 2;
-  margin-bottom: $spacing-unit * 3;
+//   display: grid;
+//   grid-template-columns: 1fr 1fr;
+//   gap: $spacing-unit * 2;
+//   margin-bottom: $spacing-unit * 3;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: $spacing-unit;
-  }
+//   @media (max-width: 768px) {
+//     grid-template-columns: 1fr;
+//     gap: $spacing-unit;
+//   }
 }
 
 // Stats tile
 .home-stats-tile {
-  margin-bottom: $spacing-unit * 3;
+//   margin-bottom: $spacing-unit * 3;
 }
 
 // Help tile
 .home-help-tile {
-  margin-bottom: $spacing-unit * 3;
+//   margin-bottom: $spacing-unit * 3;
 }
 
 // API and Data tile
 .home-api-data-tile {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: $spacing-unit * 2;
-  margin-bottom: $spacing-unit * 3;
+//   display: grid;
+//   grid-template-columns: 1fr 1fr;
+//   gap: $spacing-unit * 2;
+//   margin-bottom: $spacing-unit * 3;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: $spacing-unit;
-  }
+//   @media (max-width: 768px) {
+//     grid-template-columns: 1fr;
+//     gap: $spacing-unit;
+//   }
 }
 
 // Related content tile
 .home-related-tile {
-  margin-bottom: $spacing-unit * 3;
-}
-
-// General tile styling for consistency
-[class*="-tile"] {
-  &:not(.home-search-tile):not(.new-pathway-tile) {
-    padding: $spacing-unit * 2;
-    background-color: var(--surface-container);
-    border-radius: $border-radius;
-    box-shadow: $shadow;
-
-    @media (max-width: 768px) {
-      padding: $spacing-unit;
-    }
-  }
+//   margin-bottom: $spacing-unit * 3;
 }

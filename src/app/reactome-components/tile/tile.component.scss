@@ -1,0 +1,39 @@
+$spacing-unit: 16px;
+$border-radius: 8px;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+$transition: all 0.3s ease;
+
+.tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+//   border-radius: $border-radius; TODO: Undecided if rounded corners look good or not
+  gap: $spacing-unit;
+  padding: $spacing-unit;
+  margin-bottom: $spacing-unit * 2;
+}
+
+.dark-tile {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: $shadow;
+}
+
+.light-tile {
+    background: var(--on-primary);
+    color: var(--primary);
+    box-shadow: $shadow;
+}
+
+.dark-transparent-tile {
+    background: color-mix(in srgb, var(--primary) 25%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--on-primary);
+}
+
+.light-transparent-tile {
+    background: color-mix(in srgb, var(--on-primary) 25%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--primary);
+}
