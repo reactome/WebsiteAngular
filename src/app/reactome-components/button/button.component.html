@@ -1,1 +1,3 @@
-<p>button works!</p>
+<button (click)="onClick()" [class]="buttonVariant + ' ' + buttonShape + ' ' + buttonSize" class="reactome-button">
+    <ng-content></ng-content>
+</button>

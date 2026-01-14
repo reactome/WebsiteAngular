@@ -18,118 +18,31 @@ $transition: all 0.3s ease;
   gap: $spacing-unit;
 }
 
-// Search tile - hero section
 .home-search-tile {
 }
 
-// New pathway tile
 .new-pathway-tile {
-//   display: flex;
-//   flex-direction: column;
-//   gap: $spacing-unit;
-//   padding: $spacing-unit * 2;
-//   background-color: var(--surface-container);
-//   border: 2px solid var(--primary);
-//   border-radius: $border-radius;
-//   margin-bottom: $spacing-unit * 3;
-//   box-shadow: $shadow;
-
-//   span {
-//     font-size: 14px;
-//     line-height: 1.6;
-//     color: var(--on-surface);
-
-//     a {
-//       color: var(--primary);
-//       text-decoration: underline;
-//       transition: $transition;
-
-//       &:hover {
-//         color: var(--tertiary);
-//       }
-//     }
-//   }
-
-//   .pathway-tile-button {
-//     align-self: flex-start;
-//     padding: $spacing-unit $spacing-unit * 2;
-//     background-color: var(--primary);
-//     color: white;
-//     border: none;
-//     border-radius: $border-radius;
-//     font-size: 14px;
-//     font-weight: 500;
-//     cursor: pointer;
-//     transition: $transition;
-//     box-shadow: $shadow;
-
-//     &:hover {
-//       background-color: var(--tertiary);
-//       transform: translateY(-2px);
-//       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-//     }
-
-//     &:active {
-//       transform: translateY(0);
-//     }
-//   }
-
-//   @media (max-width: 768px) {
-//     padding: $spacing-unit;
-
-//     span {
-//       font-size: 13px;
-//     }
-//   }
 }
 
-// Shortcut tiles
+
 .home-shortcut-tile {
-//   margin-bottom: $spacing-unit * 3;
 }
 
-// Spotlight tile
 .home-spotlight-tile {
-//   margin-bottom: $spacing-unit * 3;
 }
 
-// Why Reactome and Latest News section
+
 .home-why-latest-tile {
-//   display: grid;
-//   grid-template-columns: 1fr 1fr;
-//   gap: $spacing-unit * 2;
-//   margin-bottom: $spacing-unit * 3;
-
-//   @media (max-width: 768px) {
-//     grid-template-columns: 1fr;
-//     gap: $spacing-unit;
-//   }
 }
 
-// Stats tile
 .home-stats-tile {
-//   margin-bottom: $spacing-unit * 3;
 }
 
-// Help tile
 .home-help-tile {
-//   margin-bottom: $spacing-unit * 3;
 }
 
-// API and Data tile
 .home-api-data-tile {
-//   display: grid;
-//   grid-template-columns: 1fr 1fr;
-//   gap: $spacing-unit * 2;
-//   margin-bottom: $spacing-unit * 3;
-
-//   @media (max-width: 768px) {
-//     grid-template-columns: 1fr;
-//     gap: $spacing-unit;
-//   }
 }
 
-// Related content tile
 .home-related-tile {
-//   margin-bottom: $spacing-unit * 3;
 }
