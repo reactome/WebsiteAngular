@@ -14,11 +14,20 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 .dark-button {
     background: var(--primary);
     color: var(--on-primary);
+    &:hover {
+        background: var(--on-primary);
+        color: var(--primary);
+    }
 }
 
 .light-button {
     background: var(--on-primary);
     color: var(--primary);
+
+    &:hover {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
 }
 
 .square-button {

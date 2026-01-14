@@ -10,7 +10,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   width: 100%;
-  z-index: 1000;
+  z-index: 998;
   height: $header-height;
   display: flex;
   align-items: center;
@@ -113,7 +113,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   visibility: hidden;
   transform: translateY(-10px);
   transition: all 0.3s ease;
-  z-index: 1001;
+  z-index: 998;
 
   &.show {
     opacity: 1;

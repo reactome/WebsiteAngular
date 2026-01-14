@@ -1,11 +1,18 @@
-<div class="cite-button" (click)="showModal = true" (mouseenter)="showText = true" (mouseleave)="showText = false">
-    <mat-icon class="cite-icon" *ngIf="showText === false" >format_quote</mat-icon>
-    <span class="cite-text" *ngIf="showText === true"> Cite Us!</span>
+<div
+  class="cite-button"
+  (click)="showModal = true"
+  (mouseenter)="showText = true"
+  (mouseleave)="showText = false"
+>
+  <mat-icon class="cite-icon" *ngIf="showText === false">format_quote</mat-icon>
+  <span class="cite-text" *ngIf="showText === true"> Cite Us!</span>
 </div>
 
-<div class="cite-modal" *ngIf="showModal === true">
+<div class="dark-filter" *ngIf="showModal === true">
+  <div class="cite-modal" *ngIf="showModal === true">
     MODAL YEAH!
     <button class="cite-close-button" (click)="showModal = false">
-        <mat-icon class="cite-close-icon">close</mat-icon>
+      <mat-icon class="cite-close-icon">close</mat-icon>
     </button>
+  </div>
 </div>
