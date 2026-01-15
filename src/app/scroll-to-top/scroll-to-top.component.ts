@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIcon } from "@angular/material/icon";
 @Component({
   selector: 'app-scroll-to-top',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIcon],
   templateUrl: './scroll-to-top.component.html',
   styleUrl: './scroll-to-top.component.scss'
 })

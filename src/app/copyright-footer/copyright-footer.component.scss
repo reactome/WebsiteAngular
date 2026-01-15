@@ -1,24 +1,50 @@
 .copyright-wrapper {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: left;
-    padding: 12px 24px;
-    gap: 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+  padding: 12px 24px;
+  gap: 16px;
 }
 
 .copyright {
-    flex-direction: row; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 4px;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  color: var(--primary);
 }
 
+
+
 .socials {
-    flex-direction: row; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 4px;
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  margin-right: 10%;
+}
+
+.twitter,
+.facebook,
+.youtube {
+  min-width: 24px;
+  min-height: 24px;
+  border: 2px solid var(--primary);
+  padding: 4px;
+  border-radius: 8px;
+  background-color: var(--on-primary);
+  color: var(--primary);
+  fill: var(--primary) !important;
+  stroke: var(--primary);
+
+  &:hover {
+    background-color: var(--primary);
+    color: var(--on-primary);
+    fill: var(--on-primary);
+    stroke: var(--on-primary);
+  }
 }

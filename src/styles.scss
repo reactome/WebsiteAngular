@@ -37,8 +37,8 @@ body {
   padding: 0;
   height: 100%;
   overflow: auto;
-  background: var(--surface);
-  color: var(--on-surface);
+  background: var(--on-primary);
+  color: var(--primary);
 
   scrollbar-color: var(--primary) transparent;
   --reactome-symbols-font-family: 'Material Symbols Rounded';

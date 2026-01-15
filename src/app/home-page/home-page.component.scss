@@ -15,7 +15,11 @@ $transition: all 0.3s ease;
   background-attachment: fixed;
   min-height: 100vh;
   padding: $spacing-unit;
-  gap: $spacing-unit;
+}
+
+.pathway-link {
+    color: var(--on-primary) !important;
+    text-decoration: underline !important;
 }
 
 .home-search-tile {
@@ -28,11 +32,7 @@ $transition: all 0.3s ease;
 .home-shortcut-tile {
 }
 
-.home-spotlight-tile {
-}
-
-
-.home-why-latest-tile {
+.home-news-why-tile {
 }
 
 .home-stats-tile {

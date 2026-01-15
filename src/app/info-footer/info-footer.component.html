@@ -3,7 +3,10 @@
     <ul *ngFor="let option of navOptions" class="info-footer-list">
       <li class="info-option-item">
         <div class="info-link-container">
-          <a [routerLink]="option.link" class="info-option-link">
+          <mat-icon class="info-option-icon">
+            {{ option.icon }}
+          </mat-icon>
+          <a [href]="option.link" class="info-option-link">
             {{ option.label }}
           </a>
         </div>
@@ -15,7 +18,7 @@
           "
             class="info-link-container"
         >
-          <a [routerLink]="link.link" class="info-suboption-link">
+          <a [href]="link.link" class="info-option-link">
             {{ link.label }}
           </a>
         </div>

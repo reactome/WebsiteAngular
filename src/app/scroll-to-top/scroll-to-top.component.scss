@@ -5,12 +5,28 @@ Retrieved 2026-01-12, License - CC BY-SA 4.0
 */
 
 .to-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: var(--on-primary);
+  padding: 4px;
+  border-radius: 10%;
   bottom: 0;
   cursor: pointer;
   margin: 0 8px 12px 0;
   position: fixed;
   right: 0;
   opacity: 0;
+  z-index: 998;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+
+  &:hover {
+    background-color: var(--primary);
+    color: var(--on-primary);
+    transition: all 0.2s ease-in-out;
+  }
 }
 
 .show-scrollTop {

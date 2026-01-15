@@ -11,7 +11,7 @@ $transition: all 0.3s ease;
 //   border-radius: $border-radius; TODO: Undecided if rounded corners look good or not
   gap: $spacing-unit;
   padding: $spacing-unit;
-  margin-bottom: $spacing-unit * 2;
+  margin-bottom: $spacing-unit;
 }
 
 .dark-tile {

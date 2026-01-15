@@ -21,7 +21,7 @@ export class NavigationBarComponent implements OnInit {
 
   loadNavOptions() {
     // Load nav options from the JSON file
-    import('../config/nav-options.json').then((data) => {
+    import('../../config/nav-options.json').then((data) => {
       this.navOptions = data.default;
     });
   }

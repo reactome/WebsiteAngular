@@ -1,7 +1,7 @@
 [
   {
     "label": "About",
-    "link": "/",
+    "link": "/about",
     "icon": "info",
     "dropdown-links": [
         {
@@ -64,7 +64,7 @@
   },
   {
     "label": "Content",
-    "link": "/",
+    "link": "/content",
     "icon": "dvr",
     "dropdown-links": [
         {
@@ -138,7 +138,7 @@
   },
   {
     "label": "Tools",
-    "link": "/",
+    "link": "/#tools",
     "icon": "perm_data_setting",
     "dropdown-links": [
         {

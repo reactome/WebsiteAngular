@@ -19,7 +19,7 @@
       >
         <div class="nav-link-wrapper">
           <a
-            [routerLink]="option.link"
+            [href]="option.link"
             class="nav-link"
             [class.has-dropdown]="
               option['dropdown-links'] && option['dropdown-links'].length > 0
@@ -29,14 +29,14 @@
               {{ option.icon }}
             </mat-icon>
             {{ option.label }}
-            <span
+            <mat-icon
               *ngIf="
                 option['dropdown-links'] && option['dropdown-links'].length > 0
               "
               class="dropdown-arrow"
             >
-              ▼
-            </span>
+                keyboard_arrow_down
+            </mat-icon>
           </a>
         </div>
 
@@ -52,7 +52,7 @@
               *ngFor="let link of option['dropdown-links']"
               class="dropdown-item"
             >
-              <a [routerLink]="link.link" class="dropdown-link">
+              <a [href]="link.link" class="dropdown-link">
                 {{ link.label }}
               </a>
             </li>
