@@ -8,7 +8,7 @@ $transition: all 0.3s ease;
 // Main container
 :host {
   display: block;
-  background-image: url('../../assets/reactome/bg-fireworks-colour.svg');
+  background-image: url("../../assets/reactome/bg-fireworks-colour.svg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -18,22 +18,57 @@ $transition: all 0.3s ease;
 }
 
 .pathway-link {
-    color: var(--on-primary) !important;
-    text-decoration: underline !important;
+  color: var(--on-primary) !important;
+  text-decoration: underline !important;
 }
 
-.home-search-title{
+.home-search-title {
   margin-top: 8px;
 }
 
-.new-pathway-tile {
+.new-pathway-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 }
 
+.new-pathway-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.med-button-icon {
+  width: 100px;
+  height: 64px;
+  padding: 36px;
+  overflow: visible;
+  font-size: 64px;
+  text-decoration: none !important;
+
+  &:hover {
+    color: var(--on-primary);
+  }
+}
 
 .home-shortcut-tile {
 }
 
-.home-news-why-tile {
+.large-button-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+}
+
+.home-news-why-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: unset;
+  align-items: center;
+  gap: 16px;
 }
 
 .home-stats-tile {

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HomeShortcutsComponent } from './home-shortcuts.component';
+import { CarouselComponent } from './carousel.component';
 
-describe('HomeShortcutsComponent', () => {
-  let component: HomeShortcutsComponent;
-  let fixture: ComponentFixture<HomeShortcutsComponent>;
+describe('CarouselComponent', () => {
+  let component: CarouselComponent;
+  let fixture: ComponentFixture<CarouselComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HomeShortcutsComponent]
+      imports: [CarouselComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(HomeShortcutsComponent);
+    fixture = TestBed.createComponent(CarouselComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

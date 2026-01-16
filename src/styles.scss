@@ -147,7 +147,7 @@ p:first-child {
   bottom: 10px;
   left: 0;
 
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  background: color-mix(in srgb, var(--primary) 80%, transparent);
   backdrop-filter: blur(5px);
   border-right: 1px solid var(--outline-variant);
   border-top: 1px solid var(--outline-variant);
@@ -176,7 +176,7 @@ p:first-child {
         min-width: var(--slider-height);
 
         @include mat.slider-overrides((
-          inactive-track-color: var(--on-surface)
+          inactive-track-color: var(--primary)
         ));
       }
     }

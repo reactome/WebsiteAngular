@@ -16,6 +16,8 @@ export class ButtonComponent {
 
   @Input() size: 'small' | 'medium' | 'large' = 'medium';
 
+  @Input() style: string = '';
+
   get buttonVariant(): string {
     return this.variant === 'dark' ? 'dark-button' : 'light-button';
   }

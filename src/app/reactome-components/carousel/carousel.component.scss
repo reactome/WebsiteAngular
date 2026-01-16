@@ -1,0 +1,32 @@
+.carousel-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.carousel-container {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    gap: 32px;
+    padding: 32px 0;
+    min-width: 0;
+}
+
+.left-button, .right-button {
+    cursor: pointer;
+    height: 48px;
+    width: 48px;
+    min-width: 48px;
+    font-size: 48px;
+    color: var(--primary);
+    overflow: visible;
+    flex-shrink: 0;
+    user-select: none;
+}
