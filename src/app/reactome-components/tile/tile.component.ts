@@ -9,6 +9,7 @@ import { Component, Input } from '@angular/core';
 })
 export class TileComponent {
   @Input() variant: 'dark' | 'light' | 'dark-transparent' | 'light-transparent' = 'light';
+  @Input() style: string = '';
 
   get tileVariant(): string {
     return this.variant === 'dark' ? 'dark-tile' :

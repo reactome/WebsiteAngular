@@ -1,10 +1,14 @@
-<app-tile variant="light" class="home-search-tile">
+<app-tile variant="light" class="home-search-tile" style="flex-direction: column !important; gap: 0px;">
+    <h1 class="home-search-title">Find Reactions, Proteins, and Pathways</h1>
     <app-search-bar/>
 </app-tile>
 <app-tile variant="dark" class="new-pathway-tile">
-    <span>Introducing Reactome’s new Pathway Browser! Click the button to explore the new Pathway Browser Beta! Don’t forget to read our 
-        <a class="pathway-link" href="#TODO">Release Notes</a>, and share your <a class="pathway-link" href="#TODO">Feedback</a>!</span>
-        <app-button variant="light" size="medium" shape="circle" class="pathway-tile-button">Explore the New Pathway Browser</app-button>
+    <span>Introducing Reactome’s new Pathway Browser! Click the button to explore the new Pathway Browser Beta!</span>  
+    <span>Don’t forget to read our 
+        <a class="pathway-link" href="#TODO">Release Notes</a>, and share your 
+        <a class="pathway-link" href="#TODO">Feedback</a>!
+    </span>
+    <app-button variant="light" size="medium" shape="circle" class="pathway-tile-button">Explore the New Pathway Browser</app-button>
 </app-tile>
 <app-tile variant="light" class="home-shortcut-tile" id="tools">
     <app-home-shortcuts/>

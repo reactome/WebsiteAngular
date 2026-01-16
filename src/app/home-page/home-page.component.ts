@@ -26,7 +26,7 @@ import { ButtonComponent } from '../reactome-components/button/button.component'
     HomeRelatedComponent,
     TileComponent,
     ButtonComponent,
-  ],
+],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
 })
