@@ -1,0 +1,41 @@
+.related-wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 32px;
+}
+
+.related-link {
+
+}
+
+.releated-logo-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.related-logo {
+    height: 64px;
+    width: auto;
+}
+
+.info-text {
+
+}
+
+.info-subtext {
+    font-size: 12px;
+}
+
+.learn-more {
+    text-decoration: underline;
+}
+
+.elixir-text {
+    display: flex;
+    flex-direction: column;
+}

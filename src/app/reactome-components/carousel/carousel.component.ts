@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
 
 @Component({
@@ -8,6 +8,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrl: './carousel.component.scss'
 })
 export class CarouselComponent {
+  @Input() dark: boolean = true;
   @ViewChild('carouselContainer') carouselContainer!: ElementRef<HTMLDivElement>;
 
   scrollLeft(): void {

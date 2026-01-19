@@ -25,8 +25,15 @@
     width: 48px;
     min-width: 48px;
     font-size: 48px;
-    color: var(--primary);
     overflow: visible;
     flex-shrink: 0;
     user-select: none;
+}
+
+.dark {
+    color: var(--primary);
+}
+
+.light {
+    color: var(--on-primary);
 }

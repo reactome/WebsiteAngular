@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { SearchBarComponent } from '../search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
 import { HomeWhyReactomeComponent } from './home-why-reactome/home-why-reactome.component';
@@ -35,6 +35,8 @@ import Article from '../../types/article';
   styleUrl: './home-page.component.scss',
 })
 export class HomePageComponent {
+  @Input() releaseNotesLink: string = 'TODO';
+
   navOptions: NavOption[] = [];
   pathwayBrowserLink: string = '';
   testArticleList:Article[] = [{title: "Test",link: "#", datePublished: new Date(), content: "This is a test article."}];

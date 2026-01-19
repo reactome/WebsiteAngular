@@ -1,1 +1,43 @@
-<p>home-help works!</p>
+<h1 class="home-help-header">Guides and Support</h1>
+<app-carousel class="home-help-container" [dark]="false">
+  <a class="home-help-link" href="/userguide"><app-button
+    variant="light"
+    size="large"
+    shape="circle"
+    class="home-help-button"
+  >
+    <mat-icon class="home-help-icon">favorite</mat-icon>
+    User Guide
+  </app-button></a>
+
+  <a class="home-help-link" href="/dev"><app-button
+    variant="light"
+    size="large"
+    shape="circle"
+    class="home-help-button"
+  >
+    <mat-icon class="home-help-icon">code</mat-icon>
+    Dev Zone
+  </app-button></a>
+
+  <a class="home-help-link" href="/cite"><app-button
+    variant="light"
+    size="large"
+    shape="circle"
+    class="home-help-button"
+  >
+    <mat-icon class="home-help-icon">format_quote</mat-icon>
+    Citing Us
+  </app-button></a>
+
+  <a class="home-help-link" href="mailto:help@reactome.org"><app-button
+    variant="light"
+    size="large"
+    shape="circle"
+    class="home-help-button"
+  >
+    <mat-icon class="home-help-icon">email</mat-icon>
+    Contact Us
+  </app-button></a>
+</app-carousel>
+
