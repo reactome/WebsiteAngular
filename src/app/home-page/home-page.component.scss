@@ -67,8 +67,16 @@ $transition: all 0.3s ease;
   display: flex;
   flex-direction: row;
   justify-content: unset;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
+
+  app-tile:nth-child(1) {
+    flex: 0 0 40%;
+  }
+
+  app-tile:nth-child(2) {
+    flex: 0 0 60%;
+  }
 }
 
 .home-stats-tile {
