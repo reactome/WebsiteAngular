@@ -11,10 +11,19 @@ $transition: all 0.3s ease;
   background-image: url("../../assets/reactome/bg-fireworks-colour.svg");
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
+  background-repeat: repeat-y;
   background-attachment: fixed;
   min-height: 100vh;
   padding: $spacing-unit;
+}
+
+@media (max-width: 768px) {
+  :host {
+    background-attachment: scroll;
+    background-position: top center;
+    background-size: cover;
+    background-repeat: repeat-y;
+  }
 }
 
 .pathway-link {
@@ -71,11 +80,29 @@ $transition: all 0.3s ease;
   gap: 16px;
 
   app-tile:nth-child(1) {
+    min-height: 435px;
     flex: 0 0 40%;
   }
 
   app-tile:nth-child(2) {
+    height: 435px;
     flex: 0 0 60%;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+
+    app-tile:nth-child(1),
+    app-tile:nth-child(2) {
+      max-width: 100%;
+      flex: unset;
+    }
+
+    app-tile:nth-child(2) {
+      min-height: auto !important;
+      height: auto !important;
+      min-width: 100%;
+    }
   }
 }
 
