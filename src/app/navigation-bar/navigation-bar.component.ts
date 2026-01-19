@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {MatIconModule} from '@angular/material/icon'
@@ -12,8 +12,10 @@ import NavOption from '../../types/nav-option';
   styleUrl: './navigation-bar.component.scss'
 })
 export class NavigationBarComponent implements OnInit {
+  windowWidth:number = window.innerWidth;
   navOptions: NavOption[] = [];
   activeDropdown: string | null = null;
+  activeHamburgerMenu: boolean = false;
 
   ngOnInit() {
     this.loadNavOptions();
@@ -24,6 +26,10 @@ export class NavigationBarComponent implements OnInit {
     import('../../config/nav-options.json').then((data) => {
       this.navOptions = data.default;
     });
+  }
+
+  toggleHamburgerMenu() {
+    this.activeHamburgerMenu = !this.activeHamburgerMenu;
   }
 
   toggleDropdown(label: string) {
@@ -37,11 +43,23 @@ export class NavigationBarComponent implements OnInit {
     }
   }
 
+  showHamburgerDropdown(label: string) {
+    this.activeHamburgerMenu = true;
+  }
+
   hideDropdown() {
     this.activeDropdown = null;
   }
 
   closeDropdown() {
     this.activeDropdown = null;
+  }
+
+  closeHamburgerMenu() {
+    this.activeHamburgerMenu = false;
+  }
+
+  @HostListener('window:resize', ['$event']) onResize(event: any) {
+    this.windowWidth = window.innerWidth;
   }
 }

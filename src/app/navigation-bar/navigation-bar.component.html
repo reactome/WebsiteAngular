@@ -8,18 +8,21 @@
       />
     </a>
   </div>
+  
   <nav class="navbar-nav">
-    <ul class="nav-list">
+    <mat-icon class="menu-icon" *ngIf="windowWidth <= 768" (click)="toggleHamburgerMenu()">menu</mat-icon>
+    <ul class="nav-list" *ngIf="windowWidth > 768 || activeHamburgerMenu">
       <li
         *ngFor="let option of navOptions"
         class="nav-item"
         [class.active]="activeDropdown === option.label"
         (mouseenter)="showDropdown(option.label)"
         (mouseleave)="hideDropdown()"
+        (click)="toggleDropdown(option.label)"
       >
         <div class="nav-link-wrapper">
           <a
-            [href]="option.link"
+            [attr.href]="(windowWidth > 768 || option.label == 'Download') ? option.link : null"
             class="nav-link"
             [class.has-dropdown]="
               option['dropdown-links'] && option['dropdown-links'].length > 0
