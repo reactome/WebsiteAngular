@@ -14,8 +14,11 @@
     </span>
     <span
       >Don’t forget to read our
-      <a class="pathway-link" href={{releaseNotesLink}}>Release Notes</a>, and share your
-      <a class="pathway-link" href="https://forms.gle/TPBxaWnnVLLZj66p8">Feedback</a>!
+      <a class="pathway-link" href="{{ releaseNotesLink }}">Release Notes</a>,
+      and share your
+      <a class="pathway-link" href="https://forms.gle/TPBxaWnnVLLZj66p8"
+        >Feedback</a
+      >!
     </span>
   </div>
   <app-button
@@ -37,24 +40,7 @@
   id="tools"
   style="display: block"
 >
-  <app-carousel>
-    <app-button variant="dark" size="large"
-      ><mat-icon class="large-button-icon">account_tree</mat-icon>Pathway
-      Browser
-    </app-button>
-    <app-button variant="dark" size="large"
-      ><mat-icon class="large-button-icon">analytics</mat-icon>Analysis Tools
-    </app-button>
-    <app-button variant="dark" size="large"
-      ><mat-icon class="large-button-icon">smart_toy</mat-icon>AI Chatbot
-    </app-button>
-    <app-button variant="dark" size="large"
-      ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
-    </app-button>
-    <app-button variant="dark" size="large">
-      <mat-icon class="large-button-icon">school</mat-icon>Documentation
-    </app-button>
-  </app-carousel>
+  <app-home-shortcuts />
 </app-tile>
 
 <app-tile variant="dark-transparent">
@@ -66,17 +52,17 @@
   <app-tile variant="dark-transparent">
     <app-home-why-reactome />
   </app-tile>
-  <app-tile variant="dark-transparent" style="display: block;">
+  <app-tile variant="dark-transparent" style="display: block">
     <app-home-latest-news [newsList]="testArticleList" />
   </app-tile>
 </div>
 <app-tile variant="light" class="home-stats-tile" style="display: block">
   <app-home-stats />
 </app-tile>
-<app-tile variant="dark" class="home-api-data-tile" style="display: block;">
+<app-tile variant="dark" class="home-api-data-tile" style="display: block">
   <app-home-api-data />
 </app-tile>
-<app-tile variant="dark" class="home-help-tile" style="display: block;">
+<app-tile variant="dark" class="home-help-tile" style="display: block">
   <app-home-help />
 </app-tile>
 <app-tile variant="light" class="home-related-tile">

@@ -11,8 +11,8 @@ import { TileComponent } from '../reactome-components/tile/tile.component';
 import { ButtonComponent } from '../reactome-components/button/button.component';
 import { MatIcon } from "@angular/material/icon";
 import NavOption from '../../types/nav-option';
-import { CarouselComponent } from "../reactome-components/carousel/carousel.component";
 import Article from '../../types/article';
+import { HomeShortcutsComponent } from "./home-shortcuts/home-shortcuts.component";
 
 @Component({
   selector: 'app-home-page',
@@ -29,7 +29,7 @@ import Article from '../../types/article';
     TileComponent,
     ButtonComponent,
     MatIcon,
-    CarouselComponent
+    HomeShortcutsComponent
 ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
