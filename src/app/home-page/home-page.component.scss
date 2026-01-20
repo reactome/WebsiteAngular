@@ -80,12 +80,10 @@ $transition: all 0.3s ease;
   gap: 16px;
 
   app-tile:nth-child(1) {
-    min-height: 435px;
     flex: 0 0 40%;
   }
 
   app-tile:nth-child(2) {
-    height: 435px;
     flex: 0 0 60%;
   }
 
@@ -99,8 +97,6 @@ $transition: all 0.3s ease;
     }
 
     app-tile:nth-child(2) {
-      min-height: auto !important;
-      height: auto !important;
       min-width: 100%;
     }
   }

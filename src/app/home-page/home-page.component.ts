@@ -39,7 +39,8 @@ export class HomePageComponent {
 
   navOptions: NavOption[] = [];
   pathwayBrowserLink: string = '';
-  testArticleList:Article[] = [{title: "Test",link: "#", datePublished: new Date(), content: "This is a test article."}];
+  testArticle:Article = {title: "Test",link: "#", datePublished: new Date(), content: "This is a test article."};
+  testArticleList:Article[] = [this.testArticle,this.testArticle,this.testArticle, this.testArticle,this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle];
     ngOnInit() {
       this.loadNavOptions();
       this.pathwayBrowserLink = this.navOptions.find(option => option.label === 'Tools')?.['dropdown-links']?.find(link => link.label === 'Pathway Browser')?.link || '/PathwayBrowser';
