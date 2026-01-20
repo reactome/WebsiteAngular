@@ -38,18 +38,26 @@ export class HomePageComponent {
   @Input() releaseNotesLink: string = 'TODO';
 
   navOptions: NavOption[] = [];
+  navOptionsByLabel: Record<string, NavOption> = {};
   pathwayBrowserLink: string = '';
   testArticle:Article = {title: "Test",link: "#", datePublished: new Date(), content: "This is a test article."};
   testArticleList:Article[] = [this.testArticle,this.testArticle,this.testArticle, this.testArticle,this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle];
     ngOnInit() {
       this.loadNavOptions();
-      this.pathwayBrowserLink = this.navOptions.find(option => option.label === 'Tools')?.['dropdown-links']?.find(link => link.label === 'Pathway Browser')?.link || '/PathwayBrowser';
     }
 
     loadNavOptions() {
       // Load nav options from the JSON file
       import('../../config/nav-options.json').then((data) => {
         this.navOptions = data.default;
+        this.navOptionsByLabel = this.navOptions.reduce((acc, option) => {
+          acc[option.label] = option;
+          return acc;
+        }, {} as Record<string, NavOption>);
+
+        const toolsOption = this.navOptionsByLabel['Tools'];
+        const pathwayLink = toolsOption?.['dropdown-links']?.find(link => link.label === 'Pathway Browser')?.link;
+        this.pathwayBrowserLink = pathwayLink || '/PathwayBrowser';
       });
     }
 }
