@@ -14,7 +14,6 @@ import NavOption from '../../types/nav-option';
 export class NavigationBarComponent implements OnInit {
   windowWidth:number = window.innerWidth;
   navOptions: NavOption[] = [];
-  navOptionsByLabel: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
   activeHamburgerMenu: boolean = false;
 
@@ -26,10 +25,6 @@ export class NavigationBarComponent implements OnInit {
     // Load nav options from the JSON file
     import('../../config/nav-options.json').then((data) => {
       this.navOptions = data.default;
-      this.navOptionsByLabel = this.navOptions.reduce((acc, option) => {
-        acc[option.label] = option;
-        return acc;
-      }, {} as Record<string, NavOption>);
     });
   }
 
@@ -42,7 +37,7 @@ export class NavigationBarComponent implements OnInit {
   }
 
   showDropdown(label: string) {
-    const option = this.navOptionsByLabel[label];
+    const option = this.navOptions.find(opt => opt.label === label);
     if (option && option['dropdown-links'] && option['dropdown-links'].length > 0) {
       this.activeDropdown = label;
     }

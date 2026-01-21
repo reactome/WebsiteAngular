@@ -28,6 +28,9 @@ export default defineConfig({
           { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
           { type: "rich-text", name: "body", label: "Body" },
         ],
+        ui: {
+          router: ({ document }) => `/pages/${document._sys.filename}`,
+        }
       },
       {
         name: "news",
@@ -40,7 +43,10 @@ export default defineConfig({
           { type: 'string', name: "author", label: "Author" },
           { type: "rich-text", name: "body", label: "Body" },
           { type: 'string', name: "tags", label: "Tags", list: true },
-        ]
+        ],
+        ui: {
+          router: ({ document }) => `/news/${document._sys.filename}`,
+        }
       }
 
     ],

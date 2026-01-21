@@ -1,0 +1,16 @@
+[
+  {
+    "title": "First Test Article",
+    "content": "|\n  Good Morning USA",
+    "datePublished": "2026-01-21T19:50:56.208Z",
+    "link": "First-Test-Article",
+    "author": "Me, Myself, I"
+  },
+  {
+    "title": "news 2",
+    "content": "|\n  Bleh",
+    "datePublished": "2026-01-21T19:50:56.208Z",
+    "link": "news-2",
+    "author": "You yourself and ?"
+  }
+]

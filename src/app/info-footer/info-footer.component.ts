@@ -13,7 +13,6 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class InfoFooterComponent {
   navOptions: NavOption[] = [];
-  navOptionsByLabel: Record<string, NavOption> = {};
 
   ngOnInit() {
     this.loadNavOptions();
@@ -23,10 +22,6 @@ export class InfoFooterComponent {
     // Load nav options from the JSON file
     import('../../config/nav-options.json').then((data) => {
       this.navOptions = data.default;
-      this.navOptionsByLabel = this.navOptions.reduce((acc, option) => {
-        acc[option.label] = option;
-        return acc;
-      }, {} as Record<string, NavOption>);
     });
   }
 }
