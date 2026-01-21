@@ -9,10 +9,10 @@ import { HomeApiDataComponent } from './home-api-data/home-api-data.component';
 import { HomeRelatedComponent } from './home-related/home-related.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { ButtonComponent } from '../reactome-components/button/button.component';
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon } from '@angular/material/icon';
 import NavOption from '../../types/nav-option';
 import Article from '../../types/article';
-import { HomeShortcutsComponent } from "./home-shortcuts/home-shortcuts.component";
+import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 
 @Component({
   selector: 'app-home-page',
@@ -29,8 +29,8 @@ import { HomeShortcutsComponent } from "./home-shortcuts/home-shortcuts.componen
     TileComponent,
     ButtonComponent,
     MatIcon,
-    HomeShortcutsComponent
-],
+    HomeShortcutsComponent,
+  ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
 })
@@ -39,25 +39,49 @@ export class HomePageComponent {
 
   navOptions: NavOption[] = [];
   navOptionsByLabel: Record<string, NavOption> = {};
+
   pathwayBrowserLink: string = '';
-  testArticle:Article = {title: "Test",link: "#", datePublished: new Date(), content: "This is a test article."};
-  testArticleList:Article[] = [this.testArticle,this.testArticle,this.testArticle, this.testArticle,this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle, this.testArticle,this.testArticle, this.testArticle, this.testArticle, this.testArticle];
-    ngOnInit() {
-      this.loadNavOptions();
-    }
+  testArticle: Article = {
+    title: 'Test',
+    link: '#',
+    datePublished: new Date(),
+    content: 'This is a test article.',
+  };
+  testArticleList: Article[] = [
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+    this.testArticle,
+  ];
+  ngOnInit() {
+    this.loadNavOptions();
+  }
 
-    loadNavOptions() {
-      // Load nav options from the JSON file
-      import('../../config/nav-options.json').then((data) => {
-        this.navOptions = data.default;
-        this.navOptionsByLabel = this.navOptions.reduce((acc, option) => {
-          acc[option.label] = option;
-          return acc;
-        }, {} as Record<string, NavOption>);
+  loadNavOptions() {
+    // Load nav options from the JSON file
+    import('../../config/nav-options.json').then((data) => {
+      this.navOptions = data.default;
+      this.navOptionsByLabel = this.navOptions.reduce((acc, option) => {
+        acc[option.label] = option;
+        return acc;
+      }, {} as Record<string, NavOption>);
 
-        const toolsOption = this.navOptionsByLabel['Tools'];
-        const pathwayLink = toolsOption?.['dropdown-links']?.find(link => link.label === 'Pathway Browser')?.link;
-        this.pathwayBrowserLink = pathwayLink || '/PathwayBrowser';
-      });
-    }
+      const toolsOption = this.navOptionsByLabel['Tools'];
+      const pathwayLink = toolsOption?.['dropdown-links']?.find(
+        (link) => link.label === 'Pathway Browser'
+      )?.link;
+      this.pathwayBrowserLink = pathwayLink || '/PathwayBrowser';
+    });
+  }
 }

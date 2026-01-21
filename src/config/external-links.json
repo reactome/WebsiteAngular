@@ -1,0 +1,50 @@
+[
+    {
+        "label": "Twitter",
+        "link": "https://twitter.com/Reactome"
+    },
+    {
+        "label": "Facebook",
+        "link": "https://www.facebook.com/reactome"
+    },
+    {
+        "label": "Youtube",
+        "link": "https://www.youtube.com/@Reactome"
+    },
+    {
+        "label": "elixir",
+        "link": "https://elixir-europe.org/platforms/data/core-data-resources"
+    },
+    {
+        "label": "GCDR",
+        "link": "https://globalbiodata.org/scientific-activities/global-core-biodata-resources/"
+    },
+    {
+        "label": "CoreTrustSeal",
+        "link": "https://www.coretrustseal.org/"
+    },
+    {
+        "label": "EBI",
+        "link": "http://www.ebi.ac.uk/"
+    },
+    {
+        "label": "NYU",
+        "link": "https://med.nyu.edu/"
+    },
+    {
+        "label": "OHSU",
+        "link": "http://www.ohsu.edu/"
+    },
+    {
+        "label": "OICR",
+        "link": "https://oicr.on.ca/"
+    },
+    {
+        "label": "Release Notes",
+        "link": "http://localhost:8080/about/news/280-reactome-pathway-browser-new-beta-release#TODO: Fix"
+    },
+    {
+        "label": "Feedback",
+        "link": "https://forms.gle/TPBxaWnnVLLZj66p8"
+    }
+]
