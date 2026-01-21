@@ -45,7 +45,7 @@ export default defineConfig({
           { type: 'string', name: "tags", label: "Tags", list: true },
         ],
         ui: {
-          router: ({ document }) => `/news/${document._sys.filename}`,
+          router: ({ document }) => `about/news/${document._sys.filename}`,
         }
       }
 

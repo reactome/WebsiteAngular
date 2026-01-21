@@ -98,7 +98,7 @@ export class HomePageComponent {
             title: a.title,
             content: content.slice(0, this.maxExerptLength) + (content.length > this.maxExerptLength ? '...' : ''),
             datePublished: new Date(a.datePublished),
-            link: `/news/${a.link}`
+            link: `about/news/${a.link}`
           };
         });
         console.log('Processed latest news:', this.latestNews);
