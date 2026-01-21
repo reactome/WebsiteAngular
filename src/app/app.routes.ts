@@ -4,10 +4,12 @@ import { DocumentationPageComponent } from './documentation-page/documentation-p
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { NewsArticleComponent } from './about-page/news/news-article/news-article.component';
 import { NewsPageComponent } from './about-page/news/news-page/news-page.component';
+import { AboutPageComponent } from './about-page/about-page.component';
 
 export const routes: Routes = [
     {path: '', component: HomePageComponent, pathMatch: 'full'},
     {path: 'documentation', component: DocumentationPageComponent},
+    {path: 'about', component: AboutPageComponent},
     {path: 'about/news', component: NewsPageComponent},
     {path: 'about/news/:slug', component: NewsArticleComponent},
     {path: '**', component: PageNotFoundComponent}
