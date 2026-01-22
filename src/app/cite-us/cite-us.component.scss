@@ -56,10 +56,68 @@
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+    width: 40%;
 
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.cite-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+
+    h1 {
+        align-self: flex-start;
+        flex: 1;
+    }
+}
+
+.icon-button {
+    border: 2px solid var(--primary);
+    background: var(--on-primary);
+    color: var(--primary);
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 4px;
+
+    &:hover {
+        border: 2px solid var(--on-primary);
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+}
+
+.citation-text {
+    border-top: 2px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+    width: 100%;
+    padding: 16px 8px;
+}
+
+.download-text {
+    width: 100%;
+}
+
+.citation-options {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+}
+
+.cite-actions {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-end;
     gap: 8px;
 }
 

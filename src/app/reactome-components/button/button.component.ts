@@ -18,6 +18,8 @@ export class ButtonComponent {
 
   @Input() style: string = '';
 
+  @Input() border: boolean = false;
+
   get buttonVariant(): string {
     return this.variant === 'dark' ? 'dark-button' : 'light-button';
   }
