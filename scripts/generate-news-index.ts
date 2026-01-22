@@ -71,16 +71,11 @@ function loadNewsArticles(): NewsArticle[] {
   }
 
   const files = fs.readdirSync(newsDir).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
-
-  console.log(`Found ${files.length} news files:`, files);
-
   const articles = files
     .map((filename) => {
       const filePath = path.join(newsDir, filename);
       const content = fs.readFileSync(filePath, 'utf-8');
       const { meta, body } = parseFrontmatter(content);
-
-      console.log(`Parsed ${filename}:`, meta);
 
       return {
         title: meta['title'] || filename.replace(/\.(mdx|md)$/, ''),
@@ -113,7 +108,7 @@ function generateNewsIndex(): void {
   const outputPath = path.join(outputDir, 'index.json');
   fs.writeFileSync(outputPath, JSON.stringify(articles, null, 2));
 
-  console.log(`✅ Generated news index with ${articles.length} articles at ${outputPath}`);
+  console.log(`Generated news index with ${articles.length} articles at ${outputPath}`);
 }
 
 // Run on module load

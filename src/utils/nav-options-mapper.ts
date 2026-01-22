@@ -40,6 +40,5 @@ export function mapNavOptions(raw: Record<string, any>): Record<string, NavOptio
     }
   });
   
-  console.log('Mapped NavOptions:', mapped);
   return mapped;
 }

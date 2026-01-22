@@ -17,7 +17,7 @@ export class HomeApiDataComponent {
 
   ngOnInit() {
     this.loadNavOptions();
-    console.log("NavOptions:", this.navOptions);
+    
   }
 
   loadNavOptions() {
