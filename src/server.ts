@@ -22,6 +22,25 @@ export function app(): express.Express {
    * });
    * ```
    */
+  // Proxy Reactome downloads to avoid CORS in SSR deployments
+  server.get('/reactome/*', async (req, res, next) => {
+    try {
+      const rest = req.originalUrl.replace(/^\/reactome/, '');
+      const target = `https://download.reactome.org${rest}`;
+      const upstream = await fetch(target);
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      res.status(upstream.status);
+      upstream.headers.forEach((v, k) => {
+        if (k.toLowerCase() !== 'content-encoding') {
+          res.setHeader(k, v);
+        }
+      });
+      res.setHeader('access-control-allow-origin', '*');
+      res.send(buf);
+    } catch (e) {
+      next(e);
+    }
+  });
 
   /**
    * Serve static files from /browser

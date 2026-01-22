@@ -10,9 +10,32 @@
 
 <div class="dark-filter" *ngIf="showModal === true">
   <div class="cite-modal" *ngIf="showModal === true">
-    TODO: MODAL YEAH!
-    <button class="cite-close-button" (click)="showModal = false">
-      <mat-icon class="cite-close-icon">close</mat-icon>
-    </button>
+    <div class="cite-header">
+      <h1>Cite Us!</h1>
+      <div (click)="copyToClipboard()"><mat-icon class="icon-button">file_copy</mat-icon></div>
+      <a href={{mailToLink}}><mat-icon class="icon-button">email</mat-icon></a>
+    </div>
+    <p class="citation-text" id="citation-text">
+      {{ citationText }}
+    </p>
+    <span class="download-text">Download citation as:</span>
+    <form class="citation-options">
+      <div>
+        <input [checked]="citationType === 'bibtex'" type="radio" name="citationType" mat-button (click)="citationType = 'bibtex'"/>
+        <label>BibTeX</label>
+      </div>
+      <div>
+        <input [checked]="citationType === 'ris'" type="radio" name="citationType" mat-button (click)="citationType = 'ris'"/>
+        <label>RIS</label>
+      </div>
+      <div>
+        <input [checked]="citationType === 'plaintext'" type="radio" name="citationType" mat-button (click)="citationType = 'plaintext'"/>
+        <label>Plain Text</label>
+      </div>
+    </form>
+    <div class="cite-actions">
+      <app-button shape="square" variant="light" style="height: 36px;" [border]="true" (click)="download()">Download</app-button>
+      <app-button shape="square" variant="light" style="height: 36px;" [border]="true" (click)="showModal = false">Close</app-button>
+    </div>
   </div>
 </div>

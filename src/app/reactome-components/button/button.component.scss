@@ -14,6 +14,9 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dark-button {
+    &.border {
+        border: 2px solid var(--on-primary);
+    }
     background: var(--primary);
     color: var(--on-primary);
     &:hover {
@@ -24,6 +27,9 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .light-button {
+    &.border {
+        border: 2px solid var(--primary);
+    }
     background: var(--on-primary);
     color: var(--primary) !important;
 

@@ -4,32 +4,32 @@
 <app-carousel class="stats-container">
     <div class="stat-item">
         <mat-icon class="stat-item-icon">accessibility</mat-icon>
-        <span>{{ stats.human_pathways }}</span>
+        <span>{{ formatNumber(stats.human_pathways) }}</span>
         <span>Human Pathways</span>
     </div>
     <div class="stat-item">
         <mat-icon class="stat-item-icon">science</mat-icon>
-        <span>{{ stats.reactions }}</span>
+        <span>{{ formatNumber(stats.reactions) }}</span>
         <span>Reactions</span>
     </div>
     <div class="stat-item">
         <mat-icon class="stat-item-icon">share</mat-icon>
-        <span>{{ stats.proteins }}</span>
+        <span>{{ formatNumber(stats.proteins) }}</span>
         <span>Proteins</span>
     </div>
     <div class="stat-item">
         <mat-icon class="stat-item-icon">snowing</mat-icon>
-        <span>{{ stats.small_molecules }}</span>
+        <span>{{ formatNumber(stats.small_molecules) }}</span>
         <span>Small Molecules</span>
     </div>
     <div class="stat-item">
         <mat-icon class="stat-item-icon">local_hospital</mat-icon>
-        <span>{{ stats.drugs }}</span>
+        <span>{{ formatNumber(stats.drugs) }}</span>
         <span>Drugs</span>
     </div>
     <div class="stat-item">
         <mat-icon class="stat-item-icon">book</mat-icon>
-        <span>{{ stats.references }}</span>
+        <span>{{ formatNumber(stats.references) }}</span>
         <span>Literature References</span>
     </div>
 </app-carousel>
