@@ -1,229 +1,313 @@
-[
-  {
+{
+  "about": {
     "label": "About",
     "link": "/about",
     "icon": "info",
-    "dropdown-links": [
-        {
-            "label": "What is Reactome?",
-            "link": "/what-is-reactome"
-        },
-        {
-            "label": "News",
-            "link": "/about/news"
-        },
-        {
-            "label": "Team",
-            "link": "/about/team"
-        },
-        {
-            "label": "Scientific Advisory Board",
-            "link": "/sab"
-        },
-        {
-            "label": "Funding",
-            "link": "/about/funding"
-        },
-        {
-            "label": "Editorial Calendar",
-            "link": "/about/editorial-calendar"
-        },
-        {
-            "label": "Release Calendar",
-            "link": "/about/release-calendar"
-        },
-        {
-            "label": "Statistics",
-            "link": "/about/statistics"
-        },
-        {
-            "label": "Our Logo",
-            "link": "/about/logo"
-        },
-        {
-            "label": "License Agreement",
-            "link": "/license"
-        },
-        {
-            "label": "Privacy Notice",
-            "link": "/about/privacy-notice"
-        },
-        {
-            "label": "Discalaimer",
-            "link": "/about/disclaimer"
-        },
-        {
-            "label": "Digital Preservation",
-            "link": "/about/digital-preservation"
-        },
-        {
-            "label": "Contact Us",
-            "link": "/about/contact-us"
-        }
-    ]
+    "dropdown-links": {
+      "what-is-reactome": {
+        "label": "What is Reactome?",
+        "link": "/about/what-is-reactome"
+      },
+      "news": {
+        "label": "News",
+        "link": "/about/news"
+      },
+      "team": {
+        "label": "Team",
+        "link": "/about/team"
+      },
+      "scientific-advisory-board": {
+        "label": "Scientific Advisory Board",
+        "link": "/about/sab"
+      },
+      "funding": {
+        "label": "Funding",
+        "link": "/about/funding"
+      },
+      "editorial-calendar": {
+        "label": "Editorial Calendar",
+        "link": "/about/editorial-calendar"
+      },
+      "release-calendar": {
+        "label": "Release Calendar",
+        "link": "/about/release-calendar"
+      },
+      "statistics": {
+        "label": "Statistics",
+        "link": "/about/statistics"
+      },
+      "our-logo": {
+        "label": "Our Logo",
+        "link": "/about/logo"
+      },
+      "license-agreement": {
+        "label": "License Agreement",
+        "link": "/about/license"
+      },
+      "privacy-notice": {
+        "label": "Privacy Notice",
+        "link": "/about/privacy-notice"
+      },
+      "disclaimer": {
+        "label": "Discalaimer",
+        "link": "/about/disclaimer"
+      },
+      "digital-preservation": {
+        "label": "Digital Preservation",
+        "link": "/about/digital-preservation"
+      },
+      "contact-us": {
+        "label": "Contact Us",
+        "link": "/about/contact-us"
+      }
+    }
   },
-  {
+  "content": {
     "label": "Content",
     "link": "/content",
     "icon": "dvr",
-    "dropdown-links": [
-        {
-            "label": "Table of Contents",
-            "link": "/content/toc"
-        },
-        {
-            "label": "DOIs",
-            "link": "/content/doi"
-        },
-        {
-            "label": "Data Schema",
-            "link": "/content/schema"
-        },
-        {
-            "label": "Reactome Research Spotlight",
-            "link": "/content/reactome-research-spotlight"
-        },
-        {
-            "label": "ORCID Integration Project",
-            "link": "/orcid"
-        },
-        {
-            "label": "COVID-19 Disease Pathways",
-            "link": "/content/covid-19"
-        }
-    ]
+    "dropdown-links": {
+      "table-of-contents": {
+        "label": "Table of Contents",
+        "link": "/content/toc"
+      },
+      "dois": {
+        "label": "DOIs",
+        "link": "/content/doi"
+      },
+      "data-schema": {
+        "label": "Data Schema",
+        "link": "/content/schema"
+      },
+      "reactome-research-spotlight": {
+        "label": "Reactome Research Spotlight",
+        "link": "/content/reactome-research-spotlight"
+      },
+      "orcid-integration-project": {
+        "label": "ORCID Integration Project",
+        "link": "/content/orcid"
+      },
+      "covid-19-disease-pathways": {
+        "label": "COVID-19 Disease Pathways",
+        "link": "/content/covid-19"
+      }
+    }
   },
-  {
+  "docs": {
     "label": "Docs",
     "link": "/documentation",
     "icon": "school",
-    "dropdown-links": [
-        {
+    "dropdown-links": {
+        "userguide": {
             "label": "Userguide",
-            "link": "/userguide"
+            "link": "/documentation/userguide",
+            "dropdown-links": {
+              "pathway-browser": {
+                "label": "Pathway Browser",
+                "link": "/documentation/userguide/pathway-browser"
+              },
+              "how-do-i-search": {
+                "label": "How do I search?",
+                "link": "/documentation/userguide/searching"
+              },
+              "details-panel": {
+                "label": "Details Panel",
+                "link": "/documentation/userguide/details-panel"
+              },
+              "analysis-tools": {
+                "label": "Analysis Tools",
+                "link": "/documentation/userguide/analysis",
+                "dropdown-links": {
+                  "analysis-data": {
+                    "label": "Analysis Data",
+                    "link": "/documentation/userguide/analysis/analysis"
+                  },
+                  "analysis-gene-expression": {
+                    "label": "Analysis Gene Expression",
+                    "link": "/documentation/userguide/analysis/gsa"
+                  },
+                  "species-comparison": {
+                    "label": "Species Comparison",
+                    "link": "/documentation/userguide/analysis/species"
+                  },
+                  "tissue-distribution": {
+                    "label": "Tissue Distribution",
+                    "link": "/documentation/userguide/analysis/tissue"
+                  }
+                }
+              },
+              "diseases": {
+                "label": "Diseases",
+                "link": "/documentation/userguide/diseases"
+              },
+              "cytomics": {
+                "label": "Cytomics",
+                "link": "/documentation/userguide/cytomics"
+              },
+              "review-status": {
+                "label": "Review Status of Reactome Events",
+                "link": "/documentation/userguide/review-status"
+              },
+              "reactome-fiviz": {
+                "label": "ReactomeFIViz",
+                "link": "/documentation/userguide/reactome-fiviz"
+              }
+
+            }
         },
-        {
+        "developers-zone": {
             "label": "Developers Zone",
-            "link": "/dev"
+            "link": "/documentation/dev",
+            "dropdown-links": {
+              "graph-database": {
+                "label": "Graph Database",
+                "link": "/documentation/dev/graph-database"
+              },
+              "analysis-service": {
+                "label": "Analysis Service",
+                "link": "/documentation/dev/analysis"
+              },
+              
+              "content-service": {
+                "label": "Content Service",
+                "link": "/documentation/dev/content-service"
+              },
+              "pathways-overview": {
+                "label": "Pathways Overview",
+                "link": "/documentation/dev/pathways-overview"
+              },
+              "pathway-diagrams": {
+                "label": "Pathway Diagrams",
+                "link": "/documentation/dev/pathway-diagrams"
+              }
+            }
         },
-        {
+        "icon-info": {
             "label": "Icon Info",
-            "link": "/icon-info"
+            "link": "/documentation/icon-info",
+            "dropdown-links": {
+              "ehld": {
+                "label": "EHLD Specs & Guidelines",
+                "link": "/documentation/icon-info/ehld-specs-guideline"
+              },
+              "icons-guidelines": {
+                "label": "Icon Library Guidelines",
+                "link": "/documentation/icon-info/icons-guidelines"
+              }
+            }
         },
-        {
+        "data-model": {
             "label": "Data Model",
-            "link": "/data-model"
+            "link": "/documentation/data-model"
         },
-        {
+        "curator-guide": {
             "label": "Curator Guide",
             "link": "/documentation/curator-guide"
         },
-        {
+        "computationally-inferred-events": {
             "label": "Computationally Inferred Events",
             "link": "/documentation/inferred-events"
         },
-        {
+        "faq": {
             "label": "FAQ",
             "link": "/documentation/faq"
         },
-        {
+        "linking-to-us": {
             "label": "Linking to Us",
-            "link": "/linking-to-us"
+            "link": "/documentation/linking-to-us"
         },
-        {
+        "citing-us": {
             "label": "Citing Us",
-            "link": "/cite"
+            "link": "/documentation/cite"
         }
-    ]
+    }
   },
-  {
+  "tools": {
     "label": "Tools",
     "link": "/#tools",
     "icon": "perm_data_setting",
-    "dropdown-links": [
-        {
+    "dropdown-links": {
+        "pathway-browser": {
             "label": "Pathway Browser",
             "link": "/PathwayBrowser"
         },
-        {
+        "analyse-gene-expression": {
             "label": "Analyse gene expression",
             "link": "/gsa/home"
         },
-        {
+        "species-comparison": {
             "label": "Species Comparison",
             "link": "/PathwayBrowser/#TOOL=AT"
         },
-        {
+        "tissue-distribution": {
             "label": "Tissue Distribution",
             "link": "/PathwayBrowser/#TOOL=AT"
         },
-        {
+        "analysis-service": {
             "label": "Analysis Service",
             "link": "/AnalysisService"
         },
-        {
+        "content-service": {
             "label": "Content Service",
             "link": "/ContentService"
         },
-        {
+        "reactome-fiviz": {
             "label": "ReactomeFIViz",
             "link": "/tools/reactome-fiviz"
         },
-        {
+        "advanced-data-search": {
             "label": "Advanced Data Search",
             "link": "/content/advanced"
         },
-        {
+        "site-search": {
             "label": "Site Search",
             "link": "/tools/site-search"
         }
-    ]
+    }
   },
-  {
+  "community": {
     "label": "Community",
     "link": "/community",
      "icon": "contacts",
-    "dropdown-links": [
-         {
+    "dropdown-links": {
+         "contribute-pathway-knowledge": {
             "label": "Contribute Pathway Knowledge",
             "link": "/community/collaboration"
         },
-        {
+        "icon-library": {
             "label": "Icon Library",
-            "link": "/icon-lib"
+            "link": "/community/icon-lib"
         },
-        {
+        "outreach": {
             "label": "Outreach",
             "link": "/community/outreach"
         },
-        {
+        "events": {
             "label": "Events",
             "link": "/community/events"
         },
-        {
+        "publications": {
             "label": "Publications",
             "link": "/community/publications"
         },
-        {
+        "partners": {
             "label": "Partners",
             "link": "/community/partners"
         },
-        {
+        "contributors": {
             "label": "Contributors",
             "link": "/community/contributors"
         },
-        {
+        "resources-guide": {
             "label": "Resources Guide",
             "link": "/community/resources"
         }
-    ]
+    }
   },
-  {
+  "download": {
     "icon": "cloud_download",
     "label": "Download",
     "link": "/download-data",
-    "dropdown-links": [
-        
-    ]
+    "dropdown-links": {}
   }
-]
+}

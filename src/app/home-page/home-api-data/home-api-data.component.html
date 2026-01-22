@@ -1,6 +1,6 @@
 <h1 class="api-data-header">API and Data Access</h1>
 <app-carousel class="api-data-container" [dark]="false">
-  <a class="api-data-link" href="/ContentService"><app-button
+  <a class="api-data-link" [href]="navOptions['tools']?.dropdownLinks?.['content-service']?.link || ''"><app-button
     variant="light"
     size="large"
     shape="circle"
@@ -10,7 +10,7 @@
     Content Service
   </app-button></a>
 
-  <a class="api-data-link" href="/AnalysisService"><app-button
+  <a class="api-data-link" [href]="navOptions['tools']?.dropdownLinks?.['analysis-service']?.link || ''"><app-button
     variant="light"
     size="large"
     shape="circle"
@@ -20,7 +20,7 @@
     Analysis Service
   </app-button></a>
 
-  <a class="api-data-link" href="/icon-lib"><app-button
+  <a class="api-data-link" [href]="navOptions['community']?.dropdownLinks?.['icon-library']?.link || ''"><app-button
     variant="light"
     size="large"
     shape="circle"
@@ -30,7 +30,7 @@
     Icon Library
   </app-button></a>
 
-  <a class="api-data-link" href="/dev/graph-database"><app-button
+  <a class="api-data-link" [href]="navOptions['docs']?.dropdownLinks?.['userguide']?.dropdownLinks?.['developers-zone']?.dropdownLinks?.['graph-database']?.link || ''"><app-button
     variant="light"
     size="large"
     shape="circle"

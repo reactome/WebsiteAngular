@@ -13,28 +13,28 @@
     <mat-icon class="menu-icon" *ngIf="windowWidth <= 768" (click)="toggleHamburgerMenu()">menu</mat-icon>
     <ul class="nav-list" *ngIf="windowWidth > 768 || activeHamburgerMenu">
       <li
-        *ngFor="let option of navOptions"
+        *ngFor="let option of navOptions | keyvalue:preserveOrder"
         class="nav-item"
-        [class.active]="activeDropdown === option.label"
-        (mouseenter)="showDropdown(option.label)"
+        [class.active]="activeDropdown === option.key"
+        (mouseenter)="showDropdown(option.key)"
         (mouseleave)="hideDropdown()"
-        (click)="toggleDropdown(option.label)"
+        (click)="toggleDropdown(option.key)"
       >
         <div class="nav-link-wrapper">
           <a
-            [attr.href]="(windowWidth > 768 || option.label == 'Download') ? option.link : null"
+            [attr.href]="(windowWidth > 768 || option.value.label == 'Download') ? option.value.link : null"
             class="nav-link"
             [class.has-dropdown]="
-              option['dropdown-links'] && option['dropdown-links'].length > 0
+              option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
             "
           >
             <mat-icon>
-              {{ option.icon }}
+              {{ option.value.icon }}
             </mat-icon>
-            {{ option.label }}
+            {{ option.value.label }}
             <mat-icon
               *ngIf="
-                option['dropdown-links'] && option['dropdown-links'].length > 0
+                option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
               "
               class="dropdown-arrow"
             >
@@ -45,18 +45,18 @@
 
         <div
           *ngIf="
-            option['dropdown-links'] && option['dropdown-links'].length > 0
+            option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
           "
           class="dropdown-menu"
-          [class.show]="activeDropdown === option.label"
+          [class.show]="activeDropdown === option.key"
         >
           <ul class="dropdown-list">
             <li
-              *ngFor="let link of option['dropdown-links']"
+              *ngFor="let linkItem of option.value.dropdownLinks | keyvalue:preserveOrder"
               class="dropdown-item"
             >
-              <a [href]="link.link" class="dropdown-link">
-                {{ link.label }}
+              <a [href]="linkItem.value.link" class="dropdown-link">
+                {{ linkItem.value.label }}
               </a>
             </li>
           </ul>

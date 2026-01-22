@@ -1,25 +1,20 @@
 <div class="info-footer-container">
   <footer class="info-footer-wrapper">
-    <ul *ngFor="let option of navOptions" class="info-footer-list">
+    <ul *ngFor="let item of navOptions | keyvalue:preserveOrder" class="info-footer-list">
       <li class="info-option-item">
         <div class="info-link-container">
           <mat-icon class="info-option-icon">
-            {{ option.icon }}
+            {{ item.value.icon }}
           </mat-icon>
-          <a [href]="option.link" class="info-option-link">
-            {{ option.label }}
+          <a [href]="item.value.link" class="info-option-link">
+            {{ item.value.label }}
           </a>
         </div>
       </li>
-      <li *ngFor="let link of option['dropdown-links']" class="info-suboption-item">
-        <div
-          *ngIf="
-            option['dropdown-links'] && option['dropdown-links'].length > 0
-          "
-            class="info-link-container"
-        >
-          <a [href]="link.link" class="info-option-link">
-            {{ link.label }}
+      <li *ngFor="let linkItem of item.value.dropdownLinks | keyvalue:preserveOrder" class="info-suboption-item">
+        <div class="info-link-container">
+          <a [href]="linkItem.value.link" class="info-option-link">
+            {{ linkItem.value.label }}
           </a>
         </div>
       </li>

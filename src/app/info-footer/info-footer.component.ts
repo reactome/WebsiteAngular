@@ -3,6 +3,7 @@ import NavOption from '../../types/nav-option';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
+import { mapNavOptions } from '../../utils/nav-options-mapper';
 
 @Component({
   selector: 'app-info-footer',
@@ -12,7 +13,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrl: './info-footer.component.scss'
 })
 export class InfoFooterComponent {
-  navOptions: NavOption[] = [];
+  navOptions: Record<string, NavOption> = {};
 
   ngOnInit() {
     this.loadNavOptions();
@@ -21,7 +22,10 @@ export class InfoFooterComponent {
   loadNavOptions() {
     // Load nav options from the JSON file
     import('../../config/nav-options.json').then((data) => {
-      this.navOptions = data.default;
+      this.navOptions = mapNavOptions(data.default);
     });
   }
+
+  // Preserve original insertion order for keyvalue pipe
+  preserveOrder = () => 0;
 }

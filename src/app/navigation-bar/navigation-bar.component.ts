@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {MatIconModule} from '@angular/material/icon'
 import NavOption from '../../types/nav-option';
+import { mapNavOptions } from '../../utils/nav-options-mapper';
 
 @Component({
   standalone: true,
@@ -13,7 +14,7 @@ import NavOption from '../../types/nav-option';
 })
 export class NavigationBarComponent implements OnInit {
   windowWidth:number = window.innerWidth;
-  navOptions: NavOption[] = [];
+  navOptions: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
   activeHamburgerMenu: boolean = false;
 
@@ -24,7 +25,7 @@ export class NavigationBarComponent implements OnInit {
   loadNavOptions() {
     // Load nav options from the JSON file
     import('../../config/nav-options.json').then((data) => {
-      this.navOptions = data.default;
+      this.navOptions = mapNavOptions(data.default);
     });
   }
 
@@ -37,8 +38,8 @@ export class NavigationBarComponent implements OnInit {
   }
 
   showDropdown(label: string) {
-    const option = this.navOptions.find(opt => opt.label === label);
-    if (option && option['dropdown-links'] && option['dropdown-links'].length > 0) {
+    const option = this.navOptions[label];
+    if (option && option.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
       this.activeDropdown = label;
     }
   }
@@ -58,6 +59,9 @@ export class NavigationBarComponent implements OnInit {
   closeHamburgerMenu() {
     this.activeHamburgerMenu = false;
   }
+
+  // Preserve original insertion order for keyvalue pipe
+  preserveOrder = () => 0;
 
   @HostListener('window:resize', ['$event']) onResize(event: any) {
     this.windowWidth = window.innerWidth;

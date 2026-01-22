@@ -14,6 +14,7 @@ import NavOption from '../../types/nav-option';
 import Article from '../../types/article';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { mapNavOptions } from '../../utils/nav-options-mapper';
 
 @Component({
   selector: 'app-home-page',
@@ -40,7 +41,7 @@ export class HomePageComponent {
   releaseNotesLink: string = 'TODO';
   private http = inject(HttpClient);
 
-  navOptions: NavOption[] = [];
+  navOptions: Record<string, NavOption> = {};
   latestNews: Article[] = [];
   maxArticlesToShow: number = 5;
   maxExerptLength: number = 200;
@@ -78,13 +79,10 @@ export class HomePageComponent {
   loadNavOptions() {
     // Load nav options from the JSON file
     import('../../config/nav-options.json').then((data) => {
-      this.navOptions = data.default;
+      this.navOptions = mapNavOptions(data.default);
 
-      const toolsOption = this.navOptions.find(option => option.label === 'Tools');
-      const pathwayLink = toolsOption?.['dropdown-links']?.find(
-        (link) => link.label === 'Pathway Browser'
-      )?.link;
-      this.pathwayBrowserLink = pathwayLink || '/PathwayBrowser';
+      const pathwayLink = this.navOptions['tools'].dropdownLinks?.['pathway-browser'];
+      this.pathwayBrowserLink = pathwayLink?.link || '/PathwayBrowser';
     });
   }
 
