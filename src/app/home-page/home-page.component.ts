@@ -11,6 +11,7 @@ import { TileComponent } from '../reactome-components/tile/tile.component';
 import { ButtonComponent } from '../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
 import NavOption from '../../types/nav-option';
+import ExternalLink from '../../types/external-link';
 import Article from '../../types/article';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -38,10 +39,12 @@ import { mapNavOptions } from '../../utils/nav-options-mapper';
   styleUrl: './home-page.component.scss',
 })
 export class HomePageComponent {
-  releaseNotesLink: string = 'TODO';
+  releaseNotesLink: string = '';
+  feedbackLink: string = '';
   private http = inject(HttpClient);
 
   navOptions: Record<string, NavOption> = {};
+  externalLinks: Record<string, ExternalLink> = {};
   latestNews: Article[] = [];
   maxArticlesToShow: number = 5;
   maxExerptLength: number = 200;
@@ -73,6 +76,7 @@ export class HomePageComponent {
 
   ngOnInit() {
     this.loadNavOptions();
+    this.loadExternalLinks();
     this.loadLatestNews();
   }
 
@@ -83,6 +87,14 @@ export class HomePageComponent {
 
       const pathwayLink = this.navOptions['tools'].dropdownLinks?.['pathway-browser'];
       this.pathwayBrowserLink = pathwayLink?.link || '/PathwayBrowser';
+    });
+  }
+
+  loadExternalLinks() {
+    import('../../config/external-links.json').then((data) => {
+      this.externalLinks = data.default;
+      this.releaseNotesLink = this.externalLinks['releaseNotes']?.link || '';
+      this.feedbackLink = this.externalLinks['feedback']?.link || '';
     });
   }
 

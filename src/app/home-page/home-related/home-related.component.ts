@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import ExternalLink from '../../../types/external-link';
 
 @Component({
   selector: 'app-home-related',
@@ -8,5 +9,15 @@ import { Component } from '@angular/core';
   styleUrl: './home-related.component.scss'
 })
 export class HomeRelatedComponent {
+  externalLinks: Record<string, ExternalLink> = {};
 
+  ngOnInit() {
+    this.loadExternalLinks();
+  }
+
+  loadExternalLinks() {
+    import('../../../config/external-links.json').then((data) => {
+      this.externalLinks = data.default;
+    });
+  }
 }

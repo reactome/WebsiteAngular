@@ -30,9 +30,12 @@
 
 .twitter,
 .facebook,
-.youtube {
-  min-width: 24px;
-  min-height: 24px;
+.youtube,
+.github,
+.linkedin,
+.bluesky {
+  width: 24px;
+  height: 24px;
   border: 2px solid var(--primary);
   padding: 4px;
   border-radius: 8px;
@@ -47,4 +50,8 @@
     fill: var(--on-primary);
     stroke: var(--on-primary);
   }
+}
+
+.linkedin {
+  margin-bottom: 4px;
 }

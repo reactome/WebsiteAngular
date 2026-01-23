@@ -1,11 +1,11 @@
   <app-carousel>
-    <a class="shortcut-link" href="/PathwayBrowser#TODO"
+    <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"
       ><app-button variant="dark" size="large"
         ><mat-icon class="large-button-icon">account_tree</mat-icon>Pathway
         Browser
       </app-button></a
     >
-    <a class="shortcut-link" href="/PathwayBrowser/#TOOL=AT"
+    <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['species-comparison']?.link || '/PathwayBrowser/#TOOL=AT'"
       ><app-button variant="dark" size="large"
         ><mat-icon class="large-button-icon">analytics</mat-icon>Analysis Tools
       </app-button></a
@@ -15,12 +15,12 @@
         ><mat-icon class="large-button-icon">smart_toy</mat-icon>AI Chatbot
       </app-button></a
     >
-    <a class="shortcut-link" href="/userguide/reactome-fiviz"
+    <a class="shortcut-link" [href]="navOptions['docs']?.dropdownLinks?.['userguide']?.dropdownLinks?.['reactome-fiviz']?.link || '/documentation/userguide/reactome-fiviz'"
       ><app-button variant="dark" size="large"
         ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
       </app-button></a
     >
-    <a class="shortcut-link" href="/documentation"
+    <a class="shortcut-link" [href]="navOptions['docs']?.link || '/documentation'"
       ><app-button variant="dark" size="large">
         <mat-icon class="large-button-icon">school</mat-icon>Documentation
       </app-button></a

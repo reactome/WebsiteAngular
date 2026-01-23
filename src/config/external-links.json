@@ -11,6 +11,18 @@
         "label": "Youtube",
         "link": "https://www.youtube.com/@Reactome"
     },
+    "github": {
+        "label": "GitHub",
+        "link": "https://github.com/reactome"
+    },
+    "bluesky": {
+        "label": "Bluesky",
+        "link": "https://bsky.app/profile/reactome.org"
+    },
+    "linkedin": {
+        "label": "LinkedIn",
+        "link": "https://ca.linkedin.com/company/reactome-group"
+    },
     "elixir": {
         "label": "elixir",
         "link": "https://elixir-europe.org/platforms/data/core-data-resources"
