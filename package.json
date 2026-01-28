@@ -5,7 +5,8 @@
     "ng": "ng",
     "generate:news": "npx ts-node scripts/generate-news-index.ts",
     "start": "npm run generate:news && tinacms dev -c \"ng serve\"",
-    "build": "npm run generate:news && tinacms build && ng build",
+    "build": "npm run generate:news && tinacms build --local --skip-cloud-checks && ng build",
+    "build:prod": "npm run generate:news && tinacms build && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:WebsiteAngular": "node dist/website-angular/server/server.mjs"

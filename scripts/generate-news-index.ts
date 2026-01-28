@@ -63,7 +63,7 @@ function parseFrontmatter(content: string): { meta: Record<string, any>; body: s
  * Load all news articles from content/news directory
  */
 function loadNewsArticles(): NewsArticle[] {
-  const newsDir = path.resolve(process.cwd(), 'content', 'news');
+  const newsDir = path.resolve(process.cwd(), 'content', 'about', 'news');
 
   if (!fs.existsSync(newsDir)) {
     console.warn('News directory not found:', newsDir);
@@ -99,7 +99,7 @@ function loadNewsArticles(): NewsArticle[] {
  */
 function generateNewsIndex(): void {
   const articles = loadNewsArticles();
-  const outputDir = path.resolve(process.cwd(), 'content', 'news');
+  const outputDir = path.resolve(process.cwd(), 'content', 'about', 'news');
 
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
