@@ -1,1 +1,17 @@
-<p>breadcrumb works!</p>
+@if (breadcrumbs.length > 0) {
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb-list">
+      <li class="breadcrumb-item">
+        <a href="/" class="breadcrumb-link home-link">
+          <mat-icon class="material-symbols-outlined">home</mat-icon>
+        </a>
+      </li>
+      @for (crumb of breadcrumbs; track crumb.link) {
+        <li class="breadcrumb-item">
+          <mat-icon class="breadcrumb-separator material-symbols-outlined">chevron_right</mat-icon>
+          <a [href]="crumb.link" class="breadcrumb-link">{{ crumb.label }}</a>
+        </li>
+      }
+    </ol>
+  </nav>
+}

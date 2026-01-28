@@ -1,16 +1,15 @@
 <app-page-layout>
-  <div class="about-page">
+  <div class="page">
     @if (loading) {
         <div class="loading">Loading...</div>
     } @else if (error) {
         <div class="error">
         <h1>Page Not Found</h1>
         <p>{{ error }}</p>
-        <a routerLink="/">Return to Home</a>
         </div>
     } @else if (page) {
-        <article class="about-content">
-        <header class="about-header">
+        <article class="page-content">
+        <header class="page-header">
             @if (page.category) {
             <span class="category-badge">{{ page.category }}</span>
             }
@@ -20,7 +19,7 @@
             }
         </header>
 
-        <div class="about-body" [innerHTML]="renderedContent"></div>
+        <div class="page-body" [innerHTML]="renderedContent"></div>
         </article>
     }
   </div>

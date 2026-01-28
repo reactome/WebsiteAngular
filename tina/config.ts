@@ -40,9 +40,9 @@ export default defineConfig({
         format: "mdx",
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
-          { type: 'datetime', name: "date", label: "Date Published" },
+          { type: 'datetime', name: "date", label: "Date Published", required: true },
           { type: 'string', name: "author", label: "Author" },
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: "rich-text", name: "body", label: "Body", required: true },
           { type: 'string', name: "tags", label: "Tags", list: true },
           { type: 'image', name: "image", label: "Image" },
         ],
@@ -113,8 +113,8 @@ export default defineConfig({
         }
       },
       { //Documentation Pages
-        name: "docs",
-        label: "Docs",
+        name: "documentation",
+        label: "Documentation",
         path: "content/documentation",
         format: "mdx",
         fields: [

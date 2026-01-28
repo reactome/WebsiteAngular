@@ -1,1 +1,15 @@
-<p>page-layout works!</p>
+<div class="page-layout" [class.with-sidebar]="showSidebar">
+  @if (showSidebar) {
+    <app-sidebar />
+  }
+
+  <div class="page-main">
+    @if (showBreadcrumb) {
+      <app-breadcrumb />
+    }
+
+    <div class="page-content">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

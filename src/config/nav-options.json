@@ -93,7 +93,7 @@
       }
     }
   },
-  "docs": {
+  "documentation": {
     "label": "Docs",
     "link": "/documentation",
     "icon": "school",

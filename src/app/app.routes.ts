@@ -1,16 +1,20 @@
 import { Routes } from '@angular/router';
 import { HomePageComponent } from './home-page/home-page.component';
-import { DocumentationPageComponent } from './documentation-page/documentation-page.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
-import { NewsArticleComponent } from './about-page/news/news-article/news-article.component';
-import { NewsPageComponent } from './about-page/news/news-page/news-page.component';
-import { AboutPageComponent } from './about-page/about-page.component';
+import { NewsArticleComponent } from './page/news/news-article/news-article.component';
+import { NewsPageComponent } from './page/news/news-page/news-page.component';
+import { PageComponent } from './page/page.component';
 
 export const routes: Routes = [
-    {path: '', component: HomePageComponent, pathMatch: 'full'},
-    {path: 'documentation', component: DocumentationPageComponent},
-    {path: 'about', component: AboutPageComponent},
-    {path: 'about/news', component: NewsPageComponent},
-    {path: 'about/news/:slug', component: NewsArticleComponent},
-    {path: '**', component: PageNotFoundComponent}
+    //Home Page
+    { path: '', component: HomePageComponent, pathMatch: 'full' },
+
+    //
+
+    //Pages (Non CMS page types most go ABOVE this line)
+    { path: ':slug', component: PageComponent },
+
+    //404 Page
+    { path: '**', component: PageNotFoundComponent },
+    { path: '404', component: PageNotFoundComponent }
 ];
