@@ -9,12 +9,16 @@ export const routes: Routes = [
     //Home Page
     { path: '', component: HomePageComponent, pathMatch: 'full' },
 
-    //
-
-    //Pages (Non CMS page types most go ABOVE this line)
-    { path: ':slug', component: PageComponent },
+    /* Non - CMS Pages Below this Line */
+    //News Pages
+    { path: 'about/news', component: NewsPageComponent, pathMatch: 'full' },
+    { path: 'about/news/:slug', component: NewsArticleComponent, pathMatch: 'full' },
 
     //404 Page
-    { path: '**', component: PageNotFoundComponent },
-    { path: '404', component: PageNotFoundComponent }
+    { path: '404', component: PageNotFoundComponent, pathMatch: 'full' },
+    /* Non - CMS Pages Above this Line */
+
+    //CMS Pages
+    { path: '**', component: PageComponent },
+    
 ];
