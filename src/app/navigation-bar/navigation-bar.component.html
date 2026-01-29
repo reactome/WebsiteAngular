@@ -20,48 +20,80 @@
         (mouseleave)="hideDropdown()"
         (click)="toggleDropdown(option.key)"
       >
-        <div class="nav-link-wrapper">
-          <a
-            [attr.href]="(windowWidth > 768 || option.value.label == 'Download') ? option.value.link : null"
-            class="nav-link"
-            [class.has-dropdown]="
-              option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
-            "
-          >
-            <mat-icon>
-              {{ option.value.icon }}
-            </mat-icon>
-            {{ option.value.label }}
-            <mat-icon
-              *ngIf="
-                option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
+        <ng-container *ngIf="asNavOption(option.value) as navOption">
+          <div class="nav-link-wrapper">
+            <a
+              [attr.href]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
+              class="nav-link"
+              [class.has-dropdown]="
+                navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
               "
-              class="dropdown-arrow"
             >
-                keyboard_arrow_down
-            </mat-icon>
-          </a>
-        </div>
+              <mat-icon>
+                {{ navOption.icon }}
+              </mat-icon>
+              {{ navOption.label }}
+              <mat-icon
+                *ngIf="
+                  navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+                "
+                class="dropdown-arrow"
+              >
+                  keyboard_arrow_down
+              </mat-icon>
+            </a>
+          </div>
 
-        <div
-          *ngIf="
-            option.value.dropdownLinks && (option.value.dropdownLinks | keyvalue:preserveOrder).length > 0
-          "
-          class="dropdown-menu"
-          [class.show]="activeDropdown === option.key"
-        >
-          <ul class="dropdown-list">
-            <li
-              *ngFor="let linkItem of option.value.dropdownLinks | keyvalue:preserveOrder"
-              class="dropdown-item"
-            >
-              <a [href]="linkItem.value.link" class="dropdown-link">
-                {{ linkItem.value.label }}
-              </a>
-            </li>
-          </ul>
-        </div>
+          <div
+            *ngIf="
+              navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+            "
+            class="dropdown-menu"
+            [class.show]="activeDropdown === option.key"
+          >
+            <ng-container
+              *ngTemplateOutlet="dropdownItems; context: { $implicit: navOption.dropdownLinks, level: 0 }"
+            ></ng-container>
+          </div>
+        </ng-container>
       </li>
     </ul>
   </nav>
 </header>
+
+<ng-template #dropdownItems let-links let-level="level">
+  <ul class="dropdown-list" [class.nested-dropdown-list]="level > 0">
+    <li
+      *ngFor="let linkItem of links | keyvalue:preserveOrder"
+      class="dropdown-item"
+      [class.nested-dropdown-item]="level > 0"
+    >
+      <ng-container *ngIf="asNavLink(linkItem.value) as navLink">
+        <div class="dropdown-link-wrapper">
+          <a
+            [href]="navLink.link"
+            class="dropdown-link"
+            [class.nested-dropdown-link]="level > 0"
+          >
+            {{ navLink.label }}
+          </a>
+          <mat-icon
+            *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+            class="nested-arrow"
+          >
+            keyboard_arrow_right
+          </mat-icon>
+        </div>
+
+        <div
+          *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+          class="nested-dropdown-menu"
+        >
+          <ng-container
+            *ngTemplateOutlet="dropdownItems; context: { $implicit: navLink.dropdownLinks, level: level + 1 }"
+          ></ng-container>
+        </div>
+      </ng-container>
+    </li>
+  </ul>
+</ng-template>

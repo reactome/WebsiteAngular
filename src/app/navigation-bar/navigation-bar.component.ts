@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {MatIconModule} from '@angular/material/icon'
 import { mapNavOptions } from '../../utils/nav-options-mapper';
-import { NavOption } from '../../types/link';
+import { NavLink, NavOption } from '../../types/link';
 
 @Component({
   standalone: true,
@@ -62,6 +62,20 @@ export class NavigationBarComponent implements OnInit {
 
   // Preserve original insertion order for keyvalue pipe
   preserveOrder = () => 0;
+
+  asNavOption(value: unknown): NavOption | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+    return value as NavOption;
+  }
+
+  asNavLink(value: unknown): NavLink | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+    return value as NavLink;
+  }
 
   @HostListener('window:resize', ['$event']) onResize(event: any) {
     this.windowWidth = window.innerWidth;
