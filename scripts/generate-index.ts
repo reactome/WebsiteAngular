@@ -86,11 +86,12 @@ function parseFrontmatter(content: string): {
       const key = line.substring(0, colonIndex).trim();
       let value: string | string[] = line.substring(colonIndex + 1).trim();
 
-      // Check for multiline indicators (| or >)
-      if (value === '|' || value === '>') {
+      // Check for multiline indicators (|, >, with optional chomping: -, +)
+      const multilineMatch = value.match(/^([|>])[-+]?$/);
+      if (multilineMatch) {
         currentKey = key;
         isMultilineValue = true;
-        multilineType = value === '|' ? 'literal' : 'folded';
+        multilineType = multilineMatch[1] === '|' ? 'literal' : 'folded';
         multilineValue = [];
         baseIndent = line.length - line.trimStart().length;
         continue;
@@ -149,8 +150,8 @@ function parseFrontmatter(content: string): {
 /**
  * Load all news articles from content/news directory
  */
-function loadNewsArticles(): NewsIndexItem[] {
-  const newsDir = path.resolve(process.cwd(), 'content', 'about', 'news');
+function loadNewsArticles(...directories: string[]): NewsIndexItem[] {
+  const newsDir = path.resolve(process.cwd(), ...directories);
 
   if (!fs.existsSync(newsDir)) {
     console.warn('News directory not found:', newsDir);
@@ -184,9 +185,9 @@ function loadNewsArticles(): NewsIndexItem[] {
 /**
  * Generate a JSON file with news articles for static serving
  */
-function generateNewsIndex(): void {
-  const articles = loadNewsArticles();
-  const outputDir = path.resolve(process.cwd(), 'content', 'about', 'news');
+function generateIndex(...directories: string[]): void {
+  const articles = loadNewsArticles(...directories);
+  const outputDir = path.resolve(process.cwd(), ...directories);
 
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -198,4 +199,5 @@ function generateNewsIndex(): void {
 }
 
 // Run on module load
-generateNewsIndex();
+generateIndex('content', 'about', 'news');
+generateIndex('content', 'content', 'reactome-research-spotlights')

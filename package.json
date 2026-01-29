@@ -1,12 +1,13 @@
 {
   "name": "website-angular",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "ng": "ng",
-    "generate:news": "npx ts-node scripts/generate-news-index.ts",
-    "start": "npm run generate:news && tinacms dev -c \"ng serve\"",
-    "build": "npm run generate:news && tinacms build --local --skip-cloud-checks && ng build",
-    "build:prod": "npm run generate:news && tinacms build && ng build",
+    "generate:indices": "npx ts-node scripts/generate-index.ts",
+    "start": "npm run generate:indices && tinacms dev -c \"ng serve\"",
+    "build": "npm run generate:indices && tinacms build --local --skip-cloud-checks && ng build",
+    "build:prod": "npm run generate:indices && tinacms build && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:WebsiteAngular": "node dist/website-angular/server/server.mjs"

@@ -70,11 +70,12 @@ export default function parseFrontmatter(content: string): {
       const key = line.substring(0, colonIndex).trim();
       let value: string | string[] = line.substring(colonIndex + 1).trim();
 
-      // Check for multiline indicators (| or >)
-      if (value === '|' || value === '>') {
+      // Check for multiline indicators (|, >, with optional chomping: -, +)
+      const multilineMatch = value.match(/^([|>])[-+]?$/);
+      if (multilineMatch) {
         currentKey = key;
         isMultilineValue = true;
-        multilineType = value === '|' ? 'literal' : 'folded';
+        multilineType = multilineMatch[1] === '|' ? 'literal' : 'folded';
         multilineValue = [];
         baseIndent = line.length - line.trimStart().length;
         continue;
