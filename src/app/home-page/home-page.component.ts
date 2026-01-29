@@ -10,8 +10,7 @@ import { HomeRelatedComponent } from './home-related/home-related.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { ButtonComponent } from '../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
-import NavOption from '../../types/nav-option';
-import ExternalLink from '../../types/external-link';
+import {ExternalLink, NavOption} from '../../types/link';
 import { ArticleIndexItem } from '../../types/article';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -69,7 +68,7 @@ export class HomePageComponent {
 
   loadExternalLinks() {
     import('../../config/external-links.json').then((data) => {
-      this.externalLinks = data.default;
+      this.externalLinks = mapNavOptions(data.default);
       this.releaseNotesLink = this.externalLinks['releaseNotes']?.link || '';
       this.feedbackLink = this.externalLinks['feedback']?.link || '';
     });

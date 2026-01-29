@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
-import NavLink from '../../types/nav-link';
+import {NavLink} from '../../types/link';
 
 @Component({
   selector: 'app-breadcrumb',

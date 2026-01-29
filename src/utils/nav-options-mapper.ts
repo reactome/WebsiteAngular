@@ -1,5 +1,4 @@
-import NavLink from "../types/nav-link";
-import NavOption from "../types/nav-option";
+import {NavLink, NavOption} from "../types/link";
 
 /**
  * Recursively maps JSON dropdown-links to typed NavLink objects

@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { KeyValuePipe, NgForOf } from '@angular/common';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
-import NavOption from '../../types/nav-option';
-import NavLink from '../../types/nav-link';
+import {NavLink, NavOption} from '../../types/link';
 import { ActivatedRoute } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { ContentService } from '../../services/content.service';

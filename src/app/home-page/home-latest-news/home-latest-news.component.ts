@@ -3,8 +3,8 @@ import { ArticleIndexItem } from '../../../types/article';
 import { NgForOf, NgFor } from '@angular/common';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
-import NavOption from '../../../types/nav-option';
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
+import { NavOption } from '../../../types/link';
 
 @Component({
   selector: 'app-home-latest-news',

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
-import NavLink from '../../types/nav-link';
+import {NavLink} from '../../types/link';
+import { mapNavOptions } from '../../utils/nav-options-mapper';
 
 @Component({
   selector: 'app-copyright-footer',
@@ -19,7 +20,7 @@ export class copyrightFooterComponent {
    loadExternalLinks() {
     // Load external links from the JSON file
     import('../../config/external-links.json').then((data) => {
-      this.externalLinks = data.default;
+      this.externalLinks = mapNavOptions(data.default);
     });
    }
 }

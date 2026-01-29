@@ -1,8 +1,2 @@
-import NavLink from "./nav-link";
+import {NavLink} from "./link";
 
-export default interface NavOption {
-  label: string;
-  link: string;
-  icon?: string;
-  dropdownLinks?: Record<string, NavLink>;
-}

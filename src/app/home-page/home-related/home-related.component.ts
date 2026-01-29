@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import ExternalLink from '../../../types/external-link';
+import {ExternalLink} from '../../../types/link';
+import { mapNavOptions } from '../../../utils/nav-options-mapper';
 
 @Component({
   selector: 'app-home-related',
@@ -17,7 +18,7 @@ export class HomeRelatedComponent {
 
   loadExternalLinks() {
     import('../../../config/external-links.json').then((data) => {
-      this.externalLinks = data.default;
+      this.externalLinks = mapNavOptions(data.default);
     });
   }
 }

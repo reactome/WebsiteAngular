@@ -1,6 +1,5 @@
 import { Component, inject, Input } from '@angular/core';
 import { ButtonComponent } from "../../reactome-components/button/button.component";
-import NavOption from '../../../types/nav-option';
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
@@ -8,6 +7,7 @@ import formatDate from '../../../utils/formatDate';
 import { marked } from 'marked';
 import stripFirstH1 from '../../../utils/stripFirstH1';
 import truncateHtml from '../../../utils/truncateHtml';
+import { NavOption } from '../../../types/link';
 
 @Component({
   selector: 'app-home-spotlight',

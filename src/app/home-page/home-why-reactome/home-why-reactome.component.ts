@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-import ExternalLink from '../../../types/external-link';
-import NavOption from '../../../types/nav-option';
+import {ExternalLink, NavOption} from '../../../types/link';
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
 
 @Component({
@@ -21,7 +20,7 @@ export class HomeWhyReactomeComponent {
 
   loadExternalLinks() {
     import('../../../config/external-links.json').then((data) => {
-      this.externalLinks = data.default;
+      this.externalLinks = mapNavOptions(data.default);
     });
   }
 

@@ -2,8 +2,8 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {MatIconModule} from '@angular/material/icon'
-import NavOption from '../../types/nav-option';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOption } from '../../types/link';
 
 @Component({
   standalone: true,

@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import NavOption from '../../types/nav-option';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOption } from '../../types/link';
 
 @Component({
   selector: 'app-info-footer',
