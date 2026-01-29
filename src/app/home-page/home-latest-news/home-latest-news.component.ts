@@ -3,6 +3,8 @@ import { ArticleIndexItem } from '../../../types/article';
 import { NgForOf, NgFor } from '@angular/common';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
+import NavOption from '../../../types/nav-option';
+import { mapNavOptions } from '../../../utils/nav-options-mapper';
 
 @Component({
   selector: 'app-home-latest-news',
@@ -13,11 +15,13 @@ import { ContentService } from '../../../services/content.service';
 })
 export class HomeLatestNewsComponent {
   contentService = inject(ContentService);
+  navOptions: Record<string, NavOption> = {};
 
   loading = true;
   newsList: ArticleIndexItem[] = [];
 
   ngOnInit() {
+    this.loadNavOptions();
     this.loadLatestNews();
   }
 
@@ -41,6 +45,12 @@ export class HomeLatestNewsComponent {
         this.newsList = [];
         this.loading = false;
       }
+    });
+  }
+
+  loadNavOptions() {
+    import('../../../config/nav-options.json').then((data) => {
+      this.navOptions = mapNavOptions(data.default);
     });
   }
 

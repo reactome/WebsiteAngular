@@ -82,7 +82,7 @@ export class ContentService {
           description: frontmatter['description'] as string,
           category: frontmatter['category'] as string,
           image: frontmatter['image'] as string,
-          body: body,
+          body: frontmatter['body'] as string || body,
           bodyHtml: undefined // Will be processed by component
         };
       })

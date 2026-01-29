@@ -51,6 +51,7 @@ export class PageComponent {
           this.page = page;
           let html = await marked(page.body);
           this.renderedContent = stripFirstH1(html);
+          console.log("Page loaded:", page.body);
           this.loading = false;
         } else {
           this.error = 'Page not found.';

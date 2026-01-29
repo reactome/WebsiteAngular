@@ -7,6 +7,7 @@ import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
 import { marked } from 'marked';
 import stripFirstH1 from '../../../utils/stripFirstH1';
+import truncateHtml from '../../../utils/truncateHtml';
 
 @Component({
   selector: 'app-home-spotlight',
@@ -43,6 +44,15 @@ export class HomeSpotlightComponent {
           excerpt: item.excerpt
         } ))[0];
         this.loading = false;
+        
+        // Load the full article content using the slug
+        this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
+          next: async (article) => {
+            console.log("Spotlight article loaded:", article);
+            let html = await marked(article?.body || '');
+            this.renderedContent = truncateHtml(stripFirstH1(html), 150);
+          }
+        });
       },
       error: (err) => {
         console.error('Error loading articles:', err);
@@ -50,17 +60,6 @@ export class HomeSpotlightComponent {
         this.loading = false;
       }
     });
-
-    console.log("Slug of spotlight article:", this.spotLightArticle.slug);
-
-    this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
-      next: async (article) => {
-        console.log("Spotlight article loaded:", article);
-        let html = await marked(article?.body || '');
-        this.renderedContent = stripFirstH1(html);
-
-      }
-    })
   }
 
   loadNavOptions() {
@@ -68,6 +67,8 @@ export class HomeSpotlightComponent {
       this.navOptions = mapNavOptions(data.default);
     });
   }
+
+  
 
   formatD(date: Date): string {
     return formatDate(date);
