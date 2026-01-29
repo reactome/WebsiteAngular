@@ -146,6 +146,15 @@ export class ContentService {
   }
 
   /**
+   * Get latest news articles (for home page)
+   */
+  getLatestNews(count: number = 3): Observable<NewsIndexItem[]> {
+    return this.getAllNews().pipe(
+      map(articles => articles.slice(0, count))
+    );
+  }
+
+  /**
    * Get all team members
    */
   getTeamMembers(): Observable<TeamMember[]> {
@@ -190,48 +199,47 @@ export class ContentService {
   //   );
   // }
 
-//   /**
-//    * Get all spotlight articles
-//    */
-//   getAllSpotlights(): Observable<NewsArticle[]> {
-//     return this.http.get<{articles: NewsArticle[]}>(`${this.contentBasePath}/spotlight/index.json`).pipe(
-//       map(data => (data.articles || []).map(article => ({
-//         ...article,
-//         date: new Date(article.date)
-//       }))),
-//       catchError(() => of([]))
-//     );
-//   }
+  /**
+   * Get all spotlight articles
+   */
+  getAllSpotlights(): Observable<NewsIndexItem[]> {
+    return this.http.get<NewsIndexItem[]>(`${this.contentBasePath}/content/reactome-research-spotlights/index.json`).pipe(
+      map(data => {
+        return data || []
+      }),
+      catchError(() => of([]))
+    );
+  }
 
-//   /**
-//    * Get a spotlight article by slug
-//    */
-//   getSpotlightArticle(slug: string): Observable<NewsArticle | null> {
-//     return this.http.get(`${this.contentBasePath}/spotlight/${slug}.mdx`, { responseType: 'text' }).pipe(
-//       map(content => {
-//         const { frontmatter, body } = this.parseFrontmatter(content);
-//         return {
-//           title: frontmatter['title'] as string || '',
-//           date: new Date(frontmatter['date'] as string),
-//           journal: frontmatter['journal'] as string,
-//           authors: frontmatter['authors'] as string,
-//           excerpt: frontmatter['excerpt'] as string,
-//           pathways: frontmatter['pathways'] as string[],
-//           articleUrl: frontmatter['articleUrl'] as string,
-//           body: body,
-//           slug: slug
-//         };
-//       }),
-//       catchError(() => of(null))
-//     );
-//   }
+  /**
+   * Get a spotlight article by slug
+   */
+  getSpotlightArticle(slug: string): Observable<NewsArticle | null> {
+    return this.http.get(`${this.contentBasePath}/content/reactome-research-spotlights/${slug}.mdx`, { responseType: 'text' }).pipe(
+      map(content => {
+        const { frontmatter, body } = parseFrontmatter(content);
+        let returnArticle: NewsArticle = {
+          title: frontmatter['title'] as string || '',
+          date: new Date(frontmatter['date'] as string),
+          author: frontmatter['author'] as string,
+          image: frontmatter['image'] as string,
+          tags: frontmatter['tags'] as string[],
+          body: frontmatter['body'] as string || body, //TODO: links and formatting in body
+          excerpt: frontmatter['body']?.toString().substring(0, 200) || '',
+          slug: slug
+        };
+        return returnArticle;
+      }),
+      catchError(() => of(null))
+    );
+  }
 
-//   /**
-//    * Get latest spotlight articles (for home page)
-//    */
-//   getLatestSpotlights(count: number = 3): Observable<NewsArticle[]> {
-//     return this.getAllSpotlights().pipe(
-//       map(articles => articles.slice(0, count))
-//     );
-//   }
+  /**
+   * Get latest spotlight articles (for home page)
+   */
+  getLatestSpotlights(count: number = 3): Observable<NewsIndexItem[]> {
+    return this.getAllSpotlights().pipe(
+      map(articles => articles.slice(0, count))
+    );
+  }
 }
