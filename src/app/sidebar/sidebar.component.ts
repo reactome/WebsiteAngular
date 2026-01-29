@@ -5,6 +5,8 @@ import NavOption from '../../types/nav-option';
 import NavLink from '../../types/nav-link';
 import { ActivatedRoute } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
+import { ContentService } from '../../services/content.service';
+import { ArticleIndexItem } from '../../types/article';
 
 @Component({
   selector: 'app-sidebar',
@@ -14,6 +16,7 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class SidebarComponent {
   private route = inject(ActivatedRoute);
+  private contentService = inject(ContentService);
   navOptions: Record<string, NavOption> = {};
 
   sectionTitle = '';
@@ -33,7 +36,15 @@ export class SidebarComponent {
       let path_segments = segments.map(s => s.path);
 
       if (path_segments.length > 0 && path_segments) {
-        this.updateItems(path_segments);
+        //If 2nd last item is news or reactome-research-spotlight, load articles as items
+        const secondLastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 2] : null;
+        if (secondLastSegment === 'news') {
+          this.updateItemsArticles('about/news', path_segments[path_segments.length -1]);
+        } else if (secondLastSegment === 'reactome-research-spotlight') {
+          this.updateItemsArticles('content/reactome-research-spotlight', path_segments[path_segments.length -1]);
+        } else {
+          this.updateItems(path_segments);
+        }
       }
     });
   }
@@ -105,6 +116,38 @@ export class SidebarComponent {
       this.items = sectionDropdownLinks;
       this.activeItem = matchedSubSectionKey || null;
     }
+  }
+
+  updateItemsArticles(path: string, currentSlug: string) {
+    if (path.includes('news')) {
+      this.sectionTitle = "News & Updates";
+      this.sectionLink = this.navOptions['about']?.dropdownLinks?.['news']?.link || '';
+    } else {
+      this.sectionTitle = "Reactome Research Spotlights";
+      this.sectionLink = this.navOptions['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '';
+    }
+
+    this.contentService.getAllArticles(path).subscribe({
+      next: (result) => {
+        this.items = Object.fromEntries(result.map((item: ArticleIndexItem) => {
+          if (item.slug == currentSlug) {
+            this.activeItem = item.slug;
+          }
+
+          const key = item.slug;
+          const navLink: NavLink = {
+            link: `/${path}/${item.slug}`,
+            label: item.title
+          };
+          return [key, navLink];
+        }));
+
+      },
+      error: (err) => {
+        console.error('Error loading articles:', err);
+        this.items = {};
+      }
+    });
   }
 
   /**
