@@ -33,7 +33,8 @@ export class NewsPageComponent {
           date: new Date(item.date),
           author: item.author,
           tags: item.tags || [],
-          slug: item.slug
+          slug: item.slug,
+          excerpt: item.excerpt
         } ));
         this.loading = false;
       },
