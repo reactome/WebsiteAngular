@@ -1,1 +1,48 @@
-<p>news-page works!</p>
+<app-page-layout>
+  <main class="news-page">
+    <header class="page-header">
+      <h1>News & Updates</h1>
+      <p>Stay up to date with the latest Reactome releases, publications, and announcements.</p>
+    </header>
+
+    @if (loading) {
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading news...</p>
+      </div>
+    } @else {
+      <div class="news-grid">
+        @for (article of articles; track article.slug) {
+          <app-tile variant="light" class="news-card">
+            <div class="news-content">
+              <div class="news-meta">
+                <time [attr.datetime]="article.date">{{ formatD(article.date) }}</time>
+                @if (article.tags && article.tags.length > 0) {
+                  <div class="news-tags">
+                    @for (tag of article.tags.slice(0, 3); track tag) {
+                      <span class="tag">{{ tag }}</span>
+                    }
+                  </div>
+                }
+              </div>
+              <h2>
+                <a [href]="['/about/news', article.slug]">{{ article.title }}</a>
+              </h2>
+              @if (article.excerpt) {
+                <p class="excerpt">{{ article.excerpt }}</p>
+              }
+              <a [href]="['/about/news/' + article.slug]" class="read-more">
+                Read more
+                <mat-icon class="material-symbols-outlined">arrow_forward</mat-icon>
+              </a>
+            </div>
+          </app-tile>
+        } @empty {
+          <app-tile variant="light" class="no-news">
+            <p>No news articles available.</p>
+          </app-tile>
+        }
+      </div>
+    }
+  </main>
+</app-page-layout>

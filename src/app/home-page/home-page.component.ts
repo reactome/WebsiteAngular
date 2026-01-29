@@ -12,7 +12,7 @@ import { ButtonComponent } from '../reactome-components/button/button.component'
 import { MatIcon } from '@angular/material/icon';
 import NavOption from '../../types/nav-option';
 import ExternalLink from '../../types/external-link';
-import Article from '../../types/article';
+import { NewsIndexItem } from '../../types/article';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
@@ -45,7 +45,7 @@ export class HomePageComponent {
 
   navOptions: Record<string, NavOption> = {};
   externalLinks: Record<string, ExternalLink> = {};
-  latestNews: Article[] = [];
+  latestNews: NewsIndexItem[] = [];
   maxArticlesToShow: number = 5;
   maxExerptLength: number = 200;
 
@@ -99,19 +99,21 @@ export class HomePageComponent {
   }
 
   loadLatestNews() {
-    this.http.get<Article[]>('/content/news/index.json').subscribe({
+    this.http.get<NewsIndexItem[]>('/content/news/index.json').subscribe({
       next: (data) => {
-        console.log('Loaded news articles:', data);
+        // console.log('Loaded news articles:', data);
         this.latestNews = data.slice(0, this.maxArticlesToShow).map(a => {
-          const content = a.content || '';
+          const content = a.excerpt || '';
           return {
             title: a.title,
+            author: a.author,
             content: content.slice(0, this.maxExerptLength) + (content.length > this.maxExerptLength ? '...' : ''),
-            datePublished: new Date(a.datePublished),
-            link: `about/news/${a.link}`
+            date: new Date(a.date),
+            slug: `about/news/${a.slug}`,
+            tags: a.tags,
           };
         });
-        console.log('Processed latest news:', this.latestNews);
+        // console.log('Processed latest news:', this.latestNews);
       }, error: (err) => {
         console.error('Failed to load latest news:', err);
         this.latestNews = [];

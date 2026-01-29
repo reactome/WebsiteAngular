@@ -1,68 +1,81 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface NewsArticle {
-  title: string;
-  content: string;
-  datePublished: string;
-  link: string;
+export interface NewsIndexItem {
+   title: string;
   author?: string;
+  date: Date;
+
+  image?: string;
   tags?: string[];
+
+  excerpt?: string;
+
+  slug: string;
 }
 
 /**
- * Parse MDX/Markdown frontmatter (YAML between --- delimiters)
+ * Parse frontmatter from MDX content
  */
-function parseFrontmatter(content: string): { meta: Record<string, any>; body: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+export default function parseFrontmatter(content: string): {
+  frontmatter: Record<string, unknown>;
+  body: string;
+} {
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
+
   if (!match) {
-    return { meta: {}, body: content };
+    return { frontmatter: {}, body: content };
   }
 
   const frontmatterStr = match[1];
-  let body = match[2].trim();
+  const body = match[2];
 
-  const meta: Record<string, any> = {};
+  // Simple YAML parsing for frontmatter
+  const frontmatter: Record<string, unknown> = {};
   const lines = frontmatterStr.split('\n');
-  let currentKey = '';
-  let currentValue = '';
 
-  lines.forEach((line) => {
-    if (line.match(/^[a-z]+:/i)) {
-      // New key
-      if (currentKey) {
-        meta[currentKey] = currentValue.trim();
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      const key = line.substring(0, colonIndex).trim();
+      let value: string | string[] = line.substring(colonIndex + 1).trim();
+
+      // Remove quotes if present
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
       }
-      const [key, ...valueParts] = line.split(':');
-      currentKey = key.trim();
-      currentValue = valueParts.join(':').trim().replace(/^['"]|['"]$/g, '');
-    } else if (currentKey) {
-      // Continuation of previous key (multiline value)
-      if (currentValue) {
-        currentValue += '\n' + line;
-      } else {
-        currentValue = line;
+
+      // Handle arrays (tags, etc.)
+      if (key === 'tags' || line.trim() === `${key}:`) {
+        // Check for array items in following lines
+        continue;
+      }
+
+      frontmatter[key] = value;
+    } else if (line.trim().startsWith('- ')) {
+      // Handle array item
+      const lastKey = Object.keys(frontmatter).pop();
+      if (lastKey) {
+        if (!Array.isArray(frontmatter[lastKey])) {
+          frontmatter[lastKey] = [];
+        }
+        (frontmatter[lastKey] as string[]).push(line.trim().substring(2));
       }
     }
-  });
-
-  if (currentKey) {
-    meta[currentKey] = currentValue.trim();
   }
 
-  // Extract multiline body if present in frontmatter (YAML | or > syntax)
-  if (meta['body']) {
-    body = meta['body'];
-    delete meta['body'];
-  }
-
-  return { meta, body };
+  return { frontmatter, body };
 }
+
 
 /**
  * Load all news articles from content/news directory
  */
-function loadNewsArticles(): NewsArticle[] {
+function loadNewsArticles(): NewsIndexItem[] {
   const newsDir = path.resolve(process.cwd(), 'content', 'about', 'news');
 
   if (!fs.existsSync(newsDir)) {
@@ -75,20 +88,20 @@ function loadNewsArticles(): NewsArticle[] {
     .map((filename) => {
       const filePath = path.join(newsDir, filename);
       const content = fs.readFileSync(filePath, 'utf-8');
-      const { meta, body } = parseFrontmatter(content);
+      const { frontmatter, body } = parseFrontmatter(content);
 
       return {
-        title: meta['title'] || filename.replace(/\.(mdx|md)$/, ''),
-        content: body.slice(0, 200) + (body.length > 200 ? '...' : ''),
-        datePublished: meta['date'] || new Date().toISOString(),
-        link: filename.replace(/\.(mdx|md)$/, ''),
-        author: meta['author'] || undefined,
-        tags: typeof meta['tags'] === 'string' ? meta['tags'].split(',').map((t: string) => t.trim()) : meta['tags'],
-      };
+        title: frontmatter['title'] || filename.replace(/\.(mdx|md)$/, ''),
+        author: frontmatter['author'] || undefined,
+        excerpt: body.slice(0, 200) + (body.length > 200 ? '...' : ''),
+        date: frontmatter['date'] || new Date().toISOString(),
+        slug: filename.replace(/\.(mdx|md)$/, ''), //TODO: This might be wrong lol
+        tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim()) : frontmatter['tags'],
+      } as NewsIndexItem;
     })
     .sort(
       (a, b) =>
-        new Date(b.datePublished).getTime() - new Date(a.datePublished).getTime()
+        new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
   return articles;
@@ -108,7 +121,6 @@ function generateNewsIndex(): void {
   const outputPath = path.join(outputDir, 'index.json');
   fs.writeFileSync(outputPath, JSON.stringify(articles, null, 2));
 
-  console.log(`Generated news index with ${articles.length} articles at ${outputPath}`);
 }
 
 // Run on module load

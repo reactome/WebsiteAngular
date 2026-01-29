@@ -1,6 +1,16 @@
-export default interface Article {
-    title: string;
-    content: string;
-    datePublished: Date;
-    link: string;
+export interface NewsIndexItem {
+   title: string;
+  author?: string;
+  date: Date;
+
+  image?: string;
+  tags?: string[];
+
+  excerpt?: string;
+
+  slug: string;
+}
+
+export interface NewsArticle extends NewsIndexItem {
+  body: string;
 }

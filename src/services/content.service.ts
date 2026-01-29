@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map, catchError, of, tap } from 'rxjs';
 import { marked } from 'marked';
+import e from 'express';
+import parseFrontmatter from '../utils/parseFrontmatter';
+import { NewsArticle, NewsIndexItem } from '../types/article';
 
 export interface PageContent {
   title: string;
@@ -12,16 +15,7 @@ export interface PageContent {
   // bodyHtml?: string;
 }
 
-export interface NewsArticle {
-  title: string;
-  date: Date;
-  author?: string;
-  image?: string;
-  tags?: string[];
-  body: string;
-  bodyHtml?: string;
-  slug: string;
-}
+
 
 export interface TeamMember {
   name: string;
@@ -78,63 +72,11 @@ export class ContentService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Parse frontmatter from MDX content
-   */
-  private parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-    const match = content.match(frontmatterRegex);
-
-    if (!match) {
-      return { frontmatter: {}, body: content };
-    }
-
-    const frontmatterStr = match[1];
-    const body = match[2];
-
-    // Simple YAML parsing for frontmatter
-    const frontmatter: Record<string, unknown> = {};
-    const lines = frontmatterStr.split('\n');
-
-    for (const line of lines) {
-      const colonIndex = line.indexOf(':');
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim();
-        let value: string | string[] = line.substring(colonIndex + 1).trim();
-
-        // Remove quotes if present
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
-          value = value.slice(1, -1);
-        }
-
-        // Handle arrays (tags, etc.)
-        if (key === 'tags' || line.trim() === `${key}:`) {
-          // Check for array items in following lines
-          continue;
-        }
-
-        frontmatter[key] = value;
-      } else if (line.trim().startsWith('- ')) {
-        // Handle array item
-        const lastKey = Object.keys(frontmatter).pop();
-        if (lastKey) {
-          if (!Array.isArray(frontmatter[lastKey])) {
-            frontmatter[lastKey] = [];
-          }
-          (frontmatter[lastKey] as string[]).push(line.trim().substring(2));
-        }
-      }
-    }
-
-    return { frontmatter, body };
-  }
-
   //Get any page by type and slug
   getPage(pageType:string, slug:string ): Observable<PageContent | null> {
     return this.http.get(`${this.contentBasePath}/${pageType}/${slug}.mdx`, { responseType: 'text' }).pipe(
       map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
+        const { frontmatter, body } = parseFrontmatter(content);
         return {
           title: frontmatter['title'] as string || '',
           description: frontmatter['description'] as string,
@@ -154,136 +96,38 @@ export class ContentService {
     return await marked(markdown);
   }
 
-  /**
-   * Get a documentation page by path (supports nested paths like userguide/pathway-browser)
-   */
-  getDocPage(path: string): Observable<PageContent | null> {
-    return this.http.get(`${this.contentBasePath}/documentation/${path}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: body,
-          bodyHtml: undefined
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get a community page by slug
-   */
-  getCommunityPage(slug: string): Observable<PageContent | null> {
-    return this.http.get(`${this.contentBasePath}/community/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: body,
-          bodyHtml: undefined
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get an about page by slug
-   */
-  getAboutPage(slug: string): Observable<PageContent | null> {
-    return this.http.get(`${this.contentBasePath}/about/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: body,
-          bodyHtml: undefined
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get a tools page by slug
-   */
-  getToolsPage(slug: string): Observable<PageContent | null> {
-    return this.http.get(`${this.contentBasePath}/tools/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: body,
-          bodyHtml: undefined
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get a content section page by slug (from /content/content/)
-   */
-  getContentSectionPage(slug: string): Observable<PageContent | null> {
-    return this.http.get(`${this.contentBasePath}/content/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: body,
-          bodyHtml: undefined
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get all pages
-   */
-  getAllPages(): Observable<PageContent[]> {
-    // In a real app, this would call an API or use a manifest file
-    const slugs = ['what-is-reactome', 'license', 'privacy'];
-    return this.http.get<PageContent[]>(`${this.contentBasePath}/pages/index.json`).pipe(
-      catchError(() => {
-        // Fallback to known pages
-        return of(slugs.map(slug => ({ title: slug, body: '', slug })) as unknown as PageContent[]);
-      })
-    );
-  }
+  // /**
+  //  * Get all pages
+  //  */
+  // getAllPages(): Observable<PageContent[]> {
+  //   // In a real app, this would call an API or use a manifest file
+  //   const slugs = ['what-is-reactome', 'license', 'privacy'];
+  //   return this.http.get<PageContent[]>(`${this.contentBasePath}/pages/index.json`).pipe(
+  //     catchError(() => {
+  //       // Fallback to known pages
+  //       return of(slugs.map(slug => ({ title: slug, body: '', slug })) as unknown as PageContent[]);
+  //     })
+  //   );
+  // }
 
   /**
    * Get a news article by slug
    */
   getNewsArticle(slug: string): Observable<NewsArticle | null> {
-    return this.http.get(`${this.contentBasePath}/news/${slug}.mdx`, { responseType: 'text' }).pipe(
+    return this.http.get(`${this.contentBasePath}/about/news/${slug}.mdx`, { responseType: 'text' }).pipe(
       map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
+        const { frontmatter, body } = parseFrontmatter(content);
+        let returnArticle: NewsArticle = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),
-          excerpt: frontmatter['excerpt'] as string,
+          author: frontmatter['author'] as string,
           image: frontmatter['image'] as string,
           tags: frontmatter['tags'] as string[],
-          body: body,
+          body: frontmatter['body'] as string || body, //TODO: links and formatting in body
+          excerpt: frontmatter['body']?.toString().substring(0, 200) || '',
           slug: slug
         };
+        return returnArticle;
       }),
       catchError(() => of(null))
     );
@@ -292,10 +136,11 @@ export class ContentService {
   /**
    * Get all news articles
    */
-  getAllNews(): Observable<NewsArticle[]> {
-    // In production, this would call the Tina GraphQL API or use a manifest
-    return this.http.get<{articles: NewsArticle[]}>(`${this.contentBasePath}/news/index.json`).pipe(
-      map(data => data.articles || []),
+  getAllNews(): Observable<NewsIndexItem[]> {
+    return this.http.get<NewsIndexItem[]>(`${this.contentBasePath}/about/news/index.json`).pipe(
+      map(data => {
+        return data || []
+      }),
       catchError(() => of([]))
     );
   }
@@ -345,48 +190,48 @@ export class ContentService {
   //   );
   // }
 
-  /**
-   * Get all spotlight articles
-   */
-  getAllSpotlights(): Observable<NewsArticle[]> {
-    return this.http.get<{articles: NewsArticle[]}>(`${this.contentBasePath}/spotlight/index.json`).pipe(
-      map(data => (data.articles || []).map(article => ({
-        ...article,
-        date: new Date(article.date)
-      }))),
-      catchError(() => of([]))
-    );
-  }
+//   /**
+//    * Get all spotlight articles
+//    */
+//   getAllSpotlights(): Observable<NewsArticle[]> {
+//     return this.http.get<{articles: NewsArticle[]}>(`${this.contentBasePath}/spotlight/index.json`).pipe(
+//       map(data => (data.articles || []).map(article => ({
+//         ...article,
+//         date: new Date(article.date)
+//       }))),
+//       catchError(() => of([]))
+//     );
+//   }
 
-  /**
-   * Get a spotlight article by slug
-   */
-  getSpotlightArticle(slug: string): Observable<NewsArticle | null> {
-    return this.http.get(`${this.contentBasePath}/spotlight/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = this.parseFrontmatter(content);
-        return {
-          title: frontmatter['title'] as string || '',
-          date: new Date(frontmatter['date'] as string),
-          journal: frontmatter['journal'] as string,
-          authors: frontmatter['authors'] as string,
-          excerpt: frontmatter['excerpt'] as string,
-          pathways: frontmatter['pathways'] as string[],
-          articleUrl: frontmatter['articleUrl'] as string,
-          body: body,
-          slug: slug
-        };
-      }),
-      catchError(() => of(null))
-    );
-  }
+//   /**
+//    * Get a spotlight article by slug
+//    */
+//   getSpotlightArticle(slug: string): Observable<NewsArticle | null> {
+//     return this.http.get(`${this.contentBasePath}/spotlight/${slug}.mdx`, { responseType: 'text' }).pipe(
+//       map(content => {
+//         const { frontmatter, body } = this.parseFrontmatter(content);
+//         return {
+//           title: frontmatter['title'] as string || '',
+//           date: new Date(frontmatter['date'] as string),
+//           journal: frontmatter['journal'] as string,
+//           authors: frontmatter['authors'] as string,
+//           excerpt: frontmatter['excerpt'] as string,
+//           pathways: frontmatter['pathways'] as string[],
+//           articleUrl: frontmatter['articleUrl'] as string,
+//           body: body,
+//           slug: slug
+//         };
+//       }),
+//       catchError(() => of(null))
+//     );
+//   }
 
-  /**
-   * Get latest spotlight articles (for home page)
-   */
-  getLatestSpotlights(count: number = 3): Observable<NewsArticle[]> {
-    return this.getAllSpotlights().pipe(
-      map(articles => articles.slice(0, count))
-    );
-  }
+//   /**
+//    * Get latest spotlight articles (for home page)
+//    */
+//   getLatestSpotlights(count: number = 3): Observable<NewsArticle[]> {
+//     return this.getAllSpotlights().pipe(
+//       map(articles => articles.slice(0, count))
+//     );
+//   }
 }

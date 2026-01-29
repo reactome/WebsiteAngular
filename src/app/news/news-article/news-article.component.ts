@@ -1,32 +1,25 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-
-interface ArticleData {
-  title: string;
-  content: string;
-  datePublished: string;
-  link: string;
-  author?: string;
-  tags?: string[];
-}
+import { ContentService } from '../../../services/content.service';
+import { NewsArticle } from '../../../types/article';
+import formatDate from '../../../utils/formatDate';
+import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 
 @Component({
   selector: 'app-news-article',
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, PageLayoutComponent],
   templateUrl: './news-article.component.html',
   styleUrl: './news-article.component.scss'
 })
 export class NewsArticleComponent implements OnInit {
-  article: ArticleData | null = null;
+  article: NewsArticle | null = null;
   loading = true;
   error: string | null = null;
 
-  constructor(
-    private route: ActivatedRoute,
-    private http: HttpClient
-  ) {}
+  private route =  inject(ActivatedRoute);
+  private contentService = inject(ContentService);
+
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug');
@@ -36,21 +29,30 @@ export class NewsArticleComponent implements OnInit {
   }
 
   loadArticle(slug: string) {
-    this.http.get<ArticleData[]>('/content/news/index.json').subscribe({
-      next: (articles) => {
-        const article = articles.find(a => a.link === slug);
-        if (article) {
-          this.article = article;
-        } else {
-          this.error = 'Article not found';
-        }
+    this.loading = true;
+
+    this.contentService.getNewsArticle(slug).subscribe({
+      next: (article) => {
+        this.article = {
+          title: article?.title || 'Untitled',
+          author: article?.author || 'Unknown',
+          date: article?.date || new Date(),
+          body: article?.body || '',
+          slug: slug,
+          image: article?.image,
+          tags: article?.tags
+        };
         this.loading = false;
       },
       error: (err) => {
-        console.error('Failed to load article:', err);
-        this.error = 'Failed to load article';
+        this.error = 'Error loading article.';
         this.loading = false;
+        console.error('Error loading article:', err);
       }
-    });
+    })
+  }
+
+  formatD(date: Date): string {
+    return formatDate(date);
   }
 }
