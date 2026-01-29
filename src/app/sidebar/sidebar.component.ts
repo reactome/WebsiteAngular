@@ -108,8 +108,26 @@ export class SidebarComponent {
       this.items = matchedSubSection.dropdownLinks;
       
       // Find active item within the nested dropdown links
+      // For deeply nested routes, we need to find the item that matches any of the remaining segments
       const lastSegment = segments[segments.length - 1];
       this.activeItem = this.findActiveItemKey(matchedSubSection.dropdownLinks, lastSegment, segments);
+      
+      // If we didn't find an active item and there are 3+ segments,
+      // check if any of the matched subsection's items are parents of the current route
+      if (!this.activeItem && segments.length > 2) {
+        for (const [key, navLink] of Object.entries(matchedSubSection.dropdownLinks)) {
+          if (navLink.dropdownLinks) {
+            // Check if current route is within this item's nested links
+            const currentPath = '/' + segments.join('/');
+            for (const nestedLink of Object.values(navLink.dropdownLinks)) {
+              if (nestedLink.link === currentPath) {
+                this.activeItem = key;
+                break;
+              }
+            }
+          }
+        }
+      }
     } else {
       // Otherwise, show the parent section's dropdown links
       this.items = sectionDropdownLinks;

@@ -69,7 +69,12 @@
       [class.nested-dropdown-item]="level > 0"
     >
       <ng-container *ngIf="asNavLink(linkItem.value) as navLink">
-        <div class="dropdown-link-wrapper">
+        <div
+          class="dropdown-link-wrapper"
+          [class.opens-left]="
+            navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0
+          "
+        >
           <a
             [href]="navLink.link"
             class="dropdown-link"
@@ -81,7 +86,7 @@
             *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
             class="nested-arrow"
           >
-            keyboard_arrow_right
+            {{ (navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0) ? 'keyboard_arrow_left' : 'keyboard_arrow_right' }}
           </mat-icon>
         </div>
 

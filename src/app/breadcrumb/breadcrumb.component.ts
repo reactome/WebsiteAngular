@@ -51,8 +51,18 @@ export class BreadcrumbComponent {
     for (const segment of segments) {
       currentPath += '/' + segment;
 
-      // Look up the nav link directly by segment key
-      const matchedLink = currentNavLevel[segment];
+      // First, try to look up the nav link directly by segment key
+      let matchedLink = currentNavLevel[segment];
+      
+      // If not found by key, search through all items at current level to find matching link
+      if (!matchedLink) {
+        for (const navLink of Object.values(currentNavLevel)) {
+          if (navLink.link === currentPath) {
+            matchedLink = navLink;
+            break;
+          }
+        }
+      }
 
       if (matchedLink) {
         this.breadcrumbs.push({
