@@ -6,6 +6,7 @@ import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { marked } from 'marked';
+import stripFirstH1 from '../../../utils/stripFirstH1';
 
 @Component({
   selector: 'app-article',
@@ -47,7 +48,7 @@ export class ArticleComponent implements OnInit {
     this.contentService.getArticle(path,slug).subscribe({
       next: async (article) => {
         let html = await marked(article?.body || '');
-        let renderedContent = this.stripFirstH1(html);
+        let renderedContent = stripFirstH1(html);
 
         this.article = {
           title: article?.title || '',
@@ -70,10 +71,5 @@ export class ArticleComponent implements OnInit {
 
   formatD(date: Date): string {
     return formatDate(date);
-  }
-
-  private stripFirstH1(html: string): string {
-    // Remove the first H1 tag since it's already displayed in the header from frontmatter
-    return html.replace(/^<h1[^>]*>.*?<\/h1>\s*/i, '');
   }
 }

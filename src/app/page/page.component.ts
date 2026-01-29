@@ -3,6 +3,7 @@ import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
+import stripFirstH1 from '../../utils/stripFirstH1';
 
 @Component({
   selector: 'app-page',
@@ -49,7 +50,7 @@ export class PageComponent {
         if (page) {
           this.page = page;
           let html = await marked(page.body);
-          this.renderedContent = this.stripFirstH1(html);
+          this.renderedContent = stripFirstH1(html);
           this.loading = false;
         } else {
           this.error = 'Page not found.';
@@ -63,10 +64,5 @@ export class PageComponent {
         console.error("Issue Loading Page: ",err);
       }
     })
-  }
-
-  private stripFirstH1(html: string): string {
-    // Remove the first H1 tag since it's already displayed in the header from frontmatter
-    return html.replace(/^<h1[^>]*>.*?<\/h1>\s*/i, '');
   }
 }

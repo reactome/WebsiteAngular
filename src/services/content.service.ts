@@ -150,7 +150,10 @@ export class ContentService {
    */
   getLatestArticles(path:string, count: number = 3): Observable<ArticleIndexItem[]> {
     return this.getAllArticles(path).pipe(
-      map(articles => articles.slice(0, count))
+      map(articles => {
+        console.log("All articles fetched for latest:", articles[0].slug);
+        return articles.slice(0, count);
+      })
     );
   }
 

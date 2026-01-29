@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
 import { HomePageComponent } from './home-page/home-page.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
-import { ArticleComponent } from './news/article/article.component';
-import { ArticlePageComponent } from './news/article-page/article-page.component';
+
 import { PageComponent } from './page/page.component';
+import { ArticlePageComponent } from './article/article-page/article-page.component';
+import { ArticleComponent } from './article/article/article.component';
 
 export const routes: Routes = [
     //Home Page

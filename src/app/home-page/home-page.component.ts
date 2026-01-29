@@ -45,39 +45,16 @@ export class HomePageComponent {
 
   navOptions: Record<string, NavOption> = {};
   externalLinks: Record<string, ExternalLink> = {};
-  latestNews: ArticleIndexItem[] = [];
-  maxArticlesToShow: number = 5;
-  maxExerptLength: number = 200;
+  // latestNews: ArticleIndexItem[] = [];
+  // maxArticlesToShow: number = 5;
+  // maxExerptLength: number = 200;
 
   pathwayBrowserLink: string = '';
-  // testArticle: Article = {
-  //   title: 'Test',
-  //   link: '#',
-  //   datePublished: new Date(),
-  //   content: 'This is a test article.',
-  // };
-  // testArticleList: Article[] = [
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  //   this.testArticle,
-  // ];
 
   ngOnInit() {
     this.loadNavOptions();
     this.loadExternalLinks();
-    this.loadLatestNews();
+    // this.loadLatestNews();
   }
 
   loadNavOptions() {
@@ -98,26 +75,26 @@ export class HomePageComponent {
     });
   }
 
-  loadLatestNews() {
-    this.http.get<ArticleIndexItem[]>('/content/news/index.json').subscribe({
-      next: (data) => {
-        // console.log('Loaded news articles:', data);
-        this.latestNews = data.slice(0, this.maxArticlesToShow).map(a => {
-          const content = a.excerpt || '';
-          return {
-            title: a.title,
-            author: a.author,
-            content: content.slice(0, this.maxExerptLength) + (content.length > this.maxExerptLength ? '...' : ''),
-            date: new Date(a.date),
-            slug: `about/news/${a.slug}`,
-            tags: a.tags,
-          };
-        });
-        // console.log('Processed latest news:', this.latestNews);
-      }, error: (err) => {
-        console.error('Failed to load latest news:', err);
-        this.latestNews = [];
-      }
-    })
-  }
+  // loadLatestNews() {
+  //   this.http.get<ArticleIndexItem[]>('/content/news/index.json').subscribe({
+  //     next: (data) => {
+  //       // console.log('Loaded news articles:', data);
+  //       this.latestNews = data.slice(0, this.maxArticlesToShow).map(a => {
+  //         const content = a.excerpt || '';
+  //         return {
+  //           title: a.title,
+  //           author: a.author,
+  //           content: content.slice(0, this.maxExerptLength) + (content.length > this.maxExerptLength ? '...' : ''),
+  //           date: new Date(a.date),
+  //           slug: `about/news/${a.slug}`,
+  //           tags: a.tags,
+  //         };
+  //       });
+  //       // console.log('Processed latest news:', this.latestNews);
+  //     }, error: (err) => {
+  //       console.error('Failed to load latest news:', err);
+  //       this.latestNews = [];
+  //     }
+  //   })
+  // }
 }
