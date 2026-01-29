@@ -5,6 +5,7 @@ import { ContentService } from '../../../services/content.service';
 import { NewsArticle } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
+import { marked } from 'marked';
 
 @Component({
   selector: 'app-news-article',
@@ -32,12 +33,15 @@ export class NewsArticleComponent implements OnInit {
     this.loading = true;
 
     this.contentService.getNewsArticle(slug).subscribe({
-      next: (article) => {
+      next: async (article) => {
+        let html = await marked(article?.body || '');
+        let renderedContent = this.stripFirstH1(html);
+
         this.article = {
           title: article?.title || 'Untitled',
           author: article?.author || 'Unknown',
           date: article?.date || new Date(),
-          body: article?.body || '',
+          body: renderedContent,
           slug: slug,
           image: article?.image,
           tags: article?.tags
@@ -54,5 +58,10 @@ export class NewsArticleComponent implements OnInit {
 
   formatD(date: Date): string {
     return formatDate(date);
+  }
+
+  private stripFirstH1(html: string): string {
+    // Remove the first H1 tag since it's already displayed in the header from frontmatter
+    return html.replace(/^<h1[^>]*>.*?<\/h1>\s*/i, '');
   }
 }
