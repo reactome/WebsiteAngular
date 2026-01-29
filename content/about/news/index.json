@@ -2,8 +2,19 @@
   {
     "title": "wORK PLZ",
     "excerpt": "EKBFEKB",
-    "date": "2026-01-29T19:16:23.175Z",
+    "date": "2026-01-29T20:56:15.607Z",
     "slug": "wORK-PLZ"
+  },
+  {
+    "title": "Testing an Image?",
+    "author": "Leo Raby",
+    "excerpt": "This is a sentence. Now its image time, this will be done two ways! Inline we have the lockheed t-33. Outline(?) we have the ELR car.\n\n![](/uploads/testimage2.jpeg)",
+    "date": "2026-01-29T20:53:02.050Z",
+    "slug": "Testing-an-Image",
+    "tags": [
+      "cars",
+      "planes"
+    ]
   },
   {
     "title": "This is a title",

@@ -5,7 +5,6 @@
 }
 
 .article-header {
-  margin-bottom: 2rem;
   border-bottom: 1px solid var(--primary-contrast-1);
   padding-bottom: 1rem;
 }
@@ -27,20 +26,38 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  visibility: hidden;
+  height: 0;
+
+  &.has-tags {
+    visibility: visible;
+    height: auto;
+  }
 }
 
 .tag {
-  background: var(--primary-contrast-1);
+  background: var(--primary);
   color: var(--on-primary);
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;
   font-size: 0.85rem;
+  cursor: default;
 }
 
 .article-body {
-  line-height: 1.6;
-  white-space: pre-wrap;
+  
 }
+
+.article-image {
+  width: 100%;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.article-text {
+line-height: 1.6;
+  white-space: pre-wrap;
+} 
 
 .error-message,
 .loading-message {
