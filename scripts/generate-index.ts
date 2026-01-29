@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export interface NewsIndexItem {
+export interface ArticleIndexItem {
    title: string;
   author?: string;
   date: Date;
@@ -150,7 +150,7 @@ function parseFrontmatter(content: string): {
 /**
  * Load all news articles from content/news directory
  */
-function loadNewsArticles(...directories: string[]): NewsIndexItem[] {
+function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
   const newsDir = path.resolve(process.cwd(), ...directories);
 
   if (!fs.existsSync(newsDir)) {
@@ -172,7 +172,7 @@ function loadNewsArticles(...directories: string[]): NewsIndexItem[] {
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''), //TODO: This might be wrong lol
         tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim()) : frontmatter['tags'],
-      } as NewsIndexItem;
+      } as ArticleIndexItem;
     })
     .sort(
       (a, b) =>
@@ -200,4 +200,4 @@ function generateIndex(...directories: string[]): void {
 
 // Run on module load
 generateIndex('content', 'about', 'news');
-generateIndex('content', 'content', 'reactome-research-spotlights')
+generateIndex('content', 'content', 'reactome-research-spotlight')

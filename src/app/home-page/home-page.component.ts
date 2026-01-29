@@ -12,7 +12,7 @@ import { ButtonComponent } from '../reactome-components/button/button.component'
 import { MatIcon } from '@angular/material/icon';
 import NavOption from '../../types/nav-option';
 import ExternalLink from '../../types/external-link';
-import { NewsIndexItem } from '../../types/article';
+import { ArticleIndexItem } from '../../types/article';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
@@ -45,7 +45,7 @@ export class HomePageComponent {
 
   navOptions: Record<string, NavOption> = {};
   externalLinks: Record<string, ExternalLink> = {};
-  latestNews: NewsIndexItem[] = [];
+  latestNews: ArticleIndexItem[] = [];
   maxArticlesToShow: number = 5;
   maxExerptLength: number = 200;
 
@@ -99,7 +99,7 @@ export class HomePageComponent {
   }
 
   loadLatestNews() {
-    this.http.get<NewsIndexItem[]>('/content/news/index.json').subscribe({
+    this.http.get<ArticleIndexItem[]>('/content/news/index.json').subscribe({
       next: (data) => {
         // console.log('Loaded news articles:', data);
         this.latestNews = data.slice(0, this.maxArticlesToShow).map(a => {

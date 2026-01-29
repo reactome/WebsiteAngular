@@ -1,4 +1,4 @@
-export interface NewsIndexItem {
+export interface ArticleIndexItem {
    title: string;
   author?: string;
   date: Date;
@@ -11,6 +11,6 @@ export interface NewsIndexItem {
   slug: string;
 }
 
-export interface NewsArticle extends NewsIndexItem {
+export interface Article extends ArticleIndexItem {
   body: string;
 }

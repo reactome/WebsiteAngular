@@ -4,7 +4,7 @@
 // import { Observable, map, catchError, of, timeout } from 'rxjs';
 // import { environment } from '../../environments/environment';
 
-// export interface NewsArticle {
+// export interface Article {
 //   slug: string;
 //   title: string;
 //   date: string;
@@ -13,7 +13,7 @@
 //   tags: string[] | null;
 // }
 
-// interface NewsIndexItem {
+// interface ArticleIndexItem {
 //   slug: string;
 //   title: string;
 //   date: string;
@@ -23,7 +23,7 @@
 // }
 
 // interface NewsIndex {
-//   articles: NewsIndexItem[];
+//   articles: ArticleIndexItem[];
 // }
 
 // interface NewsNode {
@@ -66,9 +66,9 @@
 //    * Get the latest news articles, sorted by date descending
 //    * Falls back to index.json if TinaCMS is unavailable or during SSR
 //    * @param first Number of articles to fetch
-//    * @returns Observable of NewsArticle array
+//    * @returns Observable of Article array
 //    */
-//   getLatestNews(first: number = 5): Observable<NewsArticle[]> {
+//   getLatestNews(first: number = 5): Observable<Article[]> {
 //     // During SSR, skip TinaCMS and use fallback directly
 //     if (!this.isBrowser) {
 //       return this.getNewsFromIndex(first);
@@ -141,7 +141,7 @@
 //   /**
 //    * Fallback: Load news from index.json when TinaCMS is unavailable
 //    */
-//   private getNewsFromIndex(first?: number): Observable<NewsArticle[]> {
+//   private getNewsFromIndex(first?: number): Observable<Article[]> {
 //     return this.http.get<NewsIndex>('/content/news/index.json').pipe(
 //       map(data => {
 //         const articles = data.articles
@@ -171,7 +171,7 @@
 //    * @returns Observable with articles and pagination info
 //    */
 //   getAllNews(first: number = 20, after?: string): Observable<{
-//     articles: NewsArticle[];
+//     articles: Article[];
 //     totalCount: number;
 //     hasNextPage: boolean;
 //     endCursor: string;

@@ -2,19 +2,19 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService } from '../../../services/content.service';
-import { NewsArticle } from '../../../types/article';
+import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { marked } from 'marked';
 
 @Component({
-  selector: 'app-news-article',
+  selector: 'app-article',
   imports: [CommonModule, PageLayoutComponent],
-  templateUrl: './news-article.component.html',
-  styleUrl: './news-article.component.scss'
+  templateUrl: './article.component.html',
+  styleUrl: './article.component.scss'
 })
-export class NewsArticleComponent implements OnInit {
-  article: NewsArticle | null = null;
+export class ArticleComponent implements OnInit {
+  article: Article | null = null;
   loading = true;
   error: string | null = null;
 
@@ -25,21 +25,33 @@ export class NewsArticleComponent implements OnInit {
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (slug) {
-      this.loadArticle(slug);
+      this.route.url.subscribe(segments => {
+      // Build the path from URL segments (e.g., about/userguide/pathway-browser)
+      let path_segments = segments.map(s => s.path);
+
+      if (path_segments.length > 0 && path_segments) {
+        if (path_segments.includes('about')) {
+          this.loadArticle('about/news', slug);
+
+        } else if (path_segments.includes('content')) {
+          this.loadArticle('content/reactome-research-spotlight', slug);
+        }
+      }
+    });
     }
   }
 
-  loadArticle(slug: string) {
+  loadArticle(path: string, slug: string) {
     this.loading = true;
 
-    this.contentService.getNewsArticle(slug).subscribe({
+    this.contentService.getArticle(path,slug).subscribe({
       next: async (article) => {
         let html = await marked(article?.body || '');
         let renderedContent = this.stripFirstH1(html);
 
         this.article = {
-          title: article?.title || 'Untitled',
-          author: article?.author || 'Unknown',
+          title: article?.title || '',
+          author: article?.author || '',
           date: article?.date || new Date(),
           body: renderedContent,
           slug: slug,

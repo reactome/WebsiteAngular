@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { NewsIndexItem } from '../../../types/article';
+import { ArticleIndexItem } from '../../../types/article';
 import { NgForOf, NgFor } from '@angular/common';
 import formatDate from '../../../utils/formatDate';
 
@@ -11,7 +11,7 @@ import formatDate from '../../../utils/formatDate';
   styleUrl: './home-latest-news.component.scss'
 })
 export class HomeLatestNewsComponent {
-  @Input() newsList: NewsIndexItem[] = [];
+  @Input() newsList: ArticleIndexItem[] = [];
 
   formatD(date: Date): string {
     return formatDate(date);

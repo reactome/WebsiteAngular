@@ -4,7 +4,7 @@ import { Observable, map, catchError, of, tap } from 'rxjs';
 import { marked } from 'marked';
 import e from 'express';
 import parseFrontmatter from '../utils/parseFrontmatter';
-import { NewsArticle, NewsIndexItem } from '../types/article';
+import { Article, ArticleIndexItem } from '../types/article';
 
 export interface PageContent {
   title: string;
@@ -111,13 +111,13 @@ export class ContentService {
   // }
 
   /**
-   * Get a news article by slug
+   * Get an article by slug
    */
-  getNewsArticle(slug: string): Observable<NewsArticle | null> {
-    return this.http.get(`${this.contentBasePath}/about/news/${slug}.mdx`, { responseType: 'text' }).pipe(
+  getArticle(path:string, slug: string): Observable<Article | null> {
+    return this.http.get(`${this.contentBasePath}/${path}/${slug}.mdx`, { responseType: 'text' }).pipe(
       map(content => {
         const { frontmatter, body } = parseFrontmatter(content);
-        let returnArticle: NewsArticle = {
+        let returnArticle: Article = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),
           author: frontmatter['author'] as string,
@@ -134,10 +134,10 @@ export class ContentService {
   }
 
   /**
-   * Get all news articles
+   * Get all articles
    */
-  getAllNews(): Observable<NewsIndexItem[]> {
-    return this.http.get<NewsIndexItem[]>(`${this.contentBasePath}/about/news/index.json`).pipe(
+  getAllArticles(path:string): Observable<ArticleIndexItem[]> {
+    return this.http.get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`).pipe(
       map(data => {
         return data || []
       }),
@@ -146,10 +146,10 @@ export class ContentService {
   }
 
   /**
-   * Get latest news articles (for home page)
+   * Get latest articles (for home page)
    */
-  getLatestNews(count: number = 3): Observable<NewsIndexItem[]> {
-    return this.getAllNews().pipe(
+  getLatestArticles(path:string, count: number = 3): Observable<ArticleIndexItem[]> {
+    return this.getAllArticles(path).pipe(
       map(articles => articles.slice(0, count))
     );
   }
@@ -198,48 +198,4 @@ export class ContentService {
   //     catchError(() => of(null))
   //   );
   // }
-
-  /**
-   * Get all spotlight articles
-   */
-  getAllSpotlights(): Observable<NewsIndexItem[]> {
-    return this.http.get<NewsIndexItem[]>(`${this.contentBasePath}/content/reactome-research-spotlights/index.json`).pipe(
-      map(data => {
-        return data || []
-      }),
-      catchError(() => of([]))
-    );
-  }
-
-  /**
-   * Get a spotlight article by slug
-   */
-  getSpotlightArticle(slug: string): Observable<NewsArticle | null> {
-    return this.http.get(`${this.contentBasePath}/content/reactome-research-spotlights/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = parseFrontmatter(content);
-        let returnArticle: NewsArticle = {
-          title: frontmatter['title'] as string || '',
-          date: new Date(frontmatter['date'] as string),
-          author: frontmatter['author'] as string,
-          image: frontmatter['image'] as string,
-          tags: frontmatter['tags'] as string[],
-          body: frontmatter['body'] as string || body, //TODO: links and formatting in body
-          excerpt: frontmatter['body']?.toString().substring(0, 200) || '',
-          slug: slug
-        };
-        return returnArticle;
-      }),
-      catchError(() => of(null))
-    );
-  }
-
-  /**
-   * Get latest spotlight articles (for home page)
-   */
-  getLatestSpotlights(count: number = 3): Observable<NewsIndexItem[]> {
-    return this.getAllSpotlights().pipe(
-      map(articles => articles.slice(0, count))
-    );
-  }
 }

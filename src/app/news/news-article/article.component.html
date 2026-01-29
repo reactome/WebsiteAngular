@@ -1,10 +1,10 @@
 <app-page-layout>
-  <div class="news-article-container" *ngIf="!loading">
+  <div class="article-container" *ngIf="!loading">
   <div *ngIf="error" class="error-message">
     <h1>{{ error }}</h1>
   </div>
   
-  <article *ngIf="article" class="news-article">
+  <article *ngIf="article" class="article">
     <header class="article-header">
       <h1 class="article-title">{{ article.title }}</h1>
       <div class="article-meta">

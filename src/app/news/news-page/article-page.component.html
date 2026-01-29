@@ -1,8 +1,8 @@
 <app-page-layout>
-  <main class="news-page">
+  <main class="article-page">
     <header class="page-header">
-      <h1>News & Updates</h1>
-      <p>Stay up to date with the latest Reactome releases, publications, and announcements.</p>
+      <h1>{{ pageTile }}</h1>
+      <p>{{ pageDescription }}</p>
     </header>
 
     @if (loading) {
@@ -26,12 +26,12 @@
                 }
               </div>
               <h2>
-                <a [href]="['/about/news', article.slug]">{{ article.title }}</a>
+                <a [href]="`/${articlePath}/` + article.slug">{{ article.title }}</a>
               </h2>
               @if (article.excerpt) {
                 <p class="excerpt">{{ article.excerpt }}</p>
               }
-              <a [href]="['/about/news/' + article.slug]" class="read-more">
+              <a [href]="`/${articlePath}/` + article.slug" class="read-more">
                 Read more
                 <mat-icon class="material-symbols-outlined">arrow_forward</mat-icon>
               </a>

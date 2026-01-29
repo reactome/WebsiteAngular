@@ -9,7 +9,7 @@ $max-content-width: 1200px;
   min-height: 100vh;
 }
 
-.news-page {
+.article-page {
   width: 100%;
 }
 
@@ -186,7 +186,7 @@ $max-content-width: 1200px;
 
 // Mobile responsiveness
 @media (max-width: 768px) {
-  .news-page {
+  .article-page {
     padding: $spacing-unit;
     padding-top: $spacing-unit * 2;
   }

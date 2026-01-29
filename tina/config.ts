@@ -98,7 +98,7 @@ export default defineConfig({
       {
         name: "reactome_research_spotlights",
         label: "Reactome Research Spotlights",
-        path: "content/content/reactome-research-spotlights",
+        path: "content/content/reactome-research-spotlight",
         format: "mdx",
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
@@ -109,7 +109,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/content/reactome-research-spotlights/${document._sys.filename}`,
+          router: ({ document }) => `/content/reactome-research-spotlight/${document._sys.filename}`,
         }
       },
       { //Documentation Pages
