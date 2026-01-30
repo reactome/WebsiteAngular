@@ -1,0 +1,254 @@
+---
+title: Content Service
+category: "documentation"
+---
+
+##  Content Service 
+
+#### Explore our tools and web services and learn how to include them in your applications
+
+[ __ ](<#MoreInfo>)
+
+##  [ More Info ](<#MoreInfo>)
+
+[ __ ](<#GetStarted>)
+
+##  [ Get Started ](<#GetStarted>)
+
+[ __ ](</ContentService>)
+
+##  [ API ](</ContentService>)
+
+[ __ ](<#Resources>)
+
+##  [ Resources ](<#Resources>)
+
+### [__More Info](<#MoreInfo>)
+
+The Content Service constitutes an easy [API](</ContentService/#/>) that provides access to the Reactome knowledgebase. Information in Reactome is authored by expert biologist researchers, maintained by Reactome editorial staff, and extensively cross-referenced to other resources e.g. NCBI, Ensembl, UniProt, UCSC Genome Browser, HapMap, KEGG (Gene and Compound), ChEBI, PubMed and GO. It also incorporates inferred orthologous reactions for over 14 non-human species including mouse, rat, chicken, puffer fish, worm, fly, yeast, rice, Arabidopsis and E.coli. Additionally, the Content Service provides access to molecular interactions integrated from PSICQUIC.
+
+The Content Service is based on the Representational State Transfer (REST) protocol. This eliminates the need for complex clients and renders the service simpler, more lightweight, more flexible, and, thus, easier to integrate into third party software compared to its SOAP/WSDL counterparts.
+
+The [API](</ContentService/>) includes a set of methods classified in groups according to their functionality. For instance, expanding the [pathways group](</ContentService/#/pathways>) reveals a set of methods that provide specific information about pathways such as the contained Events or the participating PhysicalEntities. All methods are specified as either GET or POST requests. GET and POST are not interchangeable. [Expanding a particular method](</ContentService/#!/pathways/getParticipatingPhysicalEntitiesUsingGET>) provides more information about its input and output parameters as well as a simple test case for users to try out. In addition, users can also use any command line client such as [wget](<http://www.gnu.org/software/wget/>) or [curl](<http://curl.haxx.se/docs/manual.html>) to access the methods.
+
+It is worth mentioning that to use this API efficiently, the user needs to understand the Reactome [data model](</documentation/data-model>) and [schema](</content/schema/>).
+
+### [__Get Started](<#GetStarted>)
+
+Let’s start with one of the most basic examples; retrieving the version of the database. It can be addressed by querying the “/data/database/version” method:
+    
+    
+    curl -X GET --header 'Accept: text/plain' 'https://reactome.org/ContentService/data/database/version'
+
+The response will be a “text/plain” file containing just the number of the release.
+
+To retrieve the information for the reaction **Mad1 binds kinetochore** which identifier is **R-HSA-141409** , the query would be as follows:
+    
+    
+    curl -X GET --header 'Accept: application/json' 'https://reactome.org/ContentService/data/query/R-HSA-141409'
+
+And the response comes in “application/json” format:
+    
+    
+    {
+      dbId: 141409,
+      displayName: "Mad1 binds kinetochore",
+      stId: "R-HSA-141409",
+      created: {
+        dbId: 143430,
+        displayName: "Yen, T, 2004-05-05 00:00:00",
+        dateTime: "2004-05-05 05:00:00.0",
+        schemaClass: "InstanceEdit"
+      },
+      modified: {
+        dbId: 1591212,
+        displayName: "Matthews, L, 2011-09-08",
+        dateTime: "2011-09-08 21:45:40.0",
+        schemaClass: "InstanceEdit"
+      },
+      isInDisease: false,
+      isInferred: false,
+      name: [
+        "Mad1 binds kinetochore"
+      ],
+      speciesName: "Homo sapiens",
+      authored: [
+        143430
+      ],
+      compartment: [
+        {
+          dbId: 70101,
+          displayName: "cytosol",
+          accession: "0005829",
+          databaseName: "GO",
+          definition: "The part of the cytoplasm that does not contain organelles but which does contain other particulate matter, such as protein complexes.",
+          name: "cytosol",
+          url: "http://www.ebi.ac.uk/ego/QuickGO?mode=display&entry=GO:0005829",
+          schemaClass: "EntityCompartment"
+        }
+      ],
+      literatureReference: [
+        {
+          dbId: 143441,
+          displayName: "Mitotic checkpoint proteins HsMAD1 and HsMAD2 are associated with nuclear pore complexes in interphase",
+          title: "Mitotic checkpoint proteins HsMAD1 and HsMAD2 are associated with nuclear pore complexes in interphase",
+          journal: "J Cell Sci",
+          pages: "953-63",
+          pubMedIdentifier: 11181178,
+          volume: 114,
+          year: 2001,
+          url: "http://www.ncbi.nlm.nih.gov/pubmed/11181178",
+          schemaClass: "LiteratureReference"
+        }
+      ],
+      species: [
+        {
+          dbId: 48887,
+          displayName: "Homo sapiens",
+          name: [
+            "Homo sapiens",
+            "H. sapiens",
+            "Hs",
+            "human",
+            "man"
+          ],
+          taxId: "9606",
+          schemaClass: "Species"
+        }
+      ],
+      summation: [
+        {
+          dbId: 143355,
+          displayName: "",
+          text: "The association of Mad1 with the kinetochore is the first step in the process of Mad2 mediated amplification of the signal from defective kinetochores.",
+          schemaClass: "Summation"
+        }
+      ],
+      input: [
+        {
+          dbId: 141433,
+          displayName: "MAD1L1 [cytosol]",
+          stId: "R-HSA-141433",
+          name: [
+            "MAD1L1",
+            "HsMad1"
+          ],
+          speciesName: "Homo sapiens",
+          consumedByEvent: [
+            141409
+          ],
+          endCoordinate: 718,
+          referenceType: "ReferenceGeneProduct",
+          startCoordinate: 1,
+          schemaClass: "EntityWithAccessionedSequence"
+        },
+        {
+          dbId: 141398,
+          displayName: "Kinetochore Complex [cytosol]",
+          stId: "R-HSA-141398",
+          name: [
+            "Kinetochore Complex"
+          ],
+          speciesName: "Homo sapiens",
+          consumedByEvent: [
+            141409
+          ],
+          schemaClass: "GenomeEncodedEntity"
+        }
+      ],
+      output: [
+        {
+          dbId: 141441,
+          displayName: "Mad1:kinetochore complex [cytosol]",
+          stId: "R-HSA-141441",
+          name: [
+            "Mad1:kinetochore complex"
+          ],
+          speciesName: "Homo sapiens",
+          producedByEvent: [
+            141409
+          ],
+          hasComponent: [
+            
+          ],
+          schemaClass: "Complex"
+        }
+      ],
+      schemaClass: "Reaction"
+    }
+
+In the previous result, there are several json field keys such as dbId, displayName, stId, name, compartment, literatureReference and so on. In case we are only interested in a particular field, e.g compartment, the query would be as follows:
+    
+    
+    curl -X GET --header 'Accept: text/plain' 'https://reactome.org/ContentService/data/query/R-HSA-141409/compartment'
+
+In this case, because **compartment** is an object, the result will be a TSV file where the first column is the identifier of the object, the second column is the displayName of the object and the third column is the schemaClass of the object:
+    
+    
+    70101	cytosol	EntityCompartment
+
+In case the queried attribute is a **primitive** type:
+    
+    
+    curl -X GET --header 'Accept: text/plain' 'https://reactome.org/ContentService/data/query/R-HSA-141409/displayName'
+
+Then the returned value is the content of it in a “text/plain” response:
+    
+    
+    Mad1 binds kinetochore
+
+As the last example in the section, let’s check out how to retrieve the participanting molecules of the reaction used in the previous examples. To do so, we call the [getParticipatingPhysicalEntities](</ContentService/#!/events/getParticipatingPhysicalEntitiesUsingGET>) method in the API:
+    
+    
+    curl -X GET --header 'Accept: application/json' 'https://www.reactome.org/ContentService/data/event/R-HSA-141409/participatingPhysicalEntities'
+
+And the response comes in “application/json” format:
+    
+    
+    [
+      {
+        dbId: 141398,
+        displayName: "Kinetochore Complex [cytosol]",
+        stId: "R-HSA-141398",
+        name: [
+          "Kinetochore Complex"
+        ],
+        speciesName: "Homo sapiens",
+        schemaClass: "GenomeEncodedEntity"
+      },
+      {
+        dbId: 141433,
+        displayName: "MAD1L1 [cytosol]",
+        stId: "R-HSA-141433",
+        name: [
+          "MAD1L1",
+          "HsMad1"
+        ],
+        speciesName: "Homo sapiens",
+        endCoordinate: 718,
+        referenceType: "ReferenceGeneProduct",
+        startCoordinate: 1,
+        schemaClass: "EntityWithAccessionedSequence"
+      },
+      {
+        dbId: 141441,
+        displayName: "Mad1:kinetochore complex [cytosol]",
+        stId: "R-HSA-141441",
+        name: [
+          "Mad1:kinetochore complex"
+        ],
+        speciesName: "Homo sapiens",
+        hasComponent: [
+          
+        ],
+        schemaClass: "Complex"
+      }
+    ]
+
+Check out the [ContentService API](</ContentService/>) to find out more methods and see which ones cover your needs. Please This email address is being protected from spambots. You need JavaScript enabled to view it. if your needs are not covered and you think extra methods should be added to our API.
+
+### [__Resources](<#Resources>)
+
+[API Documentation](</ContentService/>)
+
+[Diagram exporter](</dev/content-service/diagram-exporter>)

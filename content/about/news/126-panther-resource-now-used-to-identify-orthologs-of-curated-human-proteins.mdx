@@ -1,0 +1,18 @@
+---
+title: PANTHER resource now used to identify orthologs of curated human proteins
+category: "about"
+date: "2019-03-20T13:39:44-04:00"
+tags: ["about", "news", "126-panther-resource-now-used-to-identify-orthologs-of-curated-human-proteins"]
+---
+
+##  PANTHER resource now used to identify orthologs of curated human proteins 
+
+![Orthology](/images/news/Orthology.png)
+
+Biological processes are remarkably well-conserved over large evolutionary distances. At a practical level, this fact enables the extrapolation of mechanistic insights from species to species. The Reactome project aims to annotate the molecular details of a broad range of human biological processes based on experimental data from human systems. To link these human annotations at a molecular level to their conserved counterparts in model organism systems we use protein sequence orthology relationships to ask, for each human reaction and each model organism, whether the human proteins involved in the reaction have orthologs in the model organism. If the orthologs exist, we computationally infer the corresponding reaction for the model organism and in this way build up a predicted pathway knowledgebase for the organism. If the human protein functions as part of a complex, we search for orthologs of all components of the complex, and computationally infer the existence of the complex in the model organism if model organism counterparts of at least 75% of the human proteins are found.
+
+With our March, 2019 (version 68) release, we have made two changes to improve the quality and usability of these inferred pathways.
+
+First, with the development of Plant Reactome, a substantial body of rice (Oryza sativa) pathways annotated from plant experimental evidence is now available online. That material improves on orthology-based inferences from human data, and provides a better starting point for making such inferences to other plant species, so all inferences for plant species will now be generated, maintained, and made available through [Plant Reactome](<http://plantreactome.gramene.org/index.php?lang=en>).
+
+Second, we are now using the [PANTHER](<http://pantherdb.org>) resource (Protein Analysis Through Evolutionary Relationships) to identify model organism orthologs of human proteins annotated in Reactome. This change will allow us to exploit features of PANTHER, such as the identification of least-diverged orthologs in model organism protein families, to improve the specificity of our inferences. The change is also part of a larger project to better align the Reactome with the Gene Ontology, PANTHER, the Alliance of Genome Resources, and related resources to generate interactive, expert-curated, actively maintained, and tightly integrated community genomics resources.

@@ -1,0 +1,88 @@
+---
+title: "EHLD Specs & Guidelines"
+category: "documentation"
+---
+
+##  EHLD Specs & Guidelines 
+
+The Enhanced High Level Diagrams (EHLD) project aims to improve the graphical representation of higher-level pathways in the Reactome events hierarchy, e.g., “signal transduction”, “apoptosis”, or “metabolism” whose pathway diagrams consist of green boxes labeled with the names of sub-events, optionally located in cellular compartments and connected by arrows. These green-box diagrams feature limited navigation: clicking on a green box takes the user to that sub-event. In some cases, an illustrator has also created a graphic representation of the event. However, these illustrator diagrams offer no navigation functionality.
+
+There was a general agreement that green-box diagrams are not that appealing, and put off users accustomed to textbook-quality illustrations of biological processes with striking, intuitively clear iconography. Meanwhile, while our illustrations often are up to textbook standards, they are static images. The project included generation of scalable vector graphic (SVG) versions of illustrations, and the development of software that will make these SVG images navigable in the way that the green-box figures are now, and also to provide user interactivity by progressive zoom in/out, actions when hovering over the items or selecting them and showing the associated content in the details panel for the selected items.
+
+This project has also driven the development of a consistent iconography, a controlled visual vocabulary for biological processes like the controlled word vocabularies we already have for names of physical entities and reactions.
+
+This document includes two main sections. The first section describes in detail the process that should be followed to create an EHLD. The second section of this document provides guide through the process of creating and including new graphic elements into the Reactome EHLD icons library. 
+
+### Enhanced High Level Diagrams guidelines
+
+This section aims to guide you through the process of creating an EHLD. The following paragraphs aim to summarise the set of requirements and guidelines the illustrator should follow in order to produce EHLDs that are compatible with Reactome Pathway Browser v3.4.
+
+#### Generic guidelines
+
+In Reactome, an EHLD is an interactive graphical representation of a higher level pathway diagram, typically containing two or more subpathways as active regions. An active region refers to a group of shapes representing a single subpathway. In particular, users can interact with active regions by hovering or selecting them, as well as use them to navigate to the subpathways they represent.
+
+![ehld with analysis](/images/ehldguide/ehld-with-analysis.png)
+
+_EHLD representing the Hemostasis branch of the Reactome event hierarchy. (a) Pathway hierarchy view for Hemostasis. (b) Hemostasis as an EHLD representation. (c) Hemostasis EHLD overlaid with pathway enrichment analysis results._
+
+### Generic guidelines
+
+To make all these possible, there is a set of initial requirements to be taken into account during the generation of the EHLDs.
+
+  * EHLDs must be in SVG format. Illustrators are free to use the design tool of their preference but at the end their diagram must be exported to SVG.
+  * The use of raster graphics is strongly discouraged as it results in larger file sizes and it has a negative impact on software performance. Also, by including bitmap images we cancel out resolution-independent zooming, which is one of SVG’s main advantage. 
+  * All exported SVG files should include the styles in an internal CSS stylesheet. Please make use of this option when exporting from Adobe Illustrator: _Export As - > SVG -> Styling: Internal CSS_. If you are using another application to create the EHLDs, you will need to configure it appropriately.
+  * The name of each EHLD file has to be the Reactome Identifier of the corresponding pathway diagram, followed by “.svg”. For example, the _Apoptosis_ EHLD should be named as _R-HSA-109581.svg_. Please keep in mind that only one EHLD should be created per high level pathway diagram.
+  * Active regions are annotated using the id attribute of their group element (inside the SVG file) and can be classified in the following two groups: 
+    * Regions containing a group of irregular shapes (including text) that can be selected (and hovered) in order to navigate to the respective pathway diagram. These regions should be annotated by setting their id attribute to “ _REGION-_ ” _\+ Reactome Identifier_ of their represented subpathway, e.g. “ _REGION-R-HSA-109581_ ”. This type of active regions may include arrows pointing to or from them and they are not mandatory.
+    * Regions containing the label of the represented subpathway in a box-like shape that can be not only selected but also overlaid with the results of the analysis. These regions should be annotated by setting their id attribute to “ _OVERLAY-_ ” _\+ Reactome Identifier_ of their represented subpathway, e.g. “ _OVERLAY-R-HSA-109581_ ”. Regions of this category must not include arrows pointing to or from them, and they are mandatory.
+    * Please keep in mind that if we need to annotate both types of active regions for a given subpathway, the region (“REGION-R-HSA-109581”) has to include the overlay component (“OVERLAY-R-HSA-109581”). In other words, the group of the selectable shapes has to include the group of shapes that can be overlaid.
+  * Any group of shapes, text or graphical elements that are not annotated as active regions are considered decorators and users cannot interact with them. They have pure esthetic value and they cannot be selected, hovered or overlaid. 
+  * If possible, no background covering the whole image should be put in place. Please note that compartments or other necessary backgrounds can be kept, but we suggest to avoid “unnecessary” backgrounds. In case a background is required, but it is too big to fit in the illustration, it is suggested to draw only a small part of it with clear and well defined boundaries (See the blood vessel in the EHLD of Hemostasis above). 
+  * Text elements should not be converted to groups of shapes. Instead, use the normal <text> SVG element.
+
+![subpathways](/images/ehldguide/subpathways.png)
+
+Example illustrating the two types of active regions. Selectable regions (annotated with “REGION-” + Reactome Identifier) are highlighted in red, while regions that can be overlaid are highlighted in brown. Shapes and text that are not annotated as active regions are considered decorators (presented in blue) and users cannot interact with them.
+
+Taking the aforementioned requirements into consideration, the EHLD of the figure above should have the following structure:
+
+  * REGION-Pathway A _# The whole pathway will be selectable #_
+    * OVERLAY-Pathway A _# Only the label will be overlaid #_
+  * REGION-Pathway B _# The whole pathway will be selectable including the arrow #_
+    * OVERLAY-Pathway B _# Only the label will be overlaid #_
+  * REGION-Pathway C _# The whole pathway will be selectable including the arrow #_
+    * OVERLAY-Pathway C _# Only the label will be overlaid #_
+  * OVERLAY-Pathway D  _# The whole pathway will be selectable and overlaid #_
+  * DECORATORS _# None of the shapes are selectable or can be overlaid #_
+
+### Creating an EHLD step by step
+
+We suggest starting a new EHLD by creating an Adobe Illustrator document with **1366px** in width and **768px** in height and using the **RGB colour mode**.
+
+Pathway Labels should have **centered,** **white** , **uppercased** , text using **Arial Bold** font at **12pt** inside a **rounded rectangle** with **8pt** **radius** , minimum **width of 170px** and **height** of**30px** for single lines or **43px** for double lines. The colour of the rounded rectangle should be **#0F82BC** (R:15 G:130 B:188). We suggest writing the name of the subpathway it represents as it appears in the Reactome hierarchy. In case of a discrepancy, or any kind of oddity, please contact the author or the curator related to the pathway.
+
+Please use the same specifications for any other written element except for:
+
+  * **Descriptions** of a process should always be black and in lowercase letters.
+  * Any **written element** that belongs to a compound, protein or cell (generically inside of any coloured shape) should be white and in uppercase letters (when possible).
+  * Any **written element** that belongs to a receptor and/or describes a cell element or a process (generically outside of any shape) should be black and in lowercase letters (when possible, usually receptors are named by acronyms and capital letters should be used in these cases).
+  * Greek or other Unicode characters must be avoided in text elements. Thus, names with greek characters should include the whole word (e.g. alpha instead of α) written in lowercase.
+  * Reactome **logo** should always have **50%** **opacity**.
+
+Every pathway label should have one **Analysis Information Label**. The latter is used to display additional details about the hit elements and the false discovery rate (FDR). All analysis information labels should be annotated as “ANALINFO” in the Layer Hierarchy Panel. Place “XXX/YYY” as a text placeholder inside it. Text should be centered and uppercased in **Arial Bold** **9pt** , and in white colour. The box should be a rounded rectangle with **8px radius** , minimum **width of 170px** and **20px height**. Its fill colour should be **#C6C6C6** (R:198 G:198 B:198). Also, set the opacity of the group to 0%, but make sure you leave the opacity of the shapes and text inside the group to 100%. Each analysis information label should be placed beside its pathway label and in the opposite side of the content for that pathway. For instance, if the pathway label is above its content, the analysis information label should be placed above the pathway label and vice versa.
+
+In order to better shape the active region (or the clickable area) of a pathway we can add a white shape with **0% opacity** under any element of the Pathway in the Layer Hierarchy Panel. In this way we can extent the clickable area and improve the overall user experience while navigating the EHLDs. In particular, we should try to surround the elements of the subpathway covering the gaps within the individual graphic elements, and thus, avoiding the inconvenient situation where the mouse cursor changes from the usual arrow shape to the hand constantly. Additionally, in EHLDs where elements of a particular subpathway are too thin and users find it difficult to select them, this technique can provide a bigger and more convenient clickable area around them. However, we should use this with caution, as creating too large clickable areas can mislead users.
+
+It is recommended to place all arrows and neutral text elements in a group at the top of the layer hierarchy. As well, all decorators and elements in the background that we do not want to highlight or be clickable, we recommend to place them in a group at the bottom of the layer hierarchy.
+
+Reactome displays EHLDs in a blank zoomable space. For a better user experience we suggest to have all shapes and elements portrayed in full. However, we understand that some pathways are large and contain too many and too big elements to fit in one image. In cases where the illustrator needs to cut an element and it is difficult to make a clean representation of the cut, we suggest the addition of a gradient so that elements vanish keeping the limits of the canvas clear.
+
+In order to export an EHLD we should use the “Export as” option and save the file as an SVG with the following options:
+
+  * Styling: Internal CSS.
+  * Font: SVG.
+  * Images: Preserve.
+  * Object IDs: Layer Names.
+  * Decimal Points: 3.
+  * Minify and Responsive, both ticked.

@@ -1,8 +1,392 @@
 [
   {
     "title": "Inhibition of type I interferon signaling is a conserved function of gamma-herpesvirus-encoded microRNAs",
-    "excerpt": "Type I interferon (IFN) signaling is one of the body’s earliest and most important defenses against viral infection, rapidly activating hundreds of antiviral genes. In the December 2025 Journal of Vir",
-    "date": "2026-01-11T17:49:15.383Z",
-    "slug": "Inhibition-of-type-I-interferon-signaling-is-a-conserved-function-of-gamma-herpesvirus-encoded-microRNAs-"
+    "excerpt": "\n##  [ Inhibition of type I interferon signaling is a conserved function of gamma-herpesvirus-encoded microRNAs ](</content/reactome-research-spotlight/287-inhibition-of-type-i-interferon-signaling-is",
+    "date": "2026-01-10T01:30:20-05:00",
+    "slug": "blogpost-1",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Anti-progestin therapy targets hallmarks of breast cancer risk",
+    "excerpt": "\n##  [ Anti-progestin therapy targets hallmarks of breast cancer risk ](</content/reactome-research-spotlight/285-anti-progestin-therapy-targets-hallmarks-of-breast-cancer-risk>)\n\nProgesterone, a horm",
+    "date": "2025-12-05T14:03:53-05:00",
+    "slug": "blogpost-2",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Reprogramming neuroblastoma by diet-enhanced polyamine depletion",
+    "excerpt": "\n##  [ Reprogramming neuroblastoma by diet-enhanced polyamine depletion ](</content/reactome-research-spotlight/283-reprogramming-neuroblastoma-by-diet-enhanced-polyamine-depletion>)\n\nNeuroblastomas a",
+    "date": "2025-10-28T15:00:42-04:00",
+    "slug": "blogpost-3",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "An immune-competent lung-on-a-chip for modelling the human severe influenza infection response",
+    "excerpt": "\n##  [ An immune-competent lung-on-a-chip for modelling the human severe influenza infection response ](</content/reactome-research-spotlight/281-an-immune-competent-lung-on-a-chip-for-modelling-the-h",
+    "date": "2025-09-30T18:37:19-04:00",
+    "slug": "blogpost-4",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Learning and actioning general principles of cancer cell drug sensitivity",
+    "excerpt": "\n##  [ Learning and actioning general principles of cancer cell drug sensitivity ](</content/reactome-research-spotlight/278-learning-and-actioning-general-principles-of-cancer-cell-drug-sensitivity>)",
+    "date": "2025-08-26T00:28:13-04:00",
+    "slug": "blogpost-5",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Identification and targeting of regulators of SARS-CoV-2–host interactions in the airway epithelium",
+    "excerpt": "\n##  [ Identification and targeting of regulators of SARS-CoV-2–host interactions in the airway epithelium ](</content/reactome-research-spotlight/277-identification-and-targeting-of-regulators-of-sar",
+    "date": "2025-07-28T15:14:13-04:00",
+    "slug": "blogpost-6",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Rhythm profiling using COFE reveals multi-omic circadian rhythms in human cancers in vivo",
+    "excerpt": "\n##  [ Rhythm profiling using COFE reveals multi-omic circadian rhythms in human cancers in vivo ](</content/reactome-research-spotlight/276-rhythm-profiling-using-cofe-reveals-multi-omic-circadian-rh",
+    "date": "2025-06-27T11:33:17-04:00",
+    "slug": "blogpost-7",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Interpreting biologically informed neural networks for enhanced proteomic biomarker discovery and pathway analysis",
+    "excerpt": "\n##  [ Interpreting biologically informed neural networks for enhanced proteomic biomarker discovery and pathway analysis ](</content/reactome-research-spotlight/274-interpreting-biologically-informed",
+    "date": "2025-06-01T23:18:05-04:00",
+    "slug": "blogpost-8",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Reactome Strengthens Accuracy by Monitoring for Retracted Publications",
+    "excerpt": "\n##  [ Reactome Strengthens Accuracy by Monitoring for Retracted Publications ](</content/reactome-research-spotlight/272-reactome-strengthens-accuracy-by-monitoring-for-retracted-publications>)\n\nReac",
+    "date": "2025-04-30T23:03:07-04:00",
+    "slug": "blogpost-9",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Genetically supported targets and drug repurposing for brain aging: A systematic study in the UK Biobank",
+    "excerpt": "\n##  [ Genetically supported targets and drug repurposing for brain aging: A systematic study in the UK Biobank ](</content/reactome-research-spotlight/271-genetically-supported-targets-and-drug-repur",
+    "date": "2025-03-31T02:58:31-04:00",
+    "slug": "blogpost-10",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Co-methylation networks associated with cognition and structural brain development during adolescence",
+    "excerpt": "\n##  [ Co-methylation networks associated with cognition and structural brain development during adolescence ](</content/reactome-research-spotlight/269-co-methylation-networks-associated-with-cogniti",
+    "date": "2025-02-25T23:02:54-05:00",
+    "slug": "blogpost-11",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "BPP: a platform for automatic biochemical pathway prediction",
+    "excerpt": "\n##  [ BPP: a platform for automatic biochemical pathway prediction ](</content/reactome-research-spotlight/267-bpp-a-platform-for-automatic-biochemical-pathway-prediction>)\n\nIn the July 2024 issue of",
+    "date": "2025-01-28T20:35:50-05:00",
+    "slug": "blogpost-12",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "A living organoid biobank of patients with Crohn’s disease reveals molecular subtypes for personalized therapeutics",
+    "excerpt": "\n##  [ A living organoid biobank of patients with Crohn’s disease reveals molecular subtypes for personalized therapeutics ](</content/reactome-research-spotlight/266-a-living-organoid-biobank-of-pati",
+    "date": "2024-12-30T21:19:35-05:00",
+    "slug": "blogpost-13",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "RNA editing regulates host immune response and T cell homeostasis in SARS-CoV-2 infection",
+    "excerpt": "\n##  [ RNA editing regulates host immune response and T cell homeostasis in SARS-CoV-2 infection ](</content/reactome-research-spotlight/264-rna-editing-regulates-host-immune-response-and-t-cell-homeo",
+    "date": "2024-11-21T22:52:31-05:00",
+    "slug": "blogpost-14",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "PathIntegrate: Multivariate modelling approaches for pathway-based multi-omics data integration",
+    "excerpt": "\n##  [ PathIntegrate: Multivariate modelling approaches for pathway-based multi-omics data integration ](</content/reactome-research-spotlight/263-pathintegrate-multivariate-modelling-approaches-for-p",
+    "date": "2024-10-22T14:59:45-04:00",
+    "slug": "blogpost-15",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Chemical coverage of human biological pathways",
+    "excerpt": "\n##  [ Chemical coverage of human biological pathways ](</content/reactome-research-spotlight/262-chemical-coverage-of-human-biological-pathways>)\n\nIn the feature article of the October 2024 issue of ",
+    "date": "2024-10-03T11:25:44-04:00",
+    "slug": "blogpost-16",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Engineering Toxoplasma gondii secretion systems for intracellular delivery of multiple large therapeutic proteins to neurons",
+    "excerpt": "\n##  [ Engineering Toxoplasma gondii secretion systems for intracellular delivery of multiple large therapeutic proteins to neurons ](</content/reactome-research-spotlight/256-engineering-toxoplasma-g",
+    "date": "2024-08-29T18:48:21-04:00",
+    "slug": "blogpost-17",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "The landscape of cancer-rewired GPCR signaling axes",
+    "excerpt": "\n##  [ The landscape of cancer-rewired GPCR signaling axes ](</content/reactome-research-spotlight/255-the-landscape-of-cancer-rewired-gpcr-signaling-axes>)\n\nIn their May 2024 paper in Cell Genomics,[",
+    "date": "2024-07-23T13:34:24-04:00",
+    "slug": "blogpost-18",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Drug target prediction through deep learning functional representation of gene signatures",
+    "excerpt": "\n##  [ Drug target prediction through deep learning functional representation of gene signatures ](</content/reactome-research-spotlight/254-drug-target-prediction-through-deep-learning-functional-rep",
+    "date": "2024-07-04T16:52:17-04:00",
+    "slug": "blogpost-19",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Acquired resistance to immunotherapy and chemoradiation in MYC amplified head and neck cancer",
+    "excerpt": "\n##  [ Acquired resistance to immunotherapy and chemoradiation in MYC amplified head and neck cancer ](</content/reactome-research-spotlight/252-acquired-resistance-to-immunotherapy-and-chemoradiation",
+    "date": "2024-06-18T10:04:25-04:00",
+    "slug": "blogpost-20",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "IBPGNET: lung adenocarcinoma recurrence prediction based on neural network interpretability",
+    "excerpt": "\n##  [ IBPGNET: lung adenocarcinoma recurrence prediction based on neural network interpretability ](</content/reactome-research-spotlight/249-ibpgnet-lung-adenocarcinoma-recurrence-prediction-based-o",
+    "date": "2024-05-10T12:15:21-04:00",
+    "slug": "blogpost-21",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Nickel-induced transcriptional memory in lung epithelial cells promotes interferon signaling upon nicotine exposure",
+    "excerpt": "\n##  [ Nickel-induced transcriptional memory in lung epithelial cells promotes interferon signaling upon nicotine exposure ](</content/reactome-research-spotlight/248-nickel-induced-transcriptional-me",
+    "date": "2024-04-09T00:51:43-04:00",
+    "slug": "blogpost-22",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Identification of potential biological processes and key genes in diabetes-related stroke through weighted gene co-expression network analysis",
+    "excerpt": "\n##  [ Identification of potential biological processes and key genes in diabetes-related stroke through weighted gene co-expression network analysis ](</content/reactome-research-spotlight/244-identi",
+    "date": "2024-03-13T03:23:12-04:00",
+    "slug": "blogpost-23",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Discovering the anti-cancer phytochemical rutin against breast cancer through the methodical platform based on traditional medicinal knowledge",
+    "excerpt": "\n##  [ Discovering the anti-cancer phytochemical rutin against breast cancer through the methodical platform based on traditional medicinal knowledge ](</content/reactome-research-spotlight/242-discov",
+    "date": "2024-02-09T13:21:53-05:00",
+    "slug": "blogpost-24",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Machine learning-based analysis of cancer cell-derived vesicular proteins revealed significant tumor-specificity and predictive potential of extracellular vesicles for cell invasion and proliferation – A meta-analysis",
+    "excerpt": "\n##  [ Machine learning-based analysis of cancer cell-derived vesicular proteins revealed significant tumor-specificity and predictive potential of extracellular vesicles for cell invasion and prolife",
+    "date": "2024-01-12T12:00:24-05:00",
+    "slug": "blogpost-25",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "New Insights into Clinical Management for Sickle Cell Disease: Uncovering the Significant Pathways Affected by the Involvement of Sickle Cell Disease",
+    "excerpt": "\n##  [ New Insights into Clinical Management for Sickle Cell Disease: Uncovering the Significant Pathways Affected by the Involvement of Sickle Cell Disease ](</content/reactome-research-spotlight/237",
+    "date": "2023-11-29T15:19:05-05:00",
+    "slug": "blogpost-26",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "XMR: an explainable multimodal neural network for drug response prediction",
+    "excerpt": "\n##  [ XMR: an explainable multimodal neural network for drug response prediction ](</content/reactome-research-spotlight/235-xmr-an-explainable-multimodal-neural-network-for-drug-response-prediction>",
+    "date": "2023-11-02T12:57:25-04:00",
+    "slug": "blogpost-27",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "DNA methylation and 28-year cardiovascular disease risk in type 1 diabetes: the Epidemiology of Diabetes Complications (EDC) cohort study",
+    "excerpt": "\n##  [ DNA methylation and 28-year cardiovascular disease risk in type 1 diabetes: the Epidemiology of Diabetes Complications (EDC) cohort study ](</content/reactome-research-spotlight/233-dna-methyla",
+    "date": "2023-10-22T23:06:05-04:00",
+    "slug": "blogpost-28",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Computational drug repositioning of clopidogrel as a novel therapeutic option for focal segmental glomerulosclerosis",
+    "excerpt": "\n##  [ Computational drug repositioning of clopidogrel as a novel therapeutic option for focal segmental glomerulosclerosis ](</content/reactome-research-spotlight/232-computational-drug-repositioning",
+    "date": "2023-09-07T15:56:12-04:00",
+    "slug": "blogpost-29",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Genetic Networks of Alzheimer’s Disease, Aging, and Longevity in Humans",
+    "excerpt": "\n##  [ Genetic Networks of Alzheimer’s Disease, Aging, and Longevity in Humans ](</content/reactome-research-spotlight/229-genetic-networks-of-alzheimer-s-disease-aging-and-longevity-in-humans>)\n\nUsin",
+    "date": "2023-08-11T13:49:31-04:00",
+    "slug": "blogpost-30",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "In Vitro Zika Virus Infection of Human Neural Progenitor Cells: Meta-Analysis of RNA-Seq Assays",
+    "excerpt": "\n##  [ In Vitro Zika Virus Infection of Human Neural Progenitor Cells: Meta-Analysis of RNA-Seq Assays ](</content/reactome-research-spotlight/228-in-vitro-zika-virus-infection-of-human-neural-progeni",
+    "date": "2023-07-14T17:08:49-04:00",
+    "slug": "blogpost-31",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Severe COVID-19 in pregnancy has a distinct serum profile, including greater complement activation and dysregulation of serum lipids",
+    "excerpt": "\n##  [ Severe COVID-19 in pregnancy has a distinct serum profile, including greater complement activation and dysregulation of serum lipids ](</content/reactome-research-spotlight/227-severe-covid-19-",
+    "date": "2023-06-13T10:02:39-04:00",
+    "slug": "blogpost-32",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Label-Free Mass Spectrometry Proteomics Reveals Different Pathways Modulated in THP‐1 Cells Infected with Therapeutic Failure and Drug Resistance Leishmania infantum Clinical Isolates",
+    "excerpt": "\n##  [ Label-Free Mass Spectrometry Proteomics Reveals Different Pathways Modulated in THP‐1 Cells Infected with Therapeutic Failure and Drug Resistance Leishmania infantum Clinical Isolates ](</conte",
+    "date": "2023-06-13T09:48:16-04:00",
+    "slug": "blogpost-33",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Patient-derived cell-based pharmacogenomic assessment to unveil underlying resistance mechanisms and novel therapeutics for advanced lung cancer",
+    "excerpt": "\n##  [ Patient-derived cell-based pharmacogenomic assessment to unveil underlying resistance mechanisms and novel therapeutics for advanced lung cancer ](</content/reactome-research-spotlight/200-pati",
+    "date": "2023-04-11T13:42:02-04:00",
+    "slug": "blogpost-34",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Probable Treatment Targets for Diabetic Retinopathy Based on an Integrated Proteomic and Genomic Analysis",
+    "excerpt": "\n##  [ Probable Treatment Targets for Diabetic Retinopathy Based on an Integrated Proteomic and Genomic Analysis ](</content/reactome-research-spotlight/190-probable-treatment-targets-for-diabetic-ret",
+    "date": "2023-03-13T16:29:19-04:00",
+    "slug": "blogpost-35",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Common targetable inflammatory pathways in brain transcriptome of autism spectrum disorders and Tourette syndrome",
+    "excerpt": "\n##  [ Common targetable inflammatory pathways in brain transcriptome of autism spectrum disorders and Tourette syndrome ](</content/reactome-research-spotlight/189-common-targetable-inflammatory-path",
+    "date": "2023-02-14T08:23:23-05:00",
+    "slug": "blogpost-36",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Gene set enrichment analysis (GSEA) identifies upregulated carbohydrate metabolism pathways in tumors with high tumor-specific total mRNA expression (TmS)",
+    "excerpt": "\n##  [ Gene set enrichment analysis (GSEA) identifies upregulated carbohydrate metabolism pathways in tumors with high tumor-specific total mRNA expression (TmS) ](</content/reactome-research-spotligh",
+    "date": "2023-01-10T14:47:21-05:00",
+    "slug": "blogpost-37",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Circadian transcriptional pathway atlas highlights a proteasome switch in intermittent fasting",
+    "excerpt": "\n##  [ Circadian transcriptional pathway atlas highlights a proteasome switch in intermittent fasting ](</content/reactome-research-spotlight/186-reactome-pathway-gene-sets-in-the-msigdb-facilitated-i",
+    "date": "2022-12-12T11:41:07-05:00",
+    "slug": "blogpost-38",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
+  },
+  {
+    "title": "Post-infusion CAR TReg cells identify patients resistant to CD19-CAR therapy",
+    "excerpt": "\n##  [ Post-infusion CAR TReg cells identify patients resistant to CD19-CAR therapy ](</content/reactome-research-spotlight/180-reactome-spotlight>)\n\nReactome pathway enrichment analysis helps to pinp",
+    "date": "2022-10-18T10:26:35-04:00",
+    "slug": "blogpost-39",
+    "tags": [
+      "[\"content\"",
+      "\"reactome-research-spotlight\"]"
+    ]
   }
 ]

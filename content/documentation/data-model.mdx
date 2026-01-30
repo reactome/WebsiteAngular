@@ -1,0 +1,50 @@
+---
+title: Data Model
+category: "documentation"
+---
+
+##  Data Model 
+
+Life on the cellular level is a network of molecular interactions. Molecules are synthesized and degraded, undergo a bewildering array of temporary and permanent modifications, are transported from one location to another, and form complexes with other molecules. Reactome represents all of this complexity as reactions in which input physical entities are converted to output entities. These reactions can occur spontaneously or be facilitated by physical entities acting as catalysts, and their progress can be modulated by regulatory effects of other physical entities. Reactions are linked together by shared physical entities: a product from one reaction may be a substrate in another reaction and may catalyze yet a third. It is often convenient, if sometimes arbitrary, to group such sets of interlinked reactions into pathways.
+
+The functions of macromolecular entities such as proteins are often determined not only by their primary sequences but by chemical modifications they have undergone. In Reactome, unmodified and modified forms of a protein are distinct physical entities and the modification process is treated as an explicit reaction. A macromolecule’s function may depend on whether the molecule is free or complexed with specific other molecules. Reactome treats complexes as physical entities distinct from their components, and the multimerization events that build up complexes are modeled explicitly as reactions.
+
+Cellular compartments play a key role in biological processes. The segregation of molecules into different compartments often regulates the reactions in which those entities can participate or can be responsible for driving a reaction forward. In Reactome, a molecule in one compartment is distinct from that molecule in another compartment. Thus, extracellular and cytosolic glucose are different Reactome entities and, e.g., the movement of glucose across the plasma membrane is a reaction that converts the extracellular glucose entity into the cytosolic one.
+
+Many biochemical entities and processes appear redundant: there are two or more chemically distinct entities that can act more or less interchangeably. It is often useful to treat functionally equivalent protein isoforms, splice variants, and paralogues as a single entity, implying that any individual entity from the given set could fulfill the same role in a given situation. The Reactome data model allows this type of generalization, but does so explicitly in a way that allows us to trace specific functions back to the individual molecules covered by the generalization.
+
+The goal of the Reactome knowledgebase is to represent human biological processes, but many of these processes have not been directly studied in humans. Rather, a human event has been inferred from experiments on material from a model organism. In such cases, the model organism reaction is annotated in Reactome, the inferred human reaction is annotated as a separate event, and the inferential link between the two reactions is explicitly noted.
+
+Reactome uses a frame-based knowledge representation. The data model consists of classes (frames) that describe the different concepts (e.g., reaction, simple entity). Knowledge is captured as instances of these classes (e.g., “glucose transport across the plasma membrane”, “cytosolic ATP”). Classes have attributes (slots) that hold properties of the instances (e.g., the identities of the molecules that participate as inputs and outputs in a reaction).
+
+### Key data classes
+
+#### [PhysicalEntity](</content/schema/>)
+
+PhysicalEntities include individual molecules, multi-molecular complexes, and sets of molecules or complexes grouped together on the basis of shared characteristics. Molecules are further classified as genome-encoded (DNA, RNA, and proteins) or not (all others). Attributes of a PhysicalEntity instance capture the chemical structure of an entity, including any covalent modifications in the case of a macromolecule and its subcellular localization.
+
+PhysicalEntity instances that represent, e.g., the same chemical in different compartments, or different post-translationally modified forms of a single protein, share numerous invariant features such as names, molecular structure and links to external databases like UniProt or ChEBI. To enable storage of this shared information in a single place, and to create an explicit link among all the variant forms of what can also be seen as a single chemical entity, Reactome creates instances of the separate ReferenceEntity class. A [ReferenceEntity](</content/schema/ReferenceEntity>) instance captures the invariant features of a molecule. A PhysicalEntity instance is then the combination of a ReferenceEntity attribute (e.g., [Glycogen phosphorylase UniProt:P06737](</content/detail/R-HSA-71580>)) and attributes giving specific conditional information (e.g., localization to the cytosol and phosphorylation on serine residue 14).
+
+The PhysicalEntity class has subclasses to distinguish between different kinds of entity and to ensure data integrity while enabling different handling rules for different categories:
+
+**[EntityWithAccessionedSequence](</content/schema/EntityWithAccessionedSequence>) **– proteins and nucleic acids with known sequences.
+
+**[GenomeEncodedEntity](</content/schema/GenomeEncodedEntity>) **– a species-specific protein or nucleic acid whose sequence is unknown, such as an enzyme that has been characterized functionally but not yet purified and sequenced, e.g. [cytosolic 15-HEDH enzyme](</content/detail/R-HSA-2161674>)
+
+**[SimpleEntity](</content/schema/SimpleEntity>) **– other fully characterized molecules, e.g. [nucleoplasmic ATP](</content/detail/R-ALL-29358>) or [cytosolic glutathione](</content/detail/R-ALL-29450>)
+
+**[Complex](</content/schema/Complex>) **– a complex of two or more PhysicalEntities, e.g. [Trimerization of the FASL:FAS receptor complex](</content/detail/R-HSA-71050>)
+
+[**EntitySet**](</content/schema/EntitySet>)**** – a set of PhysicalEntities (molecules or complexes) that function interchangeably in a given situation, e.g., [Mature NOTCH heterodimer traffics to the plasma membrane](</content/detail/R-HSA-1912382>). This notation allows the collective properties of multiple individual entities to be described explicitly.
+
+PhysicalEntities are paired with molecular functions taken from the Gene Ontology molecular function controlled vocabulary to describe instances of biological catalysis. An optional ActiveUnit attribute indicates the specific domain of a protein or subunit of a complex that mediates the catalysis. If a PhysicalEntity has multiple catalytic activities, a separate CatalystActivity is created for each. This strategy allows the association of specific activities with specific variant forms of a protein or complex and also enables easy retrieval of all activities of a protein or all proteins capable of mediating a specific molecular function.
+
+#### **[Event](</content/schema/Event>)**
+
+Events – the conversion of input entities to output entities in one or more steps – are the building blocks used in Reactome to represent all biological processes. Two subclasses of Event are recognized, **[ReactionLikeEvent](</content/schema/ReactionLikeEvent>) **and **[Pathway](</content/schema/Pathway>)**. A ReactionlikeEvent is an event that converts inputs into outputs. A Pathway is any grouping of related Events. An event may be a member of more than one Pathway.
+
+The ReactionlikeEvent class is further divided into **[Reaction](</content/schema/Reaction>)** , **[BlackBoxEvent](</content/schema/BlackBoxEvent>)** , **[Polymerisation](</content/schema/Polymerisation>), **and **[Depolymerisation](</content/schema/Depolymerisation>)**. The Reaction class holds bona fide reactions with balanced inputs and outputs. The BlackBoxEvent class is used for ‘unbalanced’ reactions like protein synthesis or degradation, as well as ‘shortcut’ reactions for more complex processes that essentially convert inputs into outputs, e.g. the series of cyclical reactions involved in fatty acid biosynthesis. The De-/Polymerisation classes can hold reactions that describe the mechanics of a de-/polymerisation reaction, which is inherently ‘unbalanced’ due to the nature of a Polymer (that remains the ‘same’ entity even after adding or subtracting a unit).
+
+### Full specification of the Reactome data model
+
+A full specification of all Reactome classes, slots and a listing of all instances of each class is accessible from the **[Schema](</content/schema/>)** page on the top menu bar. There is also a [Data Model Glossary](<https://download.reactome.org/documentation/DataModelGlossary_V90.pdf>), giving more details on the usage of the various classes and slots.

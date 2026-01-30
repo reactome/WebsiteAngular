@@ -1,0 +1,105 @@
+---
+title: Pathways Overview JS
+category: "documentation"
+---
+
+##  Pathways Overview JS 
+
+Reactome's Fireworks JS widget is our pathways overview viewer in an ordinary JavaScript API. It is meant to be reused by third party resources in order to display Reactome pathways overview directly in their web pages and enable users to interact with them.
+
+### [__Reusing Reactome's Pathways Overview Widget?](<#reuse-pathways-widget>)
+
+To reuse our viewer you need to follow the following steps
+
+1\. Include the fireworks javascript dependency in you HTML header
+    
+    
+        <script type="text/javascript" language="javascript" src="https://reactome.org/FireworksJs/fireworks/fireworks.nocache.js"></script>
+            
+
+2\. Add a place holder in the body of your web page
+    
+    
+        <div id="fireworksHolder"></div>
+            
+
+3\. Set a proxy in your server under "/reactome" pointing to "https://reactome.org"
+
+4\. Create and initialise the pathways overview from your javascript code
+    
+    
+        //Creating the Reactome pathways overview widget
+        function onReactomeFireworksReady(){  //This function is automatically called when the widget code is ready to be used
+            var fireworks = Reactome.Fireworks.create({
+                "placeHolder" : "fireworksHolder",
+                "width" : 930,
+                "height" : 500
+            });
+    
+            //Adding different listeners
+    
+            fireworks.onFireworksLoaded(function (loaded) {
+                console.info("Loaded ", loaded);
+            });
+    
+            fireworks.onNodeHovered(function (hovered){
+                console.info("Hovered ", hovered);
+            });
+    
+            fireworks.onNodeSelected(function (selected){
+                console.info("Selected ", selected);
+            });
+        }
+            
+
+### [__FireworksJs API](<#API>)
+
+The current implementation supports the following listeners and methods:
+
+Method| Params| Description  
+---|---|---  
+**create** :: Constructor  
+Reactome.Fireworks.create(params); | **param** :: json object  
+{  
+'proxyPrefix' : string,  
+'placeHolder' : string,  
+'width' : int (optional),  
+'height' : int (optional)  
+} | Creates and returns a new Reactome.Fireworks object  
+**flagItems(String identifier)** :: void | Item identifier   
+**identifier** : string | Flags pathways where the identifier is found. It accepts main identifiers but also cross references, gene names and physical entity stable identifiers  
+**highlightNode(stId)** :: void | Item stable identifier  
+**stId** : string | Highlights the specified item if it exists in the fireworks  
+**resetAnalysis()** :: void |  | Resets the analysis overlay  
+**resetHighlight()** :: void |  | Clears the highlights in the fireworks  
+**resetSelection()** :: void |  | Clears the selection in the fireworks  
+**resize(width, height)** :: void | **width** : int  
+**height** : int | Resizes the viewport to the specified with and height  
+**selectNode(stId)** :: void | Item stable identifier  
+**stId** : string | Selects the specified item if it exists in the fireworks  
+**setAnalysisToken(token, resource)** :: void | Analysis token  
+**token** : string  
+Resource  
+**resource** : string | Overlays the analysis result corresponding to the specified (token, resource)  
+**showAll()** :: void |  | Shows all the pathways in the viewport  
+**onNodesFlaggedReset(function())** :: void | The function receives no parameters | The function is called when the user resets the flagged items  
+**onNodeSelected(function(obj))** :: void | **obj** is selected item:  
+{  
+'stId' : string,  
+'displayName' : string,  
+'schemaClass' : string,  
+} | The function is called when an object in the fireworks is selected by the user action  
+**onNodeHovered(function(obj))** :: void | **obj** is hovered item:  
+{  
+'stId' : string,  
+'displayName' : string,  
+'schemaClass' : string,  
+} | The function is called when an object in the fireworks is hovered by the user action  
+**onFireworksLoaded(function(id))** :: void | The db identifier of the loaded species in fireworks  
+**id** : string | The function is called when a fireworks is loaded in the viewer  
+**onAnalysisReset(function())** :: void | The function receives no parameters | The function is called when the users resets the analysis overlay  
+  
+fireworks.onAnalysisReset(function(){ /* your code here */ });  
+**onCanvasNotSupported(function())** :: void | The function receives no parameters. | The function is called when the browser doesn't support HTML5 Canvas so the viewer cannot be instantiated  
+  
+fireworks.onCanvasNotSupported(function(){ /* your code here */ });

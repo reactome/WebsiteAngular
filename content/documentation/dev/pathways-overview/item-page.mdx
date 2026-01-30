@@ -1,0 +1,56 @@
+---
+title: Pathways Overview
+category: "documentation"
+---
+
+##  Pathways Overview 
+
+The Pathways Overview is a genome-wide, hierarchical visualization of Reactome pathways in a space-filling graph. Each node represents a pathway, and the size of the node reflects the number of entities (proteins, small molecules, genes, etc) belonging to that pathway. The edges represent the connection between the different pathway nodes within the Reactome pathway hierarchy.
+
+[ __ ](<#MoreInfo>)
+
+##  [ More Info ](<#MoreInfo>)
+
+[ __ ](<#GetStarted>)
+
+##  [ Get Started ](<#GetStarted>)
+
+[ __ ](<#API>)
+
+##  [ API ](<#API>)
+
+[ __ ](<#Resources>)
+
+##  [ Resources ](<#Resources>)
+
+### [__More Info](<#MoreInfo>)
+
+The central node within each pathway burst is the parent (or top-level) pathway node. Each child (or sub level) pathway belonging to the pathway hierarchy is represented as a node, which is projected outwards from the central node and connected to the subsequent pathway in the hierarchy, until the lowest level pathway is reached. When the graph initially loads, the Pathways Overview display automatically fits all the nodes and edges into the existing area.
+
+The pathways overview retrieves the information directly from Reactome server, which mean that for third party resources it will be straight forward to include it in browser supporting CORS, or it will just work by adding a proxy mechanism in order to avoid SOP. Another important feature of the pathways overview that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</dev/analysis>) and later on have a look to the pathways overview [API](<#API>).
+
+### [__Get Started](<#GetStarted>)
+
+[ __ ](</dev/pathways-overview/js>)
+
+##  [ Fireworks JS ](</dev/pathways-overview/js>)
+
+[ __ ](</dev/pathways-overview/gwt>)
+
+##  [ Fireworks GWT ](</dev/pathways-overview/gwt>)
+
+### [__API](<#API>)
+
+[ __ ](</dev/pathways-overview/js#API>)
+
+##  [ Fireworks JS API ](</dev/pathways-overview/js#API>)
+
+[ __ ](</dev/pathways-overview/gwt#API>)
+
+##  [ Fireworks GWT API ](</dev/pathways-overview/gwt#API>)
+
+### [__Resources](<#Resources>)
+
+  * [__GWT Fireworks code](<https://github.com/reactome-pwp/fireworks>)
+  * [__GWT Fireworks exporter to JavaSript](<https://github.com/reactome-pwp/fireworks-js>)
+  * [__Reactome Pathways Portal code](<https://github.com/reactome-pwp>)

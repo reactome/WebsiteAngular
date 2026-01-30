@@ -1,0 +1,168 @@
+---
+title: Details Panel
+category: "documentation"
+---
+
+##  Details Panel 
+
+The Details Panel is the bottom right panel of the Pathway Browser. It displays the details of molecular objects or events when selected in the Pathway Diagram or Hierarchy. The details shown depend on the type of molecule or event selected. The Details Panel can be revealed/hidden using the middle Layout button. 
+
+The Details Panel has several tabs:
+
+### **The Description tab**
+
+This tab contains the defining details of the selected diagram object. These details vary, depending on what is selected in the diagram. For example, reaction details always describe the input and output molecules, and where relevant, the enzyme catalyst. Other items in the Description tab may include:
+
+Summation – a summary of the molecular event, often with background information and additional literature citations
+
+Preceding/Following Events - Links to reactions that precede/follow this reaction.
+
+Cellular Compartment - Identifies the cellular compartment for the reaction, with the associated Gene Ontology (GO) term.
+
+Inferred from another species - Reactome represents human biology. Wherever possible key references contain experimental data obtained using human reagents. If the only data available is from model organisms, a human event may be inferred from this data, if the Author, Curator and Reviewer agree that this inference is valid. The inferred event is labelled with an icon ‘Inferred from another species’ in the Hierarchy and in the Details panel, where there is a link to the molecular details of the event as it occurs in the model organism and the supporting literature references. A description of the inference process can be found here.
+
+Computationally Inferred To – This drop-down list represents the species available for computationally predicted pathways, inferred from Reactome’s human pathway. References – all events in Reactome include links to original research publications containing experimental data, the evidence that the event has been shown to exist.
+
+Authored - an expert biologist who contributed materials allowing construction of the reaction/pathway. All Reactome pathways are authored by an expert biologist.
+
+Reviewed – all Reactome pathways are peer reviewed by an expert biologist who verifies the content provided by the Author.
+
+Details are organised into panels. Panels that have a plus icon on the right hand side can be expanded to reveal further levels of detail by clicking on the icon or the detail name.
+
+![details output](/images/userguide/details/details_output.gif)
+
+Clicking the plus icon reveals further details:
+
+![further details](/images/userguide/details/further_details.gif)
+
+Panels that represent molecules have an icon on the left hand side that represents the molecule subtype, e.g. the protein icon is a green circle. Mouse-over the icon to see an explanation of the subtype. The icon is a selection button; clicking the icon replaces the current details with a new panel of details specific to the selected molecule, which is highlighted on the pathway diagram. 
+
+### **The Molecules Tab**
+
+This tab details all the molecules involved in the pathway displayed in the panel above. When a pathway name is highlighted in the hierarchy, the total number of molecules in that pathway is shown in a bubble on the molecules tab.
+
+Molecules are grouped into the subtypes Protein, Chemical Compound, Sequences (for DNA/RNA) and Other.
+
+If an item is selected in the diagram, the corresponding molecules are highlighted in the details panel, and the bubble next to the ‘Molecules’ tab enumerates the fraction of the total pathway molecules that are represented in that item.
+
+![molecules](/images/userguide/details/molecules.png)
+
+The Download button to the right of the pathway name and species buttons allows details of the molecules to be downloaded in several formats. Click on the buttons to select the fields you want included in the output file, and the format of the file. Click Download to save the file.
+
+### **The Structures Tab**
+
+The content displayed in this tab depends on the type of object or event selected in the pathway diagram. For Reactions it will display equivalent reaction diagrams from the [Rhea](<http://www.ebi.ac.uk/rhea/home.xhtml>) database if available:
+
+![Screen Shot 2017-07-24 at 3.40.03 PM.png](https://lh7-us.googleusercontent.com/g6iumaN6NuhJGuh0Lt2VlaAWYvtWXWkDAHAFydu-LqjKjXtiUzvVuAdIflUs6TRNAnksDhtMsfHuiBGYHBoednc7mOcuemJ--VZZRhBGzfLmbwl0Fj0EbjKl2ttq1RU7ftfYM4cNQr-FYkMXIRJBRw)
+
+The panel has a link top-left to details in the Rhea database. 
+
+The molecular structures are linked to the [ChEBI](<http://www.ebi.ac.uk/chebi/>) database:
+
+![Screen Shot 2017-07-24 at 3.41.20 PM.png](https://lh7-us.googleusercontent.com/6k3XSs45-pLn5HxU-u6P1gvTEmV61rKJDW278KuDMnRqeWS8HLhv05dbUwVVA1GflKWZ-iVufwn68vCFoYvYhd6rVZN_7GEikOLMcO6WHUCMCS1ck0EbYxzv1_SO8BD3n4fgOZNWDWHQyeP5LKjiGw)
+
+For Proteins or pathway objects that represent sets or complexes, corresponding structure information from [PDBe](<http://www.ebi.ac.uk/pdbe/>) is represented if available:
+
+![](https://lh7-us.googleusercontent.com/8GbH3m-qGBUHN56s2oTSlOTzUy5WSQvtXhou9wb2a32LeTU0Q-bEB7SFpeIoMHj5sSc-0Cp_YQ0MDKI3Zvj2Uy3Ray8xHyiRtBkzQCgYs7b5Eow9TBGwKHyVvpDLQp7ESW_VnzzD2YTg5kwNcPSYhQ)
+
+For simple molecules, the structures tab represents information from the ChEBI database:
+
+![](https://lh7-us.googleusercontent.com/7_W66YJKtBA9pvDOPgM_8h2LMgTuQ4GOaaxbUqPieS27oBiACQ0R6oxL1lUKuwoF6gBCvGBGLiOYkf9fkXsnQM5ihus1-MgTw6epeeC42aaORf2KJqfpW5NDmsiTv-JOOkuaeUGLE3EBPcbknUUv3w)
+
+### **The Expression Tab**
+
+This tab represents expression information obtained from the [Expression Atlas](<http://www.ebi.ac.uk/gxa/>). Note that at the moment, only information from the first 50 genes in the pathway is displayed or available for download from the Expression Atlas widget. 
+
+![expression atlas](/images/userguide/details/expression_atlas.gif)
+
+### **The Analysis Tab**
+
+This tab displays the results of analyses – see the section Reactome Tools for further details
+
+### **The Downloads Tab**
+
+The Downloads Tab contains buttons to start a download of the currently displayed pathway in several human-readable or computationally reusable formats. 
+
+![downloads](/images/userguide/details/downloads.gif)
+
+### Get Started:
+
+### **Exercises:**
+
+  1. Find the reaction ‘Activated type I receptor phosphorylates SMAD2/3 directly’. What pathway does it belong to?
+  2. In which cellular compartment does this reaction take place?
+  3. What is the GO molecular function associated with the catalyst?
+  4. What reference has experimental verification of this reaction?
+  5. Is this reaction predicted to occur in Canis familiaris? In C. elegans?
+  6. Is this event likely to occur in liver?
+  7. Are 3D structures available for TGF-beta1?
+
+### More info:
+
+**Pathway Description tab:**
+
+The Description tab for a pathway includes:
+
+  * pathway name
+  * species
+  * stable identifier
+  * pathway summation
+  * a drop-down menu to select species for which the pathway is computationally predicted to be conserved, where appropriate. A description of the inference process can be found here.
+  * the GO biological process term for the pathway, where appropriate. Expanding the panel provides a link-out to GO.
+  * literature references 
+
+**Reaction Description tab:**
+
+The Description tab for a reaction includes:
+
+  * reaction name
+  * a stable identifier
+  * pathway summation
+  * links to external identifiers, where appropriate. For instance, a reaction that describes a binding event may link out to IntAct records that corroborate the interaction. 
+  * Input/Output: Identifies the input/output molecules, sets or complexes for this reaction. Icons to the right of these named items link to further information in Reactome.
+  * Catalyst (when relevant): The protein or complex that catalyzes the reaction. The Gene Ontology molecular function term that represents the activity of a catalyst or transporter within the reaction will be listed. If the catalyst is a complex, the component that enables the reaction to occur will be identified as the ‘active unit’.
+  * Preceding event(s): A list of events that occur immediately before the event being viewed.
+  * Following event(s): A list of events that occur immediately after the event being viewed.
+  * Cellular compartment:
+  * Inferred from another species (when relevant): This indicates that event has not been experimentally demonstrated in humans, but has been inferred on the basis of data acquired for another species. 
+    * Clicking on the ‘+’ button to the right of the reaction name in this panel reveals the summation and literature references for the supporting reaction in the other species; 
+    * clicking on the reaction icon to the left of the reaction name in this panel switches the user to the corresponding pathway of the species from which the human reaction has been inferred. Note that the manually curated event in the non-human species is not currently displayed in this pathway; instead, a computationally-inferred reaction is shown. This will be addressed in future updates. The human representation of the pathway can be restored either by clicking on the back button of the browser or by re-selecting ‘Homo sapiens’ in the species selector in the top panel of the Reactome website.
+  * Computationally inferred to: Links to descriptions of the events in other species that are either confirmed to occur in a very similar way in both species, or have been electronically inferred. 
+  * Positively (or Negatively) regulated by: The protein or complex that regulates the reaction.
+  * References that contain experimental data verifying the reaction, with a link-out to PubMed, when applicable.
+  * Authors: The expert biologists that contributed materials that allowed this reaction to be created in Reactome.
+
+  * Reviewers: The expert biologists that verified the content for this pathway.
+
+**Physical Entity Description tab:**
+
+The details of any protein, small molecule, complex or set represented in a pathway diagram can be displayed in the Details panel by selecting the object within the diagram. Clicking a ‘+’ or ‘-‘ icon associated with the different displayed fields within the Detail panel tabs will show or hide more information about the protein, small molecule, complex and set.
+
+The Description tab may display include the following information depending upon what physical entity is selected:
+
+  * Link to corresponding entries in other databases: Cross-reference to identifiers used for this molecule in external reference databases, with hyperlinks to the record.
+  * Cellular compartment: The cellular compartment that contains this molecule, with hyperlink to the corresponding GO term.
+  * Computationally inferred orthologues: Lists equivalent molecules in other species if these have been inferred to exist. A description of the inference process can be found here.
+  * Components: If a complex is selected in the diagram, its components are listed here.
+  * Produced by: If a complex is selected in the diagram, this tab in the details panel will list all the reactions in Reactome that produce it as an output. Clicking on the ‘+’ reveals summation and literature references for these reactions.
+  * Consumed by events: If a complex is selected in the diagram, this tab in the details panel will list all reactions in Reactome that use it as an input. Clicking on the ‘+’ reveals summation and literature references for these reactions.
+
+**Download tab:**
+
+The Download tab provides options for the user to download different files types for the selected pathways. These files include:
+
+  * SBML: An exchange format used by systems biologists for their models.
+  * SBGN: An exchange format used to represent pathway and network diagrams.
+  * BioPAX2: An exchange format used by systems biologists for their models.
+  * BioPAX3: An exchange format used by systems biologists for their models.
+  * PDF: Text dump of the pathway, organized to look like a research report.
+  * Word: A document format compatible with Microsoft and other word processor software.
+  * Protege: A format used for ontology exchange.
+
+[SBML](<http://sbml.org/Main_Page>),[ SBGN](<http://www.sbgn.org/Main_Page>) and[ BioPAX](<http://www.biopax.org>) are exchange formats of interest to bioinformaticians.[ Word](<http://en.wikipedia.org/wiki/Microsoft_Word>) and[ PDF](<http://en.wikipedia.org/wiki/Portable_Document_Format>) are familiar document formats, providing you with a convenient "document" of the pathway.[ Protégé](<http://protege.stanford.edu>) is an extensible, platform-independent environment for creating and editing ontologies and knowledge bases, this download is likely to be of interest to those wishing to extend Reactome functionality.
+
+The complete Reactome textbook of biological processes in PDF or RTF format, the complete set of human reactions in Reactome (in SBML or BioPAX level 2 or 3 format), and a list of human protein-protein interaction pairs are available to download from the Download page, linked to the Menu Bar on the Reactome homepage.
+
+To find out about how Reactome generates SBML, see[ SBML At Reactome](<http://wiki.reactome.org/index.php/SBML_At_Reactome>).
+
+For general information about SBML,[ click here](<http://sbml.org/index.psp>). For more information about BioPAX[ click here](<http://www.biopax.org>).

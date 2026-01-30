@@ -1,0 +1,35 @@
+---
+title: Untitled
+category: "about"
+---
+
+### The Reactome consortium and host institutions OICR, EMBL-EBI, NYU and OHSU are committed to the long-term development and maintenance of the Reactome database.
+
+#### Reactome content:
+
+  * Reactome pathway annotation is fully stored in a mysql database and exported with each release in a simple text file format along with a Protege file that describes the data model of the mysql database.
+  * Content is also exported in a variety of community standards including BioPAX, SBML and PSIMITAB, among others. These files are XML-based text files with version information embedded. These files follow community standards that are well maintained by individual communities. 
+  * Reactome continuously supports and updates file export formats to be in line with major open-data standards and changing user requirements. Wherever possible, Reactome strives to keep archived data and files compatible with current formats and uses. 
+  * Changes to annotation content are tracked by StableIdentifierHistory, UpdateTracker and DeletedInstances, ensuring content stays up to date and allowing users to track changes over time
+  * Reactome uses Github to manage software source code and actively uses label, version and branching to manage development. 
+  * Reactome data and resources are available for [direct download](<https://reactome.org/download-data>) from the Reactome website and from the [GitHub](<https://github.com/reactome/>) [r](<https://github.com/reactome-pwp/>)epository.
+
+#### Reactome data, code and tools are robustly safeguarded by many levels of backup:
+
+  * The Reactome dataset is replicated across two independent servers hosted by AWS. 
+  * Our legacy data for each release is stored in an AWS Simple Storage System (S3) bucket, allowing regeneration and remounting of the database or rollback to earlier versions if necessary. 
+  * Legacy data and documentation for each release is additionally stored in the [Reactome Community](<https://zenodo.org/communities/reactome/records?q=&l=list&p=1&s=10&sort=newest>) on Zenodo
+  * Reactome source code and the full data schema is preserved and available on Github. Archiving of Reactome code in the [Zenodo Reactome Community](<https://zenodo.org/communities/reactome/records?q=&l=list&p=1&s=10&sort=newest>) will be implemented by May 2026.
+  * Reactome is Dockerizing all components of the architecture and offloading computational tasks to AWS services. 
+  * Zabbix monitors all major services hosted on our servers
+  * Multiple personnel across the host institutions have the expertise required to restore services and regenerate the Reactome website
+
+#### Long-term preservation plan:
+
+Reactome has a 20+ year history of stable funding from varied sources, providing stability and continuity. In recognition of its value to the bioinformatics community and its long-term stability, Reactome has been recognized as an ELIXIR Core Data Resource and as a Global Core Biodata Resource. 
+
+In the unlikely event that Reactome were to lose funding or otherwise cease operating, existing content and tools would be preserved in the latest format on the public website if possible and would persist independently in other resources that make use of Reactome content such as WikiPathways and GO-CAM models. 
+
+Reactome source code is preserved and available on GitHub. Legacy data and documentation, including the full data schema and internal process documents such as the Reactome Curation Guide and the User’s Guide, are preserved in the Reactome Community on Zenodo ensuring future interpretability and reusability of stored digital content.
+
+In the event that Reactome can no longer be actively maintained, OICR is committed to maintaining static copies of the Reactome database in internet-accessible storage repositories, as documented [here](<https://download.reactome.org/documentation/OICRcommitment.pdf>).

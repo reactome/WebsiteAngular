@@ -1,6 +1,6 @@
 <h1 class="news-title">Latest News</h1>
 <ul class="news-list">
     <li *ngFor="let article of newsList" class="news-list-option">
-        <a class="news-link" [href]="`${navOptions['about']?.dropdownLinks?.['news']?.link}/${article.slug}` || '/content/latest-news'" >{{ formatD(article.date) }} - {{ article.title }}</a>
+        <a class="news-link" [href]="(navOptions['about']?.dropdownLinks?.['news']?.link || '/content/latest-news') + '/' + article.slug" >{{ formatD(article.date) }} - {{ article.title }}</a>
     </li>
 </ul>
