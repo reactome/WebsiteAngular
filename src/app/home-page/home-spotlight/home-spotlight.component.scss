@@ -1,6 +1,12 @@
 .home-spotlight-link {
-    text-decoration: none;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
+  text-decoration: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.home-spotlight-text {
+  ::ng-deep a {
+    color: var(--on-primary);
+  }
 }
