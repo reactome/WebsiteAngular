@@ -6,6 +6,8 @@ import { ArticleIndexItem } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { MatIcon } from "@angular/material/icon";
 import { ActivatedRoute } from '@angular/router';
+import stripFirstH from '../../../utils/stripFirstH';
+import { marked } from 'marked';
 
 
 @Component({
@@ -50,7 +52,7 @@ export class ArticlePageComponent {
     this.loading = true;
     // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getAllArticles(path).subscribe({
-      next: (result) => {
+      next: async (result) => {
         this.articles = result.map((item: ArticleIndexItem) => ({
           title: item.title,
           date: new Date(item.date),
@@ -59,6 +61,12 @@ export class ArticlePageComponent {
           slug: item.slug,
           excerpt: item.excerpt
         } ));
+
+        this.articles.forEach( async (article) => {
+          let html = await marked(article?.excerpt || '');
+          let renderedContent = stripFirstH(html);
+          article.excerpt = renderedContent;
+        })
         this.loading = false;
       },
       error: (err) => {

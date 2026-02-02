@@ -6,7 +6,7 @@ import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { marked } from 'marked';
-import stripFirstH1 from '../../../utils/stripFirstH1';
+import stripFirstH from '../../../utils/stripFirstH';
 
 @Component({
   selector: 'app-article',
@@ -48,7 +48,7 @@ export class ArticleComponent implements OnInit {
     this.contentService.getArticle(path,slug).subscribe({
       next: async (article) => {
         let html = await marked(article?.body || '');
-        let renderedContent = stripFirstH1(html);
+        let renderedContent = stripFirstH(html);
 
         this.article = {
           title: article?.title || '',

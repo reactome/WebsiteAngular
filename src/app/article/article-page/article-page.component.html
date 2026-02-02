@@ -29,7 +29,7 @@
                 <a [href]="'/' + articlePath + '/' + article.slug">{{ article.title }}</a>
               </h2>
               @if (article.excerpt) {
-                <p class="excerpt">{{ article.excerpt }}</p>
+                <p class="excerpt" [innerHTML]="article.excerpt"></p>
               }
               <a [href]="'/' + articlePath + '/' + article.slug" class="read-more">
                 Read more

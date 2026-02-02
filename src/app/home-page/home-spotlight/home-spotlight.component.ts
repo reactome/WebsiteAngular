@@ -5,7 +5,7 @@ import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
 import { marked } from 'marked';
-import stripFirstH1 from '../../../utils/stripFirstH1';
+import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
 import { NavOption } from '../../../types/link';
 
@@ -50,7 +50,7 @@ export class HomeSpotlightComponent {
           next: async (article) => {
             console.log("Spotlight article loaded:", article);
             let html = await marked(article?.body || '');
-            this.renderedContent = truncateHtml(stripFirstH1(html), 150);
+            this.renderedContent = truncateHtml(stripFirstH(html), 150);
           }
         });
       },

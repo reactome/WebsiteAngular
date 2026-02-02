@@ -3,7 +3,7 @@ import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
-import stripFirstH1 from '../../utils/stripFirstH1';
+import stripFirstH from '../../utils/stripFirstH';
 
 @Component({
   selector: 'app-page',
@@ -50,7 +50,7 @@ export class PageComponent {
         if (page) {
           this.page = page;
           let html = await marked(page.body);
-          this.renderedContent = stripFirstH1(html);
+          this.renderedContent = stripFirstH(html);
           console.log("Page loaded:", page.body);
           this.loading = false;
         } else {
