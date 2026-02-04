@@ -1,0 +1,342 @@
+@use '@angular/material' as mat;
+
+:host {
+  width: 100%;
+}
+
+.component-tree {
+  --gap: 4px;
+  --padding: 0px;
+  --connector-width: 24px;
+  --connector-height: 24px;
+  --max-width: 150px;
+
+  padding: var(--padding);
+
+  @include mat.tree-overrides((
+    node-text-weight: 400,
+    node-text-size:14px
+  ));
+}
+
+.component-tree-invisible {
+  display: none;
+}
+
+/*
+ * This padding sets alignment of the nested nodes.
+ */
+.component-tree .mat-nested-tree-node div[role=group] {
+  padding-left: 28px;
+}
+
+
+.mat-tree-node {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  cursor: pointer;
+  padding-left: var(--gap);
+  margin-left: calc(-1 * var(--gap));
+  padding-right: var(--padding);
+}
+
+.mat-tree-node:hover {
+  background: var(--surface2);
+  border-radius: 50px;
+}
+
+.highlight {
+  background-color: var(--primary-container);
+  border-radius: 50px;
+}
+
+.left {
+  display: flex;
+  flex: 0 1 auto; /* Default flex properties for left element */
+  align-items: center;
+  gap: 5px;
+  min-width: 200px;
+
+}
+
+
+.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.right {
+  flex: 0 1 auto; /* Default flex properties for right element */
+  display: flex;
+  gap: 5px;
+
+  font-size: 12px;
+  line-height: 12px;
+  letter-spacing: 0.4px;
+}
+
+
+.mat-tree {
+  --mat-tree-node-min-height: 20px;
+}
+
+.toggle-icon-container {
+  display: flex;
+  width: 12px;
+  height: 12px;
+  align-items: center;
+}
+
+.species {
+  padding: 0 8px;
+  background: var(--primary-container);
+  border-radius: 10px;
+  align-content: center;
+  color: var(--on-primary-container);
+  max-width: var(--max-width);
+}
+
+
+.shared-style {
+  padding: 0 8px;
+  background: var(--tertiary-container);
+  border-radius: 10px;
+  align-content: center;
+  color: var(--on-tertiary-container);
+}
+
+.compartment {
+  @extend .shared-style;
+  max-width: var(--max-width);
+}
+
+.molecule {
+  @extend .shared-style;
+}
+
+.goTo-container
+{
+  padding: 0;
+  gap: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50px;
+  background: var(--primary);
+
+  .custom-icon {
+    color: var(--on-primary);
+    display: flex;
+    padding: 4px;
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+}
+
+.select.button {
+  background: var(--primary);
+  color: var(--on-primary);
+  --size: 20px;
+  --touch-size: 20px;
+  --icon-ratio: 0.8;
+
+  @include mat.icon-button-overrides((
+    state-layer-size: var(--size, 40px),
+    icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
+  ));
+
+  .mat-icon {
+    width: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
+    height: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
+    font-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
+  }
+
+}
+
+:host ::ng-deep .select.button .mat-mdc-button-touch-target{
+  width: var(--touch-size, 48px);
+  height: var(--touch-size, 48px);
+}
+
+
+.symbol-icon {
+  display: flex;
+  width: var(--connector-width);
+  height: var(--connector-height);
+  flex-shrink: 0;
+}
+
+
+/* Connector styles*/
+.mat-nested-tree-node {
+  position: relative;
+}
+
+.connector-container {
+  position: absolute;
+  top: 0;
+  height: var(--connector-height);
+  display: flex;
+
+  left: calc(-1 * (var(--connector-width) + var(--gap)) * var(--level, 1));
+  gap: var(--gap);
+
+}
+
+.connector {
+  width: var(--connector-width);
+  height: var(--connector-height);
+}
+
+.details-connector-container {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+
+  left: calc(-1 * (var(--connector-width) + var(--gap)) * var(--level, 1));
+  gap: var(--gap);
+
+  .connector:not(:last-child) {
+    width: var(--connector-width);
+    height: 100%
+  }
+
+}
+
+.connector[data-shape] {
+  background: var(--on-surface);
+
+  &.is {
+    background: var(--primary);
+  }
+
+  &[data-shape='I'] {
+    mask: url('../../../../assets/connector/solid-I.svg');
+  }
+
+  &[data-shape='T'] {
+    mask: url('../../../../assets/connector/solid-T.svg');
+  }
+
+  &[data-shape='L'] {
+    mask: url('../../../../assets/connector/solid-L.svg');
+  }
+
+  &.member {
+    &[data-shape='I'] {
+      mask: url('../../../../assets/connector/dashed-I.svg');
+    }
+
+    &[data-shape='T'] {
+      mask: url('../../../../assets/connector/dashed-T.svg');
+    }
+
+    &[data-shape='L'] {
+      mask: url('../../../../assets/connector/dashed-L.svg');
+    }
+  }
+
+  &.candidate {
+    &[data-shape='I'] {
+      mask: url('../../../../assets/connector/mini-dashed-I.svg');
+    }
+
+    &[data-shape='T'] {
+      mask: url('../../../../assets/connector/mini-dashed-T.svg');
+    }
+
+    &[data-shape='L'] {
+      mask: url('../../../../assets/connector/mini-dashed-L.svg');
+    }
+  }
+}
+
+.dashedIConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/dashed-I.svg');
+}
+
+.dashedTConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/dashed-T.svg');
+}
+
+.dashedLConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/dashed-L.svg');
+}
+
+.solidIConnector, {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/solid-I.svg');
+}
+
+.solidTConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/solid-T.svg');
+
+}
+
+.solidLConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/solid-L.svg');
+}
+
+.miniDashedIConnector, {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/mini-dashed-I.svg');
+
+}
+
+.miniDashedTConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/mini-dashed-T.svg');
+
+}
+
+.miniDashedLConnector {
+  background-color: var(--on-surface);
+  mask: url('../../../../assets/connector/mini-dashed-L.svg');
+}
+
+.otherConnector {
+  background-color: var(--primary);
+  mask: url('../../../../assets/connector/solid-L.svg');
+}
+
+
+/* Divider styles */
+//.composition-container {
+//  @include mat.divider-overrides((
+//    color: var(--outline-variant),
+//    width: 2px
+//  ));
+//}
+
+
+
+
+
+/* Take full height of the parent to ensure branch line(connector) is working in Firefox and Safari*/
+.details-tree {
+  width: 100%;
+}
+
+.details-group {
+  display: flex;
+}
+
+.button {
+  @include mat.icon-button-overrides((
+    state-layer-size: 20px
+  ))
+}
+
+.highlight-tag {
+  padding: 4px 4px
+}

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "WebsiteAngular": {
+    "reactome": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/website-angular",
+            "outputPath": "dist/reactome",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -29,16 +29,6 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "content",
-                "output": "/content"
-              },
-              {
-                "glob": "**/*",
-                "input": "src/assets",
-                "output": "/assets"
               }
             ],
             "styles": [
@@ -72,15 +62,12 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
           "configurations": {
             "production": {
-              "buildTarget": "WebsiteAngular:build:production"
+              "buildTarget": "reactome:build:production"
             },
             "development": {
-              "buildTarget": "WebsiteAngular:build:development"
+              "buildTarget": "reactome:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -110,6 +97,7 @@
           }
         }
       }
-    }
+    },
+    
   }
 }

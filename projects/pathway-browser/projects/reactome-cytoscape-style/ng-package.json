@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
+  "dest": "../../dist/reactome-cytoscape-style",
+  "lib": {
+    "entryFile": "src/public-api.ts"
+  },
+  "assets": [
+    {
+      "input": "types",
+      "glob": "*",
+      "output": "**/*"
+    },
+    {
+      "input": "src/assets/",
+      "glob": "**/*",
+      "output": "/assets/"
+    }
+  ]
+}
