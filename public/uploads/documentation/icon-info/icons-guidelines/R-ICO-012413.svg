@@ -1,0 +1,64 @@
+<svg width="48" height="24" viewBox="0 0 48 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="R-ICO-012413">
+<g id="alpha-Tocopherol">
+<g id="LEFT_CORNER">
+<mask id="mask0_938_24630" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="10" height="24">
+<rect id="MASK" width="10" height="24" transform="matrix(-1 0 0 1 10 0)" fill="white"/>
+</mask>
+<g mask="url(#mask0_938_24630)">
+<g id="CORNER">
+<mask id="path-2-outside-1_938_24630" maskUnits="userSpaceOnUse" x="0" y="0" width="12" height="24" fill="black">
+<rect fill="white" width="12" height="24"/>
+<path d="M2 12C2 12 6.04738 5.90524 8 2H10V22H8C6.04738 18.0948 2 12 2 12Z"/>
+</mask>
+<path d="M2 12C2 12 6.04738 5.90524 8 2H10V22H8C6.04738 18.0948 2 12 2 12Z" fill="#E02DA0"/>
+<path d="M2 12C2 12 6.04738 5.90524 8 2H10V22H8C6.04738 18.0948 2 12 2 12Z" stroke="url(#paint0_linear_938_24630)" stroke-width="4" stroke-miterlimit="3.99933" stroke-linejoin="round" mask="url(#path-2-outside-1_938_24630)"/>
+</g>
+</g>
+</g>
+<g id="RIGHT CORNER">
+<mask id="mask1_938_24630" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="38" y="0" width="10" height="24">
+<rect id="MASK_2" width="10" height="24" transform="matrix(1 -8.74228e-08 -8.74228e-08 -1 38 24)" fill="white"/>
+</mask>
+<g mask="url(#mask1_938_24630)">
+<g id="CORNER_2">
+<mask id="path-4-outside-2_938_24630" maskUnits="userSpaceOnUse" x="36" y="0" width="12" height="24" fill="black">
+<rect fill="white" x="36" width="12" height="24"/>
+<path d="M46 12C46 12 41.9526 5.90524 40 2H38V22H40C41.9526 18.0948 46 12 46 12Z"/>
+</mask>
+<path d="M46 12C46 12 41.9526 5.90524 40 2H38V22H40C41.9526 18.0948 46 12 46 12Z" fill="#E02DA0"/>
+<path d="M46 12C46 12 41.9526 5.90524 40 2H38V22H40C41.9526 18.0948 46 12 46 12Z" stroke="url(#paint1_linear_938_24630)" stroke-width="4" stroke-miterlimit="3.99933" stroke-linejoin="round" mask="url(#path-4-outside-2_938_24630)"/>
+</g>
+</g>
+</g>
+<g id="alpha TOH">
+<g clip-path="url(#clip0_938_24630)">
+<mask id="path-5-outside-3_938_24630" maskUnits="userSpaceOnUse" x="8" y="0" width="32" height="24" fill="black">
+<rect fill="white" x="8" width="32" height="24"/>
+<path d="M8 2H40V22H8V2Z"/>
+</mask>
+<path d="M8 2H40V22H8V2Z" fill="#E02DA0"/>
+<text id="Chemical" fill="white" xml:space="preserve" style="white-space: pre" font-family="Arial" font-size="12" font-weight="bold" letter-spacing="0em"><tspan x="8.31445" y="10.6602">alpha&#10;</tspan><tspan x="11.4375" y="21.6602">TOH</tspan></text>
+</g>
+<path d="M8 2V4H40V2V0H8V2ZM40 22V20H8V22V24H40V22Z" fill="url(#paint2_linear_938_24630)" mask="url(#path-5-outside-3_938_24630)"/>
+</g>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_938_24630" x1="6" y1="2" x2="6" y2="22" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E02DA0"/>
+<stop offset="1" stop-color="#4A002E"/>
+</linearGradient>
+<linearGradient id="paint1_linear_938_24630" x1="42" y1="2" x2="42" y2="22" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E02DA0"/>
+<stop offset="1" stop-color="#4A002E"/>
+</linearGradient>
+<linearGradient id="paint2_linear_938_24630" x1="24" y1="2" x2="24" y2="22" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E02DA0"/>
+<stop offset="1" stop-color="#4A002E"/>
+</linearGradient>
+<clipPath id="clip0_938_24630">
+<path d="M8 2H40V22H8V2Z" fill="white"/>
+</clipPath>
+</defs>
+</svg>

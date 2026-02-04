@@ -32,7 +32,7 @@ The Analysis Web-Service is token based, so for every analysis request a TOKEN i
 As mentioned afore, Reactome provides an overrepresentation analysis, an expression data analysis and a species comparison tool. For overrepresentation and expression analysis, the service can automatically detect which one to perform depending on the format of the submitted data (see [Table 1](<#AnalysisFormat>)). If the data contains expression values in a tab-separated-values (TSV) format, then the expression analysis will be executed, otherwise the overrepresentation analysis is the executed one.
 
 Table 1: Analysis input data formats  
-![analysis format](/images/devguide/analysis/analysis_format.png)
+![analysis format](/uploads/documentation/dev/analysis/analysis_format.png)
 
 Data must be submitted in a format that includes a first row of column headers. The header for column 1 must start with the # symbol. Column 1 must contain protein, compound or other suitable identifiers, such as OMIM IDs. Identifiers can only be placed in column 1. A one-column file is sufficient for pathway over-representation analysis. For expression analysis, columns 2 and onwards must contain numeric values, with no alphabetical characters. Decimals must use the full stop (period) symbol, not commas. Columns must be tab-delimited (this format is an option when saving from most spreadsheet programs such as Excel).
 
@@ -114,7 +114,7 @@ Both of the previous commands will produce the result shown in [Figure 1](<#Anal
 
 Figure 1: Analysis result example
 
-![analysis result example 01](/images/devguide/analysis/analysis_result_example_01.png)
+![analysis result example 01](/uploads/documentation/dev/analysis/analysis_result_example_01.png)
 
 Let’s focus on the retrieved **pathways** list. It only contains one pathway because in the command we have specified **\?pageSize\=1\ &page\=1** and that forces the analysis to provide **ONLY** the most significant pathway for the submitted data. If you want the first 10 results, the way of doing it would be **\?pageSize\=10\ &page\=1**. To see the results from 11 to 20 use **\?pageSize\=10\ &page\=2**. The reason for this **paging** mechanism is to avoid overloading the client with the full set of results. Here we are querying from the command line and probably the memory usage isn’t an issue, but please consider web-clients. **Important note:** If **pageSize** and **page** are not specified, then the whole set of results is retrieved to the client.
 
@@ -127,7 +127,7 @@ As illustrated in [Figure 2](<#AnalysisTokenMethods>), the analysis service prov
 
 Figure 2: All the token-based methods provided by the analysis service
 
-![token methods](/images/devguide/analysis/token_methods.png)
+![token methods](/uploads/documentation/dev/analysis/token_methods.png)
 
 The **summary.type** provides information about the type of the analysis performed and it can be OVERREPRESENTATION, EXPRESSION or SPECIES_COMPARISON.
 
@@ -174,7 +174,7 @@ As you can see in the [Figure 3](<#HTMLExample01Figure>), the resulting page is 
 
 Figure 3: Example HTML
 
-![example 01](/images/devguide/analysis/example_01.png)
+![example 01](/uploads/documentation/dev/analysis/example_01.png)
 
 The next step is to write the code that connects to the analysis service and presents the data back to the client. Please note that we will use the **/identifiers/url/projection** method in order to request the analysis of [data](<https://www.ebi.ac.uk/pride/ws/archive/protein/list/assay/27929.acc>) stored in the PRIDE repository.
 
@@ -242,7 +242,7 @@ In the example, a table is created with the retrieved set of pathways ([Figure 4
 
 Figure 4: Example HTML with results already loaded
 
-![example 02](/images/devguide/analysis/example_02.png)
+![example 02](/uploads/documentation/dev/analysis/example_02.png)
 
 But this example doesn’t look pretty! Yes, we know but we are explaining how to access Reactome data. Please have a look to the [CSS](<http://www.w3schools.com/css/>) documentation and start learning how to apply the styles to make the look fit with your expectations.
 

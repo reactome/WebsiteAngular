@@ -1,6 +1,6 @@
 ---
 title: ReactomeFIVIz
-category: "tools"
+category: "content"
 ---
 
 ##  ReactomeFIVIz 
@@ -45,7 +45,7 @@ For an example how we use Reactome FIs for cancer data analysis, please see our 
 
 ReactomeFIViz app 6 needs Cytoscape 3.7.0 or above. If you have not installed Cytoscape 3.7.0 or above, please download it from Cytoscape's web site: [http://www.cytoscape.org](<http://www.cytoscape.org/>). After launching Cytoscape, use menu "Apps/App Manager" to open the "App Manager" dialog, and search for "ReactomeFI". You should see the ReactomeFIViz app listed in the middle panel (See the Figure below. You may see a different version number. **Note: The listed name of this app is "ReactomeFIPlugIn"** , which is the original name of the app.). Choose the app, and then click the "Install" button at the bottom of the dialog. Follow the procedures to finish the installation.
 
-![](/images/userguide/fiviz/InstallReactomeFIVizFromAppstore.png)
+![](/uploads/tools/reactome-fiviz/InstallReactomeFIVizFromAppstore.png)
 
 Install ReactomeFIViz app From App Store
 
@@ -57,13 +57,13 @@ Using the pathway visualization and analysis features, you can load pathways in 
 
   1. Load Reactome pathways: Use menu "Apps/Reactome FI/Reactome Pathways" to load pathways into Cytoscape. The loaded pathways are organized in a hierarchical way as in the Reactome web application ([https://reactome.org/PathwayBrowser/](</PathwayBrowser>)), and listed in the left side "Control Panel" in the tab called "Reactome". 
 
-![](/images/userguide/fiviz/ReactomePathways_4.png)
+![](/uploads/tools/reactome-fiviz/ReactomePathways_4.png)
 
 Reactome Pathways
 
   2. View pathways in Reactome: After selecting a pathway in the pathway hierarchy, you can choose "View Reactome Source" from the popup menu (right click in Windows or Control-click in Macs to get the popup menu) 
 
-![](/images/userguide/fiviz/PathwayPopup_4.png)
+![](/uploads/tools/reactome-fiviz/PathwayPopup_4.png)
 
 Pathway Popup Menu
 
@@ -72,27 +72,27 @@ to view its detailed annotation in Reactome. Or you can choose "View in Reactome
   3. Search pathways: Choose "Search" in the popup menu to bring up the search dialog. The found pathway(s) will be highlighted in blue in the pathway tree.   
 **Note** : Search will be against all loaded pathways, not limited to the selected pathway and its contained sub-pathways. 
 
-![](/images/userguide/fiviz/PathwaySearch_4.png)
+![](/uploads/tools/reactome-fiviz/PathwaySearch_4.png)
 
 Search Pathways
 
   4. Open Reactome Reacfoam: The Reacfoam view provides a holistic view of all (exclude disease) human pathways in the Reactome database. Choose "Open Reactome Reacfoam" in the popup menu to open the Reactome Reacfoam in the default browser.   
 
-![Open Reactome Reacfoam](/images/userguide/fiviz/OpenReacfoamPopup.png)
+![Open Reactome Reacfoam](/uploads/tools/reactome-fiviz/OpenReacfoamPopup.png)
 
 Open Reacfoam
 
 **Note** : Pressing your mouse and then holding it to a pathway box will select the pathway in the tree of ReactomeFIV automatically. 
 
-![](/images/userguide/fiviz/Reacfoam.png)
+![](/uploads/tools/reactome-fiviz/Reacfoam.png)
 
 Reactome Reacfoam
 
   5. Open pathway diagram: Pathways in Reactome are organized in a hierarchical way. Not all pathways have their own pathway diagrams. A smaller pathway (called sub-pathway) may be drawn in a bigger pathway, which has its own pathway diagram. Most of top-level pathways (called modules or super pathways) are used to organize related pathways (e.g. Disease, Signaling Transduction), and therefore contain only rectangle boxes representing canonical pathways.
-    1. **Show Diagram** : If a selected pathway has its own pathway diagram, you can choose "Show Diagram" in the popup menu to open its pathway diagram into the central Cytoscape desktop.
-    2. **View in Diagram** : If a selected pathway is laid-out as a sub-pathway in a bigger one, you can choose "View in Diagram" in the popup menu to view its drawing in its container pathway. Reactions contained by the selected pathway will be highlighted in blue after the diagram is opened. For example, see pathway "G1/S DNA Damage Checkpoints" opened in pathway "Cell Cycle Checkpoints" below:  
+     1. **Show Diagram** : If a selected pathway has its own pathway diagram, you can choose "Show Diagram" in the popup menu to open its pathway diagram into the central Cytoscape desktop.
+     2. **View in Diagram** : If a selected pathway is laid-out as a sub-pathway in a bigger one, you can choose "View in Diagram" in the popup menu to view its drawing in its container pathway. Reactions contained by the selected pathway will be highlighted in blue after the diagram is opened. For example, see pathway "G1/S DNA Damage Checkpoints" opened in pathway "Cell Cycle Checkpoints" below:  
 
-![](/images/userguide/fiviz/PathwayDiagram_4.png)
+![](/uploads/tools/reactome-fiviz/PathwayDiagram_4.png)
 
 Pathway Diagram
 
@@ -101,13 +101,13 @@ Pathway Diagram
   7. Export diagram: Displayed diagram can be exported as a PDF, JPG or PNG file. Use "Export Diagram" from the popup menu to export the displayed diagram.
   8. View Reactome Source or View in Reactome: Select an object, and then right-click (or control click) to get the popup menu. Choose "View Reactome Source" to view the detailed annotation for the selected object in a table (See Figure below for an example). Or choose "View in Reactome" to view the selected object in the Reactome web application.  
 
-![](/images/userguide/fiviz/ReactomeInstanceView.png)
+![](/uploads/tools/reactome-fiviz/ReactomeInstanceView.png)
 
 Reactome Instance View
 
   9. List Genes: Genes contained by a complex or protein set, or a gene related by a displayed protein can be viewed by using a menu item "List Genes" after selecting an object. For example, the following dialog shows genes contained by complex hBUBR1:hBUB3:MAD2*:CDC20. Clicking a gene symbol will bring you to the web page for that gene in the GeneCard web site.  
 
-![](/images/userguide/fiviz/ListGenes_4.png)
+![](/uploads/tools/reactome-fiviz/ListGenes_4.png)
 
 List Genes
 
@@ -116,7 +116,7 @@ List Genes
   1. Display pathway in the FI network view: A Reactome pathway can be converted into a functional interaction network using the method we have established (see [A human functional protein interaction network and its application to cancer dat analysis](<https://doi.org/10.1186/gb-2010-11-5-r53>)). Use "Convert to FI Network" in the popup menu brought up by right-clicking (Windows) or control-clicking (Macs) an empty area without any selection in the pathway diagram panel. The original pathway diagram will be moved to the bottom-left corner, and a new FI network will be generated based on the original pathway diagram, which will be displayed in a new network panel.   
 **Note** : sub-pathways contained by the displayed pathway will be extracted into the FI network too.  
 
-![](/images/userguide/fiviz/PathwayInFINetworkView_4.png)
+![](/uploads/tools/reactome-fiviz/PathwayInFINetworkView_4.png)
 
 Pathway in the FI Network View
 
@@ -129,45 +129,45 @@ Pathway in the FI Network View
 
   1. **Pathway enrichment analysis** : A list of genes can be used to check if any of Reactome pathways have been enriched. To do this, use the popup menu item, "Analyze Pathway Enrichment" (below left figure), to get the dialog for choosing a gene set file (below right figure). You can use a gene set file in one of three file formats: one gene per line, all genes in the same line and delimited by commas, or all genes in the same line and delimited by tabs. You can also manually input genes by clicking the "Click to Enter" button (one line for one gene).  
 **Note** : Dependent on the size of your gene list, it may take over 1 minute for running the pathway enrichment analysis. Pathways used in this feature are different from Reactome pathways for annotating a FI network or network modules. Here all over 2,000 pathways are used. For annotation, only a subset of Reactome pathways, which have been pre-selected for a certain size, are used.  
-![Analyze Pathway Enrichment](/images/userguide/fiviz/AnalyzeGeneEnrichment_4.png)![Dialog for Analyzing Pathway Enrichment](/images/userguide/fiviz/DialogForAnalyzeGeneEnrichment_4.png)  
+![Analyze Pathway Enrichment](/uploads/tools/reactome-fiviz/AnalyzeGeneEnrichment_4.png)![Dialog for Analyzing Pathway Enrichment](/uploads/tools/reactome-fiviz/DialogForAnalyzeGeneEnrichment_4.png)  
 **Note** : To get a holistic view of the pathway enrichment analysis results, open the Reactome Reacfoam after the analysis using the popup menu "Open Reactome Reacfoam" for the pathway tree. You may also download the Reacfoam view by clicking the download button at the top-right corner. For windows 10 users, to open the Reacfoam view, you need to allow "public" access to Cytoscape by checking "public" in the settings for "Allow an app through Windows Firewall" in the "System and Security" control settings.  
-![Reacfoam View for Enrichment Analysis](/images/userguide/fiviz/Reacfoam_Enrichment.png)
+![Reacfoam View for Enrichment Analysis](/uploads/tools/reactome-fiviz/Reacfoam_Enrichment.png)
   2. **View enrichment analysis results** : Pathway enrichment results are displayed as a table labeled as "Reactome Pathway Enrichment" in the "Table Panel" at the bottom of the main Cytoscape window. You can use "Views in Diagram" to view hit pathways in the pathway diagram view, and use "Export Annotations" to save the results in the table. Pathways in the Reactome pathway tree are highlighted in different colors based on their FDR values. Objects containing genes from your gene list are highlighted in a purple background with a white font in the pathway diagram view. Hit genes are displayed in a thick purple border in the FI network view for a hit pathway.   
 **Note** : Hit genes are displayed with same colors in the "Gene List" dialog from the "List Genes" feature. 
 
-![](/images/userguide/fiviz/PathwayEnrichmentResults_4.png)
+![](/uploads/tools/reactome-fiviz/PathwayEnrichmentResults_4.png)
 
 Pathway Enrichment Results
 
   3. **Perform GSEA analysis** : Gene Set Enrichment Analysis ([GSEA](<http://software.broadinstitute.org/gsea/index.jsp>)) is a rank-based pathway enrichment analysis approach, widely used in pathway-based data analysis. ReactomeFIViz provides support to perform GSEA analysis for Reactome pathways using a gene score file. Gene score may be t-score from differential gene expression analysis or other type of scores that can be ranked. To perform the GSEA pathway enrichment analysis, you need to provide a tab-delimited text file containing two columns: the first for gene symbols (human only) and the second for gene scores. The first row is reserved for the column headers, and will not be imported for analysis. To perform GSEA analysis, use popup menu "Perform GSEA Analysis" in the pathway tree to bring up the GSEA configuration dialog, where you can enter the gene score file and choose the minimum and maximum size of pathways along with the permutation number. 
 
-![Perform GSEA Analysis](/images/userguide/fiviz/PerformGSEAAnalysis.png)
+![Perform GSEA Analysis](/uploads/tools/reactome-fiviz/PerformGSEAAnalysis.png)
 
 Perform GSEA Analysis
 
-![Congigure GSEA Analysis](/images/userguide/fiviz/ConfigureGSEAAnalysis.png)
+![Congigure GSEA Analysis](/uploads/tools/reactome-fiviz/ConfigureGSEAAnalysis.png)
 
 Configure GSEA Analysis
 
 The GSEA analysis results are displayed in the table labeled as "Reactome GSEA Analysis" in Cytoscape Table Panel. Pathways subject to GSEA analysis in the pathway tree are highlighted based on FDR values as in the gene set-based pathway enrichment analysis (See above). For details about the meanings of columns shown in the results table, please consult the original GSEA document: [GSEA Document](<http://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Main_Page>).
 
-![GSEA Analysis Results](/images/userguide/fiviz/GSEAAnalysisResults.png)
+![GSEA Analysis Results](/uploads/tools/reactome-fiviz/GSEAAnalysisResults.png)
 
 GSEA Analysis Results
 
   4. **Overlay Gene Scores onto Pathways** : For significant pathways produced from the GSEA analysis, you can overlay gene scores to investigate locations of products of genes having significant high or low scores, therefore to understand potential pathway activity impact caused by these extreme scores. To do this, use popup menu "Overlay Gene Scores" in pathway diagram view to choose the gene score file in the configuration dialog. After the file loading, entities in pathway diagrams will be highlighted based on scores. You may choose one or more genes in the right gene scores Table View to visualize related entities in the pathway diagram. 
 
-![Overlay Gene Scores](/images/userguide/fiviz/OverlayGeneScores.png)
+![Overlay Gene Scores](/uploads/tools/reactome-fiviz/OverlayGeneScores.png)
 
 Overlay Gene Scores
 
-![Gene Score Overlay Results](/images/userguide/fiviz/GeneScoreOverlayResults.png)
+![Gene Score Overlay Results](/uploads/tools/reactome-fiviz/GeneScoreOverlayResults.png)
 
 Gene Score Overlay Results
 
 **Note** : If an entitiy (e.g. a complex or an EntitySet) is composed of more than one gene, the score for the entity is the mean of all genes annotated for that entity. To remove overlaid gene scores in the pathway diagram, use popup menu "Remove Gene Scores". To view the distribution of scores for genes annotated in the displayed pathway diagram, choose "Plot View" in the "Gene Scores" tab in Cytoscape Results Panel (see below).
 
-![Gene Score Distribution](/images/userguide/fiviz/GeneScoreDistribution.png)
+![Gene Score Distribution](/uploads/tools/reactome-fiviz/GeneScoreDistribution.png)
 
 Gene Score Distribution
 
@@ -176,13 +176,13 @@ Gene Score Distribution
 We adapted the PARADIGM approach for Reactome pathways by converting reactions drawn in pathway diagrams into factors in factor graphs, a type of probabilistic graphical models (PGMs). For details about the PARADIGM approach, see: [Inference of patient-specific pathway activities from multi-dimensional cancer genomics data using PARADIGM](<https://pubmed.ncbi.nlm.nih.gov/20529912/>). For introduction to factor graphs, see this wikipedia entry: [Factor Graph](<http://en.wikipedia.org/wiki/Factor_graph>). For test purposes, you can download two sample data files for 100 TCGA ovarian cancer patients: [CNVs](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/ImpactAnalysis/ov.CNV.100.txt.zip> "ov.CNV.100.txt.zip") and [mRNA gene expression](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/ImpactAnalysis/ov.mRNA.100.txt.zip> "ov.mRNA.100.txt.zip"). The original TCGA OV files were downloaded from [the Broad GDAC](<https://gdac.broadinstitute.org>)[ Firehose](<https://gdac.broadinstitute.org>) web site.
 
   1. **Run graphical model analysis in batch:** This feature is used to perform a batch graphical model analysis for all Reactome pathways having manual layout diagrams.
-    1. **Start the analysis:** Choose the popup menu, "Run Graphical Model Analysis", in the pathway hierarchical tree. After choosing this menu, you will be asked to choose data files and provide parameters for inference algorithms in the following two tabs in the "Run Graphical Model Analysis" dialog:  
+     1. **Start the analysis:** Choose the popup menu, "Run Graphical Model Analysis", in the pathway hierarchical tree. After choosing this menu, you will be asked to choose data files and provide parameters for inference algorithms in the following two tabs in the "Run Graphical Model Analysis" dialog:  
 
-![](/images/userguide/fiviz/LoadData.png)
+![](/uploads/tools/reactome-fiviz/LoadData.png)
 
 LoadData
 
-![](/images/userguide/fiviz/SetUpAlgorithms.png)
+![](/uploads/tools/reactome-fiviz/SetUpAlgorithms.png)
 
 SetUpAlgorithms
 
@@ -190,62 +190,62 @@ SetUpAlgorithms
 **Notes** :   
 1). If you choose "Use empirical distribution" in the data loading dialog, your loaded data will be used directly to construct factor functions without discretizing. At present, we recommend to use "Choose threshold values for discretizing".   
 2). It is recommended to use the default parameters for inference algorithms for a batch analysis for quick performance. You can try different parameters for some specific pathways after you find interesting pathways from the batch analysis. _**If you want to perform two-case study (e.g. case-control, drug sensitive/insensitive, etc), check the checkbox, "Used for pathway analysis for samples with two cases", and provide a sample information file as required. For two-case analysis, a random data set will not be generated. Results will be presented by comparing two types of samples in your uploaded data files.**_
-    2. **Run the analysis:** Click the "OK" button to start the batch analysis. Depending on your sample size, it may take hours to finish the whole analysis.
-    3. **Finish the analysis:** After the batch analysis done, you may see the following list if some of pathways cannot be analyzed because the inference algorithm cannot converge. Please make sure the following list is small (probably less than 10 pathways) so that you can get enough results. 
+     2. **Run the analysis:** Click the "OK" button to start the batch analysis. Depending on your sample size, it may take hours to finish the whole analysis.
+     3. **Finish the analysis:** After the batch analysis done, you may see the following list if some of pathways cannot be analyzed because the inference algorithm cannot converge. Please make sure the following list is small (probably less than 10 pathways) so that you can get enough results. 
 
-![](/images/userguide/fiviz/FailedPathwaysList.png)
+![](/uploads/tools/reactome-fiviz/FailedPathwaysList.png)
 
 FailedPathwaysList
 
-    4. **View the results:** The results from the batch analysis are displayed at the bottom table panel of the Cytoscape desktop as the following: 
+     4. **View the results:** The results from the batch analysis are displayed at the bottom table panel of the Cytoscape desktop as the following: 
 
-![](/images/userguide/fiviz/BatchResults.png)
+![](/uploads/tools/reactome-fiviz/BatchResults.png)
 
 BatchResults
 
 **Note** : There are 7 columns in this table: ReactomePathway for pathway names analyzed by the App; AverageUpIPA shows how much a pathway is up-perturbated by comparing to a random background (IPA: integrated pathway activity. See the above PARADIGM paper for details); AverageDownIPA shows how much a pathway is down-perturbated; CombinedPValue is a p-value indicating how significant this pathway is perturbed based on pathway outputs and the Fisher's method; MinimumPValue is the minimum p-value for pathway outputs; the last two columns are FDRs for two p-values based on the Benjamini–Hochberg method. AverageUpIPA or AverageDownIPA may be NaN, which indicates there is no detected up or down perturbation based on this analysis. The FDR filtering works based on the FDR values displayed in the last two columns with "OR" operation.
-    5. **Save the results:** To keep the results, use the popup menu in the table, "Export Annotations", to save the results into an external text file. The saved results can be loaded later on by using popup menu, "Load Graphical Model Results", in the pathway tree.
+     5. **Save the results:** To keep the results, use the popup menu in the table, "Export Annotations", to save the results into an external text file. The saved results can be loaded later on by using popup menu, "Load Graphical Model Results", in the pathway tree.
   2. **Run graphical model analysis for a single pathway:** This feature is used to perform a graphical model analysis for a pathway displayed in the Cytoscape desktop.
-    1. **Open a pathway:** As before, you can choose a pathway in the pathway tree, and open its diagram in the Cytoscape desktop. Or you can choose an interesting pathway from the batch analysis results table by choosing popup menu, "View in Diagram".
-    2. **Start the analysis:** Choose popup menu, "Run Graphical Model Analysis", from the popup menu list in the pathway diagram window. You will be asked to provide data files and set up inference algorithms as in the batch analysis. After clicking the "OK" button, you will be asked to provide a list of escape names for entities in the pathway that will not be considered in the graphical model (e.g. ATP, ADP, etc) in the following dialog: 
+     1. **Open a pathway:** As before, you can choose a pathway in the pathway tree, and open its diagram in the Cytoscape desktop. Or you can choose an interesting pathway from the batch analysis results table by choosing popup menu, "View in Diagram".
+     2. **Start the analysis:** Choose popup menu, "Run Graphical Model Analysis", from the popup menu list in the pathway diagram window. You will be asked to provide data files and set up inference algorithms as in the batch analysis. After clicking the "OK" button, you will be asked to provide a list of escape names for entities in the pathway that will not be considered in the graphical model (e.g. ATP, ADP, etc) in the following dialog: 
 
-![](/images/userguide/fiviz/EscapeNamesDialog.png)
+![](/uploads/tools/reactome-fiviz/EscapeNamesDialog.png)
 
 EscapeNameDialog
 
   
 **Note** : If you have loaded data files, you may choose to use the loaded data files without displaying the data loading dialog.
-    3. **View the results:** After the analysis is done, three tabs are displayed in the table pane of Cytoscape: IPA Pathway Analysis, IPA Sample Analysis and IPA Node Values. IPA Pathway analysis displays inference results for entities in the pathway by comparing samples in your data files and in a random data set generated dynamically by the App based on your data files. IPA Sample Analysis shows results for each individual samples as up or down perturbation. You may choose to show/hide p-values and FDR values for samples in the table. IPA Node Values show inference results for selected entities in the pathway diagram for each sample. Entities in the pathway diagram are highlighted based on values in the MeanDiff column in the IPA Pathway Analysis tab. 
+     3. **View the results:** After the analysis is done, three tabs are displayed in the table pane of Cytoscape: IPA Pathway Analysis, IPA Sample Analysis and IPA Node Values. IPA Pathway analysis displays inference results for entities in the pathway by comparing samples in your data files and in a random data set generated dynamically by the App based on your data files. IPA Sample Analysis shows results for each individual samples as up or down perturbation. You may choose to show/hide p-values and FDR values for samples in the table. IPA Node Values show inference results for selected entities in the pathway diagram for each sample. Entities in the pathway diagram are highlighted based on values in the MeanDiff column in the IPA Pathway Analysis tab. 
 
-![](/images/userguide/fiviz/CellCycleCheckPointsResults.png)
+![](/uploads/tools/reactome-fiviz/CellCycleCheckPointsResults.png)
 
 CellCycleCheckPointsResults
 
   
 **Note** : You may change the color spectrum mapping for pathway diagram highlighting by double-clicking the color spectrum bar at the bottom of pathway diagram window to get the dialog for setting min/max values. You can save the analysis results for a pathway by using popup menu, "Save Analysis Results", and load the results back later on by "Open Analysis Results".
-    4. **Analyze gene level results:** The up or down perturbation results are inferred based on genomic data files for individual genes. The App provides features to analyze observation results and inference results for individual genes. You can view gene-level observation and inference results for the whole pathway by using popup menus, "Show Gene Level Analysis Results" and "Show Observations". You can also view these results for genes contained by an entity displayed in the pathway diagram after selecting that entity and then using these two popup menus. The following two dialogs show gene level observations and inference results for genes whose products are contained by complex "hBUBR1:hBUB3:MAD2*:CDC20 complex [cytosol]" in the cell cycle checkpoints pathway: 
+     4. **Analyze gene level results:** The up or down perturbation results are inferred based on genomic data files for individual genes. The App provides features to analyze observation results and inference results for individual genes. You can view gene-level observation and inference results for the whole pathway by using popup menus, "Show Gene Level Analysis Results" and "Show Observations". You can also view these results for genes contained by an entity displayed in the pathway diagram after selecting that entity and then using these two popup menus. The following two dialogs show gene level observations and inference results for genes whose products are contained by complex "hBUBR1:hBUB3:MAD2*:CDC20 complex [cytosol]" in the cell cycle checkpoints pathway: 
 
-![](/images/userguide/fiviz/ObservationsForEntity.png)
+![](/uploads/tools/reactome-fiviz/ObservationsForEntity.png)
 
 ObservationsForEntity
 
-![](/images/userguide/fiviz/GeneLevelResultsForEntity.png)
+![](/uploads/tools/reactome-fiviz/GeneLevelResultsForEntity.png)
 
 GeneLevelResultsForEntity
 
-    5. **Analyze and visualize results for individual samples:** The inference results and loaded observation data are displayed in the right "Results Panel" (see below). By checking "Highlight pathway for sample", entities in the displayed pathway diagram will be highlighted based on inferred IPA values for the selected sample displayed in the "Choose sample" box. You can also enable animation by clicking the play button. There are two tabs in the "Results Panel": "Inference" for showing inferred IPA values, and "Observation" tab for loaded observed data related to entities in the pathway (Note: if you choose "discretizing", the displayed observation values are discretized: 0 for lower than normal, 1 for normal, and 2 for higher normal). Objects in three views (pathway diagram, inference table, and observation table) are synchronized for selection. 
+     5. **Analyze and visualize results for individual samples:** The inference results and loaded observation data are displayed in the right "Results Panel" (see below). By checking "Highlight pathway for sample", entities in the displayed pathway diagram will be highlighted based on inferred IPA values for the selected sample displayed in the "Choose sample" box. You can also enable animation by clicking the play button. There are two tabs in the "Results Panel": "Inference" for showing inferred IPA values, and "Observation" tab for loaded observed data related to entities in the pathway (Note: if you choose "discretizing", the displayed observation values are discretized: 0 for lower than normal, 1 for normal, and 2 for higher normal). Objects in three views (pathway diagram, inference table, and observation table) are synchronized for selection. 
 
-![](/images/userguide/fiviz/PGMSampleViewWithInference.png)
+![](/uploads/tools/reactome-fiviz/PGMSampleViewWithInference.png)
 
 PGM Sample View: Inference
 
-![](/images/userguide/fiviz/PGMSampleViewWithObservation.png)
+![](/uploads/tools/reactome-fiviz/PGMSampleViewWithObservation.png)
 
 PGM Sample View: Observation
 
-    6. **Compare analysis results for two samples:** You can compare observation data and inference results for two samples. To do this, choose two samples in the "IPA Sample Analysis" tab in the bottom results pane, and use popup menu "Compare Samples" to bring out another tab called "Sample Comparison". You can view comparing results for inference and observation data. 
+     6. **Compare analysis results for two samples:** You can compare observation data and inference results for two samples. To do this, choose two samples in the "IPA Sample Analysis" tab in the bottom results pane, and use popup menu "Compare Samples" to bring out another tab called "Sample Comparison". You can view comparing results for inference and observation data. 
 
-![](/images/userguide/fiviz/TwoSampleComparison.png)
+![](/uploads/tools/reactome-fiviz/TwoSampleComparison.png)
 
 Two Sample Comparison
 
@@ -256,32 +256,32 @@ We have developed an approach (Manuscript in preparation) to convert biochemical
   1. **Set up and run logic model simulation** : Choose popup menu "Run Logic Model Analysis" in the Pathway Diagram View to get the New Simulation dialog. Enter a name for the simulation and the default value, which usually should be 1.0 to enable that the simulation can proceed, and then choose either PROD or MIN for the AND gate mode (the default choice PROD usually should be fine).   
 **Note** : You may also choose an Transfer Function and adjust parameters for Hill function. However, for simplicity, it is suggested to use "Identity Function" first. For how to apply drugs for logic model simulation, see below.   
 
-![](/images/userguide/fiviz/RunBooleanNetworkAnalysis.png)
+![](/uploads/tools/reactome-fiviz/RunBooleanNetworkAnalysis.png)
 
 Run Boolean Network Analysis
 
-![](/images/userguide/fiviz/NewBNSimulation.png)
+![](/uploads/tools/reactome-fiviz/NewBNSimulation.png)
 
 New BN Simulation
 
   
 After clicking the OK button in the New Simulation dialog, the default initial configuration will be displayed in the Results Panel. You may change the variable Type and Modification in the set up table by clicking the cell for the selected variable. To run the simulation, click the Simulate button in the Results Panel.   
 
-![](/images/userguide/fiviz/SetupBNSimulation.png)
+![](/uploads/tools/reactome-fiviz/SetupBNSimulation.png)
 
 Set up Boolean Network Analysis
 
-![](/images/userguide/fiviz/ChooseBNType.png)
+![](/uploads/tools/reactome-fiviz/ChooseBNType.png)
 
 Choose BN Variable Type
 
-![](/images/userguide/fiviz/ChooseBNModification.png)
+![](/uploads/tools/reactome-fiviz/ChooseBNModification.png)
 
 Choose BN Modification Type
 
   2. **Visualize the simulation results** : After the simulation is done, entities in the pathway diagram will be highlighted based on simulated values, which should be between 0 and 1. You may choose one or more entities to visualize their temporal behaviors inside the Table Panel at the bottom of Cytoscape. Attractors computed from the simulation are also listed in the right columns in the original set up table inside the Results Panel. **Note** : After simulation, you will not be able to modify any initial configuration. 
 
-![](/images/userguide/fiviz/BNSimulationResults_Default.png)
+![](/uploads/tools/reactome-fiviz/BNSimulationResults_Default.png)
 
 Boolean Network Simulation Results
 
@@ -289,33 +289,33 @@ Boolean Network Simulation Results
 **Note** : To avoid clutter, if too many time steps have been generated for a logic model simulation, only the last 20 time steps are displayed in the table. However, the plot shows all time steps. You may choose different columns to display in the table by use popup menu "Configure Columns" after selecting any variables in the table.
   3. **Perform pathway simulation via modification** : Simulation with Boolean network can help users uncover the impact of modification of entity activities (e.g. inhibition or activation caused by somatic mutation) on the pathway behaviors. For example, in PIP3 activates AKT signaling, Complex AKT:PIP3 forms a complex with EntitySet THEM4/TRIB3 to form another complex, which inhibits the activation of AKT (For details see [Reactome PIP3 activates AKT signaling](</PathwayBrowser/#/R-HSA-1257604>)). To perform simulation with modification, choose modification type in the simulation set up table and assign the strength to the modification.   
 
-![](/images/userguide/fiviz/SetBNInhibition.png)
+![](/uploads/tools/reactome-fiviz/SetBNInhibition.png)
 
 Choose Inhibition for Boolean Network Simulation
 
   
 Clicking the Simulate button invokes the constrained fuzzy logic model simulation with this configured inhibition. You can compare the simulation results between the two configurations by selecting an entity and then toggling the simulation result tables at the bottom of Cytoscape.   
 
-![](/images/userguide/fiviz/ActiveAKT_Inhibition.png)
+![](/uploads/tools/reactome-fiviz/ActiveAKT_Inhibition.png)
 
 Active AKT in Inihibition
 
   
 
-![](/images/userguide/fiviz/ActiveAKT_Default.png)
+![](/uploads/tools/reactome-fiviz/ActiveAKT_Default.png)
 
 Active AKT in Default
 
   
 You can also use the "Compare" button in the Results Panel to get the comparison dialog and then choose two simulations for comparison. The comparison results are displayed in a new table listed at the bottom Table Panel.   
 
-![](/images/userguide/fiviz/CompareTwoBNResults.png)
+![](/uploads/tools/reactome-fiviz/CompareTwoBNResults.png)
 
 Comparison Dialog
 
   
 
-![](/images/userguide/fiviz/AktiveAKT_Comparison.png)
+![](/uploads/tools/reactome-fiviz/AktiveAKT_Comparison.png)
 
 Active AKT in Comparison
 
@@ -329,21 +329,21 @@ By collaborating with Drs. Francesco Raimondi and Rob Russell at the University 
 
   1. **Visualize analysis results in the context of a pathway and its reactions** : In the opened pathway diagram view (See [Explore Reactome Pathways](<#Explore_Reactome_Pathways>) for how to open a pathway diagram), use the popup menu "Load Mechismo Results" to load the analysis results into the opened pathway diagram. After the results are loaded, reactions are colored based on FDR values as listed in the bottom table labeled as "Mechismo Reaction". 
 
-![Mechismo Reaction View](/images/userguide/fiviz/MechismoReactionView.png)
+![Mechismo Reaction View](/uploads/tools/reactome-fiviz/MechismoReactionView.png)
 
 Mechismo Reaction View
 
 **Note** : You may choose results from a different cancer type or pancancer by clicking the list at the top of the bottom tab labeled as "Choose a cancer type to highlight reactions based on FDRs in the table". Some of reactions are not highlighted by any color since there are no structural variants found for proteins annotated for these reactions. To remove the loaded results from the pathway diagram, use another popup menu "Remove Mechismo Results".
   2. **Visualize analysis results in the context of a pathway FI network** : After the Mechismo results are loaded into the pathway diagram, you can convert the diagram into a FI network by using popup menu "Convert to FI Network" as usual. The edges displayed in the FI network view are highlighted based on FDR values listed in the bottom table labeled as "Mechismo Interaction". 
 
-![Mechismo Interaction View](/images/userguide/fiviz/MechismoInteractionView.png)
+![Mechismo Interaction View](/uploads/tools/reactome-fiviz/MechismoInteractionView.png)
 
 Mechismo Interaction View
 
 **Note** : To make the FI network view simplier, check "Show FIs Only for Selected" at the left-bottom corner for the pathway diagram view. You may choose a reaction or complex and then view extracted FIs for the selected object in the pathway diagram view. Some of reactions and complexes may not contain any FI (e.g. a complex composed of a protein and a chemical or a reaction between a protein and a chemical).
   3. **Visualize structural variants in the protein-protein 3D structures** : In the FI network view, choose the popup menu called "Fetch Mechismo Results" to bring the view for protein-protein interaction 3D models. Structural variants collected from the TCGA data set are mapped to the original protein-protein interaction 3D structures based on the [Mechismo](<https://pubmed.ncbi.nlm.nih.gov/25392414/>) platform. 
 
-![Mechismo Structure View](/images/userguide/fiviz/MechismoStructureView.png)
+![Mechismo Structure View](/uploads/tools/reactome-fiviz/MechismoStructureView.png)
 
 Mechismo Structure View
 
@@ -353,33 +353,33 @@ Mechismo Structure View
 
 After the ReactomeFIViz app installed, you should see a menu item called "Reactome FI" under the Apps menu. Clicking this menu, you will see 6 sub-menus: [Gene Set/Mutation Analysis](<#Gene_Set.2FMutation_Analysis>), [PGM Impact Analysis](<#PGM_Impact_Analysis>), [Microarray Data Analysis](<#Microarray_Data_Analysis>), [Reactome Pathways](<#Use_Reactome_Pathways>) and [User Guide.](</userguide>) Gene set/mutation analysis is for doing FI network-based data analysis for a set of genes or a mutation data file, PGM Impact analysis for performing functional impact analysis based on a probabilistic graphical model for the Reactome FI network using multiple omics data types, HotNet mutation analysis for the HotNet algorithm to search for network modules (see <http://compbio.cs.brown.edu/projects/hotnet/>), microarray data analysis for doing MCL (Markov Graph Clustering, <http://micans.org/mcl/>) based FI network clustering analysis by converting a non-weighted FI network to weighted network using correlations among genes in the network, Reactome pathways for loading pathways from the Reactome database, visualizing Reactome pathways directly in Cytoscape in a their native way, and doing pathway enrichment analysis, and user guide brings you to this user guide.
 
-![ReactomeFIViz app Menu](/images/userguide/fiviz/ReactomeFIMenu_4.png)
+![ReactomeFIViz app Menu](/uploads/tools/reactome-fiviz/ReactomeFIMenu_4.png)
 
 #### Gene Set/Mutation Analysis
 
   1. You can enter a list of genes directly into ReactomeFIViz by clicking the "Enter" button, or load it from a local file. Currently ReactomeFIViz supports three file formats for gene set/mutation analysis:
-    1. **Simple gene set** : one line per gene. For example, [GWASFuzzyGenes.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GWASFuzzyGenes.txt>), a list of T2D GWAS genes.
-    2. **Gene/sample number pair**. For example, [GeneSampleNumber.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GeneSampleNumber.txt>), which contains two required columns, gene and number of samples having gene mutated, and an optional third column listing sample names (delimited by ";").
-    3. **NCI MAF (mutation annotation file)**. For example, [GlioblastomaMutationTable.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GlioblastomaMutationTable.txt>), the mutation file from the TCGA GBM project.
+     1. **Simple gene set** : one line per gene. For example, [GWASFuzzyGenes.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GWASFuzzyGenes.txt>), a list of T2D GWAS genes.
+     2. **Gene/sample number pair**. For example, [GeneSampleNumber.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GeneSampleNumber.txt>), which contains two required columns, gene and number of samples having gene mutated, and an optional third column listing sample names (delimited by ";").
+     3. **NCI MAF (mutation annotation file)**. For example, [GlioblastomaMutationTable.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneList/GlioblastomaMutationTable.txt>), the mutation file from the TCGA GBM project.
   2. Choose a FI network version from listed three versions.   
 **Note** : you may get different results using different FI network versions because a later version may contain more proteins/genes and more FIs. But based on our experience, a significant FI network module is usually stable across multiple versions.
   3. Enter genes directly by clicking the "Enter" button or choose a file containing genes you want to use to construct a functional interaction network. To choose a file, select an appropriate file format and parameters to load genes and construct FI network in the dialog. Click the "OK" button to start the FI network building process. 
 
-![Gene Set/Mutation Analysis](/images/userguide/fiviz/GeneSetAnalysis_4.png)
+![Gene Set/Mutation Analysis](/uploads/tools/reactome-fiviz/GeneSetAnalysis_4.png)
 
   4. The constructed FI network will be displayed in the network view panel. A FI specific visual style will be created automatically for the FI network. 
 
-![](/images/userguide/fiviz/FISubNetwork.png)
+![](/uploads/tools/reactome-fiviz/FISubNetwork.png)
 
 Reactome FI Sub-Network
 
   5. The main features of Reactome FI plug-in should be invoked from a popup menu, which can be displayed by right clicking an empty space in the network view panel. 
 
-![Popup Menu for Network](/images/userguide/fiviz/PopupMenu_4.png)
+![Popup Menu for Network](/uploads/tools/reactome-fiviz/PopupMenu_4.png)
 
   * **Fetch FI annotations** : query detailed information on selected FIs. Three FI related edge attribues will be created: FI Annotation, FI Direction, and FI Score. Edges will be displayed based on FI direction attribute values. In the following screenshot, "->" for activating/catalyzing, "-|" for inhibition, "-" for FIs extracted from complexes or inputs, and "---" for predicted FIs. See the "VizMapper" tab, Edge Source Arrow Shape and Edge Target Arrow Shape values for details. 
 
-![](/images/userguide/fiviz/FIAnnotations.png)
+![](/uploads/tools/reactome-fiviz/FIAnnotations.png)
 
 FI Annotations
 
@@ -387,7 +387,7 @@ FI Annotations
 **Note** : Here is a short explanation about displayed columns: GeneSet for pathways collected in the Reactome FI network hit by the query gene list; RatioOfProteinInGeneSet for ratios of numbers of genes contained in pathways to total genes in the Reactome FI network; NumberOfProteinInGeneSet for numbers of genes in pathways; ProteinFromNetwork for numbers of hit genes from the query gene list; P-value for pvalues calculated based on binomial test; FDR for FDRs calculated based on p-values using Benjamini-Hocherberg method; Nodes for hit genes in pathways.
   * **Analyze network functions** : pathway or GO term ennrichment analysis for the displayed network. You can choose to filter enrichment results by a FDR cutoff value. Also you can choose to display nodes in the network panel for a selected row or rows by checking "Hide nodes in not selected rows". The letter in parentheses after each pathway gene set name corresponds to the source of the pathway annotations: C - CellMap, R – Reactome, K – KEGG, N – NCI PID, P - Panther, and B – BioCarta. The following screenshot shows results from a pathway enrichment analysis. 
 
-![](/images/userguide/fiviz/PathwayAnnotations.png)
+![](/uploads/tools/reactome-fiviz/PathwayAnnotations.png)
 
 Pathways in FI Sub-Network
 
@@ -395,7 +395,7 @@ Pathways in FI Sub-Network
 _Tip: To analyze pathway or GO term enrichment on a set of genes that are not linked together, select the "Show genes not linked to others" option in the "Set Parameters for FI Network" dialog._
   * **Cluster FI network** : run a network clustering algorithm (spectral partition based network clustering by [Newman 2006](<http://www.ncbi.nlm.nih.gov/pubmed/16723398>)) on the displayed FI network. Nodes in different network modules will be shown in different colors (different colors used only for first 15 modules based on sizes). 
 
-![](/images/userguide/fiviz/NetworkModules.png)
+![](/uploads/tools/reactome-fiviz/NetworkModules.png)
 
 Network Modules
 
@@ -408,7 +408,7 @@ Network Modules
   1. We have developed a probabilistic graphical model (PGM)-based functional impact analysis using the Reactome FI network by integrating multiple omics data types together. The current version of ReactomeFIViz supports four omics data types: CNV, mRNA expression, DNA methylation, and somatic mutation. PGMs used for this analysis are based on [Markov random field (MRF)](<https://en.wikipedia.org/wiki/Markov_random_field>). Currently we support two types of MRFs: [Pairwise MRF](<https://class.coursera.org/pgm/lecture/31>) and [Nearest neighbor Gibbs MRF](<http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1001353>). You can choose one of these two models. We recommend pair-wise MRF for its simplicity.
   2. To perform PGM-based functional impact analysis, choose menu, Apps/Rectome FI/PGM Impact Analysis/Analyze. You can enter your omics data by using the PGM configuration dialog. 
 
-![](/images/userguide/fiviz/ReactomeFIPGMInput.png)
+![](/uploads/tools/reactome-fiviz/ReactomeFIPGMInput.png)
 
 FI-PGM Configuration Dialog
 
@@ -419,13 +419,13 @@ FI-PGM Configuration Dialog
 3). Several parameters are needed for MRF models. We have tuned these parameters based on a small toy model. In the current version of ReactomeFIViz, these parameters cannot be changed.
   3. It may take several hours to finish the whole analysis. The actual running time will be dependent on the size of your data. The progress of the job running is displayed in the following progress pane. You can cancel the running at any time. 
 
-![](/images/userguide/fiviz/ProgressPaneOfFIPGM.png)
+![](/uploads/tools/reactome-fiviz/ProgressPaneOfFIPGM.png)
 
 Progress of FI PGM Running
 
   4. After the analysis is finished, you should see the result dialog similar to the following screenshot. You can use filtering features to filter to a list of genes that you want to use to construct a FI subnetwork for further analysis. 
 
-![](/images/userguide/fiviz/FIPGMResultDialog.png)
+![](/uploads/tools/reactome-fiviz/FIPGMResultDialog.png)
 
 FI-PGM Result Dialog
 
@@ -433,7 +433,7 @@ FI-PGM Result Dialog
 **Note** : If you select one or more genes in the result table, only these selected genes will be used to construct a FI sub-network. You can save the full analysis results by clicking the "Save" button (Results for all genes, not just displayed ones, will be saved). We strongly recommend to save your results first before clicking the "OK" button so that you can visit your results back.
   5. After choosing the "OK" button, a FI subnetwork will be constructed and displayed in a network view. The sizes of displayed nodes are proportional to impact scores inferred from the FI-PGM model. To view impact scores and loaded observation data, you can choose a sample in the Sample List tab in the Results Panel. You can also enable sample-based network visualization of the network by checking "Highlight network for sample" in the Sample List tab. If you want to review the original results used to construct the FI subnetwork, click "Show All Results" in the "Impact Gene Values" tab in "Table Panel". 
 
-![](/images/userguide/fiviz/FIPGMResultNetwork.png)
+![](/uploads/tools/reactome-fiviz/FIPGMResultNetwork.png)
 
 FI-PGM Result Network
 
@@ -445,13 +445,13 @@ An array data file should be a tab-delimited text file with table headers. The f
 
   1. **Select a microarray data file and run MCL network clustering** : After selecting sub-menu "Microarray Data Analysis" from menu Plugins/Reactome FIs, you should see the following dialog. Choose a microarray data file, check if you want to use absolute values as weights for edges, and input an inflation parameter (-I) for the MCL clustering algorithm. The smaller the inflation parameter is, the bigger the average size of generated network modules. Based on our own experience, we use 5.0 for the inflation parameter, the highest recommended value, and choose the absolute value for edge weights. For more details on how to choose the inflation parameter, please see <http://micans.org/mcl/>. After you have set these parameters, click the OK button to load the data file, calculate correlations, and apply the MCL clustering algorithm. 
 
-![](/images/userguide/fiviz/MicroarrayAnalysis_4.png)
+![](/uploads/tools/reactome-fiviz/MicroarrayAnalysis_4.png)
 
 Set Parameters for Microarray Data Analysis
 
   2. **Select network modules and build a FI sub-network** : The generated network modules are listed in the MCL clustering results dialog (see below). Only modules having more than 2 genes can be listed, and used in the FI sub-network building. You can choose a module size or an average correlation value (absolute value if absolute has been checked before) to filter out modules that may not be significant (Note: after set these cutoff values, please press the "Enter" key to commit your changes.). In our analysis, we choose modules having 7 or more genes with average correlation values no less than 0.25. These values have been used as default in the dialog. In the dialog, you can see how many modules and genes will be chosen for building FI sub-network under your selected filter values. Click the OK button to start the sub-network building. The built sub-network will be displayed, and can be analyzed as with sub-networks generated from the gene set/mutation analysis. 
 
-![](/images/userguide/fiviz/MCLClusteringResultsDialog.png)
+![](/uploads/tools/reactome-fiviz/MCLClusteringResultsDialog.png)
 
 Choose MCL Modules
 
@@ -463,30 +463,30 @@ ReactomeFIViz provide a suite of features to assist users to visualize drugs in 
 
   1. **List all FDA approved cancer drugs** : Use popup menu "View Cancer Drugs" in the Reactome pathway tree to get the list of all FDA approved cancer drugs collected in Cancer Targetome in a table dialog.   
 
-![ViewCancerDrugs](/images/userguide/fiviz/ViewCancerDrugs.png)
+![ViewCancerDrugs](/uploads/tools/reactome-fiviz/ViewCancerDrugs.png)
 
 View Cancer Drugs
 
   
 A screenshot of this drug list is shown below:  
 
-![](/images/userguide/fiviz/CancerDrugsTable.png)
+![](/uploads/tools/reactome-fiviz/CancerDrugsTable.png)
 
 List of Cancer Drugs
 
   2. **View drug/target interactions** : Select a drug in the drug table (See Figure above) to perform Google search, or view its targets by clicking one of buttons in the dialog. Two views are provided for drug/target interactions. Drug targets table view (below) shows targets for the selected drug with collected binding affinities, which are divided into different categories (e.g.): KD, IC50, Ki, and EC50. The displayed targets are pre-filtered using a set of default filters. You may change the default filters in the Drug/Target Interaction Filter dialog by clicking the "Filter" button.  
 
-![DrugTargetsTableView](/images/userguide/fiviz/DrugTargetsView.png)
+![DrugTargetsTableView](/uploads/tools/reactome-fiviz/DrugTargetsView.png)
 
 Drug Targets Table View
 
-![](/images/userguide/fiviz/DrugTargetInteractionFilter.png)
+![](/uploads/tools/reactome-fiviz/DrugTargetInteractionFilter.png)
 
 Drug Target Interaction Filter
 
 In the Drug targets table view, you can choose an interaction and then click the "View Details" button to view the detailed information for the selected interaction. In the details view, you can browse the original pubmed references for experimental evidence, Gene Card entry for target, or Google drug by clicking the hyper links. 
 
-![](/images/userguide/fiviz/CancerDrugDetailsView.png)
+![](/uploads/tools/reactome-fiviz/CancerDrugDetailsView.png)
 
 Cancer Drug Interaction Details View
 
@@ -494,17 +494,17 @@ You can also select multiple rows in the table to perform pathway enrichment ana
 
 Drug targets plot view (below) provides a stagged plot of bar charts for evidence-supported interactions between the selected drug and all its targets, suggesting primary target(s) and secondary targets in a single graphical view.
 
-![DrugTargetsPlotView](/images/userguide/fiviz/DrugTargetsPlotView.png)
+![DrugTargetsPlotView](/uploads/tools/reactome-fiviz/DrugTargetsPlotView.png)
 
 Drug Targets Plot View
 
   3. **View cancer drugs in pathway diagrams** : Cancer drugs can be overlaid directly onto displayed pathway diagrams using the popup menu, "Fetch Cancer Drugs", in the [Pathway Diagram View](<http://wiki.reactome.org/index.php/ReactomeFIViz#Explore_Reactome_Pathways>). The fetched cancer drugs are displayed in the pathway diagram, linked to entities containing targets for the displayed drugs.
 
-![](/images/userguide/fiviz/FetchCancerDrugs.png)
+![](/uploads/tools/reactome-fiviz/FetchCancerDrugs.png)
 
 Fetch Cancer Drugs
 
-![](/images/userguide/fiviz/DrugsInPathway.png)
+![](/uploads/tools/reactome-fiviz/DrugsInPathway.png)
 
 Drugs in Pathway Diagram
 
@@ -514,13 +514,13 @@ Drugs in Pathway Diagram
 
 To view the detailed information about the interaction between the displayed drug and its targeted entity, choose the link and use pupup menu "Show Details" to bring up the drug targets view. 
 
-![](/images/userguide/fiviz/ViewDrugDetailsInPathway.png)
+![](/uploads/tools/reactome-fiviz/ViewDrugDetailsInPathway.png)
 
 View Details
 
   4. **Perform systems pathway impact analysis** : In the cancer drug list table (see above), you may perform pathway impact analysis for all Reactome pathways having entity level view drawn by choosing the "Run Pathway Impact Analysis" button. After the analysis is done, the impact results are displayed in the table labled with the selected drug in the Cytoscape Table Panel. See below for an example of the results for Imatinib:
 
-![PathwayImpactAnalysisTable](/images/userguide/fiviz/PathwayImpactAnalysisTable.png)
+![PathwayImpactAnalysisTable](/uploads/tools/reactome-fiviz/PathwayImpactAnalysisTable.png)
 
 Pathway Impact Analysis Results
 
@@ -530,11 +530,11 @@ Pathway Impact Analysis Results
 
 The Reactome FI network provides a network-based view among proteins/genes, where each gene/protein is displayed only once. Visualizing cancer drugs in a FI network context shows a simplified relationship between cancer drugs and their targets. In the [FI Network View](<#Gene_Set.2FMutation_Analysis>), use popup menu, "Reactome FI/Overlay Cancer Drugs/Fetch Cancer Drugs", to load cancer drugs for proteins/genes displayed in the FI network. The loaded drugs and interactions between drugs and proteins/genes are rendered in green diamonds and blue edges, respectively.
 
-![](/images/userguide/fiviz/FetchCancerDrugsInFINetwork.png)
+![](/uploads/tools/reactome-fiviz/FetchCancerDrugsInFINetwork.png)
 
 Fetch Cancer Drugs in FI Network
 
-![](/images/userguide/fiviz/ShowDrugInteractionDetailsInFI.png)
+![](/uploads/tools/reactome-fiviz/ShowDrugInteractionDetailsInFI.png)
 
 Show Drug Target In FI Network
 
@@ -549,24 +549,24 @@ Visualize drugs collected in DrugCentral is simlar with cancer drugs collected i
 
 Overlaying cancer drugs onto the contexts of Reactome pathways and its FI network helps users to understand the potential impact of applying drugs on the pathway activities and network behavior. However, the actual perturbation of drugs on pathways may be much more complicated. Performing pathway simulation may help users to understand the actual impact. ReactomeFIViz implements features to assist users to perform Boolean network-based drug simulation. Before you do drug simulation, please read section [Boolean Network Based Pathway Analysis](<#Boolean_Network_based_Pathway_Analysis>) first. In this section, we will use pathway [HDR through Homologous Recombination (HR) or Single Strand Annealing (SSA)](<https://reactome.org/PathwayBrowser/#/R-HSA-5693567>) and drug Imatinib as an example (Note: To get the following screenshot, open diagram for this pathway, and then fetch cancer drugs and filter drugs to Imatinib using the name filter).
 
-![](/images/userguide/fiviz/ImatinibInHDRThroughHROrSSA.png)
+![](/uploads/tools/reactome-fiviz/ImatinibInHDRThroughHROrSSA.png)
 
 Imatinib in Pathway
 
   1. **Set up new simulation for drug** : In the pathway diagram view, use popup menu, "Run Logic Model Analysis". In the New Simulation dialog, enter a name (e.g. Imtatinib) and default value for the simulation, and then choose the mode for the AND gate as in the regular logic model simulation. To perform drug simulation, choose the Drug Application tab and a drug data source, and then click the "..." button to bring up the Drug Selection dialog. **  
 Note** : You will need to adjust the drug filters to show all targets for Imatinib as displayed in the following screenshot. Based on the collected annotations for interactions between cancer drugs and their targets, default modification types will be selected (as expected, most of them are inhibition). Strengths of modifications are pre-configured based on affinities collected in our aggregated drug/target database.   
 
-![](/images/userguide/fiviz/ImatinibNewSimulation_1.png)
+![](/uploads/tools/reactome-fiviz/ImatinibNewSimulation_1.png)
 
 Imatinib BN Simulation I
 
-![](/images/userguide/fiviz/ImatinibNewSimulation_2.png)
+![](/uploads/tools/reactome-fiviz/ImatinibNewSimulation_2.png)
 
 Imatinib BN Simulation II
 
   
 
-![](/images/userguide/fiviz/SelectDrugsForBN.png)
+![](/uploads/tools/reactome-fiviz/SelectDrugsForBN.png)
 
 Select Drugs for BN Simulation
 
@@ -574,39 +574,39 @@ Select Drugs for BN Simulation
 **Note:** Since no affinities can be found for interactions between Imatinib and CHEK1 or CDK2, CHEK1 and CDK2 are not listed in the New Simulation dialog. Checking "Filter members in sets to drug targets" will select members in EntitySet instances that are targeted by drugs to force showing of potential pathway impact caused by drugs.
   2. **Perform simulation with drug** : The configuration for drug in the Drug Selection dialog will be copied into the Boolean Network configuration table displayed in the Results Panel. Click the "Simulate" button to perform simulation. After the simulation is done, Entities in the pathway diagrams are highlighted in different colors based on values in the attractor with detailed temporal values displayed in the table at the bottom Table Panel.   
 
-![](/images/userguide/fiviz/ImatinibBNSetup.png)
+![](/uploads/tools/reactome-fiviz/ImatinibBNSetup.png)
 
 Imatinib BN Setup
 
   
 
-![](/images/userguide/fiviz/ImatinibBNResults.png)
+![](/uploads/tools/reactome-fiviz/ImatinibBNResults.png)
 
 Imatinib BN Results
 
   3. **Investigate the drug impact on pathway activities** : To see the impact of a drug on the pathway activities, perform another Boolean network simulation without applying cancer drugs (here as Default) (For details, see [Boolean Network Based Pathway Analysis](<#Boolean_Network_based_Pathway_Analysis>)). The screenshot for the logic model simulation results with the default initial configuration for pathway "HDR through Homologous Recombination (HR) or Single Strand Annealing (SSA)" is displayed below:   
 
-![](/images/userguide/fiviz/DefaultHDRThroughHROrSSABNResults.png)
+![](/uploads/tools/reactome-fiviz/DefaultHDRThroughHROrSSABNResults.png)
 
 HDR Through HR or SSA Default Results
 
   
 To see the drug impact to the activity of an entity displayed in the pathway, choose that entity and check its temporal behavior in both BN:Default and BN:Imatinib tables. For example, below a complex (see above screenshot) related to ABL1 is selected (Up for imatinib applied and down for default without drug):   
 
-![](/images/userguide/fiviz/ImatinibOneVariable.png)
+![](/uploads/tools/reactome-fiviz/ImatinibOneVariable.png)
 
 Imatinib One Variable
 
   
 
-![](/images/userguide/fiviz/DefaultBNOneVariable.png)
+![](/uploads/tools/reactome-fiviz/DefaultBNOneVariable.png)
 
 Default One Variable
 
   
 You may also use the "Compare" button to check the detailed difference in the computed attractors from two simulations.   
 
-![](/images/userguide/fiviz/PS456ABL1Comparison.png)
+![](/uploads/tools/reactome-fiviz/PS456ABL1Comparison.png)
 
 p-S456-ABL1 Values
 
@@ -622,7 +622,7 @@ ReactomeFIViz implements a suite of features for users to conduct scRNA-seq data
 
   1. **Set up the analysis:** The Python package, [scanpy](<https://scanpy.readthedocs.io/en/stable/>), provides a set of powerful analysis and visualization features for scRNA-seq data. ReactomeFIViz wraps these features for users to take advantage of pathway and network analysis and visualization facilities provided by Cytoscape in general and ReactomeFIViz in particular. To conduct a scRNA-seq analysis using scanpy, choose menu Apps/Reactome FI/Single Cell Analysis/Analyze to get the configuration window as shown below: 
 
-![scRNA-seq Analysis Configuration](/images/userguide/fiviz/scRNASeqConfig.png)
+![scRNA-seq Analysis Configuration](/uploads/tools/reactome-fiviz/scRNASeqConfig.png)
 
 scRNA-seq Analysis Configuration
 
@@ -630,7 +630,7 @@ ReactomeFIViz supports scRNA-seq data generated from mouse and human. You should
 **Note** : All analysis steps and their paramters are logged into CytoscapeConfiguration/ReactomeFIViz/ReactomeFIViz.{date}.log in your user folder for your review.
   2. **Configure Python for ReactomeFIViz:** If you have not done so, you will be asked to set up Python for ReactomeFIViz using the following configuration dialog when ReactomeFIViz downloads the Reactome Python app for scRNA-seq data analysis and visualization. 
 
-![Set up Python](/images/userguide/fiviz/SetupPython.png)
+![Set up Python](/uploads/tools/reactome-fiviz/SetupPython.png)
 
 Set up Python
 
@@ -638,18 +638,18 @@ Set up Python
 ReactomeFIViz uses the functions provided by scanpy for pre-processing, normalization, UMAP analysis, cell clustering and all other scRNA-seq analysis except imputation, which is handled by [MAGIC](<https://github.com/KrishnaswamyLab/MAGIC>), if checked. See details in the scanpy document: <https://scanpy.readthedocs.io/en/stable/api/index.html>. For paramters used for these functions, open the ReactomeFIViz.{data}.log file (see above).
   3. **Visuzlize Cell Networks** : Dependent on the sample size and the computing power, it may take several minutes to finish the analysis. After that, two networks, one for cell clusters and another for single cells, are displayed in Cytoscape and listed under "SingleCellClusterNetwork" and "SingleCellNetwork" in the left-side, Network tab, respectively. 
 
-![ScRNA-seq Cluster Network](/images/userguide/fiviz/ScClusterNetwork.png)
+![ScRNA-seq Cluster Network](/uploads/tools/reactome-fiviz/ScClusterNetwork.png)
 
 ScRNA-seq Cluster Network
 
-![ScRNA-seq Cell Network](/images/userguide/fiviz/ScCellNetwork.png)
+![ScRNA-seq Cell Network](/uploads/tools/reactome-fiviz/ScCellNetwork.png)
 
 ScRNA-seq Cell Network
 
 **Note** : You may use the built-in Cytoscape Style features and other configuration properties to adjust the rendering of these two networks. See Cytoscape's user manual by clicking menu Help/User Manual. To show or hide edges in the networks, use popup menu Reactome FI/Show Edges (see below for a screenshot). Cluster in the cell cluster network are named based on the rank of cell clusters sorted by cell numbers in the clusters. For example, cluster0 has the largest number of cells.
   4. **Analyze scRNA-seq Data** : To explore the loaded scRNA-seq data and perform further analysis, you can use the popup menu provided in the cell cluster or single cell network view as shown below: 
 
-![ScRNA-seq Standard Analysis Popup Menus](/images/userguide/fiviz/ScStandardPopupMenus.png)
+![ScRNA-seq Standard Analysis Popup Menus](/uploads/tools/reactome-fiviz/ScStandardPopupMenus.png)
 
 ScRNA-seq Standard Analysis Popup Menus
 
@@ -662,7 +662,7 @@ ScRNA-seq Standard Analysis Popup Menus
 **Note** : You may not see this menu item after the analysis. Try to switch to another network view and then come back to refresh the menu items.
      * **Diffusion Pseudotime Analysis (DPT)** : Perform cell trajectory inference based on network diffusion. For details about the algorithm, see [scanpy.tl.dpt](<https://scanpy.readthedocs.io/en/stable/api/scanpy.tl.dpt.html>) and the original paper: [PAGA: graph abstraction reconciles clustering with trajectory inference through a topology preserving map of single cells](<https://doi.org/10.1186/s13059-019-1663-x>). To conduct this analysis, the id of a cell that should be regarded as the root of the trajectory is needed. If you have some idea what this cell is, you may enter it directly in the following dialog. If you don't know what it is but have some idea in which cluster or clusters the root may reside, you can enter the cluster(s) in the second text field. ReactomeFIViz will try to infer a possibe cell root for you in your specified cluster(s) based on [PageRank](<https://en.wikipedia.org/wiki/PageRank>). For details about the cell root inference algorithm, see [infer_cell_root](<https://github.com/reactome-fi/fi_sc_analysis/blob/5cd26c200d6860e4a27df12fd1716709685bfe63/python/scpy4reactome/ScanpyWrapper.py#L455>). 
 
-![Configure Cell Root for DPT](/images/userguide/fiviz/ConfigCellRootForDPT.png)
+![Configure Cell Root for DPT](/uploads/tools/reactome-fiviz/ConfigCellRootForDPT.png)
 
 Configure Cell Root for DPT
 
@@ -671,45 +671,45 @@ After the DPT analysis, cells will be colored based on DPT values ranged from 0 
 **Note** : You may not see this menu item after the analysis. Try to switch to another network view and then come back to refresh the menu items.
      * **Differential Expression Analysis** : Perform differential gene expression analysis between a cell cluster (group) and another cell cluster or all other cell clusters using [t-test_overestim_var](<https://scanpy.readthedocs.io/en/stable/api/scanpy.tl.rank_genes_groups.html>). To conduct this analysis, you need to choose two groups of cells first: The group of cell for analysis based on clustering results and another group as the reference. You may choose another cell cluster or all other cells as the reference. 
 
-![Choose Cell Groups for Differential Expression Analysis](/images/userguide/fiviz/ScDiffChooseGroups.png)
+![Choose Cell Groups for Differential Expression Analysis](/uploads/tools/reactome-fiviz/ScDiffChooseGroups.png)
 
 Choose Cell Groups for Differentila Expression Analysis
 
 The differential expression analysis result is displayed in the following table. You may choose one or more filteres by clicking the "Add" button to filter genes displayed in the table. To create a FI network for the filtered genes displayed in the table, click the "Build FI Network" button. To conduct a pathway enrichment analysis, you can choose Binomial_test or [GSEA](<#Gene_Set.2FMutation_Analysis>). The Binomial_test will use the filtered, displayed genes in the table while the GSEA analysis will use gene rank by the score, including genes that are not displayed in the table. 
 
-![Differential Expression Analysis Result](/images/userguide/fiviz/ScDiffExpResultTable.png)
+![Differential Expression Analysis Result](/uploads/tools/reactome-fiviz/ScDiffExpResultTable.png)
 
 Differential Expression Analysis Result
 
 **Note** : Genes in the FI network constructed from the selected genes are colored based on gene scores. For more information on how to use the features for the FI network, see [Gene Set/Mutation Analysis](<#Gene_Set.2FMutation_Analysis>). You may open a pathway diagram when a network view is shown. To get back to the previous network view, close all displayed pathway diagrams and then select the network in the Network tab in the left, control panel. Reactome mouse pathways are predicted from human pathways based on the panther orthologous mapping file. For details, see: [Inferred Events in Reactome](<https://reactome.org/documentation/inferred-events>). The mouse human functional interaction network is predicted from the human functional interaction network using the mapping file provided by [MGI](<http://www.informatics.jax.org>), downloaded using this link: <http://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt>. One human gene may be mapped to multiple mouse genes. Therefore, the mouse FI network may show a node that is annotated with multiple mouse genes. For example, see below: The original human KLK3 is mapped to Klk1b9, Klk1b21, and many others, which are all listed in the node table at the bottom and in the network view as the label for that node. Currently links to these nodes in the FI network point to human genes (e.g. GeneCard). 
 
-![One Human Gene Mapped to Multiple Mouse Genes](/images/userguide/fiviz/OneHumanGeneToMultipleMouseGenes.png)
+![One Human Gene Mapped to Multiple Mouse Genes](/uploads/tools/reactome-fiviz/OneHumanGeneToMultipleMouseGenes.png)
 
 One Human Gene Mapped to Multiple Mouse Genes
 
      * **Build Regulatory Network** : Infer an underlying gene regulatory network between transcriptional factors (TFs) and their targets for one or more cell clusters. This approach is inspirted by Qiu et al's [Inferring Causal Gene Regulatory Networks from Coupled Single-Cell Expression Dynamics Using Scribe](<https://www.sciencedirect.com/science/article/abs/pii/S2405471220300363>). However, the current implementation provided by ReactomeFIViz uses time-delayed gene co-expression to infer potential causal relationships between TFs and their targers instead of "restricted directed information (RDI)" and limits the causal relationships search between TFs and their targets based on TF/target interactions provided by [dorothea](<https://saezlab.github.io/dorothea/>). To perform this analysis, set up parameters in the following dialog: 
 
-![Gene Regulatory Network Infernece Setup](/images/userguide/fiviz/ScRegNetSetup.png)
+![Gene Regulatory Network Infernece Setup](/uploads/tools/reactome-fiviz/ScRegNetSetup.png)
 
 Gene Regulatory Network Inference Setup
 
 **Note** : You may choose Spearman, Pearson, or Kendal for gene expression correlaiton calculation. The cell time type is one of latent_time, velocity_pseudotime, cytotrace or dpt_pseudotime, which are cell properties calculated during trajectory inference. The first two types are generated during an RNA velocity analysis (See below). If ReactomeFIViz cannot find any of these variables, you will be asked to perform the dpt_pseudotime analysis first. The time delay is used to conduct a delayed gene co-expression calculation. For example, the expression of a TF is [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] and the expresison of one of its target is [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]. If the time delay = 4, the correlation between [1, 2, 3, 4, 5, 6] and [15, 16, 17, 18, 19, 20] is calculated. The time delay in the above dialog is for the maximum time delay. Therefore, if you enter 7 for the time delay, the actual time delay values used for correlation calculation are [1, 2, 3, 4, 5, 6, 7]. The correlation is calculated 7 times and the maximum value of those calculated correlation values is used. For the cell groups, you may choose all, one of cell clusters, or multiple cell clusters (hold the command key under Mac or the control key under Windows).   
 It may take several minutes to calculate the correlation for all TF/target interactions and then build the regulatory network. The following is an example showing how a final gene regulatory network looks like: 
 
-![Partial Gene Regulatory Network](/images/userguide/fiviz/PartialGeneRegNet.png)
+![Partial Gene Regulatory Network](/uploads/tools/reactome-fiviz/PartialGeneRegNet.png)
 
 Partial Gene Regulatory Network
 
 **Note** : A style called "Regulatory Network Style" is created for rendering the generated gene regulatory network. With this style, TFs are rendered as diamonds while their targets as circles. The original [dorothea](<https://saezlab.github.io/dorothea/>) interactions provide annotation: -> for activation and -| for inhibition. Red for positive correlation while blue for negative correlaiton. The calculated correlation may not match the original annotation in dorothea. For example, in the above figure, the interaction between Insm1, a TF and one of its target, Scg3, is annotated as an inhibition. However, the actual calculated Spearman correlation is positive. The edge width is proportional to the absolute correlation value. You may investigate this style inside Cytoscape for more information.
      * **Project New Data** : Project another data set onto the displayed network. This feature uses the [ingest](<https://scanpy.readthedocs.io/en/stable/api/scanpy.tl.ingest.html>) function in scanpy to integrate a new dataset onto the dataset used to generate the network, showing where cells in the new dataset can be mapped to the displayed network. To perform this analysis, enter the data file in the following dialog: 
 
-![Project New Data Configuration](/images/userguide/fiviz/ProjectNewDataConfig.png)
+![Project New Data Configuration](/uploads/tools/reactome-fiviz/ProjectNewDataConfig.png)
 
 Project New Data Configuration
 
 **Note** : You cannot choose the approach in this dialog. It is expected that the same approach should be used to project a new dataset onto the existing network. After projecting, a new popup menu called "Toggle Projected Data" is added under the "Project New Data" menu for toggling the display of the projected cells. The following two figures show the cell network before (left) and after (right) a new dataset is projected. As shown, the majority of cells in the new dataset are projected onto the cell clusters displayed in green, salmon and rosy brown around the middle and top-right regions. 
 
-![Before Projecting](/images/userguide/fiviz/CellNetworkBeforeProject.png)![After Projecting](/images/userguide/fiviz/CellNetworkAfterProject.png)
+![Before Projecting](/uploads/tools/reactome-fiviz/CellNetworkBeforeProject.png)![After Projecting](/uploads/tools/reactome-fiviz/CellNetworkAfterProject.png)
 
      * **Save Analysis Results** : All analysis results may be saved into a local file in the [h5ad](<https://github.com/theislab/anndata/issues/180>) format. The saved file can be opened using the main menu, Apps/Reactome FI/Single Cell Analysis/Open.
 
@@ -719,33 +719,33 @@ RNA velocity analysis is a powerful approach to quantitatively model dynamic beh
 
   1. **Set up the analysis** : Select "RNA Velocity Analysis via scVelo" for Approach in the following scRNA-seq analysis action dialog and choose one of RNA velocity modes. To see the differences among the three modes listed in dialog, see the original scVelo paper, [Generalizing RNA velocity to transient cell states through dynamical modeling](<https://doi.org/10.1038/s41587-020-0591-3>). The default is "stochastic". However, if you want to get more dynamic information, choose "dynamical". For what you can do with the dynamical model, see [Dynamical Modeling with scVelo](<https://scvelo.readthedocs.io/DynamicalModeling.html>). The data file required by this analysis should be pre-processed specically by using velocyto or loompy/kallisto pipeline and contain two matrices for unspliced and spliced abundances. For more information on how to get started, see this scVelo tutorial: [Getting Started](<https://scvelo.readthedocs.io/getting_started.html>). 
 
-![RNA Velocity Analysis Configuration](/images/userguide/fiviz/RNAVelocitySetup.png)
+![RNA Velocity Analysis Configuration](/uploads/tools/reactome-fiviz/RNAVelocitySetup.png)
 
 RNA Velocity Analysis Configuration
 
   2. **Visualize the RNA velocity analysis results** : Dependent on the mode you choose, it may take a while to conduct the RNA velocity analysis. The outputs are the same as ones from a standard analysis using scanpy except that the single cell cluster network is displayed as directed, weighted network with directions corresponding to times in the inferred trajectory based on the [PAGA](<https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1663-x>) approach and weights for the connectivities between cell clusters. The following figure shows an example of such a weighted, directed cell cluster network. 
 
-![RNA Velocity Cluster Network](/images/userguide/fiviz/RNAVelocityNetwork.png)
+![RNA Velocity Cluster Network](/uploads/tools/reactome-fiviz/RNAVelocityNetwork.png)
 
 RNA Velocity Cluster Network
 
 **Note** : It is expected that you see different results from the RNA velocity analysis than ones from the standard analysis.
   3. **Analyze the RNA velocity results** : Most of analysis features for the displayed networks generated from the RNA velocity analysis are the same as ones from the standard analysis via scanpy. However, the RNA velocity analysis provides much more cell features than the standard analysis as shown in the following popup menu: 
 
-![RNA Velocity Cell Features](/images/userguide/fiviz/RNAVelocityCellFeatures.png)
+![RNA Velocity Cell Features](/uploads/tools/reactome-fiviz/RNAVelocityCellFeatures.png)
 
 RNA Velocity Cell Features Popup Menu
 
 **Note** : To understand the meanings of these RNA velocity specific cell features, please refer to the original scVelo tutorials: [scVelo tutorials](<https://scvelo.readthedocs.io/getting_started.html>). In addition to the above RNA velocity specific cell features, a new popup menu group is added for you to conduct some RNA velocity specific data analysis and visualization as shown below: 
 
-![RNA Velocity Popup Menu](/images/userguide/fiviz/RNAVelocityPopupMenu.png)
+![RNA Velocity Popup Menu](/uploads/tools/reactome-fiviz/RNAVelocityPopupMenu.png)
 
 RNA Velocity Popup Menu
 
 **Note** : Refer to this scVelo tutorial for Embedding, Embedding Grid, Embedding Stream, and Gene Velocity: [RNA Velocity Basics](<https://scvelo.readthedocs.io/VelocityBasics.html>). ReactomeFIViz utilizes scVelo's visualization features to generate image files for these plots and then automatically open them. To keep these files for your record, you may have to save them into your designated files. Otherwise, they will be automatically deleted when you close Cytoscape. 
      * **Rank Velocity Genes** : Ranks genes in individual cell clusters based on differential expression analysis using scVelo's rank_velocity_genes function: [ rank_velocity_genes](<https://scvelo.readthedocs.io/scvelo.tl.rank_velocity_genes.html#scvelo.tl.rank_velocity_genes>). Top 250 genes for individual clusters returned from this analysis are displayed in a table as shown in the following figure. You may conduct pathway enrichment analysis using a binomial test or build a FI network for a selected cell cluster. 
 
-![RNA Velocity Rank Gene Table](/images/userguide/fiviz/RNAVelocityRankGeneTable.png)
+![RNA Velocity Rank Gene Table](/uploads/tools/reactome-fiviz/RNAVelocityRankGeneTable.png)
 
 RNA Velocity Rank Gene Table
 
@@ -758,11 +758,11 @@ RNA Velocity Rank Gene Table
 
 Select an edge and right click it to get the popup menu for edge. Select a menu called "Reactome FI/Query FI Source". If a FI is extracted from curated pathways or reactions, a dialog for the original data source(s) will be displayed. Double click a row in the displayed table to show a detailed web page for the source of the FI. If the selected FI is a predicted one, the evidence for this FI should be displayed.
 
-![](/images/userguide/fiviz/QueryFISource.png)
+![](/uploads/tools/reactome-fiviz/QueryFISource.png)
 
 Query FI Source
 
-![](/images/userguide/fiviz/ShowFISource.png)
+![](/uploads/tools/reactome-fiviz/ShowFISource.png)
 
 ReactomeFIViz app Menu
 
@@ -770,11 +770,11 @@ ReactomeFIViz app Menu
 
 All FIs for a node can be queried. Select a node in the network panel, and right click it to get the popup menu for node. Select a menu called "Reactome FI/Fetch FIs". FI partners for the selected node will be displayed in two sections: partners have been displayed in the network and partners not displayed in the network. You can select partners from the second sections to expand the displayed network.
 
-![](/images/userguide/fiviz/FetchFIs.png)
+![](/uploads/tools/reactome-fiviz/FetchFIs.png)
 
 Query Node FIs
 
-![](/images/userguide/fiviz/ShowNodeFIs.png)
+![](/uploads/tools/reactome-fiviz/ShowNodeFIs.png)
 
 Show Node FIs
 
@@ -782,17 +782,17 @@ Show Node FIs
 
 Pathway diagrams can be shown for pathway hits. Select a pathway in the "Pathways in Network" or "Pathways in Modules" tab, and right click to get the popup menu for pathway. Select "Show Pathway Diagram" from the popup menu
 
-![](/images/userguide/fiviz/ShowPathwayDiagram.png)
+![](/uploads/tools/reactome-fiviz/ShowPathwayDiagram.png)
 
 Show Pathway Diagram
 
 . If pathways are imported from KEGG, KEGG pathway diagram pages will be shown in a browser with node genes listed in the "Nodes" column highlighted in red (for text and borders in pathway diagrams). If pathways are from Reactome or other non-KEGG databases, pathway diagrams should be shown in a separated window. If pathways are curated by the Reactome project, human laid-out diagrams should be displayed if any. Otherwise, auto-laid-out diagrams should be displayed. Genes or proteins from the displayed network should be highlighted in blue. Detailed annotations for nodes and reactions displayed in the diagram window can be viewed by using a popup menu called "View Instance". Diagrams displayed can be zoomed in/out using the zoom slider at the bottom of the window. The diagram can be panned by the overview window at the top-right corner.
 
-![](/images/userguide/fiviz/KEGGDiagram.png)
+![](/uploads/tools/reactome-fiviz/KEGGDiagram.png)
 
 KEGG Focal Adhesion
 
-![](/images/userguide/fiviz/ReactomeDiagram.png)
+![](/uploads/tools/reactome-fiviz/ReactomeDiagram.png)
 
 Reactome Signaling by PDGF
 
@@ -800,24 +800,24 @@ Reactome Signaling by PDGF
 
 Reactome FI plug-in can load NCI cancer [gene index annotations](<https://wiki.nci.nih.gov/display/cageneindex/Cancer+Gene+Index+End+User+Documentation>) for genes/proteins displayed in the network. There are two ways to show these annotations: use a popup menu called "Load Cancer Gene Index" when no object is selected (left figure), and use another popup menu "Fetch Cancer Gene Index" for a selected node (right figure).
 
-![](/images/userguide/fiviz/LoadCGI.png)
+![](/uploads/tools/reactome-fiviz/LoadCGI.png)
 
 Load Gene Index
 
-![](/images/userguide/fiviz/LoadNodeCGI.png)
+![](/uploads/tools/reactome-fiviz/LoadNodeCGI.png)
 
 Load Node Cancer Gene Index
 
   
 By using the first method, the user can load the tree of NCI disease terms and display the tree in the left panel. The user can select disease term in the tree, all genes or proteins have been annotated for the selected disease and its sub-terms will be selected.
 
-![](/images/userguide/fiviz/CGIOverlay.png)
+![](/uploads/tools/reactome-fiviz/CGIOverlay.png)
 
 Cancer Gene Index Overlay
 
 By using the second method, the user can view detailed annotations for the selected gene or protein. The user can sort these annotations based on PubMedID, Cancer type, and annotation status, and also filter annotations based on several criteria.
 
-![](/images/userguide/fiviz/CGIAnnotationsForNode.png)
+![](/uploads/tools/reactome-fiviz/CGIAnnotationsForNode.png)
 
 Cancer Gene Index Annotations for Node
 
@@ -825,18 +825,18 @@ Cancer Gene Index Annotations for Node
 
 Survival analysis is based on a server-side R script to do either coxph or Kaplan-Meier survival analysis. To do survival analysis, a tab-delimited text file containing at least three columns should be provided. The names of three columns should be: Samples, OSDURATION, and OSEVENT. For example, see this survival information file downloaded from [van de Vijver et al in 2002](<http://www.nejm.org/doi/full/10.1056/NEJMoa021967>): [Nejm_Clin_Simple.txt](<https://github.com/reactome-fi/CytoscapePlugIn/raw/master/example_data/GeneExpression/Nejm_Clin_Simple.txt>), which has been simplified for our analysis purpose. To do survival analysis, use the popup menu "Analyze Module Functions/Survival Analysis..." (see below)
 
-![](/images/userguide/fiviz/SurvivalAnalysisMenu.png)
+![](/uploads/tools/reactome-fiviz/SurvivalAnalysisMenu.png)
 
 Survival Analysis Menu
 
 In the survival analysis dialog (below), double click the text field to select a file containing survival information for samples used to build the displayed FI sub-network (Note: you cannot do survival analysis if you use a gene set file only to construct the displayed FI subnetweork). You can choose either coxph or Kaplan-Meier model to do survival analysis. If you choose the Kaplan-Meier model, you have to select a module for analysis. In the Kaplan-Meier analysis, all samples will be divided into two groups: samples having no mutated genes in the selected module (group 1) and samples having mutated genes in module (group 2). It is recommended to run the coxph module first without selecting any module in order to see which module is most significantly related to survival times. After that, you can focus on some specific modules for survival analysis.
 
-![](/images/userguide/fiviz/SurvivalAnalysisDialog.png)
+![](/uploads/tools/reactome-fiviz/SurvivalAnalysisDialog.png)
 
 Survival Analysis Dialog
 
 The results from survival analysis will be displayed in the right Results Panel with a tab labeled "Survival Analysis" (below left). You can do multiple survival analyses. All results returned from the server-side R script will be displayed in this panel with labels based on your parameter selections in the survival analysis dialog. The last result will be selected as default. At most three sections are displayed in the result panel for each analysis: Output, Error, and Plot. If no warning or error returned from an analysis, the error section may not be shown. Rows for modules having p-values less than 0.05 from coxph (all modules) analysis are displayed in blue with text underlined. You can click these modules to do a quick single-module based survival analysis without going through the above steps. Single module-based Kaplan-Meier analysis will show a plot file. You can click the file to view the actual plot (below right). You may need to save the plot file for your future use.
 
-![Survival Analysis Results](/images/userguide/fiviz/SurvivalAnalysisResult.png)
+![Survival Analysis Results](/uploads/tools/reactome-fiviz/SurvivalAnalysisResult.png)
 
-![Kaplan-Meier Survival Plot](/images/userguide/fiviz/KaplanMeyerPlot.png)
+![Kaplan-Meier Survival Plot](/uploads/tools/reactome-fiviz/KaplanMeyerPlot.png)

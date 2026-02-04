@@ -1,0 +1,162 @@
+---
+title: Graph Database
+category: "documentation"
+---
+
+##  Graph Database 
+
+#### The Reactome Graph Database models the Reactome knowledgebase as an interconnected graph database.
+
+[ __ ](<#MoreInfo>)
+
+##  [ More Info ](<#MoreInfo>)
+
+[ __ ](<#GetStarted>)
+
+##  [ Get Started ](<#GetStarted>)
+
+[ __ ](<#API>)
+
+##  [ API ](<#API>)
+
+[ __ ](<#Resources>)
+
+##  [ Resources ](<#Resources>)
+
+### [__More Info](<#MoreInfo>)
+
+At the cellular level, life is a network of molecular reactions. In Reactome, these processes are systematically described in molecular detail to generate an ordered network of molecular transformations [(Fabregat et al. 2015)](<http://www.ncbi.nlm.nih.gov/pubmed/26656494>). This amounts to millions of interconnected terms naturally forming a [graph](<http://en.wikipedia.org/wiki/Graph_\(abstract_data_type\)>) of biological knowledge. The Reactome Graph provides an intuitive way for data retrieval as well as interpretation and analysis of pathway knowledge.
+
+Retrieving, and especially analysing such complex data becomes tedious when using relational databases. Queries across the pathway knowledgebase are composed by a number of expensive join operations resulting in poor performance and a hard-to-maintain project. Due to the schema-based approach, relational databases are limited in how information is stored and thus are difficult to scale for new requirements. In order to overcome these problems the Reactome database is imported in [Neo4j](<http://neo4j.com/>), creating one large interconnected graph. Graph database technology is an effective tool for modelling highly connected data.
+
+Storing Reactome data in this form has many benefits. No denormalisation is required so data can be stored in its natural form. Nodes in the vicinity of a starting point can quickly be traversed giving the user the possibility to not only retrieve data but also perform fast analysis of these neighbour networks. Thus, knowledge that previously was unavailable due to the limitations of relational data storage can now be retrieved.
+
+To easily access and benefit from the graph database, we have developed the GraphCore; an open source library implemented in Java. This project uses [Spring Data Neo4j](<http://projects.spring.io/spring-data-neo4j/>), which provides an automatic object graph mapping on top of Neo4j and tightly integrates with other parts of the spring framework used across the project.
+
+### [__Get Started](<#GetStarted>)
+
+[__Download](</download/current/reactome.graphdb.tgz>)
+
+To run our graph database on your personal computer, please choose the installation option that suits your need. Our team recommends [Neo4j Desktop](</dev/graph-database/neo4j-desktop>), but we can't compete with developers and their love for terminal console.
+
+#### 1\. Docker
+
+If you are comfortable working with docker, you can build a [docker image](<https://hub.docker.com/r/reactome/graphdb/tags>) that contains Neo4j and a Reactome graph database
+
+You can use the Neo4j graph database: 
+
+  1. Download [Docker](<https://www.docker.com/products/docker-desktop/>) on your desktop. 
+  2. Pull a [docker image](<https://gallery.ecr.aws/reactome/graphdb>) that contains Neo4j and a Reactome graph database from AWS ECR.
+  3. Authenticate with AWS ECR and pull the image:  
+  
+aws ecr get-login-password --region <your-region> | docker login --username AWS --password-stdin public.ecr.aws/reactome/graphdb docker pull public.ecr.aws/reactome/graphdb:<VERSION>  
+  
+
+  4. Run the Container  
+**For Reactome GraphDB versions 79 and newer:**  
+docker run -p 7474:7474 -p 7687:7687 -e NEO4J_dbms_memory_heap_maxSize=8g public.ecr.aws/reactome/graphdb:<VERSION>  
+**  
+For Reactome GraphDB versions 76–78, set a Neo4j password:**  
+docker run --name reactome-graphdb -e NEO4J_AUTH=neo4j/$NEO4J_PASSWORD -p 7474:7474 -p 7687:7687 public.ecr.aws/reactome/graphdb:<VERSION>  
+  
+
+  5. Access Neo4j Browser
+  6. Open [](<http://localhost:7474/>)<http://localhost:7474> and log in with:  
+Username: neo4j  
+Password: (set via $NEO4J_PASSWORD or default if not set)
+
+You now have a docker image containing Neo4j and the Reactome graph database. You can create custom queries using Cypher and submit your own queries. Please refer to our [extracting pathway participating molecules](<https://reactome.org/dev/graph-database/extract-participating-molecules>) tutorial to introduce yourself to using Cypher to query the Reactome Graph Database.
+
+#### 2\. Neo4j Desktop
+
+If you would like to use Neo4j Desktop, we have created a dedicated page for it. Please see the instructions [here](</dev/graph-database/neo4j-desktop>).
+
+#### 3\. Neo4j Community manual installation
+
+If you have trouble using the Neo4j 3.5.X with our data, we strongly recommend upgrading your neo4j version to 4.X.X and following the instructions above.
+
+Our Graph Database is available in our [download data section](</download-data>). It is possible to use it in your local environment by following these steps:
+
+  1. Download and install the [Neo4j V4](<https://neo4j.com/download/other-releases/>).
+     1. Untar/unzip Neo4j tar/zip file.
+  2. Download the [Graph Database](</download/current/reactome.graphdb.tgz>) for the latest data release.
+  3. Install the Graph Database for Mac/Linux users.
+     1. Extract the Reactome.graph.db after downloading.
+     2. Move graph.db folder to /path/to/neo4j/data/databases/
+        1. If graph.db already exists, remove it or rename it.
+     3. Rename the folder to the graph.db.
+     4. Config Neo4j
+        1. Edit Neo4j confirmation file in /path/to/neo4j/conf/neo4j.conf
+        2. We recommend having all these settings:
+           1. _dbms.default_database=graph.db_
+           2. _dbms.recovery.fail_on_missing_files=false_
+           3. _unsupported.dbms.tx_log.fail_on_corrupted_log_files=false_
+     5. Start Neo4j ./path/to/neo4j/bin/neo4j start
+  4. Install the Graph Database for Windows user
+     1. Please see the instructions[ here](<https://neo4j.com/docs/operations-manual/current/installation/windows/>).
+  5. If the standard procedure has been followed, the graph database should be accessible via the Neo4j browser at your [localhost](<http://localhost:7474/>). More instructions are available in the [Neo4j operations tutorial](<http://neo4j.com/docs/operations-manual/current/>), specifically the sections “[file locations](<#file-locations>)” and “[restoring a backup](<#backup-restoring>)“.
+
+You can also [restore a graph database ](<https://neo4j.com/docs/operations-manual/current/backup-restore/restore-dump/>)dump file to Neo4j Community if you have Java 11 installed on your local.
+
+  1. Download and install the [Neo4j V4](<https://neo4j.com/download/other-releases/>).
+     1. Untar/unzip Neo4j tar/zip file.
+  2. Download the Graph Database Dump file.
+  3. Run ./path/to/neo4j/bin/neo4j-admin load --force --from=/path/to/reactome.graphdb.dump --database=graph.db
+  4. Start Neo4j ./path/to/neo4j/bin/neo4j start
+
+#### 4\. Using Neo4j V5: 
+
+Reactome data dumps are in Neo4j version 4 format. To use them with Neo4j version 5 the Reactome database needs to be downloaded as a dump and converted. The following instructions are for CLI installation of Neo4j (Linux): 
+
+  1. Download and install any 5.* version of Neo4j 
+  2. Download the Reactome [database dump](<https://reactome.org/download/current/reactome.graphdb.dump>)
+  3. cd to installation directory. From there, run all the commands provided below
+  4. cp <PATH OF DOWNLOADED DUMP> reactome.dump 
+  5. ./bin/neo4j-admin database migrate --force-btree-indexes-to-range reactome
+  6. Now there should be a new directory created under data/databases
+  7. Config Neo4j:
+     1. We recommend having all these settings in conf/neo4j.conf:
+        1. initial.dbms.default_database=reactome
+        2. db.recovery.fail_on_missing_files=false
+        3. unsupported.dbms.tx_log.fail_on_corrupted_log_files=false
+
+#### Troubleshooting
+
+##### Not able to access graph.db in Mac/Linux
+
+DatabaseUnavailable：
+
+`Database "`graph.db`" is unavailable, its status is "offline."`
+
+There may be a few reasons for being unable to access the graph database. Some areas you can check include:
+
+  1. Ensure the "graph.db" folder is accessible under your Neo4j installation folder. It should be located at "/path/to/neo4j/data/databases/graph.db".
+  2. Ensure the user and group owner are recursively set to "neo4j:adm" using the command "chown -R neo4j:adm /path/to/neo4j".
+  3. Depending on how you are using Neo4j, the database may need to be started using the "cypher-shell" or a configuration value may need to be changed to allow access to the database.
+
+If you still face any problems please send an email to [](<mailto:help@reactome.org>)This email address is being protected from spambots. You need JavaScript enabled to view it. with information about the following to help debug the problem:
+
+  1. The version of Neo4j you are using
+  2. The working environment you are using, Mac? Linux? Windows?
+  3. The software you are using to run and access Neo4j 
+     1. Neo4j Docker image vs. Neo4j community edition installed to your system
+     2. Neo4j Desktop vs. Web Browser vs. Cypher-Shell
+  4. Path of the Neo4j installation, if installed locally
+
+Great! Now you have your own copy of the current version of the Reactome data content in your instance of Neo4j, so let’s see how you can take advantage of it either with direct queries to the graph database or using our GraphCore java library.
+
+#### Directly querying to the Reactome Graph Database
+
+The Neo4j browser offers a nice interface to submit your own queries to the graph database. We recommend using this platform for the first interaction with the Reactome Graph database to see how easy is to use the [Cypher query language](<http://neo4j.com/developer/cypher/>).
+
+Please refer to our [extracting pathway participating molecules](</dev/graph-database/extract-participating-molecules>) tutorial to introduce yourself to using Cypher to query the Reactome Graph Database.
+
+### [__API](<#API>)
+
+The API for the Reactome GraphCore Java library is available on our[ _GitHub_](<https://github.com/reactome/graph-core>) repository.
+
+### [__Resources](<#Resources>)
+
+[Tutorial: Extracting participating molecules using the Graph Database](</dev/graph-database/extract-participating-molecules>).
+
+To learn more about our graph database, have a look at our relevant publication entitled [Reactome graph database: Efficient access to complex pathway data](<https://doi.org/10.1371/journal.pcbi.1005968>).

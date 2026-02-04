@@ -23,7 +23,7 @@ The Reactome data schema was expanded as described below to accommodate new clas
     * A Cell instance has CellType, TissueLayer, Tissue, and Organ as single-valued attributes which are populated using terms from public open source databases, the Cell Ontology [(Sarntivijai et al. 2014; Osumi-Sutherland 2017)](<https://paperpile.com/c/N1L8cm/oNqo+9HsK>) and UBERON [(Haendel et al. 2014)](<https://paperpile.com/c/N1L8cm/l9BZ>), and cross-reference these databases.
     * Cell instances also have multi-valued ProteinMarker and RNAMarker attributes, which are specific to the cell type and/or the cell state or are differentially upregulated in the Cell. (Figure 1B). The markers (protein or RNA) are manually curated; each marker instance is associated with one or more literature references for evidence, including, if applicable, citations of CellMarker (Hu et al. 2022) and PanglaoDB databases (Franzén et al. 2019) (Figure 1B) 
 
-![Figure 1. Cell Physical Entity class A and new attributes B](/images/userguide/cytomics/Figure_1.png)
+![Figure 1. Cell Physical Entity class A and new attributes B](/uploads/documentation/userguide/cytomics/Figure_1.png)
 
 **Figure 1**. Cell Physical Entity class A and new attributes B
 
@@ -32,7 +32,7 @@ The Reactome data schema was expanded as described below to accommodate new clas
     * A Cell Lineage Path, organizationally similar to the preexisting Pathway subclass, is composed of other Cell Lineage Path instances or Cell Development Steps as subevents that are connected through shared input/output Cells (Figure 2C).
     * Both Cell Development Step and Cell Lineage Path are associated with a relevant Gene Ontology (GO) biological process term [(The Gene Ontology Consortium 2019)](<https://paperpile.com/c/N1L8cm/vwF9>) and with a “tissue” term from UBERON [(Haendel et al. 2014)](<https://paperpile.com/c/N1L8cm/l9BZ>).
 
-![Figure 2](/images/userguide/cytomics/Figure_2.png)
+![Figure 2](/uploads/documentation/userguide/cytomics/Figure_2.png)
 
 **Figure 2.** Cell Development Step and Cell Lineage Path schema (A) and attributes (B,C).
 
@@ -42,26 +42,26 @@ The Cytomics content is searchable on the Reactome website. Running a search fro
     * Clicking on marker or Cell Development Step, will redirect to the details page of the marker or event respectively. 
     * Clicking on the Cell in the expanded hierarchical view of the Developmental Biology pathway (Figure 3B) in the details page, will redirect to the Pathway Browser view highlighting the Cell Lineage Path in the hierarchy panel and showing the selected Cell in the pathway diagram.
 
-![Figure 3A. Details page for Cell ](/images/userguide/cytomics/Figure_3A.png)
+![Figure 3A. Details page for Cell ](/uploads/documentation/userguide/cytomics/Figure_3A.png)
 
 **Figure 3**. Details page for Cell (A)
 
-![Figure 3B. expanded view of the Cell location in the Pathway Browser B . ](/images/userguide/cytomics/Figure_3B.png)
+![Figure 3B. expanded view of the Cell location in the Pathway Browser B . ](/uploads/documentation/userguide/cytomics/Figure_3B.png)
 
 **Figure 3**. Expanded view of the Cell location in the Pathway Browser (B)
 
   * See the details pages for marker instance (Figure 4), Cell Development Step (Figure 5), Cell Lineage Path (Figure 6) below. 
     * The content of individual events can be exported from the event’s details pages (Figure 5, 6) as SBML, PDF, SVG, PNG, PPTX, SBGN files.
 
-![ Figure 4. Details page for Marker instance](/images/userguide/cytomics/Figure_4.png)
+![ Figure 4. Details page for Marker instance](/uploads/documentation/userguide/cytomics/Figure_4.png)
 
 **Figure 4**. Details page for Marker instance
 
-![Figure 5. Details page for Cell Development Step](/images/userguide/cytomics/Figure_5.png)
+![Figure 5. Details page for Cell Development Step](/uploads/documentation/userguide/cytomics/Figure_5.png)
 
 **Figure 5**. Details page for Cell Development Step
 
-![Figure 6. Details page for Cell Lineage Path](/images/userguide/cytomics/Figure_6.png)
+![Figure 6. Details page for Cell Lineage Path](/uploads/documentation/userguide/cytomics/Figure_6.png)
 
 **Figure 6**. Details page for Cell Lineage Path
 
@@ -72,7 +72,7 @@ Cell Lineage Paths are available under the “Developmental Biology” pathway i
   
 Although the pathway diagram depicts a selection of cell types that are planned for annotation, only one type has been annotated so far and this is indicated by a selectable blue box label in the diagram.
 
-![Figure 7. Pathway browser view of Developmental Cell Lineages subpathway](/images/userguide/cytomics/Figure_7.png)
+![Figure 7. Pathway browser view of Developmental Cell Lineages subpathway](/uploads/documentation/userguide/cytomics/Figure_7.png)
 
 **Figure 7.** Pathway browser view of “Developmental Cell Lineages” subpathway
 
@@ -80,23 +80,23 @@ Selecting an individual Cell Lineage Path in the pathway hierarchy will display 
 
 The Description tab in the Details panel of a selected Cell Lineage Path provides additional information about the Cell Lineage Path including name, species, assigned GO Biological Process term (if applicable), and literature reference(s) (Figure 8).
 
-![Figure 8. Selecting a Cell Lineage Path from the pathway hierarchy](/images/userguide/cytomics/Figure_8.png)
+![Figure 8. Selecting a Cell Lineage Path from the pathway hierarchy](/uploads/documentation/userguide/cytomics/Figure_8.png)
 
 **Figure 8.** Selecting a Cell Lineage Path from the pathway hierarchy
 
 Clicking on an individual Cell Development Step either in the pathway hierarchy or in the pathway diagram will display relevant information for the selected event in the details panel below the diagram (Figure 9). The description tab of the details panel shows input and output, which are defined by Cell instances, regulators of the event (when applicable), GO biological process, and UBERON tissue terms. It may also display preceding event(s) connecting individual Cell Development Steps within the same Cell Lineage Path (Figure 9). Details of participating Cell instances including histological terms, specific protein and RNA markers, and corresponding marker references are accessible from the description tab of Cell Development Step upon clicking on the plus sign to the right of the input/output attributes.
 
-![Figure 9. Selecting a Cell Development Step](/images/userguide/cytomics/Figure_9.png)
+![Figure 9. Selecting a Cell Development Step](/uploads/documentation/userguide/cytomics/Figure_9.png)
 
 **Figure 9.** Selecting a Cell Development Step
 
 Alternatively, the Cell details can be displayed in the Details panel by selecting a “Cell” icon in the diagram of the Cell Lineage Path (Figure 10). Right-clicking or clicking the blue info icon when hovering over a “Cell” icon in the pathway diagram will open a popup list of protein and RNA markers for the selected Cell (Figure 11).
 
-![Figure 10. Selecting a Cell](/images/userguide/cytomics/Figure_10.png)
+![Figure 10. Selecting a Cell](/uploads/documentation/userguide/cytomics/Figure_10.png)
 
 **Figure 10.** Selecting a Cell
 
-![Figure 11. Displaying the list of Cell markers](/images/userguide/cytomics/Figure_11.png)
+![Figure 11. Displaying the list of Cell markers](/uploads/documentation/userguide/cytomics/Figure_11.png)
 
 **Figure 11.** Displaying the list of Cell markers
 
@@ -104,11 +104,11 @@ The Molecules tab in the Details panel (Figure 12A) displays a downloadable list
 
 The Structure tab (Figure 12B) in the details panel displays the Protein Data Bank structures of molecules listed in the Molecular tab and the Expression tab shows gene expression data from Expression Atlas.
 
-![Figure 12A](/images/userguide/cytomics/Figure_12A.png)
+![Figure 12A](/uploads/documentation/userguide/cytomics/Figure_12A.png)
 
 **Figure 12.** Displaying Molecules Tab (A) 
 
-![Figure 12B](/images/userguide/cytomics/Figure_12B.png)
+![Figure 12B](/uploads/documentation/userguide/cytomics/Figure_12B.png)
 
 **Figure 12.** Structures tab (B)
 
@@ -122,19 +122,19 @@ The results of gene expression analysis, including Reactome Gene Set Analysis (R
 
 Expression values for the markers of a selected cell are displayed as blue horizontal lines within the expression scale (Figure 14C). The median cell marker expression among the cell's matching markers is shown in black. On the left, when a specific marker bar is hovered over, the currently hovered marker’s expression value is displayed in red, and the expression values of other markers in the same cell are shown in yellow.
 
-![Figure 13 samll](/images/userguide/cytomics/Figure_13_samll.png)
+![Figure 13 samll](/uploads/documentation/userguide/cytomics/Figure_13_samll.png)
 
 **Figure 13.** Overrepresentation analysis displayed within the nuclei of the cells in the Cell Lineage Path
 
-![Figure 14A](/images/userguide/cytomics/Figure_14A.png)
+![Figure 14A](/uploads/documentation/userguide/cytomics/Figure_14A.png)
 
 **Figure 14.** Gene expression analysis results are displayed within the nuclei of the cells. The level with coloration reflects the average expression value of the cell markers (A)
 
-![Figure 14B](/images/userguide/cytomics/Figure_14B.png)
+![Figure 14B](/uploads/documentation/userguide/cytomics/Figure_14B.png)
 
 **Figure 14.** A zoomed-in view of the expression bars of individual markers (B) 
 
-![Figure 14C](/images/userguide/cytomics/Figure_14C.png)
+![Figure 14C](/uploads/documentation/userguide/cytomics/Figure_14C.png)
 
 **Figure 14. T** he expression scale (C)
 
