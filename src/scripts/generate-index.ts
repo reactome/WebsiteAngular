@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ArticleIndexItem } from '../types/article.ts';
-import parseFrontmatter from '../utils/parseFrontmatter.ts';
-import truncateHtml from '../utils/truncateHtml.ts';
+import { ArticleIndexItem } from '../types/article';
+import parseFrontmatter from '../utils/parseFrontmatter';
+import truncateHtml from '../utils/truncateHtml';
 
 function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
   const newsDir = path.resolve(process.cwd(), ...directories);
@@ -25,7 +25,7 @@ function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
         excerpt: truncateHtml(frontmatter['body']?.toString() || body || '', 50),
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''), //TODO: This might be wrong lol
-        tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^\[|\]$/g, '')) : frontmatter['tags'],
+        tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')) : frontmatter['tags'],
       } as ArticleIndexItem;
     })
     .sort(
