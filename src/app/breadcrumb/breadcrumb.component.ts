@@ -32,7 +32,7 @@ export class BreadcrumbComponent {
           this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -2));
           
           let articleSegment = path_segments[path_segments.length -1];
-           this.contentService.getArticle(
+           this.contentService.getArticleIndexItem(
             second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
             articleSegment).subscribe({
               next: (article) => {

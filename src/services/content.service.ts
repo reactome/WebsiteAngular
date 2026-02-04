@@ -111,6 +111,19 @@ export class ContentService {
   // }
 
   /**
+   * Get article index item by slug
+   */
+  getArticleIndexItem(path:string, slug: string): Observable<ArticleIndexItem | null> {
+    return this.http.get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`).pipe(
+      map(items => {
+        const item = items.find(i => i.slug === slug);
+        return item || null;
+      })
+    )
+  }
+
+
+  /**
    * Get an article by slug
    */
   getArticle(path:string, slug: string): Observable<Article | null> {
