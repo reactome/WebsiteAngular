@@ -27,7 +27,6 @@ export class BreadcrumbComponent {
 
       if (path_segments.length > 0 && path_segments) {
         let second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 2] : null;
-        console.log("Breadcrumb segments:", path_segments);
 
         if (second_lastSegment === 'news' || second_lastSegment === 'reactome-research-spotlight') {
           this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -2));
@@ -38,7 +37,6 @@ export class BreadcrumbComponent {
             articleSegment).subscribe({
               next: (article) => {
                 if (article) {
-                  console.log("Loaded article for breadcrumb:", article.title);
                   this.breadcrumbs.push({
                     label: article.title,
                     link: path_segments.join('/')
@@ -66,7 +64,6 @@ export class BreadcrumbComponent {
     }
 
   updateBreadcrumbs(segments: string[]) {
-    console.log("Updating breadcrumbs for segments:", segments);
     // Wait for navOptions to be loaded
     if (Object.keys(this.navOptions).length === 0) {
       // Retry after navOptions are loaded
@@ -95,7 +92,6 @@ export class BreadcrumbComponent {
       }
 
       if (matchedLink) {
-        console.log("Matched breadcrumb link:", matchedLink);
         this.breadcrumbs.push({
           label: matchedLink.label,
           link: matchedLink.link
@@ -105,7 +101,6 @@ export class BreadcrumbComponent {
         currentNavLevel = matchedLink.dropdownLinks || {};
       } else {
         // If no match found, create a breadcrumb from the segment name
-        console.log("No match for breadcrumb segment:", segment);
         this.breadcrumbs.push({
           label: this.formatSegmentLabel(segment),
           link: currentPath
