@@ -59,6 +59,8 @@ export class ArticleComponent implements OnInit {
           image: article?.image,
           tags: article?.tags
         };
+
+        console.log("Loaded article:", this.article.tags, Array.isArray(this.article.tags));
         this.loading = false;
       },
       error: (err) => {

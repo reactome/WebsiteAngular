@@ -26,10 +26,17 @@ export class BreadcrumbComponent {
       let path_segments = segments.map(s => s.path);
 
       if (path_segments.length > 0 && path_segments) {
-        let second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 2] : null;
+        let second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 1] : null;
 
         if (second_lastSegment === 'news' || second_lastSegment === 'reactome-research-spotlight') {
-          this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -2));
+          this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -1));
+          
+          //wait for breadcrumbs to update before adding article title
+          if (this.breadcrumbs.length === 0) {
+            setTimeout(() => {
+              this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -1));
+            }, 50);
+          }
           
           let articleSegment = path_segments[path_segments.length -1];
            this.contentService.getArticleIndexItem(

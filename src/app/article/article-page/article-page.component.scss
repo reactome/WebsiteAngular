@@ -148,6 +148,11 @@ $max-content-width: 1200px;
     line-height: 1.5;
     margin-bottom: $spacing-unit;
     flex: 1;
+
+    ::ng-deep img {
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   .read-more {

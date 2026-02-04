@@ -135,7 +135,7 @@ export class ContentService {
           date: new Date(frontmatter['date'] as string),
           author: frontmatter['author'] as string,
           image: frontmatter['image'] as string,
-          tags: frontmatter['tags'] as string[],
+          tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')) : frontmatter['tags'] as string[] | undefined,
           body: frontmatter['body'] as string || body, //TODO: links and formatting in body
           excerpt: frontmatter['body']?.toString().substring(0, 200) || '',
           slug: slug
