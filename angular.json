@@ -20,9 +20,7 @@
             "outputPath": "dist/reactome",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -31,9 +29,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": []
           },
           "configurations": {
@@ -78,10 +74,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
+            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -90,14 +83,288 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": []
           }
         }
       }
+    },
+    "WebsiteAngular": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/website-angular",
+      "sourceRoot": "projects/website-angular/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/website-angular",
+            "index": "projects/website-angular/src/index.html",
+            "browser": "projects/website-angular/src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/website-angular/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "content",
+                "output": "/content"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/website-angular/src/assets",
+                "output": "/assets"
+              }
+            ],
+            "styles": ["projects/website-angular/src/styles.scss"],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "WebsiteAngular:build:production"
+            },
+            "development": {
+              "buildTarget": "WebsiteAngular:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/website-angular/public"
+              }
+            ],
+            "styles": ["projects/website-angular/src/styles.scss"],
+            "scripts": []
+          }
+        }
+      }
+    },
+    "PathwayBrowser": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/pathway-browser",
+      "sourceRoot": "projects/pathway-browser/src",
+      "prefix": "cr",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/pathway-browser",
+            "index": "projects/pathway-browser/src/index.html",
+            "allowedCommonJsDependencies": [
+              "cytoscape",
+              "lodash/debounce",
+              "lodash/get",
+              "lodash/set",
+              "lodash/toPath"
+            ],
+            "polyfills": ["zone.js", "@angular/localize/init"],
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              "projects/pathway-browser/src/favicon.svg",
+              "projects/pathway-browser/src/assets",
+              {
+                "glob": "**/*",
+                "input": "dist/reactome-cytoscape-style/assets",
+                "output": "/assets"
+              }
+            ],
+            "styles": ["projects/pathway-browser/src/styles.scss"],
+            "scripts": [],
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules/", "dist/"]
+            },
+            "browser": "projects/pathway-browser/src/main.ts"
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "4mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "10kb"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.production.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "release": {
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "4mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "10kb"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.release.ts"
+                }
+              ]
+            },
+            "development": {
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "remote": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            },
+            "local": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.local.ts"
+                }
+              ]
+            },
+            "github": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.github.ts"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "projects/pathway-browser/proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "pathway-browser:build:production"
+            },
+            "development": {
+              "buildTarget": "pathway-browser:build:development"
+            },
+            "local": {
+              "buildTarget": "pathway-browser:build:local"
+            },
+            "remote": {
+              "buildTarget": "pathway-browser:build:remote"
+            }
+          },
+          "defaultConfiguration": "remote"
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "buildTarget": "pathway-browser:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing",
+              "@angular/localize/init"
+            ],
+            "tsConfig": "tsconfig.spec.json",
+            "assets": ["src/favicon.ico", "src/assets"],
+            "styles": ["src/styles.scss"],
+            "scripts": [],
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules/", "dist/"]
+            }
+          }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {
+            "remote": "origin"
+          }
+        }
+      }
     }
-    
   }
 }
