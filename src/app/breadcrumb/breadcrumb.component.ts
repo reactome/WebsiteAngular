@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink} from '../../types/link';
+import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -12,6 +13,7 @@ import {NavLink} from '../../types/link';
 })
 export class BreadcrumbComponent {
   private route = inject(ActivatedRoute);
+  private contentService = inject(ContentService);
   navOptions: Record<string, NavLink> = {};
   breadcrumbs: NavLink[] = [];
 
@@ -24,7 +26,34 @@ export class BreadcrumbComponent {
       let path_segments = segments.map(s => s.path);
 
       if (path_segments.length > 0 && path_segments) {
-        this.updateBreadcrumbs(path_segments);
+        let second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 2] : null;
+        console.log("Breadcrumb segments:", path_segments);
+
+        if (second_lastSegment === 'news' || second_lastSegment === 'reactome-research-spotlight') {
+          this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -2));
+          
+          let articleSegment = path_segments[path_segments.length -1];
+           this.contentService.getArticle(
+            second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
+            articleSegment).subscribe({
+              next: (article) => {
+                if (article) {
+                  console.log("Loaded article for breadcrumb:", article.title);
+                  this.breadcrumbs.push({
+                    label: article.title,
+                    link: path_segments.join('/')
+                  });
+                }
+              },
+              error: (err) => {
+                console.error("Error loading article for breadcrumb:", err);
+                this.updateBreadcrumbs(path_segments);
+              }
+            })
+        } else {
+          this.updateBreadcrumbs(path_segments);
+        }
+        
       }
     });
   }
@@ -37,6 +66,7 @@ export class BreadcrumbComponent {
     }
 
   updateBreadcrumbs(segments: string[]) {
+    console.log("Updating breadcrumbs for segments:", segments);
     // Wait for navOptions to be loaded
     if (Object.keys(this.navOptions).length === 0) {
       // Retry after navOptions are loaded
@@ -65,6 +95,7 @@ export class BreadcrumbComponent {
       }
 
       if (matchedLink) {
+        console.log("Matched breadcrumb link:", matchedLink);
         this.breadcrumbs.push({
           label: matchedLink.label,
           link: matchedLink.link
@@ -74,6 +105,7 @@ export class BreadcrumbComponent {
         currentNavLevel = matchedLink.dropdownLinks || {};
       } else {
         // If no match found, create a breadcrumb from the segment name
+        console.log("No match for breadcrumb segment:", segment);
         this.breadcrumbs.push({
           label: this.formatSegmentLabel(segment),
           link: currentPath
