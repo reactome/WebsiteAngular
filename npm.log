@@ -1,0 +1,2433 @@
+❯ Building...
+✔ Building...
+Application bundle generation failed. [4.962 seconds]
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.html:3:56:
+[37m      3 │ ...ef]="navOptions['tools']?.[32mdropdownLinks[37m?.['content-service']?.li...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeApiDataComponent.
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-api-data.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.html:13:56:
+[37m      13 │ ...f]="navOptions['tools']?.[32mdropdownLinks[37m?.['analysis-service']?.l...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeApiDataComponent.
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-api-data.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.html:23:60:
+[37m      23 │ ...navOptions['community']?.[32mdropdownLinks[37m?.['icon-library']?.link ...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeApiDataComponent.
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-api-data.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.html:33:64:
+[37m      33 │ ...ptions['documentation']?.[32mdropdownLinks[37m?.['developers-zone']?.dr...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeApiDataComponent.
+
+    projects/website-angular/src/app/home-page/home-api-data/home-api-data.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-api-data.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.html:3:65:
+[37m      3 │ ...Options['documentation']?.[32mdropdownLinks[37m?.['userguide']?.link || ...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeHelpComponent.
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-help.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.html:13:65:
+[37m      13 │ ...ptions['documentation']?.[32mdropdownLinks[37m?.['developers-zone']?.li...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeHelpComponent.
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-help.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.html:23:65:
+[37m      23 │ ...ptions['documentation']?.[32mdropdownLinks[37m?.['citing-us']?.link || ...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeHelpComponent.
+
+    projects/website-angular/src/app/home-page/home-help/home-help.component.ts:12:15:
+[37m      12 │   templateUrl: [32m'./home-help.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-latest-news/home-latest-news.component.html:4:59:
+[37m      4 │ ...f]="(navOptions['about']?.[32mdropdownLinks[37m?.['news']?.link || '/con...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeLatestNewsComponent.
+
+    projects/website-angular/src/app/home-page/home-latest-news/home-latest-news.component.ts:13:15:
+[37m      13 │   templateUrl: [32m'./home-latest-news.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.html:2:61:
+[37m      2 │ ...ef]="externalLinks['elixir']?.[32mlink[37m || 'https://elixir-europe.org...
+        ╵                                  [32m~~~~[0m
+
+  Error occurs in the template of component HomeRelatedComponent.
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.ts:9:15:
+[37m      9 │   templateUrl: [32m'./home-related.component.html'[37m,
+        ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.html:12:55:
+[37m      12 │ ...href]="externalLinks['gcdr']?.[32mlink[37m || 'https://globalbiodata.or...
+         ╵                                  [32m~~~~[0m
+
+  Error occurs in the template of component HomeRelatedComponent.
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.ts:9:15:
+[37m      9 │   templateUrl: [32m'./home-related.component.html'[37m,
+        ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.html:19:64:
+[37m      19 │ ...ternalLinks['coretrustseal']?.[32mlink[37m || 'https://www.coretrustsea...
+         ╵                                  [32m~~~~[0m
+
+  Error occurs in the template of component HomeRelatedComponent.
+
+    projects/website-angular/src/app/home-page/home-related/home-related.component.ts:9:15:
+[37m      9 │   templateUrl: [32m'./home-related.component.html'[37m,
+        ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.html:2:58:
+[37m      2 │ ...ef]="navOptions['tools']?.[32mdropdownLinks[37m?.['pathway-browser']?.li...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeShortcutsComponent.
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./home-shortcuts.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.html:8:58:
+[37m      8 │ ...ef]="navOptions['tools']?.[32mdropdownLinks[37m?.['species-comparison']?...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeShortcutsComponent.
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./home-shortcuts.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.html:18:66:
+[37m      18 │ ...ptions['documentation']?.[32mdropdownLinks[37m?.['userguide']?.dropdown...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeShortcutsComponent.
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./home-shortcuts.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.html:23:66:
+[37m      23 │ ...nk" [href]="navOptions['documentation']?.[32mlink[37m || '/documentation'"
+         ╵                                             [32m~~~~[0m
+
+  Error occurs in the template of component HomeShortcutsComponent.
+
+    projects/website-angular/src/app/home-page/home-shortcuts/home-shortcuts.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./home-shortcuts.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-spotlight/home-spotlight.component.html:4:35:
+[37m      4 │ ...="(navOptions['content']?.[32mdropdownLinks[37m?.['reactome-research-spo...
+        ╵                              [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeSpotlightComponent.
+
+    projects/website-angular/src/app/home-page/home-spotlight/home-spotlight.component.ts:16:15:
+[37m      16 │   templateUrl: [32m'./home-spotlight.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/website-angular/src/app/home-page/home-why-reactome/home-why-reactome.component.html:37:55:
+[37m      37 │ ...f]="navOptions['about']?.[32mdropdownLinks[37m?.['funding']?.link || '/...
+         ╵                             [32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component HomeWhyReactomeComponent.
+
+    projects/website-angular/src/app/home-page/home-why-reactome/home-why-reactome.component.ts:9:15:
+[37m      9 │   templateUrl: [32m'./home-why-reactome.component.html'[37m,
+        ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'state' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/details/tabs/molecule-tab/molecule-tab.component.ts:62:19:
+[37m      62 │   pathwayId = this.[32mstate[37m.pathwayId as WritableSignal<string>;
+         ╵                    [32m~~~~~[0m
+
+  'state' is declared here.
+
+    projects/pathway-browser/src/app/details/tabs/molecule-tab/molecule-tab.component.ts:74:14:
+[37m      74 │               [32mprivate state: UrlStateService[37m) {
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'cdkDragFreeDragPosition' since it isn't a known property of 'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:28:41:
+[37m      28 │ ...Legend()" [32m[cdkDragFreeDragPosition]="legendPosition()"[37m [class.a...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-analysis-legend' is not a known element:
+1. If 'cr-analysis-legend' is an Angular component, then verify that it is part of this module.
+2. If 'cr-analysis-legend' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:35:14:
+[37m      35 │               [32m<cr-analysis-legend>[37m</cr-analysis-legend>
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-slider' is not a known element:
+1. If 'mat-slider' is an Angular component, then verify that it is part of this module.
+2. If 'mat-slider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:72:8:
+[37m      72 │         [32m<mat-slider [min]="controlMinZoom()" [max]="controlMaxZoom[37m...
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'min' since it isn't a known property of 'mat-slider'.
+1. If 'mat-slider' is an Angular component and it has 'min' input, then verify that it is part of this module.
+2. If 'mat-slider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:72:20:
+[37m      72 │         <mat-slider [32m[min]="controlMinZoom()"[37m [max]="controlMaxZoom...
+         ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'max' since it isn't a known property of 'mat-slider'.
+1. If 'mat-slider' is an Angular component and it has 'max' input, then verify that it is part of this module.
+2. If 'mat-slider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:72:45:
+[37m      72 │ ...="controlMinZoom()" [32m[max]="controlMaxZoom()"[37m [step]="1" class="...
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'step' since it isn't a known property of 'mat-slider'.
+1. If 'mat-slider' is an Angular component and it has 'step' input, then verify that it is part of this module.
+2. If 'mat-slider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/diagram/diagram.component.html:72:70:
+[37m      72 │ ..." [max]="controlMaxZoom()" [32m[step]="1"[37m class="slider" (input)="z...
+         ╵                               [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component DiagramComponent.
+
+    projects/pathway-browser/src/app/diagram/diagram.component.ts:64:15:
+[37m      64 │   templateUrl: [32m'./diagram.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-dialog-content' is not a known element:
+1. If 'mat-dialog-content' is an Angular component, then verify that it is part of this module.
+2. If 'mat-dialog-content' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:2:0:
+[37m      2 │ [32m<mat-dialog-content>[37m
+        ╵ [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'formGroup' since it isn't a known property of 'form'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:3:8:
+[37m      3 │   <form [32m[formGroup]="resourceForm"[37m>
+        ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-form-field' is not a known element:
+1. If 'mat-form-field' is an Angular component, then verify that it is part of this module.
+2. If 'mat-form-field' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:5:6:
+[37m      5 │       [32m<mat-form-field>[37m
+        ╵       [32m~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-label' is not a known element:
+1. If 'mat-label' is an Angular component, then verify that it is part of this module.
+2. If 'mat-label' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:6:8:
+[37m      6 │         [32m<mat-label>[37mName</mat-label>
+        ╵         [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'formControl' since it isn't a known property of 'input'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:7:24:
+[37m      7 │         <input matInput [32m[formControl]="name"[37m (blur)="updateErrorMes...
+        ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-error' is not a known element:
+1. If 'mat-error' is an Angular component, then verify that it is part of this module.
+2. If 'mat-error' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:9:10:
+[37m      9 │           [32m<mat-error>[37m{{ errorMessage }}</mat-error>
+        ╵           [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-tab-group' is not a known element:
+1. If 'mat-tab-group' is an Angular component, then verify that it is part of this module.
+2. If 'mat-tab-group' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:13:4:
+[37m      13 │     [32m<mat-tab-group (selectedTabChange)="onTabChange($event)">[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5: Argument of type 'Event' is not assignable to parameter of type 'MatTabChangeEvent'.
+  Type 'Event' is missing the following properties from type 'MatTabChangeEvent': index, tab[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:13:52:
+[37m      13 │     <mat-tab-group (selectedTabChange)="onTabChange([32m$event[37m)">
+         ╵                                                     [32m~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-tab' is not a known element:
+1. If 'mat-tab' is an Angular component, then verify that it is part of this module.
+2. If 'mat-tab' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:14:6:
+[37m      14 │       [32m<mat-tab label="Add your data" aria-labelledby="data">[37m
+         ╵       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-radio-group' is not a known element:
+1. If 'mat-radio-group' is an Angular component, then verify that it is part of this module.
+2. If 'mat-radio-group' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:16:10:
+[37m      16 │           [32m<mat-radio-group (change)="onItemChange($event)">[37m
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5: Argument of type 'Event' is not assignable to parameter of type 'MatRadioChange'.
+  Type 'Event' is missing the following properties from type 'MatRadioChange': source, value[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:16:50:
+[37m      16 │           <mat-radio-group (change)="onItemChange([32m$event[37m)">
+         ╵                                                   [32m~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-radio-button' is not a known element:
+1. If 'mat-radio-button' is an Angular component, then verify that it is part of this module.
+2. If 'mat-radio-button' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:18:14:
+[37m      18 │               [32m<mat-radio-button class="margin" [value]="item.name"[37m
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'value' since it isn't a known property of 'mat-radio-button'.
+1. If 'mat-radio-button' is an Angular component and it has 'value' input, then verify that it is part of this module.
+2. If 'mat-radio-button' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:18:47:
+[37m      18 │               <mat-radio-button class="margin" [32m[value]="item.name"[37m
+         ╵                                                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'checked' since it isn't a known property of 'mat-radio-button'.
+1. If 'mat-radio-button' is an Angular component and it has 'checked' input, then verify that it is part of this module.
+2. If 'mat-radio-button' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:19:16:
+[37m      19 │                 [32m[checked]='i===0'[37m>{{ item.content }}
+         ╵                 [32m~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-form-field' is not a known element:
+1. If 'mat-form-field' is an Angular component, then verify that it is part of this module.
+2. If 'mat-form-field' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:26:10:
+[37m      26 │           [32m<mat-form-field class="full-width">[37m
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'ngx-mat-file-input' is not a known element:
+1. If 'ngx-mat-file-input' is an Angular component, then verify that it is part of this module.
+2. If 'ngx-mat-file-input' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:27:12:
+[37m      27 │             [32m<ngx-mat-file-input class="file" placeholder="Upload f[37m...
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:29:12:
+[37m      29 │             [32m<mat-icon matSuffix>[37mfolder</mat-icon>
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-hint' is not a known element:
+1. If 'mat-hint' is an Angular component, then verify that it is part of this module.
+2. If 'mat-hint' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:30:12:
+[37m      30 │             [32m<mat-hint>[37m<strong>Upload a file stored locally on your...
+         ╵             [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-form-field' is not a known element:
+1. If 'mat-form-field' is an Angular component, then verify that it is part of this module.
+2. If 'mat-form-field' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:42:8:
+[37m      42 │         [32m<mat-form-field class="full-width">[37m
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-label' is not a known element:
+1. If 'mat-label' is an Angular component, then verify that it is part of this module.
+2. If 'mat-label' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:43:10:
+[37m      43 │           [32m<mat-label>[37mCopy & paste your data here</mat-label>
+         ╵           [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-hint' is not a known element:
+1. If 'mat-hint' is an Angular component, then verify that it is part of this module.
+2. If 'mat-hint' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:45:10:
+[37m      45 │           [32m<mat-hint>[37m<strong>Copy and paste your data in columns.</...
+         ╵           [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-form-field' is not a known element:
+1. If 'mat-form-field' is an Angular component, then verify that it is part of this module.
+2. If 'mat-form-field' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:50:8:
+[37m      50 │         [32m<mat-form-field class="full-width">[37m
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-label' is not a known element:
+1. If 'mat-label' is an Angular component, then verify that it is part of this module.
+2. If 'mat-label' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:51:10:
+[37m      51 │           [32m<mat-label>[37mURL</mat-label>
+         ╵           [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-hint' is not a known element:
+1. If 'mat-hint' is an Angular component, then verify that it is part of this module.
+2. If 'mat-hint' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:53:10:
+[37m      53 │           [32m<mat-hint>[37m<strong>Upload a publicly accessible data thou...
+         ╵           [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-tab' is not a known element:
+1. If 'mat-tab' is an Angular component, then verify that it is part of this module.
+2. If 'mat-tab' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:58:4:
+[37m      58 │     [32m<mat-tab label="Add your PSICQUIC service" aria-labelledby="ps[37m...
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-form-field' is not a known element:
+1. If 'mat-form-field' is an Angular component, then verify that it is part of this module.
+2. If 'mat-form-field' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:59:6:
+[37m      59 │       [32m<mat-form-field class="full-width">[37m
+         ╵       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-label' is not a known element:
+1. If 'mat-label' is an Angular component, then verify that it is part of this module.
+2. If 'mat-label' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:60:8:
+[37m      60 │         [32m<mat-label>[37mURL</mat-label>
+         ╵         [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-hint' is not a known element:
+1. If 'mat-hint' is an Angular component, then verify that it is part of this module.
+2. If 'mat-hint' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:62:8:
+[37m      62 │         [32m<mat-hint>[37m<strong>Add your custom PSICQUIC service through...
+         ╵         [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-dialog-actions' is not a known element:
+1. If 'mat-dialog-actions' is an Angular component, then verify that it is part of this module.
+2. If 'mat-dialog-actions' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:66:2:
+[37m      66 │   [32m<mat-dialog-actions align="end">[37m
+         ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-spinner' is not a known element:
+1. If 'mat-spinner' is an Angular component, then verify that it is part of this module.
+2. If 'mat-spinner' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.html:74:10:
+[37m      74 │           [32m<mat-spinner class="spinner-color" diameter="20">[37m</mat-s...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CustomInteractorDialogComponent.
+
+    projects/pathway-browser/src/app/interactors/custom-interactor-dialog/custom-interactor-dialog.component.ts:23:17:
+[37m      23 │     templateUrl: [32m'./custom-interactor-dialog.component.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-divider' is not a known element:
+1. If 'mat-divider' is an Angular component, then verify that it is part of this module.
+2. If 'mat-divider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:4:6:
+[37m      4 │       [32m<mat-divider class="divider">[37m</mat-divider>
+        ╵       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-divider' is not a known element:
+1. If 'mat-divider' is an Angular component, then verify that it is part of this module.
+2. If 'mat-divider' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:8:6:
+[37m      8 │       [32m<mat-divider class="divider">[37m</mat-divider>
+        ╵       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-card' is not a known element:
+1. If 'mat-card' is an Angular component, then verify that it is part of this module.
+2. If 'mat-card' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:15:2:
+[37m      15 │   [32m<mat-card class="card">[37m
+         ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-card-content' is not a known element:
+1. If 'mat-card-content' is an Angular component, then verify that it is part of this module.
+2. If 'mat-card-content' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:16:4:
+[37m      16 │     [32m<mat-card-content>[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:19:10:
+[37m      19 │           [32m[ngClass]="{'active-button': clear}"[37m>
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:20:10:
+[37m      20 │           [32m<mat-icon [ngClass]="{'active-icon': clear}" color="prim[37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'mat-icon'.
+1. If 'mat-icon' is an Angular component and it has 'ngClass' input, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:20:20:
+[37m      20 │ ...     <mat-icon [32m[ngClass]="{'active-icon': clear}"[37m color="primar...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:31:10:
+[37m      31 │           [32m[ngClass]="{'active-button': currentResource().type === [37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:35:10:
+[37m      35 │           [32m[ngClass]="{'active-button': currentResource().type === [37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-grid-list' is not a known element:
+1. If 'mat-grid-list' is an Angular component, then verify that it is part of this module.
+2. If 'mat-grid-list' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:42:8:
+[37m      42 │         [32m<mat-grid-list cols="2" rowHeight="28px" [gutterSize]="'5p[37m...
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'gutterSize' since it isn't a known property of 'mat-grid-list'.
+1. If 'mat-grid-list' is an Angular component and it has 'gutterSize' input, then verify that it is part of this module.
+2. If 'mat-grid-list' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:42:49:
+[37m      42 │ ...    <mat-grid-list cols="2" rowHeight="28px" [32m[gutterSize]="'5px'"[37m>
+         ╵                                                 [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-grid-tile' is not a known element:
+1. If 'mat-grid-tile' is an Angular component, then verify that it is part of this module.
+2. If 'mat-grid-tile' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:44:12:
+[37m      44 │             [32m<mat-grid-tile class="rounded-corner">[37m
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:47:16:
+[37m      47 │ ...          [32m[ngClass]="{'active-button': currentResource().name =[37m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-spinner' is not a known element:
+1. If 'mat-spinner' is an Angular component, then verify that it is part of this module.
+2. If 'mat-spinner' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:51:20:
+[37m      51 │                     [32m<mat-spinner class="spinner-color" diameter="20"[37m
+         ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-selection-list' is not a known element:
+1. If 'mat-selection-list' is an Angular component, then verify that it is part of this module.
+2. If 'mat-selection-list' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:64:8:
+[37m      64 │         [32m<mat-selection-list [multiple]=false hideSingleSelectionIn[37m...
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'multiple' since it isn't a known property of 'mat-selection-list'.
+1. If 'mat-selection-list' is an Angular component and it has 'multiple' input, then verify that it is part of this module.
+2. If 'mat-selection-list' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:64:28:
+[37m      64 │ ...    <mat-selection-list [32m[multiple]=false[37m hideSingleSelectionInd...
+         ╵                            [32m~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-list-option' is not a known element:
+1. If 'mat-list-option' is an Angular component, then verify that it is part of this module.
+2. If 'mat-list-option' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:66:12:
+[37m      66 │             [32m<mat-list-option [value]="resourceToken"[37m
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'value' since it isn't a known property of 'mat-list-option'.
+1. If 'mat-list-option' is an Angular component and it has 'value' input, then verify that it is part of this module.
+2. If 'mat-list-option' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:66:29:
+[37m      66 │             <mat-list-option [32m[value]="resourceToken"[37m
+         ╵                              [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'selected' since it isn't a known property of 'mat-list-option'.
+1. If 'mat-list-option' is an Angular component and it has 'selected' input, then verify that it is part of this module.
+2. If 'mat-list-option' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:67:14:
+[37m      67 │               [32m[selected]="isSelected(resourceToken)"[37m (click)="getI...
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'mat-list-option'.
+1. If 'mat-list-option' is an Angular component and it has 'ngClass' input, then verify that it is part of this module.
+2. If 'mat-list-option' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:68:14:
+[37m      68 │ ...          [32m[ngClass]="{'active-button': currentResource().name =[37m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:73:18:
+[37m      73 │                   [32m<mat-icon>[37mdelete</mat-icon>
+         ╵                   [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.html:83:10:
+[37m      83 │           [32m<mat-icon color="primary">[37madd</mat-icon>
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component InteractorsComponent.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:15:15:
+[37m      15 │   templateUrl: [32m'./interactors.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'interactors' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:33:34:
+[37m      33 │   readonly currentResource = this.[32minteractors[37m.currentResource;
+         ╵                                   [32m~~~~~~~~~~~[0m
+
+  'interactors' is declared here.
+
+    projects/pathway-browser/src/app/interactors/interactors.component.ts:36:73:
+[37m      36 │ ...DarkService, [32mprivate interactors: InteractorService[37m, private st...
+         ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS7016: Could not find a declaration file for module '@carrotsearch/foamtree'. '/home/lraby/gitroot/WebsiteAngular/node_modules/@carrotsearch/foamtree/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/carrotsearch__foamtree` if it exists or add a new declaration (.d.ts) file containing `declare module '@carrotsearch/foamtree';`[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/reacfoam/reacfoam.service.ts:8:23:
+[37m      8 │ import {FoamTree} from [32m"@carrotsearch/foamtree"[37m;
+        ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2307: Cannot find module 'reactome-gsa-form/lib/model/report-status.model' or its corresponding type declarations.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/services/analysis.service.ts:15:21:
+[37m      15 │ ...t {Report} from [32m"reactome-gsa-form/lib/model/report-status.model"[37m;
+         ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'state' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/services/analysis.service.ts:306:24:
+[37m      306 │   resourceFilter = this.[32mstate[37m.resourceFilter
+          ╵                         [32m~~~~~[0m
+
+  'state' is declared here.
+
+    projects/pathway-browser/src/app/services/analysis.service.ts:315:4:
+[37m      315 │     [32mprivate state: UrlStateService[37m,
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'dataStateService' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/services/entity.service.ts:26:39:
+[37m      26 │ ...tedElement$ = toObservable(this.[32mdataStateService[37m.selectedElement);
+         ╵                                    [32m~~~~~~~~~~~~~~~~[0m
+
+  'dataStateService' is declared here.
+
+    projects/pathway-browser/src/app/services/entity.service.ts:20:14:
+[37m      20 │               [32mprivate dataStateService: DataStateService[37m,
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'analysisService' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/services/event.service.ts:475:46:
+[37m      475 │ ...ts$ = toObservable(this.[32manalysisService[37m.resultResource.isLoading)
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+  'analysisService' is declared here.
+
+    projects/pathway-browser/src/app/services/event.service.ts:67:14:
+[37m      67 │               [32mprivate analysisService: AnalysisService[37m,
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'route' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/services/url-state.service.ts:105:26:
+[37m      105 │   section = toSignal(this.[32mroute[37m.fragment)
+          ╵                           [32m~~~~~[0m
+
+  'route' is declared here.
+
+    projects/pathway-browser/src/app/services/url-state.service.ts:108:14:
+[37m      108 │   constructor([32mprivate route: ActivatedRoute[37m, private router: Rout...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'state' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/search/search.component.ts:225:17:
+[37m      225 │   diagram = this.[32mstate[37m.pathwayId
+          ╵                  [32m~~~~~[0m
+
+  'state' is declared here.
+
+    projects/pathway-browser/src/app/viewport/search/search.component.ts:134:4:
+[37m      134 │     [32mpublic state: UrlStateService[37m,
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split' is not a known element:
+1. If 'as-split' is an Angular component, then verify that it is part of this module.
+2. If 'as-split' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:3:2:
+[37m      3 │   [32m<as-split direction="horizontal" gutterSize="4" #sideSplit useTra[37m...
+        ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split-area' is not a known element:
+1. If 'as-split-area' is an Angular component, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:5:4:
+[37m      5 │     [32m<as-split-area [size]="20">[37m
+        ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'size' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'size' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:5:19:
+[37m      5 │     <as-split-area [32m[size]="20"[37m>
+        ╵                    [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-search' is not a known element:
+1. If 'cr-search' is an Angular component, then verify that it is part of this module.
+2. If 'cr-search' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:8:10:
+[37m      8 │           [32m<cr-search/>[37m
+        ╵           [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:13:69:
+[37m      13 │ ...sibility('species')" [32m[ngClass]="{'selected': visibility.species}"[37m>
+         ╵                         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:14:12:
+[37m      14 │             [32m<mat-icon class="custom-icon" svgIcon="species">[37m</mat-...
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:19:12:
+[37m      19 │             [32m<mat-icon class="custom-icon">[37marrow_drop_down</mat-icon>
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'div'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:22:15:
+[37m      22 │                [32m[ngClass]="{'selected': visibility.interactor}"[37m>
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:23:12:
+[37m      23 │             [32m<mat-icon class="custom-icon" svgIcon="overlay">[37m</mat-...
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:31:12:
+[37m      31 │             [32m<mat-icon class="custom-icon">[37marrow_drop_down</mat-icon>
+         ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-species' is not a known element:
+1. If 'cr-species' is an Angular component, then verify that it is part of this module.
+2. If 'cr-species' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:36:10:
+[37m      36 │           [32m<cr-species [(pathwayId)]="pathwayId" [visibility]="visi[37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'pathwayId' since it isn't a known property of 'cr-species'.
+1. If 'cr-species' is an Angular component and it has 'pathwayId' input, then verify that it is part of this module.
+2. If 'cr-species' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:36:22:
+[37m      36 │           <cr-species [32m[(pathwayId)]="pathwayId"[37m [visibility]="visi...
+         ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'visibility' since it isn't a known property of 'cr-species'.
+1. If 'cr-species' is an Angular component and it has 'visibility' input, then verify that it is part of this module.
+2. If 'cr-species' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:36:48:
+[37m      36 │ ... [(pathwayId)]="pathwayId" [32m[visibility]="visibility"[37m></cr-species>
+         ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-interactors' is not a known element:
+1. If 'cr-interactors' is an Angular component, then verify that it is part of this module.
+2. If 'cr-interactors' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:40:10:
+[37m      40 │           [32m<cr-interactors #interactors [cy]="diagram()?.cy" [cys]=[37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'cy' since it isn't a known property of 'cr-interactors'.
+1. If 'cr-interactors' is an Angular component and it has 'cy' input, then verify that it is part of this module.
+2. If 'cr-interactors' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:40:39:
+[37m      40 │ ...eractors #interactors [32m[cy]="diagram()?.cy"[37m [cys]="diagram()?.cy...
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'cys' since it isn't a known property of 'cr-interactors'.
+1. If 'cr-interactors' is an Angular component and it has 'cys' input, then verify that it is part of this module.
+2. If 'cr-interactors' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:40:60:
+[37m      40 │ ... [cy]="diagram()?.cy" [32m[cys]="diagram()?.cys"[37m [hasEHLD]="hasEHLD()"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'hasEHLD' since it isn't a known property of 'cr-interactors'.
+1. If 'cr-interactors' is an Angular component and it has 'hasEHLD' input, then verify that it is part of this module.
+2. If 'cr-interactors' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:40:83:
+[37m      40 │ ... [cy]="diagram()?.cy" [cys]="diagram()?.cys" [32m[hasEHLD]="hasEHLD()"[37m
+         ╵                                                 [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-event-hierarchy' is not a known element:
+1. If 'cr-event-hierarchy' is an Angular component, then verify that it is part of this module.
+2. If 'cr-event-hierarchy' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:45:10:
+[37m      45 │           [32m<cr-event-hierarchy [(pathwayId)]="pathwayId" [eventSpli[37m...
+         ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'pathwayId' since it isn't a known property of 'cr-event-hierarchy'.
+1. If 'cr-event-hierarchy' is an Angular component and it has 'pathwayId' input, then verify that it is part of this module.
+2. If 'cr-event-hierarchy' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:45:30:
+[37m      45 │ ...cr-event-hierarchy [32m[(pathwayId)]="pathwayId"[37m [eventSplit]="side...
+         ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'eventSplit' since it isn't a known property of 'cr-event-hierarchy'.
+1. If 'cr-event-hierarchy' is an Angular component and it has 'eventSplit' input, then verify that it is part of this module.
+2. If 'cr-event-hierarchy' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:45:56:
+[37m      45 │ ...wayId)]="pathwayId" [32m[eventSplit]="sideSplit"[37m></cr-event-hierarchy>
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split-area' is not a known element:
+1. If 'as-split-area' is an Angular component, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:51:4:
+[37m      51 │     [32m<as-split-area [size]="80">[37m
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'size' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'size' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:51:19:
+[37m      51 │     <as-split-area [32m[size]="80"[37m>
+         ╵                    [32m~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:58:16:
+[37m      58 │                 [32m<mat-icon>[37mquery_stats</mat-icon>
+         ╵                 [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-spinner' is not a known element:
+1. If 'mat-spinner' is an Angular component, then verify that it is part of this module.
+2. If 'mat-spinner' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:61:18:
+[37m      61 │                   [32m<mat-spinner [diameter]="18">[37m</mat-spinner>
+         ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'diameter' since it isn't a known property of 'mat-spinner'.
+1. If 'mat-spinner' is an Angular component and it has 'diameter' input, then verify that it is part of this module.
+2. If 'mat-spinner' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:61:31:
+[37m      61 │                   <mat-spinner [32m[diameter]="18"[37m></mat-spinner>
+         ╵                                [32m~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:77:22:
+[37m      77 │                       [32m<mat-icon>[37mskip_previous</mat-icon>
+         ╵                       [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'matTooltip' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:81:28:
+[37m      81 │ ...          [32m[matTooltip]=" interval ? 'Pause samples' : 'Play sam[37m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:83:22:
+[37m      83 │ ...          [32m<mat-icon [fontIcon]="interval ? 'pause' : 'play_arro[37m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'fontIcon' since it isn't a known property of 'mat-icon'.
+1. If 'mat-icon' is an Angular component and it has 'fontIcon' input, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:83:32:
+[37m      83 │ ...<mat-icon [32m[fontIcon]="interval ? 'pause' : 'play_arrow'"[37m></mat-...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:89:22:
+[37m      89 │                       [32m<mat-icon>[37mskip_next</mat-icon>
+         ╵                       [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'matMenuTriggerFor' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:93:28:
+[37m      93 │                             [32m[matMenuTriggerFor]="speed"[37m>
+         ╵                             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:94:22:
+[37m      94 │                       [32m<mat-icon>[37mspeed</mat-icon>
+         ╵                       [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:102:18:
+[37m      102 │                   [32m<mat-icon>[37mclose</mat-icon>
+          ╵                   [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-menu' is not a known element:
+1. If 'mat-menu' is an Angular component, then verify that it is part of this module.
+2. If 'mat-menu' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:106:12:
+[37m      106 │             [32m<mat-menu #speed="matMenu">[37m
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8003: No directive found with exportAs 'matMenu'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:106:30:
+[37m      106 │             <mat-menu #speed="[32mmatMenu[37m">
+          ╵                               [32m~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-radio-group' is not a known element:
+1. If 'mat-radio-group' is an Angular component, then verify that it is part of this module.
+2. If 'mat-radio-group' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:107:14:
+[37m      107 │               [32m<mat-radio-group [(ngModel)]="playSpeed">[37m
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngModel' since it isn't a known property of 'mat-radio-group'.
+1. If 'mat-radio-group' is an Angular component and it has 'ngModel' input, then verify that it is part of this module.
+2. If 'mat-radio-group' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:107:31:
+[37m      107 │               <mat-radio-group [32m[(ngModel)]="playSpeed"[37m>
+          ╵                                [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-radio-button' is not a known element:
+1. If 'mat-radio-button' is an Angular component, then verify that it is part of this module.
+2. If 'mat-radio-button' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:110:20:
+[37m      110 │ ...              [32m<mat-radio-button [value]="option">[37m{{ option }} ...
+          ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'value' since it isn't a known property of 'mat-radio-button'.
+1. If 'mat-radio-button' is an Angular component and it has 'value' input, then verify that it is part of this module.
+2. If 'mat-radio-button' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:110:38:
+[37m      110 │ ...     <mat-radio-button [32m[value]="option"[37m>{{ option }} s</mat-ra...
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-menu' is not a known element:
+1. If 'mat-menu' is an Angular component, then verify that it is part of this module.
+2. If 'mat-menu' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:116:12:
+[37m      116 │             [32m<mat-menu #an="matMenu">[37m
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8003: No directive found with exportAs 'matMenu'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:116:27:
+[37m      116 │             <mat-menu #an="[32mmatMenu[37m">
+          ╵                            [32m~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'routerLink' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:121:41:
+[37m      121 │ ...ed-button [32m[routerLink]="['/', normalPathway()?.stId]"[37m [queryPa...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'queryParams' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:121:85:
+[37m      121 │ ...nk]="['/', normalPathway()?.stId]" [32m[queryParams]="{select: null}"[37m
+          ╵                                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:123:16:
+[37m      123 │                 [32m<mat-icon>[37mcompare</mat-icon>
+          ╵                 [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:125:16:
+[37m      125 │                 [32m<mat-icon iconPositionEnd>[37mcheck</mat-icon>
+          ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'matMenuTriggerFor' since it isn't a known property of 'button'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:128:85:
+[37m      128 │ ...]="diseasePathways().length === 0" [32m[matMenuTriggerFor]="compare"[37m>
+          ╵                                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:129:16:
+[37m      129 │                 [32m<mat-icon>[37mcompare</mat-icon>
+          ╵                 [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-menu' is not a known element:
+1. If 'mat-menu' is an Angular component, then verify that it is part of this module.
+2. If 'mat-menu' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:132:14:
+[37m      132 │               [32m<mat-menu #compare="matMenu">[37m
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8003: No directive found with exportAs 'matMenu'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:132:34:
+[37m      132 │               <mat-menu #compare="[32mmatMenu[37m">
+          ╵                                   [32m~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'routerLink' since it isn't a known property of 'a'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:134:35:
+[37m      134 │ ...menu-item [32m[routerLink]="['/', comparablePathway.stId]"[37m [queryP...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'queryParams' since it isn't a known property of 'a'.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:134:80:
+[37m      134 │ ...k]="['/', comparablePathway.stId]" [32m[queryParams]="{select: null}"[37m
+          ╵                                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:148:14:
+[37m      148 │               [32m<mat-icon fontSet="symbols">[37mhistory</mat-icon>
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:151:14:
+[37m      151 │ ...          [32m<mat-icon fontSet="symbols" iconPositionEnd>[37mfeedback...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-slide-toggle' is not a known element:
+1. If 'mat-slide-toggle' is an Angular component, then verify that it is part of this module.
+2. If 'mat-slide-toggle' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:154:12:
+[37m      154 │             [32m<mat-slide-toggle color="primary" [(ngModel)]="dark.i[37m...
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngModel' since it isn't a known property of 'mat-slide-toggle'.
+1. If 'mat-slide-toggle' is an Angular component and it has 'ngModel' input, then verify that it is part of this module.
+2. If 'mat-slide-toggle' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:154:46:
+[37m      154 │ ...le color="primary" [32m[(ngModel)]="dark.isDark"[37m #darkToggle [matT...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'matTooltip' since it isn't a known property of 'mat-slide-toggle'.
+1. If 'mat-slide-toggle' is an Angular component and it has 'matTooltip' input, then verify that it is part of this module.
+2. If 'mat-slide-toggle' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:154:84:
+[37m      154 │ ...arkToggle [32m[matTooltip]="dark.isDark() ? 'Switch to light mode'[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:157:14:
+[37m      157 │               [32m<mat-icon [svgIcon]="'format-quote'">[37m</mat-icon>
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'svgIcon' since it isn't a known property of 'mat-icon'.
+1. If 'mat-icon' is an Angular component and it has 'svgIcon' input, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:157:24:
+[37m      157 │               <mat-icon [32m[svgIcon]="'format-quote'"[37m></mat-icon>
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-icon' is not a known element:
+1. If 'mat-icon' is an Angular component, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:161:16:
+[37m      161 │                 [32m<mat-icon [svgIcon]="'logo'">[37m</mat-icon>
+          ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'svgIcon' since it isn't a known property of 'mat-icon'.
+1. If 'mat-icon' is an Angular component and it has 'svgIcon' input, then verify that it is part of this module.
+2. If 'mat-icon' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:161:26:
+[37m      161 │                 <mat-icon [32m[svgIcon]="'logo'"[37m></mat-icon>
+          ╵                           [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split' is not a known element:
+1. If 'as-split' is an Angular component, then verify that it is part of this module.
+2. If 'as-split' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:172:10:
+[37m      172 │           [32m<as-split direction="vertical" gutterSize="4" useTransi[37m...
+          ╵           [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG5: Argument of type 'Event' is not assignable to parameter of type 'IOutputData'.
+  Type 'Event' is missing the following properties from type 'IOutputData': gutterNum, sizes[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:172:108:
+[37m      172 │ ..."4" useTransition="true" (dragEnd)="onViewDetailDragEnd([32m$event[37m)">
+          ╵                                                            [32m~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split-area' is not a known element:
+1. If 'as-split-area' is an Angular component, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:173:12:
+[37m      173 │             [32m<as-split-area [size]="viewShare()" id="view" class="[37m...
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'size' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'size' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:173:27:
+[37m      173 │ ...      <as-split-area [32m[size]="viewShare()"[37m id="view" class="hid...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'mat-progress-spinner' is not a known element:
+1. If 'mat-progress-spinner' is an Angular component, then verify that it is part of this module.
+2. If 'mat-progress-spinner' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:177:20:
+[37m      177 │                     [32m<mat-progress-spinner mode="indeterminate"/>[37m
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-ehld' is not a known element:
+1. If 'cr-ehld' is an Angular component, then verify that it is part of this module.
+2. If 'cr-ehld' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:181:20:
+[37m      181 │                     [32m<cr-ehld [(pathwayId)]="pathwayId"/>[37m
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'pathwayId' since it isn't a known property of 'cr-ehld'.
+1. If 'cr-ehld' is an Angular component and it has 'pathwayId' input, then verify that it is part of this module.
+2. If 'cr-ehld' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:181:29:
+[37m      181 │                     <cr-ehld [32m[(pathwayId)]="pathwayId"[37m/>
+          ╵                              [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-diagram' is not a known element:
+1. If 'cr-diagram' is an Angular component, then verify that it is part of this module.
+2. If 'cr-diagram' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:183:20:
+[37m      183 │ ...          [32m<cr-diagram [(pathwayId)]="pathwayId" #diagram [inte[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'pathwayId' since it isn't a known property of 'cr-diagram'.
+1. If 'cr-diagram' is an Angular component and it has 'pathwayId' input, then verify that it is part of this module.
+2. If 'cr-diagram' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:183:32:
+[37m      183 │ ...       <cr-diagram [32m[(pathwayId)]="pathwayId"[37m #diagram [interac...
+          ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'interactor' since it isn't a known property of 'cr-diagram'.
+1. If 'cr-diagram' is an Angular component and it has 'interactor' input, then verify that it is part of this module.
+2. If 'cr-diagram' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:183:67:
+[37m      183 │ ...m [(pathwayId)]="pathwayId" #diagram [32m[interactor]="interactors"[37m/>
+          ╵                                         [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-reacfoam' is not a known element:
+1. If 'cr-reacfoam' is an Angular component, then verify that it is part of this module.
+2. If 'cr-reacfoam' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:187:16:
+[37m      187 │                 [32m<cr-reacfoam/>[37m
+          ╵                 [32m~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-analysis-form' is not a known element:
+1. If 'cr-analysis-form' is an Angular component, then verify that it is part of this module.
+2. If 'cr-analysis-form' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:191:16:
+[37m      191 │ ...          [32m<cr-analysis-form (close)="dropdown.set(null)" [stat[37m...
+          ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'status' since it isn't a known property of 'cr-analysis-form'.
+1. If 'cr-analysis-form' is an Angular component and it has 'status' input, then verify that it is part of this module.
+2. If 'cr-analysis-form' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:191:63:
+[37m      191 │ ...sis-form (close)="dropdown.set(null)" [32m[status]="analysisStatus"[37m/>
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-compare-form' is not a known element:
+1. If 'cr-compare-form' is an Angular component, then verify that it is part of this module.
+2. If 'cr-compare-form' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:194:16:
+[37m      194 │                 [32m<cr-compare-form (close)="dropdown.set(null)"/>[37m
+          ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'as-split-area' is not a known element:
+1. If 'as-split-area' is an Angular component, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:202:12:
+[37m      202 │             [32m<as-split-area [size]="detailShare()" [minSize]="deta[37m...
+          ╵             [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'size' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'size' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:202:27:
+[37m      202 │ ...     <as-split-area [32m[size]="detailShare()"[37m [minSize]="detailMi...
+          ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'minSize' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'minSize' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:202:50:
+[37m      202 │ ...]="detailShare()" [32m[minSize]="detailMinSize()"[37m [visible]="detai...
+          ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'visible' since it isn't a known property of 'as-split-area'.
+1. If 'as-split-area' is an Angular component and it has 'visible' input, then verify that it is part of this module.
+2. If 'as-split-area' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@NgModule.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:202:78:
+[37m      202 │ ...lShare()" [minSize]="detailMinSize()" [32m[visible]="detailVisible()"[37m
+          ╵                                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'cr-details-panel' is not a known element:
+1. If 'cr-details-panel' is an Angular component, then verify that it is part of this module.
+2. If 'cr-details-panel' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@NgModule.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.html:204:14:
+[37m      204 │               [32m<cr-details-panel>[37m</cr-details-panel>
+          ╵               [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component ViewportComponent.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./viewport.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'state' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:81:28:
+[37m      81 │   readonly pathwayId = this.[32mstate[37m.pathwayId as WritableSignal<stri...
+         ╵                             [32m~~~~~[0m
+
+  'state' is declared here.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:149:14:
+[37m      149 │               [32mpublic state: UrlStateService[37m,
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'dataState' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:83:28:
+[37m      83 │   loadingPathwayData = this.[32mdataState[37m._currentPathway.isLoading;
+         ╵                             [32m~~~~~~~~~[0m
+
+  'dataState' is declared here.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:151:14:
+[37m      151 │               [32mpublic dataState: DataStateService[37m,
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'interactorService' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:124:35:
+[37m      124 │ ...rrentInteractorResource = this.[32minteractorService[37m.currentResource;
+          ╵                                   [32m~~~~~~~~~~~~~~~~~[0m
+
+  'interactorService' is declared here.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:144:14:
+[37m      144 │               [32mprivate interactorService: InteractorService[37m,
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'state' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:127:18:
+[37m      127 │     request: this.[32mstate[37m.example,
+          ╵                   [32m~~~~~[0m
+
+  'state' is declared here.
+
+    projects/pathway-browser/src/app/viewport/viewport.component.ts:149:14:
+[37m      149 │               [32mpublic state: UrlStateService[37m,
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
