@@ -1,4 +1,4 @@
-import {Component, input, output, signal} from '@angular/core';
+import {Component, inject, input, output, signal} from '@angular/core';
 import {AnalysisResult} from "reactome-gsa-form/lib/model/analysis-result.model";
 import {AnalysisService} from "../../../services/analysis.service";
 import {UrlStateService} from "../../../services/url-state.service";
@@ -13,13 +13,11 @@ import {GsaFormModule} from "reactome-gsa-form";
   styleUrl: './quantitative-analysis.component.scss'
 })
 export class QuantitativeAnalysisComponent {
+  private state: UrlStateService = inject(UrlStateService);
+   public analysis: AnalysisService = inject(AnalysisService);
 
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open'| 'closed'>()
-
-  constructor(private state: UrlStateService, public analysis: AnalysisService) {
-
-  }
 
   gsaId = signal<string>('')
 
@@ -30,7 +28,7 @@ export class QuantitativeAnalysisComponent {
   }
 
   seeResultAction = (result: AnalysisResult) =>   {
-    const link = result.reactome_links.find(link => link.token);
+    const link = result.reactome_links.find((link:any) => link.token);
     if (!link) return;
     this.state.analysis.set(link.token)
     this.close.emit({status: 'finished'});

@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, input, output} from '@angular/core';
 import {MatTab, MatTabGroup, MatTabLabel} from "@angular/material/tabs";
 import {AsyncPipe} from "@angular/common";
 import {QualitativeAnalysisComponent} from "./qualitative-analysis/qualitative-analysis.component";
@@ -31,6 +31,9 @@ import {SpeciesAnalysisComponent} from "./species-analysis/species-analysis.comp
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AnalysisFormComponent {
+  private http: HttpClient = inject(HttpClient);
+   private state: UrlStateService = inject(UrlStateService);
+   public analysis: AnalysisService = inject(AnalysisService);
 
   qualitative = this.http.get('assets/icons/analysis/Qualitative.svg', {responseType: 'text'})
   quantitative = this.http.get('assets/icons/analysis/Quantitative.svg', {responseType: 'text'})
@@ -39,8 +42,4 @@ export class AnalysisFormComponent {
 
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open'| 'closed'>()
-
-  constructor(private http: HttpClient,  private state: UrlStateService, public analysis: AnalysisService) {
-  }
-
 }

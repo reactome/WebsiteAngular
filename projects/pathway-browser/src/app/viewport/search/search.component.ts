@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, input, linkedSignal, signal, viewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild} from '@angular/core';
 import {MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
 import {FormsModule} from "@angular/forms";
@@ -96,6 +96,10 @@ type Scope = 'local' | 'global';
   ]
 })
 export class SearchComponent {
+  private http: HttpClient = inject(HttpClient);
+  private species: SpeciesService = inject(SpeciesService);
+  public state: UrlStateService = inject(UrlStateService);
+  public icons: IconService = inject(IconService);
 
   searchText = signal('');
   hasFocus = signal<boolean>(false);
@@ -129,10 +133,7 @@ export class SearchComponent {
   searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
 
   constructor(
-    private http: HttpClient,
-    private species: SpeciesService,
-    public state: UrlStateService,
-    public icons: IconService) {
+    ) {
     effect(() => this.typeFilter() && this.searchParams.update(params => (params ? {
       ...params,
       types: this.typeFilter()

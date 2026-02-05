@@ -1,4 +1,4 @@
-import {Component, computed, effect, input, OnDestroy, signal, WritableSignal} from '@angular/core';
+import {Component, computed, effect, inject, input, OnDestroy, signal, WritableSignal} from '@angular/core';
 import {Molecule, Participant, ParticipantService} from "../../../services/participant.service";
 import {EntityService} from "../../../services/entity.service";
 import {SelectableObject} from "../../../services/event.service";
@@ -57,6 +57,9 @@ export enum MoleculeType {
   styleUrl: './molecule-tab.component.scss',
 })
 export class MoleculeTabComponent implements OnDestroy {
+  private participant: ParticipantService = inject(ParticipantService);
+  private entity: EntityService = inject(EntityService);
+  private state: UrlStateService = inject(UrlStateService);
 
   readonly selectableObject = input.required<SelectableObject>();
   pathwayId = this.state.pathwayId as WritableSignal<string>;
@@ -69,9 +72,7 @@ export class MoleculeTabComponent implements OnDestroy {
   private observer?: () => void;
 
 
-  constructor(private participant: ParticipantService,
-              private entity: EntityService,
-              private state: UrlStateService) {
+  constructor() {
     effect(() => {
       const selectableObjStId = this.selectableObject()?.stId;
       const pathwayId = this.pathwayId();

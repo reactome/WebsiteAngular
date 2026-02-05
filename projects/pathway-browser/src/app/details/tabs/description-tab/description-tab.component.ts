@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   OnDestroy,
   signal,
@@ -59,6 +60,12 @@ import HasModifiedResidue = Relationship.HasModifiedResidue;
 })
 export class DescriptionTabComponent implements OnDestroy {
 
+  private iconService: IconService = inject(IconService);
+  private entity: EntityService = inject(EntityService);
+  public figure: FigureService = inject(FigureService);
+  private interactorService: InteractorService = inject(InteractorService);
+  public state: UrlStateService = inject(UrlStateService);
+  private species: SpeciesService = inject(SpeciesService);
   icon = rxResource({
     request: () => this.referenceEntity()?.identifier,
     loader: (param) => param.request ? this.iconService.fetchIcon(param.request) : of(null)
@@ -353,14 +360,7 @@ export class DescriptionTabComponent implements OnDestroy {
   ]
 
 
-  constructor(private iconService: IconService,
-              private entity: EntityService,
-              public figure: FigureService,
-              private interactorService: InteractorService,
-              public state: UrlStateService,
-              private species: SpeciesService
-  ) {
-
+  constructor() {
     effect(() => {
       const section = this.state.section();
       if (section) {

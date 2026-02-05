@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {CONTENT_SERVICE, environment} from "../../environments/environment";
 import {HttpClient} from "@angular/common/http";
 import {
@@ -40,6 +40,11 @@ export type SelectableObject = Event | PhysicalEntity | SummaryEntity;
   providedIn: 'root'
 })
 export class EventService {
+  private http: HttpClient = inject(HttpClient);
+  private state: UrlStateService = inject(UrlStateService);
+  private analysisService: AnalysisService = inject(AnalysisService);
+  private ehldService: EhldService = inject(EhldService);
+  private dboService: DatabaseObjectService = inject(DatabaseObjectService);
 
   private readonly _TOP_LEVEL_PATHWAYS = `${CONTENT_SERVICE}/data/pathways/top/`;
   private readonly _ANCESTORS = `${CONTENT_SERVICE}/data/event/`;
@@ -61,13 +66,6 @@ export class EventService {
   private _diagramPathway = new BehaviorSubject<Pathway | undefined>(undefined);
   diagramPathway$ = this._diagramPathway.asObservable();
   diagramPathway?: Pathway;
-
-  constructor(private http: HttpClient,
-              private state: UrlStateService,
-              private analysisService: AnalysisService,
-              private ehldService: EhldService,
-              private dboService: DatabaseObjectService,) {
-  }
 
   setTreeData(events: Event[]) {
     this.treeData$.next(events);

@@ -1,4 +1,4 @@
-import {Component, computed, effect, linkedSignal, untracked} from '@angular/core';
+import {Component, computed, effect, inject, linkedSignal, untracked} from '@angular/core';
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {AnalysisService} from "../services/analysis.service";
 import {DataStateService} from "../services/data-state.service";
@@ -13,6 +13,9 @@ import {UrlStateService} from "../services/url-state.service";
 })
 @UntilDestroy()
 export class DetailsComponent {
+  protected analysis: AnalysisService = inject(AnalysisService);
+  public dataState: DataStateService = inject(DataStateService);
+  public state: UrlStateService = inject(UrlStateService);
 
   obj = this.dataState.selectedElement;
   hasResult = computed(() => !!(this.analysis.result()));
@@ -32,10 +35,7 @@ export class DetailsComponent {
   )
 
 
-  constructor(
-    protected analysis: AnalysisService,
-    public dataState: DataStateService,
-    public state: UrlStateService,) {
+  constructor() {
     effect(() => this.state.tab.set(this.tabs[this.selectedTabIndex()!]));
     effect(() => {
       if (!untracked(this.state.tab) && this.state.section()) this.state.tab.set('details'); // Make publication link still work as they didn't include the tab, but sections

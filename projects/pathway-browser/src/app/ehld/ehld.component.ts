@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   ElementRef,
+  inject,
   linkedSignal,
   model,
   OnDestroy,
@@ -34,6 +35,12 @@ import {map} from "rxjs";
 
 @UntilDestroy()
 export class EhldComponent implements AfterViewInit, OnDestroy {
+  private ehldService: EhldService = inject(EhldService);
+  public analysis: AnalysisService = inject(AnalysisService);
+  public state: UrlStateService = inject(UrlStateService);
+  private data: DataStateService = inject(DataStateService);
+  private download: DownloadService = inject(DownloadService);
+  private svgExporter: SvgExporterService = inject(SvgExporterService);
 
   ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
@@ -67,12 +74,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private initialPan = {x: 0, y: 0};
   currentSample?: string;
 
-  constructor(private ehldService: EhldService,
-              public analysis: AnalysisService,
-              public state: UrlStateService,
-              private data: DataStateService,
-              private download: DownloadService,
-              private svgExporter: SvgExporterService) {
+  constructor() {
     effect(() => this.selectedElement() && this.ehldService.applyOutline(this.selectedElement()!, this.flaggedElements()));
     effect(() => this.flaggedElements().forEach(g => this.ehldService.applyFlagOutline(g)));
     effect(() => {

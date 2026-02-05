@@ -31,11 +31,6 @@ interface Config {
 })
 export class LottieService {
 
-
-  constructor() {
-
-  }
-
   async buildLottie(params: Config) {
     if (module === undefined) module = await import('@lottiefiles/dotlottie-web')
     return new module.DotLottie(params)

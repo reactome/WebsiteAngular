@@ -1,4 +1,4 @@
-import {computed, Injectable, signal} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {CONTENT_SERVICE} from "../../environments/environment";
 import {PhysicalEntity} from "../model/graph/physical-entity/physical-entity.model";
@@ -15,11 +15,9 @@ import {isDefined, isRefEntity, isReferenceEntityStId, isReferenceSummary} from 
   providedIn: 'root'
 })
 export class EntityService {
-
-  constructor(private http: HttpClient,
-              private dataStateService: DataStateService,
-              private participant: ParticipantService) {
-  }
+  private http: HttpClient = inject(HttpClient);
+  private dataStateService: DataStateService = inject(DataStateService);
+  private participant: ParticipantService = inject(ParticipantService);
 
   eventId = signal<string | undefined>(undefined);
 

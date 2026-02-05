@@ -1,4 +1,4 @@
-import {Component, computed, effect, linkedSignal, Signal, viewChild} from '@angular/core';
+import {Component, computed, effect, inject, linkedSignal, Signal, viewChild} from '@angular/core';
 import {MatTableDataSource, MatTableModule} from "@angular/material/table";
 import {MatIconModule} from "@angular/material/icon";
 import {MatPaginatorModule} from "@angular/material/paginator";
@@ -29,6 +29,8 @@ import {MatSort, MatSortModule} from "@angular/material/sort";
   styleUrl: './not-found-table.component.scss'
 })
 export class NotFoundTableComponent {
+  public analysis: AnalysisService = inject(AnalysisService);
+  public state: UrlStateService = inject(UrlStateService);
 
   isGSA = computed(() => this.analysis.result()?.summary?.type === 'GSA_REGULATION');
 
@@ -53,7 +55,7 @@ export class NotFoundTableComponent {
   scrollOffset = computed(() => (this.headerRow().clientHeight || 56) + 'px')
 
 
-  constructor(public analysis: AnalysisService, public state: UrlStateService) {
+  constructor() {
     effect(() => this.dataSource.data = this.data())
     effect(() => this.dataSource.sort = this.sort());
     this.dataSource.sortingDataAccessor = (data, header) => {

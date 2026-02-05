@@ -3,7 +3,7 @@ import {
   Component,
   computed,
   effect,
-  ElementRef, input,
+  ElementRef, inject, input,
   output,
   signal,
   viewChild,
@@ -46,6 +46,12 @@ import {DarkService} from "../../../services/dark.service";
   styleUrl: './qualitative-analysis.component.scss'
 })
 export class QualitativeAnalysisComponent implements AfterViewInit {
+  private http: HttpClient = inject(HttpClient);
+  public analysis: AnalysisService = inject(AnalysisService);
+  private state: UrlStateService = inject(UrlStateService);
+  private lottieService: LottieService = inject(LottieService);
+  private darkService: DarkService = inject(DarkService);
+  
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open' | 'closed'>()
 
@@ -79,11 +85,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   interactorsIllustrationLottie?: DotLottie;
 
   constructor(
-    private http: HttpClient,
-    public analysis: AnalysisService,
-    private state: UrlStateService,
-    private lottieService: LottieService,
-    private darkService: DarkService,
+    
   ) {
     effect(async () => {
       if (!this.interactorsIllustrationCanvas() || this.interactorsIllustrationLottie !== undefined) return;

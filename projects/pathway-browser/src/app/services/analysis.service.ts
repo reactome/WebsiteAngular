@@ -1,4 +1,4 @@
-import {computed, effect, Injectable, linkedSignal, signal, WritableSignal} from '@angular/core';
+import {computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal} from '@angular/core';
 import {catchError, EMPTY, Observable, of, switchMap, tap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../environments/environment";
@@ -154,6 +154,11 @@ export type Examples = 'uniprot' | 'microarray' | 'cancer-gene-census' | 'extrem
   providedIn: 'root'
 })
 export class AnalysisService {
+  private http: HttpClient = inject(HttpClient);
+  private state: UrlStateService = inject(UrlStateService);
+  private data: DataStateService = inject(DataStateService);
+  private darkS: DarkService = inject(DarkService);
+  private speciesService: SpeciesService = inject(SpeciesService);
   style: Style = new Style(document.body);
 
   paletteOptions: Map<PaletteName, PaletteSummary> = new Map(([
@@ -310,13 +315,7 @@ export class AnalysisService {
   speciesFilterActive = computed(() => this.state.speciesFilter().length !== 0)
 
 
-  constructor(
-    private http: HttpClient,
-    private state: UrlStateService,
-    private data: DataStateService,
-    private darkS: DarkService,
-    private speciesService: SpeciesService,
-  ) {
+  constructor() {
     effect(() => {
       [...this.paletteOptions.values()].forEach(summary => summary.dark = this.darkS.isDark())
     });

@@ -1,4 +1,4 @@
-import {effect, Injectable, signal, WritableSignal} from '@angular/core';
+import {effect, inject, Injectable, signal, WritableSignal} from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Params, Router} from "@angular/router";
 import {catchError, filter, firstValueFrom, map, of, switchMap} from "rxjs";
 import {isArray, isNumber} from "lodash";
@@ -38,6 +38,10 @@ type State = UrlStateService['values']
   providedIn: 'root'
 })
 export class UrlStateService implements State {
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private router: Router = inject(Router);
+  private http: HttpClient = inject(HttpClient);
+
 
   private readonly tabsCompatibility: [string | null, string][] = [
     ['ST', 'details'],
@@ -105,7 +109,7 @@ export class UrlStateService implements State {
   section = toSignal(this.route.fragment)
 
 
-  constructor(private route: ActivatedRoute, private router: Router, private http: HttpClient) {
+  constructor() {
 
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd),
@@ -123,7 +127,7 @@ export class UrlStateService implements State {
       });
     });
 
-    route.fragment.pipe(untilDestroyed(this)).subscribe((fragment) => {
+    this.route.fragment.pipe(untilDestroyed(this)).subscribe((fragment) => {
       if (fragment) { // Convert fragments to params
         let params: Params = {};
         let id = undefined; // Default routing
@@ -152,7 +156,7 @@ export class UrlStateService implements State {
       }
     })
 
-    route.queryParams.pipe(untilDestroyed(this)).subscribe(async (params) => {
+    this.route.queryParams.pipe(untilDestroyed(this)).subscribe(async (params) => {
       for (const mainToken in this.values) {
         const param = this.values[mainToken as keyof State] as UrlParam<any>;
         const tokens: string[] = [mainToken, ...param.otherTokens || []];

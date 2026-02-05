@@ -49,7 +49,7 @@
     "ngx-reactome-style": "^0.0.20",
     "ngx-ui-tour-md-menu": "^14.0.1",
     "reactome-cytoscape-style": "^0.0.2",
-    "reactome-gsa-form": "19.1.2",
+    "reactome-gsa-form": "^19.1.2",
     "reactome-table": "^19.0.1",
     "rxjs": "~7.8.0",
     "svg-pan-zoom": "^3.6.1",

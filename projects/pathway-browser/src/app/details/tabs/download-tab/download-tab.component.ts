@@ -1,4 +1,4 @@
-import {Component, computed, signal, Signal, WritableSignal} from '@angular/core';
+import {Component, computed, inject, signal, Signal, WritableSignal} from '@angular/core';
 import {UrlStateService} from "../../../services/url-state.service";
 import {HttpClient} from "@angular/common/http";
 import {DataStateService} from "../../../services/data-state.service";
@@ -51,6 +51,15 @@ type DiagramItem = {
   styleUrl: './download-tab.component.scss'
 })
 export class DownloadTabComponent {
+  private state: UrlStateService = inject(UrlStateService);
+  private http: HttpClient = inject(HttpClient);
+  private dataState: DataStateService = inject(DataStateService);
+  public analysis: AnalysisService = inject(AnalysisService);
+  private download: DownloadService = inject(DownloadService);
+  public ehld: EhldService = inject(EhldService);
+  private dialog: MatDialog = inject(MatDialog);
+
+  
   newtUrl = computed(() => {
     const reactomeUrl = new URL(`${CONTENT_SERVICE}/exporter/event/${this.finalEventId()}.sbgn&inferNestingOnLoad=true&mapColorScheme=opposed_red_blue&fitLabelsToNodes=true`, window.location.origin).href
     return `https://web.newteditor.org/?URL=${reactomeUrl}`;
@@ -205,13 +214,7 @@ export class DownloadTabComponent {
       isShown: signal(true)
     }]
 
-  constructor(private state: UrlStateService,
-              private http: HttpClient,
-              private dataState: DataStateService,
-              public analysis: AnalysisService,
-              private download: DownloadService,
-              public ehld: EhldService,
-              private dialog: MatDialog,) {
+  constructor() {
   }
 
   getGsaIcon(name: string): Icon | undefined {

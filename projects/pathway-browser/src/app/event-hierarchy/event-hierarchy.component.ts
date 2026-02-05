@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, effect, ElementRef, input, model, OnDestroy, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, effect, ElementRef, inject, input, model, OnDestroy, ViewChild} from '@angular/core';
 import {Event} from "../model/graph/event/event.model";
 import {EventService, SelectableObject} from "../services/event.service";
 import {SpeciesService} from "../services/species.service";
@@ -25,6 +25,15 @@ import {toObservable} from "@angular/core/rxjs-interop";
 })
 @UntilDestroy()
 export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
+  protected eventService: EventService = inject(EventService);
+  private speciesService: SpeciesService = inject(SpeciesService);
+  public state: UrlStateService = inject(UrlStateService);
+  private el: ElementRef = inject(ElementRef);
+  private router: Router = inject(Router);
+  private ehldService: EhldService = inject(EhldService);
+  private analysis: AnalysisService = inject(AnalysisService);
+  private iconService: IconService = inject(IconService);
+  private dboService: DatabaseObjectService = inject(DatabaseObjectService);
 
   readonly pathwayId = model<string>();
   readonly split = input.required<SplitComponent>({alias: "eventSplit"});
@@ -62,15 +71,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   lastSpecieId?: string;
 
 
-  constructor(protected eventService: EventService,
-              private speciesService: SpeciesService,
-              public state: UrlStateService,
-              private el: ElementRef,
-              private router: Router,
-              private ehldService: EhldService,
-              private analysis: AnalysisService,
-              private iconService: IconService,
-              private dboService: DatabaseObjectService) {
+  constructor() {
     effect(() => {
 
       const currentSpecieId = this.speciesService.currentSpecies().taxId;
@@ -152,20 +153,20 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue
-      this.treeDataSource.data = events;
+      this.treeDataSource.data = events as Event[];
       this.adjustWidths();
     });
 
     this.eventService.selectedTreeEvent$.pipe(untilDestroyed(this)).subscribe(event => {
-      this.selectedTreeEvent = event;
+      this.selectedTreeEvent = event as Event;
     });
 
     this.dboService.selectedObj$.pipe(untilDestroyed(this)).subscribe(event => {
-      this.selectedObj = event;
+      this.selectedObj = event as Event;
     });
 
     this.eventService.breadcrumbs$.pipe(untilDestroyed(this)).subscribe(events => {
-      this.breadcrumbs = events;
+      this.breadcrumbs = events as Event[];
     });
 
     this.split().dragProgress$.pipe(untilDestroyed(this)).subscribe(data => {
@@ -310,7 +311,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.eventService.loadEventData(treeEvent);
     } else {
       this.dboService.fetchEnhancedEntry<Event>(treeEvent.parent.stId).pipe(untilDestroyed(this)).subscribe(result => {
-        this.dboService.setCurrentObj(result);
+        this.dboService.setCurrentObj(result as DatabaseObject);
       })
     }
   }

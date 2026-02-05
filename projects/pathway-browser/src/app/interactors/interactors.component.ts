@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectorRef, Component, EventEmitter, input, OnDestroy, Output} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, EventEmitter, inject, input, OnDestroy, Output} from '@angular/core';
 import {InteractorToken, PsicquicResource, ResourceAndType, ResourceType} from "./model/interactor.model";
 import cytoscape from "cytoscape";
 import {DiagramService} from "../services/diagram.service";
@@ -18,6 +18,13 @@ import {Subscription} from "rxjs";
 })
 export class InteractorsComponent implements AfterViewInit {
 
+  private diagram: DiagramService = inject(DiagramService);
+   public dark: DarkService = inject(DarkService);
+   private interactors: InteractorService = inject(InteractorService);
+   private state: UrlStateService = inject(UrlStateService);
+   public dialog: MatDialog = inject(MatDialog);
+   private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
+
   isDataFromPsicquicLoading: boolean = false;
   resourceTokens: InteractorToken[] = [];
   clear = false;
@@ -32,10 +39,6 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
   @Output('initialiseReplaceElements') initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
-
-  constructor(private diagram: DiagramService, public dark: DarkService, private interactors: InteractorService, private state: UrlStateService, public dialog: MatDialog, private cdr: ChangeDetectorRef) {
-
-  }
 
   ngAfterViewInit(): void {
     this.getPsicquicResources();
