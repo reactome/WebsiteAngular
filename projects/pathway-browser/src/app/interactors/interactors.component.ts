@@ -8,13 +8,33 @@ import {UrlStateService} from "../services/url-state.service";
 import {MatDialog} from "@angular/material/dialog";
 import {CustomInteractorDialogComponent} from "./custom-interactor-dialog/custom-interactor-dialog.component";
 import {Subscription} from "rxjs";
+import {MatCard, MatCardContent} from "@angular/material/card";
+import {MatButton, MatIconButton} from "@angular/material/button";
+import {MatIcon} from "@angular/material/icon";
+import {NgClass, NgTemplateOutlet} from "@angular/common";
+import {MatDivider} from "@angular/material/divider";
+import {MatGridList, MatGridTile} from "@angular/material/grid-list";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
 
 
 @Component({
   selector: 'cr-interactors',
   templateUrl: './interactors.component.html',
   styleUrls: ['./interactors.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    MatCard,
+    MatCardContent,
+    MatButton,
+    MatIconButton,
+    MatIcon,
+    NgClass,
+    NgTemplateOutlet,
+    MatDivider,
+    MatGridList,
+    MatGridTile,
+    MatProgressSpinner
+  ]
 })
 export class InteractorsComponent implements AfterViewInit {
 

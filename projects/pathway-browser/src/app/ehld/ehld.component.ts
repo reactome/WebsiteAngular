@@ -24,13 +24,26 @@ import {Point} from "@angular/cdk/drag-drop";
 import {defaultDownloadOptions, DownloadFormat, DownloadService} from "../services/download.service";
 import {SvgExporterService} from "../reacfoam/svg-exporter.service";
 import {map} from "rxjs";
+import {CdkDrag, CdkDragHandle} from "@angular/cdk/drag-drop";
+import {MatSlider, MatSliderThumb} from "@angular/material/slider";
+import {MatTooltip} from "@angular/material/tooltip";
+import {AnalysisLegendComponent} from "../legend/analysis-legend/analysis-legend.component";
+import {NgClass} from "@angular/common";
 
 
 @Component({
   selector: 'cr-ehld',
   templateUrl: './ehld.component.html',
   styleUrls: ['./ehld.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    CdkDrag,
+    CdkDragHandle,
+    MatSlider,
+    MatSliderThumb,
+    MatTooltip,
+    AnalysisLegendComponent
+  ]
 })
 
 @UntilDestroy()

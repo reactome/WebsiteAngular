@@ -5,13 +5,20 @@ import {UntilDestroy} from "@ngneat/until-destroy";
 import {DataStateService} from "../services/data-state.service";
 import {isDefined} from "../services/utils";
 import {UrlStateService} from "../services/url-state.service";
+import {MatSelectionList, MatListOption} from "@angular/material/list";
+import {MatIcon} from "@angular/material/icon";
 
 
 @Component({
   selector: 'cr-species',
   templateUrl: './species.component.html',
   styleUrls: ['./species.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    MatSelectionList,
+    MatListOption,
+    MatIcon
+  ]
 })
 @UntilDestroy()
 export class SpeciesComponent implements AfterViewInit {

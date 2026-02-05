@@ -3,13 +3,36 @@ import {UntilDestroy} from "@ngneat/until-destroy";
 import {AnalysisService} from "../services/analysis.service";
 import {DataStateService} from "../services/data-state.service";
 import {UrlStateService} from "../services/url-state.service";
+import {MatTabGroup, MatTab, MatTabLabel, MatTabContent} from "@angular/material/tabs";
+import {MatIcon} from "@angular/material/icon";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {DescriptionTabComponent} from "./tabs/description-tab/description-tab.component";
+import {MoleculeTabComponent} from "./tabs/molecule-tab/molecule-tab.component";
+import {ResultTabComponent} from "./tabs/result-tab/result-tab.component";
+import {ExpressionTabComponent} from "./tabs/expression-tab/expression-tab.component";
+import {InfoTabComponent} from "./tabs/info-tab/info-tab.component";
+import {DownloadTabComponent} from "./tabs/download-tab/download-tab.component";
 
 
 @Component({
   selector: 'cr-details-panel',
   templateUrl: './details.component.html',
   styleUrls: ['./details.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    MatTabGroup,
+    MatTab,
+    MatTabLabel,
+    MatTabContent,
+    MatIcon,
+    MatProgressSpinner,
+    DescriptionTabComponent,
+    MoleculeTabComponent,
+    ResultTabComponent,
+    ExpressionTabComponent,
+    InfoTabComponent,
+    DownloadTabComponent
+  ]
 })
 @UntilDestroy()
 export class DetailsComponent {

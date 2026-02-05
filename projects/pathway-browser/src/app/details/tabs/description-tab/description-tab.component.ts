@@ -50,13 +50,48 @@ import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
 import HasModifiedResidue = Relationship.HasModifiedResidue;
+import {MatDivider} from "@angular/material/divider";
+import {MatIcon} from "@angular/material/icon";
+import {MatSlideToggle} from "@angular/material/slide-toggle";
+import {FormsModule} from "@angular/forms";
+import {MatAnchor} from "@angular/material/button";
+import {DescriptionOverviewComponent} from "./description-overview/description-overview.component";
+import {RefsTreeComponent} from "../../common/refs-tree/refs-tree.component";
+import {PublicationComponent} from "../../common/publication/publication.component";
+import {CrossReferencesComponent} from "../../common/cross-references/cross-references.component";
+import {ExternalReferenceComponent} from "../../common/external-reference/external-reference.component";
+import {ObjectTreeComponent} from "../../common/object-tree/object-tree.component";
+import {ControllerTreeComponent} from "../../common/controller-tree/controller-tree.component";
+import {MolecularProcessComponent} from "../../common/molecular-process/molecular-process.component";
+import {CellMarkerComponent} from "../../common/cell-marker/cell-marker.component";
+import {IconComponent} from "./icon/icon.component";
+import {RheaComponent} from "../../common/rhea/rhea.component";
+import {InteractorsTableComponent} from "../../common/interactors-table/interactors-table.component";
 
 
 @Component({
   selector: 'cr-description-tab',
   templateUrl: './description-tab.component.html',
   styleUrl: './description-tab.component.scss',
-  standalone: false
+  standalone: true,
+  imports: [
+    MatDivider,
+    MatIcon,
+    MatSlideToggle,
+    FormsModule,
+    MatAnchor,
+    DescriptionOverviewComponent,
+    RefsTreeComponent,
+    PublicationComponent,
+    CrossReferencesComponent,
+    ExternalReferenceComponent,
+    ControllerTreeComponent,
+    MolecularProcessComponent,
+    CellMarkerComponent,
+    IconComponent,
+    RheaComponent,
+    InteractorsTableComponent
+  ]
 })
 export class DescriptionTabComponent implements OnDestroy {
 

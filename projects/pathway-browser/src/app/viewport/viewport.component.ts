@@ -1,5 +1,4 @@
-import {
-  AfterViewInit,
+import {  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -32,7 +31,25 @@ import {of} from "rxjs";
 import {rxResource} from "@angular/core/rxjs-interop";
 import {environment} from "../../environments/environment";
 import {FigureService} from "../details/tabs/description-tab/figure/figure.service";
-import {IOutputData} from "angular-split";
+import {IOutputData, AngularSplitModule} from "angular-split";
+import {EhldComponent} from "../ehld/ehld.component";
+import {ReacfoamComponent} from "../reacfoam/reacfoam.component";
+import {SpeciesComponent} from "../species/species.component";
+import {EventHierarchyComponent} from "../event-hierarchy/event-hierarchy.component";
+import {DetailsComponent} from "../details/details.component";
+import {SearchComponent} from "./search/search.component";
+import {MatIcon} from "@angular/material/icon";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {MatRipple} from "@angular/material/core";
+import {MatTooltip} from "@angular/material/tooltip";
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {MatButton, MatIconButton} from "@angular/material/button";
+import {NgClass} from "@angular/common";
+import {AnalysisFormComponent} from "./analysis-form/analysis-form.component";
+import {CompareFormComponent} from "./compare-form/compare-form.component";
+import {FormsModule} from "@angular/forms";
+import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
+import {RouterLink} from "@angular/router";
 
 
 const DETAIL_MIN_HEIGHT = 0;
@@ -44,7 +61,35 @@ const DROPDOWN_DURATION = 500;
   templateUrl: './viewport.component.html',
   styleUrls: ['./viewport.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: false,
+  standalone: true,
+  imports: [
+    AngularSplitModule,
+    SearchComponent,
+    MatIcon,
+    NgClass,
+    SpeciesComponent,
+    InteractorsComponent,
+    EventHierarchyComponent,
+    MatSlideToggle,
+    FormsModule,
+    MatProgressSpinner,
+    MatRipple,
+    MatTooltip,
+    MatMenu,
+    MatMenuItem,
+    MatMenuTrigger,
+    MatButton,
+    MatIconButton,
+    MatRadioGroup,
+    MatRadioButton,
+    RouterLink,
+    DiagramComponent,
+    EhldComponent,
+    ReacfoamComponent,
+    DetailsComponent,
+    AnalysisFormComponent,
+    CompareFormComponent
+  ],
   animations: [
     trigger('appear', [
       transition(':enter', [

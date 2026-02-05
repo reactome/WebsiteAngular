@@ -49,7 +49,11 @@ import {DownloadFormat, DownloadService} from "../services/download.service";
 import {DataStateService} from "../services/data-state.service";
 import {SchemaClasses} from "../constants/constants";
 import {Interactor} from "../interactors/model/interactor.model";
-import {Point} from "@angular/cdk/drag-drop";
+import {Point, CdkDrag, CdkDragHandle} from "@angular/cdk/drag-drop";
+import {NgClass} from "@angular/common";
+import {MatSlider, MatSliderThumb} from "@angular/material/slider";
+import {MatTooltip} from "@angular/material/tooltip";
+import {AnalysisLegendComponent} from "../legend/analysis-legend/analysis-legend.component";
 
 
 const INIT_RX = 2;
@@ -63,7 +67,15 @@ const FIT_PADDING = 100;
   selector: 'cr-diagram',
   templateUrl: './diagram.component.html',
   styleUrls: ['./diagram.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    CdkDrag,
+    CdkDragHandle,
+    MatSlider,
+    MatSliderThumb,
+    MatTooltip,
+    AnalysisLegendComponent
+  ]
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
   title = 'pathway-browser';

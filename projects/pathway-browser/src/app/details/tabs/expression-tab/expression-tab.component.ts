@@ -11,9 +11,10 @@ type GXAQuery = { value: string };
 
 @Component({
   selector: 'cr-expression-tab',
-  standalone: false,
+  standalone: true,
   templateUrl: './expression-tab.component.html',
-  styleUrl: './expression-tab.component.scss'
+  styleUrl: './expression-tab.component.scss',
+  imports: []
 })
 export class ExpressionTabComponent {
 

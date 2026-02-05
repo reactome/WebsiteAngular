@@ -4,13 +4,26 @@ import {PageEvent} from "@angular/material/paginator";
 import {isArray, max} from "lodash";
 import {InDepth} from "../../../model/graph/in-depth.model";
 import {Relationship} from "../../../model/graph/relationship.model";
+import {MatPaginator} from "@angular/material/paginator";
+import {ObjectTreeComponent} from "../object-tree/object-tree.component";
+import {MatSlider, MatSliderThumb} from "@angular/material/slider";
+import {MatTooltip} from "@angular/material/tooltip";
+import {MatIcon} from "@angular/material/icon";
+import {MatIconButton} from "@angular/material/button";
 
 
 @Component({
   selector: 'cr-controller-tree',
   templateUrl: './controller-tree.component.html',
   styleUrl: './controller-tree.component.scss',
-  standalone: false
+  standalone: true,
+  imports: [
+    ObjectTreeComponent,
+    MatTooltip,
+    MatIcon,
+    MatIconButton,
+    MatPaginator
+  ]
 })
 export class ControllerTreeComponent<E extends DatabaseObject & InDepth, R extends Relationship.Has<E>> {
 

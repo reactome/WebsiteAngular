@@ -2,12 +2,14 @@ import {Component, OnInit} from '@angular/core';
 import {DomSanitizer} from "@angular/platform-browser";
 import {MatIconRegistry} from "@angular/material/icon";
 import {IconService} from "./services/icon.service";
+import {RouterOutlet} from "@angular/router";
 
 @Component({
   selector: 'cr-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [RouterOutlet]
 })
 export class AppComponent implements OnInit {
   title = 'PathwayBrowser'

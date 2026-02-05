@@ -1,13 +1,30 @@
 import {Component, computed, input} from '@angular/core';
 import {CustomInteraction} from "../../../interactors/model/interactor.model";
 import {CONTENT_QUERY} from "../../../../environments/environment";
+import {MatTable, MatColumnDef, MatHeaderCell, MatCell, MatHeaderCellDef, MatCellDef, MatHeaderRow, MatRow, MatHeaderRowDef, MatRowDef} from "@angular/material/table";
+import {MatAnchor} from "@angular/material/button";
+import {MatIcon} from "@angular/material/icon";
 
 
 @Component({
   selector: 'cr-interactors-table',
   templateUrl: './interactors-table.component.html',
   styleUrl: './interactors-table.component.scss',
-  standalone: false
+  standalone: true,
+  imports: [
+    MatTable,
+    MatColumnDef,
+    MatHeaderCell,
+    MatCell,
+    MatHeaderCellDef,
+    MatCellDef,
+    MatHeaderRow,
+    MatRow,
+    MatHeaderRowDef,
+    MatRowDef,
+    MatAnchor,
+    MatIcon
+  ]
 })
 
 

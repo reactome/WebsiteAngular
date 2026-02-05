@@ -19,13 +19,20 @@ import {
 } from "../../../services/utils";
 import {MolecularProcess} from "../../../model/graph/molecular-process.model";
 import HasModifiedResidue = Relationship.HasModifiedResidue;
+import {ObjectTreeComponent} from "../object-tree/object-tree.component";
+import {MatIcon} from "@angular/material/icon";
+import {MatTooltip} from "@angular/material/tooltip";
 
 
 @Component({
   selector: 'cr-molecular-process',
-  standalone: false,
+  standalone: true,
   templateUrl: './molecular-process.component.html',
-  styleUrl: './molecular-process.component.scss'
+  styleUrl: './molecular-process.component.scss',
+  imports: [
+    ObjectTreeComponent,
+    MatIcon
+  ]
 })
 /**
  * This is a shared component for regulation, catalystActivity and modifiedResidue(modifications)

@@ -15,13 +15,31 @@ import {DatabaseObject} from "../model/graph/database-object.model";
 import {isPathway} from "../services/utils";
 import {DatabaseObjectService} from "../services/database-object.service";
 import {toObservable} from "@angular/core/rxjs-interop";
+import {RouterLink} from "@angular/router";
+import {MatIcon} from "@angular/material/icon";
+import {MatTree, MatTreeNode, MatNestedTreeNode} from "@angular/material/tree";
+import {MatButton, MatIconButton} from "@angular/material/button";
+import {NgClass} from "@angular/common";
+import {MatTooltip} from "@angular/material/tooltip";
+import {PassiveDirective} from "../utils/passive.directive";
 
 
 @Component({
   selector: 'cr-event-hierarchy',
   templateUrl: './event-hierarchy.component.html',
   styleUrls: ['./event-hierarchy.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [
+    RouterLink,
+    MatIcon,
+    MatTree,
+    MatNestedTreeNode,
+    MatButton,
+    MatIconButton,
+    NgClass,
+    MatTooltip,
+    PassiveDirective
+  ]
 })
 @UntilDestroy()
 export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
