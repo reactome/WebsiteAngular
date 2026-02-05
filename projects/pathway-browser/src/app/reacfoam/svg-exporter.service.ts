@@ -24,6 +24,7 @@ namespace SvgDecoration {
     width: number,
     height: number
   }
+  
 
   export interface Output {
     css: string,
@@ -84,6 +85,7 @@ export class SvgExporterService {
       await this.waitFor(() => !untracked(reacfoam.relaxing), 50);
       foamtree.drawTo(ctx);
       svg = ctx.getSvg();
+      if (!svg) throw new Error('Failed to generate SVG');
       const result = this.addStaticTitle(svg, width, height, decorationSize, css);
       css = result.css;
       padding = result.padding;
@@ -100,6 +102,7 @@ export class SvgExporterService {
 
         foamtree.drawTo(ctx);
         svg = ctx.getSvg();
+        if (!svg) throw new Error('Failed to generate SVG');
         if (untracked(this.isReacfoamLayoutChanging)) {
           const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           svg.childNodes.forEach(child => g.appendChild(child.cloneNode(true)));

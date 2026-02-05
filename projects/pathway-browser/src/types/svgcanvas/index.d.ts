@@ -26,7 +26,7 @@ declare module 'svgcanvas'{
     constructor(width: number, height: number);
     constructor(options: Options);
     getSerializedSvg: () => string;
-    getSvg: () => SVGSVGElement;
+    getSvg: () => SVGSVGElement | undefined;
   }
   export interface Element extends HTMLCanvasElement {
     ctx : Context;

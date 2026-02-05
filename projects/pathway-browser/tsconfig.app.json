@@ -6,16 +6,20 @@
     "paths": {
       "reactome-cytoscape-style": [
         "dist/reactome-cytoscape-style"
+      ],
+      "@carrotsearch/foamtree": [
+        "projects/pathway-browser/src/types/@carrotsearch/foamtree"
+      ],
+      "svgcanvas": [
+        "projects/pathway-browser/src/types/svgcanvas"
       ]
-    },
-    "typeRoots": [
-      "node_modules/@types"
-    ],
+    }
   },
   "files": [
     "src/main.ts"
   ],
   "include": [
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "src/types/**/*.d.ts"
   ]
 }

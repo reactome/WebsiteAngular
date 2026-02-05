@@ -10,9 +10,19 @@
     "typeRoots": [
       "./node_modules/@types",
       "./types",
-    ]
+    ],
+    "module": "ES2022",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"]
   },
   "exclude": [
     "**/*.spec.ts"
-  ]
+  ],
+  "angularCompilerOptions": {
+    "compilationMode": "partial",
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
 }

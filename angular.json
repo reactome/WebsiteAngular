@@ -212,7 +212,7 @@
               "lodash/toPath"
             ],
             "polyfills": ["zone.js", "@angular/localize/init"],
-            "tsConfig": "tsconfig.app.json",
+            "tsConfig": "projects/pathway-browser/tsconfig.app.json",
             "assets": [
               "projects/pathway-browser/src/favicon.svg",
               "projects/pathway-browser/src/assets",
