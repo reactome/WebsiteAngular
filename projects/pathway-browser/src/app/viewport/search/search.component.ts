@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild, WritableSignal} from '@angular/core';
 import {MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
 import {FormsModule} from "@angular/forms";
@@ -119,7 +119,7 @@ export class SearchComponent {
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
   })
 
-  suggestionIndex = linkedSignal(() => this.suggestionResults() && -1)
+  suggestionIndex:WritableSignal<number> = linkedSignal(() => this.suggestionResults() && -1)
   currentSuggest = computed(() => this.suggestionIndex() !== -1
     ? this.searchText() + this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
     : undefined);

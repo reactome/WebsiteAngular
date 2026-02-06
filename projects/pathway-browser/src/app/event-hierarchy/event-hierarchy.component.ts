@@ -17,7 +17,7 @@ import {DatabaseObjectService} from "../services/database-object.service";
 import {toObservable} from "@angular/core/rxjs-interop";
 import {RouterLink} from "@angular/router";
 import {MatIcon} from "@angular/material/icon";
-import {MatTree, MatTreeNode, MatNestedTreeNode} from "@angular/material/tree";
+import { MatTreeNode, MatNestedTreeNode} from "@angular/material/tree";
 import {MatButton, MatIconButton} from "@angular/material/button";
 import {NgClass} from "@angular/common";
 import {MatTooltip} from "@angular/material/tooltip";

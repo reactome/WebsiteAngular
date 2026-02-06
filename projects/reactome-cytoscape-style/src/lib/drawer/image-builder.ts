@@ -146,7 +146,7 @@ function _expToGradient(id: string, exps: (number | [number, number] | undefined
   // console.time('exp-to-gradient')
   const stops: { start: number, stop: number, color: string, exp: number | undefined, width: number }[] = [];
   const size = exps.reduce((l: number, e) => e !== undefined && isArray(e) ? l + e[1] : l + 1, 0);
-  const delta = 1 / size;
+  const delta = Array.isArray(size) ? (1 / size[0] + 1/size[1])/ 2 : 1 / size;
   exps.forEach((exp, i) => {
     const p = stops.length - 1;
     const realExp = isArray(exp) ? exp[0]! : exp;

@@ -106,12 +106,12 @@ export class ReacfoamComponent implements OnDestroy {
     // Roll out in groups
     rolloutMethod: "groups",
 
-    onGroupDoubleClick: (event) => {
+    onGroupDoubleClick: (event: any) => {
       event.preventDefault();
       this.router.navigate([event.group.stId], {queryParamsHandling: 'preserve', preserveFragment: true})
     },
 
-    onGroupClick: (event) => {
+    onGroupClick: (event: any) => {
       event.preventDefault();
       if (!event.secondary) {
         this.state.select.set(event.group.stId)
@@ -125,7 +125,7 @@ export class ReacfoamComponent implements OnDestroy {
     },
 
     // For now, add exposure at end of relaxation, useful upon resizing reset. to be removed when alternative solution found for stable layout
-    onRelaxationStep: (relaxationProgress, relaxationComplete, relaxationTimeout) => {
+    onRelaxationStep: (relaxationProgress: any, relaxationComplete: any, relaxationTimeout: any) => {
       this.relaxing.set(true)
       this.foamTree().set("groupLabelMinFontSize", 20);
       if ((relaxationTimeout || relaxationComplete)) {
@@ -167,7 +167,7 @@ export class ReacfoamComponent implements OnDestroy {
         groups: undefined,
         keepPrevious: false
       }).then(() => {
-        this.foamTree().set('exposeDuration', this.options().exposeDuration!) // Put back initial exposure time
+        this.foamTree().set('exposeDuration', this.options()['exposeDuration']!) // Put back initial exposure time
         this.foamTree().resize()
       })
     })
@@ -236,7 +236,7 @@ export class ReacfoamComponent implements OnDestroy {
       this.foamTree().set({
         groupStrokePlainLightnessShift: this.dark.isDark() ? 70 : -70,
         groupStrokePlainSaturationShift: 0,
-        groupColorDecorator: (options, props, values) => {
+        groupColorDecorator: (options: any, props: any, values: any) => {
           const depth = props.group.depth;
           // If child groups of some group doesn't have enough space to
           // render, draw the parent group in red.
@@ -261,10 +261,10 @@ export class ReacfoamComponent implements OnDestroy {
               values.groupColor = notFoundColor;
             } else {
               if (this.analysis.type() === 'OVERREPRESENTATION' || this.analysis.type() === 'SPECIES_COMPARISON') { // FDR ~ color
-                values.groupColor = this.analysis.palette().scale(props.group.fdr).hex()
+                values.groupColor = (this.analysis.palette().scale(props.group.fdr) as any).hex()
               } else { // expression ~ color
                 if (props.group.expressions) {
-                  values.groupColor = this.analysis.palette().scale(props.group.expressions[this.analysis.sampleIndex()]).hex()
+                  values.groupColor = (this.analysis.palette().scale(props.group.expressions[this.analysis.sampleIndex()]) as any).hex()
                 } else {
                   values.groupColor = notFoundColor;
                 }
