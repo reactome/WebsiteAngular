@@ -52,6 +52,7 @@ import {FigureService} from "./figure/figure.service";
 import HasModifiedResidue = Relationship.HasModifiedResidue;
 import {MatDivider} from "@angular/material/divider";
 import {MatIcon} from "@angular/material/icon";
+import {MatTooltip} from "@angular/material/tooltip";
 import {MatSlideToggle} from "@angular/material/slide-toggle";
 import {FormsModule} from "@angular/forms";
 import {MatAnchor} from "@angular/material/button";
@@ -77,6 +78,7 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
   imports: [
     MatDivider,
     MatIcon,
+    MatTooltip,
     MatSlideToggle,
     FormsModule,
     MatAnchor,

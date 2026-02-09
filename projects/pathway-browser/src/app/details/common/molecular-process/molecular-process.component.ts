@@ -22,6 +22,7 @@ import HasModifiedResidue = Relationship.HasModifiedResidue;
 import {ObjectTreeComponent} from "../object-tree/object-tree.component";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
+import {SortByDatePipe} from "../../../pipes/sort-by-date.pipe";
 
 
 @Component({
@@ -31,7 +32,8 @@ import {MatTooltip} from "@angular/material/tooltip";
   styleUrl: './molecular-process.component.scss',
   imports: [
     ObjectTreeComponent,
-    MatIcon
+    MatIcon,
+    SortByDatePipe
   ]
 })
 /**
