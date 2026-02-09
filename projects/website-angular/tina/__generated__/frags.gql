@@ -1,0 +1,63 @@
+fragment AboutParts on About {
+  __typename
+  title
+  description
+  category
+  body
+  image
+}
+
+fragment NewsParts on News {
+  __typename
+  title
+  date
+  author
+  body
+  tags
+  image
+}
+
+fragment TeamParts on Team {
+  __typename
+  name
+  role
+  institution
+  type
+}
+
+fragment ContentParts on Content {
+  __typename
+  title
+  description
+  category
+  body
+  image
+}
+
+fragment Reactome_research_spotlightsParts on Reactome_research_spotlights {
+  __typename
+  title
+  date
+  author
+  body
+  tags
+  image
+}
+
+fragment DocumentationParts on Documentation {
+  __typename
+  title
+  description
+  category
+  body
+  image
+}
+
+fragment CommunityParts on Community {
+  __typename
+  title
+  description
+  category
+  body
+  image
+}

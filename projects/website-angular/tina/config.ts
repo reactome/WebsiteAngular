@@ -22,6 +22,9 @@ export default defineConfig({
         label: "About",
         path: "content/about",
         format: "mdx",
+        match: {
+          exclude: "news/**",
+        },
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
@@ -30,7 +33,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/about/${document._sys.filename}`,
+          router: ({ document }: any) => `/about/${document._sys.filename}`,
         }
       },
       { //News Articles
@@ -47,7 +50,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/about/news/${document._sys.filename}`,
+          router: ({ document }: any) => `/about/news/${document._sys.filename}`,
         }
       },
       { //Team Info
@@ -92,7 +95,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/content/${document._sys.filename}`,
+          router: ({ document }: any) => `/content/${document._sys.filename}`,
         }
       },
       {
@@ -109,7 +112,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/content/reactome-research-spotlight/${document._sys.filename}`,
+          router: ({ document }: any) => `/content/reactome-research-spotlight/${document._sys.filename}`,
         }
       },
       { //Documentation Pages
@@ -125,7 +128,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/documentation/${document._sys.filename}`,
+          router: ({ document }: any) => `/documentation/${document._sys.filename}`,
         }
       },
       { //Community Pages
@@ -141,7 +144,7 @@ export default defineConfig({
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
-          router: ({ document }) => `/community/${document._sys.filename}`,
+          router: ({ document }:any) => `/community/${document._sys.filename}`,
         }
       },
       

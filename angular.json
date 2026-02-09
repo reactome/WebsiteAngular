@@ -27,10 +27,27 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/website-angular/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/website-angular/src/assets",
+                "output": "/assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/website-angular/content",
+                "output": "/content"
               }
             ],
             "styles": ["src/styles.scss"],
-            "scripts": []
+            "scripts": [],
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules/", "dist/"]
+            }
           },
           "configurations": {
             "production": {
