@@ -5,7 +5,7 @@ $max-content-width: 1200px;
 
 :host {
   display: block;
-  background-color: #f8f9fa;
+  background-color: var(--on-primary);
   min-height: 100vh;
 }
 
@@ -148,6 +148,8 @@ $max-content-width: 1200px;
     line-height: 1.5;
     margin-bottom: $spacing-unit;
     flex: 1;
+    overflow: hidden;
+
 
     ::ng-deep img {
       max-width: 100%;

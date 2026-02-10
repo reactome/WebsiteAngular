@@ -9,4 +9,9 @@
   ::ng-deep a {
     color: var(--on-primary);
   }
+
+  ::ng-deep img {
+    max-width: 100%;
+    height: auto;
+  }
 }
