@@ -30,11 +30,11 @@ $transition-speed: 0.25s;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: var(--on-primary);
     border-radius: 3px;
 
     &:hover {
-      background: #aaa;
+      background: var(--primary);
     }
   }
 }
@@ -45,14 +45,14 @@ $transition-speed: 0.25s;
   justify-content: center;
   width: 100%;
   padding: 0.5rem;
-  background: var(--primary, #2e7eb3);
+  background: var(--primary);
   color: white;
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: var(--primary-dark, #256a9a);
+    background: var(--primary-dark);
   }
 
   .material-symbols-outlined {
@@ -69,18 +69,18 @@ $transition-speed: 0.25s;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem 0.75rem;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--on-primary);
   margin-bottom: 0.5rem;
 
   .section-icon {
     font-size: 1.25rem;
-    color: var(--primary, #2e7eb3);
+    color: var(--primary);
   }
 
   .section-title {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--on-surface, #333);
+    color: var(--on-surface);
     margin: 0;
   }
 }
@@ -94,9 +94,9 @@ $transition-speed: 0.25s;
 .sidebar-item {
   &.active > .sidebar-link {
     background: rgba(46, 126, 179, 0.12);
-    color: var(--primary, #2e7eb3);
+    color: var(--primary);
     font-weight: 500;
-    border-left-color: var(--primary, #2e7eb3);
+    border-left-color: var(--primary);
   }
 }
 
@@ -105,7 +105,7 @@ $transition-speed: 0.25s;
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  color: var(--on-surface-variant, #555);
+  color: var(--on-surface);
   text-decoration: none;
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -113,14 +113,14 @@ $transition-speed: 0.25s;
 
   &:hover {
     background: rgba(0, 0, 0, 0.04);
-    color: var(--primary, #2e7eb3);
+    color: var(--primary);
   }
 
   &.router-active {
     background: rgba(46, 126, 179, 0.12);
-    color: var(--primary, #2e7eb3);
+    color: var(--primary);
     font-weight: 500;
-    border-left-color: var(--primary, #2e7eb3);
+    border-left-color: var(--primary);
   }
 
   .external-icon {

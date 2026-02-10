@@ -20,12 +20,12 @@
 }
 
 .breadcrumb-link {
-  color: var(--primary, #2e7eb3);
+  color: var(--primary);
   text-decoration: none;
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--primary-dark, #1a5a8a);
+    color: var(--primary-dark);
     text-decoration: underline;
   }
 
@@ -40,13 +40,14 @@
 }
 
 .breadcrumb-separator {
-  color: var(--on-surface-variant, #666);
+  color: var(--on-surface);
   font-size: 1.125rem;
   user-select: none;
+  align-content: center;
 }
 
 .breadcrumb-current {
-  color: var(--on-surface, #333);
+  color: var(--on-surface);
   font-weight: 500;
 }
 
