@@ -37,7 +37,7 @@ export class HomeStatsComponent {
 
   getVersionAndDate () {
     import('../../../config/config.json').then((data) => {
-        this.version = data.default.version.number;
+        this.version = data.default.version.label;
         this.releaseDate = new Date(data.default.version.releaseDate);
         this.fetchStats();
       });
