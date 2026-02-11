@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
-import { marked } from 'marked';
 import parseFrontmatter from '../utils/parseFrontmatter';
 import { Article, ArticleIndexItem } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
