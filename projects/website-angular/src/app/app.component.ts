@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavigationBarComponent } from "./navigation-bar/navigation-bar.component";
 import { InfoFooterComponent } from "./info-footer/info-footer.component";
 import { copyrightFooterComponent } from "./copyright-footer/copyright-footer.component";
 import { CiteUsComponent } from "./cite-us/cite-us.component";
 import { ScrollToTopComponent } from "./scroll-to-top/scroll-to-top.component";
+import { MatIconRegistry } from '@angular/material/icon';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +14,12 @@ import { ScrollToTopComponent } from "./scroll-to-top/scroll-to-top.component";
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'WebsiteAngular';
+
+  constructor(private matIconRegistry: MatIconRegistry) {}
+
+  ngOnInit(): void {
+    this.matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');
+  }
 }
