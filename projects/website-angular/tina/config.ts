@@ -28,7 +28,7 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
           { type: "rich-text", name: "body", label: "Body" },
           { type: 'image', name: "image", label: "Image" },
         ],
@@ -90,7 +90,7 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
           { type: "rich-text", name: "body", label: "Body" },
           { type: 'image', name: "image", label: "Image" },
         ],
@@ -123,7 +123,7 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
           { type: "rich-text", name: "body", label: "Body" },
           { type: 'image', name: "image", label: "Image" },
         ],
@@ -139,7 +139,7 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
           { type: "rich-text", name: "body", label: "Body" },
           { type: 'image', name: "image", label: "Image" },
         ],
