@@ -45,6 +45,7 @@ Thumbs.db
 node_modules
 .env
 tina/__generated__
+projects/website-angular/tina/__generated__
 
 # System files
 .DS_Store
