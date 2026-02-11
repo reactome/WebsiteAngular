@@ -1,7 +1,7 @@
 <div class="carousel-wrapper">
-    <mat-icon [class]="'left-button' + (dark ? ' dark' : ' light')" (click)="scrollLeft()">keyboard_arrow_left</mat-icon>
-    <div class="carousel-container" #carouselContainer>
+    <mat-icon [class]="'left-button' + (dark ? ' dark' : ' light') + (!canScrollLeft ? ' disabled' : '') + (!showButtons ? ' hidden' : '')" (click)="canScrollLeft && scrollLeft()">keyboard_arrow_left</mat-icon>
+    <div class="carousel-container" #carouselContainer (scroll)="onScroll()">
         <ng-content class="carousel-obj"></ng-content>
     </div>
-    <mat-icon [class]="'right-button' + (dark ? ' dark' : ' light')" (click)="scrollRight()">keyboard_arrow_right</mat-icon>
+    <mat-icon [class]="'right-button' + (dark ? ' dark' : ' light') + (!canScrollRight ? ' disabled' : '') + (!showButtons ? ' hidden' : '')" (click)="canScrollRight && scrollRight()">keyboard_arrow_right</mat-icon>
 </div>

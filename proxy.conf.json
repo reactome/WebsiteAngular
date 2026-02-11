@@ -1,0 +1,10 @@
+{
+  "/reactome": {
+    "target": "https://download.reactome.org",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/reactome": ""
+    }
+  }
+}

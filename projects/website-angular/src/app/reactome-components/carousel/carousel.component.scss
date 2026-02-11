@@ -28,6 +28,18 @@
     overflow: visible;
     flex-shrink: 0;
     user-select: none;
+    transition: opacity 0.2s ease;
+
+    &.disabled {
+        opacity: 0.3;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    &.hidden {
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
 
 .dark {

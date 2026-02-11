@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { StatsService } from '../../../services/stats.service';
-import { response } from 'express';
 
 interface Stats {
     human_pathways: number;

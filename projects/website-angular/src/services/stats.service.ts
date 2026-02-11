@@ -64,10 +64,12 @@ export class StatsService {
       return of(defaultStats);
     }
 
-    let downloadUrl = await this.getDownloadBaseUrl();
-    let version = await this.getVersion();
+    // In the browser, use the /reactome proxy path to avoid CORS.
+    // In SSR (server.ts), requests to /reactome/* are proxied server-side.
+    const baseUrl = this.isBrowser ? '/reactome' : await this.getDownloadBaseUrl();
+    const version = await this.getVersion();
 
-    const url = `${downloadUrl}/${version}/stats/summary_stats.json`;
+    const url = `${baseUrl}/${version}/stats/summary_stats.json`;
 
     return this.http.get<RawStatItem[]>(url).pipe(
       timeout(5000), // 5 second timeout
