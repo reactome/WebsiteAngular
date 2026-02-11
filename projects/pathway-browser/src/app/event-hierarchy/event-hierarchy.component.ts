@@ -3,7 +3,7 @@ import {Event} from "../model/graph/event/event.model";
 import {EventService, SelectableObject} from "../services/event.service";
 import {SpeciesService} from "../services/species.service";
 import {combineLatest, combineLatestWith, filter, fromEvent, map, Observable, of, switchMap, take, tap} from "rxjs";
-import {MatTree, MatTreeNestedDataSource} from "@angular/material/tree";
+import {MatTree, MatTreeNestedDataSource, MatTreeNodeDef} from "@angular/material/tree";
 import {UrlStateService} from "../services/url-state.service";
 import {SplitComponent} from "angular-split";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
@@ -34,6 +34,7 @@ import {PassiveDirective} from "../utils/passive.directive";
     MatIcon,
     MatTree,
     MatNestedTreeNode,
+    MatTreeNodeDef,
     MatButton,
     MatIconButton,
     NgClass,

@@ -403,7 +403,23 @@
   overflow: hidden;
 }
 
+.history {
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
 .feedback {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 12px;
+
+  background-color: var(--on-primary);
   color: var(--warn);
   font-variation-settings: 'FILL' 1;
   margin-left: -12px;
