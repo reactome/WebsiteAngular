@@ -60,7 +60,6 @@ export class ArticleComponent implements OnInit {
           tags: article?.tags
         };
 
-        console.log("Loaded article:", this.article.tags, Array.isArray(this.article.tags));
         this.loading = false;
       },
       error: (err) => {

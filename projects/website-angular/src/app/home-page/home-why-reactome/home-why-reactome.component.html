@@ -7,25 +7,25 @@
     genome analysis, modeling, systems biology and education.
   </p>
   <div class="sponsor-logos">
-    <a [href]="externalLinks['ebi'].link || 'http://www.ebi.ac.uk/'"
+    <a [href]="externalLinks['ebi']?.link"
       ><img
         class="sponsor-logo"
         src="/assets/logo/sponsor/embl_ebi_logo.png"
         alt="EMBL-EBI Logo"
     /></a>
-    <a [href]="externalLinks['nyu'].link || 'https://med.nyu.edu/'"
+    <a [href]="externalLinks['nyu']?.link"
       ><img
         class="sponsor-logo"
         src="/assets/logo/sponsor/nyul_health_logo.png"
         alt="NYUL Health Logo"
     /></a>
-    <a [href]="externalLinks['ohsu'].link || 'http://www.ohsu.edu/'"
+    <a [href]="externalLinks['ohsu']?.link"
       ><img
         class="sponsor-logo"
         src="/assets/logo/sponsor/ohsu_logo.png"
         alt="OHSU Logo"
     /></a>
-    <a [href]="externalLinks['oicr'].link || 'https://oicr.on.ca/'"
+    <a [href]="externalLinks['oicr']?.link"
       ><img
         class="sponsor-logo"
         src="/assets/logo/sponsor/oicr_logo.png"
@@ -34,7 +34,7 @@
   </div>
   <p class="why-text">
     The development of Reactome is supported by
-    <a class="grant-link" [href]="navOptions['about']?.dropdownLinks?.['funding']?.link || '/about/funding'">grants</a> from the US National Institutes
+    <a class="grant-link" [href]="navOptions['about']?.dropdownLinks?.['funding']?.link">grants</a> from the US National Institutes
     of Health (U24 HG012198) and the European Molecular Biology Laboratory.
   </p>
 </div>

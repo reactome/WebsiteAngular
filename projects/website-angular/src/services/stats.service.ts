@@ -2,7 +2,6 @@ import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, timeout } from 'rxjs';
-import { environment } from '../../environments/environment';
 
 export interface ReactomeStats {
   pathways: number;
@@ -19,47 +18,45 @@ interface RawStatItem {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class StatsService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
-  private baseUrl = environment.downloadBaseUrl;
-  private version = environment.reactomeVersion;
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
    * Get the current Reactome version
    */
-  getVersion(): string {
-    return this.version;
+  async getVersion(): Promise<string> {
+    let version = await import('../config/config.json').then(
+      (data) => data.default.version.releaseNumber
+    );
+    return version;
   }
 
   /**
    * Get the download base URL
    */
-  getDownloadBaseUrl(): string {
-    return this.baseUrl;
-  }
+  async getDownloadBaseUrl(): Promise<string> {
+    let downloadUrl = await import('../config/config.json').then(
+      (data) => data.default.downloadurl
+    );
 
-  /**
-   * Get the versioned download URL for a file
-   */
-  getDownloadUrl(filename: string): string {
-    return `${this.baseUrl}/${this.version}/${filename}`;
+    return downloadUrl;
   }
 
   /**
    * Fetch stats from the S3/CloudFront download directory
    */
-  getStats(): Observable<ReactomeStats> {
+  async getStats():Promise<Observable<ReactomeStats>> {
     const defaultStats: ReactomeStats = {
       pathways: 0,
       reactions: 0,
       proteins: 0,
       smallMolecules: 0,
       drugs: 0,
-      references: 0
+      references: 0,
     };
 
     // During SSR, return default stats to avoid blocking
@@ -67,12 +64,15 @@ export class StatsService {
       return of(defaultStats);
     }
 
-    const url = `${this.baseUrl}/${this.version}/stats/summary_stats.json`;
+    let downloadUrl = await this.getDownloadBaseUrl();
+    let version = await this.getVersion();
+
+    const url = `${downloadUrl}/${version}/stats/summary_stats.json`;
 
     return this.http.get<RawStatItem[]>(url).pipe(
       timeout(5000), // 5 second timeout
-      map(data => this.parseStats(data)),
-      catchError(error => {
+      map((data) => this.parseStats(data)),
+      catchError((error) => {
         console.error('Error fetching stats:', error);
         // Return default values if fetch fails
         return of(defaultStats);
@@ -96,7 +96,7 @@ export class StatsService {
       proteins: statsMap.get('netProt') || 0,
       smallMolecules: statsMap.get('chemicals') || 0,
       drugs: (statsMap.get('chemDrug') || 0) + (statsMap.get('protDrug') || 0),
-      references: statsMap.get('litRef') || 0
+      references: statsMap.get('litRef') || 0,
     };
   }
 }

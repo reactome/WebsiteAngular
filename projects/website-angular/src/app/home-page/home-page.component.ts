@@ -73,27 +73,4 @@ export class HomePageComponent {
       this.feedbackLink = this.externalLinks['feedback']?.link || '';
     });
   }
-
-  // loadLatestNews() {
-  //   this.http.get<ArticleIndexItem[]>('/content/news/index.json').subscribe({
-  //     next: (data) => {
-  //       // console.log('Loaded news articles:', data);
-  //       this.latestNews = data.slice(0, this.maxArticlesToShow).map(a => {
-  //         const content = a.excerpt || '';
-  //         return {
-  //           title: a.title,
-  //           author: a.author,
-  //           content: content.slice(0, this.maxExerptLength) + (content.length > this.maxExerptLength ? '...' : ''),
-  //           date: new Date(a.date),
-  //           slug: `about/news/${a.slug}`,
-  //           tags: a.tags,
-  //         };
-  //       });
-  //       // console.log('Processed latest news:', this.latestNews);
-  //     }, error: (err) => {
-  //       console.error('Failed to load latest news:', err);
-  //       this.latestNews = [];
-  //     }
-  //   })
-  // }
 }

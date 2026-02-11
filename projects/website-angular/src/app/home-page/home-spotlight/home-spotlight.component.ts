@@ -34,7 +34,6 @@ export class HomeSpotlightComponent {
     // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getLatestArticles('content/reactome-research-spotlight', 1).subscribe({
       next: (result) => {
-        console.log("Spotlight articles fetched:", result);
         this.spotLightArticle = result.map((item: ArticleIndexItem) => ({
           title: item.title,
           date: new Date(item.date),
@@ -48,7 +47,6 @@ export class HomeSpotlightComponent {
         // Load the full article content using the slug
         this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
           next: async (article) => {
-            console.log("Spotlight article loaded:", article);
             let html = await marked(article?.body || '');
             this.renderedContent = truncateHtml(stripFirstH(html), 150);
           }
