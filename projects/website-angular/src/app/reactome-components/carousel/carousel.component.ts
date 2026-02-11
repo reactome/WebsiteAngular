@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input, AfterViewInit, OnDestroy, NgZone, HostListener } from '@angular/core';
+import { Component, ViewChild, ElementRef, Input, AfterViewInit, OnDestroy, NgZone, HostListener, ChangeDetectorRef } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
 
 @Component({
@@ -16,7 +16,7 @@ export class CarouselComponent implements AfterViewInit, OnDestroy {
   canScrollRight = true;
   private resizeObserver?: ResizeObserver;
 
-  constructor(private ngZone: NgZone) {}
+  constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef) {}
 
   @HostListener('window:resize')
   onWindowResize(): void {
@@ -24,7 +24,10 @@ export class CarouselComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.checkOverflow();
+    setTimeout(() => {
+      this.checkOverflow();
+      this.cdr.detectChanges();
+    });
     this.ngZone.runOutsideAngular(() => {
       this.resizeObserver = new ResizeObserver(() => {
         this.ngZone.run(() => this.checkOverflow());

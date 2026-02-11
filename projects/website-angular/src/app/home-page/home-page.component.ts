@@ -29,8 +29,6 @@ import { mapNavOptions } from '../../utils/nav-options-mapper';
     HomeApiDataComponent,
     HomeRelatedComponent,
     TileComponent,
-    ButtonComponent,
-    MatIcon,
     HomeShortcutsComponent,
     HttpClientModule,
   ],
