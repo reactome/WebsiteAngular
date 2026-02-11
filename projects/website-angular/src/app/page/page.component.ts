@@ -4,6 +4,8 @@ import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
 import stripFirstH from '../../utils/stripFirstH';
+import sanitize from '../../utils/sanitize';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-page',
@@ -14,9 +16,10 @@ import stripFirstH from '../../utils/stripFirstH';
 export class PageComponent {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
+  private sanitizer = inject(DomSanitizer);
 
   page: any | null = null;
-  renderedContent: string = '';
+  renderedContent: SafeHtml = '';
   loading = false;
   error: string | null = null;
 
@@ -50,7 +53,7 @@ export class PageComponent {
         if (page) {
           this.page = page;
           let html = await marked(page.body);
-          this.renderedContent = stripFirstH(html);
+          this.renderedContent = sanitize(stripFirstH(html), this.sanitizer);
           this.loading = false;
         } else {
           this.error = 'Page not found.';
