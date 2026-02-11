@@ -26,6 +26,11 @@ $spacing: 24px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: $spacing;
+
+  :host-context(.dark) & {
+    background-color: var(--surface);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+  }
 }
 
 // Mobile responsiveness

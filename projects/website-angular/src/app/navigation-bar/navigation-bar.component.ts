@@ -1,14 +1,17 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import {MatIconModule} from '@angular/material/icon'
+import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavLink, NavOption } from '../../types/link';
+import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
 
 @Component({
   standalone: true,
   selector: 'app-navigation-bar',
-  imports: [CommonModule, RouterModule, MatIconModule],
+  imports: [CommonModule, RouterModule, MatIconModule, MatSlideToggleModule, FormsModule],
   templateUrl: './navigation-bar.component.html',
   styleUrl: './navigation-bar.component.scss'
 })
@@ -17,6 +20,7 @@ export class NavigationBarComponent implements OnInit {
   navOptions: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
   activeHamburgerMenu: boolean = false;
+  public dark: DarkService = inject(DarkService);
 
   ngOnInit() {
     this.loadNavOptions();

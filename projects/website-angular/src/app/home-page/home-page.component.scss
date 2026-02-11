@@ -17,6 +17,10 @@ $transition: all 0.3s ease;
   padding: $spacing-unit;
 }
 
+:host-context(.dark) {
+  background-image: url("../../assets/reactome/bg-fireworks-mono.svg");
+}
+
 @media (max-width: 768px) {
   :host {
     background-attachment: scroll;
