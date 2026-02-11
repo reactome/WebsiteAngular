@@ -300,4 +300,17 @@ $shadow: rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   padding: 0 10px;
+
+  #dark-toggle {
+    ::ng-deep .mat-mdc-slide-toggle {
+      --mdc-switch-track-width: 38px;
+      --mdc-switch-track-height: 26px;
+      --mdc-switch-handle-width: 18px;
+      --mdc-switch-handle-height: 18px;
+      --mdc-switch-selected-icon-size: 18px;
+      --mdc-switch-unselected-icon-size: 18px;
+      --mdc-switch-track-shape: 26px;
+      --mdc-switch-handle-shape: 18px;
+    }
+  }
 }

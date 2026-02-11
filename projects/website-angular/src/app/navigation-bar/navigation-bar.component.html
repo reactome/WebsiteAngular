@@ -58,7 +58,8 @@
         </ng-container>
       </li>
       <li class="nav-item dark-toggle-item">
-        <mat-slide-toggle color="primary" [(ngModel)]="dark.isDark" [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"></mat-slide-toggle>
+        <mat-slide-toggle color="primary" [(ngModel)]="dark.isDark" #darkToggle [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'" id="dark-toggle" [hideIcon]="false">
+        </mat-slide-toggle>
       </li>
     </ul>
   </nav>
