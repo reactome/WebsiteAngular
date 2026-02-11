@@ -58,8 +58,6 @@ type Query {
   aboutConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: AboutFilter): AboutConnection!
   news(relativePath: String): News!
   newsConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: NewsFilter): NewsConnection!
-  team(relativePath: String): Team!
-  teamConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: TeamFilter): TeamConnection!
   content(relativePath: String): Content!
   contentConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: ContentFilter): ContentConnection!
   reactome_research_spotlights(relativePath: String): Reactome_research_spotlights!
@@ -73,7 +71,6 @@ type Query {
 input DocumentFilter {
   about: AboutFilter
   news: NewsFilter
-  team: TeamFilter
   content: ContentFilter
   reactome_research_spotlights: Reactome_research_spotlightsFilter
   documentation: DocumentationFilter
@@ -103,7 +100,7 @@ type Collection {
   documents(before: String, after: String, first: Float, last: Float, sort: String, filter: DocumentFilter, folder: String): DocumentConnection!
 }
 
-union DocumentNode = About | News | Team | Content | Reactome_research_spotlights | Documentation | Community | Folder
+union DocumentNode = About | News | Content | Reactome_research_spotlights | Documentation | Community | Folder
 
 type About implements Node & Document {
   title: String!
@@ -193,34 +190,6 @@ type NewsConnection implements Connection {
   pageInfo: PageInfo!
   totalCount: Float!
   edges: [NewsConnectionEdges]
-}
-
-type Team implements Node & Document {
-  name: String!
-  role: String!
-  institution: String!
-  type: String!
-  id: ID!
-  _sys: SystemInfo!
-  _values: JSON!
-}
-
-input TeamFilter {
-  name: StringFilter
-  role: StringFilter
-  institution: StringFilter
-  type: StringFilter
-}
-
-type TeamConnectionEdges {
-  cursor: String!
-  node: Team
-}
-
-type TeamConnection implements Connection {
-  pageInfo: PageInfo!
-  totalCount: Float!
-  edges: [TeamConnectionEdges]
 }
 
 type Content implements Node & Document {
@@ -355,8 +324,6 @@ type Mutation {
   createAbout(relativePath: String!, params: AboutMutation!): About!
   updateNews(relativePath: String!, params: NewsMutation!): News!
   createNews(relativePath: String!, params: NewsMutation!): News!
-  updateTeam(relativePath: String!, params: TeamMutation!): Team!
-  createTeam(relativePath: String!, params: TeamMutation!): Team!
   updateContent(relativePath: String!, params: ContentMutation!): Content!
   createContent(relativePath: String!, params: ContentMutation!): Content!
   updateReactome_research_spotlights(relativePath: String!, params: Reactome_research_spotlightsMutation!): Reactome_research_spotlights!
@@ -370,7 +337,6 @@ type Mutation {
 input DocumentUpdateMutation {
   about: AboutMutation
   news: NewsMutation
-  team: TeamMutation
   content: ContentMutation
   reactome_research_spotlights: Reactome_research_spotlightsMutation
   documentation: DocumentationMutation
@@ -381,7 +347,6 @@ input DocumentUpdateMutation {
 input DocumentMutation {
   about: AboutMutation
   news: NewsMutation
-  team: TeamMutation
   content: ContentMutation
   reactome_research_spotlights: Reactome_research_spotlightsMutation
   documentation: DocumentationMutation
@@ -403,13 +368,6 @@ input NewsMutation {
   body: JSON
   tags: [String]
   image: String
-}
-
-input TeamMutation {
-  name: String
-  role: String
-  institution: String
-  type: String
 }
 
 input ContentMutation {

@@ -52,36 +52,6 @@ var config_default = defineConfig({
         }
       },
       {
-        //Team Info
-        name: "team",
-        label: "Team",
-        path: "content/about/team",
-        format: "json",
-        fields: [
-          { type: "string", name: "name", label: "Name", isTitle: true, required: true },
-          { type: "string", name: "role", label: "Role", required: true },
-          {
-            type: "string",
-            name: "institution",
-            label: "Institution",
-            options: [
-              "Ontario Institute for Cancer Research",
-              "New York University Langone Medical Center",
-              "European Bioinformatics Institute",
-              "Oregon Health & Science University"
-            ],
-            required: true
-          },
-          {
-            type: "string",
-            name: "type",
-            label: "Member Type",
-            options: ["principal_investigator", "current", "alumni"],
-            required: true
-          }
-        ]
-      },
-      {
         //Content Pages
         name: "content",
         label: "Content",

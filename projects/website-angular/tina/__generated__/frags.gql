@@ -17,14 +17,6 @@ fragment NewsParts on News {
   image
 }
 
-fragment TeamParts on Team {
-  __typename
-  name
-  role
-  institution
-  type
-}
-
 fragment ContentParts on Content {
   __typename
   title
