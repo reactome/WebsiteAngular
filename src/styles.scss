@@ -1,28 +1,56 @@
 @use "@angular/material" as mat;
-@use "ngx-reactome-style/theme-colors" as colors;
-@use "ngx-reactome-style/index" as ngx-reactome-style;
-@use "ngx-reactome-style/variables" as variablesq;
+@use "reactome-cytoscape-style/assets" as reactome-cytoscape-style;
+@use "ngx-reactome-style";
+@use "reactome-table";
+@use "reactome-gsa-form";
 
+@include reactome-cytoscape-style.configure-diagrams();
 @include ngx-reactome-style.theme();
+@include reactome-table.configure-table-globals();
+@include reactome-gsa-form.configure-gsa-form();
 
-html {
-    margin: 0;
-    padding: 0;
+
+cr-quantitative-analysis {
+
+}
+
+// Custom TABS
+.custom-tab-group {
+  @include mat.tabs-overrides((
+    container-height: 30px,
+    active-label-text-color: var(--primary),
+    active-focus-label-text-color: var(--primary),
+    active-hover-label-text-color: var(--primary),
+  ));
+
+  .mat-mdc-tab {
+    flex: 1 1 0; // equal width column
+  }
+
+  .mat-mdc-tab-labels {
+    gap: 20px;
+  }
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 body {
-  margin: 0;
-  padding: 0;
   height: 100%;
-  overflow: auto;
-  background: var(--on-primary);
-  color: var(--primary);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--surface);
+  color: var(--on-surface);
 
-  scrollbar-color: var(--primary);
+  scrollbar-color: var(--primary) transparent;
   --reactome-symbols-font-family: 'Material Symbols Rounded';
+  margin:0;
+  padding:0;
 }
 
 a {
+  text-decoration: none;
   color: var(--primary);
 
   &:hover {
@@ -34,13 +62,240 @@ a {
   }
 }
 
-h1 {
-  font-size: 32px;
-  line-height: 32px;
-}
-
 .palette {
+  //width: 100%;
   height: 20px;
   min-width: 100px;
   margin-right: 20px;
+}
+
+// SHARED ACROSS MANY COMPONENTS
+.label-container {
+  padding: 0;
+  width: var(--column-width);
+  justify-content: center;
+  border-radius: 15px 0 0 15px;
+  flex-shrink: 0;
+
+  // Sticky vertically centered div
+  margin: auto 0;
+  position: sticky;
+  top: 4px;
+  bottom: 4px;
+
+  // text style, an extra span?
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 20px; // Avoid sticky to act one one liners
+  text-align: right;
+  letter-spacing: 0.5px;
+  color: var(--on-surface);
+
+}
+
+// Shared with tree detail components, molecule tree and entity tree
+.details-content-container {
+  border: 2px solid var(--primary);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  > :first-child {
+    padding-top: 6px;
+  }
+
+  > :last-child {
+    padding-bottom: 6px;
+  }
+
+  .mat-divider {
+    margin: 6px;
+  }
+}
+
+// Avoid first paragraph of summation being indented
+p:first-child {
+  margin-top: 0;
+}
+
+/**
+ * Exception for sets as they are going out of their bounding box
+ */
+.mat-icon[data-mat-icon-name*=set] {
+  width: 28px !important;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+.chebi-background rect {
+  fill: transparent !important
+}
+
+.dark .chebi-background {
+  filter: hue-rotate(180deg) invert(1);
+}
+
+// progress-spinner loading container
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+}
+
+// navigation control for diagram and EHLD
+#controls {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(5px);
+  border-right: 1px solid var(--outline-variant);
+  border-top: 1px solid var(--outline-variant);
+  border-bottom: 1px solid var(--outline-variant);
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-right: 5px;
+  border-radius: 0 50px 50px 0;
+
+  .rotated-wrapper {
+    --slider-height: 60px;
+    height: calc(var(--slider-height) + 20px);
+    width: 44px;
+
+    .rotated {
+      transform: rotate(-90deg) translate(-55px, 15px);
+      //width: 20px;
+      height: 48px;
+      width: var(--slider-height);
+      transform-origin: center left;
+
+      .slider {
+        width: var(--slider-height);
+        min-width: var(--slider-height);
+
+        @include mat.slider-overrides((
+          inactive-track-color: var(--on-surface)
+        ));
+      }
+    }
+  }
+
+  #nav-wheel {
+    margin-left: -12px;
+    z-index: 3; // A bit over the slider
+
+    .button:hover,
+    .button:focus {
+      cursor: pointer;
+      outline: none;
+
+      .bg {
+        filter: brightness(1.2);
+      }
+    }
+  }
+}
+
+
+body {
+  --opacity: 0.08;
+  --structure-opacity: [[130,0], [150,100]];
+  --shadow-padding: 20;
+
+  --shadow-luminosity: 40;
+
+  --positive: #0C9509;
+  --negative: #BA1A1A;
+  --negative-contrast: #ea7d7d;
+  --select-node: #6EB3E4;
+  --select-edge: #0561A6;
+  --hover-node: #78E076;
+  --hover-edge: #04B601;
+  --interactor-fill: #68297C;
+  --interactor-stroke: #9f5cb5;
+  --flag: #ff009a;
+
+
+  --compartment: #E5834A;
+  --compartment-opacity: 0.06;
+
+  --primary-contrast-1: #001F29;
+  --primary-contrast-2: #003545;
+  --primary-contrast-3: #004D62;
+  --primary-contrast-4: #006782;
+
+  --tertiary-contrast-1: #00315C;
+  --tertiary-contrast-2: #004882;
+  --tertiary-contrast-3: #1660A5;
+
+  --drug-contrast-1: #3E001D;
+  --drug-contrast-2: #610B33;
+  --drug-contrast-3: #7E2549;
+  --drug-contrast-4: #BB557A;
+
+  --analysis-uni-palette: [
+    [0, '#FFFFE0'],
+    [1, '#00429D']
+  ];
+
+  //--analysis-bi-palette: [
+  //  [0.0, '#93003A'],
+  //  [0.5, '#FFFFE0'],
+  //  [1.0, '#00429D']
+  //];
+
+  --analysis-bi-palette: 'viridis';
+  --analysis-not-found: #d6d6d6;
+
+
+  &.dark {
+    --opacity: 0.08;
+    --shadow-luminosity: 70;
+    --shadow-opacity: [[20, 40], [40, 0]];
+
+    --surface: #0D1617;
+    --on-surface: #fff;
+    --primary: #5CD4FF;
+    --on-primary: #0D1617;
+    --on-tertiary: #0D1317;
+    --positive: #10d70b;
+    --negative: #ea2323;
+    --select-node: #00ffff;
+    --negative-contrast: #8f0000;
+    --select-edge: #1d85cc;
+    --hover-node: #ffff00;
+    --hover-edge: #ffff00;
+    --interactor-stroke: #68297C;
+    --interactor-fill: #9f5cb5;
+    --flag: #DA429E;
+
+    --compartment: #5e232d;
+    --compartment-opacity: 0.10;
+
+    --primary-contrast-1: #5CD4FF;
+    --primary-contrast-2: #20B9E5;
+    --primary-contrast-3: #009DC4;
+    --primary-contrast-4: #0081A2;
+
+    --tertiary-contrast-1: #a48ee0;
+    --tertiary-contrast-2: #9b73d3;
+    --tertiary-contrast-3: #8c63c5;
+
+    --drug-contrast-1: #FFB1C8;
+    --drug-contrast-2: #F988AE;
+    --drug-contrast-3: #DA6E94;
+    --drug-contrast-4: #c4527b;
+  }
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
 }

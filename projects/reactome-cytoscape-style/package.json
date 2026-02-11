@@ -1,0 +1,25 @@
+{
+  "name": "reactome-cytoscape-style",
+  "version": "0.0.2",
+  "type": "module",
+  "peerDependencies": {
+    "cytoscape": "^3.30.0",
+    "lodash.memoize": "^4.1.2",
+    "chroma-js": "^3.1.2"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/chroma-js": "^3.1.1"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "esm2022": "./esm2022/reactome-cytoscape-style.mjs",
+      "esm": "./esm2022/reactome-cytoscape-style.mjs",
+      "default": "./fesm2022/reactome-cytoscape-style.mjs"
+    }
+  }
+}

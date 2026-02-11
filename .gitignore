@@ -41,6 +41,22 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Environment files
 node_modules
 .env
 tina/__generated__
+
+# System files
+.DS_Store
+Thumbs.db
+/.yalc/
+
+**/*.css
+**/*.css.map
+
+# Ignore npm lock file
+package-lock.json
+
+# Ignore Yarn lock file
+yarn.lock
+/src/assets/reacfoam/@carrotsearch/

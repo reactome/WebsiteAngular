@@ -1,0 +1,10 @@
+.page-body {
+  ::ng-deep img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.page-content {
+  background-color: unset;
+}

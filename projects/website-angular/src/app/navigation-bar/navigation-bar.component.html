@@ -1,0 +1,108 @@
+<header class="navbar-header">
+  <div class="navbar-logo">
+    <a href="/" class="logo-link">
+      <img
+        src="assets/logo/logo.png"
+        alt="Reactome Pathway Database"
+        class="logo-image"
+      />
+    </a>
+  </div>
+  
+  <nav class="navbar-nav">
+    <mat-icon class="menu-icon" *ngIf="windowWidth <= 768" (click)="toggleHamburgerMenu()">menu</mat-icon>
+    <ul class="nav-list" *ngIf="windowWidth > 768 || activeHamburgerMenu">
+      <li
+        *ngFor="let option of navOptions | keyvalue:preserveOrder"
+        class="nav-item"
+        [class.active]="activeDropdown === option.key"
+        (mouseenter)="showDropdown(option.key)"
+        (mouseleave)="hideDropdown()"
+        (click)="toggleDropdown(option.key)"
+      >
+        <ng-container *ngIf="asNavOption(option.value) as navOption">
+          <div class="nav-link-wrapper">
+            <a
+              [attr.href]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
+              class="nav-link"
+              [class.has-dropdown]="
+                navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+              "
+            >
+              <mat-icon>
+                {{ navOption.icon }}
+              </mat-icon>
+              {{ navOption.label }}
+              <mat-icon
+                *ngIf="
+                  navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+                "
+                class="dropdown-arrow"
+              >
+                  keyboard_arrow_down
+              </mat-icon>
+            </a>
+          </div>
+
+          <div
+            *ngIf="
+              navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+            "
+            class="dropdown-menu"
+            [class.show]="activeDropdown === option.key"
+          >
+            <ng-container
+              *ngTemplateOutlet="dropdownItems; context: { $implicit: navOption.dropdownLinks, level: 0 }"
+            ></ng-container>
+          </div>
+        </ng-container>
+      </li>
+      <li class="nav-item dark-toggle-item">
+        <mat-slide-toggle color="primary" [(ngModel)]="dark.isDark" #darkToggle [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'" id="dark-toggle" [hideIcon]="false">
+        </mat-slide-toggle>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<ng-template #dropdownItems let-links let-level="level">
+  <ul class="dropdown-list" [class.nested-dropdown-list]="level > 0">
+    <li
+      *ngFor="let linkItem of links | keyvalue:preserveOrder"
+      class="dropdown-item"
+      [class.nested-dropdown-item]="level > 0"
+    >
+      <ng-container *ngIf="asNavLink(linkItem.value) as navLink">
+        <div
+          class="dropdown-link-wrapper"
+          [class.opens-left]="
+            navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0
+          "
+        >
+          <a
+            [href]="navLink.link"
+            class="dropdown-link"
+            [class.nested-dropdown-link]="level > 0"
+          >
+            {{ navLink.label }}
+          </a>
+          <mat-icon
+            *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+            class="nested-arrow"
+          >
+            {{ (navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0) ? 'keyboard_arrow_left' : 'keyboard_arrow_right' }}
+          </mat-icon>
+        </div>
+
+        <div
+          *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+          class="nested-dropdown-menu"
+        >
+          <ng-container
+            *ngTemplateOutlet="dropdownItems; context: { $implicit: navLink.dropdownLinks, level: level + 1 }"
+          ></ng-container>
+        </div>
+      </ng-container>
+    </li>
+  </ul>
+</ng-template>

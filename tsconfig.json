@@ -1,34 +1,46 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
+    "allowJs": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "sourceMap": true,
+    "declaration": false,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "esModuleInterop": true,
     "experimentalDecorators": true,
-    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
     "importHelpers": true,
+    "paths": {
+      "reactome-cytoscape-style": [ "dist/reactome-cytoscape-style" ],
+      "reactome-gsa-form/lib/*": [ "node_modules/reactome-gsa-form/lib/*" ]
+    },
     "target": "ES2022",
-    "module": "ES2022"
-  },
-  "ts-node": {
-    "esm": true,
-    "experimentalEsm": true,
-    "compilerOptions": {
-      "module": "ES2022"
-    }
+    "module": "ES2022",
+    "useDefineForClassFields": false,
+    "lib": [
+      "ES2022",
+      "dom"
+    ],
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/reactome-cytoscape-style/types",
+      "src/types"
+    ]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "strictTemplates": true
+    "strictTemplates": false
   }
 }

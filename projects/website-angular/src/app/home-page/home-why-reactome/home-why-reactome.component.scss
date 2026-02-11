@@ -1,0 +1,29 @@
+.why-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.sponsor-logos {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    gap: 16px;
+    background-color: rgba(255, 255, 255, 0.75);
+    padding: 16px;
+
+     &:hover {
+        border: 2px solid var(--primary);
+     }
+}
+
+.sponsor-logo {
+    max-width: 80px;
+    max-height: 50px;
+}
+
+
+.grant-link {
+    color: var(--on-primary);
+    text-decoration: underline;
+}

@@ -1,0 +1,46 @@
+@use "@angular/material" as mat;
+@use "ngx-reactome-style/theme-colors" as colors;
+@use "ngx-reactome-style/index" as ngx-reactome-style;
+@use "ngx-reactome-style/variables" as variablesq;
+
+@include ngx-reactome-style.theme();
+
+html {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: auto;
+  background: var(--on-primary);
+  color: var(--primary);
+
+  scrollbar-color: var(--primary);
+  --reactome-symbols-font-family: 'Material Symbols Rounded';
+}
+
+a {
+  color: var(--primary);
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:active {
+    color: var(--tertiary);
+  }
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 32px;
+}
+
+.palette {
+  height: 20px;
+  min-width: 100px;
+  margin-right: 20px;
+}

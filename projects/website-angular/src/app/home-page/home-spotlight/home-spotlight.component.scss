@@ -1,0 +1,17 @@
+.home-spotlight-link {
+  text-decoration: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.home-spotlight-text {
+  ::ng-deep a {
+    color: var(--on-primary);
+  }
+
+  ::ng-deep img {
+    max-width: 100%;
+    height: auto;
+  }
+}

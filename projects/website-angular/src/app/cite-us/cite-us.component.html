@@ -1,0 +1,9 @@
+<div
+  class="cite-button"
+  (click)="openCitationDialog()"
+  (mouseenter)="showText = true"
+  (mouseleave)="showText = false"
+>
+  <mat-icon class="cite-icon" *ngIf="showText === false">format_quote</mat-icon>
+  <span class="cite-text" *ngIf="showText === true"> Cite Us!</span>
+</div>
