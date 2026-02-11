@@ -22,7 +22,7 @@ function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
       return {
         title: frontmatter['title'] || filename.replace(/\.(mdx|md)$/, ''),
         author: frontmatter['author'] || undefined,
-        excerpt: truncateHtml(frontmatter['body']?.toString() || body || '', 50),
+        excerpt: truncateHtml(body || '', 50),
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''),
         tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')) : frontmatter['tags'],
