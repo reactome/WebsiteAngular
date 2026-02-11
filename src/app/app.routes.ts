@@ -5,12 +5,14 @@ import { provideEffects } from '@ngrx/effects';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const routes: Routes = [
+    {
+        path: 'pathwaybrowser',
+        redirectTo: 'PathwayBrowser',
+        pathMatch: 'full'
+    },
     { 
         path: 'PathwayBrowser', 
         providers: [
-            provideStore({ router: routerReducer }),
-            provideRouterStore(),
-            provideEffects([]),
             provideAnimations(),
         ],
         loadChildren: () => import('../../projects/pathway-browser/src/app/app-routing.module').then(m => m.routes) 

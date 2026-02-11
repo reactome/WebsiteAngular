@@ -34,7 +34,16 @@
               },
               {
                 "glob": "**/*",
+                "input": "projects/pathway-browser/public"
+              },
+              {
+                "glob": "**/*",
                 "input": "projects/website-angular/src/assets",
+                "output": "/assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/pathway-browser/src/assets",
                 "output": "/assets"
               },
               {
