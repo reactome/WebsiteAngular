@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { MatIcon } from "@angular/material/icon";
-import { CitationService } from "../../services/citation.service";
+import { CitationService } from "../../../../pathway-browser/src/app/services/citation.service";
 
 @Component({
   selector: 'app-cite-us',
