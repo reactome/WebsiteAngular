@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { ButtonComponent } from "../../reactome-components/button/button.component";
 import { MatIcon } from "@angular/material/icon";
@@ -13,6 +13,7 @@ import { NavOption } from '../../../types/link';
 })
 export class HomeShortcutsComponent {
   navOptions: Record<string, NavOption> = {};
+  @Input() dark:boolean = true;
 
   ngOnInit() {
     this.loadNavOptions();

@@ -6,7 +6,7 @@
   <h1 class="home-search-title">Find Reactions, Proteins, and Pathways</h1>
   <app-search-bar />
 </app-tile>
-<app-tile variant="dark" class="new-pathway-tile">
+<!-- <app-tile variant="dark" class="new-pathway-tile">
   <div class="new-pathway-text">
     <span>
       Introducing Reactome’s new Pathway Browser! Click the button to explore
@@ -33,14 +33,14 @@
       </mat-icon>
     </a>
   </app-button>
-</app-tile>
+</app-tile> -->
 <app-tile
-  variant="light"
+  variant="dark"
   class="home-shortcut-tile"
   id="tools"
   style="display: block"
 >
-  <app-home-shortcuts />
+  <app-home-shortcuts [dark]="false"/>
 </app-tile>
 
 <app-tile variant="dark-transparent">
