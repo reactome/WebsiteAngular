@@ -421,6 +421,13 @@ $border-radius: 8px;
     }
   }
 
+  .field-error {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.825rem;
+    color: #c62828;
+  }
+
   textarea.favth-form-control {
     resize: vertical;
     min-height: 150px;

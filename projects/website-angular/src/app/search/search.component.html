@@ -180,7 +180,12 @@
                   <div class="favth-form-group mail-required">
                     <label for="mailAddress" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">From* </label>
                     <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
-                      <input #mailAddress type="email" class="favth-form-control" name="mailAddress" id="mailAddress" placeholder="your-mail@domain.com" required="">
+                      <input #mailAddress type="email" class="favth-form-control" name="mailAddress" id="mailAddress"
+                        placeholder="your-mail@domain.com" required=""
+                        pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}">
+                      @if (mailAddress.value && !mailAddress.validity.valid) {
+                        <span class="field-error">Please enter a valid email address</span>
+                      }
                     </div>
                   </div>
                   <div class="favth-form-group">
@@ -223,13 +228,13 @@ NOTE: This is an automatically generated message.
 
                   <div class="favth-form-group">
                     <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                      <div class="h-captcha" data-sitekey="a7e45eb1-ba7a-47a7-95da-5c67d948dd4f" data-theme="light" data-callback="onSuccess"></div>
+                      <div #captchaContainer class="h-captcha"></div>
                     </div>
                   </div>
 
                   <div class="favth-form-group">
                     <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                      <button type="submit" id="send" class="btn btn-default" [disabled]="!mailAddress.value || !messageArea.value">Send</button>
+                      <button type="submit" id="send" class="btn btn-default" [disabled]="!mailAddress.value || !mailAddress.validity.valid || !messageArea.value || !captchaToken">Send</button>
                     </div>
                   </div>
                 </form>

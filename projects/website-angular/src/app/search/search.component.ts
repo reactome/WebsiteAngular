@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
 import { of } from 'rxjs';
@@ -21,11 +21,17 @@ import {
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
-export class SearchComponent implements OnInit, OnDestroy {
+export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchService = inject(SearchService);
   private http = inject(HttpClient);
+  private ngZone = inject(NgZone);
+
+  @ViewChild('captchaContainer') captchaContainer!: ElementRef<HTMLDivElement>;
+
+  captchaToken: string | null = null;
+  private captchaWidgetId: string | null = null;
 
   query = '';
   results: SearchResult | null = null;
@@ -73,8 +79,66 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.renderCaptchaWhenReady();
+  }
+
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
+  }
+
+  private renderCaptchaWhenReady(): void {
+    // Wait until the captcha container is available in the DOM
+    const checkContainer = () => {
+      if (this.captchaContainer?.nativeElement) {
+        this.loadHCaptchaScript().then(() => this.renderCaptcha());
+      } else {
+        setTimeout(checkContainer, 200);
+      }
+    };
+    checkContainer();
+  }
+
+  private loadHCaptchaScript(): Promise<void> {
+    return new Promise((resolve) => {
+      if ((window as any).hcaptcha) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      document.head.appendChild(script);
+    });
+  }
+
+  private renderCaptcha(): void {
+    const hcaptcha = (window as any).hcaptcha;
+    if (!hcaptcha || !this.captchaContainer?.nativeElement) return;
+
+    this.captchaWidgetId = hcaptcha.render(this.captchaContainer.nativeElement, {
+      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
+      theme: 'light',
+      callback: (token: string) => {
+        this.ngZone.run(() => { this.captchaToken = token; });
+      },
+      'expired-callback': () => {
+        this.ngZone.run(() => { this.captchaToken = null; });
+      },
+      'error-callback': () => {
+        this.ngZone.run(() => { this.captchaToken = null; });
+      },
+    });
+  }
+
+  private resetCaptcha(): void {
+    const hcaptcha = (window as any).hcaptcha;
+    if (hcaptcha && this.captchaWidgetId != null) {
+      hcaptcha.reset(this.captchaWidgetId);
+    }
+    this.captchaToken = null;
   }
 
   private doSearch(): void {
@@ -214,24 +278,29 @@ export class SearchComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
 
+    if (!this.captchaToken) {
+      return;
+    }
+
     const form = event.target as HTMLFormElement;
     const formData = new FormData(form);
+    formData.set('h-captcha-response', this.captchaToken);
 
-    this.http.post('/content/contact', formData).subscribe({ //TODO: Post to the acctual route
+    this.http.post('/content/contact', formData).subscribe({ //TODO: Post to the actual route
       next: () => {
         this.formSubmitted = true;
+        this.resetCaptcha();
       },
       error: (err) => {
         console.error('Error submitting contact form:', err);
         this.formSubmitted = true; // Still show thank you message even if there's an error
+        this.resetCaptcha();
       },
     });
   }
 }
 
 //TODO: Add suggestions for search bar and did you mean
-
-//TODO: Add captcha to contact form
 
 function toArray(value: string | string[] | undefined): string[] {
   if (!value) return [];
