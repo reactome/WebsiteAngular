@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
+import { of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { SearchBarComponent } from './search-bar/search-bar.component';
@@ -23,12 +25,15 @@ export class SearchComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchService = inject(SearchService);
+  private http = inject(HttpClient);
 
   query = '';
   results: SearchResult | null = null;
   facets: FacetResponse | null = null;
   loading = false;
   error = '';
+  hasNoResults = false;
+  formSubmitted = false;
 
   currentPage = 0;
   pageSize = 30;
@@ -75,22 +80,55 @@ export class SearchComponent implements OnInit, OnDestroy {
   private doSearch(): void {
     this.loading = true;
     this.error = '';
+    this.hasNoResults = false;
 
     forkJoin({
-      results: this.searchService.search(this.query, this.filters, this.currentPage, this.pageSize),
-      facets: this.searchService.getFacets(this.query, this.filters),
+      results: this.searchService.search(this.query, this.filters, this.currentPage, this.pageSize).pipe(
+        catchError((err) => this.handleSearchError(err))
+      ),
+      facets: this.searchService.getFacets(this.query, this.filters).pipe(
+        catchError(() => of(null))
+      ),
     }).subscribe({
       next: ({ results, facets }) => {
-        this.results = results;
-        this.facets = facets;
-        this.totalPages = Math.ceil((results.numberOfMatches || 0) / this.pageSize);
+        // If either API call failed, show error
+        if (!results || !facets) {
+          this.error = 'An error occurred while searching. Please try again.';
+          this.results = null;
+          this.facets = null;
+          this.hasNoResults = false;
+        } else {
+          // Successful API response - check if we have results
+          this.results = results as SearchResult;
+          this.facets = facets;
+          this.totalPages = Math.ceil(((results as SearchResult).numberOfMatches || 0) / this.pageSize);
+          this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
+          this.error = '';
+        }
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
         this.error = 'An error occurred while searching. Please try again.';
+        this.hasNoResults = false;
+        this.results = null;
+        this.facets = null;
         this.loading = false;
       },
     });
+  }
+
+  private handleSearchError(err: any): Observable<SearchResult | null> {
+    // Check if this is a 404 with "No entries found" message
+    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
+      // Return empty results instead of throwing error
+      return of({
+        results: [],
+        rowCount: 0,
+        numberOfMatches: 0,
+      });
+    }
+    // For other errors, return null
+    return of(null);
   }
 
   toggleFacet(category: string, value: string): void {
@@ -170,6 +208,24 @@ export class SearchComponent implements OnInit, OnDestroy {
       pages.push(i);
     }
     return pages;
+  }
+
+  submitContactForm(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const form = event.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    this.http.post('/content/contact', formData).subscribe({ //TODO: Post to the acctual route
+      next: () => {
+        this.formSubmitted = true;
+      },
+      error: (err) => {
+        console.error('Error submitting contact form:', err);
+        this.formSubmitted = true; // Still show thank you message even if there's an error
+      },
+    });
   }
 }
 

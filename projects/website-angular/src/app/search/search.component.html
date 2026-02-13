@@ -27,7 +27,7 @@
 
       <div class="search-layout">
         <!-- Facet sidebar -->
-        <aside class="facet-sidebar">
+        <aside [class]="'facet-sidebar' + (hasNoResults ? ' no-results' : '')">
           <!-- Species facet -->
           @if (getFacetItems(facets?.speciesFacet); as items) {
             @if (items.length) {
@@ -147,7 +147,97 @@
             <div class="error">{{ error }}</div>
           }
 
-          @if (!loading && !error && results) {
+          @if (hasNoResults && !loading && !error) {
+            <div class="no-results">
+              <h2>No results found for "{{ query }}"</h2>
+                <h3>Did you mean...</h3>
+                <ul class="suggestions">
+                  @for (s of suggestions; track s) {
+                    <li>
+                      <a [routerLink]="'/search?q=' + s">{{ s }}</a>
+                    </li>
+                  }
+                </ul>
+              @if (formSubmitted) {
+                <div class="thank-you-message">
+                  <h2>Thank you for contacting us.</h2>
+                  <p>We will get back to you shortly.</p>
+                </div>
+              } @else {
+                <h2>Please report to us and we will get back shortly.</h2>
+                <form class="favth-form-horizontal" id="contact-form" (ngSubmit)="submitContactForm($event)" (submit)="submitContactForm($event)">
+                  <p>&nbsp;</p>
+                  <input type="hidden" name="source" id="source" value="W">
+                  <input type="hidden" name="exception" id="exception" value="">
+                  <input type="hidden" name="url" id="url" value="">
+
+                  <div class="favth-form-group">
+                    <label for="contactName" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">Name </label>
+                    <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                      <input type="text" class="favth-form-control" name="contactName" id="contactName" placeholder="your name">
+                    </div>
+                  </div>
+                  <div class="favth-form-group mail-required">
+                    <label for="mailAddress" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">From* </label>
+                    <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                      <input #mailAddress type="email" class="favth-form-control" name="mailAddress" id="mailAddress" placeholder="your-mail@domain.com" required="">
+                    </div>
+                  </div>
+                  <div class="favth-form-group">
+                    <label for="to" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">To </label>
+                    <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                      <input type="text" class="favth-form-control" id="to" placeholder="Reactome Helpdesk" readonly="">
+                    </div>
+                  </div>
+                  <div class="favth-form-group">
+                    <label for="subject" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">Subject </label>
+                    <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                      <input type="text" id="subject" name="subject" class="favth-form-control" [value]="'No results found for ' + query" readonly="">
+                    </div>
+                  </div>
+                  <div class="favth-form-group message-required">
+                    <label for="message" class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label">Message* </label>
+                    <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                      <textarea #messageArea id="message" name="message" class="favth-form-control" rows="5">Dear help desk,
+
+I've searched for "{{ query }}" and couldn't find it.
+
+Thank you for contacting us!
+We will try to get back to you as soon as possible.
+
+NOTE: This is an automatically generated message.
+
+</textarea>
+                    </div>
+                  </div>
+                  <div class="favth-form-group">
+                    <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                      <div class="checkbox">
+                        <label>
+                          <input type="checkbox" id="sendEmailCopy" name="sendEmailCopy" checked=""> Send me
+                          a copy
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="favth-form-group">
+                    <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                      <div class="h-captcha" data-sitekey="a7e45eb1-ba7a-47a7-95da-5c67d948dd4f" data-theme="light" data-callback="onSuccess"></div>
+                    </div>
+                  </div>
+
+                  <div class="favth-form-group">
+                    <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                      <button type="submit" id="send" class="btn btn-default" [disabled]="!mailAddress.value || !messageArea.value">Send</button>
+                    </div>
+                  </div>
+                </form>
+              }
+            </div>
+          }
+
+          @if (!loading && !error && !hasNoResults && results) {
             @if (results.results && results.results.length) {
               @for (group of results.results; track group.typeName) {
                 <app-tile variant="light">
@@ -191,8 +281,6 @@
                   </div>
                 </app-tile>
               }
-            } @else {
-              <div class="no-results">No results found for "{{ query }}".</div>
             }
 
             <!-- Pagination -->
