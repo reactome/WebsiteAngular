@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
-import { SearchBarComponent } from '../search-bar/search-bar.component';
+import { SearchBarComponent } from './search-bar/search-bar.component';
 import {
   SearchService,
   SearchResult,
