@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { SearchBarComponent } from '../search-bar/search-bar.component';
+import { SearchBarComponent } from '../search/search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
 import { HomeWhyReactomeComponent } from './home-why-reactome/home-why-reactome.component';
 import { HomeLatestNewsComponent } from './home-latest-news/home-latest-news.component';
