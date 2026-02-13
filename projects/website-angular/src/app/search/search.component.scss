@@ -1,0 +1,371 @@
+$spacing: 24px;
+$border-radius: 8px;
+
+.search-page {
+  width: 100%;
+}
+
+.result-count {
+  margin: 0 0 16px;
+  color: var(--on-surface-variant);
+  font-size: 0.9rem;
+}
+
+.loading {
+  text-align: center;
+  padding: $spacing * 2;
+  color: var(--on-surface-variant);
+  font-size: 1.1rem;
+}
+
+.error {
+  text-align: center;
+  padding: $spacing;
+  color: #c62828;
+  background: #ffebee;
+  border-radius: $border-radius;
+}
+
+.search-layout {
+  display: flex;
+  gap: $spacing;
+  align-items: flex-start;
+}
+
+// Facet sidebar
+.facet-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.facet-section {
+  background: white;
+  border-radius: $border-radius;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  overflow: hidden;
+
+  :host-context(.dark) & {
+    background-color: var(--surface);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+  }
+}
+
+.facet-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.facet-toggle {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.facet-options {
+  padding: 8px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.facet-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  input[type='checkbox'] {
+    flex-shrink: 0;
+    accent-color: var(--primary);
+  }
+}
+
+.facet-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facet-count {
+  color: var(--on-surface-variant);
+  flex-shrink: 0;
+}
+
+// Results area
+.results-area {
+  flex: 1;
+  min-width: 0;
+
+  app-tile {
+    display: block;
+    margin-bottom: 0;
+  }
+}
+
+.result-group {
+  width: 100%;
+  text-align: left;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--primary);
+  }
+}
+
+.group-toggle {
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.group-entries {
+  margin-top: 16px;
+}
+
+.search-entry {
+  padding: 12px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+  :host-context(.dark) & {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.entry-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.entry-name {
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+::ng-deep .highlighting {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.entry-id {
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+  font-family: monospace;
+}
+
+.entry-species {
+  margin-top: 4px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.species-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--on-surface);
+}
+
+.entry-compartments {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+}
+
+.entry-summation {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--on-surface);
+
+  // Truncate long summations
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.entry-reference {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+
+  a {
+    color: var(--primary);
+  }
+}
+
+// Search bar at top
+.search-top {
+  max-width: 600px;
+  margin: 0 auto $spacing;
+}
+
+// Active filter chips
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: $spacing;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--on-surface);
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+
+  .chip-label {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .chip-remove {
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--on-surface-variant);
+  }
+}
+
+// Empty state
+.empty-state {
+  text-align: center;
+  padding: $spacing * 2 0;
+
+  h1 {
+    margin: 0 0 8px;
+  }
+
+  p {
+    color: var(--on-surface-variant);
+    margin: 0 0 $spacing;
+  }
+}
+
+.empty-search-bar {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.no-results {
+  text-align: center;
+  padding: $spacing * 2;
+  color: var(--on-surface-variant);
+  font-size: 1.1rem;
+}
+
+// Pagination
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin-top: $spacing;
+  padding: 16px 0;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--primary);
+  background: white;
+  color: var(--primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+
+  :host-context(.dark) & {
+    background: var(--surface);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  &.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .search-layout {
+    flex-direction: column;
+  }
+
+  .facet-sidebar {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+}

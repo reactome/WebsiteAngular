@@ -1,0 +1,245 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
+  <div class="search-page">
+    @if (query) {
+      <!-- Search bar + filters above the two-column layout -->
+      <div class="search-top">
+        <app-search-bar [query]="query" />
+      </div>
+
+      <!-- Active filter chips -->
+      @if (getActiveFilters(); as activeFilters) {
+        @if (activeFilters.length) {
+          <div class="active-filters">
+            @for (f of activeFilters; track f.category + f.value) {
+              <button class="filter-chip" (click)="toggleFacet(f.category, f.value)">
+                <span class="chip-label">{{ f.label }}:</span> {{ f.value }}
+                <span class="chip-remove">&times;</span>
+              </button>
+            }
+          </div>
+        }
+      }
+
+      <!-- Result count -->
+      @if (results && !loading) {
+        <p class="result-count">{{ results.numberOfMatches }} results found for "{{ query }}"</p>
+      }
+
+      <div class="search-layout">
+        <!-- Facet sidebar -->
+        <aside class="facet-sidebar">
+          <!-- Species facet -->
+          @if (getFacetItems(facets?.speciesFacet); as items) {
+            @if (items.length) {
+              <div class="facet-section">
+                <button class="facet-title" (click)="toggleFacetSection('species')">
+                  <span>Species</span>
+                  <span class="facet-toggle">{{ collapsedFacets['species'] ? '+' : '−' }}</span>
+                </button>
+                @if (!collapsedFacets['species']) {
+                  <div class="facet-options">
+                    @for (item of items; track item.name) {
+                      <label class="facet-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isFacetSelected('species', item.name)"
+                          (change)="toggleFacet('species', item.name)"
+                        />
+                        <span class="facet-name">{{ item.name }}</span>
+                        <span class="facet-count">({{ item.count }})</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Types facet -->
+          @if (getFacetItems(facets?.typeFacet); as items) {
+            @if (items.length) {
+              <div class="facet-section">
+                <button class="facet-title" (click)="toggleFacetSection('types')">
+                  <span>Types</span>
+                  <span class="facet-toggle">{{ collapsedFacets['types'] ? '+' : '−' }}</span>
+                </button>
+                @if (!collapsedFacets['types']) {
+                  <div class="facet-options">
+                    @for (item of items; track item.name) {
+                      <label class="facet-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isFacetSelected('types', item.name)"
+                          (change)="toggleFacet('types', item.name)"
+                        />
+                        <span class="facet-name">{{ item.name }}</span>
+                        <span class="facet-count">({{ item.count }})</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Compartments facet -->
+          @if (getFacetItems(facets?.compartmentFacet); as items) {
+            @if (items.length) {
+              <div class="facet-section">
+                <button class="facet-title" (click)="toggleFacetSection('compartments')">
+                  <span>Compartments</span>
+                  <span class="facet-toggle">{{ collapsedFacets['compartments'] ? '+' : '−' }}</span>
+                </button>
+                @if (!collapsedFacets['compartments']) {
+                  <div class="facet-options">
+                    @for (item of items; track item.name) {
+                      <label class="facet-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isFacetSelected('compartments', item.name)"
+                          (change)="toggleFacet('compartments', item.name)"
+                        />
+                        <span class="facet-name">{{ item.name }}</span>
+                        <span class="facet-count">({{ item.count }})</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+
+          <!-- Keywords facet -->
+          @if (getFacetItems(facets?.keywordFacet); as items) {
+            @if (items.length) {
+              <div class="facet-section">
+                <button class="facet-title" (click)="toggleFacetSection('keywords')">
+                  <span>Keywords</span>
+                  <span class="facet-toggle">{{ collapsedFacets['keywords'] ? '+' : '−' }}</span>
+                </button>
+                @if (!collapsedFacets['keywords']) {
+                  <div class="facet-options">
+                    @for (item of items; track item.name) {
+                      <label class="facet-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isFacetSelected('keywords', item.name)"
+                          (change)="toggleFacet('keywords', item.name)"
+                        />
+                        <span class="facet-name">{{ item.name }}</span>
+                        <span class="facet-count">({{ item.count }})</span>
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+        </aside>
+
+        <!-- Results area -->
+        <div class="results-area">
+          @if (loading) {
+            <div class="loading">Searching...</div>
+          }
+
+          @if (error) {
+            <div class="error">{{ error }}</div>
+          }
+
+          @if (!loading && !error && results) {
+            @if (results.results && results.results.length) {
+              @for (group of results.results; track group.typeName) {
+                <app-tile variant="light">
+                  <div class="result-group">
+                    <button class="group-header" (click)="toggleGroup(group.typeName)">
+                      <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                      <span class="group-toggle">{{ collapsedGroups[group.typeName] ? '+' : '−' }}</span>
+                    </button>
+                    @if (!collapsedGroups[group.typeName]) {
+                      <div class="group-entries">
+                        @for (entry of group.entries; track entry.dbId) {
+                          <div class="search-entry">
+                            <div class="entry-header">
+                              <a class="entry-name" [routerLink]="'/content/detail/' + entry.stId" [innerHTML]="entry.name"></a>
+                              <span class="entry-id">{{ entry.stId }}</span>
+                            </div>
+                            @if (entry.species?.length) {
+                              <div class="entry-species">
+                                @for (sp of entry.species; track sp; let last = $last) {
+                                  <span class="species-tag">{{ sp }}</span>
+                                }
+                              </div>
+                            }
+                            @if (entry.compartmentNames?.length) {
+                              <div class="entry-compartments">
+                                Compartments: {{ entry.compartmentNames.join(', ') }}
+                              </div>
+                            }
+                            @if (entry.summation) {
+                              <p class="entry-summation" [innerHTML]="entry.summation"></p>
+                            }
+                            @if (entry.referenceName) {
+                              <div class="entry-reference">
+                                Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener">{{ entry.referenceName }} ({{ entry.referenceIdentifier }})</a>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </app-tile>
+              }
+            } @else {
+              <div class="no-results">No results found for "{{ query }}".</div>
+            }
+
+            <!-- Pagination -->
+            @if (totalPages > 1) {
+              <nav class="pagination">
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === 0"
+                  (click)="goToPage(0)"
+                >First</button>
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === 0"
+                  (click)="goToPage(currentPage - 1)"
+                >Prev</button>
+
+                @for (p of getPageNumbers(); track p) {
+                  <button
+                    class="page-btn"
+                    [class.active]="p === currentPage"
+                    (click)="goToPage(p)"
+                  >{{ p + 1 }}</button>
+                }
+
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === totalPages - 1"
+                  (click)="goToPage(currentPage + 1)"
+                >Next</button>
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === totalPages - 1"
+                  (click)="goToPage(totalPages - 1)"
+                >Last</button>
+              </nav>
+            }
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <h1>Search Reactome</h1>
+        <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
+        <div class="empty-search-bar">
+          <app-search-bar [query]="query" />
+        </div>
+      </div>
+    }
+  </div>
+</app-page-layout>

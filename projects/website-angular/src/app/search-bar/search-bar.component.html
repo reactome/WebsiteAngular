@@ -1,4 +1,4 @@
-<form class="search-bar-container">
-    <input type="text" placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose" class="search-input" />
-    <button class="search-button">Go!</button>
+<form class="search-bar-container" (submit)="onSubmit($event)">
+    <input type="text" placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose" class="search-input" [value]="query" (input)="onInput($event)" />
+    <button type="submit" class="search-button">Go!</button>
 </form>
