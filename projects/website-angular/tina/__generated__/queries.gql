@@ -108,61 +108,6 @@ query newsConnection($before: String, $after: String, $first: Float, $last: Floa
   }
 }
 
-query team($relativePath: String!) {
-  team(relativePath: $relativePath) {
-    ... on Document {
-      _sys {
-        filename
-        basename
-        hasReferences
-        breadcrumbs
-        path
-        relativePath
-        extension
-      }
-      id
-    }
-    ...TeamParts
-  }
-}
-
-query teamConnection($before: String, $after: String, $first: Float, $last: Float, $sort: String, $filter: TeamFilter) {
-  teamConnection(
-    before: $before
-    after: $after
-    first: $first
-    last: $last
-    sort: $sort
-    filter: $filter
-  ) {
-    pageInfo {
-      hasPreviousPage
-      hasNextPage
-      startCursor
-      endCursor
-    }
-    totalCount
-    edges {
-      cursor
-      node {
-        ... on Document {
-          _sys {
-            filename
-            basename
-            hasReferences
-            breadcrumbs
-            path
-            relativePath
-            extension
-          }
-          id
-        }
-        ...TeamParts
-      }
-    }
-  }
-}
-
 query content($relativePath: String!) {
   content(relativePath: $relativePath) {
     ... on Document {

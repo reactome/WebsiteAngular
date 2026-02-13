@@ -86,8 +86,6 @@ export type Query = {
   aboutConnection: AboutConnection;
   news: News;
   newsConnection: NewsConnection;
-  team: Team;
-  teamConnection: TeamConnection;
   content: Content;
   contentConnection: ContentConnection;
   reactome_research_spotlights: Reactome_Research_Spotlights;
@@ -147,21 +145,6 @@ export type QueryNewsConnectionArgs = {
   last?: InputMaybe<Scalars['Float']['input']>;
   sort?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<NewsFilter>;
-};
-
-
-export type QueryTeamArgs = {
-  relativePath?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryTeamConnectionArgs = {
-  before?: InputMaybe<Scalars['String']['input']>;
-  after?: InputMaybe<Scalars['String']['input']>;
-  first?: InputMaybe<Scalars['Float']['input']>;
-  last?: InputMaybe<Scalars['Float']['input']>;
-  sort?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<TeamFilter>;
 };
 
 
@@ -227,7 +210,6 @@ export type QueryCommunityConnectionArgs = {
 export type DocumentFilter = {
   about?: InputMaybe<AboutFilter>;
   news?: InputMaybe<NewsFilter>;
-  team?: InputMaybe<TeamFilter>;
   content?: InputMaybe<ContentFilter>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsFilter>;
   documentation?: InputMaybe<DocumentationFilter>;
@@ -271,7 +253,7 @@ export type CollectionDocumentsArgs = {
   folder?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type DocumentNode = About | News | Team | Content | Reactome_Research_Spotlights | Documentation | Community | Folder;
+export type DocumentNode = About | News | Content | Reactome_Research_Spotlights | Documentation | Community | Folder;
 
 export type About = Node & Document & {
   __typename?: 'About';
@@ -367,37 +349,6 @@ export type NewsConnection = Connection & {
   pageInfo: PageInfo;
   totalCount: Scalars['Float']['output'];
   edges?: Maybe<Array<Maybe<NewsConnectionEdges>>>;
-};
-
-export type Team = Node & Document & {
-  __typename?: 'Team';
-  name: Scalars['String']['output'];
-  role: Scalars['String']['output'];
-  institution: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  _sys: SystemInfo;
-  _values: Scalars['JSON']['output'];
-};
-
-export type TeamFilter = {
-  name?: InputMaybe<StringFilter>;
-  role?: InputMaybe<StringFilter>;
-  institution?: InputMaybe<StringFilter>;
-  type?: InputMaybe<StringFilter>;
-};
-
-export type TeamConnectionEdges = {
-  __typename?: 'TeamConnectionEdges';
-  cursor: Scalars['String']['output'];
-  node?: Maybe<Team>;
-};
-
-export type TeamConnection = Connection & {
-  __typename?: 'TeamConnection';
-  pageInfo: PageInfo;
-  totalCount: Scalars['Float']['output'];
-  edges?: Maybe<Array<Maybe<TeamConnectionEdges>>>;
 };
 
 export type Content = Node & Document & {
@@ -545,8 +496,6 @@ export type Mutation = {
   createAbout: About;
   updateNews: News;
   createNews: News;
-  updateTeam: Team;
-  createTeam: Team;
   updateContent: Content;
   createContent: Content;
   updateReactome_research_spotlights: Reactome_Research_Spotlights;
@@ -615,18 +564,6 @@ export type MutationCreateNewsArgs = {
 };
 
 
-export type MutationUpdateTeamArgs = {
-  relativePath: Scalars['String']['input'];
-  params: TeamMutation;
-};
-
-
-export type MutationCreateTeamArgs = {
-  relativePath: Scalars['String']['input'];
-  params: TeamMutation;
-};
-
-
 export type MutationUpdateContentArgs = {
   relativePath: Scalars['String']['input'];
   params: ContentMutation;
@@ -677,7 +614,6 @@ export type MutationCreateCommunityArgs = {
 export type DocumentUpdateMutation = {
   about?: InputMaybe<AboutMutation>;
   news?: InputMaybe<NewsMutation>;
-  team?: InputMaybe<TeamMutation>;
   content?: InputMaybe<ContentMutation>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsMutation>;
   documentation?: InputMaybe<DocumentationMutation>;
@@ -688,7 +624,6 @@ export type DocumentUpdateMutation = {
 export type DocumentMutation = {
   about?: InputMaybe<AboutMutation>;
   news?: InputMaybe<NewsMutation>;
-  team?: InputMaybe<TeamMutation>;
   content?: InputMaybe<ContentMutation>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsMutation>;
   documentation?: InputMaybe<DocumentationMutation>;
@@ -710,13 +645,6 @@ export type NewsMutation = {
   body?: InputMaybe<Scalars['JSON']['input']>;
   tags?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   image?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type TeamMutation = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  role?: InputMaybe<Scalars['String']['input']>;
-  institution?: InputMaybe<Scalars['String']['input']>;
-  type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ContentMutation = {
@@ -755,8 +683,6 @@ export type CommunityMutation = {
 export type AboutPartsFragment = { __typename: 'About', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
 
 export type NewsPartsFragment = { __typename: 'News', title: string, date: string, author?: string | null, body: any, tags?: Array<string | null> | null, image?: string | null };
-
-export type TeamPartsFragment = { __typename: 'Team', name: string, role: string, institution: string, type: string };
 
 export type ContentPartsFragment = { __typename: 'Content', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
 
@@ -803,25 +729,6 @@ export type NewsConnectionQueryVariables = Exact<{
 
 
 export type NewsConnectionQuery = { __typename?: 'Query', newsConnection: { __typename?: 'NewsConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'NewsConnectionEdges', cursor: string, node?: { __typename: 'News', id: string, title: string, date: string, author?: string | null, body: any, tags?: Array<string | null> | null, image?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
-
-export type TeamQueryVariables = Exact<{
-  relativePath: Scalars['String']['input'];
-}>;
-
-
-export type TeamQuery = { __typename?: 'Query', team: { __typename: 'Team', id: string, name: string, role: string, institution: string, type: string, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
-
-export type TeamConnectionQueryVariables = Exact<{
-  before?: InputMaybe<Scalars['String']['input']>;
-  after?: InputMaybe<Scalars['String']['input']>;
-  first?: InputMaybe<Scalars['Float']['input']>;
-  last?: InputMaybe<Scalars['Float']['input']>;
-  sort?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<TeamFilter>;
-}>;
-
-
-export type TeamConnectionQuery = { __typename?: 'Query', teamConnection: { __typename?: 'TeamConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'TeamConnectionEdges', cursor: string, node?: { __typename: 'Team', id: string, name: string, role: string, institution: string, type: string, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
 
 export type ContentQueryVariables = Exact<{
   relativePath: Scalars['String']['input'];
@@ -918,15 +825,6 @@ export const NewsPartsFragmentDoc = gql`
   body
   tags
   image
-}
-    `;
-export const TeamPartsFragmentDoc = gql`
-    fragment TeamParts on Team {
-  __typename
-  name
-  role
-  institution
-  type
 }
     `;
 export const ContentPartsFragmentDoc = gql`
@@ -1084,63 +982,6 @@ export const NewsConnectionDocument = gql`
   }
 }
     ${NewsPartsFragmentDoc}`;
-export const TeamDocument = gql`
-    query team($relativePath: String!) {
-  team(relativePath: $relativePath) {
-    ... on Document {
-      _sys {
-        filename
-        basename
-        hasReferences
-        breadcrumbs
-        path
-        relativePath
-        extension
-      }
-      id
-    }
-    ...TeamParts
-  }
-}
-    ${TeamPartsFragmentDoc}`;
-export const TeamConnectionDocument = gql`
-    query teamConnection($before: String, $after: String, $first: Float, $last: Float, $sort: String, $filter: TeamFilter) {
-  teamConnection(
-    before: $before
-    after: $after
-    first: $first
-    last: $last
-    sort: $sort
-    filter: $filter
-  ) {
-    pageInfo {
-      hasPreviousPage
-      hasNextPage
-      startCursor
-      endCursor
-    }
-    totalCount
-    edges {
-      cursor
-      node {
-        ... on Document {
-          _sys {
-            filename
-            basename
-            hasReferences
-            breadcrumbs
-            path
-            relativePath
-            extension
-          }
-          id
-        }
-        ...TeamParts
-      }
-    }
-  }
-}
-    ${TeamPartsFragmentDoc}`;
 export const ContentDocument = gql`
     query content($relativePath: String!) {
   content(relativePath: $relativePath) {
@@ -1383,12 +1224,6 @@ export type Requester<C= {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) 
       },
     newsConnection(variables?: NewsConnectionQueryVariables, options?: C): Promise<{data: NewsConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: NewsConnectionQueryVariables, query: string}> {
         return requester<{data: NewsConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: NewsConnectionQueryVariables, query: string}, NewsConnectionQueryVariables>(NewsConnectionDocument, variables, options);
-      },
-    team(variables: TeamQueryVariables, options?: C): Promise<{data: TeamQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: TeamQueryVariables, query: string}> {
-        return requester<{data: TeamQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: TeamQueryVariables, query: string}, TeamQueryVariables>(TeamDocument, variables, options);
-      },
-    teamConnection(variables?: TeamConnectionQueryVariables, options?: C): Promise<{data: TeamConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: TeamConnectionQueryVariables, query: string}> {
-        return requester<{data: TeamConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: TeamConnectionQueryVariables, query: string}, TeamConnectionQueryVariables>(TeamConnectionDocument, variables, options);
       },
     content(variables: ContentQueryVariables, options?: C): Promise<{data: ContentQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: ContentQueryVariables, query: string}> {
         return requester<{data: ContentQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: ContentQueryVariables, query: string}, ContentQueryVariables>(ContentDocument, variables, options);

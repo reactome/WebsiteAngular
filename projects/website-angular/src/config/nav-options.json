@@ -224,7 +224,7 @@
   },
   "tools": {
     "label": "Tools",
-    "link": "/#tools",
+    "link": "/tools",
     "icon": "perm_data_setting",
     "dropdown-links": {
         "pathway-browser": {
@@ -257,7 +257,7 @@
         },
         "advanced-data-search": {
             "label": "Advanced Data Search",
-            "link": "/content/advanced"
+            "link": "/tools/advanced"
         },
         "site-search": {
             "label": "Site Search",
@@ -307,7 +307,7 @@
   "download": {
     "icon": "cloud_download",
     "label": "Download",
-    "link": "/download-data",
+    "link": "/download",
     "dropdown-links": {}
   }
 }

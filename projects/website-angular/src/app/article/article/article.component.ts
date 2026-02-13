@@ -7,6 +7,7 @@ import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-article',
@@ -16,11 +17,13 @@ import stripFirstH from '../../../utils/stripFirstH';
 })
 export class ArticleComponent implements OnInit {
   article: Article | null = null;
+  renderedContent: SafeHtml = '';
   loading = true;
   error: string | null = null;
 
   private route =  inject(ActivatedRoute);
   private contentService = inject(ContentService);
+  private sanitizer = inject(DomSanitizer);
 
 
   ngOnInit() {
@@ -47,8 +50,9 @@ export class ArticleComponent implements OnInit {
 
     this.contentService.getArticle(path,slug).subscribe({
       next: async (article) => {
-        let html = await marked(article?.body || '');
+        let html = await marked(article?.body as string || '');
         let renderedContent = stripFirstH(html);
+        this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
         this.article = {
           title: article?.title || '',

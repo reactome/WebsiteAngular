@@ -28,8 +28,8 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
+          { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
@@ -45,42 +45,13 @@ export default defineConfig({
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'datetime', name: "date", label: "Date Published", required: true },
           { type: 'string', name: "author", label: "Author" },
-          { type: "rich-text", name: "body", label: "Body", required: true },
+          { type: "rich-text", name: "body", label: "Body", isBody: true, required: true },
           { type: 'string', name: "tags", label: "Tags", list: true },
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
           router: ({ document }: any) => `/about/news/${document._sys.filename}`,
         }
-      },
-      { //Team Info
-        name: "team",
-        label: "Team",
-        path: "content/about/team",
-        format: "json",
-        fields: [
-          { type: "string", name: "name", label: "Name", isTitle: true, required: true },
-          { type: "string", name: "role", label: "Role", required: true },
-          {
-            type: "string",
-            name: "institution",
-            label: "Institution",
-            options: [
-              "Ontario Institute for Cancer Research",
-              "New York University Langone Medical Center",
-              "European Bioinformatics Institute",
-              "Oregon Health & Science University",
-            ],
-            required: true,
-          },
-           {
-            type: "string",
-            name: "type",
-            label: "Member Type",
-            options: ["principal_investigator", "current", "alumni"],
-            required: true,
-          },
-        ]
       },
       { //Content Pages
         name: "content",
@@ -90,8 +61,8 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
+          { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
@@ -107,7 +78,7 @@ export default defineConfig({
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'datetime', name: "date", label: "Date Published" },
           { type: 'string', name: "author", label: "Author" },
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'string', name: "tags", label: "Tags", list: true },
           { type: 'image', name: "image", label: "Image" },
         ],
@@ -123,8 +94,8 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
+          { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {
@@ -139,8 +110,8 @@ export default defineConfig({
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
-          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] }, //TODO: Downalod might not be needed
-          { type: "rich-text", name: "body", label: "Body" },
+          { type: 'string', name: "category", label: "Category", options: ["about", "content", "documentation", "tools", "community", "download"] },
+          { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
         ui: {

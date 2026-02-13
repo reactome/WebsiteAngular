@@ -17,7 +17,7 @@
     </header>
     <div class="article-body">
       <img class="article-image" *ngIf="article.image" [src]="article.image" alt="Article Image" class="article-image"/>
-      <div class="article-text" [innerHTML]="article.body"></div>
+      <div class="article-text" [innerHTML]="renderedContent"></div>
     </div>
     
   </article>

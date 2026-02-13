@@ -8,3 +8,12 @@
 .page-content {
   background-color: unset;
 }
+
+.category-badge {
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+  cursor: default;
+}
