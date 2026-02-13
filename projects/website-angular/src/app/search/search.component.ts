@@ -229,6 +229,10 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 }
 
+//TODO: Add suggestions for search bar and did you mean
+
+//TODO: Add captcha to contact form
+
 function toArray(value: string | string[] | undefined): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
