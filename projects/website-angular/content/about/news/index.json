@@ -1,915 +1,872 @@
 [
   {
-    "title": "New Publication in NAR 2026:",
-    "excerpt": "\n##  New Publication in NAR 2026: \n\nA new research article entitled “The Reactome Knowledgebase 2026” has been published in the Nucleic Acids Research 2026 Databases Issue. The paper highlights Reactome’s redesigned Angular-based interface, enhanced global and entity-level visualizations, multi-omics analysis tools, and innovations such as the React-to-Me chatbot. It also ...",
-    "date": "2025-12-08T16:18:39-05:00",
-    "slug": "286-new-publication-in-nar-2026",
+    "title": "Claim Your Work",
+    "excerpt": "\nFollow this [link](</userguide/claim-your-work> \"Click for instructions on how to claim your work\") to learn more about how you can claim your work.\n...",
+    "date": "2026-02-13T18:48:06.251Z",
+    "slug": "blogpost-48",
     "tags": [
       "about",
-      "news",
-      "286-new-publication-in-nar-2026"
+      "news"
+    ]
+  },
+  {
+    "title": "Reactome Releases Two New AI-Focused Preprints",
+    "excerpt": "\n##  [ Reactome Releases Two New AI-Focused Preprints ](</about/news/288-reactome-releases-two-new-ai-focused-preprints>)\n\nReactome has released two preprints describing recent advances in applying artificial intelligence to pathway curation and user access.\n\nThe preprint, [_Application of Large Language Models for Annotating Genes into Reactome Pathways_](<https://www.biorxiv.org/content/10.64898/2025.12.20.695723v1>), presents an LLM-assisted workflow that supports expert curators ...</https>",
+    "date": "2026-02-05T11:16:48-05:00",
+    "slug": "blogpost-1",
+    "tags": [
+      "about",
+      "news"
+    ]
+  },
+  {
+    "title": "New Publication in NAR 2026:",
+    "excerpt": "\n##  [ New Publication in NAR 2026: ](</about/news/286-new-publication-in-nar-2026>)\n\nA new research article entitled “The Reactome Knowledgebase 2026” has been published in the Nucleic Acids Research 2026 Databases Issue. The paper highlights Reactome’s redesigned Angular-based interface, enhanced global and entity-level visualizations, multi-omics analysis tools, and innovations such as the React-to-Me ...",
+    "date": "2025-12-08T16:18:39-05:00",
+    "slug": "blogpost-2",
+    "tags": [
+      "about",
+      "news"
     ]
   },
   {
     "title": "V95 Released",
-    "excerpt": "\n##  V95 Released \n\n![R HSA 9839923](/uploads/about/news/R-HSA-9839923.png)\n\n[Dengue Virus Infection](</PathwayBrowser/#/R-HSA-9839923&PATH=R-HSA-1643685,R-HSA-5663205,R-HSA-9824446>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Disease ([Dengue virus infection](</PathwayBrowser/#9839923>), [Diseases of urea cycle](</PathwayBrowser/#9955698>), [Enterobacterial factors antagonize host defense](</PathwayBrowser/#9956593>), [NS1-mediated effects on host pathways](</PathwayBrowser/#168276>), and [SARS-CoV-2 ...",
+    "excerpt": "\n##  [ V95 Released ](</about/news/284-v95-released>)\n\n![R HSA 9839923](/uploads/about/news/R-HSA-9839923.png)\n\n[Dengue Virus Infection](</PathwayBrowser/#/R-HSA-9839923&PATH=R-HSA-1643685,R-HSA-5663205,R-HSA-9824446>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Disease ([Dengue virus infection](</PathwayBrowser/#9839923>), [Diseases of urea cycle](</PathwayBrowser/#9955698>), [Enterobacterial factors antagonize host defense](</PathwayBrowser/#9956593>), [NS1-mediated effects on host pathways](</PathwayBrowser/#168276>...",
     "date": "2025-12-03T18:22:40-05:00",
-    "slug": "284-v95-released",
+    "slug": "blogpost-3",
     "tags": [
       "about",
-      "news",
-      "284-v95-released"
+      "news"
     ]
   },
   {
     "title": "Reactome Pathway Browser: New Beta Release",
-    "excerpt": "\n##  Reactome Pathway Browser: New Beta Release \n\nReactome is excited to announce the beta release of our redesigned Pathway Browser, now available at: [](<https://dev.reactome.org/new-pwb/>)<https://reactome.org/beta/PathwayBrowser>\n\nThis major update delivers a modernized user interface (UI) and user experience (UX), along with new visualization and analysis features.\n\n#### Key Highlights\n\n##### **Event ...</https>",
+    "excerpt": "\n##  [ Reactome Pathway Browser: New Beta Release ](</about/news/280-reactome-pathway-browser-new-beta-release>)\n\nReactome is excited to announce the beta release of our redesigned Pathway Browser, now available at: [](<https://dev.reactome.org/new-pwb/>)<https://reactome.org/beta/PathwayBrowser>\n\nThis major update delivers a modernized user interface (UI) and user experience (UX), along with new visualization and analysis features.\n\n#### Key ...</https>",
     "date": "2025-09-18T08:34:09-04:00",
-    "slug": "280-reactome-pathway-browser-new-beta-release",
+    "slug": "blogpost-4",
     "tags": [
       "about",
-      "news",
-      "280-reactome-pathway-browser-new-beta-release"
+      "news"
     ]
   },
   {
     "title": "V94 Released",
-    "excerpt": "\n##  V94 Released \n\n![R HSA 1474244](/uploads/about/news/R-HSA-1474244.png)\n\n[Extracellular matrix organization](</PathwayBrowser/#1474244>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cell Cycle ([p53-Independent G1/S DNA Damage Checkpoint](</PathwayBrowser/#69613>)), Developmental Biology ([Developmental Lineage of Mammary Gland Cells](</PathwayBrowser/#9924644>), [Developmental Lineage of Mammary Gland Alveolar Cells](</PathwayBrowser/#9927426>...",
+    "excerpt": "\n##  [ V94 Released ](</about/news/279-v94-released>)\n\n![R HSA 1474244](/uploads/about/news/R-HSA-1474244.png)\n\n[Extracellular matrix organization](</PathwayBrowser/#1474244>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cell Cycle ([p53-Independent G1/S DNA Damage Checkpoint](</PathwayBrowser/#69613>)), Developmental Biology ([Developmental Lineage of Mammary Gland Cells](</PathwayBrowser/#9924644>), [Developmental Lineage of Mammary ...",
     "date": "2025-09-11T01:17:50-04:00",
-    "slug": "279-v94-released",
+    "slug": "blogpost-5",
     "tags": [
       "about",
-      "news",
-      "279-v94-released"
+      "news"
     ]
   },
   {
     "title": "V93 Released",
-    "excerpt": "\n##  V93 Released \n\n![R HSA 9734779 newsV93](/uploads/about/news/R-HSA-9734779_newsV93.png)\n\n[Developmental Lineages of Integumentary System](</PathwayBrowser/#9734779>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cell-Cell Communication ([Regulation of CDH1 Expression and Function](</PathwayBrowser/#9764265>)), Circadian clock ([BMAL1:CLOCK,NPAS2 activates circadian expression](</PathwayBrowser/#1368108>)), Developmental Biology ([Developmental Lineage of ...",
+    "excerpt": "\n##  [ V93 Released ](</about/news/275-v93-released>)\n\n![R HSA 9734779 newsV93](/uploads/about/news/R-HSA-9734779_newsV93.png)\n\n[Developmental Lineages of Integumentary System](</PathwayBrowser/#9734779>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cell-Cell Communication ([Regulation of CDH1 Expression and Function](</PathwayBrowser/#9764265>)), Circadian clock ([BMAL1:CLOCK,NPAS2 activates circadian expression](</PathwayBrowser/#1368108>)), Developmental Biology ...",
     "date": "2025-06-12T13:09:20-04:00",
-    "slug": "275-v93-released",
+    "slug": "blogpost-6",
     "tags": [
       "about",
-      "news",
-      "275-v93-released"
+      "news"
     ]
   },
   {
     "title": "Reactome Recognized with CoreTrustSeal Certification",
-    "excerpt": "\n##  Reactome Recognized with CoreTrustSeal Certification \n\nWe are excited to share that the Reactome Knowledgebase has officially received CoreTrustSeal certification, a recognition awarded to data repositories that meet high standards for trustworthiness, sustainability, and open data practices.\n\nThis milestone reflects years of work by the Reactome team to ensure that ...",
+    "excerpt": "\n##  [ Reactome Recognized with CoreTrustSeal Certification ](</about/news/273-coretrustseal-news>)\n\nWe are excited to share that the Reactome Knowledgebase has officially received CoreTrustSeal certification, a recognition awarded to data repositories that meet high standards for trustworthiness, sustainability, and open data practices.\n\nThis milestone reflects years of work by the Reactome team ...",
     "date": "2025-05-20T12:48:44-04:00",
-    "slug": "273-coretrustseal-news",
+    "slug": "blogpost-7",
     "tags": [
       "about",
-      "news",
-      "273-coretrustseal-news"
+      "news"
     ]
   },
   {
     "title": "V92 Released",
-    "excerpt": "\n##  V92 Released \n\n![R HSA 9909396](/uploads/about/news/R-HSA-9909396.png)\n\n[Circadian Clock](</PathwayBrowser/#9909396>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Autophagy ([Macroautophagy](</PathwayBrowser/#/R-HSA-1632852>)), Cell Cycle ([Cyclin A/B1/B2 associated events during G2/M transition](</PathwayBrowser/#69273>), [Regulation of PLK1 Activity at G2/M Transition](</PathwayBrowser/#2565942>)), Cellular responses to stimuli ...",
+    "excerpt": "\n##  [ V92 Released ](</about/news/270-v92-news>)\n\n![R HSA 9909396](/uploads/about/news/R-HSA-9909396.png)\n\n[Circadian Clock](</PathwayBrowser/#9909396>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Autophagy ([Macroautophagy](</PathwayBrowser/#/R-HSA-1632852>)), Cell Cycle ([Cyclin A/B1/B2 associated events during G2/M transition](</PathwayBrowser/#69273>), [Regulation of PLK1 Activity at G2/M Transition](</PathwayBrowser/#2565942>)), Cellular ...",
     "date": "2025-03-20T01:13:44-04:00",
-    "slug": "270-v92-news",
+    "slug": "blogpost-8",
     "tags": [
       "about",
-      "news",
-      "270-v92-news"
+      "news"
     ]
   },
   {
     "title": "V91 Released",
-    "excerpt": "\n##  V91 Released \n\n![R HSA 388841](/uploads/about/news/R-HSA-388841.png)\n\n[Regulation of T cell activation by CD28 family](</PathwayBrowser/#388841>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cellular responses to stimuli ([Mechanical load activates signaling by PIEZO1 and integrins in osteocytes](</PathwayBrowser/#9856532>)), Developmental Biology ([Developmental Lineage ...",
+    "excerpt": "\n##  [ V91 Released ](</about/news/265-v91-news>)\n\n![R HSA 388841](/uploads/about/news/R-HSA-388841.png)\n\n[Regulation of T cell activation by CD28 family](</PathwayBrowser/#388841>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cellular responses to stimuli ([Mechanical load activates signaling by PIEZO1 and integrins in osteocytes](</PathwayBrowser/#9856532>)), Developmental ...",
     "date": "2024-11-30T10:22:36-05:00",
-    "slug": "265-v91-news",
+    "slug": "blogpost-9",
     "tags": [
       "about",
-      "news",
-      "265-v91-news"
+      "news"
     ]
   },
   {
     "title": "V90 Released",
-    "excerpt": "\n##  V90 Released \n\n![R HSA 2262752](/uploads/about/news/R-HSA-2262752.png)\n\n[Cellular response to stress](</PathwayBrowser/#/R-HSA-2262752>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cellular responses to stimuli ([High laminar flow shear stress activates signaling by PIEZO1 and PECAM1:CDH5:KDR in endothelial cells](</PathwayBrowser/#/R-HSA-9856530>), [Turbulent (oscillatory, disturbed) flow ...",
+    "excerpt": "\n##  [ V90 Released ](</about/news/261-v90-news>)\n\n![R HSA 2262752](/uploads/about/news/R-HSA-2262752.png)\n\n[Cellular response to stress](</PathwayBrowser/#/R-HSA-2262752>)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Cellular responses to stimuli ([High laminar flow shear stress activates signaling by PIEZO1 and PECAM1:CDH5:KDR in endothelial cells](</PathwayBrowser/#/R-HSA-9856530>), [Turbulent ...",
     "date": "2024-09-17T00:01:08-04:00",
-    "slug": "261-v90-news",
+    "slug": "blogpost-10",
     "tags": [
       "about",
-      "news",
-      "261-v90-news"
+      "news"
     ]
   },
   {
     "title": "V89 Released",
-    "excerpt": "\n##  V89 Released \n\n![R HSA 212165](/uploads/about/news/R-HSA-212165.png)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Autophagy ([Mitophagy](</PathwayBrowser/#/R-HSA-5205647>)), Cell Cycle ([Meiotic recombination](</PathwayBrowser/#/R-HSA-912446>) and [Resolution of sister chromatid cohesion](</PathwayBrowser/#/R-HSA-2500257>)); Developmental Biology ([MITF-M-regulation melanocyte development](</PathwayBrowser/#/R-HSA-9730414>)); DNA Repair ([Resolution of D-loop structures through ...",
+    "excerpt": "\n##  [ V89 Released ](</about/news/251-v89-released>)\n\n![R HSA 212165](/uploads/about/news/R-HSA-212165.png)\n\nNew and Updated Topics and Pathways. Topics with new or revised pathways in this release include Autophagy ([Mitophagy](</PathwayBrowser/#/R-HSA-5205647>)), Cell Cycle ([Meiotic recombination](</PathwayBrowser/#/R-HSA-912446>) and [Resolution of sister chromatid cohesion](</PathwayBrowser/#/R-HSA-2500257>)); Developmental Biology ([MITF-M-regulation melanocyte development](</PathwayBrowser/#/R-HSA-9730414>)); DNA Repair ([Resolution of ...",
     "date": "2024-06-09T22:59:54-04:00",
-    "slug": "251-v89-released",
+    "slug": "blogpost-11",
     "tags": [
       "about",
-      "news",
-      "251-v89-released"
+      "news"
     ]
   },
   {
     "title": "New Publication in Database (Oxford)!",
-    "excerpt": "\n##  New Publication in Database (Oxford)! \n\nIntroducing a new publication from the Reactome team in the Database (Oxford) journal by Orlic-Milacic et al, titled \"[Pathway-based, reaction-specific annotation of disease variants for elucidation of molecular phenotypes](<https://doi.org/10.1093/database/baae031>)\"! \n\nThe study outlines Reactome's expansion to encompass annotations for **disease variants** , providing insights ...</https>",
+    "excerpt": "\n##  [ New Publication in Database (Oxford)! ](</about/news/250-new-publication-in-database-oxford>)\n\nIntroducing a new publication from the Reactome team in the Database (Oxford) journal by Orlic-Milacic et al, titled \"[Pathway-based, reaction-specific annotation of disease variants for elucidation of molecular phenotypes](<https://doi.org/10.1093/database/baae031>)\"! \n\nThe study outlines Reactome's expansion to encompass annotations for **disease variants** ...</https>",
     "date": "2024-05-14T17:45:16-04:00",
-    "slug": "250-new-publication-in-database-oxford",
+    "slug": "blogpost-12",
     "tags": [
       "about",
-      "news",
-      "250-new-publication-in-database-oxford"
+      "news"
     ]
   },
   {
     "title": "V88 Released",
-    "excerpt": "\n##  V88 Released \n\n![R HSA 9734767](/uploads/about/news/R-HSA-9734767.png)\n\n**Cytomics Reactome.** The trillions of cells in the adult human body, specialized to fulfill diverse roles in tissues, organs, and organ systems, all originate from a single cell, a zygote formed at conception. From zygote to adulthood, cells divide and commit to different fates. ...",
+    "excerpt": "\n##  [ V88 Released ](</about/news/246-v88-released-2>)\n\n![R HSA 9734767](/uploads/about/news/R-HSA-9734767.png)\n\n**Cytomics Reactome.** The trillions of cells in the adult human body, specialized to fulfill diverse roles in tissues, organs, and organ systems, all originate from a single cell, a zygote formed at conception. From zygote to adulthood, cells divide and commit ...",
     "date": "2024-03-20T00:35:16-04:00",
-    "slug": "246-v88-released-2",
+    "slug": "blogpost-13",
     "tags": [
       "about",
-      "news",
-      "246-v88-released-2"
+      "news"
     ]
   },
   {
     "title": "V87 released",
-    "excerpt": "\n##  V87 released \n\n![R HSA 9820952](/uploads/about/news/R-HSA-9820952.png)**Respiratory Syncytial Virus Infection Pathway**\n\n**New and Updated Topics and Pathways.** As we head into winter and medical experts warn, once again, of a potential tripledemic of flu, COVID-19, and Respiratory Syncytial Virus (RSV), Reactome completes its coverage of these three viruses with the release ...",
+    "excerpt": "\n##  [ V87 released ](</about/news/238-version-87-released>)\n\n![R HSA 9820952](/uploads/about/news/R-HSA-9820952.png)**Respiratory Syncytial Virus Infection Pathway**\n\n**New and Updated Topics and Pathways.** As we head into winter and medical experts warn, once again, of a potential tripledemic of flu, COVID-19, and Respiratory Syncytial Virus (RSV), Reactome completes its coverage of these three viruses ...",
     "date": "2023-12-04T22:25:30-05:00",
-    "slug": "238-version-87-released",
+    "slug": "blogpost-14",
     "tags": [
       "about",
-      "news",
-      "238-version-87-released"
+      "news"
     ]
   },
   {
     "title": "V86 Released",
-    "excerpt": "\n##  V86 Released \n\n![R HSA 9816359 2242x1261](/uploads/about/news/R-HSA-9816359-2242x1261.png)\n\nMaternal to zygotic transition\n\n**New and Updated Topics and Pathways.** In V86, Topics with new or revised pathways include Cellular responses to stimuli ([KEAP1-NFE2L2 pathway](</PathwayBrowser/#/R-HSA-9755511>)), Developmental biology ([Formation of anterior neural plate](</PathwayBrowser/#/R-HSA-9823739>), [Formation of posterior neural plate](</PathwayBrowser/#9832991>), and [Maternal to ...",
+    "excerpt": "\n##  [ V86 Released ](</about/news/230-version-86-released>)\n\n![R HSA 9816359 2242x1261](/uploads/about/news/R-HSA-9816359-2242x1261.png)\n\nMaternal to zygotic transition\n\n**New and Updated Topics and Pathways.** In V86, Topics with new or revised pathways include Cellular responses to stimuli ([KEAP1-NFE2L2 pathway](</PathwayBrowser/#/R-HSA-9755511>)), Developmental biology ([Formation of anterior neural plate](</PathwayBrowser/#/R-HSA-9823739>), [Formation of posterior neural plate](</PathwayBrowser/#9832991>), ...",
     "date": "2023-09-07T00:15:08-04:00",
-    "slug": "230-version-86-released",
+    "slug": "blogpost-15",
     "tags": [
       "about",
-      "news",
-      "230-version-86-released"
+      "news"
     ]
   },
   {
     "title": "V85 released",
-    "excerpt": "\n##  V85 released \n\n![R HSA 9758941](/uploads/about/news/R-HSA-9758941.png)\n\n**New and Updated Topics and Pathways.** In V85, Topics with new or revised pathways include Developmental Biology ([Cardiogenesis](</PathwayBrowser/#/R-HSA-9733709>), [Formation of intermediate mesoderm](</PathwayBrowser/#/R-HSA-9761174>), [Formation of paraxial mesoderm](</PathwayBrowser/#/R-HSA-9793380>), [Somitogenesis](</PathwayBrowser/#/R-HSA-9824272>), [Specification of primordial germ cells](</PathwayBrowser/#/R-HSA-9827857>) ), Cell-Cell communication ([Regulation of Expression and ...",
+    "excerpt": "\n##  [ V85 released ](</about/news/225-v85-released>)\n\n![R HSA 9758941](/uploads/about/news/R-HSA-9758941.png)\n\n**New and Updated Topics and Pathways.** In V85, Topics with new or revised pathways include Developmental Biology ([Cardiogenesis](</PathwayBrowser/#/R-HSA-9733709>), [Formation of intermediate mesoderm](</PathwayBrowser/#/R-HSA-9761174>), [Formation of paraxial mesoderm](</PathwayBrowser/#/R-HSA-9793380>), [Somitogenesis](</PathwayBrowser/#/R-HSA-9824272>), [Specification of primordial germ cells](</PathwayBrowser/#/R-HSA-9827857>) ), Cell-Cell communication ([Regulation ...",
     "date": "2023-05-25T20:43:26-04:00",
-    "slug": "225-v85-released",
+    "slug": "blogpost-16",
     "tags": [
       "about",
-      "news",
-      "225-v85-released"
+      "news"
     ]
   },
   {
     "title": "V84 released",
-    "excerpt": "\n##  V84 released \n\n[Infectious Disease](</PathwayBrowser/#/R-HSA-5663205>)\n\n![](/uploads/about/news/infectious_events.png)\n\n**New and Updated Topics and Pathways.** In V84, Topics with new or revised pathways include Developmental Biology ([Formation of definitive endoderm](</PathwayBrowser/#/R-HSA-9823730>)), Gene Expression ([Formation of WDR5-containing histone-modifying complexes](</PathwayBrowser/#/R-HSA-9772755>)), and Signal Transduction ([Regulation of TNFR1 signaling](</PathwayBrowser/#/5357905>), [TNFR1-induced NF-kappa-B signaling pathway](</PathwayBrowser/#/5357956>), ...",
+    "excerpt": "\n##  [ V84 released ](</about/news/194-v84-released>)\n\n[Infectious Disease](</PathwayBrowser/#/R-HSA-5663205>)\n\n![](/uploads/about/news/infectious_events.png)\n\n**New and Updated Topics and Pathways.** In V84, Topics with new or revised pathways include Developmental Biology ([Formation of definitive endoderm](</PathwayBrowser/#/R-HSA-9823730>)), Gene Expression ([Formation of WDR5-containing histone-modifying complexes](</PathwayBrowser/#/R-HSA-9772755>)), and Signal Transduction ([Regulation of TNFR1 signaling](</PathwayBrowser/#/5357905>), [TNFR1-induced NF-kappa-B ...",
     "date": "2023-03-23T15:07:16-04:00",
-    "slug": "194-v84-released",
+    "slug": "blogpost-17",
     "tags": [
       "about",
-      "news",
-      "194-v84-released"
+      "news"
     ]
   },
   {
     "title": "Reactome is hiring!",
-    "excerpt": "\n##  Reactome is hiring! \n\n**Outreach Coordinator**\n\nWe are looking for an experienced and enthusiastic person to lead our outreach efforts. \n\nAs Reactome Outreach Coordinator, you will lead our community outreach activities, strengthening existing collaborations and developing initiatives to foster new ones. Working with the software and curatorial teams, you will ...",
+    "excerpt": "\n##  [ Reactome is hiring! ](</about/news/191-reactome-is-hiring>)\n\n**Outreach Coordinator**\n\nWe are looking for an experienced and enthusiastic person to lead our outreach efforts. \n\nAs Reactome Outreach Coordinator, you will lead our community outreach activities, strengthening existing collaborations and developing initiatives to foster new ones. Working with the software and curatorial ...",
     "date": "2023-03-20T13:26:04-04:00",
-    "slug": "191-reactome-is-hiring",
+    "slug": "blogpost-18",
     "tags": [
       "about",
-      "news",
-      "191-reactome-is-hiring"
+      "news"
     ]
   },
   {
     "title": "Reactome named as a Global Core Biodata Resource",
-    "excerpt": "\n##  Reactome named as a Global Core Biodata Resource \n\nOn December 15, the Global Biodata Coalition ([](<https://globalbiodata.org/>)<https://globalbiodata.org/>) of research funders recognized the Reactome Knowledgebase ([www.reactome.org](<http://www.reactome.org/>)) as one of just 37 resources worldwide whose long-term funding and sustainability are critical to life science and biomedical research. See the ...",
+    "excerpt": "\n##  [ Reactome named as a Global Core Biodata Resource ](</about/news/187-reactome-named-as-a-global-core-biodata-resource>)\n\nOn December 15, the Global Biodata Coalition ([](<https://globalbiodata.org/>)<https://globalbiodata.org/>) of research funders recognized the Reactome Knowledgebase ([www.reactome.org](<http://www.reactome.org/>)) as one of just 37 resources worldwide whose long-term funding and sustainability are critical to life science and biomedical ...",
     "date": "2022-12-21T13:16:35-05:00",
-    "slug": "187-reactome-named-as-a-global-core-biodata-resource",
+    "slug": "blogpost-19",
     "tags": [
       "about",
-      "news",
-      "187-reactome-named-as-a-global-core-biodata-resource"
+      "news"
+    ]
+  },
+  {
+    "title": "Version 83 Released",
+    "excerpt": "\n##  [ Version 83 Released ](</about/news/184-version-83-released>)\n\n[Cytokine Signaling in Immune System](</PathwayBrowser/#/R-HSA-1280215&PATH=R-HSA-168256>)\n\n![R HSA 1280215](/uploads/about/news/R-HSA-1280215.png)\n\nNew and Updated Topics and Pathways. In V83, Topics with new or revised pathways include Developmental Biology ([Formation of axial mesoderm](</PathwayBrowser/#/R-HSA-9796292>), [Formation of lateral plate mesoderm](</PathwayBrowser/#/R-HSA-9758920>), [Formation of paraxial mesoderm](</PathwayBrowser/#/R-HSA-9793380>)), Immune ...",
+    "date": "2022-11-30T11:53:24-05:00",
+    "slug": "blogpost-20",
+    "tags": [
+      "about",
+      "news"
     ]
   },
   {
     "title": "Reactome Research Spotlight",
-    "excerpt": "\n##  Reactome Research Spotlight \n\nIntroducing the Reactome Research Spotlight!\n\nIn October 2022, Reactome introduced a new feature, the Reactome Research Spotlight. This monthly feature will highlight a recent standout publication that makes use of Reactome data or analysis tools in its research.\n\nIn our first spotlight, we feature the paper ...",
+    "excerpt": "\n##  [ Reactome Research Spotlight ](</about/news/183-reactome-research-spotlight>)\n\nIntroducing the Reactome Research Spotlight!\n\nIn October 2022, Reactome introduced a new feature, the Reactome Research Spotlight. This monthly feature will highlight a recent standout publication that makes use of Reactome data or analysis tools in its research.\n\nIn our first spotlight, we ...",
     "date": "2022-11-10T12:22:32-05:00",
-    "slug": "183-reactome-research-spotlight",
+    "slug": "blogpost-21",
     "tags": [
       "about",
-      "news",
-      "183-reactome-research-spotlight"
+      "news"
     ]
   },
   {
     "title": "Collaboration with PharmGKB",
-    "excerpt": "\n##  Collaboration with PharmGKB \n\n![Drug ADME](/uploads/about/news/Drug_ADME.png)\n\nReactome is pleased to announce a partnership with PharmGKB to curate pharmacokinetic / Drug ADME (absorption distribution metabolism excretion) pathways. Sharing knowledge and distributing curation effort will increase the efficiency and consistency with which both resources are able to integrate pathway data. The cross-references ...",
+    "excerpt": "\n##  [ Collaboration with PharmGKB ](</about/news/179-collaboration-with-pharmgkb>)\n\n![Drug ADME](/uploads/about/news/Drug_ADME.png)\n\nReactome is pleased to announce a partnership with PharmGKB to curate pharmacokinetic / Drug ADME (absorption distribution metabolism excretion) pathways. Sharing knowledge and distributing curation effort will increase the efficiency and consistency with which both resources are able to integrate pathway ...",
     "date": "2022-09-28T11:02:07-04:00",
-    "slug": "179-collaboration-with-pharmgkb",
+    "slug": "blogpost-22",
     "tags": [
       "about",
-      "news",
-      "179-collaboration-with-pharmgkb"
+      "news"
     ]
   },
   {
     "title": "Version 82 Released",
-    "excerpt": "\n##  Version 82 Released \n\n[SARS-CoV-2 Infection](</PathwayBrowser/#9694516>)\n\n![SARS COV 2 Infection](/uploads/about/news/SARS-COV-2_Infection.png)\n\n**New and Updated Topics and Pathways.** In V82, Topics with new or revised pathways include Developmental Biology ([Epithelial-Mesenchymal Transition during gastrulation](<https://reactome.org/PathwayBrowser/#9758919>) and [Germ layer formation at gastrulation](<https://reactome.org/PathwayBrowser/#9754189>)), Disease-SARS-CoV-1 Infection ([SARS-CoV-1-host interactions](<https://reactome.org/PathwayBrowser/#9692914>)), Disease-SARS-CoV-2 Infection ([Induction of Cell-Cell ...</https></https></https>",
+    "excerpt": "\n##  [ Version 82 Released ](</about/news/176-version-82-released>)\n\n[SARS-CoV-2 Infection](</PathwayBrowser/#9694516>)\n\n![SARS COV 2 Infection](/uploads/about/news/SARS-COV-2_Infection.png)\n\n**New and Updated Topics and Pathways.** In V82, Topics with new or revised pathways include Developmental Biology ([Epithelial-Mesenchymal Transition during gastrulation](<https://reactome.org/PathwayBrowser/#9758919>) and [Germ layer formation at gastrulation](<https://reactome.org/PathwayBrowser/#9754189>)), Disease-SARS-CoV-1 Infection ([SARS-CoV-1-host interactions](<https://reactome.org/PathwayBrowser/#9692914>)), Disease-SARS-CoV-2 Infection ...</https></https></https>",
     "date": "2022-09-15T14:28:48-04:00",
-    "slug": "176-version-82-released",
+    "slug": "blogpost-23",
     "tags": [
       "about",
-      "news",
-      "176-version-82-released"
+      "news"
     ]
   },
   {
     "title": "New Paper pulished in Database (Oxford)",
-    "excerpt": "\n##  New Paper pulished in Database (Oxford) \n\n![baac009f1](/uploads/about/news/baac009f1.jpeg)\n\nA new research article entitled “[Evaluating the predictive accuracy of curated biological pathways in a public knowledgebase](<https://doi.org/10.1093/database/baac009>)” has been published in the [Database (Oxford)](<https://academic.oup.com/database>) journal. The paper describes the utility of Reactome pathways for predicting functional consequences of genetic perturbations. ...</https></https>",
+    "excerpt": "\n##  [ New Paper pulished in Database (Oxford) ](</about/news/177-new-paper-pulished-in-database-oxford>)\n\n![baac009f1](/uploads/about/news/baac009f1.jpeg)\n\nA new research article entitled “[Evaluating the predictive accuracy of curated biological pathways in a public knowledgebase](<https://doi.org/10.1093/database/baac009>)” has been published in the [Database (Oxford)](<https://academic.oup.com/database>) journal. The paper describes the utility of Reactome pathways for predicting functional consequences ...</https></https>",
     "date": "2022-06-16T13:28:48-04:00",
-    "slug": "177-new-paper-pulished-in-database-oxford",
+    "slug": "blogpost-25",
     "tags": [
       "about",
-      "news",
-      "177-new-paper-pulished-in-database-oxford"
+      "news"
     ]
   },
   {
     "title": "Version 81 Released",
-    "excerpt": "\n##  Version 81 Released \n\n![Gastrulation](/uploads/about/news/Gastrulation.png)\n\n**New and Updated Topics and Pathways.** In V81, Topics with new or revised pathways include Development ([Germ layer formation at gastrulation](</PathwayBrowser/#/R-HSA-9754189>)), Immune system ([TAK1-dependent IKK and NF-kB activation](</PathwayBrowser/#/R-HSA-445989>)), and Signal Transduction ([Transcriptional activity of SMAD2/SMAD3:SMAD4 heterotrimer](</PathwayBrowser/#/R-HSA-2173793&PATH=R-HSA-162582,R-HSA-9006936,R-HSA-170834,R-HSA-2173793>)). The SARS-CoV-2 life cycle has been ...",
+    "excerpt": "\n##  [ Version 81 Released ](</about/news/178-version-81-released>)\n\n![Gastrulation](/uploads/about/news/Gastrulation.png)\n\n**New and Updated Topics and Pathways.** In V81, Topics with new or revised pathways include Development ([Germ layer formation at gastrulation](</PathwayBrowser/#/R-HSA-9754189>)), Immune system ([TAK1-dependent IKK and NF-kB activation](</PathwayBrowser/#/R-HSA-445989>)), and Signal Transduction ([Transcriptional activity of SMAD2/SMAD3:SMAD4 heterotrimer](</PathwayBrowser/#/R-HSA-2173793&PATH=R-HSA-162582,R-HSA-9006936,R-HSA-170834,R-HSA-2173793>)). The SARS-CoV-2 life ...",
     "date": "2022-06-14T13:25:02-04:00",
-    "slug": "178-version-81-released",
+    "slug": "blogpost-24",
     "tags": [
       "about",
-      "news",
-      "178-version-81-released"
+      "news"
     ]
   },
   {
     "title": "Version 80 Released",
-    "excerpt": "\n##  Version 80 Released \n\n![R HSA 3229121](/uploads/about/news/R-HSA-3229121.png)\n\n**New and Updated Topics and Pathways.** In V80, Topics with new or revised pathways include Cellular responses to stimuli ([Cellular response to chemical stress](</PathwayBrowser/#/R-HSA-9711123&PATH=R-HSA-8953897,R-HSA-2262752>), [Cytoprotection by HMOX1](</PathwayBrowser/#/R-HSA-9707564&PATH=R-HSA-8953897,R-HSA-2262752,R-HSA-9711123>), [KEAP1-NFE2L2 pathway](</PathwayBrowser/#/R-HSA-9755511>)), Disease ([Defective HDR through Homologous Recombination (HRR) Due to BRCA2 Loss ...",
+    "excerpt": "\n##  [ Version 80 Released ](</about/news/175-version-80-released>)\n\n![R HSA 3229121](/uploads/about/news/R-HSA-3229121.png)\n\n**New and Updated Topics and Pathways.** In V80, Topics with new or revised pathways include Cellular responses to stimuli ([Cellular response to chemical stress](</PathwayBrowser/#/R-HSA-9711123&PATH=R-HSA-8953897,R-HSA-2262752>), [Cytoprotection by HMOX1](</PathwayBrowser/#/R-HSA-9707564&PATH=R-HSA-8953897,R-HSA-2262752,R-HSA-9711123>), [KEAP1-NFE2L2 pathway](</PathwayBrowser/#/R-HSA-9755511>)), Disease ([Defective HDR through Homologous Recombination (HRR) Due ...",
     "date": "2022-04-05T13:59:24-04:00",
-    "slug": "175-version-80-released",
+    "slug": "blogpost-26",
     "tags": [
       "about",
-      "news",
-      "175-version-80-released"
+      "news"
     ]
   },
   {
     "title": "Version 79 Released",
-    "excerpt": "\n##  Version 79 Released \n\n![V79](/uploads/about/news/V79.png)\n\n**New and Updated Topics and Pathways.** In V79 we have introduced the new topic Drug Absorption, Distribution, Metabolism and Excretion in which we cover both pharmacokinetics and pharmacodynamics of [Aspirin](</PathwayBrowser/#/R-HSA-9749641>), [Azathioprine](</PathwayBrowser/#/R-HSA-9748787>), and [Paracetamol](</PathwayBrowser/#/R-HSA-9753281>). Topics with new or revised pathways in this release ...",
+    "excerpt": "\n##  [ Version 79 Released ](</about/news/174-version-79-released>)\n\n![V79](/uploads/about/news/V79.png)\n\n**New and Updated Topics and Pathways.** In V79 we have introduced the new topic Drug Absorption, Distribution, Metabolism and Excretion in which we cover both pharmacokinetics and pharmacodynamics of [Aspirin](</PathwayBrowser/#/R-HSA-9749641>), [Azathioprine](</PathwayBrowser/#/R-HSA-9748787>), and [Paracetamol](</PathwayBrowser/#/R-HSA-9753281>). Topics with new or revised pathways ...",
     "date": "2021-12-13T01:01:33-05:00",
-    "slug": "174-version-79-released",
+    "slug": "blogpost-27",
     "tags": [
       "about",
-      "news",
-      "174-version-79-released"
+      "news"
     ]
   },
   {
     "title": "We want to hear your Success Story!",
-    "excerpt": "\n##  We want to hear your Success Story! \n\n![SSotM Transp BG](/uploads/about/news/SSotM_Transp_BG.png)Our user community is built on success stories! There are thousands of you around the world and many of you have created amazing experiments, tools and resources using Reactome. We're always looking for ways to share interesting discoveries made with ...",
+    "excerpt": "\n##  [ We want to hear your Success Story! ](</about/news/172-we-want-to-hear-your-success-story>)\n\n![SSotM Transp BG](/uploads/about/news/SSotM_Transp_BG.png)Our user community is built on success stories! There are thousands of you around the world and many of you have created amazing experiments, tools and resources using Reactome. We're always looking for ways to share interesting ...",
     "date": "2021-11-01T13:25:15-04:00",
-    "slug": "172-we-want-to-hear-your-success-story",
+    "slug": "blogpost-28",
     "tags": [
       "about",
-      "news",
-      "172-we-want-to-hear-your-success-story"
+      "news"
     ]
   },
   {
     "title": "Version 78 Released",
-    "excerpt": "\n##  Version 78 Released \n\n![notch1 cancer](/uploads/about/news/notch1_cancer.png)\n\n**New and Updated Topics and Pathways.** Topics with new or revised pathways in V78 include Disease ([Defective HDR through homologous recombination (HRR) due to BRCA1 loss of function](</PathwayBrowser/#/R-HSA-9701192>) and [Defective HDR through homologous recombination (HRR) due to PALB2 loss of function](</PathwayBrowser/#/R-HSA-9701193>)), DNA ...",
+    "excerpt": "\n##  [ Version 78 Released ](</about/news/169-version-78-released>)\n\n![notch1 cancer](/uploads/about/news/notch1_cancer.png)\n\n**New and Updated Topics and Pathways.** Topics with new or revised pathways in V78 include Disease ([Defective HDR through homologous recombination (HRR) due to BRCA1 loss of function](</PathwayBrowser/#/R-HSA-9701192>) and [Defective HDR through homologous recombination (HRR) due to PALB2 loss of ...",
     "date": "2021-10-10T23:10:15-04:00",
-    "slug": "169-version-78-released",
+    "slug": "blogpost-29",
     "tags": [
       "about",
-      "news",
-      "169-version-78-released"
+      "news"
     ]
   },
   {
     "title": "Reactome Multi-Omics Pathway Analysis webinar reaches record attendance",
-    "excerpt": "\n##  Reactome Multi-Omics Pathway Analysis webinar reaches record attendance \n\n![Reactome GSA](/uploads/about/news/Reactome_GSA.png)On June 2, 2021, Dr. Johannes Griss presented \"[A guide to multiomics pathway analysis](<https://www.ebi.ac.uk/training/events/guide-multi-omics-pathway-analysis/>)\" to a record audience of 572 participants as part of the [EMBL-EBI webinar series](<https://www.ebi.ac.uk/training/on-demand?facets=type:Recorded%20webinar>). The [seminar recording](<https://embl-ebi.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=34b9ac41-e7c6-46d5-986c-ad3b00c902d6>) and [training materials](<https://drive.google.com/file/d/1DjH91Zv_1GyiAMd5Xq3zlnqeKacaK_UX/view>), which are ...</https></https></https>",
+    "excerpt": "\n##  [ Reactome Multi-Omics Pathway Analysis webinar reaches record attendance ](</about/news/167-reactome-multi-omics-pathway-analysis-webinar-reaches-record-attendance>)\n\n![Reactome GSA](/uploads/about/news/Reactome_GSA.png)On June 2, 2021, Dr. Johannes Griss presented \"[A guide to multiomics pathway analysis](<https://www.ebi.ac.uk/training/events/guide-multi-omics-pathway-analysis/>)\" to a record audience of 572 participants as part of the [EMBL-EBI webinar series](<https://www.ebi.ac.uk/training/on-demand?facets=type:Recorded%20webinar>). The [seminar recording](<https://embl-ebi.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=34b9ac41-e7c6-46d5-986c-ad3b00c902d6>) and [training materials](<https://drive.google.com/file/d/1DjH91Zv_1GyiAMd5Xq3zlnqeKacaK_UX/view>...</https></https></https>",
     "date": "2021-06-21T12:32:18-04:00",
-    "slug": "167-reactome-multi-omics-pathway-analysis-webinar-reaches-record-attendance",
+    "slug": "blogpost-30",
     "tags": [
       "about",
-      "news",
-      "167-reactome-multi-omics-pathway-analysis-webinar-reaches-record-attendance"
+      "news"
     ]
   },
   {
     "title": "Version 77 Released",
-    "excerpt": "\n##  Version 77 Released \n\n![cellular stress 72](/uploads/about/news/cellular_stress_72.jpeg)\n\n**New and Updated Topics and Pathways.** Topics with new or revised pathways in V77 include Disease ([Defective HDR through Homologous Recombination (HRR) Due to PALB2 Loss of Function](</PathwayBrowser/#/R-HSA-9701193>), [Defective pyroptosis](</PathwayBrowser/#/9710421>), [Loss of Function of TP53 in Cancer](</PathwayBrowser/#/R-HSA-9723907>), [Maturation of nucleoprotein](</PathwayBrowser/#/R-HSA-9694631>...",
+    "excerpt": "\n##  [ Version 77 Released ](</about/news/166-version-77-released>)\n\n![cellular stress 72](/uploads/about/news/cellular_stress_72.jpeg)\n\n**New and Updated Topics and Pathways.** Topics with new or revised pathways in V77 include Disease ([Defective HDR through Homologous Recombination (HRR) Due to PALB2 Loss of Function](</PathwayBrowser/#/R-HSA-9701193>), [Defective pyroptosis](</PathwayBrowser/#/9710421>), [Loss of Function of TP53 in Cancer](</PathwayBrowser/#/R-HSA-9723907>), ...",
     "date": "2021-06-09T15:53:12-04:00",
-    "slug": "166-version-77-released",
+    "slug": "blogpost-31",
     "tags": [
       "about",
-      "news",
-      "166-version-77-released"
+      "news"
     ]
   },
   {
     "title": "The Reactome IDG Portal is released",
-    "excerpt": "\n##  The Reactome IDG Portal is released \n\n![IDG Reactome](/uploads/about/news/IDG_Reactome.jpeg)\n\nAs part of the [Cutting Edge Informatics Tools (CEIT)](<https://druggablegenome.net/CEIT_OHSU>) for the [Illuminating the Druggable (IDG)](<https://druggablegenome.net/index>) Program, the Reactome group has built a new tool, the [Reactome IDG Portal](<https://idg.reactome.org/>), that utilizes the [Reactome knowledgebase](</>) to systematically illuminate interactions ...</https></https>",
+    "excerpt": "\n##  [ The Reactome IDG Portal is released ](</about/news/165-the-reactome-idg-portal-is-released>)\n\n![IDG Reactome](/uploads/about/news/IDG_Reactome.jpeg)\n\nAs part of the [Cutting Edge Informatics Tools (CEIT)](<https://druggablegenome.net/CEIT_OHSU>) for the [Illuminating the Druggable (IDG)](<https://druggablegenome.net/index>) Program, the Reactome group has built a new tool, the [Reactome IDG Portal](<https://idg.reactome.org/>), that utilizes the [Reactome knowledgebase](</>) to ...</https></https>",
     "date": "2021-06-07T13:47:37-04:00",
-    "slug": "165-the-reactome-idg-portal-is-released",
+    "slug": "blogpost-32",
     "tags": [
       "about",
-      "news",
-      "165-the-reactome-idg-portal-is-released"
+      "news"
     ]
   },
   {
     "title": "Version 76 Released",
-    "excerpt": "\n##  Version 76 Released \n\n![Sensory processing of sound](/uploads/about/news/Sensory_processing_of_sound.png)\n\nNe**w and Updated Topics and Pathways.** Topics with new or revised pathways in V76 include Cellular responses to external stimuli ([Cytoprotection by HMOX1](</PathwayBrowser/#/R-HSA-9707564>) and [Heme signaling](</PathwayBrowser/#/R-HSA-9707616>)), Disease ([Defective pyroptosis](</PathwayBrowser/#/R-HSA-9710421>)), Gene Expression ([tRNA-derived small RNA (tsRNA) biogenesis](</PathwayBrowser/#/R-HSA-9708296>)), Immune system ...",
+    "excerpt": "\n##  [ Version 76 Released ](</about/news/164-version-76-released>)\n\n![Sensory processing of sound](/uploads/about/news/Sensory_processing_of_sound.png)\n\nNe**w and Updated Topics and Pathways.** Topics with new or revised pathways in V76 include Cellular responses to external stimuli ([Cytoprotection by HMOX1](</PathwayBrowser/#/R-HSA-9707564>) and [Heme signaling](</PathwayBrowser/#/R-HSA-9707616>)), Disease ([Defective pyroptosis](</PathwayBrowser/#/R-HSA-9710421>)), Gene Expression ([tRNA-derived small RNA (tsRNA) biogenesis](</PathwayBrowser/#/R-HSA-9708296>...",
     "date": "2021-03-21T23:18:41-04:00",
-    "slug": "164-version-76-released",
+    "slug": "blogpost-33",
     "tags": [
       "about",
-      "news",
-      "164-version-76-released"
+      "news"
     ]
   },
   {
     "title": "Version 75 Released",
-    "excerpt": "\n##  Version 75 Released \n\n![FLT3 Signaling](/uploads/about/news/FLT3_Signaling.png)\n\n**New and Updated Pathways**. Topics with new or revised pathways in release 75 include Developmental biology ([Transcriptional regulation of testis differentiation](</PathwayBrowser/#/R-HSA-9690406>)), Disease ([Alternative lengthening of telomeres](</PathwayBrowser/#/R-HSA-9006821>), [Defective DNA double strand break response due to BARD1 loss of function](</PathwayBrowser/#/R-HSA-9699150>), [Defective DNA double ...",
+    "excerpt": "\n##  [ Version 75 Released ](</about/news/163-version-75-released>)\n\n![FLT3 Signaling](/uploads/about/news/FLT3_Signaling.png)\n\n**New and Updated Pathways**. Topics with new or revised pathways in release 75 include Developmental biology ([Transcriptional regulation of testis differentiation](</PathwayBrowser/#/R-HSA-9690406>)), Disease ([Alternative lengthening of telomeres](</PathwayBrowser/#/R-HSA-9006821>), [Defective DNA double strand break response due to BARD1 loss of function](</PathwayBrowser/#/R-HSA-9699150>), ...",
     "date": "2020-12-02T13:58:30-05:00",
-    "slug": "163-version-75-released",
+    "slug": "blogpost-34",
     "tags": [
       "about",
-      "news",
-      "163-version-75-released"
+      "news"
     ]
   },
   {
     "title": "New Paper published in Molecular & Cellular Proteomics",
-    "excerpt": "\n##  New Paper published in Molecular & Cellular Proteomics \n\n![ReactomeGSA](/uploads/about/news/ReactomeGSA.png)\n\nA new research article entitled “[ReactomeGSA - Efficient Multi-Omics Comparative Pathway Analysis](<https://doi.org/10.1074/mcp.TIR120.002155>)” has been published in the [Molecular & Cellular Proteomics](<https://www.mcponline.org/>) journal. The paper discusses the novel ReactomeGSA resource for comparative pathway analyses of multi-omics datasets using our ...</https>",
+    "excerpt": "\n##  [ New Paper published in Molecular & Cellular Proteomics ](</about/news/162-new-paper-published-in-molecular-cellular-proteomics>)\n\n![ReactomeGSA](/uploads/about/news/ReactomeGSA.png)\n\nA new research article entitled “[ReactomeGSA - Efficient Multi-Omics Comparative Pathway Analysis](<https://doi.org/10.1074/mcp.TIR120.002155>)” has been published in the [Molecular & Cellular Proteomics](<https://www.mcponline.org/>) journal. The paper discusses the novel ReactomeGSA resource for comparative pathway analyses of multi-omics ...</https>",
     "date": "2020-10-20T11:16:35-04:00",
-    "slug": "162-new-paper-published-in-molecular-cellular-proteomics",
+    "slug": "blogpost-35",
     "tags": [
       "about",
-      "news",
-      "162-new-paper-published-in-molecular-cellular-proteomics"
+      "news"
     ]
   },
   {
     "title": "COVID-19: SARS-CoV-2 infection pathway Released",
-    "excerpt": "\n##  COVID-19: SARS-CoV-2 infection pathway Released \n\n![SARS-CoV-2](/uploads/about/news/sars-cov-2-pwy-72.png)\n\n**New Feature. In response to the COVID-19 pandemic, Reactome is fast-tracking the annotation of Human Coronavirus infection pathways in collaboration with the COVID-19 Disease Map group.** Reactome release 74 features the [SARS-CoV-2 (COVID-19) infection pathway](</PathwayBrowser/#/R-HSA-9694516&PATH=R-HSA-1643685,R-HSA-5663205,R-HSA-9679506>). To generate this pathway, we started with ...",
+    "excerpt": "\n##  [ COVID-19: SARS-CoV-2 infection pathway Released ](</about/news/161-version-74-released>)\n\n![SARS-CoV-2](/uploads/about/news/sars-cov-2-pwy-72.png)\n\n**New Feature. In response to the COVID-19 pandemic, Reactome is fast-tracking the annotation of Human Coronavirus infection pathways in collaboration with the COVID-19 Disease Map group.** Reactome release 74 features the [SARS-CoV-2 (COVID-19) infection pathway](</PathwayBrowser/#/R-HSA-9694516&PATH=R-HSA-1643685,R-HSA-5663205,R-HSA-9679506>). To generate this pathway, ...",
     "date": "2020-09-21T16:18:18-04:00",
-    "slug": "161-version-74-released",
+    "slug": "blogpost-36",
     "tags": [
       "about",
-      "news",
-      "161-version-74-released"
+      "news"
     ]
   },
   {
     "title": "Version 73 Released",
-    "excerpt": "\n##  Version 73 Released \n\n![SARS-CoV-1](/uploads/about/news/SARS-CoV-1.png)\n\n**New Feature.** In response to the COVID-19 pandemic, Reactome is fast-tracking the annotation of Human Coronavirus infection pathways in collaboration with the [COVID-19 Disease Map](<https://covid.pages.uni.lu/>) group. V73 includes descriptions of the [SARS-CoV-1 Infection pathway](</PathwayBrowser/#/R-HSA-9678108.1>) as well as [Potential therapeutics for SARS](</PathwayBrowser/#/R-HSA-9679191.1>). In ...",
+    "excerpt": "\n##  [ Version 73 Released ](</about/news/155-version-73-released>)\n\n![SARS-CoV-1](/uploads/about/news/SARS-CoV-1.png)\n\n**New Feature.** In response to the COVID-19 pandemic, Reactome is fast-tracking the annotation of Human Coronavirus infection pathways in collaboration with the [COVID-19 Disease Map](<https://covid.pages.uni.lu/>) group. V73 includes descriptions of the [SARS-CoV-1 Infection pathway](</PathwayBrowser/#/R-HSA-9678108.1>) as well as [Potential therapeutics for ...",
     "date": "2020-06-11T16:56:40-04:00",
-    "slug": "155-version-73-released",
+    "slug": "blogpost-37",
     "tags": [
       "about",
-      "news",
-      "155-version-73-released"
+      "news"
     ]
   },
   {
     "title": "New Paper published in Autophagy",
-    "excerpt": "\n##  New Paper published in Autophagy \n\n![Autophagy](/uploads/about/news/Autophagy.png)A new research article entitled “[Using Reactome to build an autophagy mechanism knowledgebase](<https://doi.org/10.1080/15548627.2020.1761659>)” has been published in the [Autophagy](<https://www.tandfonline.com/toc/kaup20/current>) journal. The paper discusses the curation and annotation of the molecular mechanisms of autophagy. The autophagy pathway can be viewed [here](</PathwayBrowser/#/R-HSA-9612973>). More ...</https></https>",
+    "excerpt": "\n##  [ New Paper published in Autophagy ](</about/news/154-new-paper-published-in-autophagy>)\n\n![Autophagy](/uploads/about/news/Autophagy.png)A new research article entitled “[Using Reactome to build an autophagy mechanism knowledgebase](<https://doi.org/10.1080/15548627.2020.1761659>)” has been published in the [Autophagy](<https://www.tandfonline.com/toc/kaup20/current>) journal. The paper discusses the curation and annotation of the molecular mechanisms of autophagy. The autophagy pathway can be viewed ...</https></https>",
     "date": "2020-06-11T15:40:50-04:00",
-    "slug": "154-new-paper-published-in-autophagy",
+    "slug": "blogpost-38",
     "tags": [
       "about",
-      "news",
-      "154-new-paper-published-in-autophagy"
+      "news"
     ]
   },
   {
     "title": "New reactome2py package links our web services and data with python.",
-    "excerpt": "\n##  New reactome2py package links our web services and data with python. \n\n![reactome2py package](/uploads/about/news/reactome2py_package.jpeg)\n\nData science represents a new and evolving way of doing scientific research with critical elements including reproducibility, open access to data, methods and source code, and highly reusable and modular services on the web.\n\nGiven the ...",
+    "excerpt": "\n##  [ New reactome2py package links our web services and data with python. ](</about/news/151-new-package-facilitates-communication-between-reactome-services-and-data-with-python>)\n\n![reactome2py package](/uploads/about/news/reactome2py_package.jpeg)\n\nData science represents a new and evolving way of doing scientific research with critical elements including reproducibility, open access to data, methods and source code, and highly reusable and modular services on the ...",
     "date": "2020-04-06T13:59:35-04:00",
-    "slug": "151-new-package-facilitates-communication-between-reactome-services-and-data-with-python",
+    "slug": "blogpost-39",
     "tags": [
       "about",
-      "news",
-      "151-new-package-facilitates-communication-between-reactome-services-and-data-with-python"
+      "news"
     ]
   },
   {
     "title": "New Paper published in eLife",
-    "excerpt": "\n##  New Paper published in eLife \n\n![wikidata reactome](/uploads/about/news/wikidata_reactome.jpg)\n\nA new research article entitled “[Science Forum: Wikidata as a knowledge graph for the life sciences](<https://elifesciences.org/articles/52614>)” has been published in the [eLife](<https://elifesciences.org/>) journal. The paper describes the use of Wikidata as a platform for the integration of biological knowledge. Over ...</https>",
+    "excerpt": "\n##  [ New Paper published in eLife ](</about/news/150-new-paper-published-in-elife>)\n\n![wikidata reactome](/uploads/about/news/wikidata_reactome.jpg)\n\nA new research article entitled “[Science Forum: Wikidata as a knowledge graph for the life sciences](<https://elifesciences.org/articles/52614>)” has been published in the [eLife](<https://elifesciences.org/>) journal. The paper describes the use of Wikidata as a platform for the integration of ...</https>",
     "date": "2020-04-06T12:48:52-04:00",
-    "slug": "150-new-paper-published-in-elife",
+    "slug": "blogpost-40",
     "tags": [
       "about",
-      "news",
-      "150-new-paper-published-in-elife"
+      "news"
     ]
   },
   {
     "title": "Version 72 Released",
-    "excerpt": "\n##  Version 72 Released \n\n![infectious events](/uploads/about/news/infectious_events.png)\n\n**New and Updated Pathways.** In version 72, topics with new or revised pathways include Autophagy ([Pexophagy](</PathwayBrowser/#/R-HSA-9664873>)), Cell Cycle ([Nuclear Envelope Reassembly](</PathwayBrowser/#/R-HSA-2555396&SEL=R-HSA-2995410&PATH=R-HSA-1640170,R-HSA-69278,R-HSA-68886>)), Developmental Biology ([EGR2- and SOX10-mediated initiation of Schwann cell myelination](</PathwayBrowser/#/R-HSA-9619665>)), Disease ([Signaling by ERBB2 in Cancer](</PathwayBrowser/#/R-HSA-1227990>), [Signaling by ERBB2 ...",
+    "excerpt": "\n##  [ Version 72 Released ](</about/news/147-version-72-released>)\n\n![infectious events](/uploads/about/news/infectious_events.png)\n\n**New and Updated Pathways.** In version 72, topics with new or revised pathways include Autophagy ([Pexophagy](</PathwayBrowser/#/R-HSA-9664873>)), Cell Cycle ([Nuclear Envelope Reassembly](</PathwayBrowser/#/R-HSA-2555396&SEL=R-HSA-2995410&PATH=R-HSA-1640170,R-HSA-69278,R-HSA-68886>)), Developmental Biology ([EGR2- and SOX10-mediated initiation of Schwann cell myelination](</PathwayBrowser/#/R-HSA-9619665>)), Disease ([Signaling by ERBB2 in Cancer](</PathwayBrowser/#/R-HSA-1227990>), ...",
     "date": "2020-03-12T21:38:36-04:00",
-    "slug": "147-version-72-released",
+    "slug": "blogpost-41",
     "tags": [
       "about",
-      "news",
-      "147-version-72-released"
+      "news"
     ]
   },
   {
     "title": "New Paper published in Database (Oxford)",
-    "excerpt": "\n##  New Paper published in Database (Oxford) \n\n![Reactome ORCID](/uploads/about/news/Reactome-ORCID.png)\n\nA new Perspective/Opinion article titled “[Reactome and ORCID-fine-grained credit attribution for community curation](<https://doi.org/10.1093/database/baz123>)” has been published in the Database (Oxford) journal. The paper describes how we are using ORCID identifiers to provide clear credit attribution for authors, curators and reviewers ...</https>",
+    "excerpt": "\n##  [ New Paper published in Database (Oxford) ](</about/news/146-new-paper-published-in-database-oxford>)\n\n![Reactome ORCID](/uploads/about/news/Reactome-ORCID.png)\n\nA new Perspective/Opinion article titled “[Reactome and ORCID-fine-grained credit attribution for community curation](<https://doi.org/10.1093/database/baz123>)” has been published in the Database (Oxford) journal. The paper describes how we are using ORCID identifiers to provide clear credit attribution for authors, ...</https>",
     "date": "2019-12-18T23:36:50-05:00",
-    "slug": "146-new-paper-published-in-database-oxford",
+    "slug": "blogpost-42",
     "tags": [
       "about",
-      "news",
-      "146-new-paper-published-in-database-oxford"
+      "news"
     ]
   },
   {
     "title": "Version 71 Released",
-    "excerpt": "\n##  Version 71 Released \n\n**![FA Metabolism](/uploads/about/news/FA_Metabolism.png)**\n\n**New and Updated Pathways.** In version 71, Topics with new or revised pathways include Autophagy ([Aggrephagy](</PathwayBrowser/#/R-HSA-9646399>)), Cell Cycle ([EML4 and NUDC in mitotic spindle formation](</PathwayBrowser/#/R-HSA-9648025>)), Cellular responses to external stimuli ([EIK2AK4 (GCN2) modifies gene expression in response to amino acid deficiency](</PathwayBrowser/#/R-HSA-9633012>) ...",
+    "excerpt": "\n##  [ Version 71 Released ](</about/news/145-version-71-releases>)\n\n**![FA Metabolism](/uploads/about/news/FA_Metabolism.png)**\n\n**New and Updated Pathways.** In version 71, Topics with new or revised pathways include Autophagy ([Aggrephagy](</PathwayBrowser/#/R-HSA-9646399>)), Cell Cycle ([EML4 and NUDC in mitotic spindle formation](</PathwayBrowser/#/R-HSA-9648025>)), Cellular responses to external stimuli ([EIK2AK4 (GCN2) modifies gene expression in response to amino ...",
     "date": "2019-12-02T00:43:55-05:00",
-    "slug": "145-version-71-releases",
+    "slug": "blogpost-43",
     "tags": [
       "about",
-      "news",
-      "145-version-71-releases"
+      "news"
     ]
   },
   {
     "title": "New Reactome Publication published in 2020 NAR Database Issue",
-    "excerpt": "\n##  New Reactome Publication published in 2020 NAR Database Issue \n\n![reactome nar 2020](/uploads/about/news/reactome_nar_2020.jpeg)\n\nA new research article titled “[The reactome pathway knowledgebase](<https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkz1031/5613674>)” has been published in the forthcoming 2020 NAR Database Issue. The paper describes annotating the molecular mechanisms of drug action, facilitating community involvement in annotation, and improvements ...</https>",
+    "excerpt": "\n##  [ New Reactome Publication published in 2020 NAR Database Issue ](</about/news/144-new-reactome-publication-published-in-2020-nar-database-issue>)\n\n![reactome nar 2020](/uploads/about/news/reactome_nar_2020.jpeg)\n\nA new research article titled “[The reactome pathway knowledgebase](<https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkz1031/5613674>)” has been published in the forthcoming 2020 NAR Database Issue. The paper describes annotating the molecular mechanisms of drug action, facilitating community involvement in ...</https>",
     "date": "2019-12-02T00:38:57-05:00",
-    "slug": "144-new-reactome-publication-published-in-2020-nar-database-issue",
+    "slug": "blogpost-44",
     "tags": [
       "about",
-      "news",
-      "144-new-reactome-publication-published-in-2020-nar-database-issue"
+      "news"
     ]
   },
   {
     "title": "Version 70 Released",
-    "excerpt": "\n##  Version 70 Released \n\n![Innate Immune System](/uploads/about/news/Innate_Immune_System.png)\n\n**New and Updated Pathways.** In version 70, topics with new or revised pathways include Cellular response to stress ([Amino acids regulate mTORC1](</PathwayBrowser/#/R-HSA-9639288>)), Disease ([Evasion of oncogene induced senescence due to p16-INK4A defects](</PathwayBrowser/#/R-HSA-9630750>), [Evasion of oxidative stress induced senescence due to p16-INK4A ...",
+    "excerpt": "\n##  [ Version 70 Released ](</about/news/142-version-70-released>)\n\n![Innate Immune System](/uploads/about/news/Innate_Immune_System.png)\n\n**New and Updated Pathways.** In version 70, topics with new or revised pathways include Cellular response to stress ([Amino acids regulate mTORC1](</PathwayBrowser/#/R-HSA-9639288>)), Disease ([Evasion of oncogene induced senescence due to p16-INK4A defects](</PathwayBrowser/#/R-HSA-9630750>), [Evasion of oxidative stress induced senescence ...",
     "date": "2019-08-30T12:30:07-04:00",
-    "slug": "142-version-70-released",
+    "slug": "blogpost-45",
     "tags": [
       "about",
-      "news",
-      "142-version-70-released"
+      "news"
     ]
   },
   {
     "title": "ReacFoam: Genome-wide pathway overview based on Voronoi tessellation",
-    "excerpt": "\n##  ReacFoam: Genome-wide pathway overview based on Voronoi tessellation \n\n[![](/uploads/about/news/141-reacfoam-genome-wide-pathway-overview-based-on-voronoi-tessellation/voroni.png)](<https://reactome.org/reacfoam/?species=48887&color=COPPER%20PLUS&analysis=MjAxOTA5MjMxMDAwNDBfNTczMQ==&resource=TOTAL>)\n\nAs part of our continuous effort to provide visually attractive and more user-friendly access to our biological pathways, we are pleased to announce our new high level pathways overview visualisation based on Voronoi tessellation.\n\nFollowing any [pathway analysis](<https://reactome.org/PathwayBrowser/#TOOL=AT>), ...</https></https>",
+    "excerpt": "\n##  [ ReacFoam: Genome-wide pathway overview based on Voronoi tessellation ](</about/news/141-reacfoam-genome-wide-pathway-overview-based-on-voronoi-tessellation>)\n\n[![](/uploads/about/news/voroni.png)](<https://reactome.org/reacfoam/?species=48887&color=COPPER%20PLUS&analysis=MjAxOTA5MjMxMDAwNDBfNTczMQ==&resource=TOTAL>)\n\nAs part of our continuous effort to provide visually attractive and more user-friendly access to our biological pathways, we are pleased to announce our new high level pathways overview visualisation based on Voronoi tessellation.\n\nFollowing any ...</https>",
     "date": "2019-07-02T07:38:13-04:00",
-    "slug": "141-reacfoam-genome-wide-pathway-overview-based-on-voronoi-tessellation",
+    "slug": "blogpost-46",
     "tags": [
       "about",
-      "news",
-      "141-reacfoam-genome-wide-pathway-overview-based-on-voronoi-tessellation"
+      "news"
+    ]
+  },
+  {
+    "title": "ORCID: Claim your works",
+    "excerpt": "\n##  [ ORCID: Claim your works ](</about/news/138-orcid-claim-your-works>)\n\n![claim your reactome work into your orcid account image](/uploads/about/news/20190618_ORCID_claim.png)\n\nReactome is a curated database, it critically depends on the expertise of curators and domain experts as volunteer pathway authors and reviewers. Over [700 scientists](</content/query?q=type%3APerson&species=Entries+without+species&types=Person&cluster=true>) have so far contributed to Reactome content. ...",
+    "date": "2019-06-06T10:16:00-04:00",
+    "slug": "blogpost-47",
+    "tags": [
+      "about",
+      "news"
     ]
   },
   {
     "title": "Version 69 Released",
-    "excerpt": "\n##  Version 69 Released \n\n![Autophagy](/uploads/about/news/Autophagy.png)\n\n**New and Updated Pathways.** In version V69, Autophagy, including [Chaperone Mediated Autophagy](</PathwayBrowser/#/R-HSA-9613829>) and [Microautophagy](</PathwayBrowser/#/R-HSA-9615710&PATH=R-HSA-9612973>) is new. Topics with new or revised pathways include Development ([Transcriptional Regulation of Granulopoiesis](</PathwayBrowser/#/R-HSA-9616222>)), Disease ([Evasion of Oncogene Induced Senescence Due to p16-INK4A Defects](</PathwayBrowser/#/R-HSA-9630750&PATH=R-HSA-1643685,R-HSA-9630747>) and [Evasion of ...",
+    "excerpt": "\n##  [ Version 69 Released ](</about/news/137-version-69-released>)\n\n![Autophagy](/uploads/about/news/Autophagy.png)\n\n**New and Updated Pathways.** In version V69, Autophagy, including [Chaperone Mediated Autophagy](</PathwayBrowser/#/R-HSA-9613829>) and [Microautophagy](</PathwayBrowser/#/R-HSA-9615710&PATH=R-HSA-9612973>) is new. Topics with new or revised pathways include Development ([Transcriptional Regulation of Granulopoiesis](</PathwayBrowser/#/R-HSA-9616222>)), Disease ([Evasion of Oncogene Induced Senescence Due to p16-INK4A Defects](</PathwayBrowser/#/R-HSA-9630750&PATH=R-HSA-1643685,R-HSA-9630747>) ...",
     "date": "2019-05-28T13:41:55-04:00",
-    "slug": "137-version-69-released",
+    "slug": "blogpost-49",
     "tags": [
       "about",
-      "news",
-      "137-version-69-released"
+      "news"
     ]
   },
   {
     "title": "Season of Docs",
-    "excerpt": "\n##  Season of Docs \n\n  * ![SeasonofDocs Logo MainGrey 300ppi](/uploads/about/news/SeasonofDocs_Logo_MainGrey_300ppi.png)\n\n**“Fostering open source collaboration with technical writers” – Season of Docs**\n\nEstablished upon the reputation of open source community programs like [Google Summer of Code](<https://summerofcode.withgoogle.com/>) and [Google Code-in](<https://codein.withgoogle.com/archive/>), Google is introducing a new initiative called [Season of Docs](<https://developers.google.com/season-of-docs/>). ...",
+    "excerpt": "\n##  [ Season of Docs ](</about/news/136-season-of-docs>)\n\n  * ![SeasonofDocs Logo MainGrey 300ppi](/uploads/about/news/SeasonofDocs_Logo_MainGrey_300ppi.png)\n\n**“Fostering open source collaboration with technical writers” – Season of Docs**\n\nEstablished upon the reputation of open source community programs like [Google Summer of Code](<https://summerofcode.withgoogle.com/>) and [Google Code-in](<https://codein.withgoogle.com/archive/>), Google is introducing a new initiative called [Season ...",
     "date": "2019-04-22T15:13:04-04:00",
-    "slug": "136-season-of-docs",
+    "slug": "blogpost-50",
     "tags": [
       "about",
-      "news",
-      "136-season-of-docs"
+      "news"
     ]
   },
   {
     "title": "ReactomeFI Network v2018 and FIViz App v2.7.0 Released",
-    "excerpt": "\n##  ReactomeFI Network v2018 and FIViz App v2.7.0 Released \n\n![ReactomeFI 2018](/uploads/about/news/ReactomeFI_2018.png)\n\nThe Reactome project provides a suite of tools for our users to perform pathway- and network-based data analysis via its [web site](</>) and [ReactomeFIViz](<https://apps.cytoscape.org/apps/reactomefiplugin>), the functional interaction (FI) network-based [Cytoscape](<https://cytoscape.org/>) app.\n\nThe Reactome FI network is ...</https>",
+    "excerpt": "\n##  [ ReactomeFI Network v2018 and FIViz App v2.7.0 Released ](</about/news/133-reactomefiviz-app-version-7-2-0-released>)\n\n![ReactomeFI 2018](/uploads/about/news/ReactomeFI_2018.png)\n\nThe Reactome project provides a suite of tools for our users to perform pathway- and network-based data analysis via its [web site](</>) and [ReactomeFIViz](<https://apps.cytoscape.org/apps/reactomefiplugin>), the functional interaction (FI) network-based [Cytoscape](<https://cytoscape.org/>) app.\n\nThe Reactome ...</https>",
     "date": "2019-04-18T00:09:37-04:00",
-    "slug": "133-reactomefiviz-app-version-7-2-0-released",
+    "slug": "blogpost-51",
     "tags": [
       "about",
-      "news",
-      "133-reactomefiviz-app-version-7-2-0-released"
+      "news"
     ]
   },
   {
     "title": "Come to our release 68 webinar to learn more about Reactome",
-    "excerpt": "\n##  Come to our release 68 webinar to learn more about Reactome \n\n![Webinar](/uploads/about/news/Webinar.png)\n\nWe are hosting a webinar aimed at new Reactome users who would like to get an idea of our data and tools and at existing Reactome users who would like to learn about the latest Reactome updates. ...",
+    "excerpt": "\n##  [ Come to our release 68 webinar to learn more about Reactome ](</about/news/127-come-to-our-release-68-webinar-to-learn-more-about-reactome>)\n\n![Webinar](/uploads/about/news/Webinar.png)\n\nWe are hosting a webinar aimed at new Reactome users who would like to get an idea of our data and tools and at existing Reactome users who would like to learn about the ...",
     "date": "2019-03-28T14:08:26-04:00",
-    "slug": "127-come-to-our-release-68-webinar-to-learn-more-about-reactome",
+    "slug": "blogpost-52",
     "tags": [
       "about",
-      "news",
-      "127-come-to-our-release-68-webinar-to-learn-more-about-reactome"
+      "news"
     ]
   },
   {
     "title": "PANTHER resource now used to identify orthologs of curated human proteins",
-    "excerpt": "\n##  PANTHER resource now used to identify orthologs of curated human proteins \n\n![Orthology](/uploads/about/news/Orthology.png)\n\nBiological processes are remarkably well-conserved over large evolutionary distances. At a practical level, this fact enables the extrapolation of mechanistic insights from species to species. The Reactome project aims to annotate the molecular details of a broad ...",
+    "excerpt": "\n##  [ PANTHER resource now used to identify orthologs of curated human proteins ](</about/news/126-panther-resource-now-used-to-identify-orthologs-of-curated-human-proteins>)\n\n![Orthology](/uploads/about/news/Orthology.png)\n\nBiological processes are remarkably well-conserved over large evolutionary distances. At a practical level, this fact enables the extrapolation of mechanistic insights from species to species. The Reactome project aims to annotate the molecular details ...",
     "date": "2019-03-20T13:39:44-04:00",
-    "slug": "126-panther-resource-now-used-to-identify-orthologs-of-curated-human-proteins",
+    "slug": "blogpost-53",
     "tags": [
       "about",
-      "news",
-      "126-panther-resource-now-used-to-identify-orthologs-of-curated-human-proteins"
+      "news"
     ]
   },
   {
     "title": "Version 68 Released",
-    "excerpt": "\n##  Version 68 Released \n\n![Signaling by Nuclear Receptors](/uploads/about/news/Signaling_by_Nuclear_Receptors.png)\n\n**New and Updated Pathways.** In version V68, topics with new or revised pathways include Disease ([Defective Base Excision Repair Associated with NTHL1](</PathwayBrowser/#/R-HSA-9616333>), [Defective Base Excision Repair Associated with NEIL1](</PathwayBrowser/#/R-HSA-9616334>), and [Defective Base Excision Repair Associated with NEIL3](</PathwayBrowser/#/R-HSA-9629232>)), Metabolism ([Blood ...",
+    "excerpt": "\n##  [ Version 68 Released ](</about/news/125-version-68-of-reactome-is-now-online>)\n\n![Signaling by Nuclear Receptors](/uploads/about/news/Signaling_by_Nuclear_Receptors.png)\n\n**New and Updated Pathways.** In version V68, topics with new or revised pathways include Disease ([Defective Base Excision Repair Associated with NTHL1](</PathwayBrowser/#/R-HSA-9616333>), [Defective Base Excision Repair Associated with NEIL1](</PathwayBrowser/#/R-HSA-9616334>), and [Defective Base Excision Repair Associated with NEIL3](</PathwayBrowser/#/R-HSA-9629232>...",
     "date": "2019-03-20T13:31:18-04:00",
-    "slug": "125-version-68-of-reactome-is-now-online",
+    "slug": "blogpost-54",
     "tags": [
       "about",
-      "news",
-      "125-version-68-of-reactome-is-now-online"
+      "news"
     ]
   },
   {
     "title": "Deprecated support for Reactome RESTful API",
-    "excerpt": "\n##  Deprecated support for Reactome RESTful API \n\nAs of Version 68 (March 2019), the RESTful API is deprecated and will be superceded by our ContentService. The ContentService is currently available through our website at <https://reactome.org/ContentService/> and is designed for bioinformaticians, computer scientists, and software developers to access our pathway data. See ...",
+    "excerpt": "\n##  [ Deprecated support for Reactome RESTful API ](</about/news/124-deprecated-support-for-reactome-restful-api>)\n\nAs of Version 68 (March 2019), the RESTful API is deprecated and will be superceded by our ContentService. The ContentService is currently available through our website at <https://reactome.org/ContentService/> and is designed for bioinformaticians, computer scientists, and software developers to access our ...",
     "date": "2019-03-20T13:14:21-04:00",
-    "slug": "124-deprecated-support-for-reactome-restful-api",
+    "slug": "blogpost-55",
     "tags": [
       "about",
-      "news",
-      "124-deprecated-support-for-reactome-restful-api"
+      "news"
     ]
   },
   {
     "title": "Download our biological pathway knowledge in a PDF book",
-    "excerpt": "\n##  Download our biological pathway knowledge in a PDF book \n\n![Reactome book](/uploads/about/news/20190130_Reactome_book.png)\n\nAiming to make our biological pathway knowledge more accessible, we've been offering for years the option to download the complete content of our knowledgebase as a PDF book. Following users feedback and requests, this book has now been ...",
+    "excerpt": "\n##  [ Download our biological pathway knowledge in a PDF book ](</about/news/121-new-pdf-book>)\n\n![Reactome book](/uploads/about/news/20190130_Reactome_book.png)\n\nAiming to make our biological pathway knowledge more accessible, we've been offering for years the option to download the complete content of our knowledgebase as a PDF book. Following users feedback and requests, this book ...",
     "date": "2019-01-30T10:26:26-05:00",
-    "slug": "121-new-pdf-book",
+    "slug": "blogpost-56",
     "tags": [
       "about",
-      "news",
-      "121-new-pdf-book"
+      "news"
     ]
   },
   {
     "title": "New tool to classify pathways into tissue types based on protein expression",
-    "excerpt": "\n##  New tool to classify pathways into tissue types based on protein expression \n\n![Tissue distribution analysis](/uploads/about/news/20190114_Tissue_distribution.png)\n\nPathways in Reactome are curated in a generic cell and are agnostic to tissue types. However, different cell types have different functional requirements and consequently the underlying pathway activities also vary. Studying pathways in ...",
+    "excerpt": "\n##  [ New tool to classify pathways into tissue types based on protein expression ](</about/news/120-classifying-pathways-into-tissue-types-based-on-protein-expression>)\n\n![Tissue distribution analysis](/uploads/about/news/20190114_Tissue_distribution.png)\n\nPathways in Reactome are curated in a generic cell and are agnostic to tissue types. However, different cell types have different functional requirements and consequently the underlying pathway activities also vary. ...",
     "date": "2019-01-15T05:56:23-05:00",
-    "slug": "120-classifying-pathways-into-tissue-types-based-on-protein-expression",
+    "slug": "blogpost-57",
     "tags": [
       "about",
-      "news",
-      "120-classifying-pathways-into-tissue-types-based-on-protein-expression"
+      "news"
     ]
   },
   {
     "title": "New reactions layout with nested compartments",
-    "excerpt": "\n##  New reactions layout with nested compartments \n\n[![Reactions automatic layout with nested compartments](/uploads/about/news/20190109_Reaction_preview.png)](</content/detail/R-HSA-164834>)\n\nUp until now, we have placed existing regular pathway diagrams and [textbook-style illustrations](<https://doi.org/10.1093/bioinformatics/btx441>) in our pathway detailed pages (e.g. [Hemostasis](</content/detail/R-HSA-109582> \"Open \"Hemostasis\"\"), [Platelet Adhesion to exposed collagen](</content/detail/R-HSA-75892> \"Open \"Platelet Adhesion to exposed collagen\"\")), leaving single ...</https>",
+    "excerpt": "\n##  [ New reactions layout with nested compartments ](</about/news/119-new-reactions-layout-with-nested-compartments>)\n\n[![Reactions automatic layout with nested compartments](/uploads/about/news/20190109_Reaction_preview.png)](</content/detail/R-HSA-164834>)\n\nUp until now, we have placed existing regular pathway diagrams and [textbook-style illustrations](<https://doi.org/10.1093/bioinformatics/btx441>) in our pathway detailed pages (e.g. [Hemostasis](</content/detail/R-HSA-109582> \"Open \"Hemostasis\"\"), [Platelet Adhesion to exposed collagen](</content/detail/R-HSA-75892> \"Open \"Platelet Adhesion to exposed ...</https>",
     "date": "2019-01-09T08:52:43-05:00",
-    "slug": "119-new-reactions-layout-with-nested-compartments",
+    "slug": "blogpost-58",
     "tags": [
       "about",
-      "news",
-      "119-new-reactions-layout-with-nested-compartments"
+      "news"
     ]
   },
   {
     "title": "Version 67 Released",
-    "excerpt": "\n##  Version 67 Released \n\n![ER to Golgi](/uploads/about/news/ER_to_Golgi.png)\n\n**New and Updated Pathways.** In version V67, topics with new or revised pathways include Gene Expression ([FOXO-mediated transcription](</PathwayBrowser/#R-HSA-9614085>)), Immune Response ([ROS, RNS production in phagocytes](</PathwayBrowser/#/R-HSA-1222556>)), Neuronal System ([Activation of NMDA receptors and postsynaptic events](</PathwayBrowser/#/R-HSA-442755>)), Programmed Cell Death ([Apoptotic factor-mediated response](</PathwayBrowser/#/R-HSA-111471>...",
+    "excerpt": "\n##  [ Version 67 Released ](</about/news/116-version-67-released>)\n\n![ER to Golgi](/uploads/about/news/ER_to_Golgi.png)\n\n**New and Updated Pathways.** In version V67, topics with new or revised pathways include Gene Expression ([FOXO-mediated transcription](</PathwayBrowser/#R-HSA-9614085>)), Immune Response ([ROS, RNS production in phagocytes](</PathwayBrowser/#/R-HSA-1222556>)), Neuronal System ([Activation of NMDA receptors and postsynaptic events](</PathwayBrowser/#/R-HSA-442755>)), Programmed Cell Death ...",
     "date": "2018-12-10T15:18:07-05:00",
-    "slug": "116-version-67-released",
+    "slug": "blogpost-59",
     "tags": [
       "about",
-      "news",
-      "116-version-67-released"
+      "news"
     ]
   },
   {
     "title": "Performing GSEA analysis with ReactomeFIViz app",
-    "excerpt": "\n##  Performing GSEA analysis with ReactomeFIViz app \n\n![ReactomeFIViz GSEA](/uploads/about/news/ReactomeFIViz_GSEA.png)\n\nReactomeFIViz is a Cytoscape app built upon Reactome pathways to help users perform pathway- and network-based data analysis and visualization. One of the most popular approaches to pathway analysis, which is an alternative to the traditional gene-list based pathway enrichment, is ...",
+    "excerpt": "\n##  [ Performing GSEA analysis with ReactomeFIViz app ](</about/news/115-performing-gsea-analysis-with-reactomefiviz-app>)\n\n![ReactomeFIViz GSEA](/uploads/about/news/ReactomeFIViz_GSEA.png)\n\nReactomeFIViz is a Cytoscape app built upon Reactome pathways to help users perform pathway- and network-based data analysis and visualization. One of the most popular approaches to pathway analysis, which is an alternative to the traditional gene-list based ...",
     "date": "2018-11-01T10:00:04-04:00",
-    "slug": "115-performing-gsea-analysis-with-reactomefiviz-app",
+    "slug": "blogpost-60",
     "tags": [
       "about",
-      "news",
-      "115-performing-gsea-analysis-with-reactomefiviz-app"
+      "news"
     ]
   },
   {
     "title": "International Open Access Week: GraphDB and Content Service",
-    "excerpt": "\n##  International Open Access Week: GraphDB and Content Service \n\n![OpenAccess Week: GraphDB and ContentService](/uploads/about/news/20181026_OpenAccess_week_-_GraphDB_ContentService.png)\n\nSince version 57 we provide our data in a [Neo4j](<https://neo4j.com/>) [graph database](</dev/graph-database>) helping to reduce the complexity of the represented knowledgebase and allowing a more straightforward access to our content. Neo4j’s query language, Cypher, ...",
+    "excerpt": "\n##  [ International Open Access Week: GraphDB and Content Service ](</about/news/114-graphdb-content-service>)\n\n![OpenAccess Week: GraphDB and ContentService](/uploads/about/news/20181026_OpenAccess_week_-_GraphDB_ContentService.png)\n\nSince version 57 we provide our data in a [Neo4j](<https://neo4j.com/>) [graph database](</dev/graph-database>) helping to reduce the complexity of the represented knowledgebase and allowing a more straightforward access to our content. Neo4j’s ...",
     "date": "2018-10-26T04:21:29-04:00",
-    "slug": "114-graphdb-content-service",
+    "slug": "blogpost-61",
     "tags": [
       "about",
-      "news",
-      "114-graphdb-content-service"
+      "news"
     ]
   },
   {
     "title": "International Open Access Week: Interactive illustrations and icon library",
-    "excerpt": "\n##  International Open Access Week: Interactive illustrations and icon library \n\n![OpenAccessWeek Textbook-like illustrations and icon library](/uploads/about/news/20181025_OpenAccess_week_-_EHLD_-_Icon_Library.png)\n\nTextbook-like illustrations aim to improve the graphical representation of higher-level pathways in the Reactome events hierarchy, e.g., “[signal transduction](</PathwayBrowser/#/R-HSA-162582>)”, “[apoptosis](</PathwayBrowser/#/R-HSA-109581>)”, or “[metabolism of proteins](</PathwayBrowser/#/R-HSA-392499>)” whose pathway diagrams consisted of green boxes ...",
+    "excerpt": "\n##  [ International Open Access Week: Interactive illustrations and icon library ](</about/news/113-oaweek-interactive-illustrations-icons>)\n\n![OpenAccessWeek Textbook-like illustrations and icon library](/uploads/about/news/20181025_OpenAccess_week_-_EHLD_-_Icon_Library.png)\n\nTextbook-like illustrations aim to improve the graphical representation of higher-level pathways in the Reactome events hierarchy, e.g., “[signal transduction](</PathwayBrowser/#/R-HSA-162582>)”, “[apoptosis](</PathwayBrowser/#/R-HSA-109581>)”, or “[metabolism of proteins](</PathwayBrowser/#/R-HSA-392499>)” whose pathway diagrams consisted ...",
     "date": "2018-10-25T04:19:18-04:00",
-    "slug": "113-oaweek-interactive-illustrations-icons",
+    "slug": "blogpost-62",
     "tags": [
       "about",
-      "news",
-      "113-oaweek-interactive-illustrations-icons"
+      "news"
     ]
   },
   {
     "title": "International Open Access Week: Network Visualization & Analysis Tool",
-    "excerpt": "\n##  International Open Access Week: Network Visualization & Analysis Tool \n\n![20181024 OpenAccess week ReactomeFIViz 2](/uploads/about/news/20181024_OpenAccess_week_-_ReactomeFIViz_2.png)\n\nAs part of the International [Open Access week](<http://www.openaccessweek.org/>), we would like to talk about another one of our open access network visualization and analysis tool – the [Reactome FIViz app](</tools/reactome-fiviz>).\n\nIn order to ...",
+    "excerpt": "\n##  [ International Open Access Week: Network Visualization & Analysis Tool ](</about/news/112-international-open-access-week-network-analysis-tools>)\n\n![20181024 OpenAccess week ReactomeFIViz 2](/uploads/about/news/20181024_OpenAccess_week_-_ReactomeFIViz_2.png)\n\nAs part of the International [Open Access week](<http://www.openaccessweek.org/>), we would like to talk about another one of our open access network visualization and analysis tool – the [Reactome FIViz app](</tools/reactome-fiviz>).\n\n...",
     "date": "2018-10-23T12:54:11-04:00",
-    "slug": "112-international-open-access-week-network-analysis-tools",
+    "slug": "blogpost-63",
     "tags": [
       "about",
-      "news",
-      "112-international-open-access-week-network-analysis-tools"
+      "news"
     ]
   },
   {
     "title": "International Open Access Week: Analysis Tools",
-    "excerpt": "\n##  International Open Access Week: Analysis Tools \n\n![International Open Access week \\(Analysis Tools\\)](/uploads/about/news/20181022_OpenAccess_week_-_Analysis_Service.png)\n\nFollowing up on the International [Open Access week](<http://www.openaccessweek.org/>), we would like to remind our users that all our tools, including the [analysis](</user/guide/analysis>), are open access.\n\nPathway analysis methods have a broad range of applications in ...",
+    "excerpt": "\n##  [ International Open Access Week: Analysis Tools ](</about/news/111-international-open-access-week-analysis-tools>)\n\n![International Open Access week \\(Analysis Tools\\)](/uploads/about/news/20181022_OpenAccess_week_-_Analysis_Service.png)\n\nFollowing up on the International [Open Access week](<http://www.openaccessweek.org/>), we would like to remind our users that all our tools, including the [analysis](</user/guide/analysis>), are open access.\n\nPathway analysis methods have a broad range ...",
     "date": "2018-10-23T04:25:02-04:00",
-    "slug": "111-international-open-access-week-analysis-tools",
+    "slug": "blogpost-64",
     "tags": [
       "about",
-      "news",
-      "111-international-open-access-week-analysis-tools"
+      "news"
     ]
   },
   {
     "title": "SBGN files revamp",
-    "excerpt": "\n##  SBGN files revamp \n\n![SBGN Revamp](/uploads/about/news/20181004_SBGN_Revamp.png)\n\nThe [Systems Biology Graphical Notation (SBGN)](<http://sbgn.github.io/sbgn/>) project is an effort to standardise the graphical notation used in maps of biological processes. It aims to communicate biological knowledge more efficiently and accurately between different research communities in the life sciences.\n\nFollowing this commitment, we’ve ...",
+    "excerpt": "\n##  [ SBGN files revamp ](</about/news/110-sbgn-files-revamp>)\n\n![SBGN Revamp](/uploads/about/news/20181004_SBGN_Revamp.png)\n\nThe [Systems Biology Graphical Notation (SBGN)](<http://sbgn.github.io/sbgn/>) project is an effort to standardise the graphical notation used in maps of biological processes. It aims to communicate biological knowledge more efficiently and accurately between different research communities in the life sciences.\n\nFollowing ...",
     "date": "2018-10-03T08:53:19-04:00",
-    "slug": "110-sbgn-files-revamp",
+    "slug": "blogpost-65",
     "tags": [
       "about",
-      "news",
-      "110-sbgn-files-revamp"
+      "news"
     ]
   },
   {
     "title": "New advanced search available in our PathwayBrowser",
-    "excerpt": "\n##  New advanced search available in our PathwayBrowser \n\nYour browser does not support the video tag. \n\nOur [PathwayBrowser](</PathwayBrowser/>) now features advanced search capabilities powered by Solr to allow finding content throughout the whole knowledgebase. The user interface has been improved adapting to the findings of our last UX testing. ...",
+    "excerpt": "\n##  [ New advanced search available in our PathwayBrowser ](</about/news/109-new-advanced-search-available-in-our-pathway-browser>)\n\nYour browser does not support the video tag. \n\nOur [PathwayBrowser](</PathwayBrowser/>) now features advanced search capabilities powered by Solr to allow finding content throughout the whole knowledgebase. The user interface has been improved adapting to the findings of our ...",
     "date": "2018-10-01T05:05:45-04:00",
-    "slug": "109-new-advanced-search-available-in-our-pathway-browser",
+    "slug": "blogpost-66",
     "tags": [
       "about",
-      "news",
-      "109-new-advanced-search-available-in-our-pathway-browser"
+      "news"
     ]
   },
   {
     "title": "Version 66 Released",
-    "excerpt": "\n##  Version 66 Released \n\n[![protein localization](/uploads/about/news/R-HSA-9609507.svg)](</PathwayBrowser/#/R-HSA-9609507>)\n\n**New and Updated Pathways.** In version 66, topics with new or revised pathways includeDisease ([Loss of function of MECP2 in Rett syndrome ](</PathwayBrowser/#/R-HSA-9005891>)and [Defective Base Excision Repair Associated with MUTYH](</PathwayBrowser/#/R-HSA-9605310>)), Gene Expression ([Transcriptional regulation by MECP2](</PathwayBrowser/#/R-HSA-8986944>)), Immune Response ([OAS antiviral ...",
+    "excerpt": "\n##  [ Version 66 Released ](</about/news/106-version-66-release>)\n\n[![protein localization](/uploads/about/news/R-HSA-9609507.svg)](</PathwayBrowser/#/R-HSA-9609507>)\n\n**New and Updated Pathways.** In version 66, topics with new or revised pathways includeDisease ([Loss of function of MECP2 in Rett syndrome ](</PathwayBrowser/#/R-HSA-9005891>)and [Defective Base Excision Repair Associated with MUTYH](</PathwayBrowser/#/R-HSA-9605310>)), Gene Expression ([Transcriptional regulation by MECP2](</PathwayBrowser/#/R-HSA-8986944>)), Immune ...",
     "date": "2018-09-27T08:56:24-04:00",
-    "slug": "106-version-66-release",
+    "slug": "blogpost-67",
     "tags": [
       "about",
-      "news",
-      "106-version-66-release"
+      "news"
     ]
   },
   {
     "title": "Our data now available through Google Dataset Search",
-    "excerpt": "\n##  Our data now available through Google Dataset Search \n\n![Google Data Search](/uploads/about/news/Google_Data_Search.jpg)\n\nWe are pleased to announce that we are amongst the early adopters of the new [Google Dataset Search](<https://toolbox.google.com/datasetsearch>).\n\nThroughout the world, there are many thousands of open access data repositories hosted by public institutions, research projects, local ...</https>",
+    "excerpt": "\n##  [ Our data now available through Google Dataset Search ](</about/news/105-our-data-now-available-through-google-dataset-search-engine>)\n\n![Google Data Search](/uploads/about/news/Google_Data_Search.jpg)\n\nWe are pleased to announce that we are amongst the early adopters of the new [Google Dataset Search](<https://toolbox.google.com/datasetsearch>).\n\nThroughout the world, there are many thousands of open access data repositories hosted by public institutions, ...</https>",
     "date": "2018-09-06T13:49:49-04:00",
-    "slug": "105-our-data-now-available-through-google-dataset-search-engine",
+    "slug": "blogpost-68",
     "tags": [
       "about",
-      "news",
-      "105-our-data-now-available-through-google-dataset-search-engine"
+      "news"
     ]
   },
   {
     "title": "New tool to generate analysis PDF reports",
-    "excerpt": "\n##  New tool to generate analysis PDF reports \n\n![Analysis Report PDF](/uploads/about/news/Analysis_Report_PDF.png)\n\nWe now offer a new tool to download your analysis results as a single PDF file. This report contains a genome-wide overview, statistics for the most significant pathways and, for each significant pathway, it includes the corresponding diagram image ...",
+    "excerpt": "\n##  [ New tool to generate analysis PDF reports ](</about/news/107-new-tool-to-generate-analysis-pdf-reports>)\n\n![Analysis Report PDF](/uploads/about/news/Analysis_Report_PDF.png)\n\nWe now offer a new tool to download your analysis results as a single PDF file. This report contains a genome-wide overview, statistics for the most significant pathways and, for each significant pathway, it includes the ...",
     "date": "2018-07-12T06:51:41-04:00",
-    "slug": "107-new-tool-to-generate-analysis-pdf-reports",
+    "slug": "blogpost-69",
     "tags": [
       "about",
-      "news",
-      "107-new-tool-to-generate-analysis-pdf-reports"
+      "news"
     ]
   },
   {
     "title": "Version 65 Released",
-    "excerpt": "\n##  Version 65 Released \n\n[![carbohydrate](/uploads/about/news/R-HSA-71387.svg)](</PathwayBrowser/#/R-HSA-71387>)\n\n**New and Updated Pathways.** In version V65, topics with new or revised pathways include Immune System ([Interleukin-9 signaling](</PathwayBrowser/#/R-HSA-8985947&PATH=R-HSA-168256,R-HSA-1280215,R-HSA-449147,R-HSA-451927>)) and Signal Transduction ([Signaling by NOTCH4](</PathwayBrowser/#/R-HSA-9013694&PATH=R-HSA-162582,R-HSA-157118>) and [Signaling by NTRK3 (TRKC)](</PathwayBrowser/#/R-HSA-9034015&PATH=R-HSA-162582,R-HSA-9006934,R-HSA-166520>)). Illustrations with embedded navigation features are now available for [Carbohydrate Metabolism](</PathwayBrowser/#/R-HSA-71387&PATH=R-HSA-1430728>) ...",
+    "excerpt": "\n##  [ Version 65 Released ](</about/news/103-version-65-released>)\n\n[![carbohydrate](/uploads/about/news/R-HSA-71387.svg)](</PathwayBrowser/#/R-HSA-71387>)\n\n**New and Updated Pathways.** In version V65, topics with new or revised pathways include Immune System ([Interleukin-9 signaling](</PathwayBrowser/#/R-HSA-8985947&PATH=R-HSA-168256,R-HSA-1280215,R-HSA-449147,R-HSA-451927>)) and Signal Transduction ([Signaling by NOTCH4](</PathwayBrowser/#/R-HSA-9013694&PATH=R-HSA-162582,R-HSA-157118>) and [Signaling by NTRK3 (TRKC)](</PathwayBrowser/#/R-HSA-9034015&PATH=R-HSA-162582,R-HSA-9006934,R-HSA-166520>)). Illustrations with embedded navigation features are now available for ...",
     "date": "2018-06-12T16:19:48-04:00",
-    "slug": "103-version-65-released",
+    "slug": "blogpost-70",
     "tags": [
       "about",
-      "news",
-      "103-version-65-released"
+      "news"
     ]
   },
   {
     "title": "Version 64 Released",
-    "excerpt": "\n##  Version 64 Released \n\n[![Digest Absorp](/uploads/about/news/R-HSA-8963743.svg)](</PathwayBrowser/#/R-HSA-8963743>)\n\n**New and Updated Pathways.** In version V64, topics with new or revised pathways include Signal Transduction ([ESR-mediated signaling](</PathwayBrowser/#/R-HSA-8939211>) and [Signaling by NTRK2](</PathwayBrowser/#/R-HSA-9006115>)), Metabolism ([Biosynthesis of specialized proresolving mediators (SPMs)](</PathwayBrowser/#/R-HSA-9018678>)), and Metabolism of proteins ([Peroxisomal protein import](</PathwayBrowser/#/R-HSA-9033241&PATH=R-HSA-392499>)).\n\n**Thanks to our ...",
+    "excerpt": "\n##  [ Version 64 Released ](</about/news/102-version-64-released>)\n\n[![Digest Absorp](/uploads/about/news/R-HSA-8963743.svg)](</PathwayBrowser/#/R-HSA-8963743>)\n\n**New and Updated Pathways.** In version V64, topics with new or revised pathways include Signal Transduction ([ESR-mediated signaling](</PathwayBrowser/#/R-HSA-8939211>) and [Signaling by NTRK2](</PathwayBrowser/#/R-HSA-9006115>)), Metabolism ([Biosynthesis of specialized proresolving mediators (SPMs)](</PathwayBrowser/#/R-HSA-9018678>)), and Metabolism of proteins ([Peroxisomal protein import](</PathwayBrowser/#/R-HSA-9033241&PATH=R-HSA-392499>)).\n\n...",
     "date": "2018-03-26T16:00:21-04:00",
-    "slug": "102-version-64-released",
+    "slug": "blogpost-71",
     "tags": [
       "about",
-      "news",
-      "102-version-64-released"
+      "news"
     ]
   },
   {
     "title": "Version 63 Released",
-    "excerpt": "\n##  Version 63 Released \n\n[![DNA repair](/uploads/about/news/R-HSA-73894.svg)](</PathwayBrowser/#/R-HSA-73894>)\n\n**New and Updated Pathways.** In version V63, topics with new or revised pathways include Immune System [(Interleukin-20 family signaling](</PathwayBrowser/#/R-HSA-8854691>), [Interleukin-21 signaling](</PathwayBrowser/#/R-HSA-451927&SEL=R-HSA-9020958&PATH=R-HSA-168256,R-HSA-1280215,R-HSA-449147>), [Interleukin-37 signaling](</PathwayBrowser/#/R-HSA-9008059>), and [other Interleukin signaling](</PathwayBrowser/#/R-HSA-449836>)), Metabolism ([Vitamin D (calciferol) metabolism](</PathwayBrowser/#/R-HSA-196791>)), and Signal Transduction ([Signaling by NOTCH3](</PathwayBrowser/#/R-HSA-9012852&PATH=R-HSA-162582,R-HSA-157118>...",
+    "excerpt": "\n##  [ Version 63 Released ](</about/news/98-version-63-released>)\n\n[![DNA repair](/uploads/about/news/R-HSA-73894.svg)](</PathwayBrowser/#/R-HSA-73894>)\n\n**New and Updated Pathways.** In version V63, topics with new or revised pathways include Immune System [(Interleukin-20 family signaling](</PathwayBrowser/#/R-HSA-8854691>), [Interleukin-21 signaling](</PathwayBrowser/#/R-HSA-451927&SEL=R-HSA-9020958&PATH=R-HSA-168256,R-HSA-1280215,R-HSA-449147>), [Interleukin-37 signaling](</PathwayBrowser/#/R-HSA-9008059>), and [other Interleukin signaling](</PathwayBrowser/#/R-HSA-449836>)), Metabolism ([Vitamin D (calciferol) metabolism](</PathwayBrowser/#/R-HSA-196791>)), and Signal Transduction ...",
     "date": "2017-12-18T15:38:11-05:00",
-    "slug": "98-version-63-released",
+    "slug": "blogpost-72",
     "tags": [
       "about",
-      "news",
-      "98-version-63-released"
+      "news"
     ]
   },
   {
     "title": "Updated License Agreement",
-    "excerpt": "\n##  Updated License Agreement \n\n![Creative Commons Zero - CC0](/uploads/about/news/20171205_CC0.png)\n\nSince our inception, we have been an open source and open access resource, free for use by anyone under the terms of a Creative Commons Attribution 4.0 International (CC BY 4.0) license. This license granted parties the non-exclusive right to use, ...",
+    "excerpt": "\n##  [ Updated License Agreement ](</about/news/97-updated-license-agreement>)\n\n![Creative Commons Zero - CC0](/uploads/about/news/20171205_CC0.png)\n\nSince our inception, we have been an open source and open access resource, free for use by anyone under the terms of a Creative Commons Attribution 4.0 International (CC BY 4.0) license. This license granted parties the non-exclusive ...",
     "date": "2017-12-06T23:09:22-05:00",
-    "slug": "97-updated-license-agreement",
+    "slug": "blogpost-73",
     "tags": [
       "about",
-      "news",
-      "97-updated-license-agreement"
+      "news"
     ]
   },
   {
     "title": "New Reactome Publication published in 2018 NAR Database Issue",
-    "excerpt": "\n##  New Reactome Publication published in 2018 NAR Database Issue \n\n![20171115 NAR Paper 2017](/uploads/about/news/20171115_NAR_Paper_2017.png)\n\nA new research article titled “[The Reactome Pathway Knowledgebase](<https://academic.oup.com/nar/article/doi/10.1093/nar/gkx1132/4626770>)” has been published in the forthcoming 2018 NAR Database Issue. The paper describes the deployment of a Neo4J graph database on our production server, development of ...</https>",
+    "excerpt": "\n##  [ New Reactome Publication published in 2018 NAR Database Issue ](</about/news/95-new-reactome-publication-published-in-2017-nar-database-issue>)\n\n![20171115 NAR Paper 2017](/uploads/about/news/20171115_NAR_Paper_2017.png)\n\nA new research article titled “[The Reactome Pathway Knowledgebase](<https://academic.oup.com/nar/article/doi/10.1093/nar/gkx1132/4626770>)” has been published in the forthcoming 2018 NAR Database Issue. The paper describes the deployment of a Neo4J graph database on our production ...</https>",
     "date": "2017-11-14T23:02:20-05:00",
-    "slug": "95-new-reactome-publication-published-in-2017-nar-database-issue",
+    "slug": "blogpost-74",
     "tags": [
       "about",
-      "news",
-      "95-new-reactome-publication-published-in-2017-nar-database-issue"
+      "news"
     ]
   },
   {
     "title": "Proudly introducing our new logo",
-    "excerpt": "\n##  Proudly introducing our new logo \n\n![new logo](/uploads/about/news/new_logo.png)\n\nAs part of the ongoing evolution of our website, we are proud to announce the launch of our new logo. Reactome has grown and evolved over the last 14 years, and we felt it was time for a change.\n\nThe new logo ...",
+    "excerpt": "\n##  [ Proudly introducing our new logo ](</about/news/94-proudly-introducing-our-new-logo>)\n\n![new logo](/uploads/about/news/new_logo.png)\n\nAs part of the ongoing evolution of our website, we are proud to announce the launch of our new logo. Reactome has grown and evolved over the last 14 years, and we felt it was time for a change.\n\n...",
     "date": "2017-11-07T11:44:47-05:00",
-    "slug": "94-proudly-introducing-our-new-logo",
+    "slug": "blogpost-75",
     "tags": [
       "about",
-      "news",
-      "94-proudly-introducing-our-new-logo"
+      "news"
     ]
   },
   {
     "title": "New responsive website with a fresh look",
-    "excerpt": "\n##  New responsive website with a fresh look \n\n![Responsive Reactome 2](/uploads/about/news/Responsive_Reactome_2.png)\n\nWe’ve launched our new website and are excited to introduce you to our new look! Reactome is inviting its users to explore its new website. The new website has been designed to provide the ultimate user-friendly experience with improved ...",
+    "excerpt": "\n##  [ New responsive website with a fresh look ](</about/news/93-reactome-launches-new-website>)\n\n![Responsive Reactome 2](/uploads/about/news/Responsive_Reactome_2.png)\n\nWe’ve launched our new website and are excited to introduce you to our new look! Reactome is inviting its users to explore its new website. The new website has been designed to provide the ultimate user-friendly ...",
     "date": "2017-11-01T11:09:43-04:00",
-    "slug": "93-reactome-launches-new-website",
+    "slug": "blogpost-76",
     "tags": [
       "about",
-      "news",
-      "93-reactome-launches-new-website"
+      "news"
     ]
   },
   {
     "title": "Version 62 Released",
-    "excerpt": "\n##  Version 62 Released \n\n**[![](/uploads/about/news/R-HSA-445717.svg)](</PathwayBrowser/#/R-HSA-445717>)**\n\n**New and Updated Pathways.****** In version V62, topics with new or revised pathways include Developmental biology ([Signaling by Robo receptor](</PathwayBrowser/#/R-HSA-376176>)), Gene expression ([Transcriptional regulation by E2F6 ](</PathwayBrowser/#/R-HSA-8953750>) and [Transcriptional regulation by RUNX2](</PathwayBrowser/#/R-HSA-8878166>)), and Immune System ([Interleukin-7 family signaling](</PathwayBrowser/#/R-HSA-1266695>),[ Interleukin-15 family ...",
+    "excerpt": "\n##  [ Version 62 Released ](</about/news/90-version-62-released>)\n\n**[![](/uploads/about/news/R-HSA-445717.svg)](</PathwayBrowser/#/R-HSA-445717>)**\n\n**New and Updated Pathways.****** In version V62, topics with new or revised pathways include Developmental biology ([Signaling by Robo receptor](</PathwayBrowser/#/R-HSA-376176>)), Gene expression ([Transcriptional regulation by E2F6 ](</PathwayBrowser/#/R-HSA-8953750>) and [Transcriptional regulation by RUNX2](</PathwayBrowser/#/R-HSA-8878166>)), and Immune System ([Interleukin-7 family signaling](</PathwayBrowser/#/R-HSA-1266695>...",
     "date": "2017-09-28T11:45:38-04:00",
-    "slug": "90-version-62-released",
+    "slug": "blogpost-77",
     "tags": [
       "about",
-      "news",
-      "90-version-62-released"
+      "news"
     ]
   },
   {
     "title": "New Reactome Paper published",
-    "excerpt": "\n##  New Reactome Paper published \n\nA new Reactome paper titled “Reactome pathway analysis: a high-performance in-memory approach” has been published in [BMC Bioinformatics](<https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1559-2>). More publications from the [Reactome Team](</about/team>) can be found [here](</community/publications>).\n...</https>",
+    "excerpt": "\n##  [ New Reactome Paper published ](</about/news/76-new-reactome-paper-published>)\n\nA new Reactome paper titled “Reactome pathway analysis: a high-performance in-memory approach” has been published in [BMC Bioinformatics](<https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1559-2>). More publications from the [Reactome Team](</about/team>) can be found [here](</community/publications>).\n...</https>",
     "date": "2017-08-20T13:17:08-04:00",
-    "slug": "76-new-reactome-paper-published",
+    "slug": "blogpost-82",
     "tags": [
       "about",
-      "news",
-      "76-new-reactome-paper-published"
+      "news"
     ]
   },
   {
     "title": "New Reactome Publication",
-    "excerpt": "\n##  New Reactome Publication \n\nA new Reactome paper titled “Functional Interaction Network Construction and Analysis for Disease Discovery” has been published in [Methods in Molecular Biology](<http://link.springer.com/protocol/10.1007%2F978-1-4939-6783-4_11>). More publications from the [Reactome Team](</about/team>) can be found [here](<https://reactome.org/community/publications>).\n...</https></http>",
+    "excerpt": "\n##  [ New Reactome Publication ](</about/news/75-new-reactome-publication>)\n\nA new Reactome paper titled “Functional Interaction Network Construction and Analysis for Disease Discovery” has been published in [Methods in Molecular Biology](<http://link.springer.com/protocol/10.1007%2F978-1-4939-6783-4_11>). More publications from the [Reactome Team](</about/team>) can be found [here](<https://reactome.org/community/publications>).\n...</https></http>",
     "date": "2017-08-20T13:16:36-04:00",
-    "slug": "75-new-reactome-publication",
+    "slug": "blogpost-83",
     "tags": [
       "about",
-      "news",
-      "75-new-reactome-publication"
+      "news"
     ]
   },
   {
     "title": "Reactome celebrates release of 10,000th annotated protein",
-    "excerpt": "\n##  Reactome celebrates release of 10,000th annotated protein \n\n[![10K Reactome](/uploads/about/news/10K_Reactome.png)](</>)\n\nThe Reactome team is pleased to announce that it met a major milestone in October 2016 with the annotation and release of its 10,000th human protein. Reactome ([www.reactome.org](</>)) is an open access curated knowledgebase which relates human genes, ...",
+    "excerpt": "\n##  [ Reactome celebrates release of 10,000th annotated protein ](</about/news/73-reactome-celebrates-release-of-10-000th-annotated-protein>)\n\n[![10K Reactome](/uploads/about/news/10K_Reactome.png)](</>)\n\nThe Reactome team is pleased to announce that it met a major milestone in October 2016 with the annotation and release of its 10,000th human protein. Reactome ([www.reactome.org](</>)) is an open access curated knowledgebase which ...",
     "date": "2017-08-20T13:15:27-04:00",
-    "slug": "73-reactome-celebrates-release-of-10-000th-annotated-protein",
+    "slug": "blogpost-85",
     "tags": [
       "about",
-      "news",
-      "73-reactome-celebrates-release-of-10-000th-annotated-protein"
+      "news"
     ]
   },
   {
     "title": "New SBML Level 3 Version 1 export is now available",
-    "excerpt": "\n##  New SBML Level 3 Version 1 export is now available \n\n[![SBML](/uploads/about/news/SBML.png)](</download-data/>)\n\nAs part of our efforts to give our modeling user community better experience, we have updated the SBML export to Level 3 Version 1, which is organized in a modular manner. Our initial export provides a richer ...",
+    "excerpt": "\n##  [ New SBML Level 3 Version 1 export is now available ](</about/news/80-new-sbml-level-3-version-1-export-is-now-available>)\n\n[![SBML](/uploads/about/news/SBML.png)](</download-data/>)\n\nAs part of our efforts to give our modeling user community better experience, we have updated the SBML export to Level 3 Version 1, which is organized in a modular manner. Our initial export ...",
     "date": "2017-07-05T13:25:06-04:00",
-    "slug": "80-new-sbml-level-3-version-1-export-is-now-available",
+    "slug": "blogpost-78",
     "tags": [
       "about",
-      "news",
-      "80-new-sbml-level-3-version-1-export-is-now-available"
+      "news"
     ]
   },
   {
     "title": "New Protein-protein Interaction files",
-    "excerpt": "\n##  New Protein-protein Interaction files \n\n![Interaction](/uploads/about/news/Interaction-nologo.png)\n\nThe Reactome team has released new versions of our protein-protein interaction files derived from reactions and complexes. These files were updated following user feedback, with the goal of providing extra annotation features through support from the [PSI-MITAB 2.7](<http://github.com/HUPO-PSI/miTab/blob/master/PSI-MITAB27Format.md>) data format. Interactions are computationally ...</http>",
+    "excerpt": "\n##  [ New Protein-protein Interaction files ](</about/news/79-new-protein-protein-interaction-files>)\n\n![Interaction](/uploads/about/news/Interaction-nologo.png)\n\nThe Reactome team has released new versions of our protein-protein interaction files derived from reactions and complexes. These files were updated following user feedback, with the goal of providing extra annotation features through support from the [PSI-MITAB 2.7](<http://github.com/HUPO-PSI/miTab/blob/master/PSI-MITAB27Format.md>) data format. ...</http>",
     "date": "2017-06-28T13:24:21-04:00",
-    "slug": "79-new-protein-protein-interaction-files",
+    "slug": "blogpost-79",
     "tags": [
       "about",
-      "news",
-      "79-new-protein-protein-interaction-files"
+      "news"
     ]
   },
   {
     "title": "Version 61 Released",
-    "excerpt": "\n##  Version 61 Released \n\n**[![R-HSA-913531](/uploads/about/news/R-HSA-913531.svg)](</PathwayBrowser/#R-HSA-913531>)**\n\n**New and Updated Pathways.****** In version V61, topics with new or revised pathways include: Gene expression ([Transcriptional regulation by RUNX1](<//reactome.org/PathwayBrowser/#/R-HSA-8878171>)), Immune System ([Interleukin-12 family signaling](</PathwayBrowser/#/R-HSA-447115>)), Signal Transduction ([PTEN Regulation](</PathwayBrowser/#/R-HSA-6807070>)), and Transport of small molecules ([Intracellular oxygen transport](</PathwayBrowser/#/R-HSA-8981607>)).\n\n**Thanks to our ...",
+    "excerpt": "\n##  [ Version 61 Released ](</about/news/78-version-61-released>)\n\n**[![R-HSA-913531](/uploads/about/news/R-HSA-913531.svg)](</PathwayBrowser/#R-HSA-913531>)**\n\n**New and Updated Pathways.****** In version V61, topics with new or revised pathways include: Gene expression ([Transcriptional regulation by RUNX1](<//reactome.org/PathwayBrowser/#/R-HSA-8878171>)), Immune System ([Interleukin-12 family signaling](</PathwayBrowser/#/R-HSA-447115>)), Signal Transduction ([PTEN Regulation](</PathwayBrowser/#/R-HSA-6807070>)), and Transport of small molecules ([Intracellular oxygen transport](</PathwayBrowser/#/R-HSA-8981607>)).\n\n...",
     "date": "2017-06-22T13:20:12-04:00",
-    "slug": "78-version-61-released",
+    "slug": "blogpost-80",
     "tags": [
       "about",
-      "news",
-      "78-version-61-released"
+      "news"
     ]
   },
   {
     "title": "Version 60 Released",
-    "excerpt": "\n##  Version 60 Released \n\n**New and Updated Pathways.****** In version V60, topics with new or revised pathways include: Cell cycle ([Cyclin D associated events in G1](</PathwayBrowser/#R-HSA-69231.4>)), Cell-cell communication [(SDK interactions](</PathwayBrowser/#R-HSA-373756.1>)), Cellular response to external stimuli ([HSP90 chaperone cycle for steroid hormone receptors (SHR)](</PathwayBrowser/#R-HSA-3371497.1>)), Disease ([Diseases of Mismatch ...",
+    "excerpt": "\n##  [ Version 60 Released ](</about/news/77-version-60-released>)\n\n**New and Updated Pathways.****** In version V60, topics with new or revised pathways include: Cell cycle ([Cyclin D associated events in G1](</PathwayBrowser/#R-HSA-69231.4>)), Cell-cell communication [(SDK interactions](</PathwayBrowser/#R-HSA-373756.1>)), Cellular response to external stimuli ([HSP90 chaperone cycle for steroid hormone receptors (SHR)](</PathwayBrowser/#R-HSA-3371497.1>)), Disease ...",
     "date": "2017-04-20T13:18:03-04:00",
-    "slug": "77-version-60-released",
+    "slug": "blogpost-81",
     "tags": [
       "about",
-      "news",
-      "77-version-60-released"
+      "news"
     ]
   },
   {
     "title": "Version 59 Released",
-    "excerpt": "\n##  Version 59 Released \n\n**New and Updated Pathways.** In version V59, topics with new or revised pathways include: Disease ([Listeria monocytogenes entry into host cells](</PathwayBrowser/#/R-HSA-8876384&PATH=R-HSA-1643685,R-HSA-5663205>)), Hemostasis ([Cell surface interaction at the vascular wall](</PathwayBrowser/#R-HSA-202733>)), Immune System ([Butyrophilins](</PathwayBrowser/#R-HSA-8851680>), [Interleukin 10 signalling](</PathwayBrowser/#R-HSA-6783783>), and [Interleukin-4 and 13 signaling](</PathwayBrowser/#R-HSA-6785807>)), Metabolism ...",
+    "excerpt": "\n##  [ Version 59 Released ](</about/news/74-version-59-release>)\n\n**New and Updated Pathways.** In version V59, topics with new or revised pathways include: Disease ([Listeria monocytogenes entry into host cells](</PathwayBrowser/#/R-HSA-8876384&PATH=R-HSA-1643685,R-HSA-5663205>)), Hemostasis ([Cell surface interaction at the vascular wall](</PathwayBrowser/#R-HSA-202733>)), Immune System ([Butyrophilins](</PathwayBrowser/#R-HSA-8851680>), [Interleukin 10 signalling](</PathwayBrowser/#R-HSA-6783783>), and [Interleukin-4 and 13 ...",
     "date": "2016-12-21T13:16:00-05:00",
-    "slug": "74-version-59-release",
+    "slug": "blogpost-84",
     "tags": [
       "about",
-      "news",
-      "74-version-59-release"
+      "news"
     ]
   },
   {
     "title": "Version 58 Released",
-    "excerpt": "\n##  Version 58 Released \n\n**[![illustration deregulated CDK5 triggers multiple neurodegenerative pathways 72](/uploads/about/news/illustration_deregulated_CDK5_triggers_multiple_neurodegenerative_pathways_72.png)](</PathwayBrowser/#R-HSA-8862803>)**\n\n**New and Updated Pathways.** With version V58, Reactome has annotations for over 10,000 human proteins. New or revised pathways include: Cell cycle ([FBXL7 down-regulates AURKA during mitotic entry and in early mitosis](</PathwayBrowser/#R-HSA-8854050>)), Developmental biology ([Keratinization](</PathwayBrowser/#R-HSA-6805567>)), ...",
+    "excerpt": "\n##  [ Version 58 Released ](</about/news/72-version-58-released>)\n\n**[![illustration deregulated CDK5 triggers multiple neurodegenerative pathways 72](/uploads/about/news/illustration_deregulated_CDK5_triggers_multiple_neurodegenerative_pathways_72.png)](</PathwayBrowser/#R-HSA-8862803>)**\n\n**New and Updated Pathways.** With version V58, Reactome has annotations for over 10,000 human proteins. New or revised pathways include: Cell cycle ([FBXL7 down-regulates AURKA during mitotic entry and in early mitosis](</PathwayBrowser/#R-HSA-8854050>)), Developmental ...",
     "date": "2016-09-28T13:14:30-04:00",
-    "slug": "72-version-58-released",
+    "slug": "blogpost-86",
     "tags": [
       "about",
-      "news",
-      "72-version-58-released"
+      "news"
     ]
   },
   {
     "title": "Version 57 Released",
-    "excerpt": "\n##  Version 57 Released \n\nIn version V57, topics with new or revised pathways include: Developmental biology ([RET signaling](</PathwayBrowser/#R-HSA-8853659.1>)), Disease ([Signaling by FGFR in disease](</PathwayBrowser/#R-HSA-1226099.3>) and [Defective CFTR causes cystic fibrosis](</PathwayBrowser/#R-HSA-5678895.2>)), Gene expression ([rRNA modification in the mitochondrion](</PathwayBrowser/#R-HSA-6793080.1>) and [Transcriptional regulation by the AP-2 (TFAP2) family of ...",
+    "excerpt": "\n##  [ Version 57 Released ](</about/news/71-version-57-released>)\n\nIn version V57, topics with new or revised pathways include: Developmental biology ([RET signaling](</PathwayBrowser/#R-HSA-8853659.1>)), Disease ([Signaling by FGFR in disease](</PathwayBrowser/#R-HSA-1226099.3>) and [Defective CFTR causes cystic fibrosis](</PathwayBrowser/#R-HSA-5678895.2>)), Gene expression ([rRNA modification in the mitochondrion](</PathwayBrowser/#R-HSA-6793080.1>) and [Transcriptional regulation by the AP-2 ...",
     "date": "2016-06-27T13:13:06-04:00",
-    "slug": "71-version-57-released",
+    "slug": "blogpost-87",
     "tags": [
       "about",
-      "news",
-      "71-version-57-released"
+      "news"
     ]
   }
 ]
