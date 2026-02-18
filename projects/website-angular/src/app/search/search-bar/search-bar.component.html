@@ -1,26 +1,15 @@
-<form class="search-bar-container" (submit)="onSubmit($event)" autocomplete="off" list="search-suggestions">
-  <div class="search-bar">
-    <input
-      id="search-input"
-      name="search-input"
-
-      list="search-suggestions"
-      autocomplete="off"
-
-      type="text"
-      placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose"
-
-      class="search-input"
-
-      [value]="query"
-      (input)="onInput($event)"
-    />
+<form class="search-bar-container" (submit)="onSubmit($event)" (focus)="showSuggestions = true" (blur)="showSuggestions = false">
+    <input type="text" placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose" class="search-input" [value]="query" (input)="onInput($event)" autocomplete="off" />
     <button type="submit" class="search-button">Go!</button>
-  </div>
-
-  <datalist id="search-suggestions">
-    @for (s of suggestions; track s) {
-      <option [value]="s">{{ s }}</option>
-    }
-  </datalist>
 </form>
+@if (query && suggestions.length > 0) {
+    <div [class]="'suggestions-container' + (showSuggestions ? '' : ' hide')">
+        <ul class="suggestions-list">
+            @for (s of suggestions; track s) {
+                <li>
+                    <a [href]="'/content/query?q=' + s">{{ s }}</a>
+                </li>
+            }
+        </ul>
+    </div>
+}

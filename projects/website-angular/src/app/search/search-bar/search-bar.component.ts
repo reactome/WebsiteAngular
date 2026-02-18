@@ -1,18 +1,29 @@
-import { Component, inject, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  inject,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { Router } from '@angular/router';
+import e from 'express';
 
 @Component({
   selector: 'app-search-bar',
   standalone: true,
   imports: [],
   templateUrl: './search-bar.component.html',
-  styleUrl: './search-bar.component.scss'
+  styleUrl: './search-bar.component.scss',
 })
 export class SearchBarComponent implements OnChanges {
   private router = inject(Router);
   @Input() query = '';
   @Input() suggestions: string[] = [];
   @Output() queryChange = new EventEmitter<string>();
+  
+  showSuggestions = false;
 
   onInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
