@@ -1,3 +1,4 @@
+  searchSubmitted = false;
 import { Component, inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
@@ -34,6 +35,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private captchaWidgetId: string | null = null;
 
   query = '';
+  searchSubmitted = false;
+    onQueryInput(newQuery: string): void {
+      this.query = newQuery;
+      this.getSuggestions(newQuery);
+      this.searchSubmitted = false;
+    }
   suggestedTerms: string[] = [];
   results: SearchResult | null = null;
   facets: FacetResponse | null = null;
@@ -75,6 +82,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       };
 
       if (this.query) {
+        this.searchSubmitted = true;
         this.doSearch();
       }
     });
@@ -87,6 +95,21 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
   }
+
+  private getSuggestions(query: string): void {
+      if (!query) {
+        this.suggestedTerms = [];
+        return;
+      }
+      this.searchService.getSuggestedTerms(query).subscribe({
+        next: (terms) => {
+          this.suggestedTerms = terms || [];
+        },
+        error: () => {
+          this.suggestedTerms = [];
+        },
+      });
+    }
 
   private renderCaptchaWhenReady(): void {
     // Wait until the captcha container is available in the DOM
@@ -306,4 +329,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 function toArray(value: string | string[] | undefined): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+
+function encodeURI (value: string): string {
+  return encodeURIComponent(value);
 }

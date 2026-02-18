@@ -1,9 +1,9 @@
 <app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
   <div class="search-page">
-    @if (query) {
+    @if (query && searchSubmitted) {
       <!-- Search bar + filters above the two-column layout -->
       <div class="search-top">
-        <app-search-bar [query]="query" />
+        <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" />
       </div>
 
       <!-- Active filter chips -->
@@ -152,9 +152,9 @@
               <h2>No results found for "{{ query }}"</h2>
                 <h3>Did you mean...</h3>
                 <ul class="suggestions">
-                  @for (s of suggestions; track s) {
+                  @for (s of this.suggestedTerms; track s) {
                     <li>
-                      <a [routerLink]="'/search?q=' + s">{{ s }}</a>
+                      <a [href]="'/content/query?q=' + s">{{ s }}</a>
                     </li>
                   }
                 </ul>
@@ -330,7 +330,7 @@ NOTE: This is an automatically generated message.
         <h1>Search Reactome</h1>
         <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
         <div class="empty-search-bar">
-          <app-search-bar [query]="query" />
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" />
         </div>
       </div>
     }

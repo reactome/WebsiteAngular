@@ -74,8 +74,7 @@ export class SearchService {
   }
 
   getSuggestedTerms(query: string): Observable<string[]> {
-    const params = this.buildParams(query, {});
-    return this.http.get<string[]>(`${this.baseUrl}/spellcheck`, { params });
+    return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
   }
 
   private buildParams(query: string, filters: SearchFilters, page?: number, rows?: number): HttpParams {

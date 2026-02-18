@@ -42,6 +42,26 @@ $border-radius: 8px;
   }
 }
 
+.suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+
+  li {
+    margin-bottom: 4px;
+    margin-left: 24px;
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
 .facet-section {
   background: white;
   border-radius: $border-radius;

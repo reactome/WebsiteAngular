@@ -1,4 +1,4 @@
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
@@ -11,9 +11,13 @@ import { Router } from '@angular/router';
 export class SearchBarComponent {
   private router = inject(Router);
   @Input() query = '';
+  @Output() queryChange = new EventEmitter<string>();
 
   onInput(event: Event): void {
-    this.query = (event.target as HTMLInputElement).value;
+    event.preventDefault();
+    const value = (event.target as HTMLInputElement).value;
+    this.query = value;
+    this.queryChange.emit(value);
   }
 
   onSubmit(event: Event): void {
