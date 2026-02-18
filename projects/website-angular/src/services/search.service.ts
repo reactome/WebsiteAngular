@@ -61,7 +61,7 @@ export interface SearchFilters {
 })
 export class SearchService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://reactome.org/ContentService/search';
+  private baseUrl = 'https://reactome.org/ContentService/search'; //TODO: alter in prod or make environment variable
 
   search(query: string, filters: SearchFilters = {}, page: number = 0, rows: number = 30): Observable<SearchResult> {
     const params = this.buildParams(query, filters, page, rows);
@@ -71,6 +71,11 @@ export class SearchService {
   getFacets(query: string, filters: SearchFilters = {}): Observable<FacetResponse> {
     const params = this.buildParams(query, filters);
     return this.http.get<FacetResponse>(`${this.baseUrl}/facet_query`, { params });
+  }
+
+  getSuggestedTerms(query: string): Observable<string[]> {
+    const params = this.buildParams(query, {});
+    return this.http.get<string[]>(`${this.baseUrl}/spellcheck`, { params });
   }
 
   private buildParams(query: string, filters: SearchFilters, page?: number, rows?: number): HttpParams {

@@ -34,6 +34,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private captchaWidgetId: string | null = null;
 
   query = '';
+  suggestedTerms: string[] = [];
   results: SearchResult | null = null;
   facets: FacetResponse | null = null;
   loading = false;
