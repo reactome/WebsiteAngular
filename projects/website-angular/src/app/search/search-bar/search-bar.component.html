@@ -1,4 +1,25 @@
 <form class="search-bar-container" (submit)="onSubmit($event)">
-    <input type="text" placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose" class="search-input" [value]="query" (input)="onInput($event)" autocomplete="off" />
+  <div class="search-bar">
+    <input
+      id="search-input"
+      name="search-input"
+
+      list="search-suggestions"
+
+      type="text"
+      placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose"
+
+      class="search-input"
+      
+      [value]="query"
+      (input)="onInput($event)"
+    />
     <button type="submit" class="search-button">Go!</button>
+  </div>
+
+  <datalist id="search-suggestions">
+    @for (s of suggestions; track s) {
+      <option [value]="s">{{ s }}</option>
+    }
+  </datalist>
 </form>

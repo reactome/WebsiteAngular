@@ -1,4 +1,3 @@
-  searchSubmitted = false;
 import { Component, inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
@@ -109,6 +108,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.suggestedTerms = [];
         },
       });
+      //wait a moment for the suggestions to be set before logging
+      
+      setTimeout(() => {
+        console.log('Got suggestions for query:', query, this.suggestedTerms);
+      }, 100);
     }
 
   private renderCaptchaWhenReady(): void {
