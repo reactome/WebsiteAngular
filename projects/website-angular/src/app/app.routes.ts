@@ -8,6 +8,7 @@ export const routes: Routes = [
     //News Pages
     { path: 'about/news', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },
     { path: 'about/news/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
+    { path: 'about/logo', loadComponent: () => import('./about/logo-page/logo-page.component').then(m => m.LogoPageComponent), pathMatch: 'full' },
 
     //Reactome Research Spotlights
     { path: 'content/reactome-research-spotlight', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },

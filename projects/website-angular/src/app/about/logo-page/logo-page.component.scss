@@ -1,0 +1,44 @@
+$spacing-unit: 16px;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: $spacing-unit;
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    gap: 4px;
+}
+
+.inline-link {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.logo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-unit * 2;
+}
+
+.logo-options {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: $spacing-unit * 2;
+}
+
+.imagotype {
+    
+}

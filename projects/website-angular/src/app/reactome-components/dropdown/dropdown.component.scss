@@ -1,0 +1,21 @@
+.dropdown-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    gap: 4px;
+}
+
+.dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    z-index: 1000;
+    margin-top: 4px;
+
+    &:hover {
+        mat-icon {
+            transform: rotate(180deg);
+        }
+    }
+}
