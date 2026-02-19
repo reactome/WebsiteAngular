@@ -8,20 +8,27 @@
     (focus)="showDropdown()"
     (blur)="hideDropdownDelayed()"
     autocomplete="off"
+    (submit)="onSubmit($event)"
   />
-  <button type="submit" class="search-button" (click)="onSubmit($event)">Go!</button>
+  <button type="submit" class="search-button">
+    Go!
+  </button>
 </form>
 
 @if (query && suggestions.length > 0 && showSuggestions) {
-  <div class="suggestions-container">
-    <ul class="suggestions-list">
-      @for (s of suggestions; track s) {
-        <li (mousedown)="selectSuggestion(s)">
-          <a [href]="'/content/query?q=' + s">
-            {{ s }}
-          </a>
-        </li>
-      }
-    </ul>
-  </div>
+<div class="suggestions-container">
+  <ul class="suggestions-list">
+    @for (s of suggestions; track s) {
+    <li (mousedown)="selectSuggestion(s)">
+      <a
+        [routerLink]="['/content/query']"
+        [queryParams]="{ q: s }"
+        (click)="showSuggestions = false"
+      >
+        {{ s }}
+      </a>
+    </li>
+    }
+  </ul>
+</div>
 }

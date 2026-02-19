@@ -14,18 +14,10 @@ export const routes: Routes = [
     { path: 'content/reactome-research-spotlight/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
 
     //Search Page
-    {
-      matcher: (segments: UrlSegment[]) => {
-        if (segments.length === 2 && segments[0].path === 'content' && segments[1].path.startsWith('query')) {
-          return { consumed: segments };
-        }
-        return null;
-      },
-      loadComponent: () => import('./search/search.component').then(m => m.SearchComponent),
-    },
+    { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
 
     //404 Page
-    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent), pathMatch: 'full' },
+    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) },
     /* Non - CMS Pages Above this Line */
 
     //CMS Pages

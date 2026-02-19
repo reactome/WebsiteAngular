@@ -108,11 +108,6 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.suggestedTerms = [];
         },
       });
-      //wait a moment for the suggestions to be set before logging
-      
-      setTimeout(() => {
-        console.log('Got suggestions for query:', query, this.suggestedTerms);
-      }, 100);
     }
 
   private renderCaptchaWhenReady(): void {
@@ -328,14 +323,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 }
 
-//TODO: Add suggestions for search bar and did you mean
 
 function toArray(value: string | string[] | undefined): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
-}
-
-
-function encodeURI (value: string): string {
-  return encodeURIComponent(value);
 }

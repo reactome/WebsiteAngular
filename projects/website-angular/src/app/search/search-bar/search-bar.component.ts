@@ -34,25 +34,24 @@ export class SearchBarComponent implements OnChanges {
     if (changes['suggestions']) {
       this.suggestions = this.suggestions ? [...this.suggestions] : [];
     }
-  }
-
-  ngOnInit(): void {
-    const urlParams = this.router.parseUrl(this.router.url).queryParams;
-    if (urlParams['q']) {
-      console.log('Setting initial query from URL:', urlParams['q']);
-      this.query = urlParams['q'];
+    if (changes['query']) {
+      this.query = this.query || '';
     }
   }
 
   onSubmit(event: Event): void {
+    event.preventDefault();
     // Only submit if the query is not empty or whitespace
     this.showSuggestions = false;
-    this.queryChange.emit(this.query);
-    if (this.query) {
-      this.router.navigate(['/content/query'], {
-        queryParams: { q: this.query },
-      });
+    
+    const q = this.query.trim();
+    if (!q) {
+      return;
     }
+    this.router.navigate(['/content/query'], { queryParams: { q: q }});
+    
+
+    this.queryChange.emit(q);
   }
 
   hideTimeout?: number;
@@ -70,8 +69,14 @@ export class SearchBarComponent implements OnChanges {
 
   selectSuggestion(s: string): void {
     this.showSuggestions = false;
+    s = s.trim();
+    if (!s) {
+      return;
+    }
+
     this.query = s;
-    this.queryChange.emit(s);
+    
     this.router.navigate(['/content/query'], { queryParams: { q: s } });
+    this.queryChange.emit(s);
   }
 }
