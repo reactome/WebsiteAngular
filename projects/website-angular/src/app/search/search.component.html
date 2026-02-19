@@ -3,7 +3,7 @@
     @if (query && searchSubmitted) {
       <!-- Search bar + filters above the two-column layout -->
       <div class="search-top">
-        <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [suggestions]="this.suggestedTerms"/>
+        <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
       </div>
 
       <!-- Active filter chips -->
@@ -330,7 +330,7 @@ NOTE: This is an automatically generated message.
         <h1>Search Reactome</h1>
         <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
         <div class="empty-search-bar">
-          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [suggestions]="suggestedTerms"/>
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
         </div>
       </div>
     }

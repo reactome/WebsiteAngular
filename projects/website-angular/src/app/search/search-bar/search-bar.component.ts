@@ -8,6 +8,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { SearchService } from 'projects/website-angular/src/services/search.service';
 
 @Component({
   selector: 'app-search-bar',
@@ -18,16 +19,19 @@ import { Router } from '@angular/router';
 })
 export class SearchBarComponent implements OnChanges {
   private router = inject(Router);
+  private searchService = inject(SearchService);
   @Input() query: string = '';
-  @Input() suggestions: string[] = [];
   @Output() queryChange = new EventEmitter<string>();
+
+  suggestions: string[] = [];
+  
 
   showSuggestions = false;
 
   onInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.query = value;
-    this.queryChange.emit(value);
+    this.getSuggestions(this.query);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -79,4 +83,19 @@ export class SearchBarComponent implements OnChanges {
     this.router.navigate(['/content/query'], { queryParams: { q: s } });
     this.queryChange.emit(s);
   }
+
+  private getSuggestions(query: string): void {
+      if (!query) {
+        this.suggestions = [];
+        return;
+      }
+      this.searchService.getSuggestedTerms(query).subscribe({
+        next: (terms) => {
+          this.suggestions = terms || [];
+        },
+        error: () => {
+          this.suggestions = [];
+        },
+      });
+    }
 }
