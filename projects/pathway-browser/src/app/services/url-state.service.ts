@@ -110,7 +110,6 @@ export class UrlStateService implements State {
 
 
   constructor() {
-
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd),
       switchMap(() => this.router.routerState.root.firstChild?.params || of()),
@@ -121,6 +120,13 @@ export class UrlStateService implements State {
 
     effect(() => {
       console.log('Updating patwhayId to ', this.pathwayId())
+
+      //If in content/search do not navigate
+      if (this.router.url.includes('content') || this.router.url.includes('query')) {
+        console.log('In content or search route, not navigating on pathwayId change');
+        return;
+      }
+
       this.router.navigate(this.pathwayId() ? [this.pathwayId()] : [], {
         queryParamsHandling: 'preserve',
         preserveFragment: true
@@ -205,6 +211,10 @@ export class UrlStateService implements State {
         queryParams[key] = isArray(paramValue) ? paramValue.join(';') : paramValue;
       }
       console.log('Updating URL from state', queryParams)
+      if (this.router.url.includes('content') || this.router.url.includes('query')) {
+        console.log('In content or search route, not navigating on state change');
+        return;
+      }
       this.router.navigate(this.pathwayId() ? [this.pathwayId()] : [], {queryParams, preserveFragment: true});
     });
   }
