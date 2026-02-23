@@ -1,0 +1,478 @@
+<app-page-layout [showSidebar]="false">
+  <article class="download-page">
+    <!-- Header -->
+    <header class="page-header">
+      <h1>Download Data</h1>
+      <p class="description">
+        Reactome provides open-source and open-data. We continuously support major open-data standards,
+        including BioPAX, PSI-MITAB, SBML and SBGN export formats. All data is freely available under a
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">Creative Commons Attribution 4.0</a> license.
+      </p>
+      @if (version) {
+        <span class="version-badge">Current Release: V{{ version }}</span>
+      }
+    </header>
+
+    <div class="content-with-toc">
+      <!-- Table of Contents (sidebar) -->
+      <nav class="toc">
+        <h3 class="toc-title">On this page</h3>
+        <ul>
+          @for (item of tocItems; track item.id) {
+            <li>
+              <a
+                [class.active]="activeTocId === item.id"
+                (click)="scrollTo(item.id); $event.preventDefault()"
+                href="#"
+              >{{ item.label }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <!-- Main content -->
+      <div class="main-content">
+
+        <!-- Services & Repositories -->
+        <section id="services" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">dns</span>
+            Services &amp; Repositories
+          </h2>
+          <div class="service-cards">
+            @for (card of serviceCards; track card.title) {
+              <a class="service-card" [href]="card.url" [target]="card.external ? '_blank' : '_self'" rel="noopener">
+                <span class="material-symbols-rounded card-icon">{{ card.icon }}</span>
+                <h3>{{ card.title }}</h3>
+                <p>{{ card.description }}</p>
+                @if (card.external) {
+                  <span class="material-symbols-rounded external-indicator">open_in_new</span>
+                }
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Databases -->
+        <section id="databases" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">database</span>
+            Databases
+          </h2>
+
+          <!-- Graph Database -->
+          <div class="subsection">
+            <h3 class="subsection-title">
+              Reactome Knowledge Graph (Neo4j)
+              <button class="info-btn" (click)="toggleInfo('graphDb')" [attr.aria-expanded]="isInfoExpanded('graphDb')">
+                <span class="material-symbols-rounded">{{ isInfoExpanded('graphDb') ? 'expand_less' : 'info' }}</span>
+              </button>
+            </h3>
+            @if (isInfoExpanded('graphDb')) {
+              <div class="info-panel">
+                <p>{{ infoPanels['graphDb'] }}</p>
+              </div>
+            }
+            <div class="download-list">
+              @for (item of graphDbDownloads; track item.label) {
+                <a class="download-item"
+                   [href]="item.url || getDownloadUrl(item.file)"
+                   target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded dl-icon">download</span>
+                  <div class="dl-info">
+                    <span class="dl-label">{{ item.label }}</span>
+                    <span class="dl-desc">{{ item.description }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+
+          <!-- MySQL -->
+          <div class="subsection">
+            <h3 class="subsection-title">MySQL Dumps</h3>
+            <div class="download-list">
+              @for (item of mysqlDownloads; track item.label) {
+                <a class="download-item"
+                   [href]="getDownloadUrl(item.file)"
+                   target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded dl-icon">download</span>
+                  <div class="dl-info">
+                    <span class="dl-label">{{ item.label }}</span>
+                    <span class="dl-desc">{{ item.description }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Identifier Mapping Files -->
+        <section id="identifier-mapping" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">swap_horiz</span>
+            Identifier Mapping Files
+          </h2>
+          <p class="section-desc">
+            Mapping of external database identifiers to Reactome pathways and reactions at various hierarchy levels.
+          </p>
+          <button class="info-btn inline" (click)="toggleInfo('identifierMapping')" [attr.aria-expanded]="isInfoExpanded('identifierMapping')">
+            <span class="material-symbols-rounded">info</span>
+            <span>About mapping levels</span>
+          </button>
+          @if (isInfoExpanded('identifierMapping')) {
+            <div class="info-panel">
+              <p>{{ infoPanels['identifierMapping'] }}</p>
+            </div>
+          }
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-db">Database</th>
+                  @for (cat of mappingCategories; track cat.label) {
+                    <th>{{ cat.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (db of mappingDatabases; track db.name) {
+                  <tr>
+                    <td class="db-name">{{ db.name }}</td>
+                    @for (cat of mappingCategories; track cat.label) {
+                      <td>
+                        <a class="dl-badge"
+                           [href]="getMappingUrl(db.prefix, cat.suffix)"
+                           target="_blank" rel="noopener"
+                           title="Download {{ db.name }} {{ cat.label }}">
+                          <span class="material-symbols-rounded">download</span>
+                          TXT
+                        </a>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PE Identifier Mapping Files -->
+        <section id="pe-mapping" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">hub</span>
+            Physical Entity (PE) Identifier Mapping Files
+          </h2>
+          <p class="section-desc">
+            Mapping files using Physical Entity stable IDs for more granular molecular-level references.
+          </p>
+          <button class="info-btn inline" (click)="toggleInfo('peMapping')" [attr.aria-expanded]="isInfoExpanded('peMapping')">
+            <span class="material-symbols-rounded">info</span>
+            <span>About PE mappings</span>
+          </button>
+          @if (isInfoExpanded('peMapping')) {
+            <div class="info-panel">
+              <p>{{ infoPanels['peMapping'] }}</p>
+            </div>
+          }
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-db">Database</th>
+                  @for (cat of peMappingCategories; track cat.label) {
+                    <th>{{ cat.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (db of mappingDatabases; track db.name) {
+                  <tr>
+                    <td class="db-name">{{ db.name }}</td>
+                    @for (cat of peMappingCategories; track cat.label) {
+                      <td>
+                        <a class="dl-badge"
+                           [href]="getMappingUrl(db.prefix, cat.suffix)"
+                           target="_blank" rel="noopener"
+                           title="Download {{ db.name }} {{ cat.label }}">
+                          <span class="material-symbols-rounded">download</span>
+                          TSV
+                        </a>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Other Mapping Files -->
+        <section id="other-mappings" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">link</span>
+            Other Mapping Files
+          </h2>
+          <div class="download-list">
+            @for (item of otherMappings; track item.label) {
+              <div class="download-row">
+                <a class="download-item"
+                   [href]="getDownloadUrl(item.file)"
+                   target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded dl-icon">download</span>
+                  <div class="dl-info">
+                    <span class="dl-label">{{ item.label }}</span>
+                  </div>
+                </a>
+                @if (item.infoKey && infoPanels[item.infoKey]) {
+                  <button class="info-btn small" (click)="toggleInfo(item.infoKey!)" [attr.aria-expanded]="isInfoExpanded(item.infoKey!)">
+                    <span class="material-symbols-rounded">{{ isInfoExpanded(item.infoKey!) ? 'expand_less' : 'info' }}</span>
+                  </button>
+                }
+                @if (item.infoKey && isInfoExpanded(item.infoKey)) {
+                  <div class="info-panel row-panel">
+                    <p>{{ infoPanels[item.infoKey] }}</p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Pathway Information -->
+        <section id="pathway-info" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">account_tree</span>
+            Pathway Information
+          </h2>
+          <div class="download-list">
+            @for (item of pathwayDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Pathway Diagrams & Figures -->
+        <section id="diagrams" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">image</span>
+            Pathway Diagrams &amp; Figures
+          </h2>
+          <div class="download-list">
+            @for (item of diagramDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Gene Ontology -->
+        <section id="gene-ontology" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">genetics</span>
+            Gene Ontology
+          </h2>
+          <div class="download-list">
+            @for (item of geneOntologyDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Systems Biology -->
+        <section id="systems-biology" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">scatter_plot</span>
+            Systems Biology Formats
+          </h2>
+          <p class="section-desc">
+            Reactome data exported in standard systems biology formats. Note: BioPAX Level 2 was discontinued as of v94.
+          </p>
+          <div class="download-list">
+            @for (item of systemsBiologyDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Gene Set -->
+        <section id="gene-set" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">biotech</span>
+            Gene Set
+          </h2>
+          <div class="download-list">
+            @for (item of geneSetDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Ontology -->
+        <section id="ontology" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">schema</span>
+            Ontology
+          </h2>
+          <p class="section-desc">
+            Protege-format ontology files were discontinued as of v94.
+          </p>
+          <div class="download-list">
+            @for (item of ontologyDownloads; track item.label) {
+              <a class="download-item"
+                 [href]="getDownloadUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Protein-Protein Interactions -->
+        <section id="ppi" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">share</span>
+            Protein-Protein Interactions
+          </h2>
+
+          <div class="subsection">
+            <h3 class="subsection-title">PSI-MITAB Format</h3>
+            <div class="download-list">
+              @for (item of ppiMitabDownloads; track item.label) {
+                <a class="download-item"
+                   [href]="getDownloadUrl(item.file)"
+                   target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded dl-icon">download</span>
+                  <div class="dl-info">
+                    <span class="dl-label">{{ item.label }}</span>
+                    <span class="dl-desc">{{ item.description }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3 class="subsection-title">Tab-delimited Format</h3>
+            <div class="download-list">
+              @for (item of ppiTabDownloads; track item.label) {
+                <a class="download-item"
+                   [href]="getDownloadUrl(item.file)"
+                   target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded dl-icon">download</span>
+                  <div class="dl-info">
+                    <span class="dl-label">{{ item.label }}</span>
+                    <span class="dl-desc">{{ item.description }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Functional Interactions -->
+        <section id="functional-interactions" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">neurology</span>
+            Functional Interactions
+          </h2>
+          <div class="download-list">
+            @for (item of functionalInteractions; track item.label) {
+              <a class="download-item"
+                 [href]="getCurrentUrl(item.file)"
+                 target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ item.label }}</span>
+                  <span class="dl-desc">{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <!-- Curator Tool -->
+        <section id="curator-tool" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">build</span>
+            Curator Tool
+          </h2>
+          <div class="download-list">
+            <a class="download-item"
+               [href]="getCurrentUrl(curatorTool.file)"
+               target="_blank" rel="noopener">
+              <span class="material-symbols-rounded dl-icon">download</span>
+              <div class="dl-info">
+                <span class="dl-label">{{ curatorTool.label }}</span>
+                <span class="dl-desc">{{ curatorTool.version }} ({{ curatorTool.date }}) &mdash; {{ curatorTool.description }}</span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <!-- Textbook -->
+        <section id="textbook" class="section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded">menu_book</span>
+            Textbook
+          </h2>
+          <div class="download-list">
+            <a class="download-item"
+               [href]="getDownloadUrl(textbook.file)"
+               target="_blank" rel="noopener">
+              <span class="material-symbols-rounded dl-icon">download</span>
+              <div class="dl-info">
+                <span class="dl-label">{{ textbook.label }}</span>
+                <span class="dl-desc">{{ textbook.description }}</span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </article>
+</app-page-layout>

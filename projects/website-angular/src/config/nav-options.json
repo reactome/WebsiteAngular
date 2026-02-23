@@ -307,7 +307,7 @@
   "download": {
     "icon": "cloud_download",
     "label": "Download",
-    "link": "/download",
+    "link": "/download-data",
     "dropdown-links": {}
   }
 }
