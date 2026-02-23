@@ -1,0 +1,103 @@
+<app-page-layout>
+  <article class="collaboration-page">
+    <header class="page-header">
+      <span class="category-badge">Community</span>
+      <h1>Contribute Pathway Knowledge</h1>
+      <p class="description">
+        Become a Reactome contributor! You will be credited with authorship or reviewership for all of your contributions.
+        Each pathway is associated with a DOI and can be cited as a publication. You can quickly and easily claim your
+        Reactome contributions in ORCID using our <a href="/userguide/claim-your-work">ORCID claiming feature</a>.
+      </p>
+    </header>
+
+    <div class="intro-text">
+      <p>
+        We are currently seeking reviewers for the pathways listed below.
+        If you'd like to contribute a pathway that is not on this list, please <a href="mailto:help@reactome.org">contact us</a>.
+        We would be happy to work with you! For more information, see this
+        <a href="/community/collaboration/faq-for-prospective-reviewers-and-authors">FAQ for prospective reviewers and authors</a>.
+      </p>
+    </div>
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading pathway data...</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load pathway data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      <div class="summary">
+        <span class="summary-count">{{ entries.length }}</span> pathways seeking reviewers across
+        <span class="summary-count">{{ topics.length }}</span> topics
+      </div>
+
+      @for (topic of topics; track topic) {
+        <section class="topic-section">
+          <h2 class="topic-title">
+            {{ topic }}
+            <span class="count">{{ entriesForTopic(topic).length }}</span>
+          </h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-pathway">Pathway</th>
+                  <th class="col-curator">Curator</th>
+                  <th class="col-links">Documents</th>
+                  <th class="col-contact">Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of entriesForTopic(topic); track entry.number) {
+                  <tr>
+                    <td class="pathway-name">
+                      @if (entry.pathwayUrl) {
+                        <a [href]="entry.pathwayUrl" target="_blank" rel="noopener" title="View in Reactome Curator Pathway Browser">
+                          {{ entry.pathway }}
+                          <span class="material-symbols-rounded external-icon">open_in_new</span>
+                        </a>
+                      } @else {
+                        {{ entry.pathway }}
+                      }
+                      @if (entry.docName) {
+                        <span class="doc-subtitle">{{ entry.docName }}</span>
+                      }
+                    </td>
+                    <td>{{ entry.curator }}</td>
+                    <td class="doc-links">
+                      @if (entry.docUrl) {
+                        <a class="doc-badge" [href]="entry.docUrl" target="_blank" rel="noopener" title="View Word document">
+                          <span class="material-symbols-rounded">description</span>
+                          DOC
+                        </a>
+                      }
+                      @if (entry.pdfUrl) {
+                        <a class="doc-badge pdf" [href]="entry.pdfUrl" target="_blank" rel="noopener" title="View PDF">
+                          <span class="material-symbols-rounded">picture_as_pdf</span>
+                          PDF
+                        </a>
+                      }
+                    </td>
+                    <td>
+                      <a class="contact-link" href="mailto:{{ entry.contact }}?subject=Reviewing: {{ entry.pathway }}">
+                        <span class="material-symbols-rounded">mail</span>
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    }
+  </article>
+</app-page-layout>
