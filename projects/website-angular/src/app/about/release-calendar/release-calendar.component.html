@@ -1,0 +1,53 @@
+<app-page-layout>
+  <article class="release-calendar">
+    <header class="page-header">
+      <span class="category-badge">About</span>
+      <h1>Release Calendar</h1>
+      <p class="description">
+        A history of all Reactome data releases, from version 1 in December 2002 to the present.
+      </p>
+    </header>
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading release data...</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load release data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      <div class="release-grid">
+        @for (group of yearGroups; track group.year) {
+          <section class="year-group">
+            <div class="year-label">
+              <span>{{ group.year }}</span>
+            </div>
+            <div class="releases">
+              @for (release of group.releases; track release.version) {
+                <div class="release-card" [class.latest]="isLatest(release)" [class.future]="!isPast(release)">
+                  <div class="version">
+                    v{{ release.version }}
+                    @if (isLatest(release)) {
+                      <span class="latest-badge">Latest</span>
+                    }
+                    @if (!isPast(release)) {
+                      <span class="upcoming-badge">Upcoming</span>
+                    }
+                  </div>
+                  <div class="date">{{ release.label }}</div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    }
+  </article>
+</app-page-layout>
