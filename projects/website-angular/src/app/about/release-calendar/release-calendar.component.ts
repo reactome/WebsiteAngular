@@ -48,6 +48,7 @@ export class ReleaseCalendarComponent implements OnInit {
     });
   }
 
+  //TODO: Centralize this parsing logic with the editorial calendar component
   private parseCsv(csv: string): YearGroup[] {
     const lines = csv.trim().split('\n');
     const releases: Release[] = [];

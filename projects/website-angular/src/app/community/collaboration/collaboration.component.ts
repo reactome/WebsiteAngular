@@ -51,6 +51,7 @@ export class CollaborationComponent implements OnInit {
     return this.entries.filter(e => e.topic === topic);
   }
 
+  //TODO: export to util
   private parseHtml(html: string): PathwayEntry[] {
     const entries: PathwayEntry[] = [];
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;

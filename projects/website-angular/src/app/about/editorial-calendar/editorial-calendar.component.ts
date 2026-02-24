@@ -45,6 +45,7 @@ export class EditorialCalendarComponent implements OnInit {
     });
   }
 
+    //TODO: Centralize this parsing logic with the release calendar component
   private parseCsv(csv: string): EditorialEntry[] {
     const lines = csv.trim().split('\n');
     const entries: EditorialEntry[] = [];

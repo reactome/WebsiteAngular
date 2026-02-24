@@ -26,7 +26,7 @@ export const routes: Routes = [
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
 
     //404 Page
-    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) },
+    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) }, //TODO: Remove?
     /* Non - CMS Pages Above this Line */
 
     //CMS Pages
