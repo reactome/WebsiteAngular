@@ -21,13 +21,45 @@
           (keydown)="onSearchKeydown($event)"
         />
         @if (searchQuery) {
-          <button class="clear-btn" (click)="searchQuery = ''; backToCategories()">
+          <button class="clear-btn" (click)="searchQuery = ''; clearFilters()">
             <span class="material-symbols-rounded">close</span>
           </button>
         }
       </div>
       <button class="search-btn" (click)="searchIcons()">Search</button>
     </div>
+
+    <!-- Category filter chips -->
+    @if (categories.length && view === 'grid') {
+      <div class="category-filters">
+        @for (cat of categories; track cat.name) {
+          <button
+            class="category-chip"
+            [class.active]="selectedCategory === cat.name"
+            (click)="selectCategory(cat.name)"
+          >
+            {{ cat.name }}
+            <span class="chip-count">{{ cat.count }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Results info -->
+    @if (view === 'grid' && !loading) {
+      <div class="results-info">
+        {{ totalEntries }} icon{{ totalEntries !== 1 ? 's' : '' }}
+        @if (selectedCategory) {
+          <span> in {{ formattedCategory }}</span>
+        }
+        @if (searchQuery) {
+          <span> matching "{{ searchQuery }}"</span>
+        }
+        @if (selectedCategory || searchQuery) {
+          <button class="clear-link" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+    }
 
     <!-- Loading state -->
     @if (loading) {
@@ -45,50 +77,8 @@
       </div>
     }
 
-    <!-- Category view -->
-    @if (view === 'categories' && !loading && !error) {
-      <div class="summary">
-        <span class="summary-count">{{ totalIcons }}</span> icons across
-        <span class="summary-count">{{ categories.length }}</span> categories
-      </div>
-
-      <div class="category-grid">
-        @for (cat of categories; track cat.name) {
-          <button class="category-card" (click)="selectCategory(cat)">
-            <span class="cat-name">{{ cat.name }}</span>
-            <span class="cat-count">{{ cat.count }}</span>
-          </button>
-        }
-      </div>
-    }
-
     <!-- Icon grid view -->
-    @if (view === 'grid' && !loading) {
-      <div class="grid-header">
-        <button class="back-btn" (click)="backToCategories()">
-          <span class="material-symbols-rounded">arrow_back</span>
-          All Categories
-        </button>
-
-        @if (selectedCategory) {
-          <div class="active-filter">
-            <span class="filter-chip">
-              {{ formattedCategory }}
-              <button class="chip-remove" (click)="backToCategories()">
-                <span class="material-symbols-rounded">close</span>
-              </button>
-            </span>
-          </div>
-        }
-
-        <div class="results-info">
-          {{ totalEntries }} icon{{ totalEntries !== 1 ? 's' : '' }}
-          @if (searchQuery) {
-            <span> matching "{{ searchQuery }}"</span>
-          }
-        </div>
-      </div>
-
+    @if (view === 'grid' && !loading && !error) {
       @if (icons.length === 0) {
         <div class="empty-state">
           <span class="material-symbols-rounded">image_not_supported</span>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
 
@@ -35,7 +36,7 @@ const URL_MAPPING: Record<string, string> = {
   'IUPHAR':            'https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?ligandId=###ID###',
 };
 
-type View = 'categories' | 'grid' | 'detail';
+type View = 'grid' | 'detail';
 
 interface ParsedReference {
   db: string;
@@ -50,11 +51,11 @@ interface ParsedReference {
   styleUrl: './icon-lib.component.scss'
 })
 export class IconLibComponent implements OnInit {
-  view: View = 'categories';
+  view: View = 'grid';
   loading = true;
   error = false;
 
-  // Category view
+  // Categories for filtering
   categories: IconCategory[] = [];
   totalIcons = 0;
 
@@ -70,10 +71,20 @@ export class IconLibComponent implements OnInit {
   detailLoading = false;
   parsedReferences: Map<string, ParsedReference[]> = new Map();
 
-  constructor(private iconService: IconService) {}
+  constructor(
+    private iconService: IconService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.loadCategories();
+    const iconId = this.route.snapshot.paramMap.get('id');
+    if (iconId) {
+      this.loadIconById(iconId);
+    } else {
+      this.loadIcons();
+    }
   }
 
   get maxPage(): number {
@@ -85,25 +96,23 @@ export class IconLibComponent implements OnInit {
   }
 
   loadCategories() {
-    this.loading = true;
-    this.error = false;
     this.iconService.getFacets().subscribe({
       next: (data) => {
-        this.categories = (data.iconCategoriesFacet?.available || [])
-          .map(c => ({ ...c, name: this.formatCategoryName(c.name) }))
+        const merged = new Map<string, number>();
+        for (const c of data.iconCategoriesFacet?.available || []) {
+          const name = this.formatCategoryName(c.name);
+          merged.set(name, (merged.get(name) || 0) + c.count);
+        }
+        this.categories = Array.from(merged, ([name, count]) => ({ name, count }))
           .sort((a, b) => a.name.localeCompare(b.name));
         this.totalIcons = data.totalNumFount;
-        this.loading = false;
       },
-      error: () => {
-        this.error = true;
-        this.loading = false;
-      }
+      error: () => {}
     });
   }
 
-  selectCategory(category: IconCategory) {
-    this.selectedCategory = category.name;
+  selectCategory(name: string) {
+    this.selectedCategory = this.selectedCategory === name ? '' : name;
     this.currentPage = 1;
     this.searchQuery = '';
     this.loadIcons();
@@ -111,10 +120,11 @@ export class IconLibComponent implements OnInit {
 
   loadIcons() {
     this.loading = true;
+    this.error = false;
     this.view = 'grid';
-    const rawCategory = this.selectedCategory.toLowerCase().replace(/\s+/g, '_');
+    const rawCategory = this.selectedCategory ? this.selectedCategory.toLowerCase().replace(/\s+/g, '_') : undefined;
     this.iconService.queryIcons({
-      category: this.searchQuery ? undefined : rawCategory,
+      category: rawCategory,
       query: this.searchQuery || undefined,
       page: this.currentPage,
       pageSize: ICONS_PER_PAGE
@@ -129,6 +139,7 @@ export class IconLibComponent implements OnInit {
       error: () => {
         this.icons = [];
         this.totalEntries = 0;
+        this.error = true;
         this.loading = false;
       }
     });
@@ -137,53 +148,27 @@ export class IconLibComponent implements OnInit {
   searchIcons() {
     this.currentPage = 1;
     this.selectedCategory = '';
-    this.view = 'grid';
-    this.loading = true;
-    this.iconService.queryIcons({
-      query: this.searchQuery || undefined,
-      page: 1,
-      pageSize: ICONS_PER_PAGE
-    }).subscribe({
-      next: (data) => {
-        this.icons = (data.entries || []).sort((a, b) =>
-          (a.iconName || a.name || '').localeCompare(b.iconName || b.name || '')
-        );
-        this.totalEntries = data.entriesCount;
-        this.loading = false;
-      },
-      error: () => {
-        this.icons = [];
-        this.totalEntries = 0;
-        this.loading = false;
-      }
-    });
+    this.loadIcons();
   }
 
   prevPage() {
     if (this.currentPage > 1) {
       this.currentPage--;
-      if (this.searchQuery) {
-        this.searchIcons();
-      } else {
-        this.loadIcons();
-      }
+      this.loadIcons();
     }
   }
 
   nextPage() {
     if (this.currentPage < this.maxPage) {
       this.currentPage++;
-      if (this.searchQuery) {
-        this.searchIcons();
-      } else {
-        this.loadIcons();
-      }
+      this.loadIcons();
     }
   }
 
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
+    this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
     this.iconService.getIcon(icon.stId).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
@@ -201,13 +186,32 @@ export class IconLibComponent implements OnInit {
   backToGrid() {
     this.view = 'grid';
     this.selectedIcon = null;
+    this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
   }
 
-  backToCategories() {
-    this.view = 'categories';
+  private loadIconById(id: string) {
+    this.detailLoading = true;
+    this.view = 'detail';
+    this.loading = false;
+    this.iconService.getIcon(id).subscribe({
+      next: (entry) => {
+        this.selectedIcon = entry;
+        this.parsedReferences = this.prepareReferences(entry);
+        this.detailLoading = false;
+      },
+      error: () => {
+        this.view = 'grid';
+        this.detailLoading = false;
+        this.loadIcons();
+      }
+    });
+  }
+
+  clearFilters() {
     this.selectedCategory = '';
     this.searchQuery = '';
-    this.icons = [];
+    this.currentPage = 1;
+    this.loadIcons();
   }
 
   iconSvgUrl(icon: IconEntry): string {
@@ -217,7 +221,7 @@ export class IconLibComponent implements OnInit {
   formatCategoryName(name: string): string {
     if (!name) return '';
     const spaced = name.replace(/_/g, ' ');
-    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
   }
 
   getReferenceUrl(db: string, id: string): string | null {

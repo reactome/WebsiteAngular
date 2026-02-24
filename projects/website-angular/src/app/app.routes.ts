@@ -15,6 +15,7 @@ export const routes: Routes = [
     //Community Pages
     { path: 'community/collaboration', loadComponent: () => import('./community/collaboration/collaboration.component').then(m => m.CollaborationComponent), pathMatch: 'full' },
     { path: 'community/icon-lib', loadComponent: () => import('./community/icon-lib/icon-lib.component').then(m => m.IconLibComponent), pathMatch: 'full' },
+    { path: 'community/icon-lib/:id', loadComponent: () => import('./community/icon-lib/icon-lib.component').then(m => m.IconLibComponent), pathMatch: 'full' },
 
     //Download Page
     { path: 'download-data', loadComponent: () => import('./download-data/download-data.component').then(m => m.DownloadDataComponent), pathMatch: 'full' },
