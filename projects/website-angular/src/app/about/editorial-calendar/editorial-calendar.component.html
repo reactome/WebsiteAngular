@@ -1,0 +1,99 @@
+<app-page-layout>
+  <article class="editorial-calendar">
+    <header class="page-header">
+      <span class="category-badge">About</span>
+      <h1>Editorial Calendar</h1>
+      <p class="description">
+        Pathways currently being curated and reviewed by the Reactome editorial team, along with upcoming projects in the pipeline.
+      </p>
+    </header>
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading editorial data...</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load editorial data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      <section class="table-section">
+        <h2 class="section-title">
+          <span class="section-icon material-symbols-rounded">edit_note</span>
+          Current Release
+          <span class="count">{{ currentEntries.length }}</span>
+        </h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Pathway</th>
+                <th>Curator</th>
+                <th>Author</th>
+                <th>Reviewer</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of currentEntries; track entry.pathway) {
+                <tr>
+                  <td class="pathway-name">{{ entry.pathway }}</td>
+                  <td>{{ entry.curator }}</td>
+                  <td>{{ entry.author }}</td>
+                  <td>
+                    @if (entry.reviewer) {
+                      {{ entry.reviewer }}
+                    } @else {
+                      <span class="tbd">TBD</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="table-section">
+        <h2 class="section-title">
+          <span class="section-icon material-symbols-rounded">schedule</span>
+          Next Release
+          <span class="count">{{ pipelineEntries.length }}</span>
+        </h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Pathway</th>
+                <th>Curator</th>
+                <th>Author</th>
+                <th>Reviewer</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of pipelineEntries; track entry.pathway) {
+                <tr>
+                  <td class="pathway-name">{{ entry.pathway }}</td>
+                  <td>{{ entry.curator }}</td>
+                  <td>{{ entry.author }}</td>
+                  <td>
+                    @if (entry.reviewer && entry.reviewer !== 'TBD') {
+                      {{ entry.reviewer }}
+                    } @else {
+                      <span class="tbd">TBD</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  </article>
+</app-page-layout>

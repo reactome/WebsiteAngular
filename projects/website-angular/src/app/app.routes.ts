@@ -9,6 +9,14 @@ export const routes: Routes = [
     { path: 'about/news', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },
     { path: 'about/news/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
     { path: 'about/logo', loadComponent: () => import('./about/logo-page/logo-page.component').then(m => m.LogoPageComponent), pathMatch: 'full' },
+    { path: 'about/release-calendar', loadComponent: () => import('./about/release-calendar/release-calendar.component').then(m => m.ReleaseCalendarComponent), pathMatch: 'full' },
+    { path: 'about/editorial-calendar', loadComponent: () => import('./about/editorial-calendar/editorial-calendar.component').then(m => m.EditorialCalendarComponent), pathMatch: 'full' },
+
+    //Community Pages
+    { path: 'community/collaboration', loadComponent: () => import('./community/collaboration/collaboration.component').then(m => m.CollaborationComponent), pathMatch: 'full' },
+
+    //Download Page
+    { path: 'download-data', loadComponent: () => import('./download-data/download-data.component').then(m => m.DownloadDataComponent), pathMatch: 'full' },
 
     //Reactome Research Spotlights
     { path: 'content/reactome-research-spotlight', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },
@@ -18,7 +26,7 @@ export const routes: Routes = [
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
 
     //404 Page
-    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) },
+    { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) }, //TODO: Remove?
     /* Non - CMS Pages Above this Line */
 
     //CMS Pages
