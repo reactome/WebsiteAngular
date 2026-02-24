@@ -6,6 +6,7 @@ import {
   EventEmitter,
   OnChanges,
   SimpleChanges,
+  HostListener,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { SearchService } from 'projects/website-angular/src/services/search.service';
@@ -24,6 +25,7 @@ export class SearchBarComponent implements OnChanges {
   @Output() queryChange = new EventEmitter<string>();
 
   suggestions: string[] = [];
+  highlightedIndex: number = -1;
   
 
   showSuggestions = false;
@@ -98,4 +100,20 @@ export class SearchBarComponent implements OnChanges {
         },
       });
     }
+  
+  @HostListener('window:keydown.arrowdown', ['$event'])
+  onKeyDownArrowDown(event: KeyboardEvent): void {
+    event.preventDefault();
+    if (this.suggestions.length > 0 && this.showSuggestions) {
+      this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
+    }
+  }
+
+  @HostListener('window:keydown.arrowup', ['$event'])
+  onKeyDownArrowUp(event: KeyboardEvent): void {
+    event.preventDefault();
+    if (this.suggestions.length > 0 && this.showSuggestions) {
+      this.highlightedIndex = (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
+    }
+  }
 }

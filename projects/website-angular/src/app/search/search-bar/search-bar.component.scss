@@ -52,6 +52,11 @@
             padding: 4px 16px;
             border-bottom: 1px solid var(--primary);
 
+            &.highlighted {
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+
             &:last-child {
                 border-bottom: none;
             }

@@ -18,8 +18,8 @@
 @if (query && suggestions.length > 0 && showSuggestions) {
 <div class="suggestions-container">
   <ul class="suggestions-list">
-    @for (s of suggestions; track s) {
-    <li (mousedown)="selectSuggestion(s)">
+    @for (s of suggestions; track s; let i = $index) {
+    <li (mousedown)="selectSuggestion(s)" [class]="i === highlightedIndex ? 'highlighted' : ''">
       <a
         [routerLink]="['/content/query']"
         [queryParams]="{ q: s }"
