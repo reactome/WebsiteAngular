@@ -1,0 +1,208 @@
+<app-page-layout>
+  <article class="icon-lib-page">
+    <header class="page-header">
+      <span class="category-badge">Community</span>
+      <h1>Icon Library</h1>
+      <p class="description">
+        Browse the Reactome icon library. Icons are used in Enhanced High Level Diagrams (EHLDs)
+        to represent biological entities and concepts.
+      </p>
+    </header>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          placeholder="Search icons..."
+          [value]="searchQuery"
+          (input)="searchQuery = $any($event.target).value"
+          (keydown)="onSearchKeydown($event)"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="searchQuery = ''; clearFilters()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        }
+      </div>
+      <button class="search-btn" (click)="searchIcons()">Search</button>
+    </div>
+
+    <!-- Category filter chips -->
+    @if (categories.length && view === 'grid') {
+      <div class="category-filters">
+        @for (cat of categories; track cat.name) {
+          <button
+            class="category-chip"
+            [class.active]="selectedCategory === cat.name"
+            (click)="selectCategory(cat.name)"
+          >
+            {{ cat.name }}
+            <span class="chip-count">{{ cat.count }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Results info -->
+    @if (view === 'grid' && !loading) {
+      <div class="results-info">
+        {{ totalEntries }} icon{{ totalEntries !== 1 ? 's' : '' }}
+        @if (selectedCategory) {
+          <span> in {{ formattedCategory }}</span>
+        }
+        @if (searchQuery) {
+          <span> matching "{{ searchQuery }}"</span>
+        }
+        @if (selectedCategory || searchQuery) {
+          <button class="clear-link" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+    }
+
+    <!-- Loading state -->
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    }
+
+    <!-- Error state -->
+    @if (error && !loading) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load icon data. Please try again later.</p>
+      </div>
+    }
+
+    <!-- Icon grid view -->
+    @if (view === 'grid' && !loading && !error) {
+      @if (icons.length === 0) {
+        <div class="empty-state">
+          <span class="material-symbols-rounded">image_not_supported</span>
+          <p>No icons found.</p>
+        </div>
+      }
+
+      <div class="icon-grid">
+        @for (icon of icons; track icon.stId) {
+          <button class="icon-card" (click)="openDetail(icon)">
+            <div class="icon-preview">
+              <img [src]="iconSvgUrl(icon)" [alt]="icon.iconName || icon.name" loading="lazy" (error)="onImgError($event)" />
+            </div>
+            <span class="icon-name">{{ icon.iconName || icon.name }}</span>
+          </button>
+        }
+      </div>
+
+      @if (maxPage > 1) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
+            <span class="material-symbols-rounded">chevron_left</span>
+            Previous
+          </button>
+          <span class="page-info">Page {{ currentPage }} of {{ maxPage }}</span>
+          <button class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
+            Next
+            <span class="material-symbols-rounded">chevron_right</span>
+          </button>
+        </div>
+      }
+    }
+
+    <!-- Icon detail view -->
+    @if (view === 'detail') {
+      <div class="detail-header">
+        <button class="back-btn" (click)="backToGrid()">
+          <span class="material-symbols-rounded">arrow_back</span>
+          Back to Icons
+        </button>
+      </div>
+
+      @if (detailLoading) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading icon details...</p>
+        </div>
+      }
+
+      @if (!detailLoading && selectedIcon) {
+        <div class="icon-detail">
+          <div class="detail-preview">
+            <img [src]="iconSvgUrl(selectedIcon)" [alt]="selectedIcon.iconName || selectedIcon.name" (error)="onImgError($event)" />
+          </div>
+
+          <div class="detail-info">
+            <h2>{{ selectedIcon.iconName || selectedIcon.name }}</h2>
+
+            @if (selectedIcon.stId) {
+              <div class="detail-stid">{{ selectedIcon.stId }}</div>
+            }
+
+            @if (selectedIcon.summation) {
+              <p class="detail-summation">{{ selectedIcon.summation }}</p>
+            }
+
+            @if (selectedIcon.iconCategories?.length) {
+              <div class="detail-section">
+                <h3>Categories</h3>
+                <div class="category-chips">
+                  @for (cat of formatIconCategories(selectedIcon); track cat) {
+                    <span class="detail-chip">{{ cat }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (referenceGroups.length) {
+              <div class="detail-section">
+                <h3>External References</h3>
+                @for (group of referenceGroups; track group.db) {
+                  <div class="ref-group">
+                    <span class="ref-db">{{ group.db }}</span>
+                    <div class="ref-ids">
+                      @for (ref of group.refs; track ref.id) {
+                        @if (ref.url) {
+                          <a class="ref-link" [href]="ref.url" target="_blank" rel="noopener">
+                            {{ ref.id }}
+                            <span class="material-symbols-rounded external-icon">open_in_new</span>
+                          </a>
+                        } @else {
+                          <span class="ref-id">{{ ref.id }}</span>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (selectedIcon.iconEhlds?.length) {
+              <div class="detail-section">
+                <h3>Used in Pathways (EHLDs)</h3>
+                <div class="ehld-list">
+                  @for (ehld of selectedIcon.iconEhlds; track ehld) {
+                    <a class="ehld-link" [href]="'/PathwayBrowser/#/' + ehld" target="_blank" rel="noopener">
+                      {{ ehld }}
+                      <span class="material-symbols-rounded external-icon">open_in_new</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="detail-section">
+              <h3>Download</h3>
+              <a class="download-btn" [href]="iconSvgUrl(selectedIcon)" target="_blank" rel="noopener" download>
+                <span class="material-symbols-rounded">download</span>
+                Download SVG
+              </a>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </article>
+</app-page-layout>
