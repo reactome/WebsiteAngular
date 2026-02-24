@@ -9,6 +9,7 @@ import { SearchBarComponent } from './search-bar/search-bar.component';
 import {
   SearchService,
   SearchResult,
+  SearchEntry,
   FacetResponse,
   SearchFilters,
   FacetCount,
@@ -53,6 +54,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   totalPages = 0;
 
   filters: SearchFilters = {};
+
+  grouped = true;
 
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
@@ -217,6 +220,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     // For other errors, return null
     return of(null);
+  }
+
+  get allEntries(): SearchEntry[] {
+    if (!this.results?.results) return [];
+    return this.results.results.flatMap(g => g.entries);
   }
 
   toggleFacet(category: string, value: string): void {

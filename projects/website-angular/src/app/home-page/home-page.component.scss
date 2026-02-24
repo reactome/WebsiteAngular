@@ -39,6 +39,11 @@ $transition: all 0.3s ease;
   margin-top: 8px;
 }
 
+.home-search-tile app-search-bar {
+  max-width: 600px;
+  width: 100%;
+}
+
 .new-pathway-text {
   display: flex;
   flex-direction: column;
