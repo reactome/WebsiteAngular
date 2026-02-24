@@ -83,6 +83,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       if (this.query) {
         this.searchSubmitted = true;
         this.doSearch();
+        this.getSuggestions(this.query);
       }
     });
   }
@@ -100,7 +101,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.suggestedTerms = [];
         return;
       }
-      this.searchService.getSuggestedTerms(query).subscribe({
+      this.searchService.getSpellCheckTerms(query).subscribe({
         next: (terms) => {
           this.suggestedTerms = terms || [];
         },

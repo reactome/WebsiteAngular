@@ -74,6 +74,10 @@ export class SearchService {
   }
 
   getSuggestedTerms(query: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/suggest?query=${encodeURIComponent(query)}`);
+  }
+
+  getSpellCheckTerms(query: string): Observable<string[]> {
     return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
   }
 
