@@ -23,22 +23,57 @@ $spacing-unit: 16px;
     text-decoration: underline;
 }
 
-.logo-wrapper {
+.logo-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: $spacing-unit * 4;
+}
+
+.logo-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: $spacing-unit * 2;
+    gap: $spacing-unit;
+
+    padding: $spacing-unit;
+    border-radius: 4px;
+    border: solid 1px var(--on-surface);
+
+    &.negative {
+        background: black;
+    }
 }
+
 
 .logo-options {
     display: flex;
     flex-direction: row;
+    width: 95%;
     align-items: center;
     justify-content: space-evenly;
     gap: $spacing-unit * 2;
+
+    border-top: solid 1px var(--on-surface);
 }
 
-.imagotype {
-    
+.dropdown-link {
+    background: var(--on-primary);
+    color: var(--primary);
+    text-decoration: none;
+    display: block;
+    padding: 4px 16px;
+    border-bottom: dashed 1px var(--primary);
+
+    &:hover {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+}
+
+.imagotype, .isotype {
+    max-height: 100px;
+    width: auto;
 }

@@ -1,3 +1,5 @@
+$shadow: rgba(0, 0, 0, 0.1);
+
 .dropdown-button {
     display: flex;
     align-items: center;
@@ -18,4 +20,5 @@
     flex-direction: column;
     position: absolute;
     z-index: 1000;
+    box-shadow: 0 8px 16px $shadow;
 }

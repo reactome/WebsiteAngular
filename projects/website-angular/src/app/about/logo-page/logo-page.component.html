@@ -1,5 +1,5 @@
 <app-page-layout>
-  <app-tile>
+  <div>
   <div class="block">
     <h1>Introducing our Logo</h1>
     <p>
@@ -14,8 +14,8 @@
       layers of knowledge that surround biological events.
     </p>
   </div>
-</app-tile>
-<app-tile>
+</div>
+<div>
   <div class="block">
     <h1>How to Use Our Logo</h1>
     <p>
@@ -26,8 +26,8 @@
       that fits nicely against a coloured background.
     </p>
   </div>
-</app-tile>
-<app-tile style="width: 100%;">
+</div>
+<div style="width: 100%;">
   <div class="block">
     <h1>Download Our Logo</h1>
     <div class="logo-wrapper">
@@ -37,22 +37,59 @@
             <div class="logo-item">
                 <img class="imagotype" src="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive_25mm.png"/>
                 <div class="logo-options">
-                    <app-dropdown buttonLabel="PNG">
-                        <a href="TODO" class="inline-link">Small</a>
-                        <a href="TODO" class="inline-link">Medium</a>
-                        <a href="TODO" class="inline-link">Large</a>
+                    <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
+                        <a href="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive_25mm.png" class="dropdown-link">Small</a>
+                        <a href="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive_50mm.png" class="dropdown-link">Medium</a>
+                        <a href="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive_100mm.png" class="dropdown-link">Large</a>
                     </app-dropdown>
-                    <a href="TODO" class="inline-link">SVG</a>
-                    <a href="TODO" class="inline-link">EMF</a>
+                    <a href="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive.svg" class="inline-link">SVG</a>
+                    <a href="https://reactome.org/images/logo/imagotype/positive/Reactome_Imagotype_Positive.emf" class="inline-link">EMF</a>
                 </div>
-            </div> 
+            </div>
+            <div class="logo-item negative">
+                <img class="imagotype" src="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative_25mm.png"/>
+                <div class="logo-options">
+                    <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
+                        <a href="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative_25mm.png" class="dropdown-link">Small</a>
+                        <a href="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative_50mm.png" class="dropdown-link">Medium</a>
+                        <a href="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative_100mm.png" class="dropdown-link">Large</a>
+                    </app-dropdown>
+                    <a href="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative.svg" class="inline-link">SVG</a>
+                    <a href="https://reactome.org/images/logo/imagotype/negative/Reactome_Imagotype_Negative.emf" class="inline-link">EMF</a>
+                </div>
+            </div>
         </div>
       </div>
       <div>
         <h2>Isotype</h2>
-        <div class="logo-container">TODO: LOGOS</div>
+        <div class="logo-container">
+          <div class="logo-item">
+              <img class="isotype" src="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive_25mm.png"/>
+              <div class="logo-options">
+                  <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
+                      <a href="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive_10mm.png" class="dropdown-link">Small</a>
+                      <a href="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive_25mm.png" class="dropdown-link">Medium</a>
+                      <a href="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive_50mm.png" class="dropdown-link">Large</a>
+                  </app-dropdown>
+                  <a href="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive.svg" class="inline-link">SVG</a>
+                  <a href="https://reactome.org/images/logo/isotype/positive/Reactome_Isotype_Positive.emf" class="inline-link">EMF</a>
+              </div>
+          </div>
+          <div class="logo-item negative">
+              <img class="isotype" src="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative_25mm.png"/>
+              <div class="logo-options">
+                  <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
+                      <a href="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative_10mm.png" class="dropdown-link">Small</a>
+                      <a href="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative_25mm.png" class="dropdown-link">Medium</a>
+                      <a href="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative_50mm.png" class="dropdown-link">Large</a>
+                  </app-dropdown>
+                  <a href="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative.svg" class="inline-link">SVG</a>
+                  <a href="https://reactome.org/images/logo/isotype/negative/Reactome_Isotype_Negative.emf" class="inline-link">EMF</a>
+              </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</app-tile>
+</div>
 </app-page-layout>
