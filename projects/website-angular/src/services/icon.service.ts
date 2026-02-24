@@ -39,7 +39,7 @@ export interface IconResult {
 })
 export class IconService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://dev.reactome.org/ContentService/search';
+  private baseUrl = 'https://dev.reactome.org/ContentService/search'; //TODO: change in prod or make configurable (do ts to all sevices)
 
   getFacets(): Observable<IconFacetResponse> {
     return this.http.get<IconFacetResponse>(`${this.baseUrl}/icon/facet`);

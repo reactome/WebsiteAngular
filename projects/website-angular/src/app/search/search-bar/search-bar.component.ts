@@ -55,7 +55,7 @@ export class SearchBarComponent implements OnChanges {
       return;
     }
     this.router.navigate(['/content/query'], { queryParams: { q: q }});
-    
+    this.highlightedIndex = -1;
 
     this.queryChange.emit(q);
   }
@@ -80,6 +80,7 @@ export class SearchBarComponent implements OnChanges {
       return;
     }
 
+    this.highlightedIndex = -1;
     this.query = s;
     
     this.router.navigate(['/content/query'], { queryParams: { q: s } });
@@ -106,6 +107,7 @@ export class SearchBarComponent implements OnChanges {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
+      this.query = this.suggestions[this.highlightedIndex];
     }
   }
 
@@ -114,6 +116,7 @@ export class SearchBarComponent implements OnChanges {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions) {
       this.highlightedIndex = (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
+      this.query = this.suggestions[this.highlightedIndex];
     }
   }
 }

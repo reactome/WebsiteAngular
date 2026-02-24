@@ -5,6 +5,7 @@ import { IconService, IconCategory, IconEntry } from '../../../services/icon.ser
 
 const ICONS_PER_PAGE = 28;
 
+//TODO: this is in url remove and replace with config or fetch
 const URL_MAPPING: Record<string, string> = {
   'UNIPROT':           'https://www.uniprot.org/entry/###ID###',
   'UNIPROT-T':         'https://www.uniprot.org/taxonomy/###ID###',
