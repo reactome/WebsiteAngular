@@ -1,8 +1,17 @@
-<div class="dropdown-button" [style]="buttonStyle" (mouseenter)="viewMenu()" (mouseleave)="hideMenu()" (click)="toggleMenu">
-    <mat-icon class="dropdown-icon" *ngIf="buttonIcon">{{ buttonIcon }}</mat-icon>
+<div class="dropdown" (mouseleave)="hideMenu()">
+  <div
+    class="dropdown-button"
+    [style]="buttonStyle"
+    (mouseenter)="viewMenu()"
+    (click)="(toggleMenu)"
+  >
+    <mat-icon class="dropdown-icon" *ngIf="buttonIcon">{{
+      buttonIcon
+    }}</mat-icon>
     <span class="dropdown-label" *ngIf="buttonLabel">{{ buttonLabel }}</span>
     <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
-</div>
-<div class="dropdown-menu" [style]="menuStyle" *ngIf="menuDown">
+  </div>
+  <div class="dropdown-menu" [style]="menuStyle" *ngIf="menuDown">
     <ng-content></ng-content>
+  </div>
 </div>

@@ -4,6 +4,13 @@
     justify-content: center;
     cursor: pointer;
     gap: 4px;
+
+    &:hover {
+        mat-icon {
+            transform: rotate(180deg);
+            transition: transform 0.3s ease;
+        }
+    }
 }
 
 .dropdown-menu {
@@ -11,11 +18,4 @@
     flex-direction: column;
     position: absolute;
     z-index: 1000;
-    margin-top: 4px;
-
-    &:hover {
-        mat-icon {
-            transform: rotate(180deg);
-        }
-    }
 }
