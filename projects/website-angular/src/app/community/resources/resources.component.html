@@ -1,0 +1,68 @@
+<app-page-layout>
+  <article class="collaboration-page">
+    <header class="page-header">
+      <span class="category-badge">Community</span>
+      <h1>Resources Guide </h1>
+      <p class="description">
+        We actively seek collaborations with other data resources and users to improve data integration, share efforts, and make our data maximally useful to biologists and bioinformaticians. Here are a list of software tools, websites, databases and research projects that: i) support the use of Reactome data, ii) have integrated Reactome data, or iii) provide data linkages to the Reactome website. 
+      </p>
+    </header>
+
+    <div class="intro-text">
+      <p>
+        If we are missing your website, database, software tool and project, please contact our <a href="mailto:help@reactome.org">help desk</a>.
+      </p>
+    </div>
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading pathway data...</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load pathway data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      <div class="summary">
+        <span class="summary-count">{{ getNumberOfEntries() }}</span> resources from <span class="summary-count">{{ getKeys(entries).length }}</span> categories
+      </div>
+
+      @for (category of getKeys(entries); track category) {
+        <section class="topic-section">
+          <h2 class="topic-title">
+            {{ category }}
+            <span class="count">{{ getNumberOfEntries(category) }}</span>
+          </h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-pathway">Resource Name</th>
+                  <th class="col-curator">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of entries[category]; track entry.number) {
+                  <tr>
+                    <td class="pathway-name">
+                      
+                      <span class="entry-name">{{ entry.name }}</span>
+                      
+                    </td>
+                    <td class="entry-description">{{ entry.description }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    }
+  </article>
+</app-page-layout>
