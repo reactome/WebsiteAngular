@@ -13,6 +13,7 @@ export const routes: Routes = [
     { path: 'about/editorial-calendar', loadComponent: () => import('./about/editorial-calendar/editorial-calendar.component').then(m => m.EditorialCalendarComponent), pathMatch: 'full' },
 
     //Community Pages
+    { path: 'community/partners', loadComponent: () => import('./community/partners/partners.component').then(m => m.PartnersComponent), pathMatch: 'full' },
     { path: 'community/resources', loadComponent: () => import('./community/resources/resources.component').then(m => m.ResourcesComponent), pathMatch: 'full' },
     { path: 'community/collaboration', loadComponent: () => import('./community/collaboration/collaboration.component').then(m => m.CollaborationComponent), pathMatch: 'full' },
     { path: 'community/icon-lib', loadComponent: () => import('./community/icon-lib/icon-lib.component').then(m => m.IconLibComponent), pathMatch: 'full' },
