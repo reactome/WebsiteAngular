@@ -170,7 +170,7 @@
             <div class="error">{{ error }}</div>
           }
 
-          @if (hasNoResults && !loading && !error) {
+          @if (hasNoResults && !loading && !error && suggestedTerms.length > 0) {
             <div class="no-results">
               <h2>No results found for "{{ query }}"</h2>
                 <h3>Did you mean...</h3>
