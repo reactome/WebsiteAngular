@@ -335,8 +335,300 @@ $border-radius: 8px;
 
 // Search bar at top
 .search-top {
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto $spacing;
+}
+
+// Mode tabs (Simple / Advanced)
+.search-mode-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+
+  :host-context(.dark) & {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  color: var(--on-surface-variant);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background 0.15s ease;
+  }
+
+  &:hover {
+    color: var(--primary);
+  }
+
+  &.active {
+    color: var(--primary);
+    font-weight: 600;
+
+    &::after {
+      background: var(--primary);
+    }
+  }
+}
+
+// Compact syntax hints (always visible in results view)
+.syntax-hints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--on-surface-variant);
+
+  code {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 0.8em;
+  }
+
+  .syntax-hints-link {
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Advanced input area (in results view)
+.advanced-input-area {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+
+  .advanced-search-btn {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+}
+
+.advanced-input-column {
+  flex: 1;
+  min-width: 0;
+}
+
+// Advanced search panel (in empty state)
+.advanced-panel {
+  max-width: 900px;
+  margin: 0 auto $spacing;
+  text-align: left;
+}
+
+.advanced-query-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: $border-radius;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--on-surface);
+  background: white;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+
+  &::placeholder {
+    color: var(--on-surface-variant);
+    opacity: 0.6;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+
+  :host-context(.dark) & {
+    background: var(--surface);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+// Syntax help
+.syntax-help-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--on-surface-variant);
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 8px;
+
+  .material-symbols-rounded {
+    font-size: 16px;
+  }
+
+  &:hover {
+    color: var(--primary);
+  }
+}
+
+.syntax-help {
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  border-radius: $border-radius;
+  padding: 16px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  :host-context(.dark) & {
+    background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.syntax-help-footer {
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+  color: var(--on-surface-variant);
+
+  a {
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.syntax-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th {
+    text-align: left;
+    padding: 6px 12px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    color: var(--on-surface);
+    font-weight: 600;
+
+    :host-context(.dark) & {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--on-surface);
+
+    :host-context(.dark) & {
+      border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  code {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+}
+
+// Advanced facet grid
+.advanced-facets {
+  margin-top: 16px;
+}
+
+.advanced-facets-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.advanced-facet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.advanced-facet-column {
+  h4 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary);
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--primary);
+  }
+}
+
+.advanced-facet-list {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+// Advanced search submit button
+.advanced-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: $border-radius;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 90%, black);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 // Active filter chips
@@ -391,7 +683,7 @@ $border-radius: 8px;
 }
 
 .empty-search-bar {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -692,6 +984,10 @@ $border-radius: 8px;
   .facet-sidebar {
     width: 100%;
   }
+
+  .advanced-facet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -701,5 +997,9 @@ $border-radius: 8px;
 
   .pagination {
     flex-wrap: wrap;
+  }
+
+  .advanced-facet-grid {
+    grid-template-columns: 1fr;
   }
 }

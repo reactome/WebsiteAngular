@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -18,7 +19,7 @@ import {
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent],
+  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
@@ -60,6 +61,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
 
+  advancedMode = false;
+
   private paramsSub!: Subscription;
 
   ngOnInit(): void {
@@ -82,6 +85,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         compartments: toArray(params['compartments']),
         keywords: toArray(params['keywords']),
       };
+
+      if (params['advanced'] === 'true' && !this.advancedMode) {
+        this.toggleAdvancedMode();
+      } else if (params['advanced'] !== 'true' && this.advancedMode) {
+        this.advancedMode = false;
+      }
 
       if (this.query) {
         this.searchSubmitted = true;
@@ -257,6 +266,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   toggleGroup(group: string): void {
     this.collapsedGroups[group] = !this.collapsedGroups[group];
+  }
+
+  toggleAdvancedMode(): void {
+    this.advancedMode = !this.advancedMode;
   }
 
   private updateQueryParams(params: Record<string, string | string[] | null>): void {

@@ -3,7 +3,22 @@
     @if (query && searchSubmitted) {
       <!-- Search bar + filters above the two-column layout -->
       <div class="search-top">
-        <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+        <div class="search-mode-tabs">
+          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">search</span>
+            Simple Search
+          </button>
+          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">tune</span>
+            Advanced Search
+          </button>
+        </div>
+
+        @if (advancedMode) {
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [advancedMode]="true"/>
+        } @else {
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+        }
       </div>
 
       <!-- Active filter chips -->
@@ -374,9 +389,27 @@ NOTE: This is an automatically generated message.
       <div class="empty-state">
         <h1>Search Reactome</h1>
         <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
-        <div class="empty-search-bar">
-          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+
+        <div class="search-mode-tabs">
+          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">search</span>
+            Simple Search
+          </button>
+          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">tune</span>
+            Advanced Search
+          </button>
         </div>
+
+        @if (advancedMode) {
+          <div class="advanced-panel">
+            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [advancedMode]="true" [filters]="true" [showSuggestions]="true"/>
+          </div>
+        } @else {
+          <div class="empty-search-bar">
+            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [filters]="true" [showSuggestions]="true"/>
+          </div>
+        }
       </div>
     }
   </div>
