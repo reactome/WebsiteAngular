@@ -27,6 +27,8 @@ export const routes: Routes = [
     { path: 'content/reactome-research-spotlight/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
 
     //Search Page
+    { path: 'content/advanced', redirectTo: '/content/query?advanced=true' },
+    { path: 'tools/advanced', redirectTo: '/content/query?advanced=true' },
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
 
     //404 Page

@@ -3,7 +3,43 @@
     @if (query && searchSubmitted) {
       <!-- Search bar + filters above the two-column layout -->
       <div class="search-top">
-        <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+        <div class="search-mode-tabs">
+          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">search</span>
+            Simple Search
+          </button>
+          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">tune</span>
+            Advanced Search
+          </button>
+        </div>
+
+        @if (advancedMode) {
+          <div class="advanced-input-area">
+            <div class="advanced-input-column">
+              <textarea
+                class="advanced-query-input"
+                rows="4"
+                [(ngModel)]="advancedQuery"
+                placeholder='e.g. "apoptotic process" AND TP53'
+              ></textarea>
+              <div class="syntax-hints">
+                <span><code>" "</code> exact phrase</span>
+                <span><code>AND</code> <code>OR</code> <code>NOT</code> boolean</span>
+                <span><code>?</code> <code>*</code> wildcards</span>
+                <span><code>"raf map"~4</code> proximity</span>
+                <span><code>( )</code> grouping</span>
+                <a class="syntax-hints-link" href="https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html" target="_blank" rel="noopener">Full syntax reference</a>
+              </div>
+            </div>
+            <button class="advanced-search-btn" (click)="submitAdvancedSearch()" [disabled]="!advancedQuery.trim()">
+              <span class="material-symbols-rounded">search</span>
+              Search
+            </button>
+          </div>
+        } @else {
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+        }
       </div>
 
       <!-- Active filter chips -->
@@ -374,9 +410,154 @@ NOTE: This is an automatically generated message.
       <div class="empty-state">
         <h1>Search Reactome</h1>
         <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
-        <div class="empty-search-bar">
-          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+
+        <div class="search-mode-tabs">
+          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">search</span>
+            Simple Search
+          </button>
+          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+            <span class="material-symbols-rounded">tune</span>
+            Advanced Search
+          </button>
         </div>
+
+        @if (advancedMode) {
+          <div class="advanced-panel">
+            <textarea
+              class="advanced-query-input"
+              rows="6"
+              [(ngModel)]="advancedQuery"
+              placeholder='e.g. "apoptotic process" AND TP53'
+            ></textarea>
+
+            <button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
+              <span class="material-symbols-rounded">help_outline</span>
+              Syntax Help
+              <span class="material-symbols-rounded">{{ syntaxHelpOpen ? 'expand_less' : 'expand_more' }}</span>
+            </button>
+
+            @if (syntaxHelpOpen) {
+              <div class="syntax-help">
+                <table class="syntax-table">
+                  <thead>
+                    <tr><th>Syntax</th><th>Description</th><th>Example</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><code>"..."</code></td><td>Exact phrase match</td><td><code>"apoptotic process"</code></td></tr>
+                    <tr><td><code>AND</code></td><td>Both terms must be present</td><td><code>apoptosis AND TP53</code></td></tr>
+                    <tr><td><code>OR</code></td><td>Either term can be present</td><td><code>apoptosis OR autophagy</code></td></tr>
+                    <tr><td><code>NOT</code></td><td>Exclude a term</td><td><code>apoptosis NOT cancer</code></td></tr>
+                    <tr><td><code>?</code></td><td>Single character wildcard</td><td><code>te?t</code></td></tr>
+                    <tr><td><code>*</code></td><td>Multi-character wildcard</td><td><code>apopt*</code></td></tr>
+                    <tr><td><code>"..."~N</code></td><td>Proximity search (within N words)</td><td><code>"cell death"~3</code></td></tr>
+                    <tr><td><code>( )</code></td><td>Grouping for complex queries</td><td><code>(apoptosis OR autophagy) AND TP53</code></td></tr>
+                  </tbody>
+                </table>
+                <p class="syntax-help-footer">
+                  For the full query syntax, see the <a href="https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html" target="_blank" rel="noopener">Solr Standard Query Parser documentation</a>.
+                </p>
+              </div>
+            }
+
+            @if (allFacets) {
+              <div class="advanced-facets">
+                <h3 class="advanced-facets-title">Filter by</h3>
+                <div class="advanced-facet-grid">
+                  @if (getFacetItems(allFacets.speciesFacet); as items) {
+                    @if (items.length) {
+                      <div class="advanced-facet-column">
+                        <h4>Species</h4>
+                        <div class="advanced-facet-list">
+                          @for (item of items; track item.name) {
+                            <label class="facet-option">
+                              <input
+                                type="checkbox"
+                                [checked]="isAdvancedFacetSelected('species', item.name)"
+                                (change)="toggleAdvancedFacet('species', item.name)"
+                              />
+                              <span class="facet-name">{{ item.name }}</span>
+                              <span class="facet-count">({{ item.count }})</span>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (getFacetItems(allFacets.typeFacet); as items) {
+                    @if (items.length) {
+                      <div class="advanced-facet-column">
+                        <h4>Types</h4>
+                        <div class="advanced-facet-list">
+                          @for (item of items; track item.name) {
+                            <label class="facet-option">
+                              <input
+                                type="checkbox"
+                                [checked]="isAdvancedFacetSelected('types', item.name)"
+                                (change)="toggleAdvancedFacet('types', item.name)"
+                              />
+                              <span class="facet-name">{{ item.name }}</span>
+                              <span class="facet-count">({{ item.count }})</span>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (getFacetItems(allFacets.compartmentFacet); as items) {
+                    @if (items.length) {
+                      <div class="advanced-facet-column">
+                        <h4>Compartments</h4>
+                        <div class="advanced-facet-list">
+                          @for (item of items; track item.name) {
+                            <label class="facet-option">
+                              <input
+                                type="checkbox"
+                                [checked]="isAdvancedFacetSelected('compartments', item.name)"
+                                (change)="toggleAdvancedFacet('compartments', item.name)"
+                              />
+                              <span class="facet-name">{{ item.name }}</span>
+                              <span class="facet-count">({{ item.count }})</span>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (getFacetItems(allFacets.keywordFacet); as items) {
+                    @if (items.length) {
+                      <div class="advanced-facet-column">
+                        <h4>Keywords</h4>
+                        <div class="advanced-facet-list">
+                          @for (item of items; track item.name) {
+                            <label class="facet-option">
+                              <input
+                                type="checkbox"
+                                [checked]="isAdvancedFacetSelected('keywords', item.name)"
+                                (change)="toggleAdvancedFacet('keywords', item.name)"
+                              />
+                              <span class="facet-name">{{ item.name }}</span>
+                              <span class="facet-count">({{ item.count }})</span>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+
+            <button class="advanced-search-btn" (click)="submitAdvancedSearch()" [disabled]="!advancedQuery.trim()">
+              <span class="material-symbols-rounded">search</span>
+              Search
+            </button>
+          </div>
+        } @else {
+          <div class="empty-search-bar">
+            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+          </div>
+        }
       </div>
     }
   </div>

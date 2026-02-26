@@ -257,7 +257,7 @@
         },
         "advanced-data-search": {
             "label": "Advanced Data Search",
-            "link": "/tools/advanced"
+            "link": "/content/query?advanced=true"
         },
         "site-search": {
             "label": "Site Search",
