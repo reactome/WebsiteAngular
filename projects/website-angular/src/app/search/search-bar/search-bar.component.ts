@@ -15,11 +15,12 @@ import {
   SearchFilters,
   SearchService,
 } from 'projects/website-angular/src/services/search.service';
+import { DropdownToggleComponent } from "../../reactome-components/dropdown-toggle/dropdown-toggle.component";
 
 @Component({
   selector: 'app-search-bar',
   standalone: true,
-  imports: [],
+  imports: [DropdownToggleComponent],
   templateUrl: './search-bar.component.html',
   styleUrl: './search-bar.component.scss',
 })

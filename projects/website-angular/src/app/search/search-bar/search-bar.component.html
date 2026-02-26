@@ -28,9 +28,7 @@
   ></textarea>
   <button type="submit" class="search-button">Go!</button>
 </form>
-}
-
-@if (query && suggestions.length > 0 && showSuggestions) {
+} @if (query && suggestions.length > 0 && showSuggestions) {
 <div class="suggestions-container">
   <ul class="suggestions-list">
     @for (s of suggestions; track s; let i = $index) {
@@ -49,19 +47,15 @@
     }
   </ul>
 </div>
-}
-
-@if (advancedMode) {
-  <button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
+} @if (advancedMode) {
+<button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
   <span class="material-symbols-rounded">help_outline</span>
   Syntax Help
   <span class="material-symbols-rounded">{{
     syntaxHelpOpen ? "expand_less" : "expand_more"
   }}</span>
 </button>
-}
-
-@if (syntaxHelpOpen) {
+} @if (syntaxHelpOpen) {
 <div class="syntax-help">
   <table class="syntax-table">
     <thead>
@@ -124,34 +118,31 @@
     >.
   </p>
 </div>
-} 
-
-@if (filters && allFacets) {
+} @if (filters && allFacets) {
 <div class="advanced-facets">
   <h3 class="advanced-facets-title">Filter by</h3>
-  <div class="advanced-facet-grid">
+  <div class="">
     @if (getFacetItems(allFacets.speciesFacet); as items) { @if (items.length) {
-    <div class="advanced-facet-column">
-      <h4>Species</h4>
-      <div class="advanced-facet-list">
-        @for (item of items; track item.name) {
-        <label class="facet-option">
-          <input
-            type="checkbox"
-            [checked]="isAdvancedFacetSelected('species', item.name)"
-            (change)="toggleAdvancedFacet('species', item.name)"
-          />
-          <span class="facet-name">{{ item.name }}</span>
-          <span class="facet-count">({{ item.count }})</span>
-        </label>
-        }
-      </div>
-    </div>
+    <app-dropdown-toggle
+      name="Species"
+      (toggleEvent)="toggleAdvancedFacet('species')"
+    >
+      @for (item of items; track item.name) {
+      <label class="facet-option">
+        <input
+          type="checkbox"
+          [checked]="isAdvancedFacetSelected('species', item.name)"
+          (change)="toggleAdvancedFacet('species', item.name)"
+        />
+        <span class="facet-name">{{ item.name }}</span>
+        <span class="facet-count">({{ item.count }})</span>
+      </label>
+      }
+    </app-dropdown-toggle>
     } } @if (getFacetItems(allFacets.typeFacet); as items) { @if (items.length)
     {
-    <div class="advanced-facet-column">
-      <h4>Types</h4>
-      <div class="advanced-facet-list">
+
+      <app-dropdown-toggle name="Types" class="advanced-facet-list">
         @for (item of items; track item.name) {
         <label class="facet-option">
           <input
@@ -163,13 +154,10 @@
           <span class="facet-count">({{ item.count }})</span>
         </label>
         }
-      </div>
-    </div>
+      </app-dropdown-toggle>
     } } @if (getFacetItems(allFacets.compartmentFacet); as items) { @if
     (items.length) {
-    <div class="advanced-facet-column">
-      <h4>Compartments</h4>
-      <div class="advanced-facet-list">
+      <app-dropdown-toggle name="Compartments" class="advanced-facet-list">
         @for (item of items; track item.name) {
         <label class="facet-option">
           <input
@@ -181,13 +169,10 @@
           <span class="facet-count">({{ item.count }})</span>
         </label>
         }
-      </div>
-    </div>
+      </app-dropdown-toggle>
     } } @if (getFacetItems(allFacets.keywordFacet); as items) { @if
     (items.length) {
-    <div class="advanced-facet-column">
-      <h4>Keywords</h4>
-      <div class="advanced-facet-list">
+      <app-dropdown-toggle name="Keywords" class="advanced-facet-list">
         @for (item of items; track item.name) {
         <label class="facet-option">
           <input
@@ -199,12 +184,9 @@
           <span class="facet-count">({{ item.count }})</span>
         </label>
         }
-      </div>
-    </div>
+      </app-dropdown-toggle>
     } }
   </div>
 </div>
 
 }
-
-

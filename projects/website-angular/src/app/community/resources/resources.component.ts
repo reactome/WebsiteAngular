@@ -28,7 +28,6 @@ export class ResourcesComponent {
       next: (html) => {
         this.entries = this.parseHtml(html);
         this.loading = false;
-        console.log(this.entries);
       },
       error: () => {
         this.error = true;

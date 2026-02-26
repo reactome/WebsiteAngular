@@ -1,0 +1,77 @@
+$spacing: 24px;
+$border-radius: 8px;
+
+.facet-section {
+  background: white;
+  border-radius: $border-radius;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  overflow: hidden;
+
+  :host-context(.dark) & {
+    background-color: var(--surface);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+  }
+}
+
+.facet-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.facet-toggle {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.facet-options {
+  padding: 8px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.facet-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  input[type='checkbox'] {
+    flex-shrink: 0;
+    accent-color: var(--primary);
+  }
+}
+
+.facet-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facet-count {
+  color: var(--on-surface-variant);
+  flex-shrink: 0;
+}

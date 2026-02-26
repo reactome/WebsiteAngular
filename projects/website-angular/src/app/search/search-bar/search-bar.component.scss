@@ -192,3 +192,43 @@ $border-radius: 8px;
     font-size: 0.85em;
   }
 }
+
+.advanced-facets-title {
+    text-align: left;
+}
+
+.facet-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  input[type='checkbox'] {
+    flex-shrink: 0;
+    accent-color: var(--primary);
+  }
+}
+
+.facet-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facet-count {
+  color: var(--on-surface-variant);
+  flex-shrink: 0;
+}

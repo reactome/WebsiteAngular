@@ -63,10 +63,6 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   advancedMode = false;
 
-  advancedQuery = '';
-  advancedFilters: SearchFilters = {};
-  syntaxHelpOpen = false;
-
   private paramsSub!: Subscription;
 
   ngOnInit(): void {
@@ -274,51 +270,6 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   toggleAdvancedMode(): void {
     this.advancedMode = !this.advancedMode;
-    if (this.advancedMode) {
-      this.advancedQuery = this.query || '';
-      this.advancedFilters = {
-        species: [...(this.filters.species || [])],
-        types: [...(this.filters.types || [])],
-        compartments: [...(this.filters.compartments || [])],
-        keywords: [...(this.filters.keywords || [])],
-      };
-      this.updateQueryParams({ advanced: 'true' });
-    } else {
-      this.updateQueryParams({ advanced: null });
-    }
-  }
-
-  // toggleAdvancedFacet(category: string, value: string): void {
-  //   const key = category as keyof SearchFilters;
-  //   const current = this.advancedFilters[key] || [];
-  //   const index = current.indexOf(value);
-  //   if (index >= 0) {
-  //     current.splice(index, 1);
-  //   } else {
-  //     current.push(value);
-  //   }
-  //   this.advancedFilters[key] = current;
-  // }
-
-  // isAdvancedFacetSelected(category: string, value: string): boolean {
-  //   return (this.advancedFilters[category as keyof SearchFilters] || []).includes(value);
-  // }
-
-  submitAdvancedSearch(): void {
-    if (!this.advancedQuery.trim()) return;
-    const params: Record<string, string | string[] | null> = {
-      q: this.advancedQuery.trim(),
-      advanced: 'true',
-      page: null,
-    };
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
-      const values = this.advancedFilters[key];
-      params[key] = values?.length ? values : null;
-    }
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: params,
-    });
   }
 
   private updateQueryParams(params: Record<string, string | string[] | null>): void {
