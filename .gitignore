@@ -55,6 +55,9 @@ Thumbs.db
 **/*.css
 **/*.css.map
 
+# Generated search indices
+projects/website-angular/public/site-search-index.json
+
 # Ignore npm lock file
 package-lock.json
 
