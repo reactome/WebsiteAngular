@@ -72,7 +72,7 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: q,
-      advanced: 'true',
+      advanced: this.advancedMode ? 'true' : null,
       page: null,
     };
 
@@ -109,7 +109,7 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: s,
-      advanced: 'true',
+      advanced: this.advancedMode ? 'true' : null,
       page: null,
     };
 
