@@ -1,3 +1,4 @@
+@if (!advancedMode) {
 <form class="search-bar-container" (submit)="onSubmit($event)">
   <input
     type="text"
@@ -10,16 +11,33 @@
     autocomplete="off"
     (submit)="onSubmit($event)"
   />
-  <button type="submit" class="search-button">
-    Go!
-  </button>
+  <button type="submit" class="search-button">Go!</button>
 </form>
+} @else {
+<form class="search-bar-container" (submit)="onSubmit($event)">
+  <textarea
+    type="text"
+    placeholder='e.g. "apoptotic process" AND TP53'
+    class="advanced-input"
+    [value]="query"
+    (input)="onInput($event)"
+    (focus)="showDropdown()"
+    (blur)="hideDropdownDelayed()"
+    autocomplete="off"
+    (submit)="onSubmit($event)"
+  ></textarea>
+  <button type="submit" class="search-button">Go!</button>
+</form>
+}
 
 @if (query && suggestions.length > 0 && showSuggestions) {
 <div class="suggestions-container">
   <ul class="suggestions-list">
     @for (s of suggestions; track s; let i = $index) {
-    <li (mousedown)="selectSuggestion(s)" [class]="i === highlightedIndex ? 'highlighted' : ''">
+    <li
+      (mousedown)="selectSuggestion(s)"
+      [class]="i === highlightedIndex ? 'highlighted' : ''"
+    >
       <a
         [routerLink]="['/content/query']"
         [queryParams]="{ q: s }"
@@ -32,3 +50,161 @@
   </ul>
 </div>
 }
+
+@if (advancedMode) {
+  <button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
+  <span class="material-symbols-rounded">help_outline</span>
+  Syntax Help
+  <span class="material-symbols-rounded">{{
+    syntaxHelpOpen ? "expand_less" : "expand_more"
+  }}</span>
+</button>
+}
+
+@if (syntaxHelpOpen) {
+<div class="syntax-help">
+  <table class="syntax-table">
+    <thead>
+      <tr>
+        <th>Syntax</th>
+        <th>Description</th>
+        <th>Example</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>"..."</code></td>
+        <td>Exact phrase match</td>
+        <td><code>"apoptotic process"</code></td>
+      </tr>
+      <tr>
+        <td><code>AND</code></td>
+        <td>Both terms must be present</td>
+        <td><code>apoptosis AND TP53</code></td>
+      </tr>
+      <tr>
+        <td><code>OR</code></td>
+        <td>Either term can be present</td>
+        <td><code>apoptosis OR autophagy</code></td>
+      </tr>
+      <tr>
+        <td><code>NOT</code></td>
+        <td>Exclude a term</td>
+        <td><code>apoptosis NOT cancer</code></td>
+      </tr>
+      <tr>
+        <td><code>?</code></td>
+        <td>Single character wildcard</td>
+        <td><code>te?t</code></td>
+      </tr>
+      <tr>
+        <td><code>*</code></td>
+        <td>Multi-character wildcard</td>
+        <td><code>apopt*</code></td>
+      </tr>
+      <tr>
+        <td><code>"..."~N</code></td>
+        <td>Proximity search (within N words)</td>
+        <td><code>"cell death"~3</code></td>
+      </tr>
+      <tr>
+        <td><code>( )</code></td>
+        <td>Grouping for complex queries</td>
+        <td><code>(apoptosis OR autophagy) AND TP53</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="syntax-help-footer">
+    For the full query syntax, see the
+    <a
+      href="https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html"
+      target="_blank"
+      rel="noopener"
+      >Solr Standard Query Parser documentation</a
+    >.
+  </p>
+</div>
+} 
+
+@if (filters && allFacets) {
+<div class="advanced-facets">
+  <h3 class="advanced-facets-title">Filter by</h3>
+  <div class="advanced-facet-grid">
+    @if (getFacetItems(allFacets.speciesFacet); as items) { @if (items.length) {
+    <div class="advanced-facet-column">
+      <h4>Species</h4>
+      <div class="advanced-facet-list">
+        @for (item of items; track item.name) {
+        <label class="facet-option">
+          <input
+            type="checkbox"
+            [checked]="isAdvancedFacetSelected('species', item.name)"
+            (change)="toggleAdvancedFacet('species', item.name)"
+          />
+          <span class="facet-name">{{ item.name }}</span>
+          <span class="facet-count">({{ item.count }})</span>
+        </label>
+        }
+      </div>
+    </div>
+    } } @if (getFacetItems(allFacets.typeFacet); as items) { @if (items.length)
+    {
+    <div class="advanced-facet-column">
+      <h4>Types</h4>
+      <div class="advanced-facet-list">
+        @for (item of items; track item.name) {
+        <label class="facet-option">
+          <input
+            type="checkbox"
+            [checked]="isAdvancedFacetSelected('types', item.name)"
+            (change)="toggleAdvancedFacet('types', item.name)"
+          />
+          <span class="facet-name">{{ item.name }}</span>
+          <span class="facet-count">({{ item.count }})</span>
+        </label>
+        }
+      </div>
+    </div>
+    } } @if (getFacetItems(allFacets.compartmentFacet); as items) { @if
+    (items.length) {
+    <div class="advanced-facet-column">
+      <h4>Compartments</h4>
+      <div class="advanced-facet-list">
+        @for (item of items; track item.name) {
+        <label class="facet-option">
+          <input
+            type="checkbox"
+            [checked]="isAdvancedFacetSelected('compartments', item.name)"
+            (change)="toggleAdvancedFacet('compartments', item.name)"
+          />
+          <span class="facet-name">{{ item.name }}</span>
+          <span class="facet-count">({{ item.count }})</span>
+        </label>
+        }
+      </div>
+    </div>
+    } } @if (getFacetItems(allFacets.keywordFacet); as items) { @if
+    (items.length) {
+    <div class="advanced-facet-column">
+      <h4>Keywords</h4>
+      <div class="advanced-facet-list">
+        @for (item of items; track item.name) {
+        <label class="facet-option">
+          <input
+            type="checkbox"
+            [checked]="isAdvancedFacetSelected('keywords', item.name)"
+            (change)="toggleAdvancedFacet('keywords', item.name)"
+          />
+          <span class="facet-name">{{ item.name }}</span>
+          <span class="facet-count">({{ item.count }})</span>
+        </label>
+        }
+      </div>
+    </div>
+    } }
+  </div>
+</div>
+
+}
+
+

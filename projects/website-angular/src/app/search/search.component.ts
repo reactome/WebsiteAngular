@@ -62,7 +62,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   collapsedGroups: Record<string, boolean> = {};
 
   advancedMode = false;
-  allFacets: FacetResponse | null = null;
+
   advancedQuery = '';
   advancedFilters: SearchFilters = {};
   syntaxHelpOpen = false;
@@ -282,33 +282,27 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         compartments: [...(this.filters.compartments || [])],
         keywords: [...(this.filters.keywords || [])],
       };
-      if (!this.allFacets) {
-        this.searchService.getAllFacets().subscribe({
-          next: (facets) => this.allFacets = facets,
-          error: () => this.allFacets = null,
-        });
-      }
       this.updateQueryParams({ advanced: 'true' });
     } else {
       this.updateQueryParams({ advanced: null });
     }
   }
 
-  toggleAdvancedFacet(category: string, value: string): void {
-    const key = category as keyof SearchFilters;
-    const current = this.advancedFilters[key] || [];
-    const index = current.indexOf(value);
-    if (index >= 0) {
-      current.splice(index, 1);
-    } else {
-      current.push(value);
-    }
-    this.advancedFilters[key] = current;
-  }
+  // toggleAdvancedFacet(category: string, value: string): void {
+  //   const key = category as keyof SearchFilters;
+  //   const current = this.advancedFilters[key] || [];
+  //   const index = current.indexOf(value);
+  //   if (index >= 0) {
+  //     current.splice(index, 1);
+  //   } else {
+  //     current.push(value);
+  //   }
+  //   this.advancedFilters[key] = current;
+  // }
 
-  isAdvancedFacetSelected(category: string, value: string): boolean {
-    return (this.advancedFilters[category as keyof SearchFilters] || []).includes(value);
-  }
+  // isAdvancedFacetSelected(category: string, value: string): boolean {
+  //   return (this.advancedFilters[category as keyof SearchFilters] || []).includes(value);
+  // }
 
   submitAdvancedSearch(): void {
     if (!this.advancedQuery.trim()) return;
