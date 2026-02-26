@@ -255,9 +255,9 @@
             "label": "ReactomeFIViz",
             "link": "/tools/reactome-fiviz"
         },
-        "advanced-data-search": {
-            "label": "Advanced Data Search",
-            "link": "/content/query?advanced=true"
+        "search": {
+            "label": "Search",
+            "link": "/content/query"
         },
         "site-search": {
             "label": "Site Search",
