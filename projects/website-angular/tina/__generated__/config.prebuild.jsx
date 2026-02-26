@@ -103,6 +103,18 @@ var config_default = defineConfig({
         }
       },
       {
+        name: "faq",
+        label: "FAQ",
+        path: "documentation/faq",
+        format: "mdx",
+        fields: [
+          { type: "string", name: "question_id", label: "Question ID", required: true },
+          { type: "string", name: "question", label: "Question", isTitle: true, required: true },
+          { type: "rich-text", name: "answer", label: "Answer", isBody: true, required: true },
+          { type: "string", name: "related_links", label: "Related Links", list: true }
+        ]
+      },
+      {
         //Community Pages
         name: "community",
         label: "Community",

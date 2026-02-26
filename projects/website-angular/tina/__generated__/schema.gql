@@ -64,6 +64,8 @@ type Query {
   reactome_research_spotlightsConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: Reactome_research_spotlightsFilter): Reactome_research_spotlightsConnection!
   documentation(relativePath: String): Documentation!
   documentationConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: DocumentationFilter): DocumentationConnection!
+  faq(relativePath: String): Faq!
+  faqConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: FaqFilter): FaqConnection!
   community(relativePath: String): Community!
   communityConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: CommunityFilter): CommunityConnection!
 }
@@ -74,6 +76,7 @@ input DocumentFilter {
   content: ContentFilter
   reactome_research_spotlights: Reactome_research_spotlightsFilter
   documentation: DocumentationFilter
+  faq: FaqFilter
   community: CommunityFilter
 }
 
@@ -100,7 +103,7 @@ type Collection {
   documents(before: String, after: String, first: Float, last: Float, sort: String, filter: DocumentFilter, folder: String): DocumentConnection!
 }
 
-union DocumentNode = About | News | Content | Reactome_research_spotlights | Documentation | Community | Folder
+union DocumentNode = About | News | Content | Reactome_research_spotlights | Documentation | Faq | Community | Folder
 
 type About implements Node & Document {
   title: String!
@@ -284,6 +287,34 @@ type DocumentationConnection implements Connection {
   edges: [DocumentationConnectionEdges]
 }
 
+type Faq implements Node & Document {
+  question_id: String!
+  question: String!
+  answer: JSON!
+  related_links: [String]
+  id: ID!
+  _sys: SystemInfo!
+  _values: JSON!
+}
+
+input FaqFilter {
+  question_id: StringFilter
+  question: StringFilter
+  answer: RichTextFilter
+  related_links: StringFilter
+}
+
+type FaqConnectionEdges {
+  cursor: String!
+  node: Faq
+}
+
+type FaqConnection implements Connection {
+  pageInfo: PageInfo!
+  totalCount: Float!
+  edges: [FaqConnectionEdges]
+}
+
 type Community implements Node & Document {
   title: String!
   description: String
@@ -330,6 +361,8 @@ type Mutation {
   createReactome_research_spotlights(relativePath: String!, params: Reactome_research_spotlightsMutation!): Reactome_research_spotlights!
   updateDocumentation(relativePath: String!, params: DocumentationMutation!): Documentation!
   createDocumentation(relativePath: String!, params: DocumentationMutation!): Documentation!
+  updateFaq(relativePath: String!, params: FaqMutation!): Faq!
+  createFaq(relativePath: String!, params: FaqMutation!): Faq!
   updateCommunity(relativePath: String!, params: CommunityMutation!): Community!
   createCommunity(relativePath: String!, params: CommunityMutation!): Community!
 }
@@ -340,6 +373,7 @@ input DocumentUpdateMutation {
   content: ContentMutation
   reactome_research_spotlights: Reactome_research_spotlightsMutation
   documentation: DocumentationMutation
+  faq: FaqMutation
   community: CommunityMutation
   relativePath: String
 }
@@ -350,6 +384,7 @@ input DocumentMutation {
   content: ContentMutation
   reactome_research_spotlights: Reactome_research_spotlightsMutation
   documentation: DocumentationMutation
+  faq: FaqMutation
   community: CommunityMutation
 }
 
@@ -393,6 +428,13 @@ input DocumentationMutation {
   category: String
   body: JSON
   image: String
+}
+
+input FaqMutation {
+  question_id: String
+  question: String
+  answer: JSON
+  related_links: [String]
 }
 
 input CommunityMutation {

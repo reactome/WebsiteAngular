@@ -92,6 +92,8 @@ export type Query = {
   reactome_research_spotlightsConnection: Reactome_Research_SpotlightsConnection;
   documentation: Documentation;
   documentationConnection: DocumentationConnection;
+  faq: Faq;
+  faqConnection: FaqConnection;
   community: Community;
   communityConnection: CommunityConnection;
 };
@@ -193,6 +195,21 @@ export type QueryDocumentationConnectionArgs = {
 };
 
 
+export type QueryFaqArgs = {
+  relativePath?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFaqConnectionArgs = {
+  before?: InputMaybe<Scalars['String']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Float']['input']>;
+  last?: InputMaybe<Scalars['Float']['input']>;
+  sort?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<FaqFilter>;
+};
+
+
 export type QueryCommunityArgs = {
   relativePath?: InputMaybe<Scalars['String']['input']>;
 };
@@ -213,6 +230,7 @@ export type DocumentFilter = {
   content?: InputMaybe<ContentFilter>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsFilter>;
   documentation?: InputMaybe<DocumentationFilter>;
+  faq?: InputMaybe<FaqFilter>;
   community?: InputMaybe<CommunityFilter>;
 };
 
@@ -253,7 +271,7 @@ export type CollectionDocumentsArgs = {
   folder?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type DocumentNode = About | News | Content | Reactome_Research_Spotlights | Documentation | Community | Folder;
+export type DocumentNode = About | News | Content | Reactome_Research_Spotlights | Documentation | Faq | Community | Folder;
 
 export type About = Node & Document & {
   __typename?: 'About';
@@ -452,6 +470,37 @@ export type DocumentationConnection = Connection & {
   edges?: Maybe<Array<Maybe<DocumentationConnectionEdges>>>;
 };
 
+export type Faq = Node & Document & {
+  __typename?: 'Faq';
+  question_id: Scalars['String']['output'];
+  question: Scalars['String']['output'];
+  answer: Scalars['JSON']['output'];
+  related_links?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  id: Scalars['ID']['output'];
+  _sys: SystemInfo;
+  _values: Scalars['JSON']['output'];
+};
+
+export type FaqFilter = {
+  question_id?: InputMaybe<StringFilter>;
+  question?: InputMaybe<StringFilter>;
+  answer?: InputMaybe<RichTextFilter>;
+  related_links?: InputMaybe<StringFilter>;
+};
+
+export type FaqConnectionEdges = {
+  __typename?: 'FaqConnectionEdges';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<Faq>;
+};
+
+export type FaqConnection = Connection & {
+  __typename?: 'FaqConnection';
+  pageInfo: PageInfo;
+  totalCount: Scalars['Float']['output'];
+  edges?: Maybe<Array<Maybe<FaqConnectionEdges>>>;
+};
+
 export type Community = Node & Document & {
   __typename?: 'Community';
   title: Scalars['String']['output'];
@@ -502,6 +551,8 @@ export type Mutation = {
   createReactome_research_spotlights: Reactome_Research_Spotlights;
   updateDocumentation: Documentation;
   createDocumentation: Documentation;
+  updateFaq: Faq;
+  createFaq: Faq;
   updateCommunity: Community;
   createCommunity: Community;
 };
@@ -600,6 +651,18 @@ export type MutationCreateDocumentationArgs = {
 };
 
 
+export type MutationUpdateFaqArgs = {
+  relativePath: Scalars['String']['input'];
+  params: FaqMutation;
+};
+
+
+export type MutationCreateFaqArgs = {
+  relativePath: Scalars['String']['input'];
+  params: FaqMutation;
+};
+
+
 export type MutationUpdateCommunityArgs = {
   relativePath: Scalars['String']['input'];
   params: CommunityMutation;
@@ -617,6 +680,7 @@ export type DocumentUpdateMutation = {
   content?: InputMaybe<ContentMutation>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsMutation>;
   documentation?: InputMaybe<DocumentationMutation>;
+  faq?: InputMaybe<FaqMutation>;
   community?: InputMaybe<CommunityMutation>;
   relativePath?: InputMaybe<Scalars['String']['input']>;
 };
@@ -627,6 +691,7 @@ export type DocumentMutation = {
   content?: InputMaybe<ContentMutation>;
   reactome_research_spotlights?: InputMaybe<Reactome_Research_SpotlightsMutation>;
   documentation?: InputMaybe<DocumentationMutation>;
+  faq?: InputMaybe<FaqMutation>;
   community?: InputMaybe<CommunityMutation>;
 };
 
@@ -672,6 +737,13 @@ export type DocumentationMutation = {
   image?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type FaqMutation = {
+  question_id?: InputMaybe<Scalars['String']['input']>;
+  question?: InputMaybe<Scalars['String']['input']>;
+  answer?: InputMaybe<Scalars['JSON']['input']>;
+  related_links?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
 export type CommunityMutation = {
   title?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -689,6 +761,8 @@ export type ContentPartsFragment = { __typename: 'Content', title: string, descr
 export type Reactome_Research_SpotlightsPartsFragment = { __typename: 'Reactome_research_spotlights', title: string, date?: string | null, author?: string | null, body?: any | null, tags?: Array<string | null> | null, image?: string | null };
 
 export type DocumentationPartsFragment = { __typename: 'Documentation', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
+
+export type FaqPartsFragment = { __typename: 'Faq', question_id: string, question: string, answer: any, related_links?: Array<string | null> | null };
 
 export type CommunityPartsFragment = { __typename: 'Community', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
 
@@ -787,6 +861,25 @@ export type DocumentationConnectionQueryVariables = Exact<{
 
 export type DocumentationConnectionQuery = { __typename?: 'Query', documentationConnection: { __typename?: 'DocumentationConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'DocumentationConnectionEdges', cursor: string, node?: { __typename: 'Documentation', id: string, title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
 
+export type FaqQueryVariables = Exact<{
+  relativePath: Scalars['String']['input'];
+}>;
+
+
+export type FaqQuery = { __typename?: 'Query', faq: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, related_links?: Array<string | null> | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
+
+export type FaqConnectionQueryVariables = Exact<{
+  before?: InputMaybe<Scalars['String']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Float']['input']>;
+  last?: InputMaybe<Scalars['Float']['input']>;
+  sort?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<FaqFilter>;
+}>;
+
+
+export type FaqConnectionQuery = { __typename?: 'Query', faqConnection: { __typename?: 'FaqConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'FaqConnectionEdges', cursor: string, node?: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, related_links?: Array<string | null> | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
+
 export type CommunityQueryVariables = Exact<{
   relativePath: Scalars['String']['input'];
 }>;
@@ -856,6 +949,15 @@ export const DocumentationPartsFragmentDoc = gql`
   category
   body
   image
+}
+    `;
+export const FaqPartsFragmentDoc = gql`
+    fragment FaqParts on Faq {
+  __typename
+  question_id
+  question
+  answer
+  related_links
 }
     `;
 export const CommunityPartsFragmentDoc = gql`
@@ -1153,6 +1255,63 @@ export const DocumentationConnectionDocument = gql`
   }
 }
     ${DocumentationPartsFragmentDoc}`;
+export const FaqDocument = gql`
+    query faq($relativePath: String!) {
+  faq(relativePath: $relativePath) {
+    ... on Document {
+      _sys {
+        filename
+        basename
+        hasReferences
+        breadcrumbs
+        path
+        relativePath
+        extension
+      }
+      id
+    }
+    ...FaqParts
+  }
+}
+    ${FaqPartsFragmentDoc}`;
+export const FaqConnectionDocument = gql`
+    query faqConnection($before: String, $after: String, $first: Float, $last: Float, $sort: String, $filter: FaqFilter) {
+  faqConnection(
+    before: $before
+    after: $after
+    first: $first
+    last: $last
+    sort: $sort
+    filter: $filter
+  ) {
+    pageInfo {
+      hasPreviousPage
+      hasNextPage
+      startCursor
+      endCursor
+    }
+    totalCount
+    edges {
+      cursor
+      node {
+        ... on Document {
+          _sys {
+            filename
+            basename
+            hasReferences
+            breadcrumbs
+            path
+            relativePath
+            extension
+          }
+          id
+        }
+        ...FaqParts
+      }
+    }
+  }
+}
+    ${FaqPartsFragmentDoc}`;
 export const CommunityDocument = gql`
     query community($relativePath: String!) {
   community(relativePath: $relativePath) {
@@ -1242,6 +1401,12 @@ export type Requester<C= {}> = <R, V>(doc: DocumentNode, vars?: V, options?: C) 
       },
     documentationConnection(variables?: DocumentationConnectionQueryVariables, options?: C): Promise<{data: DocumentationConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: DocumentationConnectionQueryVariables, query: string}> {
         return requester<{data: DocumentationConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: DocumentationConnectionQueryVariables, query: string}, DocumentationConnectionQueryVariables>(DocumentationConnectionDocument, variables, options);
+      },
+    faq(variables: FaqQueryVariables, options?: C): Promise<{data: FaqQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: FaqQueryVariables, query: string}> {
+        return requester<{data: FaqQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: FaqQueryVariables, query: string}, FaqQueryVariables>(FaqDocument, variables, options);
+      },
+    faqConnection(variables?: FaqConnectionQueryVariables, options?: C): Promise<{data: FaqConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: FaqConnectionQueryVariables, query: string}> {
+        return requester<{data: FaqConnectionQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: FaqConnectionQueryVariables, query: string}, FaqConnectionQueryVariables>(FaqConnectionDocument, variables, options);
       },
     community(variables: CommunityQueryVariables, options?: C): Promise<{data: CommunityQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: CommunityQueryVariables, query: string}> {
         return requester<{data: CommunityQuery, errors?: { message: string, locations: { line: number, column: number }[], path: string[] }[], variables: CommunityQueryVariables, query: string}, CommunityQueryVariables>(CommunityDocument, variables, options);
