@@ -14,6 +14,7 @@ interface PathwayEntry {
   docName: string;
 }
 
+//TODO: should go in a config file
 const HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRorn50RGvdhBflvIAMwr7zgsj3GQrsgBBOuzM6MaKN5ntPcTYRQiCNk5OcYt0aumeLjcUTbhDb_omc/pubhtml/sheet?headers=false&gid=1133159892';
 
 @Component({

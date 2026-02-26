@@ -1,0 +1,37 @@
+<app-page-layout>
+  <article class="collaboration-page">
+    <header class="page-header">
+      <span class="category-badge">Community</span>
+      <h1>Partners</h1>
+      <p class="description">
+        The following table contains the known resources that have integrated
+        Reactome by using the
+        <a href="https://reactome.org/dev/analysis">Analysis Service</a>, the
+        <a href="https://reactome.org/dev/graph-database">Graph Database</a> or
+        any of our widgets (<a href="https://reactome.org/dev/diagram"
+          >diagram</a
+        >
+        or
+        <a href="https://reactome.org/dev/pathways-overview"
+          >pathways overview</a
+        >). If your resource is using our services, widgets or content and it is
+        not in the list,
+        <a
+          href="mailto:help@reactome.org?subject=Including%20a%20Reactome%20Partner"
+          >please let us know and we will add it.</a
+        >
+      </p>
+    </header>
+    <div class="partners-grid">
+      @for (partner of partners; track partner.name) {
+      <a [href]="partner.url" target="_blank" class="partner-card">
+
+        <img [src]="partner.logosrc" [alt]="partner.name + ' logo'" />
+        <h2>{{ partner.name }}</h2>
+        <p>{{ partner.description }}</p>
+        <a [href]="partner.url" target="_blank">Visit Partner Site</a>
+      </a>
+      }
+    </div>
+  </article>
+</app-page-layout>
