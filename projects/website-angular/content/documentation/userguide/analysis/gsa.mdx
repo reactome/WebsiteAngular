@@ -1,0 +1,115 @@
+---
+title: ReactomeGSA
+category: "documentation"
+---
+
+##  ReactomeGSA 
+
+#### 
+
+#### Quantitative, multi-dataset Pathway Analysis (ReactomeGSA)
+
+ReactomeGSA is a new pathway analysis tool integrated into the Reactome ecosystem. Its main feature is that it performs quantitative pathway analyses (so-called gene set analyses). This increases the statistical power of the differential expression analysis, which is directly performed on the pathway level.
+
+ReactomeGSA can analyse multiple datasets simultaneously resulting in a comparative pathway analysis. Thereby, it is possible to quickly assess whether the same effect was observed in independent experiments or studies.
+
+ReactomeGSA currently supports quantitative proteomics, transcriptomics, and microarray data. Datasets from all of these methods can be combined in a single analysis. Thereby, ReactomeGSA can perform multi-omics pathway analyses.
+
+#### Using ReactomeGSA
+
+We currently offer three ways to access ReactomeGSA:
+
+  1. Reactome’s web-based pathway browser (see below)
+  2. From R using our ReactomeGSA Bioconductor R package (see [here](<https://bioconductor.org/packages/release/bioc/html/ReactomeGSA.html>))
+  3. Programmatically, using the ReactomeGSA API at [](<https://gsa.reactome.org>)<https://gsa.reactome.org>
+
+> #### **Analyze Gene Expression using ReactomeGSA**
+
+You can visit ReactomeGSA [here](<https://reactome.org/gsa/home>). When you click on the “Analyse gene expression” tab of the Analysis Tools, you will be redirected to ReactomeGSA, where you can perform analyses.
+
+The following tutorial will show you how to: navigate to ReactomeGSA, submit data for analysis, annotate your data, and perform your first analysis. This following tutorial shows a simplified analysis workflow.
+
+<iframe allowfullscreen="allowfullscreen" frameborder="0" height="629" src="https://docs.google.com/presentation/d/e/2PACX-1vS7wHSSEXSYVI4Ur-7_Sdr9FI8n7-yjl5GbI3INwJUXeqBtLIfzKiTRQ4ueL7uzmA/embed?start=false&amp;loop=true&amp;delayms=3000" width="960"></iframe>
+
+#### ReactomeGSA Analysis Algorithms 
+
+In this first screen, you need to select the algorithm to use for the differential pathway analysis. At the time of writing, ReactomeGSA offers three algorithms. PADOG and Camera perform a differential expression analysis between two groups of samples. ssGSEA is a so-called gene set variation approach that returns pathway-level quantitative data for each sample.
+
+The detailed parameters for each algorithm can be adapted by clicking the blue icon on the left of the algorithm’s box.
+
+#### Adding datasets
+
+After clicking “Next”, you are presented with the now empty list of datasets. Click the “+ Add dataset” button to add a new dataset.
+
+First, you have to select the type of dataset you want to load.
+
+To upload your own data, select one of the options under “Select a file from a local folder”. The file must be a tab-delimited text file (CSV or TSV file) where the first column contains the gene or protein identifiers and all subsequent columns the respective samples. The first row contains the sample names and all subsequent rows the genes / proteins.
+
+To test the tool, it is possible to quickly load example data. Currently, ReactomeGSA provides three example datasets, two (matched) datasets on melanoma associated B cells (proteomics and transcriptomics measurements) and one scRNA-seq dataset on B cells.
+
+#### Annotating experimental metadata
+
+Once a dataset is added, you need to annotate the experimental metadata. This is necessary in order to define the groups for the differential expression analysis in the next step.
+
+You can adapt the dataset’s name in the “Dataset name” box at the top. This name will be used for all results. To increase the readability, we suggest to use as short names as possible.
+
+In case you load data from ExpressionAtlas or choose one of the example datasets (as shown in the screenshot) the sample annotation table will already be pre-filled with certain metadata. In case you uploaded your own dataset, the table will only show the orange sample labels on the left.
+
+To add an annotation, click the “plus” symbol on the right. This will add a new empty column to the table. First, add a heading to define the name of the property (for example, “treatment”). Next, add the values for every sample that you want to include in your comparisons. Samples without any values will simply be ignored.
+
+#### Defining the experimental design
+
+In the final step of adding a dataset, you have to define which groups to compare. The “comparison factor” drop-down menu contains all parameters that were annotated in the sample table before (if they contain at least two different values). “1st group” and “2nd group” define which groups of samples to compare against each other. The 1st group is the control or baseline. 
+
+Depending on which “comparison factor” you select, the available values for the “1st group” and “2nd group” will change automatically.
+
+Additionally, some gene set analysis methods allow you to define so-called “covariates”. These are parameters that might cause a bias in your result (ie. the sequencing facility used) that you would like to correct for. Simply select the relevant ones for your experiment.
+
+Once you click “Continue” you will be returned to the list of datasets where you will now see your annotated dataset in the list. If you want, you can add any number of datasets to a single request.
+
+#### Starting the analysis
+
+“Create REACTOME visualizations” is always selected. If it is de-selected, the result cannot be visualised in Reactome’s pathway browser. This option is generally only relevant to users of the [ReactomeGSA R package](<https://bioconductor.org/packages/release/bioc/html/ReactomeGSA.html>).
+
+If you select “Create reports” ReactomeGSA will automatically create a Microsoft Excel and PDF report of your results. Additionally, it will create a short R script that allows you to load your data directly into an R session.
+
+In case you provide your email address, you are automatically notified as soon as the analysis is complete. The mail will contain direct links to the generated reports (if you chose to create them) and a link to the visualisation in the PathwayBrowser.
+
+Launch the analysis by clicking the “GO” button.
+
+If you provided an email address, you can also close your browser. The analysis will still continue on our servers and you will be notified as soon as it is done. Some analysis with many large datasets (for example comparing five TCGA datasets in a single analysis) may require up to an hour to complete.
+
+> #### Loading Public Datasets
+
+The following tutorial will show you how to: load public data for analysis from EBI Expression Atlas, EBI Single Cell Expression Atlas, GREIN and GEO data. 
+
+<iframe allowfullscreen="allowfullscreen" frameborder="0" height="629" src="https://docs.google.com/presentation/d/e/2PACX-1vQlrliw-2HHwAOOTltJsQ-gyeAEQwo1tDOj2kLrnf5SZB-FCOIk4jc1-zvnC5D3pw/embed?start=false&amp;loop=true&amp;delayms=3000" width="960"></iframe>
+
+Finally, it is possible to directly load datasets from several sources.
+
+  1. ExpressionAtlas. To do so, first navigate to ExpressionAtlas (in a separate tab or window) at [](<https://www.ebi.ac.uk/gxa>)<https://www.ebi.ac.uk/gxa>. Once you have identified a dataset of interest, you can get the dataset’s id by opening the dataset and copying the portion after “[www.ebi.ac.uk/](<http://www.ebi.ac.uk/>)” and before the next “/”. For example, if you opened [](<https://www.ebi.ac.uk/gxa/experiments/E-MTAB-6592/Results>)<https://www.ebi.ac.uk/gxa/experiments/E-MTAB-6592/Results> the identifier of this dataset would be “E-MTAB-6592”.  
+  
+
+  2. Single Cell Expression Atlas. For single-cell experiments you additionally have to define the parameter “k” in order to define which clusters should be used. The effect of “k” on the results can be visualised on the first page of the respective single cell experiment in ExpressionAtlas (see [](<https://www.google.com/url?q=https://www.ebi.ac.uk/gxa/sc/experiments/E-MTAB-7008/results/&sa=D&source=docs&ust=1704903663981717&usg=AOvVaw07jZb6GFrx9exWFVK5YO1W>)<https://www.ebi.ac.uk/gxa/sc/experiments/E-MTAB-7008/results/>). In this case, the dataset identifier would be “E-MTAB-7008" and a possible value for “k” would be 10.   
+  
+
+  3. GREIN data. The accession ID is provided in the URL. 
+  4. GEO Microarray data. After choosing the Pathway algorithm the user can choose public datasets in the "Public datasets" panel and the "GEO query" section to fetch public microarray data via the GEO accession id. e.g. GSE1563. In the process the data is fetched directly from the GEO database and can be annotated, downloaded and analysed within the ReactomeGSA workflow. 
+
+> #### Citing ReactomeGSA
+
+#### **If you use ReactomeGSA in your research, please cite the following publication:**
+
+ReactomeGSA - Efficient Multi-Omics Comparative Pathway Analysis
+
+Johannes Griss, Guilherme Viteri, Konstantinos Sidiropoulos, Vy Nguyen, Antonio Fabregat, Henning Hermjakob
+
+_Mol Cell Proteomics._ 2020 Dec; 19(12): 2115–2124; [Link](<https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7710148/>)
+
+#### **If you use ReactomeGSA's data integration, please cite the following publication:**
+
+ReactomeGSA: new features to simplify public data reuse
+
+Alexander Grentner, Eliot Ragueneau, Chuqiao Gong, Adrian Prinz, Sabina Gansberger, Inigo Oyarzun, Henning Hermjakob, Johannes Griss
+
+_Bioinformatics_ , Volume 40, Issue 6, June 2024; [Link](<https://doi.org/10.1093/bioinformatics/btae338>)

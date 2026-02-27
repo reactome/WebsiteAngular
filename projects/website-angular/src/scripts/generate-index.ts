@@ -55,3 +55,4 @@ function generateIndex(...directories: string[]): void {
 // Run on module load
 generateIndex('projects', 'website-angular', 'content', 'about', 'news');
 generateIndex('projects', 'website-angular', 'content', 'content', 'reactome-research-spotlight')
+generateIndex('projects', 'website-angular', 'content', 'documentation', 'faq');

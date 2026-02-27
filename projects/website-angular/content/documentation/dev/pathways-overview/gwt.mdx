@@ -1,0 +1,190 @@
+---
+title: Pathways Overview GWT
+category: "documentation"
+---
+
+##  Pathways Overview GWT 
+
+Reactome’s Fireworks GWT widget is our original implementation of the pathways overview in GWT. It is meant to be reused by third party resources in order to display Reactome pathways overview directly in their web pages and enable users to interact with them.
+
+[ __ ](<#MoreInfo>)
+
+##  [ More Info ](<#MoreInfo>)
+
+[ __ ](<#GetStarted>)
+
+##  [ Get Started ](<#GetStarted>)
+
+[ __ ](<#API>)
+
+##  [ API ](<#API>)
+
+[ __ ](<#Resources>)
+
+##  [ Resources ](<#Resources>)
+
+### [__More Info](<#MoreInfo>)
+
+[GWT](<http://www.gwtproject.org/>) is a development toolkit for building and optimizing complex browser-based applications. Its goal is to enable productive development of high-performance web applications without the developer having to be an expert in browser quirks, XMLHttpRequest, and JavaScript. GWT is used by many products at Google, including AdWords, AdSense, Flights, Hotel Finder, Offers, Wallet, Blogger. It’s open source, completely free, and used by thousands of developers around the world.
+
+### [__Get Started](<#GetStarted>)
+
+We assume that you already have your [GWT project](<http://www.gwtproject.org/gettingstarted.html>) up and running configured with the [ MAVEN archetype](<http://www.gwtproject.org/doc/latest/RefCommandLineTools.html>). So the first step is to add the EBI Nexus repository in your pom.xml file:
+    
+    
+    <repositories>
+        ...
+        <!-- EBI repo -->
+        <repository>
+            <id>nexus-ebi-repo</id>
+            <name>The EBI internal repository</name>
+            <url>http://www.ebi.ac.uk/Tools/maven/repos/content/groups/ebi-repo/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <!-- EBI SNAPSHOT repo -->
+        <repository>
+            <id>nexus-ebi-snapshot-repo</id>
+            <name>The EBI internal snapshot repository</name>
+            <url>http://www.ebi.ac.uk/Tools/maven/repos/content/groups/ebi-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    
+
+Once the repository is in place, the next thing to do is adding the Reactome's pathways overview dependency:
+    
+    
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>org.reactome.web</groupId>
+            <artifactId>fireworks</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    <dependencies>
+    
+
+Before writing the code to use the pathways overview, add the dependency in your **gwt.xml** file, so the compiler will find the pathways overview:
+    
+    
+    <inherits name="org.reactome.web.fireworks.FireworksViewer" />
+    
+
+And finally, assuming the widget is now going to be displayed by its own, the code in your **EntryPoint** class would look like:
+    
+    
+    /**
+     * For test purposes we assume the pathway overview loads as a single item in the web page.
+     *
+     * Entry point classes define onModuleLoad().
+     */
+    public class Main implements EntryPoint {
+    
+        private final FirewowksViewer fireworks;
+    
+        public Main() {
+            //We create the fireworks. Please note that different pathways overview cannot be loaded in the same instance
+            fireworks = FireowksFactory.createFireworksViewer();
+        }
+    
+        @Override
+        public void onModuleLoad() {
+            Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+                @Override
+                public void execute() {
+                    FireworksFactory.CONSOLE_VERBOSE = true;   //This is optional (for dev purposes)
+                    FireworksFactory.EVENT_BUS_VERBOSE = true; //This is optional (for dev purposes)
+    
+                    //For this use case we add the firewoks as the main and only object of the webpage
+                    RootLayoutPanel.get().add(fireworks);
+                }
+            });
+        }
+    }
+    
+
+### [__API](<#API>)
+
+The available methods are defined in the **DiagramViewer** interface in the **org.reactome.web.diagram.client** package. These are:
+    
+    
+        //subscribe to this event to be notified when the user closes the analysis overlay
+        HandlerRegistration addAnalysisResetHandler(AnalysisResetHandler handler);
+    
+        //Subscribe to this event to be notified if the browser does not support canvas, so diagrams can not be displayed
+        HandlerRegistration addCanvasNotSupportedHandler(CanvasNotSupportedHandler handler);
+    
+        //Subscribe to this event to be notified when the overview is displayed in the viewport
+        HandlerRegistration addFireworksLoaded(FireworksLoadedHandler handler);
+    
+        //Subscribe to this event to be notified when
+        HandlerRegistration addExpressionColumnChangedHandler(ExpressionColumnChangedHandler handler);
+    
+        //Subscribe to this event to be notified when the user hovers over an node in the overview
+        HandlerRegistration addNodeHoverHandler(NodeHoverHandler handler);
+    
+        //Subscribe to this event to be notified when the user leave the hovered node in the overview
+        HandlerRegistration addNodeHoverResetHandler(NodeHoverResetHandler handler);
+    
+        //Subscribe to this event to be notified when the user opens a node in the overview
+        HandlerRegistration addNodeOpenedHandler(NodeOpenedHandler handler);
+    
+        //Subscribe to this event to be notified when the user selects a node in the overview
+        HandlerRegistration addNodeSelectedHandler(NodeSelectedHandler handler);
+    
+        //Subscribe to this event to be notified when the user unselects a node in the overview
+        HandlerRegistration addNodeSelectedResetHandler(NodeSelectedResetHandler handler);
+    
+        //Subscribe to this event to be notified when the user changes the colour profile
+        HandlerRegistration addProfileChangedHandler(ProfileChangedHandler handler);
+    
+        //Returns the selected node
+        Node getSelected();
+    
+        //Highlights the node with the provided stable identifier
+        void highlightNode(String stableIdentifier);
+    
+        //Highlights the node with the provided stable identifier
+        void highlightNode(Long dbIdentifier);
+    
+        //Zooms-in to the node with the provided stable identifier
+        void openPathway(String stableIdentifier);
+    
+        //Zooms-in to the node with the provided database identifier
+        void openPathway(Long dbIdentifier);
+    
+        //Resets the analysis overlay
+        void resetAnalysis();
+    
+        //Resets the highlighted nodes
+        void resetHighlight();
+    
+        //Resets the selected nodes
+        void resetSelection();
+    
+        //Selects the node with the provided stable identifier
+        void selectNode(String stableIdentifier);
+    
+        //Selects the node with the provided database identifier
+        void selectNode(Long dbIdentifier);
+    
+        //Sets the analysis overlay for a given "token" and "resource" (this will query the Analysis Service)
+        void setAnalysisToken(String token, String resource);
+    
+        //Show all the nodes in the viewport
+        void showAll();
+
+### [__Resources](<#Resources>)
+
+  * [__GWT Fireworks code](<https://github.com/reactome-pwp/fireworks>)
+  * [__Reactome Pathways Portal code](<http://github.com/reactome-pwp>)

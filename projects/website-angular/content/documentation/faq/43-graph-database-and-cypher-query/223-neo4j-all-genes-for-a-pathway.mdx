@@ -1,0 +1,16 @@
+---
+title: "How can I use Neo4J to identify all the genes for a given pathway?"
+category: "documentation"
+---
+
+##  How can I use Neo4J to identify all the genes for a given pathway? 
+
+The query for collecting all genes for a given pathway is
+    
+    
+     
+    MATCH (n:DatabaseObject{stId:"R-HSA-3371599"})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|referenceEntity*]->(m:ReferenceGeneProduct) 
+    RETURN DISTINCT m 
+    
+
+For guidance on formatting other queries, please take a look at our [data schema](</content/schema/DatabaseObject>). Our graph core projects also include most of the queries used in Reactome; you can find lots of examples [here](<https://github.com/reactome/graph-core/tree/master/src/main/java/org/reactome/server/graph/repository>).

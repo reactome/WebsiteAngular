@@ -1,0 +1,26 @@
+---
+title: "I have a list of input genes. I want to retrieve all the pathways in which the genes are involved. How can I do this using a Neo4j Cypher query?"
+category: "documentation"
+---
+
+##  I have a list of input genes. I want to retrieve all the pathways in which the genes are involved. How can I do this using a Neo4j Cypher query? 
+
+There is a [tutorial](</dev/graph-database/extract-participating-molecules>) on using neo4j Cypher query here.
+
+To retrieve all human pathways for a single gene (for example: [P36897](<https://www.uniprot.org/uniprotkb/P36897/entry>), the Uniprot identifier for TGFR1)
+    
+    
+     
+    MATCH (n)-[:referenceDatabase]->(rd:ReferenceDatabase) 
+    WHERE toLower(rd.displayName) = toLower("UniProt") AND (n.identifier = "P36897" OR n.variantIdentifier ="P36897" OR "P36897" IN n.geneName OR "P36897" IN n.name) 
+    WITH DISTINCT n  
+    MATCH (pe:PhysicalEntity)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n) 
+    WITH DISTINCT pe 
+    MATCH (rle:ReactionLikeEvent)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit*]->(pe) 
+    WITH DISTINCT rle  
+    MATCH (:Species{taxId:"9606"})<-[:species]-(p:Pathway)-[:hasEvent]->(rle) 
+    RETURN DISTINCT p  
+    ORDER BY p.stId 
+    
+
+If you have a list of genes, we suggest using [UNWIND](<https://neo4j.com/docs/cypher-manual/current/clauses/unwind/>) neo4j cypher to flatten your list back to individual items and then execute the query.

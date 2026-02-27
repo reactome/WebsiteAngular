@@ -8,5 +8,5 @@ import { PageLayoutComponent } from "../../page-layout/page-layout.component";
   styleUrl: './faq.component.scss'
 })
 export class FaqComponent {
-
+  
 }
