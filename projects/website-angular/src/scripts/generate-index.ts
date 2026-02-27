@@ -13,7 +13,9 @@ function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
     return [];
   }
 
-  const files = fs.readdirSync(newsDir).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
+  const files = fs
+    .readdirSync(newsDir)
+    .filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
   const articles = files
     .map((filename) => {
       const filePath = path.join(newsDir, filename);
@@ -26,13 +28,17 @@ function loadNewsArticles(...directories: string[]): ArticleIndexItem[] {
         excerpt: truncateHtml(body || '', 50),
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''),
-        tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')) : frontmatter['tags'],
+        tags:
+          typeof frontmatter['tags'] === 'string'
+            ? frontmatter['tags']
+                .split(',')
+                .map((t: string) =>
+                  t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')
+                )
+            : frontmatter['tags'],
       } as ArticleIndexItem;
     })
-    .sort(
-      (a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return articles;
 }
@@ -50,7 +56,6 @@ function generateIndex(...directories: string[]): void {
 
   const outputPath = path.join(outputDir, 'index.json');
   fs.writeFileSync(outputPath, JSON.stringify(articles, null, 2));
-
 }
 
 /**
@@ -58,19 +63,19 @@ function generateIndex(...directories: string[]): void {
  */
 function stripMarkdown(md: string): string {
   return md
-    .replace(/^---[\s\S]*?---\n?/, '')       // frontmatter
+    .replace(/^---[\s\S]*?---\n?/, '') // frontmatter
     .replace(/import\s+.*?from\s+['"].*?['"]\s*;?\n?/g, '') // ESM imports
-    .replace(/<[^>]+>/g, '')                  // HTML/JSX tags
-    .replace(/!\[.*?\]\(.*?\)/g, '')          // images
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')  // links → text
-    .replace(/#{1,6}\s+/g, '')                // headings
+    .replace(/<[^>]+>/g, '') // HTML/JSX tags
+    .replace(/!\[.*?\]\(.*?\)/g, '') // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links → text
+    .replace(/#{1,6}\s+/g, '') // headings
     .replace(/(\*{1,3}|_{1,3})(.*?)\1/g, '$2') // bold/italic
-    .replace(/`{1,3}[^`]*`{1,3}/g, '')       // inline/block code
-    .replace(/>\s?/gm, '')                    // blockquotes
-    .replace(/[-*+]\s+/gm, '')               // list markers
-    .replace(/\d+\.\s+/gm, '')               // ordered list markers
-    .replace(/\n{2,}/g, '\n')                 // collapse blank lines
-    .replace(/\s+/g, ' ')                     // normalize whitespace
+    .replace(/`{1,3}[^`]*`{1,3}/g, '') // inline/block code
+    .replace(/>\s?/gm, '') // blockquotes
+    .replace(/[-*+]\s+/gm, '') // list markers
+    .replace(/\d+\.\s+/gm, '') // ordered list markers
+    .replace(/\n{2,}/g, '\n') // collapse blank lines
+    .replace(/\s+/g, ' ') // normalize whitespace
     .trim();
 }
 
@@ -126,7 +131,8 @@ function inferCategory(url: string): string {
   const topDir = url.split('/')[1] || '';
   // Special sub-categories
   if (url.startsWith('/about/news/')) return 'News';
-  if (url.startsWith('/content/reactome-research-spotlight/')) return 'Research Spotlight';
+  if (url.startsWith('/content/reactome-research-spotlight/'))
+    return 'Research Spotlight';
   return categoryMap[topDir] || 'Other';
 }
 
@@ -162,11 +168,16 @@ function generateSiteSearchIndex(): void {
     seenUrls.add(url);
     const title =
       (frontmatter['title'] as string) ||
-      path.basename(filePath).replace(/\.(mdx|md)$/, '').replace(/-/g, ' ');
-    const category =
-      (frontmatter['category'] as string) ? inferCategory(url) : inferCategory(url);
+      path
+        .basename(filePath)
+        .replace(/\.(mdx|md)$/, '')
+        .replace(/-/g, ' ');
+    const category = (frontmatter['category'] as string)
+      ? inferCategory(url)
+      : inferCategory(url);
     const plainBody = stripMarkdown(body);
-    const excerpt = plainBody.slice(0, 200) + (plainBody.length > 200 ? '...' : '');
+    const excerpt =
+      plainBody.slice(0, 200) + (plainBody.length > 200 ? '...' : '');
 
     items.push({
       id: nextId++,
