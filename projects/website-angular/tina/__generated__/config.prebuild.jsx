@@ -111,7 +111,7 @@ var config_default = defineConfig({
           { type: "string", name: "question_id", label: "Question ID", required: true },
           { type: "string", name: "question", label: "Question", isTitle: true, required: true },
           { type: "rich-text", name: "answer", label: "Answer", isBody: true, required: true },
-          { type: "string", name: "related_links", label: "Related Links", list: true }
+          { type: "string", name: "category", label: "Category", list: true, required: true }
         ]
       },
       {

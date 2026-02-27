@@ -291,7 +291,7 @@ type Faq implements Node & Document {
   question_id: String!
   question: String!
   answer: JSON!
-  related_links: [String]
+  category: [String!]!
   id: ID!
   _sys: SystemInfo!
   _values: JSON!
@@ -301,7 +301,7 @@ input FaqFilter {
   question_id: StringFilter
   question: StringFilter
   answer: RichTextFilter
-  related_links: StringFilter
+  category: StringFilter
 }
 
 type FaqConnectionEdges {
@@ -434,7 +434,7 @@ input FaqMutation {
   question_id: String
   question: String
   answer: JSON
-  related_links: [String]
+  category: [String]
 }
 
 input CommunityMutation {

@@ -50,7 +50,7 @@ fragment FaqParts on Faq {
   question_id
   question
   answer
-  related_links
+  category
 }
 
 fragment CommunityParts on Community {

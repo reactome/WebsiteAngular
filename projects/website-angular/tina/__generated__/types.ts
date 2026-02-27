@@ -475,7 +475,7 @@ export type Faq = Node & Document & {
   question_id: Scalars['String']['output'];
   question: Scalars['String']['output'];
   answer: Scalars['JSON']['output'];
-  related_links?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  category: Array<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   _sys: SystemInfo;
   _values: Scalars['JSON']['output'];
@@ -485,7 +485,7 @@ export type FaqFilter = {
   question_id?: InputMaybe<StringFilter>;
   question?: InputMaybe<StringFilter>;
   answer?: InputMaybe<RichTextFilter>;
-  related_links?: InputMaybe<StringFilter>;
+  category?: InputMaybe<StringFilter>;
 };
 
 export type FaqConnectionEdges = {
@@ -741,7 +741,7 @@ export type FaqMutation = {
   question_id?: InputMaybe<Scalars['String']['input']>;
   question?: InputMaybe<Scalars['String']['input']>;
   answer?: InputMaybe<Scalars['JSON']['input']>;
-  related_links?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  category?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type CommunityMutation = {
@@ -762,7 +762,7 @@ export type Reactome_Research_SpotlightsPartsFragment = { __typename: 'Reactome_
 
 export type DocumentationPartsFragment = { __typename: 'Documentation', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
 
-export type FaqPartsFragment = { __typename: 'Faq', question_id: string, question: string, answer: any, related_links?: Array<string | null> | null };
+export type FaqPartsFragment = { __typename: 'Faq', question_id: string, question: string, answer: any, category: Array<string> };
 
 export type CommunityPartsFragment = { __typename: 'Community', title: string, description?: string | null, category?: string | null, body?: any | null, image?: string | null };
 
@@ -866,7 +866,7 @@ export type FaqQueryVariables = Exact<{
 }>;
 
 
-export type FaqQuery = { __typename?: 'Query', faq: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, related_links?: Array<string | null> | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
+export type FaqQuery = { __typename?: 'Query', faq: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, category: Array<string>, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
 
 export type FaqConnectionQueryVariables = Exact<{
   before?: InputMaybe<Scalars['String']['input']>;
@@ -878,7 +878,7 @@ export type FaqConnectionQueryVariables = Exact<{
 }>;
 
 
-export type FaqConnectionQuery = { __typename?: 'Query', faqConnection: { __typename?: 'FaqConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'FaqConnectionEdges', cursor: string, node?: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, related_links?: Array<string | null> | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
+export type FaqConnectionQuery = { __typename?: 'Query', faqConnection: { __typename?: 'FaqConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'FaqConnectionEdges', cursor: string, node?: { __typename: 'Faq', id: string, question_id: string, question: string, answer: any, category: Array<string>, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
 
 export type CommunityQueryVariables = Exact<{
   relativePath: Scalars['String']['input'];
@@ -957,7 +957,7 @@ export const FaqPartsFragmentDoc = gql`
   question_id
   question
   answer
-  related_links
+  category
 }
     `;
 export const CommunityPartsFragmentDoc = gql`
