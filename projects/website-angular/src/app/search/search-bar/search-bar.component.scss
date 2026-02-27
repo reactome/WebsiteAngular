@@ -201,7 +201,7 @@ $border-radius: 8px;
 }
 
 .advanced-facets-title {
-    text-align: left;
+  text-align: left;
 }
 
 .facet-option {
@@ -221,7 +221,7 @@ $border-radius: 8px;
     }
   }
 
-  input[type='checkbox'] {
+  input[type="checkbox"] {
     flex-shrink: 0;
     accent-color: var(--primary);
   }

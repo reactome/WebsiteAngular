@@ -169,7 +169,10 @@ export class SiteSearchComponent implements OnInit, OnDestroy {
     }
 
     // Reset filter if the active category has no results
-    if (this.activeCategory && !this.results.some((r) => r.category === this.activeCategory)) {
+    if (
+      this.activeCategory &&
+      !this.results.some((r) => r.category === this.activeCategory)
+    ) {
       this.activeCategory = null;
     }
 
@@ -191,10 +194,12 @@ export class SiteSearchComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.groupedResults = Array.from(groups.entries()).map(([category, items]) => ({
-      category,
-      items,
-    }));
+    this.groupedResults = Array.from(groups.entries()).map(
+      ([category, items]) => ({
+        category,
+        items,
+      })
+    );
   }
 
   private updateUrl(): void {

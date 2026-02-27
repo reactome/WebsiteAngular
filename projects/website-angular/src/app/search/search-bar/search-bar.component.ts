@@ -15,7 +15,7 @@ import {
   SearchFilters,
   SearchService,
 } from 'projects/website-angular/src/services/search.service';
-import { DropdownToggleComponent } from "../../reactome-components/dropdown-toggle/dropdown-toggle.component";
+import { DropdownToggleComponent } from '../../reactome-components/dropdown-toggle/dropdown-toggle.component';
 
 @Component({
   selector: 'app-search-bar',
@@ -76,7 +76,12 @@ export class SearchBarComponent implements OnChanges {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of [
+      'species',
+      'types',
+      'compartments',
+      'keywords',
+    ] as const) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
@@ -113,7 +118,12 @@ export class SearchBarComponent implements OnChanges {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of [
+      'species',
+      'types',
+      'compartments',
+      'keywords',
+    ] as const) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
