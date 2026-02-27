@@ -1,0 +1,75 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="true">
+  <div class="site-search">
+    <h1>Site Search</h1>
+    <p class="site-search-description">
+      Search across all Reactome pages including news, documentation, community
+      pages, and more.
+    </p>
+
+    <form class="search-bar-container" (submit)="onSubmit($event)">
+      <input
+        type="text"
+        placeholder="Search Reactome pages..."
+        class="search-input"
+        [value]="query"
+        (input)="onInput($event)"
+        autocomplete="off"
+        autofocus
+      />
+      <button type="submit" class="search-button">Search</button>
+    </form>
+
+    @if (loading) {
+    <div class="loading">Loading search index...</div>
+    } @else { @if (categoryCounts.length > 0) {
+    <div class="category-chips">
+      <button
+        class="category-chip"
+        [class.active]="activeCategory === null"
+        (click)="filterByCategory(null)"
+      >
+        All <span class="chip-count">{{ results.length }}</span>
+      </button>
+      @for (cat of categoryCounts; track cat.category) {
+      <button
+        class="category-chip"
+        [class.active]="activeCategory === cat.category"
+        (click)="filterByCategory(cat.category)"
+      >
+        {{ cat.category }} <span class="chip-count">{{ cat.count }}</span>
+      </button>
+      }
+    </div>
+    } @if (searched && results.length === 0) {
+    <div class="no-results">
+      <p>
+        No results found for "<strong>{{ query }}</strong
+        >".
+      </p>
+      <p>Try different keywords or check your spelling.</p>
+    </div>
+    } @else if (searched) {
+    <div class="results-summary">
+      {{ results.length }} result{{ results.length === 1 ? "" : "s" }} for
+      "<strong>{{ query }}</strong
+      >"
+    </div>
+    } @for (group of groupedResults; track group.category) {
+    <div class="result-group">
+      <h2 class="group-title">{{ group.category }}</h2>
+      @for (item of getVisibleItems(group); track item.id) {
+      <a [routerLink]="item.url" class="result-item">
+        <div class="result-title">{{ item.title }}</div>
+        <div class="result-url">{{ item.url }}</div>
+        <div class="result-excerpt">{{ item.excerpt }}</div>
+      </a>
+      } @if (group.items.length > previewLimit) {
+      <button class="show-all-btn" (click)="toggleExpand(group.category)">
+        @if (isExpanded(group.category)) { Show less } @else { Show all
+        {{ group.items.length }} results }
+      </button>
+      }
+    </div>
+    } }
+  </div>
+</app-page-layout>

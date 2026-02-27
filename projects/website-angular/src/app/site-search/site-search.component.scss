@@ -1,0 +1,228 @@
+$spacing: 24px;
+$border-radius: 8px;
+
+.site-search {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: $spacing 0;
+}
+
+h1 {
+  margin: 0 0 8px;
+}
+
+.site-search-description {
+  color: var(--on-surface-variant);
+  margin: 0 0 $spacing;
+}
+
+.search-bar-container {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  margin-bottom: $spacing;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 2px solid var(--primary);
+  border-radius: 4px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  font-size: 18px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+}
+
+.search-button {
+  padding: 10px 24px;
+  border: 2px solid var(--primary);
+  border-radius: 4px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background-color: var(--primary);
+  color: var(--on-primary);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.loading {
+  text-align: center;
+  padding: $spacing * 2;
+  color: var(--on-surface-variant);
+  font-size: 1.1rem;
+}
+
+.no-results {
+  text-align: center;
+  padding: $spacing * 2;
+  color: var(--on-surface-variant);
+
+  p:first-child {
+    font-size: 1.1rem;
+  }
+}
+
+.results-summary {
+  color: var(--on-surface-variant);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: $spacing;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  background: none;
+  color: var(--on-surface);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  :host-context(.dark) & {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  &.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+
+    .chip-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: var(--on-primary);
+    }
+  }
+}
+
+.chip-count {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  :host-context(.dark) & {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.result-group {
+  margin-bottom: $spacing;
+}
+
+.show-all-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  border-radius: $border-radius;
+  background: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: var(--primary);
+  }
+
+  :host-context(.dark) & {
+    border-color: rgba(255, 255, 255, 0.15);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--primary);
+    }
+  }
+}
+
+.group-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary);
+  margin: 0 0 12px;
+}
+
+.result-item {
+  display: block;
+  padding: 12px 16px;
+  border-radius: $border-radius;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  & + .result-item {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+    :host-context(.dark) & {
+      border-top-color: rgba(255, 255, 255, 0.06);
+    }
+  }
+}
+
+.result-title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.result-url {
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+  margin-bottom: 4px;
+}
+
+.result-excerpt {
+  font-size: 0.9rem;
+  color: var(--on-surface);
+  line-height: 1.4;
+}
+
+.search-prompt {
+  text-align: center;
+  padding: $spacing * 3 $spacing;
+  color: var(--on-surface-variant);
+
+  .search-prompt-icon {
+    font-size: 48px;
+    opacity: 0.3;
+    display: block;
+    margin-bottom: 12px;
+  }
+}
