@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
 
@@ -51,7 +53,7 @@ interface ParsedReference {
   templateUrl: './icon-lib.component.html',
   styleUrl: './icon-lib.component.scss'
 })
-export class IconLibComponent implements OnInit {
+export class IconLibComponent implements OnInit, OnDestroy {
   view: View = 'grid';
   loading = true;
   error = false;
@@ -72,6 +74,10 @@ export class IconLibComponent implements OnInit {
   detailLoading = false;
   parsedReferences: Map<string, ParsedReference[]> = new Map();
 
+  // Debounced search
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
   constructor(
     private iconService: IconService,
     private route: ActivatedRoute,
@@ -79,6 +85,14 @@ export class IconLibComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.searchIcons();
+    });
+
     this.loadCategories();
     const iconId = this.route.snapshot.paramMap.get('id');
     if (iconId) {
@@ -86,6 +100,11 @@ export class IconLibComponent implements OnInit {
     } else {
       this.loadIcons();
     }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get maxPage(): number {
@@ -250,6 +269,12 @@ export class IconLibComponent implements OnInit {
     fallback.className = 'material-symbols-rounded img-fallback';
     fallback.textContent = 'image';
     img.parentElement?.appendChild(fallback);
+  }
+
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery = value;
+    this.searchSubject.next(value);
   }
 
   onSearchKeydown(event: KeyboardEvent) {

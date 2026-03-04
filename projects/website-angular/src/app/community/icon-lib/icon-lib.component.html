@@ -17,7 +17,7 @@
           type="text"
           placeholder="Search icons..."
           [value]="searchQuery"
-          (input)="searchQuery = $any($event.target).value"
+          (input)="onSearchInput($event)"
           (keydown)="onSearchKeydown($event)"
         />
         @if (searchQuery) {
