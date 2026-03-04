@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ArticleIndexItem } from '../types/article';
+import { SiteSearchIndexItem } from '../types/site-search';
 import parseFrontmatter from '../utils/parseFrontmatter';
 import truncateHtml from '../utils/truncateHtml';
 
