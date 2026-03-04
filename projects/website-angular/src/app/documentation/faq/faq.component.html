@@ -11,9 +11,15 @@
     </header>
     <section class="faq-section">
       <div *ngFor="let category of categories">
-        <h2>{{ formatName(category) }}</h2>
+        <h2 class="faq-category-header" (click)="toggleCategory(category)">
+            <span class="category-name">{{ formatName(category) }}</span>
+            <button class="expand-button">
+              {{ isCategoryExpanded(category) ? '−' : '+' }}
+            </button>
+        </h2>
 
-        <div class="faq-category-content">
+        @if (isCategoryExpanded(category)) {
+            <div class="faq-category-content">
           @if (getSubcategories(category).length > 1) {
 
           <!-- Tabs Header -->
@@ -39,7 +45,7 @@
                 )
               "
             >
-              <a [href]="'documentation/faq/' + category + '/' + sub + '/' + questionArticle.slug">
+              <a [href]="'documentation/faq/' + category + '/' + activeTabs[category] + '/' + questionArticle.slug">
                 {{ formatName(questionArticle.title) }}
               </a>
             </li>
@@ -61,6 +67,7 @@
 
           }
         </div>
+        }
       </div>
     </section>
   </article>

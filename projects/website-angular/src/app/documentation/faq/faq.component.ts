@@ -14,6 +14,7 @@ export class FaqComponent {
   contentService = inject(ContentService);
 
   categories: string[] = [];
+  expandedCategories: Set<string> = new Set();
   faqIndex: Record<string, any> = {};
   activeTabs: Record<string, string> = {};
 
@@ -22,12 +23,9 @@ export class FaqComponent {
       next: async (result) => {
         this.faqIndex = result;
         this.categories = Object.keys(result);
-        console.log(
-          'FAQ Index:',
-          this.faqIndex,
-          '\nCategories:',
-          this.categories
-        );
+        Object.keys(result).forEach((category) => {
+          this.toggleCategory(category);
+        });
       },
       error: (err) => {
         console.error('Error fetching FAQ index:', err);
@@ -45,6 +43,18 @@ export class FaqComponent {
       this.activeTabs[category] = this.getSubcategories(category)[0];
     }
     return this.activeTabs[category] === sub;
+  }
+
+  isCategoryExpanded(category: string): boolean {
+    return this.expandedCategories.has(category);
+  }
+
+  toggleCategory(category: string): void {
+    if (this.isCategoryExpanded(category)) {
+      this.expandedCategories.delete(category);
+    } else {
+      this.expandedCategories.add(category);
+    }
   }
 
   getSubcategories(category: string): string[] {
