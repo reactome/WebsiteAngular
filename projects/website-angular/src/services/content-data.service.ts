@@ -52,12 +52,38 @@ export interface Contributor {
   reviewedReactions: number;
 }
 
+export interface SchemaNode {
+  className: string;
+  count: number;
+  children: SchemaNode[];
+}
+
+export interface SchemaValueType {
+  name: string;
+  databaseObject: boolean;
+}
+
+export interface SchemaAttribute {
+  name: string;
+  cardinality: string;
+  valueTypes: SchemaValueType[];
+  origin: string;
+}
+
+export interface SimpleDatabaseObject {
+  dbId: number;
+  stId: string;
+  displayName: string;
+  schemaClass: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ContentDataService {
   private http = inject(HttpClient);
   private baseUrl = 'https://dev.reactome.org/ContentService/data/content';
+  private schemaUrl = 'https://dev.reactome.org/ContentService/data/schema';
 
   getTocPathways(): Observable<TocPathway[]> {
     return this.http.get<TocPathway[]>(`${this.baseUrl}/toc`);
@@ -69,5 +95,29 @@ export class ContentDataService {
 
   getContributors(): Observable<Contributor[]> {
     return this.http.get<Contributor[]>(`${this.baseUrl}/contributors`);
+  }
+
+  getSchemaModel(): Observable<SchemaNode> {
+    return this.http.get<SchemaNode>(`${this.schemaUrl}/model`);
+  }
+
+  getSchemaAttributes(className: string): Observable<SchemaAttribute[]> {
+    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/attributes`);
+  }
+
+  getSchemaReferrals(className: string): Observable<SchemaAttribute[]> {
+    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/referrals`);
+  }
+
+  getSchemaEntries(className: string, page: number, offset: number, species?: string): Observable<SimpleDatabaseObject[]> {
+    let url = `${this.schemaUrl}/${className}/min?page=${page}&offset=${offset}`;
+    if (species) url += `&species=${encodeURIComponent(species)}`;
+    return this.http.get<SimpleDatabaseObject[]>(url);
+  }
+
+  getSchemaCount(className: string, species?: string): Observable<number> {
+    let url = `${this.schemaUrl}/${className}/count`;
+    if (species) url += `?species=${encodeURIComponent(species)}`;
+    return this.http.get<number>(url);
   }
 }

@@ -30,9 +30,11 @@ export const routes: Routes = [
     { path: 'content/reactome-research-spotlight', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },
     { path: 'content/reactome-research-spotlight/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
 
-    //Content Pages (TOC, DOI)
+    //Content Pages (TOC, DOI, Schema)
     { path: 'content/toc', loadComponent: () => import('./content/toc/toc.component').then(m => m.TocComponent), pathMatch: 'full' },
     { path: 'content/doi', loadComponent: () => import('./content/doi/doi.component').then(m => m.DoiComponent), pathMatch: 'full' },
+    { path: 'content/schema', loadComponent: () => import('./content/schema/schema.component').then(m => m.SchemaComponent), pathMatch: 'full' },
+    { path: 'content/schema/:className', loadComponent: () => import('./content/schema/schema.component').then(m => m.SchemaComponent), pathMatch: 'full' },
 
     //Search Pages
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },

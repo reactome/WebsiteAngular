@@ -1,0 +1,359 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="true">
+  <div class="schema-browser">
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading data model...</p>
+      </div>
+    } @else if (error) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Failed to load the data model.</p>
+      </div>
+    } @else {
+      <div class="schema-layout">
+        <!-- Mobile sidebar toggle -->
+        <button class="sidebar-toggle" (click)="toggleSidebar()">
+          <span class="material-symbols-rounded">{{ sidebarOpen ? 'close' : 'account_tree' }}</span>
+          Class Hierarchy
+        </button>
+
+        <!-- Tree sidebar -->
+        <aside class="schema-tree" [class.open]="sidebarOpen">
+          <div class="tree-header">
+            <h3>Data Model</h3>
+          </div>
+          <div class="tree-search">
+            <span class="material-symbols-rounded search-icon">search</span>
+            <input
+              type="text"
+              placeholder="Filter classes..."
+              [value]="treeSearchQuery"
+              (input)="onTreeSearch($event)"
+            />
+            @if (treeSearchQuery) {
+              <button class="clear-btn" (click)="clearTreeSearch()">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            }
+          </div>
+          <div class="tree-content">
+            @for (node of flatTree; track node.className) {
+              <div
+                class="tree-node"
+                [style.padding-left.px]="12 + node.depth * 16"
+                [class.selected]="node.className === selectedClass"
+              >
+                @if (node.hasChildren) {
+                  <button class="expand-btn" (click)="toggleTreeNode(node.className); $event.stopPropagation()">
+                    <span class="material-symbols-rounded">
+                      {{ node.expanded ? 'expand_more' : 'chevron_right' }}
+                    </span>
+                  </button>
+                } @else {
+                  <span class="expand-placeholder"></span>
+                }
+                <button class="node-label" (click)="onTreeNodeClick(node.className)">
+                  <span class="node-name">{{ node.className }}</span>
+                  <span class="node-count">[{{ node.count }}]</span>
+                </button>
+              </div>
+            }
+          </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="schema-content">
+          @if (selectedClass) {
+            <div class="class-header">
+              <h1>{{ selectedClass }}</h1>
+              <span class="instance-count">{{ getNodeCount(selectedClass) }} instances</span>
+            </div>
+
+            <div class="tab-bar">
+              <button
+                class="tab"
+                [class.active]="activeTab === 'properties'"
+                (click)="activeTab = 'properties'"
+              >
+                Properties
+              </button>
+              <button
+                class="tab"
+                [class.active]="activeTab === 'entries'"
+                (click)="switchToEntries()"
+              >
+                Entries
+              </button>
+            </div>
+
+            @if (activeTab === 'properties') {
+              @if (loadingAttributes) {
+                <div class="loading-state small">
+                  <div class="spinner"></div>
+                </div>
+              } @else {
+                <!-- Own attributes -->
+                @if (ownAttributes.length > 0) {
+                  <div class="attr-section">
+                    <h2>Own Attributes</h2>
+                    <div class="attr-table-wrapper">
+                      <table class="attr-table">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Cardinality</th>
+                            <th>Value Type</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (attr of ownAttributes; track attr.name) {
+                            <tr>
+                              <td class="attr-name">{{ attr.name }}</td>
+                              <td class="attr-card">
+                                <span class="cardinality-badge">{{ attr.cardinality }}</span>
+                              </td>
+                              <td class="attr-types">
+                                @for (vt of attr.valueTypes; track vt.name; let last = $last) {
+                                  @if (vt.databaseObject && isClassInTree(vt.name)) {
+                                    <a class="type-link db-object" (click)="navigateToClass(vt.name)">{{ vt.name }}</a>
+                                  } @else if (vt.databaseObject) {
+                                    <span class="type-name db-object">{{ vt.name }}</span>
+                                  } @else {
+                                    <span class="type-name primitive">{{ vt.name }}</span>
+                                  }
+                                  @if (!last) { <span class="type-sep">, </span> }
+                                }
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+
+                <!-- Inherited attributes -->
+                @if (inheritedAttributes.length > 0) {
+                  <div class="attr-section">
+                    <h2>
+                      Inherited Attributes
+                      <button class="toggle-inherited" (click)="showInherited = !showInherited">
+                        {{ showInherited ? 'Hide' : 'Show' }} ({{ inheritedAttributes.length }})
+                      </button>
+                    </h2>
+                    @if (showInherited) {
+                      <div class="attr-table-wrapper">
+                        <table class="attr-table inherited">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Cardinality</th>
+                              <th>Value Type</th>
+                              <th>Origin</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (attr of inheritedAttributes; track attr.name + attr.origin) {
+                              <tr>
+                                <td class="attr-name">{{ attr.name }}</td>
+                                <td class="attr-card">
+                                  <span class="cardinality-badge">{{ attr.cardinality }}</span>
+                                </td>
+                                <td class="attr-types">
+                                  @for (vt of attr.valueTypes; track vt.name; let last = $last) {
+                                    @if (vt.databaseObject && isClassInTree(vt.name)) {
+                                      <a class="type-link db-object" (click)="navigateToClass(vt.name)">{{ vt.name }}</a>
+                                    } @else if (vt.databaseObject) {
+                                      <span class="type-name db-object">{{ vt.name }}</span>
+                                    } @else {
+                                      <span class="type-name primitive">{{ vt.name }}</span>
+                                    }
+                                    @if (!last) { <span class="type-sep">, </span> }
+                                  }
+                                </td>
+                                <td class="attr-origin">
+                                  @if (isClassInTree(attr.origin)) {
+                                    <a class="type-link" (click)="navigateToClass(attr.origin)">{{ attr.origin }}</a>
+                                  } @else {
+                                    {{ attr.origin }}
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Referrals -->
+                @if (referrals.length > 0) {
+                  <div class="attr-section">
+                    <h2>Referrals</h2>
+                    <p class="section-desc">Other classes that reference {{ selectedClass }}:</p>
+                    <div class="attr-table-wrapper">
+                      <table class="attr-table referrals">
+                        <thead>
+                          <tr>
+                            <th>Attribute</th>
+                            <th>Cardinality</th>
+                            <th>In Class</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (ref of referrals; track ref.name + ref.origin) {
+                            <tr>
+                              <td class="attr-name">{{ ref.name }}</td>
+                              <td class="attr-card">
+                                <span class="cardinality-badge">{{ ref.cardinality }}</span>
+                              </td>
+                              <td class="attr-origin">
+                                @if (isClassInTree(ref.origin)) {
+                                  <a class="type-link" (click)="navigateToClass(ref.origin)">{{ ref.origin }}</a>
+                                } @else {
+                                  {{ ref.origin }}
+                                }
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+
+                @if (attributesError) {
+                  <div class="empty-section">
+                    <p>Could not load attributes. The attributes endpoint may need to be deployed.</p>
+                  </div>
+                } @else if (ownAttributes.length === 0 && inheritedAttributes.length === 0) {
+                  <div class="empty-section">
+                    <p>No attributes found for this class.</p>
+                  </div>
+                }
+
+                <div class="instructions">
+                  <hr />
+                  <p>
+                    You can find documentation for the Reactome data model
+                    <a routerLink="/documentation/data-model">here</a>.
+                  </p>
+                  <p>
+                    The sidebar on the left shows the hierarchy of Reactome classes. The number
+                    of instances of each class is shown in square brackets and links to a listing
+                    of all instances of that class.
+                  </p>
+                  <p>
+                    The main panel shows attributes of the selected class.
+                    <span class="own-highlight">Own attributes</span>, i.e. the ones which are
+                    not inherited from a parent class, are shown separately from inherited ones.
+                  </p>
+                  <p>
+                    <span class="cardinality-badge">+</span> in the Cardinality column indicates
+                    a multi-value attribute.
+                  </p>
+                </div>
+              }
+            } @else if (activeTab === 'entries') {
+              @if (loadingEntries) {
+                <div class="loading-state small">
+                  <div class="spinner"></div>
+                </div>
+              } @else {
+                <div class="entries-header">
+                  <span class="entries-count">
+                    {{ entryCount }} entries
+                    @if (totalPages > 1) {
+                      &mdash; Page {{ entriesPage }} of {{ totalPages }}
+                    }
+                  </span>
+                </div>
+
+                @if (entries.length > 0) {
+                  <div class="entries-table-wrapper">
+                    <table class="entries-table">
+                      <thead>
+                        <tr>
+                          <th>Identifier</th>
+                          <th>Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (entry of entries; track entry.dbId) {
+                          <tr>
+                            <td class="entry-id">
+                              <a [href]="entryUrl(entry)" target="_blank">
+                                {{ entry.stId || entry.dbId }}
+                              </a>
+                            </td>
+                            <td class="entry-name">{{ entry.displayName }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  @if (totalPages > 1) {
+                    <div class="pagination">
+                      <button
+                        class="page-btn"
+                        [disabled]="entriesPage === 1"
+                        (click)="goToPage(1)"
+                      >
+                        <span class="material-symbols-rounded">first_page</span>
+                      </button>
+                      <button
+                        class="page-btn"
+                        [disabled]="entriesPage === 1"
+                        (click)="goToPage(entriesPage - 1)"
+                      >
+                        <span class="material-symbols-rounded">chevron_left</span>
+                      </button>
+
+                      @for (p of visiblePages; track p) {
+                        <button
+                          class="page-btn"
+                          [class.active]="p === entriesPage"
+                          (click)="goToPage(p)"
+                        >
+                          {{ p }}
+                        </button>
+                      }
+
+                      <button
+                        class="page-btn"
+                        [disabled]="entriesPage === totalPages"
+                        (click)="goToPage(entriesPage + 1)"
+                      >
+                        <span class="material-symbols-rounded">chevron_right</span>
+                      </button>
+                      <button
+                        class="page-btn"
+                        [disabled]="entriesPage === totalPages"
+                        (click)="goToPage(totalPages)"
+                      >
+                        <span class="material-symbols-rounded">last_page</span>
+                      </button>
+                    </div>
+                  }
+                } @else {
+                  <div class="empty-section">
+                    <p>No entries found for this class.</p>
+                  </div>
+                }
+              }
+            }
+          } @else {
+            <div class="welcome-state">
+              <span class="material-symbols-rounded">schema</span>
+              <h2>Reactome Data Model Browser</h2>
+              <p>Select a class from the hierarchy to view its properties and entries.</p>
+            </div>
+          }
+        </main>
+      </div>
+    }
+  </div>
+</app-page-layout>
