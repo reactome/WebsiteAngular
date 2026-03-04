@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ArticleIndexItem } from '../types/article';
-import { SiteSearchIndexItem } from '../types/site-search';
 import parseFrontmatter from '../utils/parseFrontmatter';
 import truncateHtml from '../utils/truncateHtml';
 
@@ -26,14 +25,6 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
         excerpt: truncateHtml(body || '', 50),
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''),
-        tags:
-          typeof frontmatter['tags'] === 'string'
-            ? frontmatter['tags']
-                .split(',')
-                .map((t: string) =>
-                  t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')
-                )
-            : frontmatter['tags'],
         tags:
           typeof frontmatter['tags'] === 'string'
             ? frontmatter['tags']
@@ -83,7 +74,7 @@ function buildRecursiveIndex(dir: string): any {
  */
 function generateIndex(
   directories: string[],
-  recursive: boolean = false
+  recursive: boolean = true
 ): void {
   const outputDir = path.resolve(process.cwd(), ...directories);
 
