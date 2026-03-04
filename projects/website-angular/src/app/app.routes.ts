@@ -40,6 +40,10 @@ export const routes: Routes = [
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
     { path: 'tools/site-search', loadComponent: () => import('./site-search/site-search.component').then(m => m.SiteSearchComponent) },
 
+    //API Documentation (Swagger UI)
+    { path: 'ContentService', loadComponent: () => import('./swagger-page/swagger-page.component').then(m => m.SwaggerPageComponent), data: { serviceName: 'ContentService' } },
+    { path: 'AnalysisService', loadComponent: () => import('./swagger-page/swagger-page.component').then(m => m.SwaggerPageComponent), data: { serviceName: 'AnalysisService' } },
+
     //404 Page
     { path: '404', loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent) }, //TODO: Remove?
     /* Non - CMS Pages Above this Line */
