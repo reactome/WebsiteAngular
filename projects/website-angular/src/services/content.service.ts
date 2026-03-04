@@ -13,8 +13,6 @@ export interface PageContent {
   body: string;
 }
 
-
-
 export interface TeamMember {
   name: string;
   role: string;
@@ -120,6 +118,36 @@ export class ContentService {
    */
   getTeamMember(slug: string): Observable<TeamMember | null> {
     return this.http.get<TeamMember>(`${this.contentBasePath}/team/${slug}.json`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+
+  /**
+   * Get all FAQ categories
+   */
+  getFaqIndex(): Observable<Record<string, ArticleIndexItem[]>> {
+    return this.http.get<Record<string, ArticleIndexItem[]>>(`${this.contentBasePath}/documentation/faq/index.json`).pipe(
+      catchError(() => of({}))
+    );
+  }
+
+  getFaqArticle(category: string, slug: string): Observable<Article | null> {
+    return this.http.get(`${this.contentBasePath}/documentation/faq/${category}/${slug}.mdx`, { responseType: 'text' }).pipe(
+      map(content => {
+        const { frontmatter, body } = parseFrontmatter(content);
+        let returnArticle: Article = {
+          title: frontmatter['title'] as string || '',
+          date: new Date(frontmatter['date'] as string),
+          author: frontmatter['author'] as string,
+          image: frontmatter['image'] as string,
+          tags: typeof frontmatter['tags'] === 'string' ? frontmatter['tags'].split(',').map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')) : frontmatter['tags'] as string[] | undefined,
+          body: body || '',
+          excerpt: truncateHtml(body || '', 50),
+          slug: slug
+        };
+        return returnArticle;
+      }),
       catchError(() => of(null))
     );
   }

@@ -45,6 +45,14 @@ fragment DocumentationParts on Documentation {
   image
 }
 
+fragment FaqParts on Faq {
+  __typename
+  question_id
+  question
+  answer
+  category
+}
+
 fragment CommunityParts on Community {
   __typename
   title

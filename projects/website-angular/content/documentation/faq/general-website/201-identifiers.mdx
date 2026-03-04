@@ -1,0 +1,14 @@
+---
+title: Explain the identifiers associated with entities and events.
+category: "documentation"
+---
+
+##  Explain the identifiers associated with entities and events. 
+
+Each Reactome instance of any type gets a unique internal database identifier (DB_ID) when it is created that persists unchanged for the life of that instance and is not reused if that instance is deleted.
+
+The stable IDs visible on our website and in our downloads are generated only for instances that are physical entities (chemicals, genome-encoded entities, complexes and sets of these) and events (reactions and pathways). Each stable ID takes the following form: R (Reactome) - three-letter code for the species of the instance- DB_ID.version (to indicate its version if the instance has been revised since its creation). So human entities and events have stable ids with R-HSA (for Homo sapiens)-########.##, stable ids for Caenorhabditis elegans are R-CEL-########.##, etc. For simple chemicals, ALL is used as the species code (R-ALL-########.##). Like DB_IDs, stable identifiers persist for the lifetime of the instance, unchanged except for versioning, and are not reused if the instance is deleted.
+
+For manually annotated events, the species code is that of the species in which the event occurs. Barring curation errors, that species code always corresponds to the species listed in the details panel of the web page for the entity or event.
+
+For computationally inferred events, the species code is that of the model organism species and the DB identifier is the one assigned to the human event that is the basis of the inference. This is to reflect the fact that these inferences are intrinsically UNstable (because as the model organism genome build changes, the inferences based on sequence similarity to that model organism will also change).

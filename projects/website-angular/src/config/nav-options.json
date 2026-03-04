@@ -118,21 +118,9 @@
                 "label": "Analysis Tools",
                 "link": "/documentation/userguide/analysis",
                 "dropdown-links": {
-                  "analysis-data": {
-                    "label": "Analysis Data",
-                    "link": "/documentation/userguide/analysis/analysis"
-                  },
                   "analysis-gene-expression": {
                     "label": "Analysis Gene Expression",
                     "link": "/documentation/userguide/analysis/gsa"
-                  },
-                  "species-comparison": {
-                    "label": "Species Comparison",
-                    "link": "/documentation/userguide/analysis/species"
-                  },
-                  "tissue-distribution": {
-                    "label": "Tissue Distribution",
-                    "link": "/documentation/userguide/analysis/tissue"
                   }
                 }
               },
@@ -161,7 +149,17 @@
             "dropdown-links": {
               "graph-database": {
                 "label": "Graph Database",
-                "link": "/documentation/dev/graph-database"
+                "link": "/documentation/dev/graph-database",
+                "dropdown-links": {
+                  "extract-participating-molecules": {
+                    "label": "Extract Participating Molecules",
+                    "link": "/documentation/dev/graph-database/extract-participating-molecules"
+                  },
+                  "neo4j-desktop": {
+                    "label": "Neo4j Desktop",
+                    "link": "/documentation/dev/graph-database/neo4j-desktop"
+                  }
+                }
               },
               "analysis-service": {
                 "label": "Analysis Service",
@@ -170,15 +168,45 @@
               
               "content-service": {
                 "label": "Content Service",
-                "link": "/documentation/dev/content-service"
+                "link": "/documentation/dev/content-service",
+                "dropdown-links": {
+                  "diagram-exporter": {
+                    "label": "Diagram Exporter",
+                    "link": "/documentation/dev/content-service/diagram-exporter"
+                  }
+                }
               },
               "pathways-overview": {
                 "label": "Pathways Overview",
-                "link": "/documentation/dev/pathways-overview"
+                "link": "/documentation/dev/pathways-overview",
+                "dropdown-links": {
+                  "js": {
+                    "label": "Pathway JS",
+                    "link": "/documentation/dev/pathways-overview/js"
+                  },
+                  "gwt": {
+                    "label": "Pathway GWT",
+                    "link": "/documentation/dev/pathways-overview/gwt"
+                  }
+                }
               },
-              "pathway-diagrams": {
+              "diagram": {
                 "label": "Pathway Diagrams",
-                "link": "/documentation/dev/pathway-diagrams"
+                "link": "/documentation/dev/diagram",
+                "dropdown-links": {
+                  "pathway-diagram-specs": {
+                    "label": "Pathway Diagram Specs",
+                    "link": "/documentation/dev/diagram/pathway-diagram-specs"
+                  },
+                  "js": {
+                    "label": "Diagram JS",
+                    "link": "/documentation/dev/diagram/js"
+                  },
+                  "gwt": {
+                    "label": "Diagram GWT",
+                    "link": "/documentation/dev/diagram/gwt"
+                  }
+                }
               }
             }
         },
@@ -214,7 +242,13 @@
         },
         "linking-to-us": {
             "label": "Linking to Us",
-            "link": "/documentation/linking-to-us"
+            "link": "/documentation/linking-to-us",
+            "dropdown-links": {
+              "identifiers": {
+                "label": "Identifiers",
+                "link": "/documentation/linking-to-us/identifiers"
+              }
+            }
         },
         "citing-us": {
             "label": "Citing Us",
@@ -272,7 +306,13 @@
     "dropdown-links": {
          "contribute-pathway-knowledge": {
             "label": "Contribute Pathway Knowledge",
-            "link": "/community/collaboration"
+            "link": "/community/collaboration",
+            "dropdown-links": {
+              "faq-for-prospective-reviewers-and-authors": {
+                "label": "FAQ for Prospective Reviewers and Authors",
+                "link": "/community/collaboration/faq-for-prospective-reviewers-and-authors"
+              }
+            }
         },
         "icon-library": {
             "label": "Icon Library",

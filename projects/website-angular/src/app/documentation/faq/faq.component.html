@@ -1,0 +1,74 @@
+<app-page-layout>
+  <article class="faq-page">
+    <header class="page-header">
+      <span class="category-badge">Documentation</span>
+      <h1>Frequently Asked Questions</h1>
+      <p class="description">
+        Here you can find answers to some of the most common questions about
+        Reactome. If you have a question that is not answered here, please
+        <a href="mailto:help@reactome.org">contact us</a>.
+      </p>
+    </header>
+    <section class="faq-section">
+      <div *ngFor="let category of categories">
+        <h2 class="faq-category-header" (click)="toggleCategory(category)">
+            <span class="category-name">{{ formatName(category) }}</span>
+            <button class="expand-button">
+              {{ isCategoryExpanded(category) ? '−' : '+' }}
+            </button>
+        </h2>
+
+        @if (isCategoryExpanded(category)) {
+            <div class="faq-category-content">
+          @if (getSubcategories(category).length > 1) {
+
+          <!-- Tabs Header -->
+          <div class="faq-tabs">
+            <button
+              *ngFor="let sub of getSubcategories(category)"
+              class="faq-tab"
+              [class.active]="isActiveTab(category, sub)"
+              (click)="setActiveTab(category, sub)"
+            >
+              {{ formatName(sub) }}
+            </button>
+          </div>
+
+          <!-- Active Tab Content -->
+          <ul class="faq-list">
+            <li
+              class="faq-item"
+              *ngFor="
+                let questionArticle of getArticles(
+                  category,
+                  activeTabs[category]
+                )
+              "
+            >
+              <a [href]="'documentation/faq/' + category + '/' + activeTabs[category] + '/' + questionArticle.slug">
+                {{ formatName(questionArticle.title) }}
+              </a>
+            </li>
+          </ul>
+
+          } @else {
+
+          <!-- No subcategories -->
+          <ul class="faq-list">
+            <li
+              class="faq-item"
+              *ngFor="let questionArticle of getArticles(category)"
+            >
+              <a [href]="'documentation/faq/' + category + '/' + questionArticle.slug">
+                {{ formatName(questionArticle.title) }}
+              </a>
+            </li>
+          </ul>
+
+          }
+        </div>
+        }
+      </div>
+    </section>
+  </article>
+</app-page-layout>
