@@ -1,0 +1,144 @@
+<app-page-layout>
+  <article class="contributors-page">
+    <header class="page-header">
+      <span class="category-badge">Content</span>
+      <h1>Contributors</h1>
+      <p class="description">
+        Reactome authors and reviewers who have contributed pathways and reactions.
+      </p>
+    </header>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          placeholder="Search by name or ORCID..."
+          [value]="searchQuery"
+          (input)="onSearchInput($event)"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="clearSearch()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Letter filter bar -->
+    @if (!loading && !error) {
+      <div class="letter-filter">
+        <button
+          class="letter-chip"
+          [class.active]="!activeLetter && !searchQuery"
+          (click)="selectAll()"
+        >All</button>
+        @for (letter of letters; track letter) {
+          <button
+            class="letter-chip"
+            [class.active]="activeLetter === letter"
+            (click)="selectLetter(letter)"
+          >{{ letter }}</button>
+        }
+      </div>
+
+      <div class="results-info">
+        {{ resultCount }} contributor{{ resultCount !== 1 ? 's' : '' }}
+        @if (activeLetter) {
+          <span> starting with "{{ activeLetter }}"</span>
+        }
+        @if (searchQuery) {
+          <span> matching "{{ searchQuery }}"</span>
+        }
+      </div>
+    }
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading contributors...</p>
+      </div>
+    }
+
+    @if (error && !loading) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      @if (filteredContributors.length === 0) {
+        <div class="empty-state">
+          <span class="material-symbols-rounded">search_off</span>
+          <p>No contributors found.</p>
+        </div>
+      } @else {
+        <div class="contributors-table-wrapper">
+          <table class="contributors-table">
+            <thead>
+              <tr>
+                <th class="col-name sortable" (click)="toggleSort('displayName')">
+                  Name
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('displayName') }}</span>
+                </th>
+                <th class="col-orcid">ORCID</th>
+                <th class="col-num sortable" (click)="toggleSort('authoredPathways')">
+                  Authored Pathways
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('authoredPathways') }}</span>
+                </th>
+                <th class="col-num sortable" (click)="toggleSort('reviewedPathways')">
+                  Reviewed Pathways
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('reviewedPathways') }}</span>
+                </th>
+                <th class="col-num sortable" (click)="toggleSort('authoredReactions')">
+                  Authored Reactions
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('authoredReactions') }}</span>
+                </th>
+                <th class="col-num sortable" (click)="toggleSort('reviewedReactions')">
+                  Reviewed Reactions
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('reviewedReactions') }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of pagedContributors; track c.person.dbId) {
+                <tr>
+                  <td class="col-name">
+                    <a [href]="personUrl(c.person.dbId)" class="person-link">{{ c.person.displayName }}</a>
+                  </td>
+                  <td class="col-orcid">
+                    @if (c.person.orcidId) {
+                      <a class="orcid-link" [href]="orcidUrl(c.person.orcidId)" target="_blank" rel="noopener">
+                        {{ c.person.orcidId }}
+                      </a>
+                    }
+                  </td>
+                  <td class="col-num">{{ c.authoredPathways }}</td>
+                  <td class="col-num">{{ c.reviewedPathways }}</td>
+                  <td class="col-num">{{ c.authoredReactions }}</td>
+                  <td class="col-num">{{ c.reviewedReactions }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (maxPage > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
+              <span class="material-symbols-rounded">chevron_left</span>
+              Previous
+            </button>
+            <span class="page-info">Page {{ currentPage }} of {{ maxPage }}</span>
+            <button class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
+              Next
+              <span class="material-symbols-rounded">chevron_right</span>
+            </button>
+          </div>
+        }
+      }
+    }
+  </article>
+</app-page-layout>
