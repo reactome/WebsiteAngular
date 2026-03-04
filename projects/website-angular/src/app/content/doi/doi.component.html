@@ -1,0 +1,162 @@
+<app-page-layout>
+  <article class="doi-page">
+    <header class="page-header">
+      <span class="category-badge">Content</span>
+      <h1>DOI Listing</h1>
+      <p class="description">
+        Browse Reactome pathways with Digital Object Identifiers (DOIs).
+      </p>
+    </header>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          placeholder="Search pathways, DOIs, people..."
+          [value]="searchQuery"
+          (input)="onSearchInput($event)"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="clearSearch()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (!loading && !error) {
+      <div class="status-filters">
+        <button
+          class="status-chip new"
+          [class.active]="statusFilter === 'NEW'"
+          (click)="setStatusFilter('NEW')"
+        >NEW <span class="chip-count">{{ newCount }}</span></button>
+        <button
+          class="status-chip updated"
+          [class.active]="statusFilter === 'UPDATED'"
+          (click)="setStatusFilter('UPDATED')"
+        >UPDATED <span class="chip-count">{{ updatedCount }}</span></button>
+      </div>
+
+      <div class="results-info">
+        {{ resultCount }} pathway{{ resultCount !== 1 ? 's' : '' }}
+        @if (statusFilter) {
+          <span> with status "{{ statusFilter }}"</span>
+        }
+        @if (searchQuery) {
+          <span> matching "{{ searchQuery }}"</span>
+        }
+      </div>
+    }
+
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading DOI data...</p>
+      </div>
+    }
+
+    @if (error && !loading) {
+      <div class="error-state">
+        <span class="material-symbols-rounded">error</span>
+        <p>Unable to load data. Please try again later.</p>
+      </div>
+    }
+
+    @if (!loading && !error) {
+      @if (filteredPathways.length === 0) {
+        <div class="empty-state">
+          <span class="material-symbols-rounded">search_off</span>
+          <p>No pathways found.</p>
+        </div>
+      } @else {
+        <div class="doi-table-wrapper">
+          <table class="doi-table">
+            <thead>
+              <tr>
+                <th class="col-topic sortable" (click)="toggleSort('displayName')">
+                  Topic
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('displayName') }}</span>
+                </th>
+                <th class="col-doi sortable" (click)="toggleSort('doi')">
+                  DOI
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('doi') }}</span>
+                </th>
+                <th class="col-authors">Authors</th>
+                <th class="col-date sortable" (click)="toggleSort('releaseDate')">
+                  Released
+                  <span class="material-symbols-rounded sort-icon">{{ sortIcon('releaseDate') }}</span>
+                </th>
+                <th class="col-reviewers">Reviewers</th>
+                <th class="col-editors">Editors</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pathway of pagedPathways; track pathway.stId) {
+                <tr>
+                  <td class="col-topic">
+                    <div class="topic-info">
+                      <span class="pathway-name">{{ pathway.displayName }}</span>
+                      @if (pathway.releaseStatus === 'NEW') {
+                        <span class="status-badge new">NEW</span>
+                      }
+                      @if (pathway.releaseStatus === 'UPDATED') {
+                        <span class="status-badge updated">UPDATED</span>
+                      }
+                      <span class="species-name">{{ pathway.species }}</span>
+                    </div>
+                  </td>
+                  <td class="col-doi">
+                    @if (pathway.doi) {
+                      <a class="doi-link" [href]="doiUrl(pathway.doi)" target="_blank" rel="noopener">
+                        {{ pathway.doi }}
+                      </a>
+                    }
+                  </td>
+                  <td class="col-authors">
+                    <span class="person-list">
+                      @for (author of pathway.authors; track author.dbId; let last = $last) {
+                        <a [href]="personUrl(author)" class="person-link">{{ author.displayName }}</a>{{ last ? '' : ', ' }}
+                      }
+                    </span>
+                  </td>
+                  <td class="col-date">{{ pathway.releaseDate }}</td>
+                  <td class="col-reviewers">
+                    <span class="person-list">
+                      @for (reviewer of pathway.reviewers; track reviewer.dbId; let last = $last) {
+                        <a [href]="personUrl(reviewer)" class="person-link">{{ reviewer.displayName }}</a>{{ last ? '' : ', ' }}
+                      }
+                    </span>
+                  </td>
+                  <td class="col-editors">
+                    <span class="person-list">
+                      @for (editor of pathway.editors; track editor.dbId; let last = $last) {
+                        <a [href]="personUrl(editor)" class="person-link">{{ editor.displayName }}</a>{{ last ? '' : ', ' }}
+                      }
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (maxPage > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
+              <span class="material-symbols-rounded">chevron_left</span>
+              Previous
+            </button>
+            <span class="page-info">Page {{ currentPage }} of {{ maxPage }}</span>
+            <button class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
+              Next
+              <span class="material-symbols-rounded">chevron_right</span>
+            </button>
+          </div>
+        }
+      }
+    }
+  </article>
+</app-page-layout>

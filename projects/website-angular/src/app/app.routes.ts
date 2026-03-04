@@ -18,6 +18,7 @@ export const routes: Routes = [
     { path: 'community/collaboration', loadComponent: () => import('./community/collaboration/collaboration.component').then(m => m.CollaborationComponent), pathMatch: 'full' },
     { path: 'community/icon-lib', loadComponent: () => import('./community/icon-lib/icon-lib.component').then(m => m.IconLibComponent), pathMatch: 'full' },
     { path: 'community/icon-lib/:id', loadComponent: () => import('./community/icon-lib/icon-lib.component').then(m => m.IconLibComponent), pathMatch: 'full' },
+    { path: 'community/contributors', loadComponent: () => import('./content/contributors/contributors.component').then(m => m.ContributorsComponent), pathMatch: 'full' },
 
     //Documentation Pages
     { path: 'documentation/faq', loadComponent: () => import('./documentation/faq/faq.component').then(m => m.FaqComponent), pathMatch: 'full' },
@@ -28,6 +29,10 @@ export const routes: Routes = [
     //Reactome Research Spotlights
     { path: 'content/reactome-research-spotlight', loadComponent: () => import('./article/article-page/article-page.component').then(m => m.ArticlePageComponent), pathMatch: 'full' },
     { path: 'content/reactome-research-spotlight/:slug', loadComponent: () => import('./article/article/article.component').then(m => m.ArticleComponent), pathMatch: 'full' },
+
+    //Content Pages (TOC, DOI)
+    { path: 'content/toc', loadComponent: () => import('./content/toc/toc.component').then(m => m.TocComponent), pathMatch: 'full' },
+    { path: 'content/doi', loadComponent: () => import('./content/doi/doi.component').then(m => m.DoiComponent), pathMatch: 'full' },
 
     //Search Pages
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },

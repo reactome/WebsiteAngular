@@ -110,6 +110,11 @@ export class SiteSearchComponent implements OnInit, OnDestroy {
     this.updateUrl();
   }
 
+  clearSearch(): void {
+    this.query = '';
+    this.doSearch();
+  }
+
   filterByCategory(category: string | null): void {
     this.activeCategory = category;
     this.buildGroupedResults();

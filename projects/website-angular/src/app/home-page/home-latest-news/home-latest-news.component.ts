@@ -1,4 +1,4 @@
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 import { ArticleIndexItem } from '../../../types/article';
 import { NgForOf, NgFor } from '@angular/common';
 import formatDate from '../../../utils/formatDate';
@@ -13,7 +13,7 @@ import { NavOption } from '../../../types/link';
   templateUrl: './home-latest-news.component.html',
   styleUrl: './home-latest-news.component.scss'
 })
-export class HomeLatestNewsComponent {
+export class HomeLatestNewsComponent implements OnInit {
   contentService = inject(ContentService);
   navOptions: Record<string, NavOption> = {};
 

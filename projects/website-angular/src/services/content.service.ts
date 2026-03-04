@@ -85,9 +85,11 @@ export class ContentService {
    * Get all articles
    */
   getAllArticles(path:string): Observable<ArticleIndexItem[]> {
-    return this.http.get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`).pipe(
+    return this.http.get<any>(`${this.contentBasePath}/${path}/index.json`).pipe(
       map(data => {
-        return data || []
+        if (Array.isArray(data)) return data;
+        if (data?.articles && Array.isArray(data.articles)) return data.articles;
+        return [];
       }),
       catchError(() => of([]))
     );
