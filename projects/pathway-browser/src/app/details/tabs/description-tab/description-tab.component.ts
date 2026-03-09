@@ -50,6 +50,12 @@ import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
 type HasModifiedResidue = Relationship.HasModifiedResidue;
+import {KeyValuePipe, NgClass, NgTemplateOutlet} from "@angular/common";
+import {RouterLink} from "@angular/router";
+import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
+import {SortByDatePipe} from "../../../pipes/sort-by-date.pipe";
+import {IncludeRefPipe} from "../../../pipes/include-ref.pipe";
+import {AuthorshipDateFormatPipe} from "../../../pipes/authorship-date-format.pipe";
 import {MatDivider} from "@angular/material/divider";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
@@ -76,6 +82,14 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
   styleUrl: './description-tab.component.scss',
   standalone: true,
   imports: [
+    NgTemplateOutlet,
+    NgClass,
+    KeyValuePipe,
+    RouterLink,
+    SortByTextPipe,
+    SortByDatePipe,
+    IncludeRefPipe,
+    AuthorshipDateFormatPipe,
     MatDivider,
     MatIcon,
     MatTooltip,
