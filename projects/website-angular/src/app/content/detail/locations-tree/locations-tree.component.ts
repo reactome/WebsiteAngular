@@ -1,4 +1,4 @@
-import {Component, effect, inject, input, signal} from '@angular/core';
+import {Component, computed, effect, inject, input, signal} from '@angular/core';
 import {NgTemplateOutlet} from '@angular/common';
 import {HttpClient} from '@angular/common/http';
 import {MatIcon} from '@angular/material/icon';
@@ -31,6 +31,22 @@ export class LocationsTreeComponent {
   expanded = signal<Set<string>>(new Set());
   allExpanded = signal(false);
   loading = signal(false);
+  selectedSpecies = signal<string | null>(null);
+
+  availableSpecies = computed(() => {
+    const species = new Set<string>();
+    for (const tree of this.trees()) {
+      if (tree.species) species.add(tree.species);
+    }
+    return [...species].sort();
+  });
+
+  filteredTrees = computed(() => {
+    const selected = this.selectedSpecies();
+    const all = this.trees();
+    if (!selected || this.availableSpecies().length <= 1) return all;
+    return all.filter(t => t.species === selected);
+  });
 
   constructor() {
     effect(() => {
@@ -41,10 +57,22 @@ export class LocationsTreeComponent {
 
   private fetchLocations(id: string) {
     this.loading.set(true);
+    this.expanded.set(new Set());
+    this.allExpanded.set(false);
+    this.selectedSpecies.set(null);
     const url = `${CONTENT_SERVICE}/data/detail/${id}/locationsInPWB`;
     this.http.get<PathwayBrowserNode[]>(url).subscribe({
       next: (data) => {
         this.trees.set(data);
+        const species = new Set<string>();
+        for (const tree of data) {
+          if (tree.species) species.add(tree.species);
+        }
+        if (species.has('Homo sapiens')) {
+          this.selectedSpecies.set('Homo sapiens');
+        } else if (species.size > 0) {
+          this.selectedSpecies.set([...species].sort()[0]);
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -54,12 +82,12 @@ export class LocationsTreeComponent {
     });
   }
 
-  toggleNode(key: string) {
+  toggleRoot(stId: string) {
     const current = new Set(this.expanded());
-    if (current.has(key)) {
-      current.delete(key);
+    if (current.has(stId)) {
+      current.delete(stId);
     } else {
-      current.add(key);
+      current.add(stId);
     }
     this.expanded.set(current);
   }
@@ -70,20 +98,16 @@ export class LocationsTreeComponent {
       this.allExpanded.set(false);
     } else {
       const all = new Set<string>();
-      const collect = (nodes: PathwayBrowserNode[]) => {
-        for (const node of nodes) {
-          all.add(this.nodeKey(node));
-          if (node.children?.length) collect(node.children);
-        }
-      };
-      collect(this.trees());
+      for (const tree of this.filteredTrees()) {
+        all.add(tree.stId);
+      }
       this.expanded.set(all);
       this.allExpanded.set(true);
     }
   }
 
-  isExpanded(key: string): boolean {
-    return this.expanded().has(key);
+  isExpanded(stId: string): boolean {
+    return this.expanded().has(stId);
   }
 
   hasChildren(node: PathwayBrowserNode): boolean {
@@ -95,7 +119,14 @@ export class LocationsTreeComponent {
     return icons[type]?.name ?? 'pathway';
   }
 
-  nodeKey(node: PathwayBrowserNode): string {
-    return node.url || node.stId;
+  onSpeciesChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    this.selectedSpecies.set(value);
+    this.expanded.set(new Set());
+    this.allExpanded.set(false);
+  }
+
+  isLastChild(parent: PathwayBrowserNode[], node: PathwayBrowserNode): boolean {
+    return parent[parent.length - 1] === node;
   }
 }

@@ -74,6 +74,9 @@ import {CellMarkerComponent} from "../../common/cell-marker/cell-marker.componen
 import {IconComponent} from "./icon/icon.component";
 import {RheaComponent} from "../../common/rhea/rhea.component";
 import {InteractorsTableComponent} from "../../common/interactors-table/interactors-table.component";
+import {
+  LocationsTreeComponent
+} from "../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component";
 
 
 @Component({
@@ -106,7 +109,8 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
     CellMarkerComponent,
     IconComponent,
     RheaComponent,
-    InteractorsTableComponent
+    InteractorsTableComponent,
+    LocationsTreeComponent
   ]
 })
 export class DescriptionTabComponent implements OnDestroy {
@@ -138,6 +142,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
+  readonly showLocations = input(false);
 
   static referenceTypeToNameSuffix = new Map<string, string>([
       ["ReferenceMolecule", ""],
@@ -274,6 +279,7 @@ export class DescriptionTabComponent implements OnDestroy {
   authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
   interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
   rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
+  locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
 
   protected readonly Labels = Labels;
   protected readonly DataKeys = DataKeys;
@@ -300,6 +306,13 @@ export class DescriptionTabComponent implements OnDestroy {
       manual: true,
       template: this.overviewTemplate$,
       isPresent: signal(true)
+    },
+    {
+      key: 'locationsInPWB',
+      label: 'Locations in the Pathway Browser',
+      manual: true,
+      template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
+      isPresent: computed(() => this.showLocations())
     },
     {key: DataKeys.REFERENCE_ENTITY, label: Labels.EXTERNAL_REFERENCE, manual: true, template: this.referenceTemplate$},
     {key: DataKeys.SUMMARISED_ENTITIES, label: Labels.SUMMARISED_ENTITIES},
@@ -451,6 +464,8 @@ export class DescriptionTabComponent implements OnDestroy {
     switch (key) {
       case DataKeys.OVERVIEW:
         return obj;
+      case 'locationsInPWB':
+        return this.showLocations();
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:

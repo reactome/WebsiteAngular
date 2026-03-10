@@ -20,7 +20,6 @@ import {DiagramService} from '../../../../../pathway-browser/src/app/services/di
 import {ParticipantService} from '../../../../../pathway-browser/src/app/services/participant.service';
 import {IconService} from '../../../../../pathway-browser/src/app/services/icon.service';
 
-import {LocationsTreeComponent} from './locations-tree/locations-tree.component';
 import {DetailDataService} from '../../../services/detail-data.service';
 import {DetailUrlState} from './providers/detail-url-state.provider';
 import {DetailDataState} from './providers/detail-data-state.provider';
@@ -32,7 +31,7 @@ import {DetailSpeciesService} from './providers/detail-species.provider';
 @Component({
   selector: 'app-detail',
   standalone: true,
-  imports: [PageLayoutComponent, DescriptionTabComponent, LocationsTreeComponent, MatProgressSpinner],
+  imports: [PageLayoutComponent, DescriptionTabComponent, MatProgressSpinner],
   providers: [
     {provide: UrlStateService, useClass: DetailUrlState},
     {provide: DataStateService, useClass: DetailDataState},
@@ -54,7 +53,6 @@ export class DetailComponent implements OnInit {
   private domSanitizer = inject(DomSanitizer);
   private iconService = inject(IconService);
 
-  entityId = signal<string | null>(null);
   obj = signal<SelectableObject | undefined>(undefined);
   loading = signal(true);
   error = signal(false);
@@ -85,7 +83,6 @@ export class DetailComponent implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
-    this.entityId.set(id);
     if (!id) {
       this.loading.set(false);
       this.error.set(true);

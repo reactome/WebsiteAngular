@@ -1,52 +1,85 @@
 @if (trees().length) {
-  <div class="locations-section">
-    <div class="header">
-      <div class="label">
-        <span class="name">Locations in the PathwayBrowser</span>
+  <!-- Toolbar: species selector + expand/collapse -->
+  <div class="toolbar">
+    @if (availableSpecies().length > 1) {
+      <div class="species-filter">
+        <span class="species-label">Species:</span>
+        <select
+          class="species-select"
+          [value]="selectedSpecies()"
+          (change)="onSpeciesChange($event)"
+        >
+          @for (species of availableSpecies(); track species) {
+            <option [value]="species">{{ species }}</option>
+          }
+        </select>
       </div>
-      <button class="expand-all-btn" (click)="toggleAll()">
-        {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
-      </button>
-    </div>
+    }
+    <button class="expand-all-btn" (click)="toggleAll()">
+      {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
+    </button>
+  </div>
 
-    <div class="tree-list">
-      @for (root of trees(); track nodeKey(root)) {
-        <ng-container
-          *ngTemplateOutlet="treeNode; context: { $implicit: root, level: 0 }"
-        />
-      }
-    </div>
+  <!-- Tree roots -->
+  <div class="tree-roots">
+    @for (root of filteredTrees(); track root.stId) {
+      <div class="root-entry">
+        @if (hasChildren(root)) {
+          <!-- Expandable root -->
+          <button class="root-toggle" (click)="toggleRoot(root.stId)">
+            <mat-icon class="arrow-icon" [svgIcon]="isExpanded(root.stId) ? 'arrow-down' : 'arrow-right'"></mat-icon>
+            <mat-icon class="type-icon" [svgIcon]="getIconName(root.type)"></mat-icon>
+            <span class="root-name">{{ root.name }}</span>
+            @if (root.species && availableSpecies().length <= 1) {
+              <span class="node-species">({{ root.species }})</span>
+            }
+          </button>
+          <!-- Subtree -->
+          @if (isExpanded(root.stId)) {
+            <div class="subtree-container">
+              <ul class="tree">
+                @for (child of root.children; track child.url || child.stId; let last = $last) {
+                  <ng-container
+                    *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, siblings: root.children!, isLast: last }"
+                  />
+                }
+              </ul>
+            </div>
+          }
+        } @else {
+          <!-- Leaf root (no children) — direct link -->
+          <div class="root-leaf">
+            <mat-icon class="type-icon" [svgIcon]="getIconName(root.type)"></mat-icon>
+            <a class="leaf-link" [href]="root.url">{{ root.name }}</a>
+            @if (root.species && availableSpecies().length <= 1) {
+              <span class="node-species">({{ root.species }})</span>
+            }
+          </div>
+        }
+      </div>
+    }
   </div>
 }
 
-<ng-template #treeNode let-node let-level="level">
-  <div class="tree-node" [style.padding-left.px]="level * 20">
+<!-- Recursive node template -->
+<ng-template #nodeTemplate let-node let-siblings="siblings" let-isLast="isLast">
+  <li [class.last]="isLast">
     <div class="node-row">
-      @if (hasChildren(node)) {
-        <button class="toggle-btn" (click)="toggleNode(nodeKey(node))">
-          <mat-icon class="expand-icon" fontSet="symbols">
-            {{ isExpanded(nodeKey(node)) ? 'expand_more' : 'chevron_right' }}
-          </mat-icon>
-        </button>
-      } @else {
-        <span class="toggle-placeholder"></span>
-      }
       <mat-icon class="type-icon" [svgIcon]="getIconName(node.type)"></mat-icon>
-      @if (hasChildren(node)) {
-        <span class="node-name">{{ node.name }}</span>
+      @if (node.url && !hasChildren(node)) {
+        <a class="leaf-link" [href]="node.url">{{ node.name }}</a>
       } @else {
-        <a class="node-name leaf-link" [href]="node.url">{{ node.name }}</a>
-      }
-      @if (node.species) {
-        <span class="node-species">({{ node.species }})</span>
+        <span class="node-name">{{ node.name }}</span>
       }
     </div>
-    @if (hasChildren(node) && isExpanded(nodeKey(node))) {
-      @for (child of node.children; track nodeKey(child)) {
-        <ng-container
-          *ngTemplateOutlet="treeNode; context: { $implicit: child, level: level + 1 }"
-        />
-      }
+    @if (hasChildren(node)) {
+      <ul class="tree">
+        @for (child of node.children; track child.url || child.stId; let childLast = $last) {
+          <ng-container
+            *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, siblings: node.children!, isLast: childLast }"
+          />
+        }
+      </ul>
     }
-  </div>
+  </li>
 </ng-template>
