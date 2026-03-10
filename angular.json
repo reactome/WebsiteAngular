@@ -152,6 +152,11 @@
                 "glob": "**/*",
                 "input": "projects/website-angular/src/assets",
                 "output": "/assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/pathway-browser/src/assets",
+                "output": "/assets"
               }
             ],
             "styles": ["projects/website-angular/src/styles.scss"],

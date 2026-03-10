@@ -10,10 +10,7 @@
     </div>
   } @else if (obj()) {
     <div class="detail-container">
-      @if (entityId()) {
-        <app-locations-tree [id]="entityId()!" />
-      }
-      <cr-description-tab [obj]="obj()!" />
+      <cr-description-tab [obj]="obj()!" [showLocations]="true" />
     </div>
   }
 </app-page-layout>
