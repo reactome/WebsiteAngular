@@ -76,6 +76,9 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
 import {
   LocationsTreeComponent
 } from "../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component";
+import {
+  ReactionDiagramComponent
+} from "../../common/reaction-diagram/reaction-diagram.component";
 
 
 @Component({
@@ -108,7 +111,8 @@ import {
     IconComponent,
     RheaComponent,
     InteractorsTableComponent,
-    LocationsTreeComponent
+    LocationsTreeComponent,
+    ReactionDiagramComponent
   ]
 })
 export class DescriptionTabComponent implements OnDestroy {
@@ -280,6 +284,9 @@ export class DescriptionTabComponent implements OnDestroy {
   interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
   rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
   locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
+  reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
+
+  readonly isReaction = computed(() => isRLE(this.obj()));
 
   protected readonly Labels = Labels;
   protected readonly DataKeys = DataKeys;
@@ -313,6 +320,13 @@ export class DescriptionTabComponent implements OnDestroy {
       manual: true,
       template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
       isPresent: computed(() => this.showLocations())
+    },
+    {
+      key: 'reactionDiagram',
+      label: 'Reaction Diagram',
+      manual: true,
+      template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
+      isPresent: this.isReaction
     },
     {key: DataKeys.REFERENCE_ENTITY, label: Labels.EXTERNAL_REFERENCE, manual: true, template: this.referenceTemplate$},
     {key: DataKeys.SUMMARISED_ENTITIES, label: Labels.SUMMARISED_ENTITIES},
@@ -466,6 +480,8 @@ export class DescriptionTabComponent implements OnDestroy {
         return obj;
       case 'locationsInPWB':
         return this.showLocations();
+      case 'reactionDiagram':
+        return this.isReaction();
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
