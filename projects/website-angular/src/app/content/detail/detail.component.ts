@@ -40,7 +40,7 @@ import {DetailSpeciesService} from './providers/detail-species.provider';
     {provide: InteractorService, useClass: DetailInteractorService},
     {provide: FigureService, useClass: DetailFigureService},
     {provide: SpeciesService, useClass: DetailSpeciesService},
-    {provide: DiagramService, useValue: {}},
+    DiagramService,
     {provide: ParticipantService, useValue: {getReferenceEntities: () => of([])}},
     DatePipe,
   ],

@@ -80,7 +80,7 @@ export interface NodeConnector {
   type: 'INPUT' | 'OUTPUT' | 'CATALYST' | 'ACTIVATOR' | 'INHIBITOR';
   segments: Segment[]
   stoichiometry: { value: number }
-  endShape: { centre: Position }
+  endShape: { centre: Position, c?: Position }
   isFadeOut?: boolean
 }
 

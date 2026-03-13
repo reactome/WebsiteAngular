@@ -243,434 +243,441 @@ export class DiagramService {
           )
         )
       })),
-      map(({diagram, graph, chebiMapping}) => {
-        console.log("edge.reactionType", new Set(diagram.edges.flatMap(edge => edge.reactionType)))
-        console.log("node.connectors.types", new Set(diagram.nodes.flatMap(node => node.connectors.flatMap(con => con.type))))
-        console.log("node.renderableClass", new Set(diagram.nodes.flatMap(node => node.renderableClass)))
-        console.log("links.renderableClass", new Set(diagram.links.flatMap(link => link.renderableClass)))
-        console.log("shadow.renderableClass", new Set(diagram.shadows.flatMap(shadow => shadow.renderableClass)))
-
-        const idToEdges = new Map<number, Edge>(diagram.edges.map(edge => [edge.id, edge]));
-        const idToNodes = new Map<number, Node>(diagram.nodes.map(node => [node.id, node]));
-        const reactomeIdToEdge = new Map<number, Edge>(
-          [
-            // ...diagram.nodes.map(node => [node.reactomeId, node]),
-            ...diagram.edges.map(edge => [edge.reactomeId, edge])
-          ] as [number, Edge][]
-        );
-
-        const edgeIds = new Map<string, number>();
-        const forwardArray = diagram.edges.flatMap(edge => edge.segments.map(segment => [posToStr(edge, scale(segment.from)), scale(segment.to)])) as [string, Position][];
-        this.extraLine = new Map<string, Position>(forwardArray);
-        console.assert(forwardArray.length === this.extraLine.size, "Some edge diagram have been lost because 2 segments are starting from the same point")
-
-        const backwardArray = diagram.edges.flatMap(edge => edge.segments.map(segment => [posToStr(edge, scale(segment.to)), scale(segment.from)])) as [string, Position][];
-        this.reverseExtraLine = new Map<string, Position>(backwardArray);
-        console.assert(backwardArray.length == this.reverseExtraLine.size, "Some edge diagram have been lost because 2 segments are ending at the same point")
-
-
-        const subpathwayIds = new Set<number>(diagram.shadows.map((shadow) => shadow.reactomeId))
-
-        const eventIdToSubPathwayId = new Map<number, number>(graph.subpathways?.flatMap(subpathway => subpathway.events
-          .map(event => [event, subpathway.dbId])
-          .filter(entry => subpathwayIds.has(entry[1]))) as [number, number][] || [])
-
-        const subpathwayIdToEventIds = new Map<number, number[]>(graph.subpathways?.map(subpathway => [subpathway.dbId, subpathway.events]));
-        const subpathwayStIdToEventIds = new Map<string, number[]>(graph.subpathways?.map(subpathway => [subpathway.stId, subpathway.events]));
-        // create a node id - graph node mapping
-        const dbIdToGraphNode = new Map<number, Graph.Node>(graph.nodes.map(node => ([node.dbId, node])))
-        const mappingList: [number, Graph.Node][] = graph.nodes.flatMap(node => {
-          if (node.children && node.children.length === 1 && node.diagramIds?.length !== 1) { // Consider homomer complex like their constituents for interactors
-            return node.diagramIds?.map(id => [id, dbIdToGraphNode.get(node.children[0])])
-              .filter(entry => entry[1] !== undefined) as [number, Graph.Node][]
-          } else {
-            return node.diagramIds?.map(id => [id, node]) as [number, Graph.Node][]
-          }
-        }).filter(entry => entry !== undefined);
-
-        const idToGraphNodes = new Map([...mappingList]);
-        const idToGraphEdges = new Map(graph.edges.map(edge => [edge.dbId, edge]));
-
-        const getLeaves = (node: Graph.Node, leaves: Set<Graph.Node>) => {
-          if (node.children && node.children.length > 0)
-            node.children.forEach(child => getLeaves(dbIdToGraphNode.get(child)!, leaves))
-          else
-            leaves.add(node);
-        }
-
-        idToGraphNodes.forEach(node => {
-          if (node.children?.length > 0) {
-            let leaves = new Set<Graph.Node>();
-            getLeaves(node, leaves);
-            node.leaves = [...leaves];
-          }
-        })
-
-        const dbIdToGraphEdge = new Map<number, Graph.Edge>(graph.edges.map(edge => ([edge.dbId, edge])))
-
-        const hasFadeOut = diagram.nodes.some(node => node.isFadeOut);
-        const normalNodes = diagram.nodes.filter(node => node.isFadeOut);
-        const specialNodes = diagram.nodes.filter(node => !node.isFadeOut);
-        const posToNormalNode = new Map(normalNodes.map(node => [pointToStr(node.position), node]));
-        const posToSpecialNode = new Map(specialNodes.map(node => [pointToStr(node.position), node]));
-
-        const normalEdges = diagram.edges.filter(edge => edge.isFadeOut);
-        const specialEdges = diagram.edges.filter(edge => !edge.isFadeOut);
-        const posToNormalEdge = new Map(normalEdges.map(edge => [pointToStr(edge.position), edge]));
-        const posToSpecialEdge = new Map(specialEdges.map(edge => [pointToStr(edge.position), edge]));
-
-        //compartment nodes
-        const compartmentNodes: cytoscape.NodeDefinition[] = diagram?.compartments.flatMap(item => {
-          const propToRects = (prop: Prop): { [p: string]: number } => ({
-            left: scale(prop.x),
-            top: scale(prop.y),
-            right: scale(prop.x + prop.width),
-            bottom: scale(prop.x + prop.height),
-          })
-
-          let innerCR = 10;
-          let outerCR
-          if (item.insets) {
-            const rects = [propToRects(item.prop), propToRects(item.insets)]
-            outerCR = Object.keys(rects[0]).reduce((smallest, key) => Math.min(smallest, Math.abs(rects[0][key] - rects[1][key])), Number.MAX_SAFE_INTEGER);
-            outerCR = innerCR + Math.min(outerCR, 100)
-          }
-
-          const layers: cytoscape.NodeDefinition[] = [
-            {
-              data: {
-                id: item.id + '-outer',
-                displayName: item.displayName,
-                textX: scale(item.textPosition.x - (item.prop.x + item.prop.width)) + this.COMPARTMENT_SHIFT,
-                textY: scale(item.textPosition.y - (item.prop.y + item.prop.height)) + this.COMPARTMENT_SHIFT,
-                width: scale(item.prop.width),
-                height: scale(item.prop.height),
-                radius: outerCR
-              },
-              classes: ['Compartment', 'outer'],
-              position: scale(item.position),
-              selectable: false,
-            }
-          ];
-
-          if (item.insets) {
-            layers.push({
-              data: {
-                id: item.id + '-inner',
-                width: scale(item.insets.width),
-                height: scale(item.insets.height),
-                radius: innerCR
-              },
-              classes: ['Compartment', 'inner'],
-              position: scale({x: item.insets.x + item.insets.width / 2, y: item.insets.y + item.insets.height / 2}),
-              selectable: false,
-            })
-          }
-          return layers;
-        });
-
-        const replacementMap = new Map<string, string>();
-
-        //reaction nodes
-        const reactionNodes: cytoscape.NodeDefinition[] = diagram?.edges.map(item => {
-          let replacement, replacedBy;
-          if (item.isFadeOut) {
-            replacedBy = posToSpecialEdge.get(pointToStr(item.position))?.id.toString() || specialEdges.find(edge => squaredDist(scale(edge.position), scale(item.position)) < 5 ** 2)?.id.toString();
-            if (replacedBy) {
-              replacementMap.set(item.id.toString(), replacedBy)
-              replacementMap.set(replacedBy, item.id.toString())
-            }
-          }
-          if (!item.isFadeOut) {
-            replacement = posToNormalEdge.get(pointToStr(item.position))?.id.toString() || normalEdges.find(edge => squaredDist(scale(edge.position), scale(item.position)) < 5 ** 2)?.id.toString();
-          }
-          let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(([subpathwayId, events]) => events.includes(item.reactomeId) ? [subpathwayId] : []);
-
-          return ({
-            data: {
-              id: item.id + '',
-              // displayName: item.displayName,
-              inputs: item.inputs,
-              output: item.outputs,
-              isFadeOut: item.isFadeOut,
-              isBackground: item.isFadeOut,
-              reactomeId: item.reactomeId,
-              reactionId: item.id,
-              graph: idToGraphEdges.get(item.reactomeId),
-              subpathways: subpathways,
-              replacement, replacedBy
-            },
-            classes: this.reactionTypeMap.get(item.reactionType),
-            position: scale(item.position)
-          });
-        });
-
-
-        //entity nodes
-        const entityNodes: cytoscape.NodeDefinition[] = diagram?.nodes.flatMap(item => {
-          let classes = [...this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase()];
-          let unitId = undefined;
-          if (item.schemaClass === SchemaClasses.POLYMER) {
-            const polymerGraphNode = dbIdToGraphNode.get(item.reactomeId)!;
-            const unitGraph = dbIdToGraphNode.get(polymerGraphNode.children[0])!;
-            const unitClass = this.nodeTypeMap.get(unitGraph.schemaClass) || this.nodeTypeMap.get(this.schemaClassToNodeTypeMap.get(unitGraph.schemaClass === 'EntityWithAccessionedSequence' ? unitGraph.referenceType : unitGraph.schemaClass)!) || ['GenomeEncodedEntity', 'PhysicalEntity'];
-            classes = [SchemaClasses.POLYMER, ...unitClass]
-            unitId = unitGraph.identifier;
-          }
-          let replacedBy: string | undefined;
-          let replacement: string | undefined;
-          if (item.isDisease) classes.push('disease');
-          if (item.isCrossed) classes.push('crossed');
-          if (item.trivial) classes.push('trivial');
-          if (item.needDashedBorder) classes.push('loss-of-function');
-          if (item.isFadeOut) {
-            replacedBy = posToSpecialNode.get(pointToStr(item.position))?.id.toString()
-            if (!replacedBy) {
-              replacedBy = specialNodes.find(node => overlapLimited(item, node, 0.8))?.id.toString();
-            }
-            if (replacedBy) {
-              replacementMap.set(item.id.toString(), replacedBy)
-              replacementMap.set(replacedBy, item.id.toString())
-            }
-          }
-          if (!item.isFadeOut) replacement = posToNormalNode.get(pointToStr(item.position))?.id.toString() //|| normalNodes.find(node => overlap(item, node))?.id.toString();
-          if (classes.some(clazz => clazz === 'RNA')) item.prop.height -= 10;
-          if (classes.some(clazz => clazz === 'Cell')) item.prop.height /= 2;
-          const isBackground = item.isFadeOut || classes.some(clazz => clazz === 'Pathway') || item.connectors.some(connector => connector.isFadeOut);
-          item.isBackground = isBackground;
-          let html = undefined;
-          let width = scale(item.prop.width);
-          let height = scale(item.prop.height);
-          const graphData = idToGraphNodes.get(item.id);
-          if (!graphData) console.error("Missing graph data for node: ", item.id, ". Potential reason could be a wrong normal pathway for a disease")
-          let preferredId = unitId || graphData?.identifier;
-          let chebiStructure = preferredId ? chebiMapping.get(preferredId) : undefined
-          if (classes.some(clazz => clazz === 'Protein')) {
-            html = this.getStructureVideoHtml({...item, type: 'Protein'}, width, height, preferredId);
-          }
-          if (isBackground && !item.isFadeOut) {
-            replacementMap.set(item.id.toString(), item.id.toString())
-          }
-          const isFadeOut = !item.isCrossed && item.isFadeOut;
-          const nodes: cytoscape.NodeDefinition[] = [
-            {
-              data: {
-                id: item.id + '',
-                reactomeId: item.reactomeId,
-                displayName: item.displayName.replace(/([/,:;-])/g, "$1\u200b"),
-                height: height,
-                width: width,
-                graph: graphData,
-                acc: preferredId,
-                html,
-                chebiStructure,
-                isFadeOut,
-                isBackground,
-                replacement,
-                replacedBy
-              },
-              classes: classes,
-              position: scale(item.position)
-            }
-          ];
-          if (item.nodeAttachments) {
-            nodes.push(...item.nodeAttachments.map(ptm => ({
-              data: {
-                id: item.id + '-' + ptm.reactomeId,
-                reactomeId: ptm.reactomeId,
-                nodeId: item.id,
-                nodeReactomeId: item.reactomeId,
-                displayName: ptm.label,
-                height: scale(ptm.shape.b.y - ptm.shape.a.y),
-                width: scale(ptm.shape.b.x - ptm.shape.a.x),
-                isFadeOut,
-                isBackground,
-                replacement,
-                replacedBy
-              },
-              classes: "Modification",
-              position: scale(ptm.shape.centre)
-            })))
-          }
-          return nodes
-        });
-
-        //sub pathways
-        const shadowNodes: cytoscape.NodeDefinition[] = diagram?.shadows.map(item => {
-          return {
-            data: {
-              id: item.id + '',
-              displayName: item.displayName,
-              height: scale(item.prop.height),
-              width: scale(item.prop.width),
-              reactomeId: item.reactomeId,
-              isFadeOut: item.isFadeOut,
-              replacedBy: item.isFadeOut,
-              triggerPosition: scale(item.maxX)
-            },
-            classes: ['Shadow'],
-            position: closestToAverage(subpathwayIdToEventIds.get(item.reactomeId)!.map(reactionId => reactomeIdToEdge.get(reactionId)!).map(edge => scale(edge!.position)))
-          }
-        });
-
-        avoidOverlap(shadowNodes);
-
-        const T = 4;
-        const ARROW_MULT = 1.5;
-        const EDGE_MARGIN = 6;
-        const REACTION_RADIUS = 3 * T;
-        const MIN_DIST = EDGE_MARGIN;
-
-
-        /**
-         * Edges: iterate nodes connectors to get all edges information based on the connector type.
-         *
-         */
-        const edges: cytoscape.EdgeDefinition[] =
-          diagram.nodes.flatMap(node => {
-              return node.connectors.map(connector => {
-                const reaction = idToEdges.get(connector.edgeId)!;
-
-                const reactionP = scale(reaction.position);
-                const nodeP = scale(node.position);
-
-                const [source, target] = connector.type !== 'OUTPUT' ?
-                  [node, reaction] :
-                  [reaction, node];
-
-                const sourceP = scale(source.position);
-                const targetP = scale(target.position);
-
-                let points = connector.segments
-                  .flatMap((segment, i) => i === 0 ? [segment.from, segment.to] : [segment.to])
-                  .map(pos => scale(pos));
-                if (connector.type === 'OUTPUT') points.reverse();
-                if (points.length === 0) points.push(reactionP);
-
-                this.addEdgeInfo(reaction, points, 'backward', sourceP);
-                this.addEdgeInfo(reaction, points, 'forward', targetP);
-
-                let [from, to] = [points.shift()!, points.pop()!]
-                from = from ?? nodeP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-                to = to ?? reactionP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-                if (connector.type === 'CATALYST') {
-                  to = scale(connector.endShape.centre);
-                }
-
-                // points = addRoundness(from, to, points);
-                const relatives = this.absoluteToRelative(from, to, points);
-
-                const classes = [...this.edgeTypeMap.get(connector.type)!];
-                if (reaction.isDisease) classes.push('disease');
-                if (node.trivial) classes.push('trivial');
-                if (eventIdToSubPathwayId.has(reaction.reactomeId)) classes.push('shadow');
-
-                let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(([subpathwayId, events]) => events.includes(reaction.reactomeId) ? [subpathwayId] : []);
-
-                let d = dist(from, to);
-                if (equal(from, reactionP) || equal(to, reactionP)) d -= REACTION_RADIUS;
-                if (classes.includes('positive-regulation') || classes.includes('catalysis') || classes.includes('production')) d -= ARROW_MULT * T;
-                // console.assert(d > MIN_DIST, `The edge between reaction: R-HSA-${reaction.reactomeId} and entity: R-HSA-${node.reactomeId} in pathway ${id} has a visible length of ${d} which is shorter than ${MIN_DIST}`)
-                console.assert(d > MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
-
-                let replacement, replacedBy;
-                if (connector.isFadeOut) {
-                  // First case: same node is used both special and normal context
-                  // replacedBy = node.connectors.find(otherConnector => otherConnector !== connector && !otherConnector.isFadeOut && samePoint(idToEdges.get(otherConnector.edgeId)!.position, reaction.position))?.edgeId;
-                  // Second case: different nodes are used between special and normal context
-                  // replacedBy = replacedBy || (posToSpecialNode.get(pointToStr(node.position)) && posToSpecialEdge.get(pointToStr(reaction.position)))?.id;
-
-                  replacedBy = replacementMap.get(node.id.toString()) && replacementMap.get(reaction.id.toString())
-                }
-                if (!connector.isFadeOut) {
-                  // First case: same node is used both special and normal context
-                  replacement = node.connectors.find(otherConnector => otherConnector !== connector && otherConnector.isFadeOut && samePoint(idToEdges.get(otherConnector.edgeId)!.position, reaction.position))?.edgeId;
-                  // console.log("Reaction edge", replacement)
-
-                  // Second case: different nodes are used between special and normal context
-                  replacement = replacement || (posToNormalNode.get(pointToStr(node.position)) && posToNormalEdge.get(pointToStr(reaction.position)))?.id;
-                  // console.log("Reaction edge", replacement)
-
-                }
-                const edge: cytoscape.EdgeDefinition = {
-                  data: {
-                    id: this.getEdgeId(source, connector, target, edgeIds),
-                    graph: dbIdToGraphEdge.get(reaction.reactomeId),
-                    source: source.id + '',
-                    target: target.id + '',
-                    stoichiometry: connector.stoichiometry.value,
-                    weights: relatives.weights.join(" "),
-                    distances: relatives.distances.join(" "),
-                    sourceEndpoint: this.endpoint(sourceP, from),
-                    targetEndpoint: this.endpoint(targetP, to),
-                    pathway: eventIdToSubPathwayId.get(reaction.reactomeId),
-                    reactomeId: reaction.reactomeId,
-                    reactionId: reaction.id,
-                    isFadeOut: reaction.isFadeOut,
-                    isBackground: reaction.isFadeOut,
-                    subpathways,
-                    replacedBy, replacement
-                  },
-                  classes: classes
-                };
-                return edge
-              });
-            }
-          );
-
-        const linkEdges: cytoscape.EdgeDefinition[] = diagram.links
-          ?.filter(link => !link.renderableClass.includes('EntitySet') || link.inputs[0].id !== link.outputs[0].id)
-          ?.map(link => {
-              const source = idToNodes.get(link.inputs[0].id)!;
-              const target = idToNodes.get(link.outputs[0].id)!;
-
-              const sourceP = scale(source.position);
-              const targetP = scale(target.position);
-
-              let points = link.segments
-                .flatMap((segment, i) => i === 0 ? [segment.from, segment.to] : [segment.to])
-                .map(pos => scale(pos));
-
-              let [from, to] = [points.shift()!, points.pop()!]
-              from = from ?? sourceP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-              to = to ?? targetP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-
-              // points = addRoundness(from, to, points);
-              const relatives = this.absoluteToRelative(from, to, points);
-
-              const classes = [...this.linkClassMap.get(link.renderableClass)!];
-              if (link.isDisease) classes.push('disease');
-              const isBackground = link.isFadeOut ||
-                idToNodes.get(link.inputs[0].id)?.isBackground &&
-                idToNodes.get(link.outputs[0].id)?.isBackground;
-
-              return {
-                data: {
-                  id: link.id + '',
-                  source: link.inputs[0].id + '',
-                  target: link.outputs[0].id + '',
-                  weights: relatives.weights.join(" "),
-                  distances: relatives.distances.join(" "),
-                  sourceEndpoint: this.endpoint(sourceP, from),
-                  targetEndpoint: this.endpoint(targetP, to),
-                  isFadeOut: link.isFadeOut,
-                  isBackground: isBackground
-                },
-                classes: classes,
-                selectable: false
-              }
-            }
-          )
-
-        console.log('All data created')
-        return {
-          nodes: [...compartmentNodes, ...reactionNodes, ...entityNodes, ...shadowNodes],
-          edges: [...edges, ...linkEdges]
-        };
-      }),
+      map(({diagram, graph, chebiMapping}) => this.diagramFromData(diagram, graph, id, chebiMapping)),
       tap((output) => console.log('Output:', output)),
     )
 
+  }
+
+  public diagramFromData(
+    diagram: Diagram,
+    graph: Graph.Data,
+    id: number | string = '',
+    chebiMapping: Map<string, Promise<string | undefined>> = new Map()
+  ): cytoscape.ElementsDefinition {
+    console.log("edge.reactionType", new Set(diagram.edges.flatMap(edge => edge.reactionType)))
+    console.log("node.connectors.types", new Set(diagram.nodes.flatMap(node => node.connectors.flatMap(con => con.type))))
+    console.log("node.renderableClass", new Set(diagram.nodes.flatMap(node => node.renderableClass)))
+    console.log("links.renderableClass", new Set(diagram.links.flatMap(link => link.renderableClass)))
+    console.log("shadow.renderableClass", new Set(diagram.shadows.flatMap(shadow => shadow.renderableClass)))
+
+    const idToEdges = new Map<number, Edge>(diagram.edges.map(edge => [edge.id, edge]));
+    const idToNodes = new Map<number, Node>(diagram.nodes.map(node => [node.id, node]));
+    const reactomeIdToEdge = new Map<number, Edge>(
+      [
+        // ...diagram.nodes.map(node => [node.reactomeId, node]),
+        ...diagram.edges.map(edge => [edge.reactomeId, edge])
+      ] as [number, Edge][]
+    );
+
+    const edgeIds = new Map<string, number>();
+    const forwardArray = diagram.edges.flatMap(edge => edge.segments.map(segment => [posToStr(edge, scale(segment.from)), scale(segment.to)])) as [string, Position][];
+    this.extraLine = new Map<string, Position>(forwardArray);
+    console.assert(forwardArray.length === this.extraLine.size, "Some edge diagram have been lost because 2 segments are starting from the same point")
+
+    const backwardArray = diagram.edges.flatMap(edge => edge.segments.map(segment => [posToStr(edge, scale(segment.to)), scale(segment.from)])) as [string, Position][];
+    this.reverseExtraLine = new Map<string, Position>(backwardArray);
+    console.assert(backwardArray.length == this.reverseExtraLine.size, "Some edge diagram have been lost because 2 segments are ending at the same point")
+
+
+    const subpathwayIds = new Set<number>(diagram.shadows.map((shadow) => shadow.reactomeId))
+
+    const eventIdToSubPathwayId = new Map<number, number>(graph.subpathways?.flatMap(subpathway => subpathway.events
+      .map(event => [event, subpathway.dbId])
+      .filter(entry => subpathwayIds.has(entry[1]))) as [number, number][] || [])
+
+    const subpathwayIdToEventIds = new Map<number, number[]>(graph.subpathways?.map(subpathway => [subpathway.dbId, subpathway.events]));
+    const subpathwayStIdToEventIds = new Map<string, number[]>(graph.subpathways?.map(subpathway => [subpathway.stId, subpathway.events]));
+    // create a node id - graph node mapping
+    const dbIdToGraphNode = new Map<number, Graph.Node>(graph.nodes.map(node => ([node.dbId, node])))
+    const mappingList: [number, Graph.Node][] = graph.nodes.flatMap(node => {
+      if (node.children && node.children.length === 1 && node.diagramIds?.length !== 1) { // Consider homomer complex like their constituents for interactors
+        return node.diagramIds?.map(id => [id, dbIdToGraphNode.get(node.children[0])])
+          .filter(entry => entry[1] !== undefined) as [number, Graph.Node][]
+      } else {
+        return node.diagramIds?.map(id => [id, node]) as [number, Graph.Node][]
+      }
+    }).filter(entry => entry !== undefined);
+
+    const idToGraphNodes = new Map([...mappingList]);
+    const idToGraphEdges = new Map(graph.edges.map(edge => [edge.dbId, edge]));
+
+    const getLeaves = (node: Graph.Node, leaves: Set<Graph.Node>) => {
+      if (node.children && node.children.length > 0)
+        node.children.forEach(child => getLeaves(dbIdToGraphNode.get(child)!, leaves))
+      else
+        leaves.add(node);
+    }
+
+    idToGraphNodes.forEach(node => {
+      if (node.children?.length > 0) {
+        let leaves = new Set<Graph.Node>();
+        getLeaves(node, leaves);
+        node.leaves = [...leaves];
+      }
+    })
+
+    const dbIdToGraphEdge = new Map<number, Graph.Edge>(graph.edges.map(edge => ([edge.dbId, edge])))
+
+    const hasFadeOut = diagram.nodes.some(node => node.isFadeOut);
+    const normalNodes = diagram.nodes.filter(node => node.isFadeOut);
+    const specialNodes = diagram.nodes.filter(node => !node.isFadeOut);
+    const posToNormalNode = new Map(normalNodes.map(node => [pointToStr(node.position), node]));
+    const posToSpecialNode = new Map(specialNodes.map(node => [pointToStr(node.position), node]));
+
+    const normalEdges = diagram.edges.filter(edge => edge.isFadeOut);
+    const specialEdges = diagram.edges.filter(edge => !edge.isFadeOut);
+    const posToNormalEdge = new Map(normalEdges.map(edge => [pointToStr(edge.position), edge]));
+    const posToSpecialEdge = new Map(specialEdges.map(edge => [pointToStr(edge.position), edge]));
+
+    //compartment nodes
+    const compartmentNodes: cytoscape.NodeDefinition[] = diagram?.compartments.flatMap(item => {
+      const propToRects = (prop: Prop): { [p: string]: number } => ({
+        left: scale(prop.x),
+        top: scale(prop.y),
+        right: scale(prop.x + prop.width),
+        bottom: scale(prop.x + prop.height),
+      })
+
+      let innerCR = 10;
+      let outerCR
+      if (item.insets) {
+        const rects = [propToRects(item.prop), propToRects(item.insets)]
+        outerCR = Object.keys(rects[0]).reduce((smallest, key) => Math.min(smallest, Math.abs(rects[0][key] - rects[1][key])), Number.MAX_SAFE_INTEGER);
+        outerCR = innerCR + Math.min(outerCR, 100)
+      }
+
+      const layers: cytoscape.NodeDefinition[] = [
+        {
+          data: {
+            id: item.id + '-outer',
+            displayName: item.displayName,
+            textX: scale(item.textPosition.x - (item.prop.x + item.prop.width)) + this.COMPARTMENT_SHIFT,
+            textY: scale(item.textPosition.y - (item.prop.y + item.prop.height)) + this.COMPARTMENT_SHIFT,
+            width: scale(item.prop.width),
+            height: scale(item.prop.height),
+            radius: outerCR
+          },
+          classes: ['Compartment', 'outer'],
+          position: scale(item.position),
+          selectable: false,
+        }
+      ];
+
+      if (item.insets) {
+        layers.push({
+          data: {
+            id: item.id + '-inner',
+            width: scale(item.insets.width),
+            height: scale(item.insets.height),
+            radius: innerCR
+          },
+          classes: ['Compartment', 'inner'],
+          position: scale({x: item.insets.x + item.insets.width / 2, y: item.insets.y + item.insets.height / 2}),
+          selectable: false,
+        })
+      }
+      return layers;
+    });
+
+    const replacementMap = new Map<string, string>();
+
+    //reaction nodes
+    const reactionNodes: cytoscape.NodeDefinition[] = diagram?.edges.map(item => {
+      let replacement, replacedBy;
+      if (item.isFadeOut) {
+        replacedBy = posToSpecialEdge.get(pointToStr(item.position))?.id.toString() || specialEdges.find(edge => squaredDist(scale(edge.position), scale(item.position)) < 5 ** 2)?.id.toString();
+        if (replacedBy) {
+          replacementMap.set(item.id.toString(), replacedBy)
+          replacementMap.set(replacedBy, item.id.toString())
+        }
+      }
+      if (!item.isFadeOut) {
+        replacement = posToNormalEdge.get(pointToStr(item.position))?.id.toString() || normalEdges.find(edge => squaredDist(scale(edge.position), scale(item.position)) < 5 ** 2)?.id.toString();
+      }
+      let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(([subpathwayId, events]) => events.includes(item.reactomeId) ? [subpathwayId] : []);
+
+      return ({
+        data: {
+          id: item.id + '',
+          // displayName: item.displayName,
+          inputs: item.inputs,
+          output: item.outputs,
+          isFadeOut: item.isFadeOut,
+          isBackground: item.isFadeOut,
+          reactomeId: item.reactomeId,
+          reactionId: item.id,
+          graph: idToGraphEdges.get(item.reactomeId),
+          subpathways: subpathways,
+          replacement, replacedBy
+        },
+        classes: this.reactionTypeMap.get(item.reactionType),
+        position: scale(item.position)
+      });
+    });
+
+
+    //entity nodes
+    const entityNodes: cytoscape.NodeDefinition[] = diagram?.nodes.flatMap(item => {
+      let classes = [...this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase()];
+      let unitId = undefined;
+      if (item.schemaClass === SchemaClasses.POLYMER) {
+        const polymerGraphNode = dbIdToGraphNode.get(item.reactomeId)!;
+        const unitGraph = dbIdToGraphNode.get(polymerGraphNode.children[0])!;
+        const unitClass = this.nodeTypeMap.get(unitGraph.schemaClass) || this.nodeTypeMap.get(this.schemaClassToNodeTypeMap.get(unitGraph.schemaClass === 'EntityWithAccessionedSequence' ? unitGraph.referenceType : unitGraph.schemaClass)!) || ['GenomeEncodedEntity', 'PhysicalEntity'];
+        classes = [SchemaClasses.POLYMER, ...unitClass]
+        unitId = unitGraph.identifier;
+      }
+      let replacedBy: string | undefined;
+      let replacement: string | undefined;
+      if (item.isDisease) classes.push('disease');
+      if (item.isCrossed) classes.push('crossed');
+      if (item.trivial) classes.push('trivial');
+      if (item.needDashedBorder) classes.push('loss-of-function');
+      if (item.isFadeOut) {
+        replacedBy = posToSpecialNode.get(pointToStr(item.position))?.id.toString()
+        if (!replacedBy) {
+          replacedBy = specialNodes.find(node => overlapLimited(item, node, 0.8))?.id.toString();
+        }
+        if (replacedBy) {
+          replacementMap.set(item.id.toString(), replacedBy)
+          replacementMap.set(replacedBy, item.id.toString())
+        }
+      }
+      if (!item.isFadeOut) replacement = posToNormalNode.get(pointToStr(item.position))?.id.toString() //|| normalNodes.find(node => overlap(item, node))?.id.toString();
+      if (classes.some(clazz => clazz === 'RNA')) item.prop.height -= 10;
+      if (classes.some(clazz => clazz === 'Cell')) item.prop.height /= 2;
+      const isBackground = item.isFadeOut || classes.some(clazz => clazz === 'Pathway') || item.connectors.some(connector => connector.isFadeOut);
+      item.isBackground = isBackground;
+      let html = undefined;
+      let width = scale(item.prop.width);
+      let height = scale(item.prop.height);
+      const graphData = idToGraphNodes.get(item.id);
+      if (!graphData) console.error("Missing graph data for node: ", item.id, ". Potential reason could be a wrong normal pathway for a disease")
+      let preferredId = unitId || graphData?.identifier;
+      let chebiStructure = preferredId ? chebiMapping.get(preferredId) : undefined
+      if (classes.some(clazz => clazz === 'Protein')) {
+        html = this.getStructureVideoHtml({...item, type: 'Protein'}, width, height, preferredId);
+      }
+      if (isBackground && !item.isFadeOut) {
+        replacementMap.set(item.id.toString(), item.id.toString())
+      }
+      const isFadeOut = !item.isCrossed && item.isFadeOut;
+      const nodes: cytoscape.NodeDefinition[] = [
+        {
+          data: {
+            id: item.id + '',
+            reactomeId: item.reactomeId,
+            displayName: item.displayName.replace(/([/,:;-])/g, "$1\u200b"),
+            height: height,
+            width: width,
+            graph: graphData,
+            acc: preferredId,
+            html,
+            chebiStructure,
+            isFadeOut,
+            isBackground,
+            replacement,
+            replacedBy
+          },
+          classes: classes,
+          position: scale(item.position)
+        }
+      ];
+      if (item.nodeAttachments) {
+        nodes.push(...item.nodeAttachments.map(ptm => ({
+          data: {
+            id: item.id + '-' + ptm.reactomeId,
+            reactomeId: ptm.reactomeId,
+            nodeId: item.id,
+            nodeReactomeId: item.reactomeId,
+            displayName: ptm.label,
+            height: scale(ptm.shape.b.y - ptm.shape.a.y),
+            width: scale(ptm.shape.b.x - ptm.shape.a.x),
+            isFadeOut,
+            isBackground,
+            replacement,
+            replacedBy
+          },
+          classes: "Modification",
+          position: scale(ptm.shape.centre ?? {x: (ptm.shape.a.x + ptm.shape.b.x) / 2, y: (ptm.shape.a.y + ptm.shape.b.y) / 2})
+        })))
+      }
+      return nodes
+    });
+
+    //sub pathways
+    const shadowNodes: cytoscape.NodeDefinition[] = diagram?.shadows.map(item => {
+      return {
+        data: {
+          id: item.id + '',
+          displayName: item.displayName,
+          height: scale(item.prop.height),
+          width: scale(item.prop.width),
+          reactomeId: item.reactomeId,
+          isFadeOut: item.isFadeOut,
+          replacedBy: item.isFadeOut,
+          triggerPosition: scale(item.maxX)
+        },
+        classes: ['Shadow'],
+        position: closestToAverage(subpathwayIdToEventIds.get(item.reactomeId)!.map(reactionId => reactomeIdToEdge.get(reactionId)!).map(edge => scale(edge!.position)))
+      }
+    });
+
+    avoidOverlap(shadowNodes);
+
+    const T = 4;
+    const ARROW_MULT = 1.5;
+    const EDGE_MARGIN = 6;
+    const REACTION_RADIUS = 3 * T;
+    const MIN_DIST = EDGE_MARGIN;
+
+
+    /**
+     * Edges: iterate nodes connectors to get all edges information based on the connector type.
+     *
+     */
+    const edges: cytoscape.EdgeDefinition[] =
+      diagram.nodes.flatMap(node => {
+          return node.connectors.map(connector => {
+            const reaction = idToEdges.get(connector.edgeId)!;
+
+            const reactionP = scale(reaction.position);
+            const nodeP = scale(node.position);
+
+            const [source, target] = connector.type !== 'OUTPUT' ?
+              [node, reaction] :
+              [reaction, node];
+
+            const sourceP = scale(source.position);
+            const targetP = scale(target.position);
+
+            let points = connector.segments
+              .flatMap((segment, i) => i === 0 ? [segment.from, segment.to] : [segment.to])
+              .map(pos => scale(pos));
+            if (connector.type === 'OUTPUT') points.reverse();
+            if (points.length === 0) points.push(reactionP);
+
+            this.addEdgeInfo(reaction, points, 'backward', sourceP);
+            this.addEdgeInfo(reaction, points, 'forward', targetP);
+
+            let [from, to] = [points.shift()!, points.pop()!]
+            from = from ?? nodeP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+            to = to ?? reactionP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+            if (connector.type === 'CATALYST' && connector.endShape) {
+              to = scale(connector.endShape.centre || connector.endShape.c);
+            }
+
+            // points = addRoundness(from, to, points);
+            const relatives = this.absoluteToRelative(from, to, points);
+
+            const classes = [...this.edgeTypeMap.get(connector.type)!];
+            if (reaction.isDisease) classes.push('disease');
+            if (node.trivial) classes.push('trivial');
+            if (eventIdToSubPathwayId.has(reaction.reactomeId)) classes.push('shadow');
+
+            let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(([subpathwayId, events]) => events.includes(reaction.reactomeId) ? [subpathwayId] : []);
+
+            let d = dist(from, to);
+            if (equal(from, reactionP) || equal(to, reactionP)) d -= REACTION_RADIUS;
+            if (classes.includes('positive-regulation') || classes.includes('catalysis') || classes.includes('production')) d -= ARROW_MULT * T;
+            // console.assert(d > MIN_DIST, `The edge between reaction: R-HSA-${reaction.reactomeId} and entity: R-HSA-${node.reactomeId} in pathway ${id} has a visible length of ${d} which is shorter than ${MIN_DIST}`)
+            console.assert(d > MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
+
+            let replacement, replacedBy;
+            if (connector.isFadeOut) {
+              // First case: same node is used both special and normal context
+              // replacedBy = node.connectors.find(otherConnector => otherConnector !== connector && !otherConnector.isFadeOut && samePoint(idToEdges.get(otherConnector.edgeId)!.position, reaction.position))?.edgeId;
+              // Second case: different nodes are used between special and normal context
+              // replacedBy = replacedBy || (posToSpecialNode.get(pointToStr(node.position)) && posToSpecialEdge.get(pointToStr(reaction.position)))?.id;
+
+              replacedBy = replacementMap.get(node.id.toString()) && replacementMap.get(reaction.id.toString())
+            }
+            if (!connector.isFadeOut) {
+              // First case: same node is used both special and normal context
+              replacement = node.connectors.find(otherConnector => otherConnector !== connector && otherConnector.isFadeOut && samePoint(idToEdges.get(otherConnector.edgeId)!.position, reaction.position))?.edgeId;
+              // console.log("Reaction edge", replacement)
+
+              // Second case: different nodes are used between special and normal context
+              replacement = replacement || (posToNormalNode.get(pointToStr(node.position)) && posToNormalEdge.get(pointToStr(reaction.position)))?.id;
+              // console.log("Reaction edge", replacement)
+
+            }
+            const edge: cytoscape.EdgeDefinition = {
+              data: {
+                id: this.getEdgeId(source, connector, target, edgeIds),
+                graph: dbIdToGraphEdge.get(reaction.reactomeId),
+                source: source.id + '',
+                target: target.id + '',
+                stoichiometry: connector.stoichiometry.value,
+                weights: relatives.weights.join(" "),
+                distances: relatives.distances.join(" "),
+                sourceEndpoint: this.endpoint(sourceP, from),
+                targetEndpoint: this.endpoint(targetP, to),
+                pathway: eventIdToSubPathwayId.get(reaction.reactomeId),
+                reactomeId: reaction.reactomeId,
+                reactionId: reaction.id,
+                isFadeOut: reaction.isFadeOut,
+                isBackground: reaction.isFadeOut,
+                subpathways,
+                replacedBy, replacement
+              },
+              classes: classes
+            };
+            return edge
+          });
+        }
+      );
+
+    const linkEdges: cytoscape.EdgeDefinition[] = diagram.links
+      ?.filter(link => !link.renderableClass.includes('EntitySet') || link.inputs[0].id !== link.outputs[0].id)
+      ?.map(link => {
+          const source = idToNodes.get(link.inputs[0].id)!;
+          const target = idToNodes.get(link.outputs[0].id)!;
+
+          const sourceP = scale(source.position);
+          const targetP = scale(target.position);
+
+          let points = link.segments
+            .flatMap((segment, i) => i === 0 ? [segment.from, segment.to] : [segment.to])
+            .map(pos => scale(pos));
+
+          let [from, to] = [points.shift()!, points.pop()!]
+          from = from ?? sourceP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+          to = to ?? targetP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+
+          // points = addRoundness(from, to, points);
+          const relatives = this.absoluteToRelative(from, to, points);
+
+          const classes = [...this.linkClassMap.get(link.renderableClass)!];
+          if (link.isDisease) classes.push('disease');
+          const isBackground = link.isFadeOut ||
+            idToNodes.get(link.inputs[0].id)?.isBackground &&
+            idToNodes.get(link.outputs[0].id)?.isBackground;
+
+          return {
+            data: {
+              id: link.id + '',
+              source: link.inputs[0].id + '',
+              target: link.outputs[0].id + '',
+              weights: relatives.weights.join(" "),
+              distances: relatives.distances.join(" "),
+              sourceEndpoint: this.endpoint(sourceP, from),
+              targetEndpoint: this.endpoint(targetP, to),
+              isFadeOut: link.isFadeOut,
+              isBackground: isBackground
+            },
+            classes: classes,
+            selectable: false
+          }
+        }
+      )
+
+    console.log('All data created')
+    return {
+      nodes: [...compartmentNodes, ...reactionNodes, ...entityNodes, ...shadowNodes],
+      edges: [...edges, ...linkEdges]
+    };
   }
 
   getStructureVideoHtml(item: {
@@ -705,18 +712,31 @@ export class DiagramService {
 
   private addEdgeInfo(edge: Edge, points: Position[], direction: 'forward' | 'backward', stop: Position) {
     const stopPos = posToStr(edge, stop);
+    const visited = new Set<string>();
     if (direction === 'forward') {
-      const map = this.extraLine;
       let pos = posToStr(edge, points.at(-1)!)
-      while (map.has(pos) && pos !== stopPos) {
-        points.push(map.get(pos)!)
+      while (pos !== stopPos && !visited.has(pos)) {
+        visited.add(pos);
+        if (this.extraLine.has(pos)) {
+          points.push(this.extraLine.get(pos)!)
+        } else if (this.reverseExtraLine.has(pos)) {
+          points.push(this.reverseExtraLine.get(pos)!)
+        } else {
+          break;
+        }
         pos = posToStr(edge, points.at(-1)!)
       }
     } else {
-      const map = this.reverseExtraLine;
       let pos = posToStr(edge, points.at(0)!)
-      while (map.has(pos) && pos !== stopPos) {
-        points.unshift(map.get(pos)!)
+      while (pos !== stopPos && !visited.has(pos)) {
+        visited.add(pos);
+        if (this.reverseExtraLine.has(pos)) {
+          points.unshift(this.reverseExtraLine.get(pos)!)
+        } else if (this.extraLine.has(pos)) {
+          points.unshift(this.extraLine.get(pos)!)
+        } else {
+          break;
+        }
         pos = posToStr(edge, points.at(0)!)
       }
     }
