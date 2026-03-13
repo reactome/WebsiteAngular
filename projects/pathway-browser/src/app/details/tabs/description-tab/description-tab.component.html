@@ -244,13 +244,13 @@
 
 <ng-template #authorsTemplate>
   <div class="element-container">
-    @for (item of authorship(); track item) {
+    @for (item of authorship(); track item.label) {
       <div class="row">
         <div class="label-container">{{ item.label }}</div>
         <div class="composition-container flex-column">
-          @for (ie of item.data |sortByDate:'dataTime'; track ie.dbId) {
+          @for (ie of item.data; track $index) {
             <div class="authorship-item">
-              @for (author of ie.author; let i = $index; track author.dbId) {
+              @for (author of ie.author; let i = $index; track $index) {
                 <a [href]="`${CONTENT_DETAIL}/${author.dbId}`"
                    [ngClass]="{'margin-right': !author.orcidId}">
                   {{ author.firstname }} {{ author.surname }}

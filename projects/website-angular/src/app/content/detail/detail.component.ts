@@ -1,4 +1,5 @@
 import {Component, inject, OnInit, signal} from '@angular/core';
+import {DatePipe} from '@angular/common';
 import {ActivatedRoute} from '@angular/router';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MatIconRegistry} from '@angular/material/icon';
@@ -41,6 +42,7 @@ import {DetailSpeciesService} from './providers/detail-species.provider';
     {provide: SpeciesService, useClass: DetailSpeciesService},
     {provide: DiagramService, useValue: {}},
     {provide: ParticipantService, useValue: {getReferenceEntities: () => of([])}},
+    DatePipe,
   ],
   templateUrl: './detail.component.html',
   styleUrl: './detail.component.scss',
