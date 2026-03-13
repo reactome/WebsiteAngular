@@ -1,5 +1,5 @@
 import {effect, inject, Injectable, signal, WritableSignal} from '@angular/core';
-import {ActivatedRoute, NavigationEnd, Params, Router} from "@angular/router";
+import {ActivatedRoute, NavigationEnd, NavigationExtras, Params, Router} from "@angular/router";
 import {catchError, filter, firstValueFrom, map, of, switchMap} from "rxjs";
 import {isArray, isNumber} from "lodash";
 import {HttpClient} from "@angular/common/http";
@@ -112,7 +112,11 @@ export class UrlStateService implements State {
   constructor() {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd),
-      switchMap(() => this.router.routerState.root.firstChild?.params || of()),
+      switchMap(() => {
+        let route = this.router.routerState.root;
+        while (route.firstChild) route = route.firstChild;
+        return route.params;
+      }),
       map(params => params['pathwayId'])
     ).subscribe((id) => {
       this.pathwayId.set(id)
@@ -127,7 +131,7 @@ export class UrlStateService implements State {
         return;
       }
 
-      this.router.navigate(this.pathwayId() ? [this.pathwayId()] : [], {
+      this.navigateTo(this.pathwayId() ?? null, {
         queryParamsHandling: 'preserve',
         preserveFragment: true
       });
@@ -153,7 +157,7 @@ export class UrlStateService implements State {
           }
         }
 
-        this.router.navigate(id ? [id] : [], {
+        this.navigateTo(id ?? null, {
           queryParamsHandling: 'merge',
           fragment: fragment.replace(FRAGMENT_PATTERN, ''),
           preserveFragment: false,
@@ -215,7 +219,21 @@ export class UrlStateService implements State {
         console.log('In content or search route, not navigating on state change');
         return;
       }
-      this.router.navigate(this.pathwayId() ? [this.pathwayId()] : [], {queryParams, preserveFragment: true});
+      this.navigateTo(this.pathwayId() ?? null, {queryParams, preserveFragment: true});
+    });
+  }
+
+  /**
+   * Navigate to a pathway within the PathwayBrowser route context.
+   * Resolves the correct base path whether running standalone or inside the umbrella app.
+   */
+  navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
+    let route = this.router.routerState.root;
+    while (route.firstChild) route = route.firstChild;
+    const segments = pathwayId ? [pathwayId] : [];
+    return this.router.navigate(segments, {
+      relativeTo: route.parent,
+      ...extras
     });
   }
 

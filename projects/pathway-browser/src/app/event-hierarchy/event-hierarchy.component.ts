@@ -3,7 +3,7 @@ import {Event} from "../model/graph/event/event.model";
 import {EventService, SelectableObject} from "../services/event.service";
 import {SpeciesService} from "../services/species.service";
 import {combineLatest, combineLatestWith, filter, fromEvent, map, Observable, of, switchMap, take, tap} from "rxjs";
-import {MatTree, MatTreeNestedDataSource, MatTreeNodeDef} from "@angular/material/tree";
+import {MatTree, MatTreeNestedDataSource, MatTreeNodeDef, MatTreeNodeOutlet, MatTreeNodeToggle} from "@angular/material/tree";
 import {UrlStateService} from "../services/url-state.service";
 import {SplitComponent} from "angular-split";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
@@ -35,6 +35,8 @@ import {PassiveDirective} from "../utils/passive.directive";
     MatTree,
     MatNestedTreeNode,
     MatTreeNodeDef,
+    MatTreeNodeToggle,
+    MatTreeNodeOutlet,
     MatButton,
     MatIconButton,
     NgClass,
@@ -168,11 +170,15 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     }, 100);
 
     this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe(events => {
+      // Save expanded node stIds before resetting the data source
+      const expandedIds = this.collectExpandedIds(this.treeDataSource.data);
       // @ts-ignore
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue
       this.treeDataSource.data = events as Event[];
+      // Restore expansion state
+      this.restoreExpandedIds(events as Event[], expandedIds);
       this.adjustWidths();
     });
 
@@ -393,20 +399,16 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const selectedEventId = isPathway(treeEvent) && treeEvent.hasDiagram ? null : treeEvent.stId;
     this._ignore = true;
     // this.speciesService.setIgnore(true);
-    this.router.navigate([diagramId], {
+    this.state.navigateTo(diagramId ?? null, {
       queryParamsHandling: "preserve" // Keep existing query params
     }).then(() => {
       this.state.select.set(selectedEventId);
       this.eventService.setCurrentTreeEvent(treeEvent);
-      // Listen for NavigationEnd event to reset _ignore
-      this.router.events.pipe(
-        filter(routerEvent => routerEvent instanceof NavigationEnd),
-        take(1) // Take the first NavigationEnd event and unsubscribe automatically
-      ).subscribe(() => {
-        this._ignore = false;
-        // this.speciesService.setIgnore(false);
-      });
-
+      // Reset _ignore after setting state. The .then() callback fires after
+      // NavigationEnd has already been emitted, so waiting for a future
+      // NavigationEnd would leave _ignore stuck at true if no further
+      // navigation occurs.
+      this._ignore = false;
     }).catch(err => {
       throw new Error('Navigation error:', err);
     });
@@ -529,5 +531,36 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const labelSpan = el.closest('.mdc-button__label') as HTMLElement;
     labelSpan.classList.remove('add-overflowX');
     el.classList.remove('no-transition');
+  }
+
+  private collectExpandedIds(nodes: Event[]): Set<string> {
+    const expanded = new Set<string>();
+    const traverse = (items: Event[]) => {
+      for (const node of items) {
+        if (this.tree?.isExpanded(node)) {
+          expanded.add(node.stId);
+        }
+        if (isPathway(node) && node.events) {
+          traverse(node.events.map(e => e.element));
+        }
+      }
+    };
+    traverse(nodes);
+    return expanded;
+  }
+
+  private restoreExpandedIds(nodes: Event[], expandedIds: Set<string>): void {
+    if (expandedIds.size === 0) return;
+    const traverse = (items: Event[]) => {
+      for (const node of items) {
+        if (expandedIds.has(node.stId)) {
+          this.tree?.expand(node);
+        }
+        if (isPathway(node) && node.events) {
+          traverse(node.events.map(e => e.element));
+        }
+      }
+    };
+    traverse(nodes);
   }
 }
