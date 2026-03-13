@@ -17,6 +17,14 @@ export interface IconFacetResponse {
   iconCategoriesFacet: IconFacet;
 }
 
+export interface IconPhysicalEntity {
+  stId: string;
+  type: string;
+  name: string;
+  compartments: string;
+  displayName: string;
+}
+
 export interface IconEntry {
   stId: string;
   name: string;
@@ -24,9 +32,13 @@ export interface IconEntry {
   iconCategories: string[];
   iconReferences: string[];
   iconEhlds: string[];
-  iconPhysicalEntities: string[];
+  iconPhysicalEntities: IconPhysicalEntity[];
   summation: string;
   exactType: string;
+  iconCuratorName?: string;
+  iconCuratorOrcidId?: string;
+  iconDesignerName?: string;
+  iconDesignerUrl?: string;
 }
 
 export interface IconResult {
