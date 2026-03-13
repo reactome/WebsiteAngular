@@ -281,7 +281,7 @@ NOTE: This is an automatically generated message.
                           @for (entry of group.entries; track entry.dbId) {
                             <div class="search-entry">
                               <div class="entry-header">
-                                <a class="entry-name" [routerLink]="'/content/detail/' + entry.stId" [innerHTML]="entry.name"></a>
+                                <a class="entry-name" [routerLink]="getDetailLink(entry)" [innerHTML]="entry.name"></a>
                                 <span class="entry-id">{{ entry.stId }}</span>
                               </div>
                               @if (entry.species?.length) {
@@ -318,7 +318,7 @@ NOTE: This is an automatically generated message.
                     @for (entry of allEntries; track entry.dbId) {
                       <div class="search-entry">
                         <div class="entry-header">
-                          <a class="entry-name" [routerLink]="'/content/detail/' + entry.stId" [innerHTML]="entry.name"></a>
+                          <a class="entry-name" [routerLink]="getDetailLink(entry)" [innerHTML]="entry.name"></a>
                           <span class="entry-id">{{ entry.stId }}</span>
                         </div>
                         @if (entry.species?.length) {

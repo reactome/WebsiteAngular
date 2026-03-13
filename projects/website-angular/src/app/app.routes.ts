@@ -37,6 +37,8 @@ export const routes: Routes = [
     { path: 'content/schema/:className', loadComponent: () => import('./content/schema/schema.component').then(m => m.SchemaComponent), pathMatch: 'full' },
 
     //Detail Pages
+    { path: 'content/detail/interactor/:acc', loadComponent: () => import('./content/detail/interactor-detail/interactor-detail.component').then(m => m.InteractorDetailComponent) },
+    { path: 'content/detail/icon/:id', loadComponent: () => import('./content/detail/icon-detail/icon-detail.component').then(m => m.IconDetailComponent) },
     { path: 'content/detail/:id', loadComponent: () => import('./content/detail/detail.component').then(m => m.DetailComponent) },
 
     //Search Pages
