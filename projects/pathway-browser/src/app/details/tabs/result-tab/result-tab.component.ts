@@ -277,7 +277,7 @@ export class ResultTabComponent {
   visitPathway(pathway: Analysis.Pathway) {
     this.data.selectedPathwayStId.set(pathway.stId)
     console.log("Navigating to " + pathway.stId)
-    this.router.navigate([pathway.stId], {queryParamsHandling: 'preserve', preserveFragment: true})
+    this.state.navigateTo(pathway.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
   }
 
 
