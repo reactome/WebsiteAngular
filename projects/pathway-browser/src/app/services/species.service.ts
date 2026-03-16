@@ -121,7 +121,7 @@ export class SpeciesService {
       else params[key] = JSON.parse(newValue);
     }
 
-    this.router.navigate([pathwayId].filter(isDefined), {
+    this.state.navigateTo(pathwayId ?? null, {
       queryParams: params,
       preserveFragment: true
     });
