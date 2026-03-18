@@ -43,10 +43,34 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   loadNavOptions() {
-    // Load nav options from the JSON file
-    import('../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
+    Promise.all([
+      import('../../config/nav-options.json'),
+      import('../../config/config.json')
+    ]).then(([navData, configData]) => {
+      this.navOptions = mapNavOptions(navData.default);
+      this.resolveExternalLinks(configData.default.baseUrl);
     });
+  }
+
+  /**
+   * Prepend baseUrl to external links so they resolve to the correct domain
+   */
+  private resolveExternalLinks(baseUrl: string) {
+    const resolve = (links: Record<string, NavLink> | undefined) => {
+      if (!links) return;
+      for (const link of Object.values(links)) {
+        if (link.external) {
+          link.link = baseUrl + link.link;
+        }
+        resolve(link.dropdownLinks);
+      }
+    };
+    for (const option of Object.values(this.navOptions)) {
+      if (option.external) {
+        option.link = baseUrl + option.link;
+      }
+      resolve(option.dropdownLinks);
+    }
   }
 
   toggleHamburgerMenu() {

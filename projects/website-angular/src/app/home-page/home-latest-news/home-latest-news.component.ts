@@ -1,6 +1,7 @@
 import { Component, inject, Input, OnInit } from '@angular/core';
 import { ArticleIndexItem } from '../../../types/article';
 import { NgForOf, NgFor } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
@@ -9,7 +10,7 @@ import { NavOption } from '../../../types/link';
 @Component({
   selector: 'app-home-latest-news',
   standalone: true,
-  imports: [NgForOf, NgFor],
+  imports: [NgForOf, NgFor, RouterModule],
   templateUrl: './home-latest-news.component.html',
   styleUrl: './home-latest-news.component.scss'
 })

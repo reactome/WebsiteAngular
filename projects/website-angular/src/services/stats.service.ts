@@ -64,9 +64,7 @@ export class StatsService {
       return of(defaultStats);
     }
 
-    // In the browser, use the /reactome proxy path to avoid CORS.
-    // In SSR (server.ts), requests to /reactome/* are proxied server-side.
-    const baseUrl = this.isBrowser ? '/reactome' : await this.getDownloadBaseUrl();
+    const baseUrl = await this.getDownloadBaseUrl();
     const version = await this.getVersion();
 
     const url = `${baseUrl}/${version}/stats/summary_stats.json`;

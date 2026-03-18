@@ -1,6 +1,6 @@
 <h1 class="home-spotlight-title">Reactome Research Spotlight</h1>
 <span class="home-spotlight-text">{{ "[" + formatD(spotLightArticle.date) + "] " + spotLightArticle.title}}</span>
 <p class="home-spotlight-text" [innerHTML]="renderedContent"></p>
-<a [href]="(navOptions['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '/content/reactome-research-spotlight') + '/' + spotLightArticle.slug" class="home-spotlight-link">
+<a [routerLink]="(navOptions['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '/content/reactome-research-spotlight') + '/' + spotLightArticle.slug" class="home-spotlight-link">
     <app-button style="width: fit-content; height: min-content; padding: 16px;">Learn More</app-button>
 </a>

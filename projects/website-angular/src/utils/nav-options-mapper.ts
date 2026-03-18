@@ -14,11 +14,12 @@ function mapDropdownLinks(raw: any): Record<string, NavLink> | undefined {
       mapped[key] = {
         label: value.label || '',
         link: value.link || '',
+        external: value.external || false,
         dropdownLinks: mapDropdownLinks(value['dropdown-links'])
       };
     }
   });
-  
+
   return Object.keys(mapped).length > 0 ? mapped : undefined;
 }
 
@@ -27,13 +28,14 @@ function mapDropdownLinks(raw: any): Record<string, NavLink> | undefined {
  */
 export function mapNavOptions(raw: Record<string, any>): Record<string, NavOption> {
   const mapped: Record<string, NavOption> = {};
-  
+
   Object.entries(raw).forEach(([key, value]: [string, any]) => {
     if (value && typeof value === 'object') {
       mapped[key] = {
         label: value.label || '',
         link: value.link || '',
         icon: value.icon,
+        external: value.external || false,
         dropdownLinks: mapDropdownLinks(value['dropdown-links'])
       };
     }

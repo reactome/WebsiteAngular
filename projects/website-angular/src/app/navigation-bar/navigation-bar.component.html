@@ -1,6 +1,6 @@
 <header class="navbar-header">
   <div class="navbar-logo">
-    <a href="/" class="logo-link">
+    <a routerLink="/" class="logo-link">
       <img
         src="assets/logo/logo.png"
         alt="Reactome Pathway Database"
@@ -23,6 +23,28 @@
         <ng-container *ngIf="asNavOption(option.value) as navOption">
           <div class="nav-link-wrapper">
             <a
+              *ngIf="!navOption.external"
+              [routerLink]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
+              class="nav-link"
+              [class.has-dropdown]="
+                navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+              "
+            >
+              <mat-icon>
+                {{ navOption.icon }}
+              </mat-icon>
+              {{ navOption.label }}
+              <mat-icon
+                *ngIf="
+                  navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
+                "
+                class="dropdown-arrow"
+              >
+                  keyboard_arrow_down
+              </mat-icon>
+            </a>
+            <a
+              *ngIf="navOption.external"
               [attr.href]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
               class="nav-link"
               [class.has-dropdown]="
@@ -80,6 +102,15 @@
           "
         >
           <a
+            *ngIf="!navLink.external"
+            [routerLink]="navLink.link"
+            class="dropdown-link"
+            [class.nested-dropdown-link]="level > 0"
+          >
+            {{ navLink.label }}
+          </a>
+          <a
+            *ngIf="navLink.external"
             [href]="navLink.link"
             class="dropdown-link"
             [class.nested-dropdown-link]="level > 0"

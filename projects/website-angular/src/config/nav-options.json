@@ -279,11 +279,13 @@
         },
         "analysis-service": {
             "label": "Analysis Service",
-            "link": "/AnalysisService"
+            "link": "/AnalysisService",
+            "external": true
         },
         "content-service": {
             "label": "Content Service",
-            "link": "/ContentService"
+            "link": "/ContentService",
+            "external": true
         },
         "reactome-fiviz": {
             "label": "ReactomeFIViz",
