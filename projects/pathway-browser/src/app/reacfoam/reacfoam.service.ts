@@ -10,7 +10,7 @@ import {rxResource} from "@angular/core/rxjs-interop";
 import chroma from "chroma-js";
 import {AnalysisService} from "../services/analysis.service";
 import {DarkService} from "../services/dark.service";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {extract, Style} from "reactome-cytoscape-style";
 import {isArray} from "lodash";
 

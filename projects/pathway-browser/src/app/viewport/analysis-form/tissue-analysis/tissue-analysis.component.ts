@@ -3,7 +3,7 @@ import {MatFormField, MatLabel, MatOption, MatSelect} from "@angular/material/se
 import {TissueExperimentService} from "./tissue-experiment/tissue-experiment.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatTooltip} from "@angular/material/tooltip";
-import {TissueExperiment} from "./tissue-experiment/tissue-experiment.model";
+import type {TissueExperiment} from "./tissue-experiment/tissue-experiment.model";
 import {AnalysisService} from "../../../services/analysis.service";
 import type {DotLottie} from "@lottiefiles/dotlottie-web";
 import {LottieService} from "../../../services/lottie.service";
@@ -12,7 +12,7 @@ import {MatButton, MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
 import {add} from "vectorious";
 import {animate, group, sequence, style, transition, trigger} from "@angular/animations";
-import Summary = TissueExperiment.Summary;
+type Summary = TissueExperiment.Summary;
 import {MatStep, MatStepper, MatStepperNext, MatStepperPrevious} from "@angular/material/stepper";
 import {FormBuilder, FormControl} from "@angular/forms";
 import {AsyncPipe} from "@angular/common";

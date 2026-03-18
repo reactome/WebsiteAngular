@@ -10,7 +10,7 @@ import {LiteratureReference} from "../model/graph/publication/literature-referen
 import {SchemaClasses} from "../constants/constants";
 import {CatalystActivity} from "../model/graph/catalyst-activity.model";
 import {Regulation} from "../model/graph/Regulation/regulation.model";
-import {Relationship} from "../model/graph/relationship.model";
+import type {Relationship} from "../model/graph/relationship.model";
 import {ReferenceGroup} from "../model/graph/reference-entity/reference-group.model";
 import {ReplacedResidue} from "../model/graph/abstract-modified-residue/replaced-residue.model";
 import {FragmentModification} from "../model/graph/abstract-modified-residue/fragment-modification.model";
@@ -24,7 +24,7 @@ import {SummaryEntity} from "../model/graph/physical-entity/summary-entity.model
 import {ReferenceSequence} from "../model/graph/reference-entity/reference-sequence.model";
 import {ReferenceGeneProduct} from "../model/graph/reference-entity/reference-gene-product.model";
 import {WritableSignal} from "@angular/core";
-import HasModifiedResidue = Relationship.HasModifiedResidue;
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null

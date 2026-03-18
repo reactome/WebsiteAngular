@@ -40,7 +40,9 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/
+        run: |
+          npx ng build reactome-cytoscape-style
+          npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

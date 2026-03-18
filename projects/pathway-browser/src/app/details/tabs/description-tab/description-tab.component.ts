@@ -10,7 +10,7 @@ import {
   TemplateRef,
   viewChild
 } from '@angular/core';
-import {Analysis} from "../../../model/analysis.model";
+import type {Analysis} from "../../../model/analysis.model";
 import {IconService} from "../../../services/icon.service";
 import {
   getProperty,
@@ -37,7 +37,7 @@ import {CatalystActivity} from "../../../model/graph/catalyst-activity.model";
 import {CatalystActivityReference} from "../../../model/graph/control-reference/catalyst-activity-reference.model";
 import {Regulation} from "../../../model/graph/Regulation/regulation.model";
 import {RegulationReference} from "../../../model/graph/control-reference/regulation-reference.model";
-import {Relationship} from "../../../model/graph/relationship.model";
+import type {Relationship} from "../../../model/graph/relationship.model";
 import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
 import {
   EntityWithAccessionedSequence
@@ -49,7 +49,7 @@ import {CONTENT_DETAIL, environment} from "../../../../environments/environment"
 import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
-import HasModifiedResidue = Relationship.HasModifiedResidue;
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 import {MatDivider} from "@angular/material/divider";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
