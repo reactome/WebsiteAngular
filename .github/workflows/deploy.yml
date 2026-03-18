@@ -1,0 +1,61 @@
+name: Deploy to S3
+
+on:
+  push:
+    branches:
+      - main
+      - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Determine version and base href
+        id: version
+        run: |
+          PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
+          echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.ref_name }}" = "prod" ]; then
+            VERSION=$PROD_VERSION
+          else
+            VERSION=$((PROD_VERSION + 1))
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Deploying to version $VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE }}
+          aws-region: us-east-1
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync dist/reactome/browser/ \
+            s3://${{ vars.S3_BUCKET }}/${{ steps.version.outputs.version }}/website/ \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id E2WMIF8KN88WPK \
+            --paths "/${{ steps.version.outputs.version }}/website/*"
