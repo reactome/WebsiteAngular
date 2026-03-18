@@ -303,6 +303,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return active;
   }
 
+  getDetailLink(entry: SearchEntry): string {
+    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
+    if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
+    return '/content/detail/' + entry.stId;
+  }
+
   getPageNumbers(): number[] {
     const pages: number[] = [];
     const maxVisible = 5;

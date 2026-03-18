@@ -1,0 +1,91 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <div class="error-container">
+      <h2>Interactor not found</h2>
+      <p>No interaction data could be found for "{{ acc() }}".</p>
+    </div>
+  } @else {
+    <div class="interactor-detail">
+      <app-tile variant="light">
+        <div class="interactor-summary">
+          <h1>
+            <a [href]="referenceURL()" target="_blank" rel="noopener">{{ displayName() }}</a>
+          </h1>
+          <dl class="summary-fields">
+            <div class="summary-row">
+              <dt>Type</dt>
+              <dd>{{ interactorType() }}</dd>
+            </div>
+            @if (species()) {
+              <div class="summary-row">
+                <dt>Species</dt>
+                <dd>{{ species() }}</dd>
+              </div>
+            }
+            @if (synonyms().length) {
+              <div class="summary-row">
+                <dt>Synonyms</dt>
+                <dd>{{ synonyms().join(', ') }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+      </app-tile>
+
+      @if (interactions().length) {
+        <app-tile variant="light">
+          <h2>Interaction Partners ({{ interactions().length }})</h2>
+          <div class="table-wrapper">
+            <table class="interactions-table">
+              <thead>
+                <tr>
+                  <th>Accession</th>
+                  <th>#Entities</th>
+                  <th>Reactome Entity</th>
+                  <th>Confidence Score</th>
+                  <th>Evidence (IntAct)</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (interaction of interactions(); track interaction.dbId) {
+                  <tr>
+                    <td>
+                      <a [href]="interaction.url" target="_blank" rel="noopener">{{ interaction.identifier }}</a>
+                    </td>
+                    <td>{{ interaction.entitiesCount ?? '' }}</td>
+                    <td class="entities-cell">
+                      @if (entityMap()[interaction.identifier]; as entities) {
+                        @for (entity of entities; track entity.stId) {
+                          <a [routerLink]="'/content/detail/' + entity.stId" class="entity-link">{{ entity.displayName }}</a>
+                        }
+                      }
+                    </td>
+                    <td>{{ interaction.score | number:'1.3-3' }}</td>
+                    <td>
+                      @if (interaction.evidenceURL) {
+                        <a [href]="interaction.evidenceURL" target="_blank" rel="noopener" class="evidence-link">
+                          {{ interaction.evidenceCount }} pieces of evidence
+                          <span class="material-symbols-rounded">open_in_new</span>
+                        </a>
+                      } @else {
+                        {{ interaction.evidenceCount }}
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </app-tile>
+      } @else {
+        <app-tile variant="light">
+          <p>No interaction partners found.</p>
+        </app-tile>
+      }
+    </div>
+  }
+</app-page-layout>

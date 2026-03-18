@@ -1,0 +1,117 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <div class="error-container">
+      <h2>Icon not found</h2>
+      <p>The requested icon could not be found.</p>
+    </div>
+  } @else if (icon()) {
+    <div class="icon-detail">
+      <app-tile variant="light">
+        <div class="icon-header">
+          <div class="icon-info">
+            <h1>{{ icon()!.name }}</h1>
+            @if (icon()!.iconCategories?.length) {
+              <div class="icon-categories">
+                @for (cat of icon()!.iconCategories; track cat) {
+                  <span class="category-tag">{{ cat }}</span>
+                }
+              </div>
+            }
+          </div>
+          <div class="icon-preview">
+            <img [src]="getSvgUrl()" [alt]="icon()!.name" />
+          </div>
+        </div>
+      </app-tile>
+
+      @if (icon()!.summation) {
+        <app-tile variant="light">
+          <h2>Description</h2>
+          <p [innerHTML]="icon()!.summation"></p>
+        </app-tile>
+      }
+
+      @if (icon()!.iconCuratorName || icon()!.iconDesignerName) {
+        <app-tile variant="light">
+          <h2>Credits</h2>
+          <div class="credits">
+            @if (icon()!.iconCuratorName) {
+              <div class="credit-item">
+                <span class="credit-label">Curator:</span>
+                @if (icon()!.iconCuratorOrcidId) {
+                  <a [href]="'https://orcid.org/' + icon()!.iconCuratorOrcidId" target="_blank" rel="noopener">
+                    {{ icon()!.iconCuratorName }}
+                    <span class="material-symbols-rounded">open_in_new</span>
+                  </a>
+                } @else {
+                  <span>{{ icon()!.iconCuratorName }}</span>
+                }
+              </div>
+            }
+            @if (icon()!.iconDesignerName) {
+              <div class="credit-item">
+                <span class="credit-label">Designer:</span>
+                @if (icon()!.iconDesignerUrl) {
+                  <a [href]="icon()!.iconDesignerUrl" target="_blank" rel="noopener">
+                    {{ icon()!.iconDesignerName }}
+                    <span class="material-symbols-rounded">open_in_new</span>
+                  </a>
+                } @else {
+                  <span>{{ icon()!.iconDesignerName }}</span>
+                }
+              </div>
+            }
+          </div>
+        </app-tile>
+      }
+
+      @if (getUniProtReferences().length) {
+        <app-tile variant="light">
+          <h2>External References</h2>
+          <div class="references">
+            @for (ref of getUniProtReferences(); track ref) {
+              <a [href]="'https://www.uniprot.org/uniprot/' + ref" target="_blank" rel="noopener" class="ref-link">
+                UniProt: {{ ref }}
+                <span class="material-symbols-rounded">open_in_new</span>
+              </a>
+            }
+          </div>
+        </app-tile>
+      }
+
+      @if (icon()!.iconPhysicalEntities?.length) {
+        <app-tile variant="light">
+          <h2>Physical Entities ({{ icon()!.iconPhysicalEntities.length }})</h2>
+          <div class="table-wrapper">
+            <table class="entities-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Identifier</th>
+                  <th>Type</th>
+                  <th>Compartment</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entity of icon()!.iconPhysicalEntities; track entity.stId) {
+                  <tr>
+                    <td>
+                      <a [routerLink]="'/content/detail/' + entity.stId">{{ entity.displayName || entity.name }}</a>
+                    </td>
+                    <td>{{ entity.stId }}</td>
+                    <td>{{ entity.type }}</td>
+                    <td>{{ entity.compartments }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </app-tile>
+      }
+    </div>
+  }
+</app-page-layout>

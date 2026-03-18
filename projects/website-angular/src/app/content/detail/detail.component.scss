@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--on-surface);
+
+  h2 {
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--outline);
+  }
+}
+
+.detail-container {
+  container: bottom-panel / inline-size;
+  width: 100%;
+}
+
+::ng-deep cr-description-tab {
+  // Double the ID selector to beat Angular's encapsulated
+  // #details[_ngcontent-xxx] specificity (0,2,0) with (0,2,1)
+  #details#details {
+    height: auto;
+    overflow-y: visible;
+    overflow-x: visible;
+    padding: 0;
+    background: unset;
+  }
+
+  #details {
+    .content {
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    .details-button {
+      display: none;
+    }
+
+    .toc {
+      height: auto;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      position: sticky;
+      top: 80px;
+    }
+  }
+}

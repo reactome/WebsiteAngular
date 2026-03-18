@@ -1,0 +1,135 @@
+:host {
+  display: block;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--on-surface);
+
+  h2 {
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--outline);
+  }
+}
+
+.interactor-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.interactor-summary {
+  h1 {
+    margin: 0 0 16px;
+    font-size: 1.5rem;
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .summary-fields {
+    margin: 0;
+
+    .summary-row {
+      display: flex;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--outline, #eee);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      dt {
+        font-weight: 600;
+        min-width: 100px;
+        flex-shrink: 0;
+      }
+
+      dd {
+        margin: 0;
+      }
+    }
+  }
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.interactions-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--outline, #ddd);
+  }
+
+  th {
+    font-weight: 600;
+    background: var(--surface, #f5f5f5);
+    white-space: nowrap;
+  }
+
+  tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  a {
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .entities-cell {
+    .entity-link {
+      display: block;
+      padding: 2px 0;
+
+      &:not(:last-child) {
+        border-bottom: 1px dotted var(--outline, #ddd);
+      }
+    }
+  }
+
+  .evidence-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+
+    .material-symbols-rounded {
+      font-size: 16px;
+    }
+  }
+}

@@ -1,0 +1,16 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <div class="error-container">
+      <h2>Entity not found</h2>
+      <p>The requested entity could not be found.</p>
+    </div>
+  } @else if (obj()) {
+    <div class="detail-container">
+      <cr-description-tab [obj]="obj()!" [showLocations]="true" />
+    </div>
+  }
+</app-page-layout>

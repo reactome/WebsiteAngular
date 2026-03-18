@@ -50,6 +50,11 @@ import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
 import HasModifiedResidue = Relationship.HasModifiedResidue;
+import {KeyValuePipe, NgClass, NgTemplateOutlet} from "@angular/common";
+import {RouterLink} from "@angular/router";
+import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
+import {IncludeRefPipe} from "../../../pipes/include-ref.pipe";
+import {AuthorshipDateFormatPipe} from "../../../pipes/authorship-date-format.pipe";
 import {MatDivider} from "@angular/material/divider";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
@@ -68,6 +73,12 @@ import {CellMarkerComponent} from "../../common/cell-marker/cell-marker.componen
 import {IconComponent} from "./icon/icon.component";
 import {RheaComponent} from "../../common/rhea/rhea.component";
 import {InteractorsTableComponent} from "../../common/interactors-table/interactors-table.component";
+import {
+  LocationsTreeComponent
+} from "../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component";
+import {
+  ReactionDiagramComponent
+} from "../../common/reaction-diagram/reaction-diagram.component";
 
 
 @Component({
@@ -76,6 +87,13 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
   styleUrl: './description-tab.component.scss',
   standalone: true,
   imports: [
+    NgTemplateOutlet,
+    NgClass,
+    KeyValuePipe,
+    RouterLink,
+    SortByTextPipe,
+    IncludeRefPipe,
+    AuthorshipDateFormatPipe,
     MatDivider,
     MatIcon,
     MatTooltip,
@@ -92,7 +110,9 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
     CellMarkerComponent,
     IconComponent,
     RheaComponent,
-    InteractorsTableComponent
+    InteractorsTableComponent,
+    LocationsTreeComponent,
+    ReactionDiagramComponent
   ]
 })
 export class DescriptionTabComponent implements OnDestroy {
@@ -124,6 +144,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
+  readonly showLocations = input(false);
 
   static referenceTypeToNameSuffix = new Map<string, string>([
       ["ReferenceMolecule", ""],
@@ -171,21 +192,23 @@ export class DescriptionTabComponent implements OnDestroy {
 
   referenceEntity: Signal<ReferenceEntity> = computed(() => getProperty(this.obj(), DataKeys.REFERENCE_ENTITY));
 
-  readonly authorship: Signal<{ label: string, data: InstanceEdit[] }[]> = computed(() => {
+  readonly authorship: Signal<{label: string, data: InstanceEdit[]}[]> = computed(() => {
     const arrayWrap = <E>(a: E[] | E) => Array.isArray(a) ? a : [a];
 
     const obj = this.obj();
     // Ensure it's an array, either returning the existing array or wrapping it in one, it complains without this line.
-    const finalAuthored = arrayWrap(getProperty(obj, DataKeys.AUTHORED) || getProperty(obj, DataKeys.CREATED) || []);
+    const authored = arrayWrap(getProperty(obj, DataKeys.AUTHORED) || []);
     const reviewed = getProperty(obj, DataKeys.REVIEWED) || [];
     const edited = getProperty(obj, DataKeys.EDITED) || [];
     const revised = getProperty(obj, DataKeys.REVISED) || [];
+    const created = arrayWrap(getProperty(obj, DataKeys.CREATED) || []);
 
     return [
-      ...(finalAuthored.length > 0 ? [{label: Labels.AUTHOR, data: finalAuthored}] : []),
+      ...(authored.length > 0 ? [{label: Labels.AUTHOR, data: authored}] : []),
       ...(reviewed.length > 0 ? [{label: Labels.REVIEWER, data: reviewed}] : []),
       ...(edited.length > 0 ? [{label: Labels.EDITOR, data: edited}] : []),
       ...(revised.length > 0 ? [{label: Labels.REVISER, data: revised}] : []),
+      ...(created.length > 0 ? [{label: 'Created', data: created}] : []),
     ];
   });
 
@@ -260,6 +283,10 @@ export class DescriptionTabComponent implements OnDestroy {
   authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
   interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
   rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
+  locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
+  reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
+
+  readonly isReaction = computed(() => isRLE(this.obj()));
 
   protected readonly Labels = Labels;
   protected readonly DataKeys = DataKeys;
@@ -286,6 +313,20 @@ export class DescriptionTabComponent implements OnDestroy {
       manual: true,
       template: this.overviewTemplate$,
       isPresent: signal(true)
+    },
+    {
+      key: 'locationsInPWB',
+      label: 'Locations in the Pathway Browser',
+      manual: true,
+      template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
+      isPresent: computed(() => this.showLocations())
+    },
+    {
+      key: 'reactionDiagram',
+      label: 'Reaction Diagram',
+      manual: true,
+      template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
+      isPresent: this.isReaction
     },
     {key: DataKeys.REFERENCE_ENTITY, label: Labels.EXTERNAL_REFERENCE, manual: true, template: this.referenceTemplate$},
     {key: DataKeys.SUMMARISED_ENTITIES, label: Labels.SUMMARISED_ENTITIES},
@@ -437,6 +478,10 @@ export class DescriptionTabComponent implements OnDestroy {
     switch (key) {
       case DataKeys.OVERVIEW:
         return obj;
+      case 'locationsInPWB':
+        return this.showLocations();
+      case 'reactionDiagram':
+        return this.isReaction();
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
