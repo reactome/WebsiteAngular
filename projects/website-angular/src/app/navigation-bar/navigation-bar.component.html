@@ -26,18 +26,14 @@
               *ngIf="!navOption.external"
               [routerLink]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
               class="nav-link"
-              [class.has-dropdown]="
-                navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
-              "
+              [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
             >
               <mat-icon>
                 {{ navOption.icon }}
               </mat-icon>
               {{ navOption.label }}
               <mat-icon
-                *ngIf="
-                  navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
-                "
+                *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
                 class="dropdown-arrow"
               >
                   keyboard_arrow_down
@@ -47,18 +43,14 @@
               *ngIf="navOption.external"
               [attr.href]="(windowWidth > 768 || navOption.label == 'Download') ? navOption.link : null"
               class="nav-link"
-              [class.has-dropdown]="
-                navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
-              "
+              [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
             >
               <mat-icon>
                 {{ navOption.icon }}
               </mat-icon>
               {{ navOption.label }}
               <mat-icon
-                *ngIf="
-                  navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
-                "
+                *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
                 class="dropdown-arrow"
               >
                   keyboard_arrow_down
@@ -67,9 +59,7 @@
           </div>
 
           <div
-            *ngIf="
-              navOption.dropdownLinks && (navOption.dropdownLinks | keyvalue:preserveOrder).length > 0
-            "
+            *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
             class="dropdown-menu"
             [class.show]="activeDropdown === option.key"
           >
@@ -93,13 +83,12 @@
       *ngFor="let linkItem of links | keyvalue:preserveOrder"
       class="dropdown-item"
       [class.nested-dropdown-item]="level > 0"
+      [class.has-submenu]="hasDropdownLinks(asNavLink(linkItem.value)?.dropdownLinks)"
     >
       <ng-container *ngIf="asNavLink(linkItem.value) as navLink">
         <div
           class="dropdown-link-wrapper"
-          [class.opens-left]="
-            navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0
-          "
+          [class.opens-left]="hasDropdownLinks(navLink.dropdownLinks)"
         >
           <a
             *ngIf="!navLink.external"
@@ -118,15 +107,15 @@
             {{ navLink.label }}
           </a>
           <mat-icon
-            *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+            *ngIf="hasDropdownLinks(navLink.dropdownLinks)"
             class="nested-arrow"
           >
-            {{ (navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0) ? 'keyboard_arrow_left' : 'keyboard_arrow_right' }}
+            keyboard_arrow_left
           </mat-icon>
         </div>
 
         <div
-          *ngIf="navLink.dropdownLinks && (navLink.dropdownLinks | keyvalue:preserveOrder).length > 0"
+          *ngIf="hasDropdownLinks(navLink.dropdownLinks)"
           class="nested-dropdown-menu"
         >
           <ng-container

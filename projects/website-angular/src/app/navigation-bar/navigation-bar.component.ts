@@ -121,6 +121,10 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
     return value as NavLink;
   }
 
+  hasDropdownLinks(links: Record<string, NavLink> | undefined): boolean {
+    return !!links && Object.keys(links).length > 0;
+  }
+
   @HostListener('window:resize', ['$event']) onResize(event: any) {
     this.windowWidth = window.innerWidth;
   }
