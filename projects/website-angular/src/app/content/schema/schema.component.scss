@@ -411,6 +411,36 @@ $sidebar-width: 320px;
   font-size: 0.82rem;
 }
 
+// --- Back button ---
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: none;
+  color: var(--on-surface);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  :host-context(.dark) & {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+}
+
 // --- Entries table ---
 
 .entries-header {

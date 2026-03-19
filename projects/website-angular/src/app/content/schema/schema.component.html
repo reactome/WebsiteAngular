@@ -257,91 +257,101 @@
                 </div>
               }
             } @else if (activeTab === 'entries') {
-              @if (loadingEntries) {
-                <div class="loading-state small">
-                  <div class="spinner"></div>
-                </div>
+              @if (selectedInstanceId) {
+                <button class="back-btn" (click)="clearSelectedInstance()">
+                  <span class="material-symbols-rounded">arrow_back</span>
+                  Back to entries
+                </button>
+                <app-instance-browser
+                  [instanceId]="selectedInstanceId"
+                  (instanceLinkClick)="onInstanceLinkClick($event)" />
               } @else {
-                <div class="entries-header">
-                  <span class="entries-count">
-                    {{ entryCount }} entries
-                    @if (totalPages > 1) {
-                      &mdash; Page {{ entriesPage }} of {{ totalPages }}
-                    }
-                  </span>
-                </div>
-
-                @if (entries.length > 0) {
-                  <div class="entries-table-wrapper">
-                    <table class="entries-table">
-                      <thead>
-                        <tr>
-                          <th>Identifier</th>
-                          <th>Name</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (entry of entries; track entry.dbId) {
-                          <tr>
-                            <td class="entry-id">
-                              <a [href]="entryUrl(entry)" target="_blank">
-                                {{ entry.stId || entry.dbId }}
-                              </a>
-                            </td>
-                            <td class="entry-name">{{ entry.displayName }}</td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
+                @if (loadingEntries) {
+                  <div class="loading-state small">
+                    <div class="spinner"></div>
+                  </div>
+                } @else {
+                  <div class="entries-header">
+                    <span class="entries-count">
+                      {{ entryCount }} entries
+                      @if (totalPages > 1) {
+                        &mdash; Page {{ entriesPage }} of {{ totalPages }}
+                      }
+                    </span>
                   </div>
 
-                  @if (totalPages > 1) {
-                    <div class="pagination">
-                      <button
-                        class="page-btn"
-                        [disabled]="entriesPage === 1"
-                        (click)="goToPage(1)"
-                      >
-                        <span class="material-symbols-rounded">first_page</span>
-                      </button>
-                      <button
-                        class="page-btn"
-                        [disabled]="entriesPage === 1"
-                        (click)="goToPage(entriesPage - 1)"
-                      >
-                        <span class="material-symbols-rounded">chevron_left</span>
-                      </button>
+                  @if (entries.length > 0) {
+                    <div class="entries-table-wrapper">
+                      <table class="entries-table">
+                        <thead>
+                          <tr>
+                            <th>Identifier</th>
+                            <th>Name</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (entry of entries; track entry.dbId) {
+                            <tr>
+                              <td class="entry-id">
+                                <a (click)="selectInstance(entry.dbId)">
+                                  {{ entry.stId || entry.dbId }}
+                                </a>
+                              </td>
+                              <td class="entry-name">{{ entry.displayName }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
 
-                      @for (p of visiblePages; track p) {
+                    @if (totalPages > 1) {
+                      <div class="pagination">
                         <button
                           class="page-btn"
-                          [class.active]="p === entriesPage"
-                          (click)="goToPage(p)"
+                          [disabled]="entriesPage === 1"
+                          (click)="goToPage(1)"
                         >
-                          {{ p }}
+                          <span class="material-symbols-rounded">first_page</span>
                         </button>
-                      }
+                        <button
+                          class="page-btn"
+                          [disabled]="entriesPage === 1"
+                          (click)="goToPage(entriesPage - 1)"
+                        >
+                          <span class="material-symbols-rounded">chevron_left</span>
+                        </button>
 
-                      <button
-                        class="page-btn"
-                        [disabled]="entriesPage === totalPages"
-                        (click)="goToPage(entriesPage + 1)"
-                      >
-                        <span class="material-symbols-rounded">chevron_right</span>
-                      </button>
-                      <button
-                        class="page-btn"
-                        [disabled]="entriesPage === totalPages"
-                        (click)="goToPage(totalPages)"
-                      >
-                        <span class="material-symbols-rounded">last_page</span>
-                      </button>
+                        @for (p of visiblePages; track p) {
+                          <button
+                            class="page-btn"
+                            [class.active]="p === entriesPage"
+                            (click)="goToPage(p)"
+                          >
+                            {{ p }}
+                          </button>
+                        }
+
+                        <button
+                          class="page-btn"
+                          [disabled]="entriesPage === totalPages"
+                          (click)="goToPage(entriesPage + 1)"
+                        >
+                          <span class="material-symbols-rounded">chevron_right</span>
+                        </button>
+                        <button
+                          class="page-btn"
+                          [disabled]="entriesPage === totalPages"
+                          (click)="goToPage(totalPages)"
+                        >
+                          <span class="material-symbols-rounded">last_page</span>
+                        </button>
+                      </div>
+                    }
+                  } @else {
+                    <div class="empty-section">
+                      <p>No entries found for this class.</p>
                     </div>
                   }
-                } @else {
-                  <div class="empty-section">
-                    <p>No entries found for this class.</p>
-                  </div>
                 }
               }
             }

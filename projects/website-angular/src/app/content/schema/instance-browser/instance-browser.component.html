@@ -1,0 +1,54 @@
+@if (loading) {
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading instance...</p>
+  </div>
+} @else if (error) {
+  <div class="error-state">
+    <span class="material-symbols-rounded">error</span>
+    <p>Failed to load instance data.</p>
+  </div>
+} @else {
+  <div class="instance-header">
+    <h2>
+      <a class="schema-link" [routerLink]="'/content/schema/' + schemaClass">{{ schemaClass }}</a>
+      <span class="dbid">{{ dbId }}</span>
+    </h2>
+  </div>
+
+  @if (rows.length > 0) {
+    <div class="attr-table-wrapper">
+      <table class="attr-table">
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.name) {
+            <tr>
+              <td class="attr-name">{{ row.name }}</td>
+              <td class="attr-value">
+                @for (val of row.values; track $index) {
+                  @if (val.type === 'link') {
+                    <a class="instance-link" href="#" (click)="onLinkClick(val.dbId!, $event)">{{ val.text }}</a>
+                  } @else {
+                    <span class="text-value">{{ val.text }}</span>
+                  }
+                  @if (!$last) {
+                    <br />
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty-section">
+      <p>No attributes found for this instance.</p>
+    </div>
+  }
+}

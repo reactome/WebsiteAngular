@@ -120,4 +120,10 @@ export class ContentDataService {
     if (species) url += `?species=${encodeURIComponent(species)}`;
     return this.http.get<number>(url);
   }
+
+  getInstance(id: string | number): Observable<any> {
+    return this.http.get<any>(
+      `https://dev.reactome.org/ContentService/data/query/enhanced/${id}`
+    );
+  }
 }
