@@ -1,4 +1,5 @@
 import { Component, inject, Input } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { ButtonComponent } from "../../reactome-components/button/button.component";
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { ArticleIndexItem } from '../../../types/article';
@@ -12,7 +13,7 @@ import { NavOption } from '../../../types/link';
 @Component({
   selector: 'app-home-spotlight',
   standalone: true,
-  imports: [ButtonComponent],
+  imports: [RouterModule, ButtonComponent],
   templateUrl: './home-spotlight.component.html',
   styleUrl: './home-spotlight.component.scss'
 })

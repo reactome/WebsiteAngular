@@ -5,7 +5,7 @@ import {isArray, isNumber} from "lodash";
 import {HttpClient} from "@angular/common/http";
 import {CONTENT_SERVICE} from "../../environments/environment";
 import {PaletteName} from "./analysis.service";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {toSignal} from "@angular/core/rxjs-interop";
 

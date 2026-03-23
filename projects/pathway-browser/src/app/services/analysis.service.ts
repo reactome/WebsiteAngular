@@ -2,7 +2,7 @@ import {computed, effect, inject, Injectable, linkedSignal, signal, WritableSign
 import {catchError, EMPTY, Observable, of, switchMap, tap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../environments/environment";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {UrlStateService} from "./url-state.service";
 import chroma, {Color, Scale} from "chroma-js";
 import {extract, Style} from "reactome-cytoscape-style";
@@ -15,7 +15,7 @@ import {isDefined, shouldBeScientificFormat} from "./utils";
 import {Report} from "reactome-gsa-form/lib/model/report-status.model";
 import {Species} from "../model/graph/species.model";
 import {SpeciesService} from "./species.service";
-import NotFoundIdentifier = Analysis.NotFoundIdentifier;
+type NotFoundIdentifier = Analysis.NotFoundIdentifier;
 
 export interface Pagination extends Params {
   page: number,

@@ -1,7 +1,7 @@
 import {computed, ElementRef, Injectable} from '@angular/core';
 import {Observable} from "rxjs";
 import {HttpClient} from "@angular/common/http";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {isArray} from "lodash";
 import {AnalysisService} from "./analysis.service";
 import {DataStateService} from "./data-state.service";

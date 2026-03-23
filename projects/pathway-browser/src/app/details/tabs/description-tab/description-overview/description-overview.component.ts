@@ -4,13 +4,13 @@ import {getProperty} from "../../../../services/utils";
 import {Anatomy} from "../../../../model/graph/external-ontology/anatomy.model";
 import {ReviewStatus} from "../../../../model/graph/review-status.model";
 import {DataKeys} from "../../../../constants/constants";
-import {Relationship} from "../../../../model/graph/relationship.model";
+import type {Relationship} from "../../../../model/graph/relationship.model";
 import {Disease} from "../../../../model/graph/external-ontology/disease.model";
 import {CellType} from "../../../../model/graph/external-ontology/cell-type.model";
 import {TitleCasePipe} from "@angular/common";
 import {OntologyTermComponent} from "../../../common/ontology-term/ontology-term.component";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import HasCompartment = Relationship.HasCompartment;
+type HasCompartment = Relationship.HasCompartment;
 
 
 @Component({

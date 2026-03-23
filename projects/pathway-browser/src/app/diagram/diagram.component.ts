@@ -37,7 +37,7 @@ import {UntilDestroy} from "@ngneat/until-destroy";
 import {AnalysisService} from "../services/analysis.service";
 import {Graph} from "../model/graph.model";
 import {average, isDefined, isPathwayWithDiagram, isReferenceEntityStId} from "../services/utils";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {ActivatedRoute, Router} from "@angular/router";
 import {InteractorsComponent} from "../interactors/interactors.component";
 import {EventService} from "../services/event.service";

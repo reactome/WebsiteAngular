@@ -1,5 +1,5 @@
 import {InstanceEdit} from "./instance-edit.model";
-import {Relationship} from "./relationship.model";
+import type {Relationship} from "./relationship.model";
 
 export interface DatabaseObject {
   [key: string]: any;

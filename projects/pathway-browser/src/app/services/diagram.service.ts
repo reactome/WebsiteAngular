@@ -3,7 +3,7 @@ import {catchError, forkJoin, map, Observable, of, switchMap, tap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {Diagram, Edge, Node, NodeConnector, Position, Prop, Rectangle} from "../model/diagram.model";
 import {Graph} from "../model/graph.model";
-import Reactome, {Style} from "reactome-cytoscape-style";
+import {Style, Types} from "reactome-cytoscape-style";
 import legend from "../../assets/json/legend.json"
 import {array} from "vectorious";
 
@@ -12,9 +12,9 @@ import cytoscapeFcose, {FcoseLayoutOptions} from "cytoscape-fcose";
 import {CONTENT_SERVICE, environment} from "../../environments/environment";
 import {SchemaClasses} from "../constants/constants";
 import {GeneralService} from "./general.service";
-import NodeDefinition = Reactome.Types.NodeDefinition;
-import ReactionDefinition = Reactome.Types.ReactionDefinition;
-import EdgeTypeDefinition = Reactome.Types.EdgeTypeDefinition;
+type NodeDefinition = Types.NodeDefinition;
+type ReactionDefinition = Types.ReactionDefinition;
+type EdgeTypeDefinition = Types.EdgeTypeDefinition;
 
 cytoscape.use(cytoscapeFcose)
 

@@ -1,8 +1,8 @@
 import {PhysicalEntity} from "./physical-entity.model";
 import {ReferenceEntity} from "../reference-entity/reference-entity.model";
 import {Taxon} from "../taxon.model";
-import {Relationship} from "../relationship.model";
-import HasModifiedResidue = Relationship.HasModifiedResidue;
+import type {Relationship} from "../relationship.model";
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 import {ReferenceDatabase} from "../reference-database.model";
 import {DatabaseIdentifier} from "../database-identifier.model";
 import {ReferenceGeneProduct} from "../reference-entity/reference-gene-product.model";

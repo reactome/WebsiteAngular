@@ -5,7 +5,7 @@ import {MatPaginatorModule} from "@angular/material/paginator";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {TypeSafeMatCellDef} from "../../../../utils/type-safe-mat-cell-def.directive";
 import {TypeSafeMatRowDef} from "../../../../utils/type-safe-mat-row-def.directive";
-import {Analysis} from "../../../../model/analysis.model";
+import type {Analysis} from "../../../../model/analysis.model";
 import {AnalysisService} from "../../../../services/analysis.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {UrlStateService} from "../../../../services/url-state.service";

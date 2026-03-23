@@ -1,7 +1,7 @@
 import {Component, computed, input} from '@angular/core';
 import {CatalystActivityReference} from "../../../model/graph/control-reference/catalyst-activity-reference.model";
 import {CatalystActivity} from "../../../model/graph/catalyst-activity.model";
-import {Relationship} from "../../../model/graph/relationship.model";
+import type {Relationship} from "../../../model/graph/relationship.model";
 import {Regulation} from "../../../model/graph/Regulation/regulation.model";
 import {IconService} from "../../../services/icon.service";
 import {RegulationReference} from "../../../model/graph/control-reference/regulation-reference.model";
@@ -18,7 +18,7 @@ import {
   isReplacedResidue
 } from "../../../services/utils";
 import {MolecularProcess} from "../../../model/graph/molecular-process.model";
-import HasModifiedResidue = Relationship.HasModifiedResidue;
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 import {ObjectTreeComponent} from "../object-tree/object-tree.component";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";

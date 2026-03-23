@@ -217,13 +217,15 @@ $shadow: rgba(0, 0, 0, 0.1);
   z-index: 999;
 }
 
-.dropdown-item:hover .nested-dropdown-menu {
+.dropdown-item.has-submenu:hover > .nested-dropdown-menu,
+.dropdown-item.has-submenu:focus-within > .nested-dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
 }
 
-.dropdown-item:hover .nested-arrow {
+.dropdown-item.has-submenu:hover > .dropdown-link-wrapper .nested-arrow,
+.dropdown-item.has-submenu:focus-within > .dropdown-link-wrapper .nested-arrow {
   color: var(--on-primary);
   transform: translateX(2px);
 }
@@ -265,7 +267,8 @@ $shadow: rgba(0, 0, 0, 0.1);
     box-shadow: 0 8px 16px $shadow;
   }
 
-  .dropdown-item:hover .nested-dropdown-menu {
+  .dropdown-item.has-submenu:hover > .nested-dropdown-menu,
+  .dropdown-item.has-submenu:focus-within > .nested-dropdown-menu {
     opacity: 1;
     visibility: visible;
     transform: translateX(0);

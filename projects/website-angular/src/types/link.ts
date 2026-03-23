@@ -4,6 +4,7 @@ export interface ExternalLink {
 }
 
 export interface NavLink extends ExternalLink {
+  external?: boolean;
   dropdownLinks?: Record<string, NavLink>;
 }
 
