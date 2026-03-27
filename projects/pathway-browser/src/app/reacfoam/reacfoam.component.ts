@@ -46,7 +46,7 @@ export class ReacfoamComponent implements OnDestroy {
     stacking: "flattened",
     relaxationInitializer: "ordered", // Impactful on the sub-groups of TLPs
     layoutByWeightOrder: false,
-    relaxationVisible: true, // TODO evaluate if we wanna keep this
+    relaxationVisible: false,
     pixelRatio: window.devicePixelRatio || 1,
     wireframePixelRatio: window.devicePixelRatio || 1,
     exposeDuration: 500,
@@ -93,7 +93,7 @@ export class ReacfoamComponent implements OnDestroy {
     wireframeToFinalFadeDuration: 0,
     groupLabelColorThreshold: 0.8,
     relaxationMaxDuration: 4000,
-    relaxationQualityThreshold: 0.5,
+    relaxationQualityThreshold: 10,
 
     // Labels
     groupLabelFontFamily: 'Roboto',
@@ -106,12 +106,12 @@ export class ReacfoamComponent implements OnDestroy {
     // Roll out in groups
     rolloutMethod: "groups",
 
-    onGroupDoubleClick: (event: any) => {
+    onGroupDoubleClick: (event) => {
       event.preventDefault();
-      this.state.navigateTo(event.group.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
+      this.router.navigate([event.group.stId], {queryParamsHandling: 'preserve', preserveFragment: true})
     },
 
-    onGroupClick: (event: any) => {
+    onGroupClick: (event) => {
       event.preventDefault();
       if (!event.secondary) {
         this.state.select.set(event.group.stId)
@@ -121,22 +121,6 @@ export class ReacfoamComponent implements OnDestroy {
         const parent = this.foamTree().get('hierarchy', exposed)?.parent;
         this.state.select.set(parent?.stId || null)
         this.state.path.set(parent?.path || [])
-      }
-    },
-
-    // For now, add exposure at end of relaxation, useful upon resizing reset. to be removed when alternative solution found for stable layout
-    onRelaxationStep: (relaxationProgress: any, relaxationComplete: any, relaxationTimeout: any) => {
-      this.relaxing.set(true)
-      this.foamTree().set("groupLabelMinFontSize", 20);
-      if ((relaxationTimeout || relaxationComplete)) {
-        this.relaxing.set(false)
-        this.foamTree().set("groupLabelMinFontSize", 3);
-        this.foamTree().redraw()
-        if (this.correctedSelectedId()) {
-          setTimeout(() => {
-            this.foamTree().expose({groups: this.correctedSelectedId(), keepPrevious: false})
-          })
-        }
       }
     },
 
@@ -160,18 +144,25 @@ export class ReacfoamComponent implements OnDestroy {
 
   relaxing = signal(false)
 
-  sizeObserver = new ResizeObserver(() => {
-    setTimeout(() => { // Avoid white flickering
-      this.foamTree().set('exposeDuration', 0) // Make removal of exposure instant
-      this.foamTree().expose({
-        groups: undefined,
-        keepPrevious: false
-      }).then(() => {
-        this.foamTree().set('exposeDuration', this.options()['exposeDuration']!) // Put back initial exposure time
-        this.foamTree().resize()
+  sizeObserver = new ResizeObserver(throttle(50, () => {
+      setTimeout(() => { // Avoid white flickering
+        this.foamTree().set('exposeDuration', 0) // Make removal of exposure instant
+        this.foamTree().expose({
+          groups: undefined,
+          keepPrevious: false
+        }).then(() => {
+          this.foamTree().resize()
+          if (this.correctedSelectedId()) {
+            this.foamTree().expose({
+              groups: this.correctedSelectedId(),
+              keepPrevious: false
+            })
+          }
+          this.foamTree().set('exposeDuration', this.options().exposeDuration!) // Put back initial exposure time
+        })
       })
     })
-  });
+  );
 
   cleanFlagIdentifiers = computed(() => new Set(this.data.flagIdentifiers().filter(id => id.startsWith('R-'))))
   flagging = computed(() => this.cleanFlagIdentifiers().size !== 0)
@@ -236,7 +227,7 @@ export class ReacfoamComponent implements OnDestroy {
       this.foamTree().set({
         groupStrokePlainLightnessShift: this.dark.isDark() ? 70 : -70,
         groupStrokePlainSaturationShift: 0,
-        groupColorDecorator: (options: any, props: any, values: any) => {
+        groupColorDecorator: (options, props, values) => {
           const depth = props.group.depth;
           // If child groups of some group doesn't have enough space to
           // render, draw the parent group in red.
@@ -261,10 +252,10 @@ export class ReacfoamComponent implements OnDestroy {
               values.groupColor = notFoundColor;
             } else {
               if (this.analysis.type() === 'OVERREPRESENTATION' || this.analysis.type() === 'SPECIES_COMPARISON') { // FDR ~ color
-                values.groupColor = (this.analysis.palette().scale(props.group.fdr) as any).hex()
+                values.groupColor = this.analysis.palette().scale(props.group.fdr).hex()
               } else { // expression ~ color
                 if (props.group.expressions) {
-                  values.groupColor = (this.analysis.palette().scale(props.group.expressions[this.analysis.sampleIndex()]) as any).hex()
+                  values.groupColor = this.analysis.palette().scale(props.group.expressions[this.analysis.sampleIndex()]).hex()
                 } else {
                   values.groupColor = notFoundColor;
                 }
@@ -330,7 +321,7 @@ export class ReacfoamComponent implements OnDestroy {
 
 }
 
-function throttle<Args extends any[]>(func: (...args: Args) => void, delay: number): (...args: Args) => void {
+function throttle<Args extends any[]>(delay: number, func: (...args: Args) => void): (...args: Args) => void {
   let lastCall = 0;
   return (...args: Args) => {
     const now = new Date().getTime();
