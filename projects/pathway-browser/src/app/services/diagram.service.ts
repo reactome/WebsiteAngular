@@ -51,6 +51,9 @@ const squaredDist = (pos1: Position, pos2: Position) => {
 
 const dist = (pos1: Position, pos2: Position) => Math.sqrt(squaredDist(pos1, pos2))
 
+const isFinitePoint = (point: Position | undefined | null): point is Position =>
+  !!point && Number.isFinite(point.x) && Number.isFinite(point.y);
+
 const closestToAverage = (positions: Position[]): Position => {
   const average = avg(positions);
   let closest = positions[0];
@@ -582,7 +585,7 @@ export class DiagramService {
             if (equal(from, reactionP) || equal(to, reactionP)) d -= REACTION_RADIUS;
             if (classes.includes('positive-regulation') || classes.includes('catalysis') || classes.includes('production')) d -= ARROW_MULT * T;
             // console.assert(d > MIN_DIST, `The edge between reaction: R-HSA-${reaction.reactomeId} and entity: R-HSA-${node.reactomeId} in pathway ${id} has a visible length of ${d} which is shorter than ${MIN_DIST}`)
-            console.assert(d > MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
+            console.assert(Math.abs(d) >= MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
 
             let replacement, replacedBy;
             if (connector.isFadeOut) {
@@ -595,7 +598,11 @@ export class DiagramService {
             }
             if (!connector.isFadeOut) {
               // First case: same node is used both special and normal context
-              replacement = node.connectors.find(otherConnector => otherConnector !== connector && otherConnector.isFadeOut && samePoint(idToEdges.get(otherConnector.edgeId)!.position, reaction.position))?.edgeId;
+              replacement = node.connectors.find(otherConnector => {
+                if (otherConnector === connector || !otherConnector.isFadeOut) return false;
+                const otherEdge = idToEdges.get(otherConnector.edgeId);
+                return samePoint(otherEdge?.position, reaction.position);
+              })?.edgeId;
               // console.log("Reaction edge", replacement)
 
               // Second case: different nodes are used between special and normal context
@@ -603,6 +610,7 @@ export class DiagramService {
               // console.log("Reaction edge", replacement)
 
             }
+            const relativeSegments = this.getRelativeSegmentsData(relatives);
             const edge: cytoscape.EdgeDefinition = {
               data: {
                 id: this.getEdgeId(source, connector, target, edgeIds),
@@ -610,8 +618,7 @@ export class DiagramService {
                 source: source.id + '',
                 target: target.id + '',
                 stoichiometry: connector.stoichiometry.value,
-                weights: relatives.weights.join(" "),
-                distances: relatives.distances.join(" "),
+                ...relativeSegments,
                 sourceEndpoint: this.endpoint(sourceP, from),
                 targetEndpoint: this.endpoint(targetP, to),
                 pathway: eventIdToSubPathwayId.get(reaction.reactomeId),
@@ -648,6 +655,7 @@ export class DiagramService {
 
           // points = addRoundness(from, to, points);
           const relatives = this.absoluteToRelative(from, to, points);
+          const relativeSegments = this.getRelativeSegmentsData(relatives);
 
           const classes = [...this.linkClassMap.get(link.renderableClass)!];
           if (link.isDisease) classes.push('disease');
@@ -660,8 +668,7 @@ export class DiagramService {
               id: link.id + '',
               source: link.inputs[0].id + '',
               target: link.outputs[0].id + '',
-              weights: relatives.weights.join(" "),
-              distances: relatives.distances.join(" "),
+              ...relativeSegments,
               sourceEndpoint: this.endpoint(sourceP, from),
               targetEndpoint: this.endpoint(targetP, to),
               isFadeOut: link.isFadeOut,
@@ -746,6 +753,18 @@ export class DiagramService {
     return `${point.x - source.x} ${point.y - source.y}`
   }
 
+  private getRelativeSegmentsData(relatives: RelativePosition): Partial<{weights: string, distances: string}> {
+    const weights = relatives.weights.filter(value => Number.isFinite(value));
+    const distances = relatives.distances.filter(value => Number.isFinite(value));
+    if (weights.length === 0 || distances.length === 0 || weights.length !== distances.length) {
+      return {};
+    }
+    return {
+      weights: weights.join(" "),
+      distances: distances.join(" "),
+    };
+  }
+
 
   /**
    * Use Matrix power to convert points from an absolute coordinate system to an edge relative system
@@ -761,19 +780,26 @@ export class DiagramService {
     const relatives: RelativePosition = {distances: [], weights: []};
     if (toConvert.length === 0) return relatives;
 
+    if (!isFinitePoint(source) || !isFinitePoint(target) || equal(source, target)) return relatives;
+
     const mainVector = array([target.x - source.x, target.y - source.y]); // Edge vector
+    if (mainVector.x === 0 && mainVector.y === 0) return relatives;
     const orthoVector = array([-mainVector.y, mainVector.x]) // Perpendicular vector
       .normalize(); //Normalized to have the distance expressed in pixels https://math.stackexchange.com/a/413235/683621
-    let transform = array([
+    const transform = array([
       [mainVector.x, mainVector.y],
       [orthoVector.x, orthoVector.y],
     ]).inv(); // Should always be invertible if the ortho vector is indeed perpendicular
 
     for (let coord of toConvert) {
+      if (!isFinitePoint(coord)) continue;
       const absolute = array([[coord.x - source.x, coord.y - source.y]]);
       const relative = absolute.multiply(transform);
-      relatives.weights.push(relative.get(0, 0))
-      relatives.distances.push(relative.get(0, 1))
+      const weight = relative.get(0, 0);
+      const distance = relative.get(0, 1);
+      if (!Number.isFinite(weight) || !Number.isFinite(distance)) continue;
+      relatives.weights.push(weight)
+      relatives.distances.push(distance)
     }
     return relatives;
   }
@@ -869,7 +895,8 @@ export class DiagramService {
   }
 }
 
-function samePoint(p1: Position, p2: Position) {
+function samePoint(p1?: Position | null, p2?: Position | null) {
+  if (!p1 || !p2) return false;
   return p1.x === p2.x && p1.y === p2.y
 }
 
