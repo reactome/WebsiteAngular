@@ -108,7 +108,7 @@ export class ReacfoamComponent implements OnDestroy {
 
     onGroupDoubleClick: (event) => {
       event.preventDefault();
-      this.router.navigate([event.group.stId], {queryParamsHandling: 'preserve', preserveFragment: true})
+      this.state.navigateTo(event.group.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
     },
 
     onGroupClick: (event) => {
