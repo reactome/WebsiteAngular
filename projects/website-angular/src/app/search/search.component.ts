@@ -199,7 +199,26 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.hasNoResults = false;
         } else {
           // Successful API response - check if we have results
-          this.results = results as SearchResult;
+          const res = results as SearchResult;
+          const hasNonDeleted = res.results?.some(group =>
+            group.entries.some(e => !e.deleted)
+          );
+          res.results = res.results?.map(group => {
+            const entries = hasNonDeleted
+              ? group.entries.filter(e => !e.deleted)
+              : group.entries;
+
+            return {
+              ...group,
+              entries,
+              entriesCount: entries.length
+            };
+          }).filter(group => group.entries.length > 0) || [];
+          res.numberOfMatches = res.results.reduce(
+            (sum, g) => sum + g.entries.length,
+            0
+          );
+          this.results = res;
           this.facets = facets;
           this.totalPages = Math.ceil(((results as SearchResult).numberOfMatches || 0) / this.pageSize);
           this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
@@ -233,7 +252,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
-    return this.results.results.flatMap(g => g.entries);
+    return this.results.results.flatMap(g => this.filterDeletedEntries(g.entries));
   }
 
   toggleFacet(category: string, value: string): void {
@@ -270,6 +289,17 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   toggleAdvancedMode(): void {
     this.advancedMode = !this.advancedMode;
+  }
+
+  private filterDeletedEntries(entries: SearchEntry[]): SearchEntry[] {
+    if (!entries?.length) return [];
+
+    const nonDeleted = entries.filter(e => !e.deleted);
+    if (nonDeleted.length > 0) {
+      return nonDeleted;
+    }
+
+    return entries;
   }
 
   private updateQueryParams(params: Record<string, string | string[] | null>): void {

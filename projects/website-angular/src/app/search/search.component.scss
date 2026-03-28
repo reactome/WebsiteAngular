@@ -73,6 +73,12 @@ $border-radius: 8px;
   align-items: flex-start;
 }
 
+.deleted {
+  text-decoration: line-through;
+  color: #555;
+}
+
+
 // Facet sidebar
 .facet-sidebar {
   width: 260px;

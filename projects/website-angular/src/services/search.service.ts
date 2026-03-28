@@ -16,6 +16,7 @@ export interface SearchEntry {
   referenceIdentifier: string;
   databaseName: string;
   referenceURL: string;
+  deleted: string;
 }
 
 export interface ResultGroup {
