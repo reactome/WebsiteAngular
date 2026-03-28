@@ -302,6 +302,12 @@ NOTE: This is an automatically generated message.
                                 }
 
                               </div>
+                              @if (entry.deleted && entry.date) {
+                                <div class="deleted-date">
+                                  <b>Deleted on</b>
+                                  {{ entry.date | date:'MMM d, y, h:mm:ss a' }}
+                                </div>
+                              }
                               @if (entry.species?.length) {
                                 <div class="entry-species">
                                   @for (sp of entry.species; track sp; let last = $last) {

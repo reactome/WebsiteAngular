@@ -15,11 +15,12 @@ import {
   SearchFilters,
   FacetCount,
 } from '../../services/search.service';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule],
+  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule, DatePipe],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
