@@ -144,6 +144,7 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
   readonly showLocations = input(false);
+  readonly showReactionDiagram = input(true);
 
   static referenceTypeToNameSuffix = new Map<string, string>([
       ["ReferenceMolecule", ""],
@@ -325,7 +326,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: 'Reaction Diagram',
       manual: true,
       template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
-      isPresent: this.isReaction
+      isPresent: computed(() => this.isReaction() && this.showReactionDiagram())
     },
     {key: DataKeys.REFERENCE_ENTITY, label: Labels.EXTERNAL_REFERENCE, manual: true, template: this.referenceTemplate$},
     {key: DataKeys.SUMMARISED_ENTITIES, label: Labels.SUMMARISED_ENTITIES},
