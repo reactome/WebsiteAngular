@@ -27,6 +27,7 @@ export namespace Graph {
     referenceType: string;
     leaves?: Node[];
     standardIdentifier?: string;
+    chebiIdentifier?: string;
   }
 
   export interface SubPathway extends Entity {
@@ -34,4 +35,3 @@ export namespace Graph {
   }
 
 }
-
