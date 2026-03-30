@@ -18,7 +18,7 @@ this will place a local copy of the project onto you computer and open the folde
   
 
 ## Step 2: Installing Node
-Node is the tool that will compile and run the reactome project. You can download it [here](https://nodejs.org/en/download)!  
+Node is the tool that will compile and run the Reactome project. You can download it [here](https://nodejs.org/en/download)!  
 Once node is installed run the following commands in the ````WebsiteAngular/```` directory.
 
 ````
@@ -31,4 +31,4 @@ After this you should have a fully functional copy of Reactome running on your c
 If you run into any issues, try your best to follow any instructions in the error message or any advice found online.
 
 # Step 3: Rejoice!
-Nothing to do here but reap the benifits of your hard work I guess? Why are you still reading this?
+Nothing to do here but reap the benefits of your hard work I guess? Why are you still reading this.
