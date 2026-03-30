@@ -565,8 +565,13 @@ export class DiagramService {
             this.addEdgeInfo(reaction, points, 'forward', targetP);
 
             let [from, to] = [points.shift()!, points.pop()!]
-            from = from ?? nodeP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-            to = to ?? reactionP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+            // Keep fallback direction aligned with edge source/target for connectors that have missing segment endpoints.
+            from = from ?? sourceP;
+            to = to ?? targetP;
+            if (equal(from, to)) {
+              from = sourceP;
+              to = targetP;
+            }
             if (connector.type === 'CATALYST' && connector.endShape) {
               to = scale(connector.endShape.centre || connector.endShape.c);
             }
@@ -619,8 +624,7 @@ export class DiagramService {
                 target: target.id + '',
                 stoichiometry: connector.stoichiometry.value,
                 ...relativeSegments,
-                sourceEndpoint: this.endpoint(sourceP, from),
-                targetEndpoint: this.endpoint(targetP, to),
+                ...this.getEndpointData(sourceP, targetP, from, to),
                 pathway: eventIdToSubPathwayId.get(reaction.reactomeId),
                 reactomeId: reaction.reactomeId,
                 reactionId: reaction.id,
@@ -652,6 +656,10 @@ export class DiagramService {
           let [from, to] = [points.shift()!, points.pop()!]
           from = from ?? sourceP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
           to = to ?? targetP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+          if (equal(from, to)) {
+            from = sourceP;
+            to = targetP;
+          }
 
           // points = addRoundness(from, to, points);
           const relatives = this.absoluteToRelative(from, to, points);
@@ -669,8 +677,7 @@ export class DiagramService {
               source: link.inputs[0].id + '',
               target: link.outputs[0].id + '',
               ...relativeSegments,
-              sourceEndpoint: this.endpoint(sourceP, from),
-              targetEndpoint: this.endpoint(targetP, to),
+              ...this.getEndpointData(sourceP, targetP, from, to),
               isFadeOut: link.isFadeOut,
               isBackground: isBackground
             },
@@ -749,8 +756,26 @@ export class DiagramService {
     }
   }
 
-  private endpoint(source: Position, point: Position): string {
-    return `${point.x - source.x} ${point.y - source.y}`
+  private endpoint(source: Position, point: Position): string | undefined {
+    const dx = point.x - source.x;
+    const dy = point.y - source.y;
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return undefined;
+    return `${dx} ${dy}`
+  }
+
+  private getEndpointData(source: Position, target: Position, from: Position, to: Position): Partial<{ sourceEndpoint: string, targetEndpoint: string }> {
+    if (!isFinitePoint(source) || !isFinitePoint(target) || !isFinitePoint(from) || !isFinitePoint(to)) {
+      return {};
+    }
+    if (equal(source, target)) {
+      return {};
+    }
+    const sourceEndpoint = this.endpoint(source, from);
+    const targetEndpoint = this.endpoint(target, to);
+    if (!sourceEndpoint || !targetEndpoint) {
+      return {};
+    }
+    return {sourceEndpoint, targetEndpoint};
   }
 
   private getRelativeSegmentsData(relatives: RelativePosition): Partial<{weights: string, distances: string}> {

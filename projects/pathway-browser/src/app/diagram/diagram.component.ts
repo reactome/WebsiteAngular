@@ -678,7 +678,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       cy.batch(() => {
         this.setSubPathwayVisibility(true, cy);
         cy.elements().removeClass('flag');
-        cy.edges('![?color]').style({'underlay-opacity': 0})
+        cy.edges().not('[?color]').style({'underlay-opacity': 0})
       })
 
       return cy.collection()
