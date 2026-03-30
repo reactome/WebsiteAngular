@@ -201,7 +201,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           // Successful API response - check if we have results
           this.results = results as SearchResult;
           this.facets = facets;
-          this.totalPages = Math.ceil(((results as SearchResult).numberOfMatches || 0) / this.pageSize);
+          this.totalPages = this.totalPages = Math.max(
+            ...(results.results || []).map(group =>
+              Math.ceil((group.entriesCount || 0) / this.pageSize)
+            ),
+            0
+          );
           this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
           this.error = '';
         }
