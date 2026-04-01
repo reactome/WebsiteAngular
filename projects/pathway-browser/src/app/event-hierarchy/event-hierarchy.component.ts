@@ -250,7 +250,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
     // Combine all data and merged into one object
     initialData$.pipe(
-      tap(d => console.log('Initial data', d)),
+      //tap(d => console.log('Initial data', d)),
       switchMap(initialData =>
         enhancedEventData$.pipe(
           combineLatestWith(
@@ -265,14 +265,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           }))
         )
       ),
-      tap(d => console.log('Combined data', d)),
+      //tap(d => console.log('Combined data', d)),
 
       // Build the tree with all data
       switchMap(({
                    enhancedEvent,
                    hitReactions
                  }) => this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree, hitReactions)),
-      tap(d => console.log('Final data', d)),
+      //tap(d => console.log('Final data', d)),
     ).subscribe({
       next: () => {
         // Give pathway id when idToUse is PEs

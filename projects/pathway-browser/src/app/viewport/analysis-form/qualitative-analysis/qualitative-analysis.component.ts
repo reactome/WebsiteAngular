@@ -103,7 +103,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     });
     effect(async () => {
       if (!this.lottieCanvas() || this.lottieEnd !== undefined) return;
-      console.log('Building lottie')
+      // console.log('Building lottie')
       this.lottieEnd = await this.lottieService.buildLottie({
         renderConfig: {
           autoResize: true,

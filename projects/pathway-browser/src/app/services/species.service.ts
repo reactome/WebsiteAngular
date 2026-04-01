@@ -116,7 +116,7 @@ export class SpeciesService {
         newValue = newValue.replaceAll(initial, replacement || '');
       }
       newValue = newValue.replaceAll(',""', '').replaceAll('""', '').trim() // Remove trailing commas and quotes from lists
-      console.log(value, " => ", newValue);
+      // console.log(value, " => ", newValue);
       if (newValue.length === 0) delete params[key];
       else params[key] = JSON.parse(newValue);
     }
