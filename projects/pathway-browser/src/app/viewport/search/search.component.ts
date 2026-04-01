@@ -487,7 +487,9 @@ export namespace Search {
       isDisease: boolean;
       hasEHLD?: boolean;
       hasReferenceEntity: boolean;
-      disease: boolean
+      disease: boolean;
+      deleted: boolean;
+      date: number;
     }
 
     export interface EntryResult {
