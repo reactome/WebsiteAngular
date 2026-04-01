@@ -5,7 +5,7 @@
       <h1>Icon Library</h1>
       <p class="description">
         Browse the Reactome icon library. Icons are used in Enhanced High Level Diagrams (EHLDs)
-        to represent biological entities and concepts.
+        to represent biological entities and concepts. Or take a look at the <a class="figma-link" href="https://www.figma.com/design/5M1QcYKfAsp87nvoJINxM8/Reactome-Icon-Library--Community-?node-id=236-2098&t=fLQHQc4bpMX4fcQt-0" target="_blank">Figma</a>!
       </p>
     </header>
 
@@ -90,7 +90,7 @@
         @for (icon of icons; track icon.stId) {
           <button class="icon-card" (click)="openDetail(icon)">
             <div class="icon-preview">
-              <img [src]="iconSvgUrl(icon)" [alt]="icon.iconName || icon.name" loading="lazy" (error)="onImgError($event)" />
+              <img [src]="iconSvgUrl(icon)" [alt]="icon.iconName || icon.name" loading="lazy" (error)="onImgError($event)" width="250" height="auto"/>
             </div>
             <span class="icon-name">{{ icon.iconName || icon.name }}</span>
           </button>
