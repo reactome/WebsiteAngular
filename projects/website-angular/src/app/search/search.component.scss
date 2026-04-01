@@ -243,13 +243,25 @@ $border-radius: 8px;
   margin-top: 16px;
 }
 
+.type-icon {
+  width: 10px;
+}
+
 .search-entry {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
   padding: 12px 0;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 
   :host-context(.dark) & {
     border-top-color: rgba(255, 255, 255, 0.08);
   }
+}
+
+.entry-info {
+  flex: 1;
 }
 
 .entry-header {

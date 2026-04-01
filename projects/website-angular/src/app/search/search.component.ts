@@ -17,6 +17,7 @@ import {
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from "@angular/material/icon";
+import { IconEntry } from '../../services/icon.service';
 
 @Component({
   selector: 'app-search',
@@ -257,6 +258,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return of(null);
   }
 
+  printEntry(entry: SearchEntry): void {
+    console.log('Entry details:', entry);
+  }
+
+  iconSvgUrl(entry: SearchEntry): string {
+      return `https://dev.reactome.org/icon/${entry.stId}.svg`;
+  }
+
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
     return this.results.results.flatMap(g => this.filterDeletedEntries(g.entries));
@@ -341,6 +350,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getDetailLink(entry: SearchEntry): string {
+    //Remove HTML tags from entry.stId if present
+    entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
+
     if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
     if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
     return '/content/detail/' + entry.stId;
