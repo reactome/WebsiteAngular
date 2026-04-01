@@ -82,6 +82,8 @@ Once you are ready run these commands from your clone of the repository.
 ````
 git status
 git switch -c <Your Article/Branch Name Here>
+git add .
+git commit -m "<Your Commit Message Here>"
 git push -u origin <Your Article/Branch Name Here>
 ````
 Your branch is now available on the remote repository where you can make a pull request and have your article reviewed. Once everything has been approved the pull request (PR) can be merged into the working branch from which it can be put into the next release.  
