@@ -202,7 +202,7 @@ export class DiagramService {
       diagram: this.http.get<Diagram>(`${this.general.download()}/diagram/${id}.json`),
       graph: this.http.get<Graph.Data>(`${this.general.download()}/diagram/${id}.graph.json`)
     }).pipe(
-      tap(({diagram, graph}) => console.log('Original diagram:', diagram, 'Original graph', graph)),
+      // tap(({diagram, graph}) => console.log('Original diagram:', diagram, 'Original graph', graph)),
       switchMap(({diagram, graph}) => {
         if (diagram.forNormalDraw !== undefined && !diagram.forNormalDraw) {
           return this.getNormalPathway(diagram.stableId).pipe(
@@ -210,10 +210,10 @@ export class DiagramService {
               normalDiagram: this.http.get<Diagram>(`${this.general.download()}/diagram/${normalPathwayId}.json`),
               normalGraph: this.http.get<Graph.Data>(`${this.general.download()}/diagram/${normalPathwayId}.graph.json`)
             })),
-            tap(({
-                   normalGraph,
-                   normalDiagram
-                 }) => console.log('Normal diagram:', normalGraph, 'Normal graph', normalDiagram)),
+            // tap(({
+            //        normalGraph,
+            //        normalDiagram
+            //      }) => console.log('Normal diagram:', normalGraph, 'Normal graph', normalDiagram)),
             map(({normalGraph, normalDiagram}) => {
               graph.nodes.push(...normalGraph.nodes);
               graph.edges.push(...normalGraph.edges);
@@ -233,7 +233,7 @@ export class DiagramService {
           return of({diagram, graph});
         }
       }),
-      tap((mergedResponse) => console.log('All responses:', mergedResponse)),
+      // tap((mergedResponse) => console.log('All responses:', mergedResponse)),
       map(mergedResponse => ({
         ...mergedResponse,
         chebiMapping: this.getCHEBIStructure(
@@ -244,7 +244,7 @@ export class DiagramService {
         )
       })),
       map(({diagram, graph, chebiMapping}) => this.diagramFromData(diagram, graph, id, chebiMapping)),
-      tap((output) => console.log('Output:', output)),
+      // tap((output) => console.log('Output:', output)),
     )
 
   }
@@ -255,11 +255,11 @@ export class DiagramService {
     id: number | string = '',
     chebiMapping: Map<string, Promise<string | undefined>> = new Map()
   ): cytoscape.ElementsDefinition {
-    console.log("edge.reactionType", new Set(diagram.edges.flatMap(edge => edge.reactionType)))
-    console.log("node.connectors.types", new Set(diagram.nodes.flatMap(node => node.connectors.flatMap(con => con.type))))
-    console.log("node.renderableClass", new Set(diagram.nodes.flatMap(node => node.renderableClass)))
-    console.log("links.renderableClass", new Set(diagram.links.flatMap(link => link.renderableClass)))
-    console.log("shadow.renderableClass", new Set(diagram.shadows.flatMap(shadow => shadow.renderableClass)))
+    // console.log("edge.reactionType", new Set(diagram.edges.flatMap(edge => edge.reactionType)))
+    // console.log("node.connectors.types", new Set(diagram.nodes.flatMap(node => node.connectors.flatMap(con => con.type))))
+    // console.log("node.renderableClass", new Set(diagram.nodes.flatMap(node => node.renderableClass)))
+    // console.log("links.renderableClass", new Set(diagram.links.flatMap(link => link.renderableClass)))
+    // console.log("shadow.renderableClass", new Set(diagram.shadows.flatMap(shadow => shadow.renderableClass)))
 
     const idToEdges = new Map<number, Edge>(diagram.edges.map(edge => [edge.id, edge]));
     const idToNodes = new Map<number, Node>(diagram.nodes.map(node => [node.id, node]));
@@ -673,7 +673,7 @@ export class DiagramService {
         }
       )
 
-    console.log('All data created')
+    // console.log('All data created')
     return {
       nodes: [...compartmentNodes, ...reactionNodes, ...entityNodes, ...shadowNodes],
       edges: [...edges, ...linkEdges]

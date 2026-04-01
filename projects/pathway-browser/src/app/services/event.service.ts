@@ -360,7 +360,7 @@ export class EventService {
       : object.stId;
     this.dboService.setCurrentObj(object);
 
-    console.log('Build tree with selected event', idToBuild);
+    // console.log('Build tree with selected event', idToBuild);
     const ancestors = idToBuild
       ? this.fetchEventAncestors(idToBuild).pipe(map(ancestors => this.getFinalAncestor(ancestors, diagramId ? [diagramId] : undefined)))
       : from([[] as Event[]]);

@@ -207,7 +207,7 @@ export class ReacfoamComponent implements OnDestroy {
       if (selectedElement && isRLE(selectedElement)) {
         const flaggingResult = await firstValueFrom(this.data.getReacfoamFlagging(selectedElement.stId, this.species.currentSpecies().displayName));
         if (flaggingResult.matches && flaggingResult.matches.length === 1) {
-          console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
+          //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
           this.select.set(flaggingResult.matches[0]);
         }
       }

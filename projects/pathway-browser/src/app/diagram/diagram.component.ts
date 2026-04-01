@@ -964,7 +964,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const resource = this.state.overlay();
     if (resource) {
-      console.log('Resource not null', resource)
+      //console.log('Resource not null', resource)
       this.interactorsComponent()?.getInteractors(resource)
     }
 
@@ -1064,7 +1064,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     filter((e) => e.detail.cy !== this.legend && e.type === ReactomeEventTypes.unselect)
   ).subscribe(e => {
     if (this.state.select() === e.detail.element.data('graph.stId')) {
-      console.log('Unselect', e.detail.reactomeId)
+      //console.log('Unselect', e.detail.reactomeId)
       this.state.select.set(null)
     }
   })
