@@ -282,7 +282,7 @@ NOTE: This is an automatically generated message.
                             <div class="search-entry">
                               <div class="entry-header">
                                 @if (entry.deleted) {
-                                  <span>❌</span>
+                                  <mat-icon class="deleted-icon">delete</mat-icon>
                                   <span class="deleted" [innerHTML]="entry.stId"></span>
                                   @if (entry.replacementStIds?.length) {
                                     ⇒

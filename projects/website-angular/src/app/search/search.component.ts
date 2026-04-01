@@ -16,11 +16,12 @@ import {
   FacetCount,
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule, DatePipe],
+  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule, DatePipe, MatIcon],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
