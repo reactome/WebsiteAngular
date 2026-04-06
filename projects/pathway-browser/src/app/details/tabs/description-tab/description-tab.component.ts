@@ -50,6 +50,7 @@ import {CONTENT_DETAIL, environment} from "../../../../environments/environment"
 import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 import {KeyValuePipe, NgClass, NgTemplateOutlet} from "@angular/common";
 import {RouterLink} from "@angular/router";
 import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
@@ -77,7 +78,6 @@ import {
 } from "../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component";
 import {ReactionDiagramComponent} from "../../common/reaction-diagram/reaction-diagram.component";
 
-type HasModifiedResidue = Relationship.HasModifiedResidue;
 
 
 @Component({

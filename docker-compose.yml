@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "4200:4200"
+      - "4001:4001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      # This ensures the nested tina folder is visible to the watcher
+      - ./projects/website-angular/tina:/app/projects/website-angular/tina
+    environment:
+      - NG_CLI_ANALYTICS=false
+      - NODE_ENV=development
+    stdin_open: true
+    tty: true
