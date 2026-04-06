@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -49,7 +49,7 @@ interface ParsedReference {
 
 @Component({
   selector: 'app-icon-lib',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './icon-lib.component.html',
   styleUrl: './icon-lib.component.scss'
 })

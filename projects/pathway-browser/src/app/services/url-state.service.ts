@@ -123,11 +123,11 @@ export class UrlStateService implements State {
     });
 
     effect(() => {
-      console.log('Updating patwhayId to ', this.pathwayId())
+      // console.log('Updating patwhayId to ', this.pathwayId())
 
       //If in content/search do not navigate
       if (this.router.url.includes('content') || this.router.url.includes('query')) {
-        console.log('In content or search route, not navigating on pathwayId change');
+        // console.log('In content or search route, not navigating on pathwayId change');
         return;
       }
 
@@ -214,9 +214,9 @@ export class UrlStateService implements State {
         if (typeof paramValue === 'string') paramValue = paramValue.replaceAll(' ', '__')
         queryParams[key] = isArray(paramValue) ? paramValue.join(';') : paramValue;
       }
-      console.log('Updating URL from state', queryParams)
+      // console.log('Updating URL from state', queryParams)
       if (this.router.url.includes('content') || this.router.url.includes('query')) {
-        console.log('In content or search route, not navigating on state change');
+        // console.log('In content or search route, not navigating on state change');
         return;
       }
       this.navigateTo(this.pathwayId() ?? null, {queryParams, preserveFragment: true});

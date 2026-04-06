@@ -245,7 +245,7 @@ export class AnalysisService {
       species: this.state.speciesFilter()
     }),
     loader: ({request, previous}) => {
-      console.log("Loading ", request, previous)
+      //console.log("Loading ", request, previous)
       return request.token ?
         this.loadAnalysis(request.token, {
           resource: request.resource || undefined,
@@ -323,7 +323,7 @@ export class AnalysisService {
 
     effect(() => {
       const result = this.result();
-      console.log('Result updated', result)
+      //console.log('Result updated', result)
       if (!result) return
       const validGroups: Set<PaletteGroup> = new Set();
       if (result.summary.type === 'GSA_REGULATION') {

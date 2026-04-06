@@ -55,6 +55,12 @@ export class BreadcrumbComponent {
                 this.updateBreadcrumbs(path_segments);
               }
             })
+        } else if (path_segments.includes('faq') && path_segments.length > 2) { //In in an FAQ page, but not the main FAQ page
+          //Remove all segements after 'faq' and before the last segment (which is the question)
+          let faqIndex = path_segments.indexOf('faq');
+          let modifiedSegments = [...path_segments];
+          modifiedSegments.splice(faqIndex + 1, modifiedSegments.length - faqIndex - 2);
+          this.updateBreadcrumbs(modifiedSegments);
         } else {
           this.updateBreadcrumbs(path_segments);
         }

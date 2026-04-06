@@ -15,7 +15,7 @@ export class Interactivity {
   isMobile = 'ontouchstart' in document || navigator.maxTouchPoints > 0;
 
   constructor(private cy: cytoscape.Core, private properties: Properties) {
-    console.log('is mobile', this.isMobile)
+    // console.log('is mobile', this.isMobile)
     // @ts-ignore
     cy.elements().ungrabify().panify();
     this.initHover(cy);
@@ -102,7 +102,7 @@ export class Interactivity {
 
       .on('mouseover', 'edge', e => {
         const mapped = mapper(e.target);
-        if (mapped !== e.target) console.log(mapped, mapped.connectedNodes('.reaction'))
+        // if (mapped !== e.target) console.log(mapped, mapped.connectedNodes('.reaction'))
 
         hoverReaction(mapped.connectedNodes('.reaction'))
       })
