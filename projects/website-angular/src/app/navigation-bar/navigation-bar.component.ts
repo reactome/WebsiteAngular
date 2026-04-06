@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavLink, NavOption } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
+import { APP_CONFIG } from '../../config/config'; // NEW import
 
 @Component({
   standalone: true,
@@ -43,12 +44,9 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   loadNavOptions() {
-    Promise.all([
-      import('../../config/nav-options.json'),
-      import('../../config/config.json')
-    ]).then(([navData, configData]) => {
+    import('../../config/nav-options.json').then((navData) => {
       this.navOptions = mapNavOptions(navData.default);
-      this.resolveExternalLinks(configData.default.baseUrl);
+      this.resolveExternalLinks(APP_CONFIG.baseUrl);
     });
   }
 

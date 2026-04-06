@@ -2,6 +2,7 @@ import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, timeout } from 'rxjs';
+import { APP_CONFIG } from '../config/config'; // NEW import
 
 export interface ReactomeStats {
   pathways: number;
@@ -26,30 +27,23 @@ export class StatsService {
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
-   * Get the current Reactome version
+   * Get the current Reactome version from APP_CONFIG
    */
   async getVersion(): Promise<string> {
-    let version = await import('../config/config.json').then(
-      (data) => data.default.version.releaseNumber
-    );
-    return version;
+    return APP_CONFIG.version.releaseNumber;
   }
 
   /**
-   * Get the download base URL
+   * Get the download base URL from APP_CONFIG
    */
   async getDownloadBaseUrl(): Promise<string> {
-    let downloadUrl = await import('../config/config.json').then(
-      (data) => data.default.downloadurl
-    );
-
-    return downloadUrl;
+    return APP_CONFIG.downloadUrl;
   }
 
   /**
    * Fetch stats from the S3/CloudFront download directory
    */
-  async getStats():Promise<Observable<ReactomeStats>> {
+  async getStats(): Promise<Observable<ReactomeStats>> {
     const defaultStats: ReactomeStats = {
       pathways: 0,
       reactions: 0,

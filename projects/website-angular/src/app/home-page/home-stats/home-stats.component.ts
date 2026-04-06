@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { StatsService } from '../../../services/stats.service';
+import { APP_CONFIG } from '../../../config/config'; // NEW import
 
 interface Stats {
     human_pathways: number;
@@ -39,11 +40,10 @@ export class HomeStatsComponent {
   }
 
   getVersionAndDate () {
-    import('../../../config/config.json').then((data) => {
-        this.version = data.default.version.releaseNumber;
-        this.releaseDate = new Date(data.default.version.releaseDate);
-        this.fetchStats();
-      });
+    // Use APP_CONFIG instead of dynamic JSON import
+    this.version = APP_CONFIG.version.releaseNumber;
+    this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
+    this.fetchStats();
   }
 
   fetchStats () {

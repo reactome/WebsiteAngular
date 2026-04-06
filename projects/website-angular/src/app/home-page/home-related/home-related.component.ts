@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import {ExternalLink} from '../../../types/link';
 import { mapNavOptions } from '../../../utils/nav-options-mapper';
+import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({
   selector: 'app-home-related',
@@ -17,8 +18,7 @@ export class HomeRelatedComponent {
   }
 
   loadExternalLinks() {
-    import('../../../config/external-links.json').then((data) => {
-      this.externalLinks = mapNavOptions(data.default);
-    });
+    // Use the new TS constant instead of dynamic JSON import
+    this.externalLinks = EXTERNAL_LINKS as unknown as Record<string, ExternalLink>;
   }
 }
