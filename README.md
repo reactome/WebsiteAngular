@@ -54,6 +54,18 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Configuration
+
+The application configuration is centralized in TypeScript files under `projects/website-angular/src/config/`. Key configurations include:
+
+- `config.ts`: App-level settings like version, base URLs, and feature flags.
+- `environments.ts`: Environment-specific settings (development, production, etc.).
+- `api-routes.ts`: API endpoint URLs derived from the current environment.
+- `features.ts`: Feature flags for toggling functionality.
+- `external-links.ts`: External links, including dynamically constructed release notes.
+
+To update configuration values, edit the respective TS files. For environment-specific builds, consider using Angular's file replacements in `angular.json`.
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
