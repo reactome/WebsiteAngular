@@ -281,7 +281,7 @@ NOTE: This is an automatically generated message.
                           @for (entry of group.entries; track entry.dbId) {
                             <div class="search-entry">
                               <div class="type-icon">
-                                TODO: Add type icons
+                                <i [class]="getSpriteClass(entry)" title="Icon"></i>
                               </div>
                               <div class="entry-info">
                                 <div class="entry-header">
@@ -342,7 +342,6 @@ NOTE: This is an automatically generated message.
                                   Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener"><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{ entry.referenceIdentifier }})</a>
                                 </div>
                               }
-                              <button (click)="printEntry(entry)">O</button>
                               </div>
                               @if (entry.exactType == "Icon") {
                               <div class="icon-preview">

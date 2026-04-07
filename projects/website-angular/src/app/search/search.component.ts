@@ -258,8 +258,21 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return of(null);
   }
 
-  printEntry(entry: SearchEntry): void {
-    console.log('Entry details:', entry);
+  getSpriteClass(entry: SearchEntry): string {
+    const reactionSubtypes = new Set([
+      'association',
+      'binding',
+      'dissociation',
+      'omitted',
+      'transition',
+      'uncertain',
+      'depolymerisation',
+      'polymerisation'
+    ]);
+
+    const rawType = (entry.exactType || entry.type || '').trim();
+    const spriteType = reactionSubtypes.has(rawType.toLowerCase()) ? 'Reaction' : (rawType || 'Pathway');
+    return `sprite sprite-resize sprite-${spriteType}`;
   }
 
   iconSvgUrl(entry: SearchEntry): string {
