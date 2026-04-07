@@ -51,9 +51,12 @@ const squaredDist = (pos1: Position, pos2: Position) => {
 
 const dist = (pos1: Position, pos2: Position) => Math.sqrt(squaredDist(pos1, pos2))
 
-const isFinitePoint = (point: Position | undefined | null): point is Position =>
-  !!point && Number.isFinite(point.x) && Number.isFinite(point.y);
-
+const isFinitePoint = (point: Position | undefined | null): point is Position => {
+  const isFinite = !!point && Number.isFinite(point.x) && Number.isFinite(point.y);
+  console.assert(isFinite, `Invalid point with coordinates: ${point?.x}, ${point?.y}`);
+  return isFinite;
+}
+  
 const closestToAverage = (positions: Position[]): Position => {
   const average = avg(positions);
   let closest = positions[0];
@@ -566,11 +569,11 @@ export class DiagramService {
 
             let [from, to] = [points.shift()!, points.pop()!]
             // Keep fallback direction aligned with edge source/target for connectors that have missing segment endpoints.
-            from = from ?? sourceP;
-            to = to ?? targetP;
+            from = from ?? nodeP;
+            to = to ?? reactionP;
             if (equal(from, to)) {
-              from = sourceP;
-              to = targetP;
+              from = nodeP;
+              to = reactionP;
             }
             if (connector.type === 'CATALYST' && connector.endShape) {
               to = scale(connector.endShape.centre || connector.endShape.c);
@@ -590,7 +593,7 @@ export class DiagramService {
             if (equal(from, reactionP) || equal(to, reactionP)) d -= REACTION_RADIUS;
             if (classes.includes('positive-regulation') || classes.includes('catalysis') || classes.includes('production')) d -= ARROW_MULT * T;
             // console.assert(d > MIN_DIST, `The edge between reaction: R-HSA-${reaction.reactomeId} and entity: R-HSA-${node.reactomeId} in pathway ${id} has a visible length of ${d} which is shorter than ${MIN_DIST}`)
-            console.assert(Math.abs(d) >= MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
+            console.assert(d >= MIN_DIST, `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`)
 
             let replacement, replacedBy;
             if (connector.isFadeOut) {
