@@ -49,7 +49,7 @@ interface ParsedReference {
 
 @Component({
   selector: 'app-icon-lib',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageLayoutComponent],
   templateUrl: './icon-lib.component.html',
   styleUrl: './icon-lib.component.scss'
 })
