@@ -1,7 +1,6 @@
 name: autofix.ci
 on:
   pull_request:
-  push:
 
 permissions:
   contents: write
@@ -30,6 +29,15 @@ jobs:
             echo "No files to format"
           fi
 
-      - uses: autofix-ci/action@v1
-        with:
-          commit-message: "Apply Prettier format"
+      - name: Commit formatted changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add --all
+            git commit -m "chore: Apply Prettier formatting"
+            git push
+          else
+            echo "No formatting changes to commit"
+          fi

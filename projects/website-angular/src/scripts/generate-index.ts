@@ -150,9 +150,7 @@ function generateSiteSearchIndex(): void {
 
   const outputPath = path.join(outputDir, 'site-search-index.json');
   fs.writeFileSync(outputPath, JSON.stringify(items));
-  // console.log(
-  //   `Site search index generated: ${items.length} entries → ${outputPath}`
-  // );
+  console.log( `Site search index generated: ${items.length} entries → ${outputPath}`); //This chaned to test autofix
 }
 
 function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
