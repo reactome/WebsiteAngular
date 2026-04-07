@@ -458,7 +458,7 @@ export class DiagramService {
       const graphData = idToGraphNodes.get(item.id);
       if (!graphData) console.error("Missing graph data for node: ", item.id, ". Potential reason could be a wrong normal pathway for a disease")
       let preferredId = unitId || graphData?.identifier;
-      console.log(chebiMapping, graphData?.chebiIdentifier, graphData?.identifier, preferredId)
+      //console.log(chebiMapping, graphData?.chebiIdentifier, graphData?.identifier, preferredId)
       let chebiStructure = chebiMapping.get(graphData!.chebiIdentifier?.substring(6) || '') || chebiMapping.get(graphData!.identifier!);
       if (classes.some(clazz => clazz === 'Protein')) {
         html = this.getStructureVideoHtml({...item, type: 'Protein'}, width, height, preferredId);
