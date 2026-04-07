@@ -35,9 +35,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           if [ -n "$(git status --porcelain)" ]; then
+            # Check out the PR branch to avoid detached HEAD
+            git checkout ${{ github.head_ref }}
             git add --all
             git commit -m "chore: Apply Prettier formatting"
-            git push
+            git push origin ${{ github.head_ref }}
           else
             echo "No formatting changes to commit"
           fi
