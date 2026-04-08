@@ -119,7 +119,7 @@ export class StructureViewerComponent {
   readonly moleculeType = input.required<string | null>();
   viewer = viewChild<ElementRef<HTMLElement>>('viewer');
   isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
-  isChemical = computed(() => this.moleculeType() === MoleculeType.CHEMICAL || MoleculeType.CHEMICAL_DRUG);
+  isChemical = computed(() => this.moleculeType() === MoleculeType.CHEMICAL || this.moleculeType() === MoleculeType.CHEMICAL_DRUG);
   chebiIdentifier = signal<string | undefined>(undefined);
 
   pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
