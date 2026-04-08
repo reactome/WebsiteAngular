@@ -1,9 +1,9 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
-import {ActivatedRoute, RouterLink} from '@angular/router';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {PageLayoutComponent} from '../../../page-layout/page-layout.component';
-import {TileComponent} from '../../../reactome-components/tile/tile.component';
-import {IconService, IconEntry} from '../../../../services/icon.service';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
+import { TileComponent } from '../../../reactome-components/tile/tile.component';
+import { IconService, IconEntry } from '../../../../services/icon.service';
 
 @Component({
   selector: 'app-icon-detail',
@@ -45,8 +45,13 @@ export class IconDetailComponent implements OnInit {
     return stId ? `https://reactome.org/icon/${stId}.svg` : '';
   }
 
+  getPngUrl(): string {
+    const stId = this.icon()?.stId;
+    return stId ? `https://reactome.org/icon/${stId}.png` : '';
+  }
+
   getUniProtReferences(): string[] {
     const refs = this.icon()?.iconReferences ?? [];
-    return refs.filter(r => !r.includes(':'));
+    return refs.filter((r) => !r.includes(':'));
   }
 }
