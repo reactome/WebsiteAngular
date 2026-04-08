@@ -40,7 +40,7 @@
       }
 
       <!-- Result count + group toggle -->
-      @if (results && !loading) {
+      @if (results && !loading && currentMode !== "reference") {
         <div class="results-toolbar">
           <p class="result-count">{{ results.numberOfMatches }} results found for "{{ query }}"</p>
           @if (!hasNoResults) {
