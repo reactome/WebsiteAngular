@@ -340,7 +340,9 @@ NOTE: This is an automatically generated message.
                                 }
                               }
                             </div>
-                            @if (getGroupTotalPages(group) > 1 && !(group.typeName === 'Protein' && proteinLoading)) {
+                          }
+                        </div>
+                        @if (getGroupTotalPages(group) > 1 && !(group.typeName === 'Protein' && proteinLoading)) {
                           <nav class="group-pagination">
                             <button
                               class="page-btn"
@@ -375,8 +377,6 @@ NOTE: This is an automatically generated message.
                             >Last</button>
                           </nav>
                         }
-                          }
-                        </div>
                         } @else {
                           <div class="group-entries">
                           @for (entry of group.entries; track entry.dbId) {
