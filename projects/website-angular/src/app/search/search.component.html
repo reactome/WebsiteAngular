@@ -296,10 +296,37 @@ NOTE: This is an automatically generated message.
                           }
                           @for (entry of getGroupPageEntries(group); track entry.dbId) {
                             <div class="search-entry">
-                              <div class="entry-header">
-                                <a class="entry-name" [routerLink]="getDetailLink(entry)" [innerHTML]="entry.referenceName || entry.name"></a>
-                                <span class="entry-id">{{ entry.id || entry.stId }}</span>
+                              <div class="type-icon">
+                                <i [class]="getSpriteClass(entry)" title="Icon"></i>
                               </div>
+                              <div class="entry-info">
+                                <div class="entry-header">
+                                @if (entry.deleted) {
+                                  <mat-icon class="deleted-icon">delete</mat-icon>
+                                  <span class="deleted" [innerHTML]="entry.stId"></span>
+                                  @if (entry.replacementStIds?.length) {
+                                    ⇒
+                                    <a
+                                      [routerLink]="['/content/detail', entry.replacementStIds[0]]"
+                                      title="Go to replacement">
+                                      {{ entry.replacementStIds[0] }}
+                                    </a>
+                                  }
+
+                                } @else {
+                                  <a class="entry-name"
+                                    [routerLink]="getDetailLink(entry)"
+                                    [innerHTML]="entry.name || entry.referenceName">
+                                  </a>
+                                  <span class="entry-id" [innerHTML]="entry.stId || entry.id"></span>
+                                }
+                              </div>
+                              @if (entry.deleted && entry.date) {
+                                <div class="deleted-date">
+                                  <b>Deleted on</b>
+                                  {{ entry.date | date:'MMM d, y, h:mm:ss a' }}
+                                </div>
+                              }
                               @if (entry.species?.length) {
                                 <div class="entry-species">
                                   @for (sp of entry.species; track sp; let last = $last) {
@@ -312,12 +339,22 @@ NOTE: This is an automatically generated message.
                                   Compartments: {{ entry.compartmentNames.join(', ') }}
                                 </div>
                               }
+                              @if (entry.iconCuratorName) {
+                                <div class="entry-compartments">Curator: <a  [href]="'https://orcid.org/' + entry.iconCuratorOrcidId" target="_blank" rel="noopener">
+                                  {{ entry.iconCuratorName }}
+                                </a></div>
+                              }
+                              @if (entry.iconDesignerName) {
+                                <div class="entry-compartments">Designer: <a  [href]="entry.iconDesignerUrl" target="_blank" rel="noopener">
+                                  {{ entry.iconDesignerName }}
+                                </a></div>
+                              }
                               @if (entry.summation) {
                                 <p class="entry-summation" [innerHTML]="entry.summation"></p>
                               }
-                              @if (entry.referenceName) {
+                              @if (entry.referenceName || entry.databaseName) {
                                 <div class="entry-reference">
-                                  Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener"><span [innerHTML]="entry.referenceName"></span> ({{ entry.referenceIdentifier }})</a>
+                                  Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener"><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{ entry.referenceIdentifier }})</a>
                                 </div>
                               }
                               @if (entry.type === 'Protein' && entry.referenceIdentifier && getProteinFormCount(entry) > 1) {
@@ -339,6 +376,12 @@ NOTE: This is an automatically generated message.
                                   </div>
                                 }
                               }
+                              </div>
+                              @if (entry.exactType == "Icon") {
+                              <div class="icon-preview">
+                                <img [src]="iconSvgUrl(entry)" [alt]="entry.stId" loading="lazy" (error)="onImgError($event)" width="100" height="auto"/>
+                              </div>
+                            }
                             </div>
                           }
                         </div>
