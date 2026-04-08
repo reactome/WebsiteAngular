@@ -205,20 +205,7 @@
           "builder": "@angular-devkit/build-angular:extract-i18n"
         },
         "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "tsconfig.spec.json",
-            "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/website-angular/public"
-              }
-            ],
-            "styles": ["projects/website-angular/src/styles.scss"],
-            "scripts": []
-          }
+          "builder": "@analogjs/vitest-angular:test"
         }
       }
     },
