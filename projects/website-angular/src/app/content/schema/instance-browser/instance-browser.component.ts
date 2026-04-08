@@ -64,20 +64,21 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     this.error = false;
     this.rows = [];
 
-    this.contentDataService.getInstance(this.instanceId).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (instance) => {
-        this.instance = instance;
-        this.schemaClass = instance.schemaClass || instance.className || '';
-        this.dbId = instance.dbId;
-        this.loadAttributes();
-      },
-      error: () => {
-        this.error = true;
-        this.loading = false;
-      },
-    });
+    this.contentDataService
+      .getInstance(this.instanceId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (instance) => {
+          this.instance = instance;
+          this.schemaClass = instance.schemaClass || instance.className || '';
+          this.dbId = instance.dbId;
+          this.loadAttributes();
+        },
+        error: () => {
+          this.error = true;
+          this.loading = false;
+        },
+      });
   }
 
   private loadAttributes() {
@@ -147,7 +148,9 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       return [
         {
           type: 'link',
-          text: `[${val.schemaClass || val.className || 'Object'}:${val.dbId}] ${val.displayName || ''}`,
+          text: `[${val.schemaClass || val.className || 'Object'}:${
+            val.dbId
+          }] ${val.displayName || ''}`,
           dbId: val.dbId,
           schemaClass: val.schemaClass || val.className,
         },

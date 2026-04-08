@@ -297,7 +297,11 @@ export class SchemaComponent implements OnInit, OnDestroy {
   loadEntries() {
     this.loadingEntries = true;
     this.contentDataService
-      .getSchemaEntries(this.selectedClass, this.entriesPage, this.entriesPageSize)
+      .getSchemaEntries(
+        this.selectedClass,
+        this.entriesPage,
+        this.entriesPageSize
+      )
       .subscribe({
         next: (entries) => {
           this.entries = entries;
