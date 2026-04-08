@@ -100,9 +100,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         keywords: toArray(params['keywords']),
       };
 
-      if (params['advanced'] === 'true' && this.currentMode !== 'advanced') {
+      if (params['advanced'] === 'true') {
         this.currentMode = 'advanced';
-      } else if (params['reference'] === 'true' && this.currentMode !== 'reference') {
+      } else if (params['reference'] === 'true') {
         this.currentMode = 'reference';
       } else {
         this.currentMode = 'simple';
