@@ -1,4 +1,13 @@
-import { Component, inject, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  NgZone,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
@@ -14,15 +23,23 @@ import {
   FacetResponse,
   SearchFilters,
   FacetCount,
+  ResultGroup,
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
-import { MatIcon } from "@angular/material/icon";
-import { IconEntry } from '../../services/icon.service';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [PageLayoutComponent, TileComponent, RouterLink, SearchBarComponent, FormsModule, DatePipe, MatIcon],
+  imports: [
+    PageLayoutComponent,
+    TileComponent,
+    RouterLink,
+    SearchBarComponent,
+    FormsModule,
+    DatePipe,
+    MatIcon,
+  ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
@@ -40,11 +57,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   query = '';
   searchSubmitted = false;
-    onQueryInput(newQuery: string): void {
-      this.query = newQuery;
-      this.getSuggestions(newQuery);
-      this.searchSubmitted = false;
-    }
+  onQueryInput(newQuery: string): void {
+    this.query = newQuery;
+    this.getSuggestions(newQuery);
+    this.searchSubmitted = false;
+  }
   suggestedTerms: string[] = [];
   results: SearchResult | null = null;
   facets: FacetResponse | null = null;
@@ -63,8 +80,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
+  expandedForms: Record<string, boolean> = {};
+  groupPages: Record<string, number> = {};
+  groupPageSize = 10;
+  groupPageEntries: Record<string, SearchEntry[]> = {};
+  groupLoading: Record<string, boolean> = {};
 
-  advancedMode = false;
+  // Protein deduplication: all forms grouped by referenceIdentifier
+  proteinForms = new Map<string, SearchEntry[]>();
+  uniqueProteins: SearchEntry[] = [];
+  proteinTotalForms = 0;
+  proteinLoading = false;
+
+  currentMode: 'simple' | 'advanced' | 'reference' = 'simple';
 
   private paramsSub!: Subscription;
 
@@ -74,8 +102,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       let q = params['q'] || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
-        if (pathSegments.length === 2 && pathSegments[1].path.startsWith('query=')) {
-          q = decodeURIComponent(pathSegments[1].path.substring('query='.length));
+        if (
+          pathSegments.length === 2 &&
+          pathSegments[1].path.startsWith('query=')
+        ) {
+          q = decodeURIComponent(
+            pathSegments[1].path.substring('query='.length)
+          );
         }
       }
 
@@ -89,10 +122,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         keywords: toArray(params['keywords']),
       };
 
-      if (params['advanced'] === 'true' && !this.advancedMode) {
-        this.toggleAdvancedMode();
-      } else if (params['advanced'] !== 'true' && this.advancedMode) {
-        this.advancedMode = false;
+      if (params['advanced'] === 'true') {
+        this.currentMode = 'advanced';
+      } else if (params['reference'] === 'true') {
+        this.currentMode = 'reference';
+      } else {
+        this.currentMode = 'simple';
       }
 
       if (this.query) {
@@ -112,19 +147,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private getSuggestions(query: string): void {
-      if (!query) {
-        this.suggestedTerms = [];
-        return;
-      }
-      this.searchService.getSpellCheckTerms(query).subscribe({
-        next: (terms) => {
-          this.suggestedTerms = terms || [];
-        },
-        error: () => {
-          this.suggestedTerms = [];
-        },
-      });
+    if (!query) {
+      this.suggestedTerms = [];
+      return;
     }
+    this.searchService.getSpellCheckTerms(query).subscribe({
+      next: (terms) => {
+        this.suggestedTerms = terms || [];
+      },
+      error: () => {
+        this.suggestedTerms = [];
+      },
+    });
+  }
 
   private renderCaptchaWhenReady(): void {
     // Wait until the captcha container is available in the DOM
@@ -157,19 +192,28 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const hcaptcha = (window as any).hcaptcha;
     if (!hcaptcha || !this.captchaContainer?.nativeElement) return;
 
-    this.captchaWidgetId = hcaptcha.render(this.captchaContainer.nativeElement, {
-      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-      theme: 'light',
-      callback: (token: string) => {
-        this.ngZone.run(() => { this.captchaToken = token; });
-      },
-      'expired-callback': () => {
-        this.ngZone.run(() => { this.captchaToken = null; });
-      },
-      'error-callback': () => {
-        this.ngZone.run(() => { this.captchaToken = null; });
-      },
-    });
+    this.captchaWidgetId = hcaptcha.render(
+      this.captchaContainer.nativeElement,
+      {
+        sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
+        theme: 'light',
+        callback: (token: string) => {
+          this.ngZone.run(() => {
+            this.captchaToken = token;
+          });
+        },
+        'expired-callback': () => {
+          this.ngZone.run(() => {
+            this.captchaToken = null;
+          });
+        },
+        'error-callback': () => {
+          this.ngZone.run(() => {
+            this.captchaToken = null;
+          });
+        },
+      }
+    );
   }
 
   private resetCaptcha(): void {
@@ -186,12 +230,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.hasNoResults = false;
 
     forkJoin({
-      results: this.searchService.search(this.query, this.filters, this.currentPage, this.pageSize).pipe(
-        catchError((err) => this.handleSearchError(err))
-      ),
-      facets: this.searchService.getFacets(this.query, this.filters).pipe(
-        catchError(() => of(null))
-      ),
+      results: this.searchService
+        .search(this.query, this.filters, this.currentPage, this.pageSize)
+        .pipe(catchError((err) => this.handleSearchError(err))),
+      facets: this.searchService
+        .getFacets(this.query, this.filters)
+        .pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ results, facets }) => {
         // If either API call failed, show error
@@ -203,20 +247,23 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         } else {
           // Successful API response - check if we have results
           const res = results as SearchResult;
-          const hasNonDeleted = res.results?.some(group =>
-            group.entries.some(e => !e.deleted)
+          const hasNonDeleted = res.results?.some((group) =>
+            group.entries.some((e) => !e.deleted)
           );
-          res.results = res.results?.map(group => {
-            const entries = hasNonDeleted
-              ? group.entries.filter(e => !e.deleted)
-              : group.entries;
+          res.results =
+            res.results
+              ?.map((group) => {
+                const entries = hasNonDeleted
+                  ? group.entries.filter((e) => !e.deleted)
+                  : group.entries;
 
-            return {
-              ...group,
-              entries,
-              entriesCount: entries.length
-            };
-          }).filter(group => group.entries.length > 0) || [];
+                return {
+                  ...group,
+                  entries,
+                  entriesCount: entries.length,
+                };
+              })
+              .filter((group) => group.entries.length > 0) || [];
           res.numberOfMatches = res.results.reduce(
             (sum, g) => sum + g.entries.length,
             0
@@ -224,17 +271,37 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
-            ...(results.results || []).map(group =>
+            ...(results.results || []).map((group) =>
               Math.ceil((group.entriesCount || 0) / this.pageSize)
             ),
             0
           );
-          this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
+          this.hasNoResults =
+            ((results as SearchResult).numberOfMatches || 0) === 0;
           this.error = '';
+
+          // Reset per-group pagination state
+          this.groupPages = {};
+          this.groupPageEntries = {};
+          this.groupLoading = {};
+          this.expandedForms = {};
+
+          // If there's a Protein group, fetch ALL protein entries for deduplication
+          const proteinGroup = this.results.results.find(
+            (g) => g.typeName === 'Protein'
+          );
+          if (proteinGroup && proteinGroup.entriesCount > 0) {
+            this.fetchAllProteins(proteinGroup.entriesCount);
+          } else {
+            this.proteinForms = new Map();
+            this.uniqueProteins = [];
+            this.proteinTotalForms = 0;
+          }
         }
         this.loading = false;
       },
       error: (err) => {
+        console.error('Search error:', err);
         this.error = 'An error occurred while searching. Please try again.';
         this.hasNoResults = false;
         this.results = null;
@@ -246,7 +313,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private handleSearchError(err: any): Observable<SearchResult | null> {
     // Check if this is a 404 with "No entries found" message
-    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
+    if (
+      err.status === 404 &&
+      err.error?.messages?.[0]?.includes('No entries found')
+    ) {
       // Return empty results instead of throwing error
       return of({
         results: [],
@@ -258,6 +328,72 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return of(null);
   }
 
+  private fetchAllProteins(totalCount: number): void {
+    this.proteinLoading = true;
+    this.proteinForms = new Map();
+    this.uniqueProteins = [];
+    this.proteinTotalForms = 0;
+
+    const batchSize = 500;
+    const proteinFilters = { ...this.filters, types: ['Protein'] };
+
+    const batchRequests: Observable<SearchResult | null>[] = [];
+    for (let offset = 0; offset < totalCount; offset += batchSize) {
+      const batchPage = Math.floor(offset / batchSize);
+      batchRequests.push(
+        this.searchService
+          .search(this.query, proteinFilters, batchPage, batchSize)
+          .pipe(catchError(() => of(null)))
+      );
+    }
+
+    forkJoin(batchRequests).subscribe((results) => {
+      const allProteins: SearchEntry[] = [];
+      for (const result of results) {
+        if (!result?.results?.length) continue;
+        const group = result.results.find((g) => g.typeName === 'Protein');
+        if (group) allProteins.push(...group.entries);
+      }
+
+      // Group by referenceIdentifier
+      const formsMap = new Map<string, SearchEntry[]>();
+      const representativeMap = new Map<string, SearchEntry>();
+
+      for (const entry of allProteins) {
+        const key = entry.referenceIdentifier || entry.id || entry.stId;
+        if (!formsMap.has(key)) {
+          formsMap.set(key, []);
+          representativeMap.set(key, entry);
+        }
+        formsMap.get(key)!.push(entry);
+      }
+
+      this.proteinForms = formsMap;
+      this.uniqueProteins = [...representativeMap.values()];
+      this.proteinTotalForms = allProteins.length;
+      this.proteinLoading = false;
+    });
+  }
+
+  toggleForms(entry: SearchEntry): void {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    this.expandedForms[key] = !this.expandedForms[key];
+  }
+
+  getProteinForms(entry: SearchEntry): SearchEntry[] {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    return this.proteinForms.get(key) || [];
+  }
+
+  getProteinFormCount(entry: SearchEntry): number {
+    return this.getProteinForms(entry).length;
+  }
+
+  isFormsExpanded(entry: SearchEntry): boolean {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    return !!this.expandedForms[key];
+  }
+
   getSpriteClass(entry: SearchEntry): string {
     const reactionSubtypes = new Set([
       'association',
@@ -267,21 +403,25 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       'transition',
       'uncertain',
       'depolymerisation',
-      'polymerisation'
+      'polymerisation',
     ]);
 
     const rawType = (entry.exactType || entry.type || '').trim();
-    const spriteType = reactionSubtypes.has(rawType.toLowerCase()) ? 'Reaction' : (rawType || 'Pathway');
+    const spriteType = reactionSubtypes.has(rawType.toLowerCase())
+      ? 'Reaction'
+      : rawType || 'Pathway';
     return `sprite sprite-resize sprite-${spriteType}`;
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-      return `https://dev.reactome.org/icon/${entry.stId}.svg`;
+    return `https://dev.reactome.org/icon/${entry.stId}.svg`;
   }
 
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
-    return this.results.results.flatMap(g => this.filterDeletedEntries(g.entries));
+    return this.results.results.flatMap((g) =>
+      this.filterDeletedEntries(g.entries)
+    );
   }
 
   toggleFacet(category: string, value: string): void {
@@ -295,7 +435,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       current.push(value);
     }
 
-    this.updateQueryParams({ [category]: current.length ? current : null, page: null });
+    this.updateQueryParams({
+      [category]: current.length ? current : null,
+      page: null,
+    });
   }
 
   isFacetSelected(category: string, value: string): boolean {
@@ -316,14 +459,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.collapsedGroups[group] = !this.collapsedGroups[group];
   }
 
-  toggleAdvancedMode(): void {
-    this.advancedMode = !this.advancedMode;
-  }
+  // toggleAdvancedMode(): void {
+  //   this.advancedMode = !this.advancedMode;
+  // }
 
   private filterDeletedEntries(entries: SearchEntry[]): SearchEntry[] {
     if (!entries?.length) return [];
 
-    const nonDeleted = entries.filter(e => !e.deleted);
+    const nonDeleted = entries.filter((e) => !e.deleted);
     if (nonDeleted.length > 0) {
       return nonDeleted;
     }
@@ -331,7 +474,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return entries;
   }
 
-  private updateQueryParams(params: Record<string, string | string[] | null>): void {
+  private updateQueryParams(
+    params: Record<string, string | string[] | null>
+  ): void {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
@@ -339,7 +484,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  getFacetItems(facet: { selected: FacetCount[]; available: FacetCount[] } | undefined): FacetCount[] {
+  getFacetItems(
+    facet: { selected: FacetCount[]; available: FacetCount[] } | undefined
+  ): FacetCount[] {
     if (!facet) return [];
     return [...(facet.selected || []), ...(facet.available || [])];
   }
@@ -363,10 +510,18 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getDetailLink(entry: SearchEntry): string {
+    if (this.currentMode === 'reference') {
+      const id = entry.id || entry.stId;
+      if (entry.exactType === 'Interactor')
+        return '/content/detail/interactor/' + id;
+      if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
+      return '/content/detail/' + id;
+    }
     //Remove HTML tags from entry.stId if present
     entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
 
-    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
+    if (entry.exactType === 'Interactor')
+      return '/content/detail/interactor/' + entry.stId;
     if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
     return '/content/detail/' + entry.stId;
   }
@@ -387,6 +542,92 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return pages;
   }
 
+  getReferencePageNumbers(): (number | '...')[] {
+    return this.buildPageNumbers(this.currentPage, this.totalPages);
+  }
+
+  private buildPageNumbers(current: number, total: number): (number | '...')[] {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i);
+    }
+
+    const pages: (number | '...')[] = [0];
+
+    if (current > 2) {
+      pages.push('...');
+    }
+
+    const start = Math.max(1, current - 1);
+    const end = Math.min(total - 2, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 3) {
+      pages.push('...');
+    }
+
+    pages.push(total - 1);
+    return pages;
+  }
+
+  // Per-group pagination
+  getGroupPage(group: ResultGroup): number {
+    return this.groupPages[group.typeName] || 0;
+  }
+
+  getGroupTotalPages(group: ResultGroup): number {
+    if (group.typeName === 'Protein') {
+      return Math.ceil(this.uniqueProteins.length / this.groupPageSize) || 1;
+    }
+    return Math.ceil(group.entriesCount / this.groupPageSize);
+  }
+
+  getGroupPageEntries(group: ResultGroup): SearchEntry[] {
+    if (group.typeName === 'Protein') {
+      // While still loading all proteins, show nothing (loading message is displayed)
+      if (this.proteinLoading) return [];
+      const page = this.groupPages['Protein'] || 0;
+      const start = page * this.groupPageSize;
+      return this.uniqueProteins.slice(start, start + this.groupPageSize);
+    }
+    return (
+      this.groupPageEntries[group.typeName] ||
+      group.entries.slice(0, this.groupPageSize)
+    );
+  }
+
+  goToGroupPage(group: ResultGroup, page: number): void {
+    const total = this.getGroupTotalPages(group);
+    if (page < 0 || page >= total) return;
+    this.groupPages[group.typeName] = page;
+
+    // Protein group is paginated client-side — no server call needed
+    if (group.typeName === 'Protein') return;
+
+    this.groupLoading[group.typeName] = true;
+    this.searchService
+      .search(
+        this.query,
+        { ...this.filters, types: [group.typeName] },
+        page,
+        this.groupPageSize
+      )
+      .pipe(catchError(() => of(null)))
+      .subscribe((result) => {
+        this.groupLoading[group.typeName] = false;
+        if (!result?.results?.length) return;
+        this.groupPageEntries[group.typeName] = result.results[0].entries;
+      });
+  }
+
+  getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
+    return this.buildPageNumbers(
+      this.getGroupPage(group),
+      this.getGroupTotalPages(group)
+    );
+  }
+
   submitContactForm(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
@@ -399,7 +640,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const formData = new FormData(form);
     formData.set('h-captcha-response', this.captchaToken);
 
-    this.http.post('/content/contact', formData).subscribe({ //TODO: Post to the actual route
+    this.http.post('/content/contact', formData).subscribe({
+      //TODO: Post to the actual route
       next: () => {
         this.formSubmitted = true;
         this.resetCaptcha();
@@ -412,7 +654,6 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 }
-
 
 function toArray(value: string | string[] | undefined): string[] {
   if (!value) return [];

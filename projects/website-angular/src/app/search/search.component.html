@@ -4,20 +4,24 @@
       <!-- Search bar + filters above the two-column layout -->
       <div class="search-top">
         <div class="search-mode-tabs">
-          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+          <button class="mode-tab" [class.active]="currentMode === 'simple'" (click)="currentMode = 'simple'">
             <span class="material-symbols-rounded">search</span>
             Simple Search
           </button>
-          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+          <button class="mode-tab" [class.active]="currentMode === 'advanced'" (click)="currentMode = 'advanced'">
             <span class="material-symbols-rounded">tune</span>
             Advanced Search
           </button>
+          <button class="mode-tab" [class.active]="currentMode === 'reference'" (click)="currentMode = 'reference'">
+            <span class="material-symbols-rounded">menu_book</span>
+            Reference Search
+          </button>
         </div>
 
-        @if (advancedMode) {
-          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [advancedMode]="true"/>
+        @if (currentMode === 'advanced') {
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [currentMode]="currentMode"/>
         } @else {
-          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)"/>
+          <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [currentMode]="currentMode"/>
         }
       </div>
 
@@ -36,7 +40,7 @@
       }
 
       <!-- Result count + group toggle -->
-      @if (results && !loading) {
+      @if (results && !loading && currentMode !== "reference") {
         <div class="results-toolbar">
           <p class="result-count">{{ results.numberOfMatches }} results found for "{{ query }}"</p>
           @if (!hasNoResults) {
@@ -273,11 +277,151 @@ NOTE: This is an automatically generated message.
                   <app-tile variant="light">
                     <div class="result-group">
                       <button class="group-header" (click)="toggleGroup(group.typeName)">
-                        <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                        @if (currentMode === 'reference') {
+                          @if (group.typeName === 'Protein' && !proteinLoading && uniqueProteins.length) {
+                            <h2>{{ group.typeName }} — {{ uniqueProteins.length }} protein{{ uniqueProteins.length === 1 ? '' : 's' }}, {{ proteinTotalForms }} form{{ proteinTotalForms === 1 ? '' : 's' }}</h2>
+                          } @else {
+                            <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                          }
+                        } @else {
+                          <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                        }
                         <span class="group-toggle">{{ collapsedGroups[group.typeName] ? '+' : '−' }}</span>
                       </button>
                       @if (!collapsedGroups[group.typeName]) {
-                        <div class="group-entries">
+                        @if (currentMode === 'reference') {
+                          <div class="group-entries" [class.loading]="groupLoading[group.typeName] || (group.typeName === 'Protein' && proteinLoading)">
+                          @if (group.typeName === 'Protein' && proteinLoading) {
+                            <div class="protein-loading-msg">Loading all protein forms...</div>
+                          }
+                          @for (entry of getGroupPageEntries(group); track entry.dbId) {
+                            <div class="search-entry">
+                              <div class="type-icon">
+                                <i [class]="getSpriteClass(entry)" title="Icon"></i>
+                              </div>
+                              <div class="entry-info">
+                                <div class="entry-header">
+                                @if (entry.deleted) {
+                                  <mat-icon class="deleted-icon">delete</mat-icon>
+                                  <span class="deleted" [innerHTML]="entry.stId"></span>
+                                  @if (entry.replacementStIds?.length) {
+                                    ⇒
+                                    <a
+                                      [routerLink]="['/content/detail', entry.replacementStIds[0]]"
+                                      title="Go to replacement">
+                                      {{ entry.replacementStIds[0] }}
+                                    </a>
+                                  }
+
+                                } @else {
+                                  <a class="entry-name"
+                                    [routerLink]="getDetailLink(entry)"
+                                    [innerHTML]="entry.name || entry.referenceName">
+                                  </a>
+                                  <span class="entry-id" [innerHTML]="entry.stId || entry.id"></span>
+                                }
+                              </div>
+                              @if (entry.deleted && entry.date) {
+                                <div class="deleted-date">
+                                  <b>Deleted on</b>
+                                  {{ entry.date | date:'MMM d, y, h:mm:ss a' }}
+                                </div>
+                              }
+                              @if (entry.species?.length) {
+                                <div class="entry-species">
+                                  @for (sp of entry.species; track sp; let last = $last) {
+                                    <span class="species-tag">{{ sp }}</span>
+                                  }
+                                </div>
+                              }
+                              @if (entry.compartmentNames?.length) {
+                                <div class="entry-compartments">
+                                  Compartments: {{ entry.compartmentNames.join(', ') }}
+                                </div>
+                              }
+                              @if (entry.iconCuratorName) {
+                                <div class="entry-compartments">Curator: <a  [href]="'https://orcid.org/' + entry.iconCuratorOrcidId" target="_blank" rel="noopener">
+                                  {{ entry.iconCuratorName }}
+                                </a></div>
+                              }
+                              @if (entry.iconDesignerName) {
+                                <div class="entry-compartments">Designer: <a  [href]="entry.iconDesignerUrl" target="_blank" rel="noopener">
+                                  {{ entry.iconDesignerName }}
+                                </a></div>
+                              }
+                              @if (entry.summation) {
+                                <p class="entry-summation" [innerHTML]="entry.summation"></p>
+                              }
+                              @if (entry.referenceName || entry.databaseName) {
+                                <div class="entry-reference">
+                                  Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener"><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{ entry.referenceIdentifier }})</a>
+                                </div>
+                              }
+                              @if (entry.type === 'Protein' && entry.referenceIdentifier && getProteinFormCount(entry) > 1) {
+                                <button class="forms-toggle" (click)="toggleForms(entry)">
+                                  <span class="material-symbols-rounded">{{ isFormsExpanded(entry) ? 'expand_less' : 'expand_more' }}</span>
+                                  {{ getProteinFormCount(entry) }} modified form{{ getProteinFormCount(entry) === 1 ? '' : 's' }}
+                                </button>
+                                @if (isFormsExpanded(entry)) {
+                                  <div class="protein-forms">
+                                    @for (form of getProteinForms(entry); track form.dbId) {
+                                      <div class="protein-form-entry">
+                                        <a class="form-name" [routerLink]="getDetailLink(form)" [innerHTML]="form.name"></a>
+                                        <span class="form-id">{{ form.id || form.stId }}</span>
+                                        @if (form.compartmentNames?.length) {
+                                          <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                        }
+                                      </div>
+                                    }
+                                  </div>
+                                }
+                              }
+                              </div>
+                              @if (entry.exactType == "Icon") {
+                              <div class="icon-preview">
+                                <img [src]="iconSvgUrl(entry)" [alt]="entry.stId" loading="lazy" (error)="onImgError($event)" width="100" height="auto"/>
+                              </div>
+                            }
+                            </div>
+                          }
+                        </div>
+                        @if (getGroupTotalPages(group) > 1 && !(group.typeName === 'Protein' && proteinLoading)) {
+                          <nav class="group-pagination">
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === 0"
+                              (click)="goToGroupPage(group, 0)"
+                            >First</button>
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === 0"
+                              (click)="goToGroupPage(group, getGroupPage(group) - 1)"
+                            >Prev</button>
+                            @for (p of getGroupPageNumbers(group); track $index) {
+                              @if (p === '...') {
+                                <span class="page-ellipsis">...</span>
+                              } @else {
+                                <button
+                                  class="page-btn"
+                                  [class.active]="p === getGroupPage(group)"
+                                  (click)="goToGroupPage(group, +p)"
+                                >{{ +p + 1 }}</button>
+                              }
+                            }
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === getGroupTotalPages(group) - 1"
+                              (click)="goToGroupPage(group, getGroupPage(group) + 1)"
+                            >Next</button>
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === getGroupTotalPages(group) - 1"
+                              (click)="goToGroupPage(group, getGroupTotalPages(group) - 1)"
+                            >Last</button>
+                          </nav>
+                        }
+                        } @else {
+                          <div class="group-entries">
                           @for (entry of group.entries; track entry.dbId) {
                             <div class="search-entry">
                               <div class="type-icon">
@@ -300,9 +444,9 @@ NOTE: This is an automatically generated message.
                                 } @else {
                                   <a class="entry-name"
                                     [routerLink]="getDetailLink(entry)"
-                                    [innerHTML]="entry.name">
+                                    [innerHTML]="entry.name || entry.referenceName">
                                   </a>
-                                  <span class="entry-id" [innerHTML]="entry.stId"></span>
+                                  <span class="entry-id" [innerHTML]="entry.stId || entry.id"></span>
                                 }
 
                               </div>
@@ -351,6 +495,7 @@ NOTE: This is an automatically generated message.
                             </div>
                            }
                         </div>
+                        }
                       }
                     </div>
                   </app-tile>
@@ -385,6 +530,25 @@ NOTE: This is an automatically generated message.
                             Reference: <a [href]="entry.referenceURL" target="_blank" rel="noopener"><span [innerHTML]="entry.referenceName"></span> ({{ entry.referenceIdentifier }})</a>
                           </div>
                         }
+                        @if (currentMode === 'reference' && entry.type === 'Protein' && entry.referenceIdentifier && getProteinFormCount(entry) > 1) {
+                          <button class="forms-toggle" (click)="toggleForms(entry)">
+                            <span class="material-symbols-rounded">{{ isFormsExpanded(entry) ? 'expand_less' : 'expand_more' }}</span>
+                            {{ getProteinFormCount(entry) }} modified form{{ getProteinFormCount(entry) === 1 ? '' : 's' }}
+                          </button>
+                          @if (isFormsExpanded(entry)) {
+                            <div class="protein-forms">
+                              @for (form of getProteinForms(entry); track form.dbId) {
+                                <div class="protein-form-entry">
+                                  <a class="form-name" [routerLink]="getDetailLink(form)" [innerHTML]="form.name"></a>
+                                  <span class="form-id">{{ form.id || form.stId }}</span>
+                                  @if (form.compartmentNames?.length) {
+                                    <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        }
                       </div>
                     }
                   </div>
@@ -394,7 +558,44 @@ NOTE: This is an automatically generated message.
 
             <!-- Pagination -->
             @if (totalPages > 1) {
-              <nav class="pagination">
+              @if (currentMode === 'reference') {
+                <nav class="pagination">
+                    <button
+                      class="page-btn"
+                      [disabled]="currentPage === 0"
+                      (click)="goToPage(0)"
+                    >First</button>
+                    <button
+                      class="page-btn"
+                      [disabled]="currentPage === 0"
+                      (click)="goToPage(currentPage - 1)"
+                    >Prev</button>
+
+                    @for (p of getPageNumbers(); track $index) {
+                      @if (p === '...') {
+                        <span class="page-ellipsis">...</span>
+                      } @else {
+                        <button
+                          class="page-btn"
+                          [class.active]="p === currentPage"
+                          (click)="goToPage(+p)"
+                        >{{ +p + 1 }}</button>
+                      }
+                    }
+
+                    <button
+                      class="page-btn"
+                      [disabled]="currentPage === totalPages - 1"
+                      (click)="goToPage(currentPage + 1)"
+                    >Next</button>
+                    <button
+                      class="page-btn"
+                      [disabled]="currentPage === totalPages - 1"
+                      (click)="goToPage(totalPages - 1)"
+                    >Last</button>
+                  </nav>
+              } @else {
+                <nav class="pagination">
                 <button
                   class="page-btn"
                   [disabled]="currentPage === 0"
@@ -426,6 +627,7 @@ NOTE: This is an automatically generated message.
                 >Last</button>
               </nav>
             }
+            }
           }
         </div>
       </div>
@@ -435,23 +637,27 @@ NOTE: This is an automatically generated message.
         <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
 
         <div class="search-mode-tabs">
-          <button class="mode-tab" [class.active]="!advancedMode" (click)="advancedMode && toggleAdvancedMode()">
+          <button class="mode-tab" [class.active]="currentMode === 'simple'" (click)="currentMode = 'simple'">
             <span class="material-symbols-rounded">search</span>
             Simple Search
           </button>
-          <button class="mode-tab" [class.active]="advancedMode" (click)="!advancedMode && toggleAdvancedMode()">
+          <button class="mode-tab" [class.active]="currentMode === 'advanced'" (click)="currentMode = 'advanced'">
             <span class="material-symbols-rounded">tune</span>
             Advanced Search
           </button>
+          <button class="mode-tab" [class.active]="currentMode === 'reference'" (click)="currentMode = 'reference'">
+            <span class="material-symbols-rounded">menu_book</span>
+            Reference Search
+          </button>
         </div>
 
-        @if (advancedMode) {
+        @if (currentMode === 'advanced') {
           <div class="advanced-panel">
-            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [advancedMode]="true" [filters]="true" [showSuggestions]="true"/>
+            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [currentMode]="currentMode" [filters]="true" [showSuggestions]="true"/>
           </div>
         } @else {
           <div class="empty-search-bar">
-            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [filters]="true" [showSuggestions]="true"/>
+            <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [currentMode]="currentMode" [filters]="true" [showSuggestions]="true"/>
           </div>
         }
       </div>
