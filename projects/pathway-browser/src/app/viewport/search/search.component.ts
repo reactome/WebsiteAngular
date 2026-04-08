@@ -193,7 +193,7 @@ export class SearchComponent {
     this.searchText.set(searchText);
     if (event) event.preventDefault();
     this.collapsed.set('opened')
-    console.log('searching', searchText);
+    // console.log('searching', searchText);
     this.typeFilter.set([])
     this.selectedResult.set(undefined)
     this.searchParams.set({
@@ -487,7 +487,9 @@ export namespace Search {
       isDisease: boolean;
       hasEHLD?: boolean;
       hasReferenceEntity: boolean;
-      disease: boolean
+      disease: boolean;
+      deleted: boolean;
+      date: number;
     }
 
     export interface EntryResult {

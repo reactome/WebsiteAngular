@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import {AnalysisService} from "../../../services/analysis.service";
 import {MatTableDataSource, MatTableModule} from "@angular/material/table";
-import {Analysis} from "../../../model/analysis.model";
+import type {Analysis} from "../../../model/analysis.model";
 import {MatPaginator, MatPaginatorModule} from "@angular/material/paginator";
 import {MatSort, MatSortModule, Sort} from "@angular/material/sort";
 import {DecimalPipe} from "@angular/common";
@@ -148,29 +148,29 @@ export class ResultTabComponent {
     let size = data.length
     if (this.includeGrouping() === false) {
       data = data.filter(p => p.llp)
-      console.log('Filter llp', size, '==>', data.length)
+      //console.log('Filter llp', size, '==>', data.length)
       size = data.length
     }
     if (this.includeDisease() === false) {
       data = data.filter(p => !p.inDisease)
-      console.log('Filter disease', size, '==>', data.length)
+      //console.log('Filter disease', size, '==>', data.length)
       size = data.length
     }
     if (this.state.fdrFilter() !== undefined) {
       data = data.filter(p => p.entities.fdr <= this.state.fdrFilter()!)
-      console.log('Filter fdr', size, '==>', data.length)
+      //console.log('Filter fdr', size, '==>', data.length)
     }
     if (this.state.minExpressionFilter() !== undefined) {
       data = data.filter(p => p.entities.exp[this.analysis.sampleIndex()] >= this.state.minExpressionFilter()!)
-      console.log('Filter minExpression', size, '==>', data.length)
+      //console.log('Filter minExpression', size, '==>', data.length)
     }
     if (this.state.maxExpressionFilter() !== undefined) {
       data = data.filter(p => p.entities.exp[this.analysis.sampleIndex()] <= this.state.maxExpressionFilter()!)
-      console.log('Filter minExpression', size, '==>', data.length)
+      //console.log('Filter minExpression', size, '==>', data.length)
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter(p => this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()]))
-      console.log('Filter gsa', size, '==>', data.length)
+      //console.log('Filter gsa', size, '==>', data.length)
     }
     return data
   })
@@ -182,15 +182,15 @@ export class ResultTabComponent {
     let size = data.length
     if (this.state.pathwayMinSizeFilter()) {
       data = data.filter(p => p.entities.total >= this.state.pathwayMinSizeFilter()!)
-      console.log('Filter min size', size, '==>', data.length)
+      //console.log('Filter min size', size, '==>', data.length)
       size = data.length
     }
     if (this.state.pathwayMaxSizeFilter()) {
       data = data.filter(p => p.entities.total <= this.state.pathwayMaxSizeFilter()!)
-      console.log('Filter max size', size, '==>', data.length)
+      //console.log('Filter max size', size, '==>', data.length)
       size = data.length
     }
-    console.log("Total filter", this.analysis.result()?.pathways.length, '==>', size)
+    //console.log("Total filter", this.analysis.result()?.pathways.length, '==>', size)
     return data;
   })
 
@@ -276,7 +276,7 @@ export class ResultTabComponent {
 
   visitPathway(pathway: Analysis.Pathway) {
     this.data.selectedPathwayStId.set(pathway.stId)
-    console.log("Navigating to " + pathway.stId)
+    //console.log("Navigating to " + pathway.stId)
     this.state.navigateTo(pathway.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
   }
 

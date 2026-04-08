@@ -1,7 +1,6 @@
 name: autofix.ci
 on:
   pull_request:
-  push:
 
 permissions:
   contents: write
@@ -30,6 +29,17 @@ jobs:
             echo "No files to format"
           fi
 
-      - uses: autofix-ci/action@v1
-        with:
-          commit-message: "Apply Prettier format"
+      - name: Commit formatted changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            # Check out the PR branch to avoid detached HEAD
+            git checkout ${{ github.head_ref }}
+            git add --all
+            git commit -m "chore: Apply Prettier formatting"
+            git push origin ${{ github.head_ref }}
+          else
+            echo "No formatting changes to commit"
+          fi

@@ -1,6 +1,6 @@
 import {Injectable, ResourceRef} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {TissueExperiment} from "./tissue-experiment.model";
+import type {TissueExperiment} from "./tissue-experiment.model";
 import {Observable} from "rxjs";
 import {environment} from "../../../../../environments/environment";
 import {rxResource} from "@angular/core/rxjs-interop";

@@ -1,10 +1,14 @@
+import { ENVIRONMENTS } from '../../../website-angular/src/config/environments';
+
+const env = ENVIRONMENTS.development;
+
 export const environment = {
   production: true,
-  host: "../..", // For go back from /beta/PathwayBrowser
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
-  gtagId: "G-96F1EYHQR3",
-  preferS3: false,
+  host: env.host,
+  s3: env.s3,
+  gsaServer: env.gsaServer,
+  gtagId: env.gtagId,
+  preferS3: env.preferS3
 };
 
 export const CONTENT_SERVICE = `${environment.host}/ContentService`;

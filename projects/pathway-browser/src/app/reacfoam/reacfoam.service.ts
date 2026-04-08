@@ -10,7 +10,7 @@ import {rxResource} from "@angular/core/rxjs-interop";
 import chroma from "chroma-js";
 import {AnalysisService} from "../services/analysis.service";
 import {DarkService} from "../services/dark.service";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {extract, Style} from "reactome-cytoscape-style";
 import {isArray} from "lodash";
 
@@ -115,13 +115,13 @@ export class ReacfoamService {
 
   fetchEventsHierarchy(species: Species, params: Partial<EventsHierarchy.QueryParams>): Observable<EventsHierarchy.Data[]> {
     cleanObject(params)
-    console.log('fetch events hierarchy')
+    //console.log('fetch events hierarchy')
     return this.http.get<EventsHierarchy.Data[]>(`${CONTENT_SERVICE}/data/eventsHierarchy/${species.taxId}`, {params})
   }
 
 
   fetchTLPLayoutMap(): Observable<Map<string, Layout.Data>> {
-    console.log('fetch tlp layout')
+    //console.log('fetch tlp layout')
     return this.http.get(LAYOUT_URL, {responseType: "text"}).pipe(
       map((text) => new Map(
           text.split("\n") // Split lines

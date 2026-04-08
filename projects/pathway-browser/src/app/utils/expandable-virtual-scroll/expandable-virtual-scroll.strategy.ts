@@ -11,14 +11,14 @@ export class ExpandableVirtualScrollStrategy extends FixedSizeVirtualScrollStrat
   private maxBufferPx: number = 200;
 
   constructor() {
-    console.log('Expandable Virtual Scroll Strategy.');
+    // console.log('Expandable Virtual Scroll Strategy.');
     super(28, 100, 200);
   }
 
   override attach(viewport: CdkVirtualScrollViewport): void {
     // super.attach(viewport);
     this.viewport = viewport;
-    console.log('Attempting to attach', viewport);
+    // console.log('Attempting to attach', viewport);
   }
 
   setItemHeight(index: number, height: number) {
@@ -28,7 +28,7 @@ export class ExpandableVirtualScrollStrategy extends FixedSizeVirtualScrollStrat
       } else {
         this._indexToHeight.set(index, height);
       }
-      console.log(index, height);
+      // console.log(index, height);
       this._updateViewport();
     }
   }

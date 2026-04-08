@@ -2,7 +2,7 @@ import {DatabaseObject} from "../database-object.model";
 import {InstanceEdit} from "../instance-edit.model";
 import {CatalystActivity} from "../catalyst-activity.model";
 import {CellType} from "../external-ontology/cell-type.model";
-import {Relationship} from "../relationship.model";
+import type {Relationship} from "../relationship.model";
 import {DatabaseIdentifier} from "../database-identifier.model";
 import {Disease} from "../external-ontology/disease.model";
 import {MarkerReference} from "../control-reference/marker-reference.model";

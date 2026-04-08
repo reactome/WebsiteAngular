@@ -10,7 +10,7 @@ import {
   TemplateRef,
   viewChild
 } from '@angular/core';
-import {Analysis} from "../../../model/analysis.model";
+import type {Analysis} from "../../../model/analysis.model";
 import {IconService} from "../../../services/icon.service";
 import {
   getProperty,
@@ -20,7 +20,8 @@ import {
   isPhysicalEntity,
   isReferenceSequence,
   isReferenceSummary,
-  isRLE, observeSections
+  isRLE,
+  observeSections
 } from "../../../services/utils";
 import {DatabaseObject} from "../../../model/graph/database-object.model";
 import {ReferenceEntity} from "../../../model/graph/reference-entity/reference-entity.model";
@@ -37,7 +38,7 @@ import {CatalystActivity} from "../../../model/graph/catalyst-activity.model";
 import {CatalystActivityReference} from "../../../model/graph/control-reference/catalyst-activity-reference.model";
 import {Regulation} from "../../../model/graph/Regulation/regulation.model";
 import {RegulationReference} from "../../../model/graph/control-reference/regulation-reference.model";
-import {Relationship} from "../../../model/graph/relationship.model";
+import type {Relationship} from "../../../model/graph/relationship.model";
 import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
 import {
   EntityWithAccessionedSequence
@@ -49,7 +50,6 @@ import {CONTENT_DETAIL, environment} from "../../../../environments/environment"
 import {SpeciesService} from "../../../services/species.service";
 import {Summation} from "../../../model/graph/summation.model";
 import {FigureService} from "./figure/figure.service";
-import HasModifiedResidue = Relationship.HasModifiedResidue;
 import {KeyValuePipe, NgClass, NgTemplateOutlet} from "@angular/common";
 import {RouterLink} from "@angular/router";
 import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
@@ -66,7 +66,6 @@ import {RefsTreeComponent} from "../../common/refs-tree/refs-tree.component";
 import {PublicationComponent} from "../../common/publication/publication.component";
 import {CrossReferencesComponent} from "../../common/cross-references/cross-references.component";
 import {ExternalReferenceComponent} from "../../common/external-reference/external-reference.component";
-import {ObjectTreeComponent} from "../../common/object-tree/object-tree.component";
 import {ControllerTreeComponent} from "../../common/controller-tree/controller-tree.component";
 import {MolecularProcessComponent} from "../../common/molecular-process/molecular-process.component";
 import {CellMarkerComponent} from "../../common/cell-marker/cell-marker.component";
@@ -76,9 +75,9 @@ import {InteractorsTableComponent} from "../../common/interactors-table/interact
 import {
   LocationsTreeComponent
 } from "../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component";
-import {
-  ReactionDiagramComponent
-} from "../../common/reaction-diagram/reaction-diagram.component";
+import {ReactionDiagramComponent} from "../../common/reaction-diagram/reaction-diagram.component";
+
+type HasModifiedResidue = Relationship.HasModifiedResidue;
 
 
 @Component({

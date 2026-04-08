@@ -19,7 +19,7 @@ import {
 import {UrlStateService} from "./url-state.service";
 import {Event} from "../model/graph/event/event.model";
 import {MatTree} from "@angular/material/tree";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {AnalysisService} from "./analysis.service";
 import {EhldService} from "./ehld.service";
 import {TopLevelPathway} from "../model/graph/event/top-level-pathway.model";
@@ -27,10 +27,10 @@ import {DatabaseObject} from "../model/graph/database-object.model";
 import {isDefined, isPathway, isPhysicalEntity, isRLE} from "./utils";
 import {DatabaseObjectService} from "./database-object.service";
 import {PhysicalEntity} from "../model/graph/physical-entity/physical-entity.model";
-import {Relationship} from "../model/graph/relationship.model";
+import type {Relationship} from "../model/graph/relationship.model";
 import {toObservable} from "@angular/core/rxjs-interop";
 import {Pathway} from "../model/graph/event/pathway.model";
-import HasEvent = Relationship.HasEvent;
+type HasEvent = Relationship.HasEvent;
 import {SummaryEntity} from "../model/graph/physical-entity/summary-entity.model";
 
 
@@ -360,7 +360,7 @@ export class EventService {
       : object.stId;
     this.dboService.setCurrentObj(object);
 
-    console.log('Build tree with selected event', idToBuild);
+    // console.log('Build tree with selected event', idToBuild);
     const ancestors = idToBuild
       ? this.fetchEventAncestors(idToBuild).pipe(map(ancestors => this.getFinalAncestor(ancestors, diagramId ? [diagramId] : undefined)))
       : from([[] as Event[]]);

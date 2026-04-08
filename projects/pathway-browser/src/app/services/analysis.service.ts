@@ -2,7 +2,7 @@ import {computed, effect, inject, Injectable, linkedSignal, signal, WritableSign
 import {catchError, EMPTY, Observable, of, switchMap, tap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../environments/environment";
-import {Analysis} from "../model/analysis.model";
+import type {Analysis} from "../model/analysis.model";
 import {UrlStateService} from "./url-state.service";
 import chroma, {Color, Scale} from "chroma-js";
 import {extract, Style} from "reactome-cytoscape-style";
@@ -15,7 +15,7 @@ import {isDefined, shouldBeScientificFormat} from "./utils";
 import {Report} from "reactome-gsa-form/lib/model/report-status.model";
 import {Species} from "../model/graph/species.model";
 import {SpeciesService} from "./species.service";
-import NotFoundIdentifier = Analysis.NotFoundIdentifier;
+type NotFoundIdentifier = Analysis.NotFoundIdentifier;
 
 export interface Pagination extends Params {
   page: number,
@@ -245,7 +245,7 @@ export class AnalysisService {
       species: this.state.speciesFilter()
     }),
     loader: ({request, previous}) => {
-      console.log("Loading ", request, previous)
+      //console.log("Loading ", request, previous)
       return request.token ?
         this.loadAnalysis(request.token, {
           resource: request.resource || undefined,
@@ -323,7 +323,7 @@ export class AnalysisService {
 
     effect(() => {
       const result = this.result();
-      console.log('Result updated', result)
+      //console.log('Result updated', result)
       if (!result) return
       const validGroups: Set<PaletteGroup> = new Set();
       if (result.summary.type === 'GSA_REGULATION') {

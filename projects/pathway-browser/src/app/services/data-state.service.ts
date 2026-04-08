@@ -96,7 +96,7 @@ export class DataStateService {
       diagram: this.state.pathwayId(),
       species: this.species.currentSpecies().displayName,
     })
-    console.log('updating request', params);
+    // console.log('updating request', params);
     return params;
   })
 
@@ -155,8 +155,8 @@ export class DataStateService {
 
 
   constructor(private state: UrlStateService, private http: HttpClient, private species: SpeciesService) {
-    effect(() => console.log('Flagging', this.flagIdentifiers()));
-    effect(() => console.log('Flagging error', this.flagResource.error()));
+    // effect(() => console.log('Flagging', this.flagIdentifiers()));
+    // effect(() => console.log('Flagging error', this.flagResource.error()));
     effect(() => {
       if (this._selectedElement.error()) this.state.select.set(null); // If selection doesn't exist (wrong id), we remove selection
     });

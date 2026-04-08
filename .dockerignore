@@ -1,0 +1,9 @@
+node_modules
+.angular
+.git
+dist
+.vscode
+npm-debug.log
+# Add these for TinaCMS
+.tina/__generated__
+.tina/out

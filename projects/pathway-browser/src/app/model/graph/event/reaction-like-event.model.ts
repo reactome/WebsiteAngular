@@ -1,6 +1,6 @@
 import {Event} from "./event.model";
 import {PhysicalEntity} from "../physical-entity/physical-entity.model";
-import {Relationship} from "../relationship.model";
+import type {Relationship} from "../relationship.model";
 import {Anatomy} from "../external-ontology/anatomy.model";
 
 export interface ReactionLikeEvent extends Event {
