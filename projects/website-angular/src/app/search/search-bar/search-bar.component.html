@@ -1,4 +1,4 @@
-@if (!advancedMode) {
+@if (currentMode === 'simple' || currentMode === 'reference') {
 <form class="search-bar-container" (submit)="onSubmit($event)">
   <input
     type="text"
@@ -47,7 +47,7 @@
     }
   </ul>
 </div>
-} @if (advancedMode) {
+} @if (currentMode === 'advanced') {
 <button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
   <span class="material-symbols-rounded">help_outline</span>
   Syntax Help

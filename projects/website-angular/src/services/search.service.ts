@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface SearchEntry {
   dbId: number;
   stId: string;
+  id: string;
   name: string;
   type: string;
   exactType: string;

@@ -241,6 +241,11 @@ $border-radius: 8px;
 
 .group-entries {
   margin-top: 16px;
+
+    &.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 }
 
 .type-icon {
@@ -525,6 +530,84 @@ $border-radius: 8px;
   :host-context(.dark) & {
     border-top-color: rgba(255, 255, 255, 0.08);
   }
+}
+
+// Collapsible protein forms
+.forms-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 2px 8px 2px 2px;
+  border: none;
+  background: none;
+  color: var(--on-surface-variant);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
+
+  &:hover {
+    color: var(--primary);
+    background: rgba(0, 0, 0, 0.04);
+
+    :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+}
+
+.protein-forms {
+  margin-top: 4px;
+  margin-left: 16px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 0, 0, 0.1);
+  max-height: 400px;
+  overflow-y: auto;
+
+  :host-context(.dark) & {
+    border-left-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.protein-form-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+
+.form-name {
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.form-id {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  font-family: monospace;
+}
+
+.form-compartment {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  font-style: italic;
+}
+
+.protein-loading-msg {
+  padding: 12px 0;
+  color: var(--on-surface-variant);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .entry-info {
@@ -1229,6 +1312,21 @@ $border-radius: 8px;
 
 
 // Pagination
+
+// Per-group pagination
+.group-pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+  :host-context(.dark) & {
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -1266,6 +1364,13 @@ $border-radius: 8px;
     opacity: 0.4;
     cursor: not-allowed;
   }
+}
+
+.page-ellipsis {
+  padding: 6px 4px;
+  color: var(--on-surface-variant);
+  font-size: 0.85rem;
+  user-select: none;
 }
 
 // Responsive

@@ -14,10 +14,10 @@ import {
   FacetResponse,
   SearchFilters,
   FacetCount,
+  ResultGroup,
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from "@angular/material/icon";
-import { IconEntry } from '../../services/icon.service';
 
 @Component({
   selector: 'app-search',
@@ -63,8 +63,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
+  expandedForms: Record<string, boolean> = {};
+  groupPages: Record<string, number> = {};
+  groupPageSize = 10;
+  groupPageEntries: Record<string, SearchEntry[]> = {};
+  groupLoading: Record<string, boolean> = {};
 
-  advancedMode = false;
+  // Protein deduplication: all forms grouped by referenceIdentifier
+  proteinForms = new Map<string, SearchEntry[]>();
+  uniqueProteins: SearchEntry[] = [];
+  proteinTotalForms = 0;
+  proteinLoading = false;
+
+  currentMode: 'simple' | 'advanced' | 'reference' = "simple";
 
   private paramsSub!: Subscription;
 
@@ -89,10 +100,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         keywords: toArray(params['keywords']),
       };
 
-      if (params['advanced'] === 'true' && !this.advancedMode) {
-        this.toggleAdvancedMode();
-      } else if (params['advanced'] !== 'true' && this.advancedMode) {
-        this.advancedMode = false;
+      if (params['advanced'] === 'true' && this.currentMode !== 'advanced') {
+        this.currentMode = 'advanced';
+      } else if (params['reference'] === 'true' && this.currentMode !== 'reference') {
+        this.currentMode = 'reference';
+      } else {
+        this.currentMode = 'simple';
       }
 
       if (this.query) {
@@ -231,10 +244,27 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           );
           this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
           this.error = '';
+
+          // Reset per-group pagination state
+          this.groupPages = {};
+          this.groupPageEntries = {};
+          this.groupLoading = {};
+          this.expandedForms = {};
+
+          // If there's a Protein group, fetch ALL protein entries for deduplication
+          const proteinGroup = this.results.results.find(g => g.typeName === 'Protein');
+          if (proteinGroup && proteinGroup.entriesCount > 0) {
+            this.fetchAllProteins(proteinGroup.entriesCount);
+          } else {
+            this.proteinForms = new Map();
+            this.uniqueProteins = [];
+            this.proteinTotalForms = 0;
+          }
         }
         this.loading = false;
       },
       error: (err) => {
+        console.error('Search error:', err);
         this.error = 'An error occurred while searching. Please try again.';
         this.hasNoResults = false;
         this.results = null;
@@ -257,6 +287,74 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     // For other errors, return null
     return of(null);
   }
+
+  private fetchAllProteins(totalCount: number): void {
+    this.proteinLoading = true;
+    this.proteinForms = new Map();
+    this.uniqueProteins = [];
+    this.proteinTotalForms = 0;
+
+    const batchSize = 500;
+    const proteinFilters = { ...this.filters, types: ['Protein'] };
+
+    const batchRequests: Observable<SearchResult | null>[] = [];
+    for (let offset = 0; offset < totalCount; offset += batchSize) {
+      const batchPage = Math.floor(offset / batchSize);
+      batchRequests.push(
+        this.searchService.search(this.query, proteinFilters, batchPage, batchSize).pipe(
+          catchError(() => of(null))
+        )
+      );
+    }
+
+    forkJoin(batchRequests).subscribe((results) => {
+      const allProteins: SearchEntry[] = [];
+      for (const result of results) {
+        if (!result?.results?.length) continue;
+        const group = result.results.find(g => g.typeName === 'Protein');
+        if (group) allProteins.push(...group.entries);
+      }
+
+      // Group by referenceIdentifier
+      const formsMap = new Map<string, SearchEntry[]>();
+      const representativeMap = new Map<string, SearchEntry>();
+
+      for (const entry of allProteins) {
+        const key = entry.referenceIdentifier || entry.id || entry.stId;
+        if (!formsMap.has(key)) {
+          formsMap.set(key, []);
+          representativeMap.set(key, entry);
+        }
+        formsMap.get(key)!.push(entry);
+      }
+
+      this.proteinForms = formsMap;
+      this.uniqueProteins = [...representativeMap.values()];
+      this.proteinTotalForms = allProteins.length;
+      this.proteinLoading = false;
+    });
+  }
+
+  toggleForms(entry: SearchEntry): void {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    this.expandedForms[key] = !this.expandedForms[key];
+  }
+
+  getProteinForms(entry: SearchEntry): SearchEntry[] {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    return this.proteinForms.get(key) || [];
+  }
+
+  getProteinFormCount(entry: SearchEntry): number {
+    return this.getProteinForms(entry).length;
+  }
+
+  isFormsExpanded(entry: SearchEntry): boolean {
+    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    return !!this.expandedForms[key];
+  }
+
+
 
   getSpriteClass(entry: SearchEntry): string {
     const reactionSubtypes = new Set([
@@ -316,9 +414,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.collapsedGroups[group] = !this.collapsedGroups[group];
   }
 
-  toggleAdvancedMode(): void {
-    this.advancedMode = !this.advancedMode;
-  }
+  // toggleAdvancedMode(): void {
+  //   this.advancedMode = !this.advancedMode;
+  // }
 
   private filterDeletedEntries(entries: SearchEntry[]): SearchEntry[] {
     if (!entries?.length) return [];
@@ -363,6 +461,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getDetailLink(entry: SearchEntry): string {
+    if (this.currentMode === 'reference') {
+      const id = entry.id || entry.stId;
+      if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
+      if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
+      return '/content/detail/' + id;
+    }
     //Remove HTML tags from entry.stId if present
     entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
 
@@ -386,6 +490,83 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     return pages;
   }
+
+    getReferencePageNumbers(): (number | '...')[] {
+    return this.buildPageNumbers(this.currentPage, this.totalPages);
+  }
+
+  private buildPageNumbers(current: number, total: number): (number | '...')[] {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i);
+    }
+
+    const pages: (number | '...')[] = [0];
+
+    if (current > 2) {
+      pages.push('...');
+    }
+
+    const start = Math.max(1, current - 1);
+    const end = Math.min(total - 2, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 3) {
+      pages.push('...');
+    }
+
+    pages.push(total - 1);
+    return pages;
+  }
+
+    // Per-group pagination
+  getGroupPage(group: ResultGroup): number {
+    return this.groupPages[group.typeName] || 0;
+  }
+
+  getGroupTotalPages(group: ResultGroup): number {
+    if (group.typeName === 'Protein') {
+      return Math.ceil(this.uniqueProteins.length / this.groupPageSize) || 1;
+    }
+    return Math.ceil(group.entriesCount / this.groupPageSize);
+  }
+
+  getGroupPageEntries(group: ResultGroup): SearchEntry[] {
+    if (group.typeName === 'Protein') {
+      // While still loading all proteins, show nothing (loading message is displayed)
+      if (this.proteinLoading) return [];
+      const page = this.groupPages['Protein'] || 0;
+      const start = page * this.groupPageSize;
+      return this.uniqueProteins.slice(start, start + this.groupPageSize);
+    }
+    return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
+  }
+
+  goToGroupPage(group: ResultGroup, page: number): void {
+    const total = this.getGroupTotalPages(group);
+    if (page < 0 || page >= total) return;
+    this.groupPages[group.typeName] = page;
+
+    // Protein group is paginated client-side — no server call needed
+    if (group.typeName === 'Protein') return;
+
+    this.groupLoading[group.typeName] = true;
+    this.searchService
+      .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
+      .pipe(catchError(() => of(null)))
+      .subscribe((result) => {
+        this.groupLoading[group.typeName] = false;
+        if (!result?.results?.length) return;
+        this.groupPageEntries[group.typeName] = result.results[0].entries;
+      });
+  }
+
+  getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
+    return this.buildPageNumbers(this.getGroupPage(group), this.getGroupTotalPages(group));
+  }
+
+
 
   submitContactForm(event: Event): void {
     event.preventDefault();
