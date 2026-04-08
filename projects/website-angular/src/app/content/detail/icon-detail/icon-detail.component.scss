@@ -60,6 +60,23 @@
       padding: 6px 0;
       border-bottom: 1px solid var(--outline, #eee);
 
+      .download-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--primary);
+        text-decoration: none;
+        margin-right: 16px;
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        .material-symbols-rounded {
+          font-size: 16px;
+        }
+      }
+
       .icon-preview {
         display: flex;
         flex: 1;

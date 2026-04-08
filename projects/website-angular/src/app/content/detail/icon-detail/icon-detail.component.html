@@ -15,16 +15,27 @@
         <h1>{{ icon()!.name }}</h1>
         <dl class="summary-fields">
           <div class="summary-row">
-              <dd class="icon-preview">
-                <img [src]="getSvgUrl()" [alt]="icon()!.name" />
-              </dd>
+            <dt>Preview</dt>
+            <dd>
+              <a class="download-link" [href]="getPngUrl()" download="{{ icon()!.name }}.png" title="Click to download PNG">
+                <span class="material-symbols-rounded">download</span>
+                PNG
+              </a>
+              <a class="download-link" [href]="getSvgUrl()" download="{{ icon()!.name }}.svg" title="Click to download SVG">
+                <span class="material-symbols-rounded">download</span>
+                SVG
+              </a>
+            </dd>
+            <div class="icon-preview">
+              <img [src]="getSvgUrl()" [alt]="icon()!.name" />
+            </div>
           </div>
           <div class="summary-row">
             @if (icon()!.iconCategories?.length) {
             <dt>Categories</dt>
             <dd>
               @for (cat of icon()!.iconCategories; track cat) {
-              <span class="category-tag">{{ cat }}</span>
+              <span>{{ cat }}</span>
               }
             </dd>
             }
@@ -38,7 +49,7 @@
           <div class="summary-row">
             @if (icon()!.iconCuratorName) {
             <div class="credit-item">
-              <span class="credit-label">Curator:</span>
+              <span class="credit-label">Curator</span>
               @if (icon()!.iconCuratorOrcidId) {
               <a
                 [href]="'https://orcid.org/' + icon()!.iconCuratorOrcidId"
@@ -57,7 +68,7 @@
           <div class="summary-row">
             @if (icon()!.iconDesignerName) {
             <div class="credit-item">
-              <span class="credit-label">Designer:</span>
+              <span class="credit-label">Designer</span>
               @if (icon()!.iconDesignerUrl) {
               <a
                 [href]="icon()!.iconDesignerUrl"
@@ -75,7 +86,7 @@
           </div>
           <div class="summary-row">
             @if (getUniProtReferences().length) {
-            <dt>External References:</dt>
+            <dt>External References</dt>
             <div class="references">
               @for (ref of getUniProtReferences(); track ref) {
               <a

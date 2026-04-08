@@ -45,6 +45,11 @@ export class IconDetailComponent implements OnInit {
     return stId ? `https://reactome.org/icon/${stId}.svg` : '';
   }
 
+  getPngUrl(): string {
+    const stId = this.icon()?.stId;
+    return stId ? `https://reactome.org/icon/${stId}.png` : '';
+  }
+
   getUniProtReferences(): string[] {
     const refs = this.icon()?.iconReferences ?? [];
     return refs.filter(r => !r.includes(':'));
