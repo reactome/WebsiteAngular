@@ -1,0 +1,39 @@
+name: Angular Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Determine version
+        id: version
+        run: |
+          PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
+          echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.ref_name }}" = "prod" ]; then
+            VERSION=$PROD_VERSION
+          else
+            VERSION=$((PROD_VERSION + 1))
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Deploying to version $VERSION"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Test
+        run: npm test
