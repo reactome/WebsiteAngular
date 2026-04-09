@@ -58,6 +58,19 @@ jobs:
 
       - name: Invalidate CloudFront cache
         run: |
-          aws cloudfront create-invalidation \
+          set +e
+          OUTPUT=$(aws cloudfront create-invalidation \
             --distribution-id E2WMIF8KN88WPK \
-            --paths "/${{ steps.version.outputs.version }}/website/*"
+            --paths "/${{ steps.version.outputs.version }}/website/*" 2>&1)
+          STATUS=$?
+          set -e
+
+          if [ $STATUS -eq 0 ]; then
+            echo "$OUTPUT"
+          elif echo "$OUTPUT" | grep -q "AccessDenied"; then
+            echo "Warning: CloudFront invalidation skipped due to missing permissions (cloudfront:CreateInvalidation)."
+            echo "$OUTPUT"
+          else
+            echo "$OUTPUT"
+            exit $STATUS
+          fi
