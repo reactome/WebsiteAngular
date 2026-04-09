@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, timeout } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
+import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
 
 export interface ReactomeStats {
   pathways: number;
@@ -24,13 +25,14 @@ interface RawStatItem {
 export class StatsService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
+  private generalService = inject(GeneralService);
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
    * Get the current Reactome version from APP_CONFIG
    */
   async getVersion(): Promise<string> {
-    return APP_CONFIG.version.releaseNumber;
+    return (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
   }
 
   /**

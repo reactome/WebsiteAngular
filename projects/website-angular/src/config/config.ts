@@ -1,9 +1,8 @@
 export const APP_CONFIG = {
   // app-level version info
   version: {
-    label: 'V95',
-    releaseNumber: '95',
-    releaseDate: '2025-12-09'
+    releaseNumber: '96',
+    releaseDate: '2026-04-01'
   },
 
   // canonical site base / download base (choose prod by default)
