@@ -8,18 +8,18 @@ import { InfoFooterComponent } from './app/info-footer/info-footer.component';
 // Create the Angular application with standalone configuration
 createApplication(appConfig).then((appRef) => {
   const websiteAngularElement = createCustomElement(AppComponent, {
-    injector: appRef.injector
+    injector: appRef.injector,
   });
-  
+
   const navigationBarElement = createCustomElement(NavigationBarComponent, {
-    injector: appRef.injector
+    injector: appRef.injector,
   });
 
   const infoFooterElement = createCustomElement(InfoFooterComponent, {
-    injector: appRef.injector
+    injector: appRef.injector,
   });
-  
+
   customElements.define('website-angular', websiteAngularElement);
   customElements.define('app-navigation-bar', navigationBarElement);
-  customElements.define('app-info-footer', infoFooterElement)
+  customElements.define('app-info-footer', infoFooterElement);
 });
