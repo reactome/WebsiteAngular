@@ -24,7 +24,21 @@ jobs:
             | grep -E '\.(ts|tsx|js|jsx|json|md|yaml|yml|css|scss)$' || true)
 
           if [ -n "$CHANGED_FILES" ]; then
-            echo "$CHANGED_FILES" | xargs yarn prettier --write
+            FILES_TO_FORMAT=""
+
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                FILES_TO_FORMAT="$FILES_TO_FORMAT\n$file"
+              else
+                echo "Skipping missing file: $file"
+              fi
+            done <<< "$CHANGED_FILES"
+
+            if [ -n "$FILES_TO_FORMAT" ]; then
+              printf "%b\n" "$FILES_TO_FORMAT" | sed '/^$/d' | xargs yarn prettier --write
+            else
+              echo "No existing files to format"
+            fi
           else
             echo "No files to format"
           fi
