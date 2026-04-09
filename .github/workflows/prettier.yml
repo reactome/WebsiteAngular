@@ -1,4 +1,4 @@
-name: autofix.ci
+name: Auto-format with Prettier
 on:
   pull_request:
 
