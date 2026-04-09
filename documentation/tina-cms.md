@@ -94,3 +94,8 @@ If you are uncomfortable with command line there are convenient tools like the [
 - If you ever have to edit the collections or general setup of TinaCMS that can be done in ````projects/website-angular/tina/config.ts````
 - If you need to make a home / landing page for a collection (i.e *about/*, *content/*) just name the file ````index.mdx```` and place it in the correct folder
 - Additional Information about TinaCMS can be found [here](https://tina.io/)
+
+## Get Articles from Old Reactome
+If the old Joomla Site is still up and you want to quickly port all articles and pages into .md files please use the [ReactomeScraping Repository](https://github.com/reactome/ReactomeScraping). Once the scaping is done place the folders within ````mdx_pages```` into ````projects/website-angular/content```` and place the ````mdx_pages/uploads```` folder at ````projects/website-angular/public````. **Remember to rename the landing pages to index.mdx!!**
+
+**WARNING**: Do not delete any new articles you've created in Tina while doing this.
