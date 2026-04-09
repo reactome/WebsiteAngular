@@ -42,8 +42,7 @@ export class HomeStatsComponent {
   }
 
   getVersionAndDate () {
-    // Use APP_CONFIG instead of dynamic JSON import
-    this.version = this.generalService.version.value()?.toString() || 'V' + APP_CONFIG.version.releaseNumber;
+    this.version = 'V' + (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
     this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }
