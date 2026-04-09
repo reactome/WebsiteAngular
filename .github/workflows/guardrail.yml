@@ -1,0 +1,65 @@
+name: CMS Branch Guard
+
+on:
+  pull_request:
+
+jobs:
+  restrict-cms-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # IMPORTANT for diff to work properly
+
+      - name: Validate CMS branch changes
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          BASE_REF="${{ github.base_ref }}"
+
+          echo "Branch: $BRANCH_NAME"
+          echo "Base: $BASE_REF"
+
+          if [[ "$BRANCH_NAME" == cms/* ]]; then
+            echo "CMS branch detected — enforcing content rules"
+
+            # Get changed files (including renames, deletions, etc.)
+            CHANGED_FILES=$(git diff --name-only origin/$BASE_REF...HEAD)
+
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+
+            # Allowed patterns:
+            # 1. Content files
+            # 2. Upload images
+            ALLOWED_REGEX="^(projects/website-angular/content/.*\.(md|json|yml)|projects/website-angular/public/uploads/.*\.(png|jpg|jpeg|webp|gif|svg))$"
+
+            # Find invalid files
+            INVALID_FILES=$(echo "$CHANGED_FILES" | grep -vE "$ALLOWED_REGEX" || true)
+
+            if [ -n "$INVALID_FILES" ]; then
+              echo ""
+              echo "ERROR: Invalid files detected in CMS branch"
+              echo ""
+              echo "The following files are NOT allowed:"
+              echo "$INVALID_FILES"
+              echo ""
+              echo "The following files are allowed:"
+              echo "  - projects/website-angular/content/**/*.md|json|yml"
+              echo "  - projects/website-angular/public/uploads/**/*.(png|jpg|jpeg|webp|gif|svg)"
+              echo ""
+              echo "Tip: CMS branches (cms/*) are only for content editing."
+              echo "   If you need to change code, create a separate branch."
+              echo ""
+
+              exit 1
+            else
+              echo ""
+              echo "All changes are valid for a CMS branch!"
+              echo ""
+            fi
+
+          else
+            echo "Not a CMS branch — skipping CMS restrictions"
+          fi
