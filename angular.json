@@ -52,6 +52,7 @@
                 "output": "/content"
               }
             ],
+            "allowedCommonJsDependencies": ["svgcanvas", "svg-pan-zoom", "@swissprot/rhea-reaction-viz-test", "cytoscape-fcose", "lodash"],
             "styles": ["src/styles.scss"],
             "scripts": [],
             "stylePreprocessorOptions": {
@@ -68,8 +69,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
-                  "maximumError": "16kB"
+                  "maximumWarning": "20kB",
+                  "maximumError": "25kB"
                 }
               ],
               "outputHashing": "all"
