@@ -1,18 +1,18 @@
-import {Component, computed, input} from '@angular/core';
-import {ReferenceEntity} from "../../../model/graph/reference-entity/reference-entity.model";
-import {EntityService} from "../../../services/entity.service";
-import {isArray, isString} from "lodash";
-import {NgClass, TitleCasePipe} from "@angular/common";
-import {StructureViewerComponent} from "../../tabs/molecule-tab/structure-viewer/structure-viewer.component";
-import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
-import {MatIconButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {UrlStateService} from "../../../services/url-state.service";
-import {MatTooltip} from "@angular/material/tooltip";
-import {DataStateService} from "../../../services/data-state.service";
-import {Labels} from "../../../constants/constants";
-import {StructureService} from "../../../services/structure.service";
-import {MoleculeType} from "../../tabs/molecule-tab/molecule-tab.component";
+import { Component, computed, input } from '@angular/core';
+import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
+import { EntityService } from '../../../services/entity.service';
+import { isArray, isString } from 'lodash';
+import { NgClass, TitleCasePipe } from '@angular/common';
+import { StructureViewerComponent } from '../../tabs/molecule-tab/structure-viewer/structure-viewer.component';
+import { DatabaseIdentifier } from '../../../model/graph/database-identifier.model';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { UrlStateService } from '../../../services/url-state.service';
+import { MatTooltip } from '@angular/material/tooltip';
+import { DataStateService } from '../../../services/data-state.service';
+import { Labels } from '../../../constants/constants';
+import { StructureService } from '../../../services/structure.service';
+import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
 
 @Component({
   selector: 'cr-external-reference',
@@ -25,11 +25,10 @@ import {MoleculeType} from "../../tabs/molecule-tab/molecule-tab.component";
     MatIconButton,
     MatTooltip,
     NgClass,
-    StructureViewerComponent
-  ]
+    StructureViewerComponent,
+  ],
 })
 export class ExternalReferenceComponent {
-
   readonly referenceEntity = input.required<ReferenceEntity>();
   readonly xRefs = input<DatabaseIdentifier[]>([]);
 
@@ -42,22 +41,28 @@ export class ExternalReferenceComponent {
   moleculeType = computed(() => {
     const entity = this.referenceEntity();
     return entity ? entity.moleculeType : null;
-  })
+  });
 
-  hasStructure = computed(() => [MoleculeType.CHEMICAL, MoleculeType.CHEMICAL_DRUG, MoleculeType.PROTEIN].includes(this.moleculeType() as MoleculeType));
+  hasStructure = computed(() =>
+    [
+      MoleculeType.CHEMICAL,
+      MoleculeType.CHEMICAL_DRUG,
+      MoleculeType.PROTEIN,
+    ].includes(this.moleculeType() as MoleculeType)
+  );
 
-
-  constructor(private entity: EntityService,
-              private state: UrlStateService,
-              public data: DataStateService,
-              private structure: StructureService) {
-  }
+  constructor(
+    private entity: EntityService,
+    private state: UrlStateService,
+    public data: DataStateService,
+    private structure: StructureService
+  ) {}
 
   protected readonly isString = isString;
   protected readonly isArray = isArray;
 
   onSelect() {
-    this.state.select.set(this.referenceEntity().stId!)
+    this.state.select.set(this.referenceEntity().stId!);
   }
 
   protected readonly Labels = Labels;

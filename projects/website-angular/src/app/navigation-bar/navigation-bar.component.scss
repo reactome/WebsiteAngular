@@ -26,7 +26,7 @@ $shadow: rgba(0, 0, 0, 0.1);
 
 .navbar-logo {
   display: flex;
-  flex:1;
+  flex: 1;
   align-items: center;
   flex-shrink: 0;
   justify-self: flex-start;
@@ -43,7 +43,7 @@ $shadow: rgba(0, 0, 0, 0.1);
 
 .logo-image {
   height: $header-height - 20;
-  width:min-content;
+  width: min-content;
   display: block;
 }
 
@@ -53,7 +53,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   height: $nav-height;
   align-items: flex-start;
   padding-top: 4px;
-  padding-right: 8px;;
+  padding-right: 8px;
 }
 
 .nav-list {

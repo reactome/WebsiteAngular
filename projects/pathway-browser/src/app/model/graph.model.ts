@@ -10,9 +10,9 @@ export namespace Graph {
 
   export type Entity = {
     dbId: number;
-    stId: string
+    stId: string;
     displayName: string;
-  }
+  };
 
   export interface Edge extends Entity {
     schemaClass: string;
@@ -20,7 +20,7 @@ export namespace Graph {
 
   export interface Node extends Entity {
     diagramIds?: number[];
-    identifier: string
+    identifier: string;
     parents: number[];
     children: number[];
     schemaClass: string;
@@ -31,7 +31,6 @@ export namespace Graph {
   }
 
   export interface SubPathway extends Entity {
-    events: number[]
+    events: number[];
   }
-
 }

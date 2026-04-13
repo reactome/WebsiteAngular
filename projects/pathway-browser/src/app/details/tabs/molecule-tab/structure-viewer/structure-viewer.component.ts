@@ -7,23 +7,22 @@ import {
   input,
   linkedSignal,
   signal,
-  viewChild
+  viewChild,
 } from '@angular/core';
-import {DatabaseIdentifier} from "../../../../model/graph/database-identifier.model";
-import {MatFormField, MatLabel} from "@angular/material/form-field";
-import {MatOptgroup, MatOption, MatSelect} from "@angular/material/select";
-import {rxResource} from "@angular/core/rxjs-interop";
-import {extract, Style} from "reactome-cytoscape-style";
-import {DarkService} from "../../../../services/dark.service";
-import {ReferenceEntity} from "../../../../model/graph/reference-entity/reference-entity.model";
-import {catchError, EMPTY, map} from "rxjs";
-import {HttpClient} from "@angular/common/http";
-import {SafePipe} from "../../../../pipes/safe.pipe";
-import {SelectableObject} from "../../../../services/event.service";
-import {MoleculeType} from "../molecule-tab.component";
-import {StructureService} from "../../../../services/structure.service";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-
+import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.model';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { extract, Style } from 'reactome-cytoscape-style';
+import { DarkService } from '../../../../services/dark.service';
+import { ReferenceEntity } from '../../../../model/graph/reference-entity/reference-entity.model';
+import { catchError, EMPTY, map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { SafePipe } from '../../../../pipes/safe.pipe';
+import { SelectableObject } from '../../../../services/event.service';
+import { MoleculeType } from '../molecule-tab.component';
+import { StructureService } from '../../../../services/structure.service';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 
 export interface StructureEntry {
   pdb_id: string;
@@ -44,53 +43,53 @@ interface BestStructure {
 
 interface AlphaFoldSummary {
   uniprot_entry: {
-    ac: string,
-    id: string,
-    uniprot_checksum: string,
-    sequence_length: number,
-    segment_start: number,
-    segment_end: number
-  }
+    ac: string;
+    id: string;
+    uniprot_checksum: string;
+    sequence_length: number;
+    segment_start: number;
+    segment_end: number;
+  };
 
   structures: {
     summary: {
-      model_identifier: string,
-      model_category: string,
-      model_url: string,
-      model_format: string,
-      model_type?: null,
-      model_page_url: string,
-      provider: string,
-      number_of_conformers?: number,
-      ensemble_sample_url?: string,
-      ensemble_sample_format?: string,
-      created: Date,
-      sequence_identity: number,
-      uniprot_start: number,
-      uniprot_end: number,
-      coverage: number,
-      experimental_method?: string,
-      resolution?: string,
-      confidence_type?: string,
-      confidence_version?: number,
-      confidence_avg_local_score: number,
-      oligomeric_state?: string,
-      preferred_assembly_id?: string,
+      model_identifier: string;
+      model_category: string;
+      model_url: string;
+      model_format: string;
+      model_type?: null;
+      model_page_url: string;
+      provider: string;
+      number_of_conformers?: number;
+      ensemble_sample_url?: string;
+      ensemble_sample_format?: string;
+      created: Date;
+      sequence_identity: number;
+      uniprot_start: number;
+      uniprot_end: number;
+      coverage: number;
+      experimental_method?: string;
+      resolution?: string;
+      confidence_type?: string;
+      confidence_version?: number;
+      confidence_avg_local_score: number;
+      oligomeric_state?: string;
+      preferred_assembly_id?: string;
       entities: {
-        entity_type: string,
-        entity_poly_type: string,
-        identifier: string,
-        identifier_category: string,
-        description: string,
-        chain_ids: string[]
-      }[]
-    }
-  }[]
+        entity_type: string;
+        entity_poly_type: string;
+        identifier: string;
+        identifier_category: string;
+        description: string;
+        chain_ids: string[];
+      }[];
+    };
+  }[];
 }
 
 export enum Source {
-  ALPHA_FOLD = "AlphaFold",
-  PDB = "PDB"
+  ALPHA_FOLD = 'AlphaFold',
+  PDB = 'PDB',
 }
 
 // Global variable avoid typescript errors
@@ -106,27 +105,27 @@ declare const PDBeMolstarPlugin: any;
     MatOptgroup,
     MatOption,
     SafePipe,
-    MatProgressSpinner
+    MatProgressSpinner,
   ],
   styleUrl: './structure-viewer.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
-
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StructureViewerComponent {
-
   readonly obj = input.required<ReferenceEntity | SelectableObject>();
   readonly xRefs = input.required<DatabaseIdentifier[]>();
   readonly moleculeType = input.required<string | null>();
   viewer = viewChild<ElementRef<HTMLElement>>('viewer');
   isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
-  isChemical = computed(() => this.moleculeType() === MoleculeType.CHEMICAL || this.moleculeType() === MoleculeType.CHEMICAL_DRUG);
+  isChemical = computed(
+    () =>
+      this.moleculeType() === MoleculeType.CHEMICAL ||
+      this.moleculeType() === MoleculeType.CHEMICAL_DRUG
+  );
   chebiIdentifier = signal<string | undefined>(undefined);
 
   pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
 
-
   reactomeStyle: Style = new Style(document.body);
-
 
   alphaFoldEntryId = linkedSignal(() => {
     if (!this.isProtein()) return null;
@@ -138,88 +137,110 @@ export class StructureViewerComponent {
     return null;
   });
 
-
   selected = signal<string | null>(null);
 
   sourceLabel = computed(() => {
-    return this.selected()?.startsWith("AF-") ? Source.ALPHA_FOLD : Source.PDB;
-  })
+    return this.selected()?.startsWith('AF-') ? Source.ALPHA_FOLD : Source.PDB;
+  });
 
   /** protein structure data from AlphaFold and PDB */
   proteinStructureData = computed(() => {
     if (!this.isProtein()) return null;
-    const result = []
+    const result = [];
 
     const afId = this.alphaFoldEntryId();
-    if (afId) result.push({source: Source.ALPHA_FOLD, identifiers: [afId]})
+    if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
 
     const pdbIdentifiers = this.pdbIdentifiers();
-    if (pdbIdentifiers.length > 0) result.push({source: Source.PDB, identifiers: pdbIdentifiers})
+    if (pdbIdentifiers.length > 0)
+      result.push({ source: Source.PDB, identifiers: pdbIdentifiers });
 
     return result;
   });
 
-
   chebiStructureSVGData = rxResource({
     request: this.chebiIdentifier,
-    loader: ({request}) => {
+    loader: ({ request }) => {
       const id = request;
       if (!id) return EMPTY;
-      return this.http.get(`https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`, {responseType: 'text'}).pipe(
-        catchError(err => EMPTY)
-      )
-    }
-  })
+      return this.http
+        .get(
+          `https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`,
+          { responseType: 'text' }
+        )
+        .pipe(catchError((err) => EMPTY));
+    },
+  });
 
   isChebiLoading = computed(() => this.chebiStructureSVGData.isLoading());
 
   isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
-
   bestPdbStructure = rxResource({
     request: () => this.obj().identifier,
-    loader: ({request}) => {
+    loader: ({ request }) => {
       if (!this.isProtein()) return EMPTY;
       const id = request;
-      return this.http.get<BestStructure>(`https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${id}/`).pipe(
-        map(response => {
-          const value = response[id];
-          const ids = new Set(value.map(item => item.pdb_id.toUpperCase()));
-          return Array.from(ids)
-        }),
-        catchError(err => EMPTY)
-      )
-    }
-  })
+      return this.http
+        .get<BestStructure>(
+          `https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${id}/`
+        )
+        .pipe(
+          map((response) => {
+            const value = response[id];
+            const ids = new Set(value.map((item) => item.pdb_id.toUpperCase()));
+            return Array.from(ids);
+          }),
+          catchError((err) => EMPTY)
+        );
+    },
+  });
 
   alphafoldSummary = rxResource({
     request: () => this.obj().identifier,
-    loader: ({request}) => {
+    loader: ({ request }) => {
       if (!this.isProtein()) return EMPTY;
       const id = request;
-      return this.http.get<AlphaFoldSummary>(`https://alphafold.ebi.ac.uk/api/uniprot/summary/${id}.json`)
-    }
-  })
+      return this.http.get<AlphaFoldSummary>(
+        `https://alphafold.ebi.ac.uk/api/uniprot/summary/${id}.json`
+      );
+    },
+  });
 
-  alphafoldUrl = computed(() => this.alphafoldSummary.value()?.structures?.[0]?.summary?.model_url || `https://alphafold.ebi.ac.uk/files/${this.alphaFoldEntryId()}-model_v6.cif`)
+  alphafoldUrl = computed(
+    () =>
+      this.alphafoldSummary.value()?.structures?.[0]?.summary?.model_url ||
+      `https://alphafold.ebi.ac.uk/files/${this.alphaFoldEntryId()}-model_v6.cif`
+  );
 
-  hasAnyStructure = computed(() => this.chebiStructureSVGData.hasValue() || !!this.proteinStructureData()?.length);
+  hasAnyStructure = computed(
+    () =>
+      this.chebiStructureSVGData.hasValue() ||
+      !!this.proteinStructureData()?.length
+  );
 
   bgColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return extract(this.reactomeStyle.properties.global.surface);
-  })
+  });
 
-  constructor(private dark: DarkService,
-              private http: HttpClient,
-              private structure: StructureService) {
+  constructor(
+    private dark: DarkService,
+    private http: HttpClient,
+    private structure: StructureService
+  ) {
     effect(() => {
-      const [isProtein, isChemical] = [this.isProtein(), this.isChemical()]
+      const [isProtein, isChemical] = [this.isProtein(), this.isChemical()];
 
       if (isProtein) {
         this.getProteinStructure();
       } else if (isChemical) {
-        const identifier = this.obj().databaseName === 'ChEBI' ? this.obj().identifier : (this.obj().crossReference as DatabaseIdentifier[]).find(c => c.databaseName === 'ChEBI')?.identifier;
+        const identifier =
+          this.obj().databaseName === 'ChEBI'
+            ? this.obj().identifier
+            : (this.obj().crossReference as DatabaseIdentifier[]).find(
+                (c) => c.databaseName === 'ChEBI'
+              )?.identifier;
         if (identifier) this.chebiIdentifier.set(identifier);
       }
     });
@@ -247,7 +268,6 @@ export class StructureViewerComponent {
   }
 
   getProteinStructure() {
-
     const viewerRef = this.viewer(); // signal value
     if (!viewerRef?.nativeElement) return;
 
@@ -264,7 +284,7 @@ export class StructureViewerComponent {
 
     const pdbOptions = {
       moleculeId: selected.toLowerCase(),
-      ...options
+      ...options,
     };
 
     const alphaFoldOptions = {
@@ -274,29 +294,37 @@ export class StructureViewerComponent {
       },
       alphafoldView: true,
       ...options,
-    }
+    };
 
     // If only alfaFold data is available, check if the structure is available
     if (this.alphaFoldEntryId()) {
-      fetch(this.alphafoldUrl(), {method: 'HEAD'})
-        .then(e => !e.ok && this.alphaFoldEntryId.set(null));
+      fetch(this.alphafoldUrl(), { method: 'HEAD' }).then(
+        (e) => !e.ok && this.alphaFoldEntryId.set(null)
+      );
     }
 
-    const finalOptions = selected.startsWith('AF-') ? alphaFoldOptions : pdbOptions;
-    viewerInstance.render(viewerRef.nativeElement, finalOptions)
+    const finalOptions = selected.startsWith('AF-')
+      ? alphaFoldOptions
+      : pdbOptions;
+    viewerInstance.render(viewerRef.nativeElement, finalOptions);
   }
 
   getPDBIdentifiers(xRefs: DatabaseIdentifier[]) {
-    const bestStructure = new Map(this.bestPdbStructure.value()?.map((id, index) => [id, index]));
+    const bestStructure = new Map(
+      this.bestPdbStructure.value()?.map((id, index) => [id, index])
+    );
 
     return xRefs
       .filter((ref: DatabaseIdentifier) => ref.databaseName === Source.PDB)
-      .map(ref => ref.identifier)
+      .map((ref) => ref.identifier)
       .sort((a, b) => {
-
         if (bestStructure) {
-          const aIndex = bestStructure.has(a) ? bestStructure.get(a)! : Number.MAX_SAFE_INTEGER;
-          const bIndex = bestStructure.has(b) ? bestStructure.get(b)! : Number.MAX_SAFE_INTEGER;
+          const aIndex = bestStructure.has(a)
+            ? bestStructure.get(a)!
+            : Number.MAX_SAFE_INTEGER;
+          const bIndex = bestStructure.has(b)
+            ? bestStructure.get(b)!
+            : Number.MAX_SAFE_INTEGER;
 
           if (aIndex !== bIndex) {
             return aIndex - bIndex;
@@ -304,7 +332,7 @@ export class StructureViewerComponent {
         }
         // fallback method when no best structure available
         return this.sortByAlphabeticalOrder(a, b);
-      })
+      });
   }
 
   sortByAlphabeticalOrder(a: string, b: string) {
@@ -315,12 +343,11 @@ export class StructureViewerComponent {
     if (aDigit && bDigit) {
       return a.localeCompare(b);
     } else if (aDigit) {
-      return -1;// a comes before b
+      return -1; // a comes before b
     } else if (bDigit) {
-      return 1;// b comes before a
+      return 1; // b comes before a
     } else {
-      return a.localeCompare(b);// For non-digit,sort normally
+      return a.localeCompare(b); // For non-digit,sort normally
     }
   }
-
 }
