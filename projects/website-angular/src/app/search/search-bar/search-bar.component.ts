@@ -28,7 +28,7 @@ export class SearchBarComponent implements OnChanges {
   private router = inject(Router);
   private searchService = inject(SearchService);
   @Input() query: string = '';
-  @Input() advancedMode = false;
+  @Input() currentMode: 'advanced' | 'reference' | 'simple' = 'simple';
   @Input() filters = false;
   @Output() queryChange = new EventEmitter<string>();
 
@@ -72,7 +72,8 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: q,
-      advanced: this.advancedMode ? 'true' : null,
+      advanced: this.currentMode === 'advanced' ? 'true' : null,
+      reference: this.currentMode === 'reference' ? 'true' : null,
       page: null,
     };
 
@@ -114,7 +115,8 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: s,
-      advanced: this.advancedMode ? 'true' : null,
+      advanced: this.currentMode === 'advanced' ? 'true' : null,
+      reference: this.currentMode === 'reference' ? 'true' : null,
       page: null,
     };
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIcon } from "@angular/material/icon";
 import {NavLink} from '../../types/link';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { EXTERNAL_LINKS } from '../../config/external-links'; // NEW import
 
 @Component({
   selector: 'app-copyright-footer',
@@ -19,9 +20,7 @@ export class copyrightFooterComponent implements OnInit {
    }
 
    loadExternalLinks() {
-    // Load external links from the JSON file
-    import('../../config/external-links.json').then((data) => {
-      this.externalLinks = mapNavOptions(data.default);
-    });
+    // Use the new TS constant instead of dynamic JSON import
+    this.externalLinks = EXTERNAL_LINKS as unknown as Record<string, NavLink>;
    }
 }

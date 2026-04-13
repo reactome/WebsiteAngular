@@ -32,6 +32,84 @@
   gap: 16px;
 }
 
+.icon-summary {
+  width: 100%;
+  margin: 16px;
+
+  h1 {
+    border-bottom: 1px solid var(--primary);
+    padding: 0 0 16px;
+    font-size: 1.5rem;
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .summary-fields {
+    margin: 0;
+
+    .summary-row {
+      display: flex;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--outline, #eee);
+
+      .download-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--primary);
+        text-decoration: none;
+        margin-right: 16px;
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        .material-symbols-rounded {
+          font-size: 16px;
+        }
+      }
+
+      .icon-preview {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+
+        img {
+          height: 150px;
+          width: auto;
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      dt {
+        font-weight: 600;
+        min-width: 100px;
+        flex-shrink: 0;
+      }
+
+      dd {
+        margin: 0;
+      }
+    }
+  }
+}
+
 .icon-header {
   display: flex;
   align-items: flex-start;
@@ -46,25 +124,6 @@
     h1 {
       margin: 0 0 12px;
       font-size: 1.5rem;
-    }
-  }
-
-  .icon-preview {
-    flex-shrink: 0;
-    width: 120px;
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--outline, #ddd);
-    border-radius: 8px;
-    padding: 12px;
-    background: white;
-
-    img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
     }
   }
 }
@@ -151,7 +210,8 @@ h2 {
   width: 100%;
   border-collapse: collapse;
 
-  th, td {
+  th,
+  td {
     padding: 10px 14px;
     text-align: left;
     border-bottom: 1px solid var(--outline, #ddd);

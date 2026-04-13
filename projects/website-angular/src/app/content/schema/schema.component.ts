@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
+import { InstanceBrowserComponent } from './instance-browser/instance-browser.component';
 import {
   ContentDataService,
   SchemaNode,
@@ -20,7 +21,7 @@ interface FlatTreeNode {
 
 @Component({
   selector: 'app-schema',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageLayoutComponent, RouterLink, InstanceBrowserComponent],
   templateUrl: './schema.component.html',
   styleUrl: './schema.component.scss',
 })
@@ -53,6 +54,9 @@ export class SchemaComponent implements OnInit, OnDestroy {
   entriesPage = 1;
   entriesPageSize = 50;
   loadingEntries = false;
+
+  // Instance detail state
+  selectedInstanceId: number | null = null;
 
   // Overall
   loading = true;
@@ -201,6 +205,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.activeTab = 'properties';
     this.entries = [];
     this.entriesPage = 1;
+    this.selectedInstanceId = null;
     this.loadAttributes(className);
 
     // Expand tree path to this node
@@ -292,7 +297,11 @@ export class SchemaComponent implements OnInit, OnDestroy {
   loadEntries() {
     this.loadingEntries = true;
     this.contentDataService
-      .getSchemaEntries(this.selectedClass, this.entriesPage, this.entriesPageSize)
+      .getSchemaEntries(
+        this.selectedClass,
+        this.entriesPage,
+        this.entriesPageSize
+      )
       .subscribe({
         next: (entries) => {
           this.entries = entries;
@@ -337,10 +346,15 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
-  entryUrl(entry: SimpleDatabaseObject): string {
-    if (entry.stId) {
-      return `https://dev.reactome.org/content/detail/${entry.stId}`;
-    }
-    return `https://dev.reactome.org/content/detail/${entry.dbId}`;
+  selectInstance(dbId: number) {
+    this.selectedInstanceId = dbId;
+  }
+
+  clearSelectedInstance() {
+    this.selectedInstanceId = null;
+  }
+
+  onInstanceLinkClick(dbId: number) {
+    this.selectedInstanceId = dbId;
   }
 }

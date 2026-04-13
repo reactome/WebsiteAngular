@@ -11,7 +11,7 @@ export class LoggerComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    console.log('Building ',  this.toLog())
+    // console.log('Building ',  this.toLog())
   }
 
 

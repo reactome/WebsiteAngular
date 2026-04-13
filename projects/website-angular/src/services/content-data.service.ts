@@ -102,14 +102,23 @@ export class ContentDataService {
   }
 
   getSchemaAttributes(className: string): Observable<SchemaAttribute[]> {
-    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/attributes`);
+    return this.http.get<SchemaAttribute[]>(
+      `${this.schemaUrl}/${className}/attributes`
+    );
   }
 
   getSchemaReferrals(className: string): Observable<SchemaAttribute[]> {
-    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/referrals`);
+    return this.http.get<SchemaAttribute[]>(
+      `${this.schemaUrl}/${className}/referrals`
+    );
   }
 
-  getSchemaEntries(className: string, page: number, offset: number, species?: string): Observable<SimpleDatabaseObject[]> {
+  getSchemaEntries(
+    className: string,
+    page: number,
+    offset: number,
+    species?: string
+  ): Observable<SimpleDatabaseObject[]> {
     let url = `${this.schemaUrl}/${className}/min?page=${page}&offset=${offset}`;
     if (species) url += `&species=${encodeURIComponent(species)}`;
     return this.http.get<SimpleDatabaseObject[]>(url);
@@ -119,5 +128,11 @@ export class ContentDataService {
     let url = `${this.schemaUrl}/${className}/count`;
     if (species) url += `?species=${encodeURIComponent(species)}`;
     return this.http.get<number>(url);
+  }
+
+  getInstance(id: string | number): Observable<any> {
+    return this.http.get<any>(
+      `https://dev.reactome.org/ContentService/data/query/enhanced/${id}`
+    );
   }
 }

@@ -245,7 +245,7 @@ export class ViewportComponent implements AfterViewInit {
   playSpeed = model(2);
 
   updateSpeed = effect(() => {
-    console.log('Update play speed', this.playSpeed());
+    // console.log('Update play speed', this.playSpeed());
     if (this.interval) {
       this.pause();
       this.play();

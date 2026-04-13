@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface SearchEntry {
   dbId: number;
   stId: string;
+  id: string;
   name: string;
   type: string;
   exactType: string;
@@ -16,6 +17,8 @@ export interface SearchEntry {
   referenceIdentifier: string;
   databaseName: string;
   referenceURL: string;
+  deleted: boolean;
+  date: number;
 }
 
 export interface ResultGroup {
@@ -63,14 +66,24 @@ export class SearchService {
   private http = inject(HttpClient);
   private baseUrl = 'https://reactome.org/ContentService/search'; //TODO: alter in prod or make environment variable
 
-  search(query: string, filters: SearchFilters = {}, page: number = 0, rows: number = 30): Observable<SearchResult> {
+  search(
+    query: string,
+    filters: SearchFilters = {},
+    page: number = 0,
+    rows: number = 30
+  ): Observable<SearchResult> {
     const params = this.buildParams(query, filters, page, rows);
     return this.http.get<SearchResult>(`${this.baseUrl}/query`, { params });
   }
 
-  getFacets(query: string, filters: SearchFilters = {}): Observable<FacetResponse> {
+  getFacets(
+    query: string,
+    filters: SearchFilters = {}
+  ): Observable<FacetResponse> {
     const params = this.buildParams(query, filters);
-    return this.http.get<FacetResponse>(`${this.baseUrl}/facet_query`, { params });
+    return this.http.get<FacetResponse>(`${this.baseUrl}/facet_query`, {
+      params,
+    });
   }
 
   getAllFacets(): Observable<FacetResponse> {
@@ -78,17 +91,24 @@ export class SearchService {
   }
 
   getSuggestedTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/suggest?query=${encodeURIComponent(query)}`);
+    return this.http.get<string[]>(
+      `${this.baseUrl}/suggest?query=${encodeURIComponent(query)}`
+    );
   }
 
   getSpellCheckTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
+    return this.http.get<string[]>(
+      `${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`
+    );
   }
 
-  private buildParams(query: string, filters: SearchFilters, page?: number, rows?: number): HttpParams {
-    let params = new HttpParams()
-      .set('query', query)
-      .set('cluster', 'true');
+  private buildParams(
+    query: string,
+    filters: SearchFilters,
+    page?: number,
+    rows?: number
+  ): HttpParams {
+    let params = new HttpParams().set('query', query).set('cluster', 'true');
 
     if (filters.species?.length) {
       for (const s of filters.species) {

@@ -1,9 +1,0 @@
-{
-    "version": {
-        "label": "V95",
-        "releaseNumber": "95",
-        "releaseDate": "2025-12-09"
-    },
-    "baseUrl": "https://reactome.org",
-    "downloadurl": "https://download.reactome.org"
-}

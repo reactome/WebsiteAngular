@@ -2,6 +2,8 @@ import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, timeout } from 'rxjs';
+import { APP_CONFIG } from '../config/config'; // NEW import
+import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
 
 export interface ReactomeStats {
   pathways: number;
@@ -23,33 +25,27 @@ interface RawStatItem {
 export class StatsService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
+  private generalService = inject(GeneralService);
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
-   * Get the current Reactome version
+   * Get the current Reactome version from APP_CONFIG
    */
   async getVersion(): Promise<string> {
-    let version = await import('../config/config.json').then(
-      (data) => data.default.version.releaseNumber
-    );
-    return version;
+    return (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
   }
 
   /**
-   * Get the download base URL
+   * Get the download base URL from APP_CONFIG
    */
   async getDownloadBaseUrl(): Promise<string> {
-    let downloadUrl = await import('../config/config.json').then(
-      (data) => data.default.downloadurl
-    );
-
-    return downloadUrl;
+    return APP_CONFIG.downloadUrl;
   }
 
   /**
    * Fetch stats from the S3/CloudFront download directory
    */
-  async getStats():Promise<Observable<ReactomeStats>> {
+  async getStats(): Promise<Observable<ReactomeStats>> {
     const defaultStats: ReactomeStats = {
       pathways: 0,
       reactions: 0,
