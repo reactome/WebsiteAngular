@@ -1,7 +1,7 @@
 $header-height: 65px;
-$nav-height: 55px;
+$nav-height: 50px;
 $nav-width: 150px;
-$nav-item-height: 30px;
+$nav-item-height: 50px;
 $shadow: rgba(0, 0, 0, 0.1);
 
 .menu-icon {
@@ -26,13 +26,13 @@ $shadow: rgba(0, 0, 0, 0.1);
 
 .navbar-logo {
   display: flex;
-  flex:1;
+  flex: 1;
   align-items: center;
   flex-shrink: 0;
   justify-self: flex-start;
   padding-top: 4px;
   padding-bottom: 4px;
-  padding-left: 20px;
+  padding-left: 10px;
 }
 
 .logo-link {
@@ -42,8 +42,8 @@ $shadow: rgba(0, 0, 0, 0.1);
 }
 
 .logo-image {
-  height: $header-height;
-  width:min-content;
+  height: $header-height - 20;
+  width: min-content;
   display: block;
 }
 
@@ -53,7 +53,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   height: $nav-height;
   align-items: flex-start;
   padding-top: 4px;
-  padding-right: 8px;;
+  padding-right: 8px;
 }
 
 .nav-list {
@@ -303,6 +303,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   padding: 0 10px;
+  height: $nav-height;
 
   #dark-toggle {
     ::ng-deep .mat-mdc-slide-toggle {
@@ -316,4 +317,30 @@ $shadow: rgba(0, 0, 0, 0.1);
       --mdc-switch-handle-shape: 18px;
     }
   }
+}
+
+// --- DARK MODE LOGO SWITCHER ---
+
+/* 1. Hide the dark logo by default */
+.dark-only {
+  display: none !important;
+}
+
+/* 2. When body has the class "dark" */
+:host-context(.dark) {
+  // FORCE the light logo to hide
+  .light-only {
+    display: none !important;
+  }
+  // FORCE the dark logo to show
+  .dark-only {
+    display: block !important;
+    height: $header-height - 20px;
+    width: auto;
+  }
+}
+
+/* 3. Keep your preferred spacing/transition */
+.logo-image {
+  transition: opacity 1.2s ease-in-out;
 }

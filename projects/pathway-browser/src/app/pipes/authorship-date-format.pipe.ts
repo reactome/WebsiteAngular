@@ -1,17 +1,19 @@
-import {Inject, LOCALE_ID, Pipe, PipeTransform} from '@angular/core';
-import {DatePipe} from "@angular/common";
+import { Inject, LOCALE_ID, Pipe, PipeTransform } from '@angular/core';
+import { formatDate } from '@angular/common';
 
 @Pipe({
   name: 'authorshipDateFormat',
-  standalone: true
+  standalone: true,
 })
 export class AuthorshipDateFormatPipe implements PipeTransform {
-  constructor(private datePipe: DatePipe, @Inject(LOCALE_ID) private locale: string) {
-  }
+  constructor(@Inject(LOCALE_ID) private locale: string) {}
 
   transform(dateTime: string) {
     if (!dateTime) return;
-    return this.datePipe.transform(dateTime);
+    try {
+      return formatDate(dateTime, 'mediumDate', this.locale);
+    } catch {
+      return;
+    }
   }
-
 }

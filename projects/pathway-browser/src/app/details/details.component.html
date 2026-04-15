@@ -25,7 +25,7 @@
             <p>Loading details of {{ state.select() || state.pathwayId() }}</p>
           </div>
         } @else if (obj()) {
-          <cr-description-tab [obj]="obj()!" [analysisResult]="analysis.result()"></cr-description-tab>
+          <cr-description-tab [obj]="obj()!" [analysisResult]="analysis.result()" [showReactionDiagram]="false"></cr-description-tab>
         }
       </ng-template>
     </mat-tab>

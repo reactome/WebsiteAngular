@@ -1,17 +1,20 @@
-import cytoscape from "cytoscape";
-import {extract} from "./properties-utils";
-import {Properties} from "./properties";
-import {ReactomeEvent, ReactomeEventTypes} from "./model/reactome-event.model";
-import Layers, {IHTMLLayer, layers, LayersPlugin} from 'cytoscape-layers';
-import * as _ from "lodash";
-import {isPromise} from "rxjs/internal/util/isPromise";
+import cytoscape from 'cytoscape';
+import { extract } from './properties-utils';
+import { Properties } from './properties';
+import {
+  ReactomeEvent,
+  ReactomeEventTypes,
+} from './model/reactome-event.model';
+import Layers, { IHTMLLayer, layers, LayersPlugin } from 'cytoscape-layers';
+import * as _ from 'lodash';
+import { isPromise } from 'rxjs/internal/util/isPromise';
 
-
-cytoscape.use(Layers)
-type RenderableHTMLElement = HTMLElement & { render: _.DebouncedFunc<() => void> };
+cytoscape.use(Layers);
+type RenderableHTMLElement = HTMLElement & {
+  render: _.DebouncedFunc<() => void>;
+};
 
 export class Interactivity {
-
   isMobile = 'ontouchstart' in document || navigator.maxTouchPoints > 0;
 
   constructor(private cy: cytoscape.Core, private properties: Properties) {
@@ -30,184 +33,280 @@ export class Interactivity {
     return reactionNode.connectedEdges().add(reactionNode);
   }
 
-  applyToReaction = (action: (col: cytoscape.Collection) => void, stateKey: keyof State) => (reactionNode: cytoscape.NodeCollection) => {
-    if (state[stateKey]) return;
-    state[stateKey] = true;
-    action(this.expandReaction(reactionNode));
-    state[stateKey] = false;
-  };
+  applyToReaction =
+    (action: (col: cytoscape.Collection) => void, stateKey: keyof State) =>
+    (reactionNode: cytoscape.NodeCollection) => {
+      if (state[stateKey]) return;
+      state[stateKey] = true;
+      action(this.expandReaction(reactionNode));
+      state[stateKey] = false;
+    };
 
   initHover(cy: cytoscape.Core, mapper = <X>(x: X) => x) {
-    const hoverReaction = this.applyToReaction(col => col.addClass('hover'), 'hovering')
-    const deHoverReaction = this.applyToReaction(col => col.removeClass('hover'), 'deHovering')
-
+    const hoverReaction = this.applyToReaction(
+      (col) => col.addClass('hover'),
+      'hovering'
+    );
+    const deHoverReaction = this.applyToReaction(
+      (col) => col.removeClass('hover'),
+      'deHovering'
+    );
 
     const container = cy.container()!;
-    cy
-      .on('mouseover', 'node.PhysicalEntity', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.hover, {
-        element: e.target,
-        type: "PhysicalEntity",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseover', 'node.Pathway', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.hover, {
-        element: e.target,
-        type: "Pathway",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseover', 'node.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.hover, {
-        element: e.target,
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseover', 'edge.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.hover, {
-        element: e.target.connectedNodes('.reaction'),
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
+    cy.on('mouseover', 'node.PhysicalEntity', (e) =>
+      container.dispatchEvent(
+        new ReactomeEvent(ReactomeEventTypes.hover, {
+          element: e.target,
+          type: 'PhysicalEntity',
+          reactomeId: e.target.data('reactomeId'),
+          cy,
+        })
+      )
+    )
+      .on('mouseover', 'node.Pathway', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.hover, {
+            element: e.target,
+            type: 'Pathway',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('mouseover', 'node.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.hover, {
+            element: e.target,
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('mouseover', 'edge.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.hover, {
+            element: e.target.connectedNodes('.reaction'),
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
 
-      .on('mouseout', 'node.PhysicalEntity', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.leave, {
-        element: e.target,
-        type: "PhysicalEntity",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseout', 'node.Pathway', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.leave, {
-        element: e.target,
-        type: "Pathway",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseout', 'node.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.leave, {
-        element: e.target,
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('mouseout', 'edge.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.leave, {
-        element: e.target.connectedNodes('.reaction'),
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
+      .on('mouseout', 'node.PhysicalEntity', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.leave, {
+            element: e.target,
+            type: 'PhysicalEntity',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('mouseout', 'node.Pathway', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.leave, {
+            element: e.target,
+            type: 'Pathway',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('mouseout', 'node.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.leave, {
+            element: e.target,
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('mouseout', 'edge.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.leave, {
+            element: e.target.connectedNodes('.reaction'),
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
 
-      .on('mouseover', 'node', e => mapper(e.target).addClass('hover'))
-      .on('mouseout', 'node', e => mapper(e.target).removeClass('hover'))
+      .on('mouseover', 'node', (e) => mapper(e.target).addClass('hover'))
+      .on('mouseout', 'node', (e) => mapper(e.target).removeClass('hover'))
 
-      .on('mouseover', 'node.reaction', e => hoverReaction(mapper(e.target)))
-      .on('mouseout', 'node.reaction', e => deHoverReaction(mapper(e.target)))
+      .on('mouseover', 'node.reaction', (e) => hoverReaction(mapper(e.target)))
+      .on('mouseout', 'node.reaction', (e) => deHoverReaction(mapper(e.target)))
 
-      .on('mouseover', 'edge', e => {
+      .on('mouseover', 'edge', (e) => {
         const mapped = mapper(e.target);
         // if (mapped !== e.target) console.log(mapped, mapped.connectedNodes('.reaction'))
 
-        hoverReaction(mapped.connectedNodes('.reaction'))
+        hoverReaction(mapped.connectedNodes('.reaction'));
       })
-      .on('mouseout', 'edge', e => deHoverReaction(mapper(e.target).connectedNodes('.reaction')))
+      .on('mouseout', 'edge', (e) =>
+        deHoverReaction(mapper(e.target).connectedNodes('.reaction'))
+      )
 
-      .on('mouseover', 'node.Modification', e => mapper(cy.nodes(`#${e.target.data('nodeId')}`)).addClass('hover'))
-      .on('mouseout', 'node.Modification', e => mapper(cy.nodes(`#${e.target.data('nodeId')}`)).removeClass('hover'))
+      .on('mouseover', 'node.Modification', (e) =>
+        mapper(cy.nodes(`#${e.target.data('nodeId')}`)).addClass('hover')
+      )
+      .on('mouseout', 'node.Modification', (e) =>
+        mapper(cy.nodes(`#${e.target.data('nodeId')}`)).removeClass('hover')
+      )
 
-      .on('mouseover', 'edge.Interactor', e => mapper(cy.edges(`#${e.target.data('id')}`)).addClass('hover'))
-      .on('mouseout', 'edge.Interactor', e => mapper(cy.edges(`#${e.target.data('id')}`)).removeClass('hover'))
+      .on('mouseover', 'edge.Interactor', (e) =>
+        mapper(cy.edges(`#${e.target.data('id')}`)).addClass('hover')
+      )
+      .on('mouseout', 'edge.Interactor', (e) =>
+        mapper(cy.edges(`#${e.target.data('id')}`)).removeClass('hover')
+      );
   }
 
   initSelect(cy: cytoscape.Core, mapper = <X>(x: X) => x) {
-    const selectReaction = this.applyToReaction(col => col.select(), 'selecting')
+    const selectReaction = this.applyToReaction(
+      (col) => col.select(),
+      'selecting'
+    );
     const container = cy.container()!;
 
-    cy
-      .on('select', 'node.PhysicalEntity', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.select, {
-        element: e.target,
-        type: "PhysicalEntity",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('select', 'node.Pathway', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.select, {
-        element: e.target,
-        type: "Pathway",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('select', 'node.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.select, {
-        element: e.target,
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('select', 'edge.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.select, {
-        element: e.target.connectedNodes('.reaction'),
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
+    cy.on('select', 'node.PhysicalEntity', (e) =>
+      container.dispatchEvent(
+        new ReactomeEvent(ReactomeEventTypes.select, {
+          element: e.target,
+          type: 'PhysicalEntity',
+          reactomeId: e.target.data('reactomeId'),
+          cy,
+        })
+      )
+    )
+      .on('select', 'node.Pathway', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.select, {
+            element: e.target,
+            type: 'Pathway',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('select', 'node.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.select, {
+            element: e.target,
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('select', 'edge.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.select, {
+            element: e.target.connectedNodes('.reaction'),
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
 
-      .on('unselect', 'node.PhysicalEntity', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.unselect, {
-        element: e.target,
-        type: "PhysicalEntity",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('unselect', 'node.Pathway', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.unselect, {
-        element: e.target,
-        type: "Pathway",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('unselect', 'node.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.unselect, {
-        element: e.target,
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
-      .on('unselect', 'edge.reaction', e => container.dispatchEvent(new ReactomeEvent(ReactomeEventTypes.unselect, {
-        element: e.target.connectedNodes('.reaction'),
-        type: "reaction",
-        reactomeId: e.target.data('reactomeId'),
-        cy
-      })))
+      .on('unselect', 'node.PhysicalEntity', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.unselect, {
+            element: e.target,
+            type: 'PhysicalEntity',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('unselect', 'node.Pathway', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.unselect, {
+            element: e.target,
+            type: 'Pathway',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('unselect', 'node.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.unselect, {
+            element: e.target,
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
+      .on('unselect', 'edge.reaction', (e) =>
+        container.dispatchEvent(
+          new ReactomeEvent(ReactomeEventTypes.unselect, {
+            element: e.target.connectedNodes('.reaction'),
+            type: 'reaction',
+            reactomeId: e.target.data('reactomeId'),
+            cy,
+          })
+        )
+      )
 
-      .on('select', 'edge', e => selectReaction(mapper(e.target).connectedNodes('.reaction')))
-      .on('unselect', 'edge', () => selectReaction(
-        mapper(cy.edges(':selected').connectedNodes('.reaction')
-          .add(cy.nodes('.reaction:selected')))
-      )) // Avoid single element selection when double-clicking
+      .on('select', 'edge', (e) =>
+        selectReaction(mapper(e.target).connectedNodes('.reaction'))
+      )
+      .on('unselect', 'edge', () =>
+        selectReaction(
+          mapper(
+            cy
+              .edges(':selected')
+              .connectedNodes('.reaction')
+              .add(cy.nodes('.reaction:selected'))
+          )
+        )
+      ) // Avoid single element selection when double-clicking
 
-      .on('select', 'node.reaction', event => selectReaction(mapper(event.target)))
-      .on('select', 'node.Modification', e => mapper(cy.nodes(`#${e.target.data('nodeId')}`)).select())
-
+      .on('select', 'node.reaction', (event) =>
+        selectReaction(mapper(event.target))
+      )
+      .on('select', 'node.Modification', (e) =>
+        mapper(cy.nodes(`#${e.target.data('nodeId')}`)).select()
+      );
   }
 
   initClick(cy: cytoscape.Core) {
     const container = cy.container()!;
 
-    cy
-      .on('tap', 'node.InteractorOccurrences', e => {
-        const openClass = 'opened';
-        let eventType = !e.target.hasClass(openClass) ? ReactomeEventTypes.open : ReactomeEventTypes.close;
-        e.target.toggleClass(openClass);
-        container.dispatchEvent(new ReactomeEvent(eventType, {
+    cy.on('tap', 'node.InteractorOccurrences', (e) => {
+      const openClass = 'opened';
+      let eventType = !e.target.hasClass(openClass)
+        ? ReactomeEventTypes.open
+        : ReactomeEventTypes.close;
+      e.target.toggleClass(openClass);
+      container.dispatchEvent(
+        new ReactomeEvent(eventType, {
           element: e.target,
-          type: "Interactor",
+          type: 'Interactor',
           reactomeId: e.target.data('reactomeId'),
-          cy
-        }))
-      })
+          cy,
+        })
+      );
+    })
 
-      .on('tap', '.Interactor', e => {
+      .on('tap', '.Interactor', (e) => {
         const prop = e.target.isNode() ? 'accURL' : 'evidenceURLs';
         const url = e.target.data(prop);
         if (url) window.open(url);
       })
-      .on('tap', '.DiseaseInteractor', e => {
+      .on('tap', '.DiseaseInteractor', (e) => {
         const prop = e.target.isNode() ? 'accURL' : 'evidenceURLs';
         const url = e.target.data(prop);
         if (url) window.open(url);
       })
-      .on('tap', '.Compartment', () => cy.elements().unselect() )
+      .on('tap', '.Compartment', () => cy.elements().unselect());
 
     // .on('tap', e => {
     //   const openClass = 'opened';
@@ -224,7 +323,6 @@ export class Interactivity {
 
   private videoLayer?: IHTMLLayer;
 
-
   initStructureVideo(cy: cytoscape.Core) {
     const layersPlugin: LayersPlugin = layers(cy);
     this.videoLayer = layersPlugin.append('html');
@@ -232,93 +330,116 @@ export class Interactivity {
     layersPlugin.renderPerNode(
       this.videoLayer!,
       (elem: HTMLElement) => {
-        (elem as RenderableHTMLElement).render()
+        (elem as RenderableHTMLElement).render();
       },
       {
         init: (elem: RenderableHTMLElement, node: cytoscape.NodeSingular) => {
           const name = node.data('displayName');
 
           elem.innerHTML = node.data('html') || '';
-          elem.style.display = "flex";
+          elem.style.display = 'flex';
           const video = elem.children[0] as HTMLVideoElement;
 
           elem.render = _.throttle(() => {
-              if (isElementInViewport(elem)) {
-                // console.log('rendering', name)
-                if (this.videoLayer?.node.style.opacity !== '0' && video.readyState === video.HAVE_NOTHING && video.networkState === video.NETWORK_IDLE) {
-                  // video.classList.add('loading');
-                  this.addLoading(elem);
-                  video.oncanplay = e => this.removeLoading(elem);
-                  let errors = 0;
-                  const sources = video.querySelectorAll('source')!;
-                  sources.forEach(source => source.addEventListener('error', (e) => {
+            if (isElementInViewport(elem)) {
+              // console.log('rendering', name)
+              if (
+                this.videoLayer?.node.style.opacity !== '0' &&
+                video.readyState === video.HAVE_NOTHING &&
+                video.networkState === video.NETWORK_IDLE
+              ) {
+                // video.classList.add('loading');
+                this.addLoading(elem);
+                video.oncanplay = (e) => this.removeLoading(elem);
+                let errors = 0;
+                const sources = video.querySelectorAll('source')!;
+                sources.forEach((source) =>
+                  source.addEventListener('error', (e) => {
                     errors++;
-                    if (errors === sources.length) this.removeStructureContainer(elem, node)
-                  }));
+                    if (errors === sources.length)
+                      this.removeStructureContainer(elem, node);
+                  })
+                );
 
-                  video.load();
-                }
-                elem.style.visibility = node.visible() ? 'visible' : 'hidden';
+                video.load();
               }
-
-            }, 500
-          );
+              elem.style.visibility = node.visible() ? 'visible' : 'hidden';
+            }
+          }, 500);
         },
         transform: `translate(-70%, -50%)`,
         position: 'center',
         uniqueElements: false,
         checkBounds: false, // Need false otherwise destroy nodes when out of view
         selector: '.Protein',
-        updateOn: "render", // Need render to call display whenever we move
+        updateOn: 'render', // Need render to call display whenever we move
         queryEachTime: false,
       }
     );
 
-
-    this.videoLayer?.node.classList.add('video')
-    const handler = (action: (video: HTMLVideoElement) => void) => async (event: cytoscape.EventObject) => {
-      const videoId = event.target.id();
-      const videoElement = this.videoLayer?.node.querySelector(`#video-${videoId}`) as HTMLVideoElement;
-      if (videoElement && videoElement.readyState >= videoElement.HAVE_ENOUGH_DATA) {
-        action(videoElement)
-      }
-    };
+    this.videoLayer?.node.classList.add('video');
+    const handler =
+      (action: (video: HTMLVideoElement) => void) =>
+      async (event: cytoscape.EventObject) => {
+        const videoId = event.target.id();
+        const videoElement = this.videoLayer?.node.querySelector(
+          `#video-${videoId}`
+        ) as HTMLVideoElement;
+        if (
+          videoElement &&
+          videoElement.readyState >= videoElement.HAVE_ENOUGH_DATA
+        ) {
+          action(videoElement);
+        }
+      };
     if (this.isMobile) {
       this.cy
-        .on('select', 'node.Protein', handler(v => v.play()))
-        .on('unselect', 'node.Protein', handler(v => v.pause()))
+        .on(
+          'select',
+          'node.Protein',
+          handler((v) => v.play())
+        )
+        .on(
+          'unselect',
+          'node.Protein',
+          handler((v) => v.pause())
+        );
     }
     this.cy
-      .on('mouseover', 'node.Protein', handler(v => v.play()))
-      .on('mouseout', 'node.Protein', handler(v => v.pause()));
+      .on(
+        'mouseover',
+        'node.Protein',
+        handler((v) => v.play())
+      )
+      .on(
+        'mouseout',
+        'node.Protein',
+        handler((v) => v.pause())
+      );
   }
-
 
   addLoading(container: HTMLElement) {
     // const template = document.createElement('template');
     // template.innerHTML = `<video class='loader' autoplay loop muted playsinline><source src='assets/loader-dark.webm' type='video/webm'></video>`
     // container.appendChild(template.content.firstChild as HTMLVideoElement);
-    container.classList.add('loading')
+    container.classList.add('loading');
   }
 
   removeLoading(container: HTMLElement) {
     // container.querySelector('.loader')?.remove();
-    container.classList.remove('loading')
+    container.classList.remove('loading');
   }
 
-  removeStructureContainer(loadingContainer: HTMLElement, node: cytoscape.NodeSingular) {
+  removeStructureContainer(
+    loadingContainer: HTMLElement,
+    node: cytoscape.NodeSingular
+  ) {
     // console.log('Remove diagram structure container because not found', loadingContainer, node)
-    loadingContainer.classList.remove('loading')
+    loadingContainer.classList.remove('loading');
     this.removeLoading(loadingContainer);
-
-    let baseFontSize = extract(this.properties.font.size);
-    node.style({
-      'font-size': baseFontSize,
-      'text-margin-x': 0,
-      'text-max-width': "100%",
-    })
+    node.removeStyle();
     this.structureContainers = this.structureContainers.not(node);
-  };
+  }
 
   private moleculeLayer?: IHTMLLayer;
 
@@ -327,48 +448,50 @@ export class Interactivity {
     const layers: LayersPlugin = cy.layers();
 
     this.moleculeLayer = layers.append('html');
-    this.moleculeLayer.node.classList.add('molecule')
+    this.moleculeLayer.node.classList.add('molecule');
 
     layers.renderPerNode(
       this.moleculeLayer,
-      (elem: HTMLElement, node: cytoscape.NodeSingular) => {
-      },
+      (elem: HTMLElement, node: cytoscape.NodeSingular) => {},
       {
         init: (elem: HTMLElement, node: cytoscape.NodeSingular) => {
-          elem.classList.add('molecule-structure')
+          elem.classList.add('molecule-structure');
           // elem.classList.add('loading')
           this.addLoading(elem);
           const w = node.data('width') - 4; // retrieve border width
           const h = node.data('height') - 4; // retrieve border width
           const cos45 = 0.7071067811865476;
           const margin = (1 - cos45) * (Math.min(h, w) / 2); // Margin to cut the rounded corner exactly at 45deg
-          elem.style.width = (w / 2) - margin + 'px';
-          elem.style.height = h - (2 * margin) + 'px';
-          elem.style.display = "flex"
+          elem.style.width = w / 2 - margin + 'px';
+          elem.style.height = h - 2 * margin + 'px';
+          elem.style.display = 'flex';
 
           const structure = node.data('chebiStructure') as string;
           const initStructure = (svgData: string) => {
-            if (svgData === undefined) return this.removeStructureContainer(elem, node);
+            if (svgData === undefined)
+              return this.removeStructureContainer(elem, node);
             elem.innerHTML = svgData;
             const svg = elem.querySelector('svg');
             if (!svg) return this.removeStructureContainer(elem, node);
             // Avoid molecule bonds to scale with size
             // svg.querySelectorAll('path').forEach(p => p.setAttribute("vector-effect", `non-scaling-stroke`));
             // Remove white background
-            svg.querySelector('rect:first-of-type')?.remove()
+            svg.querySelector('rect:first-of-type')?.remove();
             // Readjust svg content to fit in the container
             const bbox = svg.getBBox();
-            svg.setAttribute("viewBox", `${bbox.x - 1} ${bbox.y - 1} ${bbox.width + 2} ${bbox.height + 2}`);
+            svg.setAttribute(
+              'viewBox',
+              `${bbox.x - 1} ${bbox.y - 1} ${bbox.width + 2} ${bbox.height + 2}`
+            );
             elem.classList.remove('loading');
             this.removeLoading(elem);
-          }
+          };
 
           if (isPromise(structure)) {
-            structure.then(initStructure)
+            structure.then(initStructure);
           } else {
-            initStructure(structure)
+            initStructure(structure);
           }
-
         },
         transform: `translate(-100%, -50%)`,
         position: 'center',
@@ -381,7 +504,7 @@ export class Interactivity {
   }
 
   onZoom: {
-    [name: string]: (e?: cytoscape.EventObjectCore) => void
+    [name: string]: (e?: cytoscape.EventObjectCore) => void;
     shadow: (e?: cytoscape.EventObjectCore) => void;
     protein: (e?: cytoscape.EventObjectCore) => void;
   } = {
@@ -390,14 +513,13 @@ export class Interactivity {
   };
 
   triggerZoom() {
-    Object.values(this.onZoom).forEach(onZoom => onZoom())
+    Object.values(this.onZoom).forEach((onZoom) => onZoom());
   }
 
   structureContainers!: cytoscape.NodeCollection;
 
   updateProteins() {
-    this.structureContainers = this.cy.nodes('.Protein')
-      .or('.Molecule');
+    this.structureContainers = this.cy.nodes('.Protein').or('.Molecule');
   }
 
   initZoom(cy: cytoscape.Core) {
@@ -406,79 +528,144 @@ export class Interactivity {
     const trivial = cy.elements('.trivial');
     this.updateProteins();
 
-    cy.minZoom(Math.min(cy.zoom(), extract(this.properties.shadow.labelOpacity)[0][0] / 100));
+    cy.minZoom(
+      Math.min(
+        cy.zoom(),
+        extract(this.properties.shadow.labelOpacity)[0][0] / 100
+      )
+    );
     cy.maxZoom(15);
 
     let baseFontSize = extract(this.properties.font.size);
-    const structureOpacityArray = extract(this.properties.structure.opacity)
+    const structureOpacityArray = extract(this.properties.structure.opacity);
     const zoomStart = structureOpacityArray[0][0];
-    const zoomEnd = structureOpacityArray[structureOpacityArray.length - 1][0]
-
+    const zoomEnd = structureOpacityArray[structureOpacityArray.length - 1][0];
 
     this.onZoom.shadow = () => {
-
       const zoomLevel = cy.zoom();
       const z = zoomLevel * 100;
-      const shadowLabelOpacity = this.interpolate(z, extract(this.properties.shadow.labelOpacity).map(v => this.p(...v))) / 100;
-      const trivialOpacity = this.interpolate(z, extract(this.properties.trivial.opacity).map(v => this.p(...v))) / 100;
-      let shadowOpacity = this.interpolate(z, extract(this.properties.shadow.opacity).map(v => this.p(...v))) / 100;
+      const shadowLabelOpacity =
+        this.interpolate(
+          z,
+          extract(this.properties.shadow.labelOpacity).map((v) => this.p(...v))
+        ) / 100;
+      const trivialOpacity =
+        this.interpolate(
+          z,
+          extract(this.properties.trivial.opacity).map((v) => this.p(...v))
+        ) / 100;
+      let shadowOpacity =
+        this.interpolate(
+          z,
+          extract(this.properties.shadow.opacity).map((v) => this.p(...v))
+        ) / 100;
 
       // A dirty fix for removing shadowEdges color when no shadow color is defined, color black is assigned to the edges after removing shadow class
-      if (shadows.style('underlay-color') === "rgb(0,0,0)") {
+      if (shadows.style('underlay-color') === 'rgb(0,0,0)') {
         shadowOpacity = 0;
       }
 
       shadows.style({
-        'underlay-opacity': shadowOpacity
+        'underlay-opacity': shadowOpacity,
       });
       shadowLabels.style({
-        'text-opacity': shadowLabelOpacity
+        'text-opacity': shadowLabelOpacity,
       });
       trivial.style({
-        'opacity': trivialOpacity,
-        'underlay-opacity': Math.min(shadowOpacity, trivialOpacity)
+        opacity: trivialOpacity,
+        'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
       });
-    }
+    };
+    const updateDecorationPosition = (node: cytoscape.NodeSingular) => {
+      if (!this.structureContainers.has(node)) return;
+      node.removeStyle('background-position-x');
+      node.removeStyle('background-position-y');
+      node.removeStyle('background-width');
+      node.removeStyle('background-height');
+      const i = (node.numericStyle('background-image') as string[]).findIndex(
+        (svg) => svg.includes('RX')
+      );
+
+      const xs = [...(node.numericStyle('background-position-x') as number[])];
+      const ys = [...(node.numericStyle('background-position-y') as number[])];
+      const widths = [...(node.numericStyle('background-width') as number[])];
+      const heights = [...(node.numericStyle('background-height') as number[])];
+
+      const x = xs[i];
+      xs[i] = x + this.margin * 2 * node.data('width');
+      // margin : 0 -> 0.25
+      const scale = 1 - this.margin * 2; // 1 -> 0.5
+      widths[i] = widths[i] * scale;
+      heights[i] = heights[i] * scale;
+      ys[i] = ys[i] + heights[i] * this.margin * 2;
+      node.style('background-position-x', xs);
+      node.style('background-position-y', ys);
+      node.style('background-width', widths);
+      node.style('background-height', heights);
+    };
 
     this.onZoom.protein = () => {
       const zoomLevel = cy.zoom();
       const z = zoomLevel * 100;
-      const videoOpacity = this.interpolate(z, extract(this.properties.structure.opacity).map(v => this.p(...v))) / 100;
+      const videoOpacity =
+        this.interpolate(
+          z,
+          extract(this.properties.structure.opacity).map((v) => this.p(...v))
+        ) / 100;
 
-      const maxWidth = this.interpolate(z, [this.p(zoomStart, 100), this.p(zoomEnd, 50)]);
-      this.margin = this.interpolate(z, [this.p(zoomStart, 0), this.p(zoomEnd, 0.25)]);
-      const fontSize = this.interpolate(z, [this.p(zoomStart, baseFontSize), this.p(zoomEnd, baseFontSize / 2)]);
-      this.structureContainers.style(
-        {
-          'font-size': fontSize,
-          'text-margin-x': (n: cytoscape.NodeSingular) => this.margin * n.data("width"),
-          'text-max-width': maxWidth + "%",
-        })
+      const maxWidth = this.interpolate(z, [
+        this.p(zoomStart, 100),
+        this.p(zoomEnd, 50),
+      ]); //might need to be commented out (Jhaque)
+      this.margin = this.interpolate(z, [
+        this.p(zoomStart, 0),
+        this.p(zoomEnd, 0.25),
+      ]);
+      const fontSize = this.interpolate(z, [
+        this.p(zoomStart, baseFontSize),
+        this.p(zoomEnd, baseFontSize / 2),
+      ]);
+      this.structureContainers.style({
+        'font-size': fontSize,
+        'text-margin-x': (n: cytoscape.NodeSingular) =>
+          this.margin * n.data('width') + (n.hasClass('drug') ? 10 : 0),
+        'text-max-width': maxWidth + '%', //Might need to be deleted (Jhaque)
+      });
 
-      if (this.videoLayer) this.videoLayer.node.style.opacity = videoOpacity + '';
-      if (this.moleculeLayer) this.moleculeLayer.node.style.opacity = videoOpacity + '';
+      this.structureContainers.nodes('.drug').forEach(updateDecorationPosition);
+
+      if (this.videoLayer)
+        this.videoLayer.node.style.opacity = videoOpacity + '';
+      if (this.moleculeLayer)
+        this.moleculeLayer.node.style.opacity = videoOpacity + '';
     };
 
     cy.on('zoom', this.onZoom.shadow);
     cy.on('zoom', this.onZoom.protein);
+    const handler = (e: cytoscape.EventObject) =>
+      updateDecorationPosition(e.target);
+    cy.on('mouseover', '.drug', handler)
+      .on('mouseout', '.drug', handler)
+      .on('deselect', '.drug', handler)
+      .on('select', '.drug', handler);
 
-    this.triggerZoom()
+    this.triggerZoom();
   }
 
   margin = 0;
 
   p(x: number, y: number): P {
-    return new P(x, y)
+    return new P(x, y);
   }
 
   interpolate(x: number, points: P[]): number {
     if (x < points.at(0)!.x) return points.at(0)!.y;
     if (x > points.at(-1)!.x) return points.at(-1)!.y;
     for (let i = 0; i + 1 < points.length; i++) {
-      let y = this.lerp(x, points[i], points[i + 1])
+      let y = this.lerp(x, points[i], points[i + 1]);
       if (y) return y;
     }
-    console.assert(false, "Should not arrive here")
+    console.assert(false, 'Should not arrive here');
     return 0;
   }
 
@@ -495,14 +682,14 @@ export class Interactivity {
 }
 
 interface State {
-  [k: string]: boolean
+  [k: string]: boolean;
 }
 
 const state: State = {
   selecting: false,
   hovering: false,
-  deHovering: false
-}
+  deHovering: false,
+};
 
 class P extends Array<number> {
   constructor(x: number, y: number) {
@@ -510,23 +697,21 @@ class P extends Array<number> {
   }
 
   get x() {
-    return this[0]
+    return this[0];
   }
 
   get y() {
-    return this[1]
+    return this[1];
   }
 }
-
 
 function isElementInViewport(el: HTMLElement) {
   let rect = el.getBoundingClientRect();
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.bottom <=
+      (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
 }
-
-
