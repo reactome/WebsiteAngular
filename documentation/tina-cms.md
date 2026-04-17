@@ -31,15 +31,16 @@ To Edit a pre-existing page in your local dev environment follow the following s
 1. **Start your Reactome local dev environment**  
 If you followed the ````documentation/local-environment.md```` tutorial run ````npm start````  
 If you followed the ````documentation/local-environment-docker.md```` tutorial run ````docker compose up --build````  
-2. **Navigate to /admin**
-3.  **Go to the collection you would like to edit from**  
+2. **Navigate to /admin in the search bar**
+[http://localhost:4200/admin](http://localhost:4200/admin)
+4.  **Go to the collection you would like to edit from**  
 Find the "Navigation Menu" button and click on the *collection* that the article you would like to edit is in.  
-4. **Find your chosen article**
-5. **Click on the ... menu and select Edit in Admin**
-6. **Edit your page / article**  
-7. **Click Save**  
+5. **Find your chosen article**
+6. **Click on the ... menu and select Edit in Admin**
+7. **Edit your page / article**  
+8. **Click Save**  
    
-8. **Refresh your local environment**  
+9. **Refresh your local environment**  
 Stop it with ````^C```` and run again with the command from *Step 1* 
 
 Your edited page will now appear in your local environment. To publish your changes, view the *publishing to github* portion of this tutorial.
