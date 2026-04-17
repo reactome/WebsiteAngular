@@ -13,7 +13,8 @@ Depending on whether you are adding an *about*, *content*, *documentation*, *too
 If you followed the ````documentation/local-environment.md```` tutorial run ````npm start````  
 If you followed the ````documentation/local-environment-docker.md```` tutorial run ````docker compose up --build````  
 
-3. **Navigate to /admin**
+3. **Navigate to /admin in the search bar**  
+[http://localhost:4200/admin](http://localhost:4200/admin)
 4. **Go to the collection you would like to add to**  
 Find the "Navigation Menu" button and click on the *collection* you would like to add to.  
 5. **Click Add File**
@@ -31,7 +32,7 @@ To Edit a pre-existing page in your local dev environment follow the following s
 1. **Start your Reactome local dev environment**  
 If you followed the ````documentation/local-environment.md```` tutorial run ````npm start````  
 If you followed the ````documentation/local-environment-docker.md```` tutorial run ````docker compose up --build````  
-2. **Navigate to /admin in the search bar**
+2. **Navigate to /admin in the search bar**  
 [http://localhost:4200/admin](http://localhost:4200/admin)
 4.  **Go to the collection you would like to edit from**  
 Find the "Navigation Menu" button and click on the *collection* that the article you would like to edit is in.  
