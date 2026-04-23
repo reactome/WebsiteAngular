@@ -11,9 +11,9 @@
         <time class="article-date">{{ formatD(article.date) }}</time>
         <span *ngIf="article.author" class="article-author">by {{ article.author }}</span>
       </div>
-      <div *ngIf="article.tags" [class]="'article-tags' + (article.tags.length > 0 ? ' has-tags' : '')">
+      <!-- <div *ngIf="article.tags" [class]="'article-tags' + (article.tags.length > 0 ? ' has-tags' : '')">
         <span *ngFor="let tag of article.tags" class="tag">{{ tag }}</span>
-      </div>
+      </div> -->
     </header>
     <div class="article-body">
       <img class="article-image" *ngIf="article.image" [src]="article.image" alt="Article Image" class="article-image"/>
