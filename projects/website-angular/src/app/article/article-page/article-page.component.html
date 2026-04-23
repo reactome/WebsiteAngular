@@ -17,13 +17,13 @@
             <div class="news-content">
               <div class="news-meta">
                 <time [attr.datetime]="article.date">{{ formatD(article.date) }}</time>
-                @if (article.tags && article.tags.length > 0) {
+                <!-- @if (article.tags && article.tags.length > 0) {
                   <div class="news-tags">
                     @for (tag of article.tags.slice(0, 3); track tag) {
                       <span class="tag">{{ tag }}</span>
                     }
                   </div>
-                }
+                } -->
               </div>
               <h2>
                 <a [href]="'/' + articlePath + '/' + article.slug">{{ article.title }}</a>
