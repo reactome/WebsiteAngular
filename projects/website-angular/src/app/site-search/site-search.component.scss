@@ -2,9 +2,8 @@ $spacing: 24px;
 $border-radius: 8px;
 
 .site-search {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: $spacing 0;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {

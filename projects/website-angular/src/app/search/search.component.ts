@@ -92,7 +92,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   proteinTotalForms = 0;
   proteinLoading = false;
 
-  currentMode: 'simple' | 'advanced' | 'reference' = 'simple';
+  currentMode: 'simple' | 'advanced' | 'reference' | 'site-search' = 'simple';
 
   private paramsSub!: Subscription;
 
@@ -126,6 +126,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.currentMode = 'advanced';
       } else if (params['reference'] === 'true') {
         this.currentMode = 'reference';
+      } else if (params['site-search'] === 'true') {
+        this.currentMode = 'site-search';
       } else {
         this.currentMode = 'simple';
       }
