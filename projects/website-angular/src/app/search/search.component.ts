@@ -27,6 +27,7 @@ import {
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
+import { SiteSearchComponent } from '../site-search/site-search.component';
 
 @Component({
   selector: 'app-search',
@@ -36,6 +37,7 @@ import { MatIcon } from '@angular/material/icon';
     TileComponent,
     RouterLink,
     SearchBarComponent,
+    SiteSearchComponent,
     FormsModule,
     DatePipe,
     MatIcon,
@@ -132,7 +134,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.currentMode = 'simple';
       }
 
-      if (this.query) {
+      if (this.query && this.currentMode !== 'site-search') {
         this.searchSubmitted = true;
         this.doSearch();
         this.getSuggestions(this.query);

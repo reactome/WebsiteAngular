@@ -42,9 +42,11 @@
         Site Search
       </button>
     </div>
+
+    @if (currentMode !== 'site-search') {
     <!-- Search bar + filters above the two-column layout -->
     <div class="search-top">
-      @if (currentMode !== 'site-search') {
+      
       <app-search-bar
         [query]="query"
         (queryChange)="onQueryInput($event)"
@@ -52,14 +54,11 @@
         [filters]="!(query && searchSubmitted)"
         [showSuggestions]="!(query && searchSubmitted)"
       />
-      } @else {
-      <app-site-search />
-      }
+      
     </div>
 
     <!-- Active filter chips -->
-    @if (getActiveFilters(); as activeFilters) { @if (activeFilters.length &&
-    currentMode !== 'site-search') {
+    @if (getActiveFilters(); as activeFilters) { @if (activeFilters.length) {
     <div class="active-filters">
       @for (f of activeFilters; track f.category + f.value) {
       <button class="filter-chip" (click)="toggleFacet(f.category, f.value)">
@@ -71,8 +70,7 @@
     } }
 
     <!-- Result count + group toggle -->
-    @if (results && !loading && currentMode !== "reference" && currentMode !==
-    "site-search") {
+    @if (results && !loading && currentMode !== "reference") {
     <div class="results-toolbar">
       <p class="result-count">
         {{ results.numberOfMatches }} results found for "{{ query }}"
@@ -86,7 +84,8 @@
       </button>
       }
     </div>
-    } @if (currentMode !== 'site-search') {
+    }
+    
     <div class="search-layout">
       <!-- Facet sidebar -->
       <aside [class]="'facet-sidebar' + (hasNoResults ? ' no-results' : '')">
@@ -876,10 +875,8 @@ NOTE: This is an automatically generated message.
         } } }
       </div>
     </div>
-    } @if (currentMode === 'site-search') {
-    <div class="site-search-container">
-      <app-site-search [query]="query" (queryChange)="onQueryInput($event)" />
-    </div>
+    } @else {
+      <app-site-search/>
     }
   </div>
 </app-page-layout>

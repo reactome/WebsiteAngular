@@ -1,27 +1,25 @@
 <div class="site-search">
-  <h1>Site Search</h1>
-  <p class="site-search-description">
-    Search across all Reactome pages including news, documentation, community
-    pages, and more.
-  </p>
-
-  <div class="search-bar">
-    <div class="search-input-wrapper">
-      <span class="material-symbols-rounded search-icon">search</span>
-      <input
-        type="text"
-        placeholder="Search Reactome pages..."
-        [value]="query"
-        (input)="onInput($event)"
-        autocomplete="off"
-        autofocus
-      />
-      @if (query) {
-        <button class="clear-btn" (click)="clearSearch()">
+  <div class="search-top">
+      <form class="search-bar-container" (submit)="onSubmit($event)">
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Search Reactome pages..."
+          [value]="query"
+          (input)="onInput($event)"
+          autocomplete="off"
+          autofocus
+        />
+        @if (query) {
+        <button class="search-button" (click)="clearSearch()">
           <span class="material-symbols-rounded">close</span>
         </button>
+      } @else {
+        <button type="submit" class="search-button">Go!</button>
       }
-    </div>
+        
+      </form>
+      
   </div>
 
   @if (loading) {

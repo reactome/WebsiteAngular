@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import MiniSearch from 'minisearch';
-import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { SiteSearchIndexItem } from '../../types/site-search';
 
 interface SearchResultItem extends SiteSearchIndexItem {
@@ -18,7 +17,7 @@ interface GroupedResults {
 @Component({
   selector: 'app-site-search',
   standalone: true,
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [ RouterLink],
   templateUrl: './site-search.component.html',
   styleUrl: './site-search.component.scss',
 })
