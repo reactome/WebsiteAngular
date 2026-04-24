@@ -98,162 +98,161 @@
     "link": "/documentation",
     "icon": "school",
     "dropdown-links": {
-        "userguide": {
-            "label": "Userguide",
-            "link": "/documentation/userguide",
+      "userguide": {
+        "label": "Userguide",
+        "link": "/documentation/userguide",
+        "dropdown-links": {
+          "pathway-browser": {
+            "label": "Pathway Browser",
+            "link": "/documentation/userguide/pathway-browser"
+          },
+          "how-do-i-search": {
+            "label": "How do I search?",
+            "link": "/documentation/userguide/searching"
+          },
+          "details-panel": {
+            "label": "Details Panel",
+            "link": "/documentation/userguide/details-panel"
+          },
+          "analysis-tools": {
+            "label": "Analysis Tools",
+            "link": "/documentation/userguide/analysis",
             "dropdown-links": {
-              "pathway-browser": {
-                "label": "Pathway Browser",
-                "link": "/documentation/userguide/pathway-browser"
-              },
-              "how-do-i-search": {
-                "label": "How do I search?",
-                "link": "/documentation/userguide/searching"
-              },
-              "details-panel": {
-                "label": "Details Panel",
-                "link": "/documentation/userguide/details-panel"
-              },
-              "analysis-tools": {
-                "label": "Analysis Tools",
-                "link": "/documentation/userguide/analysis",
-                "dropdown-links": {
-                  "analysis-gene-expression": {
-                    "label": "Analysis Gene Expression",
-                    "link": "/documentation/userguide/analysis/gsa"
-                  }
-                }
-              },
-              "diseases": {
-                "label": "Diseases",
-                "link": "/documentation/userguide/diseases"
-              },
-              "cytomics": {
-                "label": "Cytomics",
-                "link": "/documentation/userguide/cytomics"
-              },
-              "review-status": {
-                "label": "Review Status of Reactome Events",
-                "link": "/documentation/userguide/review-status"
-              },
-              "reactome-fiviz": {
-                "label": "ReactomeFIViz",
-                "link": "/documentation/userguide/reactome-fiviz"
-              }
-
-            }
-        },
-        "developers-zone": {
-            "label": "Developers Zone",
-            "link": "/documentation/dev",
-            "dropdown-links": {
-              "graph-database": {
-                "label": "Graph Database",
-                "link": "/documentation/dev/graph-database",
-                "dropdown-links": {
-                  "extract-participating-molecules": {
-                    "label": "Extract Participating Molecules",
-                    "link": "/documentation/dev/graph-database/extract-participating-molecules"
-                  },
-                  "neo4j-desktop": {
-                    "label": "Neo4j Desktop",
-                    "link": "/documentation/dev/graph-database/neo4j-desktop"
-                  }
-                }
-              },
-              "analysis-service": {
-                "label": "Analysis Service",
-                "link": "/documentation/dev/analysis"
-              },
-              
-              "content-service": {
-                "label": "Content Service",
-                "link": "/documentation/dev/content-service",
-                "dropdown-links": {
-                  "diagram-exporter": {
-                    "label": "Diagram Exporter",
-                    "link": "/documentation/dev/content-service/diagram-exporter"
-                  }
-                }
-              },
-              "pathways-overview": {
-                "label": "Pathways Overview",
-                "link": "/documentation/dev/pathways-overview",
-                "dropdown-links": {
-                  "js": {
-                    "label": "Pathway JS",
-                    "link": "/documentation/dev/pathways-overview/js"
-                  },
-                  "gwt": {
-                    "label": "Pathway GWT",
-                    "link": "/documentation/dev/pathways-overview/gwt"
-                  }
-                }
-              },
-              "diagram": {
-                "label": "Pathway Diagrams",
-                "link": "/documentation/dev/diagram",
-                "dropdown-links": {
-                  "pathway-diagram-specs": {
-                    "label": "Pathway Diagram Specs",
-                    "link": "/documentation/dev/diagram/pathway-diagram-specs"
-                  },
-                  "js": {
-                    "label": "Diagram JS",
-                    "link": "/documentation/dev/diagram/js"
-                  },
-                  "gwt": {
-                    "label": "Diagram GWT",
-                    "link": "/documentation/dev/diagram/gwt"
-                  }
-                }
+              "analysis-gene-expression": {
+                "label": "Analysis Gene Expression",
+                "link": "/documentation/userguide/analysis/gsa"
               }
             }
-        },
-        "icon-info": {
-            "label": "Icon Info",
-            "link": "/documentation/icon-info",
-            "dropdown-links": {
-              "ehld": {
-                "label": "EHLD Specs & Guidelines",
-                "link": "/documentation/icon-info/ehld-specs-guideline"
-              },
-              "icons-guidelines": {
-                "label": "Icon Library Guidelines",
-                "link": "/documentation/icon-info/icons-guidelines"
-              }
-            }
-        },
-        "data-model": {
-            "label": "Data Model",
-            "link": "/documentation/data-model"
-        },
-        "curator-guide": {
-            "label": "Curator Guide",
-            "link": "/documentation/curator-guide"
-        },
-        "computationally-inferred-events": {
-            "label": "Computationally Inferred Events",
-            "link": "/documentation/inferred-events"
-        },
-        "faq": {
-            "label": "FAQ",
-            "link": "/documentation/faq"
-        },
-        "linking-to-us": {
-            "label": "Linking to Us",
-            "link": "/documentation/linking-to-us",
-            "dropdown-links": {
-              "identifiers": {
-                "label": "Identifiers",
-                "link": "/documentation/linking-to-us/identifiers"
-              }
-            }
-        },
-        "citing-us": {
-            "label": "Citing Us",
-            "link": "/documentation/cite"
+          },
+          "diseases": {
+            "label": "Diseases",
+            "link": "/documentation/userguide/diseases"
+          },
+          "cytomics": {
+            "label": "Cytomics",
+            "link": "/documentation/userguide/cytomics"
+          },
+          "review-status": {
+            "label": "Review Status of Reactome Events",
+            "link": "/documentation/userguide/review-status"
+          },
+          "reactome-fiviz": {
+            "label": "ReactomeFIViz",
+            "link": "/documentation/userguide/reactome-fiviz"
+          }
         }
+      },
+      "developers-zone": {
+        "label": "Developers Zone",
+        "link": "/documentation/dev",
+        "dropdown-links": {
+          "graph-database": {
+            "label": "Graph Database",
+            "link": "/documentation/dev/graph-database",
+            "dropdown-links": {
+              "extract-participating-molecules": {
+                "label": "Extract Participating Molecules",
+                "link": "/documentation/dev/graph-database/extract-participating-molecules"
+              },
+              "neo4j-desktop": {
+                "label": "Neo4j Desktop",
+                "link": "/documentation/dev/graph-database/neo4j-desktop"
+              }
+            }
+          },
+          "analysis-service": {
+            "label": "Analysis Service",
+            "link": "/documentation/dev/analysis"
+          },
+
+          "content-service": {
+            "label": "Content Service",
+            "link": "/documentation/dev/content-service",
+            "dropdown-links": {
+              "diagram-exporter": {
+                "label": "Diagram Exporter",
+                "link": "/documentation/dev/content-service/diagram-exporter"
+              }
+            }
+          },
+          "pathways-overview": {
+            "label": "Pathways Overview",
+            "link": "/documentation/dev/pathways-overview",
+            "dropdown-links": {
+              "js": {
+                "label": "Pathway JS",
+                "link": "/documentation/dev/pathways-overview/js"
+              },
+              "gwt": {
+                "label": "Pathway GWT",
+                "link": "/documentation/dev/pathways-overview/gwt"
+              }
+            }
+          },
+          "diagram": {
+            "label": "Pathway Diagrams",
+            "link": "/documentation/dev/diagram",
+            "dropdown-links": {
+              "pathway-diagram-specs": {
+                "label": "Pathway Diagram Specs",
+                "link": "/documentation/dev/diagram/pathway-diagram-specs"
+              },
+              "js": {
+                "label": "Diagram JS",
+                "link": "/documentation/dev/diagram/js"
+              },
+              "gwt": {
+                "label": "Diagram GWT",
+                "link": "/documentation/dev/diagram/gwt"
+              }
+            }
+          }
+        }
+      },
+      "icon-info": {
+        "label": "Icon Info",
+        "link": "/documentation/icon-info",
+        "dropdown-links": {
+          "ehld": {
+            "label": "EHLD Specs & Guidelines",
+            "link": "/documentation/icon-info/ehld-specs-guideline"
+          },
+          "icons-guidelines": {
+            "label": "Icon Library Guidelines",
+            "link": "/documentation/icon-info/icons-guidelines"
+          }
+        }
+      },
+      "data-model": {
+        "label": "Data Model",
+        "link": "/documentation/data-model"
+      },
+      "curator-guide": {
+        "label": "Curator Guide",
+        "link": "/documentation/curator-guide"
+      },
+      "computationally-inferred-events": {
+        "label": "Computationally Inferred Events",
+        "link": "/documentation/inferred-events"
+      },
+      "faq": {
+        "label": "FAQ",
+        "link": "/documentation/faq"
+      },
+      "linking-to-us": {
+        "label": "Linking to Us",
+        "link": "/documentation/linking-to-us",
+        "dropdown-links": {
+          "identifiers": {
+            "label": "Identifiers",
+            "link": "/documentation/linking-to-us/identifiers"
+          }
+        }
+      },
+      "citing-us": {
+        "label": "Citing Us",
+        "link": "/documentation/cite"
+      }
     }
   },
   "tools": {
@@ -261,85 +260,85 @@
     "link": "/tools",
     "icon": "perm_data_setting",
     "dropdown-links": {
-        "pathway-browser": {
-            "label": "Pathway Browser",
-            "link": "/PathwayBrowser"
-        },
-        "analyse-gene-expression": {
-            "label": "Analyse gene expression",
-            "link": "/gsa/home"
-        },
-        "species-comparison": {
-            "label": "Species Comparison",
-            "link": "/PathwayBrowser/#TOOL=AT"
-        },
-        "tissue-distribution": {
-            "label": "Tissue Distribution",
-            "link": "/PathwayBrowser/#TOOL=AT"
-        },
-        "analysis-service": {
-            "label": "Analysis Service",
-            "link": "/AnalysisService",
-            "external": true
-        },
-        "content-service": {
-            "label": "Content Service",
-            "link": "/ContentService",
-            "external": true
-        },
-        "reactome-fiviz": {
-            "label": "ReactomeFIViz",
-            "link": "/tools/reactome-fiviz"
-        },
-        "search": {
-            "label": "Search",
-            "link": "/content/query"
-        }
+      "pathway-browser": {
+        "label": "Pathway Browser",
+        "link": "/PathwayBrowser"
+      },
+      "analyse-gene-expression": {
+        "label": "Analyse gene expression",
+        "link": "/gsa/home"
+      },
+      "species-comparison": {
+        "label": "Species Comparison",
+        "link": "/PathwayBrowser/#TOOL=AT"
+      },
+      "tissue-distribution": {
+        "label": "Tissue Distribution",
+        "link": "/PathwayBrowser/#TOOL=AT"
+      },
+      "analysis-service": {
+        "label": "Analysis Service",
+        "link": "/AnalysisService",
+        "external": true
+      },
+      "content-service": {
+        "label": "Content Service",
+        "link": "/ContentService",
+        "external": true
+      },
+      "reactome-fiviz": {
+        "label": "ReactomeFIViz",
+        "link": "/tools/reactome-fiviz"
+      },
+      "search": {
+        "label": "Search",
+        "link": "/content/query"
+      }
     }
   },
   "community": {
     "label": "Community",
     "link": "/community",
-     "icon": "contacts",
+    "icon": "contacts",
     "dropdown-links": {
-         "contribute-pathway-knowledge": {
-            "label": "Contribute Pathway Knowledge",
-            "link": "/community/collaboration",
-            "dropdown-links": {
-              "faq-for-prospective-reviewers-and-authors": {
-                "label": "FAQ for Prospective Reviewers and Authors",
-                "link": "/community/collaboration/faq-for-prospective-reviewers-and-authors"
-              }
-            }
-        },
-        "icon-library": {
-            "label": "Icon Library",
-            "link": "/community/icon-lib"
-        },
-        "outreach": {
-            "label": "Outreach",
-            "link": "/community/outreach"
-        },
-        "events": {
-            "label": "Events",
-            "link": "/community/events"
-        },
-        "publications": {
-            "label": "Publications",
-            "link": "/community/publications"
-        },
-        "partners": {
-            "label": "Partners",
-            "link": "/community/partners"
-        },
-        "contributors": {
-            "label": "Contributors",
-            "link": "/community/contributors"
-        },
-        "resources-guide": {
-            "label": "Resources Guide",
-            "link": "/community/resources"
+      "contribute-pathway-knowledge": {
+        "label": "Contribute Pathway Knowledge",
+        "link": "/community/collaboration",
+        "dropdown-links": {
+          "faq-for-prospective-reviewers-and-authors": {
+            "label": "FAQ for Prospective Reviewers and Authors",
+            "link": "/community/collaboration/faq-for-prospective-reviewers-and-authors"
+          }
         }
+      },
+      "icon-library": {
+        "label": "Icon Library",
+        "link": "/community/icon-lib"
+      },
+      "outreach": {
+        "label": "Outreach",
+        "link": "/community/outreach"
+      },
+      "events": {
+        "label": "Events",
+        "link": "/community/events"
+      },
+      "publications": {
+        "label": "Publications",
+        "link": "/community/publications"
+      },
+      "partners": {
+        "label": "Partners",
+        "link": "/community/partners"
+      },
+      "contributors": {
+        "label": "Contributors",
+        "link": "/community/contributors"
+      },
+      "resources-guide": {
+        "label": "Resources Guide",
+        "link": "/community/resources"
+      }
     }
   },
   "download": {

@@ -17,7 +17,7 @@ interface GroupedResults {
 @Component({
   selector: 'app-site-search',
   standalone: true,
-  imports: [ RouterLink],
+  imports: [RouterLink],
   templateUrl: './site-search.component.html',
   styleUrl: './site-search.component.scss',
 })
