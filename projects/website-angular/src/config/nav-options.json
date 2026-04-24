@@ -294,10 +294,6 @@
         "search": {
             "label": "Search",
             "link": "/content/query"
-        },
-        "site-search": {
-            "label": "Site Search",
-            "link": "/tools/site-search"
         }
     }
   },

@@ -43,7 +43,6 @@ export const routes: Routes = [
 
     //Search Pages
     { path: 'content/query', loadComponent: () => import('./search/search.component').then(m => m.SearchComponent) },
-    { path: 'tools/site-search', loadComponent: () => import('./site-search/site-search.component').then(m => m.SiteSearchComponent) },
 
     //API Documentation (Swagger UI)
     { path: 'ContentService', loadComponent: () => import('./swagger-page/swagger-page.component').then(m => m.SwaggerPageComponent), data: { serviceName: 'ContentService' } },
