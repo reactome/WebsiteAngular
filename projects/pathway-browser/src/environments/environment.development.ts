@@ -11,7 +11,7 @@ export const environment = {
   preferS3: env.preferS3
 };
 
-export const CONTENT_SERVICE = `${environment.host}/ContentService`;
+export const CONTENT_SERVICE = `http://localhost:8686/data`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;

@@ -82,8 +82,10 @@ export interface SimpleDatabaseObject {
 })
 export class ContentDataService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://dev.reactome.org/ContentService/data/content';
-  private schemaUrl = 'https://dev.reactome.org/ContentService/data/schema';
+  // private baseUrl = 'https://dev.reactome.org/ContentService/data/content';
+  // private schemaUrl = 'https://dev.reactome.org/ContentService/data/schema';
+  private baseUrl = 'http://localhost:8686/data';
+  private schemaUrl = 'http://localhost:8686/data/schema';
 
   getTocPathways(): Observable<TocPathway[]> {
     return this.http.get<TocPathway[]>(`${this.baseUrl}/toc`);
@@ -132,7 +134,7 @@ export class ContentDataService {
 
   getInstance(id: string | number): Observable<any> {
     return this.http.get<any>(
-      `https://dev.reactome.org/ContentService/data/query/enhanced/${id}`
+      `${this.baseUrl}/query/enhanced/${id}`
     );
   }
 }
