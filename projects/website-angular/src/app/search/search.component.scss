@@ -263,6 +263,11 @@ $border-radius: 8px;
       height: 24px;
     }
   }
+
+  .page-icon {
+    font-size: 24px;
+    color: var(--primary);
+  }
 }
 
 /** START - Sprite base configuration **/
@@ -1384,6 +1389,34 @@ $border-radius: 8px;
   user-select: none;
 }
 
+// Filter sidebar toggle button — only surfaces on narrow screens where the
+// sidebar drops below the results and would otherwise dominate the view.
+.filters-toggle-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  color: var(--primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  .material-symbols-rounded { font-size: 18px; }
+
+  &:hover { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+
+  .filters-toggle-count {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 0.8rem;
+  }
+}
+
 // Responsive
 @media (max-width: 1024px) {
   .search-layout {
@@ -1392,7 +1425,11 @@ $border-radius: 8px;
 
   .facet-sidebar {
     width: 100%;
+
+    &.collapsed { display: none; }
   }
+
+  .filters-toggle-btn { display: inline-flex; }
 
   .advanced-facet-grid {
     grid-template-columns: repeat(2, 1fr);

@@ -57,14 +57,19 @@ export interface SearchFilters {
   types?: string[];
   compartments?: string[];
   keywords?: string[];
+  // Client-side filter for the merged site-search "Pages" group. Values are
+  // page categories (e.g. "News", "Documentation").
+  pageCategories?: string[];
 }
+
+import { APP_CONFIG } from '../config/config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SearchService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://reactome.org/ContentService/search'; //TODO: alter in prod or make environment variable
+  private baseUrl = `${APP_CONFIG.contentServiceBaseUrl}/search`;
 
   search(
     query: string,

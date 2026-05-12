@@ -8,51 +8,13 @@
       </p>
     </div>
     }
-    <div class="search-mode-tabs">
-      <button
-        class="mode-tab"
-        [class.active]="currentMode === 'simple'"
-        (click)="currentMode = 'simple'"
-      >
-        <span class="material-symbols-rounded">search</span>
-        Simple Search
-      </button>
-      <button
-        class="mode-tab"
-        [class.active]="currentMode === 'advanced'"
-        (click)="currentMode = 'advanced'"
-      >
-        <span class="material-symbols-rounded">tune</span>
-        Advanced Search
-      </button>
-      <button
-        class="mode-tab"
-        [class.active]="currentMode === 'reference'"
-        (click)="currentMode = 'reference'"
-      >
-        <span class="material-symbols-rounded">menu_book</span>
-        Reference Search
-      </button>
-      <button
-        class="mode-tab"
-        [class.active]="currentMode === 'site-search'"
-        (click)="currentMode = 'site-search'"
-      >
-        <span class="material-symbols-rounded">feature_search</span>
-        Site Search
-      </button>
-    </div>
-
-    @if (currentMode !== 'site-search') {
     <!-- Search bar + filters above the two-column layout -->
     <div class="search-top">
       
       <app-search-bar
         [query]="query"
         (queryChange)="onQueryInput($event)"
-        [currentMode]="currentMode"
         [filters]="!(query && searchSubmitted)"
-        [showSuggestions]="!(query && searchSubmitted)"
       />
       
     </div>
@@ -69,26 +31,49 @@
     </div>
     } }
 
-    <!-- Result count + group toggle -->
-    @if (results && !loading && currentMode !== "reference") {
+    <!-- Result count + collapse/expand all -->
+    @if (results && !loading) {
     <div class="results-toolbar">
       <p class="result-count">
         {{ results.numberOfMatches }} results found for "{{ query }}"
       </p>
       @if (!hasNoResults) {
-      <button class="group-toggle-btn" (click)="grouped = !grouped">
-        <span class="material-symbols-rounded">{{
-          grouped ? "view_list" : "view_agenda"
-        }}</span>
-        {{ grouped ? "Ungroup" : "Group by type" }}
+      @if (allGroupsCollapsed()) {
+      <button class="group-toggle-btn" (click)="expandAllGroups()">
+        <span class="material-symbols-rounded">unfold_more</span>
+        Expand all
       </button>
+      } @else {
+      <button class="group-toggle-btn" (click)="collapseAllGroups()">
+        <span class="material-symbols-rounded">unfold_less</span>
+        Collapse all
+      </button>
+      }
       }
     </div>
     }
     
+    <button
+      class="filters-toggle-btn"
+      type="button"
+      (click)="filtersVisible = !filtersVisible"
+    >
+      <span class="material-symbols-rounded">filter_list</span>
+      {{ filtersVisible ? "Hide" : "Show" }} filters
+      @if (getActiveFilters().length) {
+      <span class="filters-toggle-count">({{ getActiveFilters().length }})</span>
+      }
+    </button>
+
     <div class="search-layout">
       <!-- Facet sidebar -->
-      <aside [class]="'facet-sidebar' + (hasNoResults ? ' no-results' : '')">
+      <aside
+        [class]="
+          'facet-sidebar' +
+          (hasNoResults ? ' no-results' : '') +
+          (filtersVisible ? '' : ' collapsed')
+        "
+      >
         <!-- Species facet -->
         @if (getFacetItems(facets?.speciesFacet); as items) { @if (items.length)
         {
@@ -202,6 +187,33 @@
           }
         </div>
         } }
+
+        <!-- Pages facet: page-category counts from merged site-search hits -->
+        @if (pageCategoryCounts.length) {
+        <div class="facet-section">
+          <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
+            <span>Pages</span>
+            <span class="facet-toggle">{{
+              collapsedFacets["pageCategories"] ? "+" : "−"
+            }}</span>
+          </button>
+          @if (!collapsedFacets['pageCategories']) {
+          <div class="facet-options">
+            @for (item of pageCategoryCounts; track item.name) {
+            <label class="facet-option">
+              <input
+                type="checkbox"
+                [checked]="isFacetSelected('pageCategories', item.name)"
+                (change)="toggleFacet('pageCategories', item.name)"
+              />
+              <span class="facet-name">{{ item.name }}</span>
+              <span class="facet-count">({{ item.count }})</span>
+            </label>
+            }
+          </div>
+          }
+        </div>
+        }
       </aside>
 
       <!-- Results area -->
@@ -437,9 +449,13 @@ NOTE: This is an automatically generated message.
               </div>
               } @for (entry of getGroupPageEntries(group); track entry.dbId) {
               <div class="search-entry">
-                @let entryIcon = getSubjectIcon(entry);
                 <div class="type-icon">
-                  <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
+                  @if (entry.exactType === 'Pages') {
+                    <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page">description</span>
+                  } @else {
+                    @let entryIcon = getSubjectIcon(entry);
+                    <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
+                  }
                 </div>
                 <div class="entry-info">
                   <div class="entry-header">
@@ -618,9 +634,13 @@ NOTE: This is an automatically generated message.
             <div class="group-entries">
               @for (entry of group.entries; track entry.dbId) {
               <div class="search-entry">
-                @let entryIcon = getSubjectIcon(entry);
                 <div class="type-icon">
-                  <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
+                  @if (entry.exactType === 'Pages') {
+                    <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page">description</span>
+                  } @else {
+                    @let entryIcon = getSubjectIcon(entry);
+                    <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
+                  }
                 </div>
                 <div class="entry-info">
                   <div class="entry-header">
@@ -882,8 +902,5 @@ NOTE: This is an automatically generated message.
         } } }
       </div>
     </div>
-    } @else {
-      <app-site-search/>
-    }
   </div>
 </app-page-layout>

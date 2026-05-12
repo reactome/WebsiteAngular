@@ -15,6 +15,11 @@ export const APP_CONFIG = {
   // dev.reactome.org, release.reactome.org, localhost) is serving this app.
   swaggerSpecBaseUrl: 'https://dev.reactome.org',
 
+  // Base URL for the Solr-backed ContentService search API used by the main
+  // search page. Same rationale as swaggerSpecBaseUrl: pointing at dev means
+  // local development sees the latest indexed content.
+  contentServiceBaseUrl: 'https://dev.reactome.org/ContentService',
+
   // pathway browser config
   pathwayBrowser: {
     stablePath: '/PathwayBrowser',

@@ -1,5 +1,7 @@
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
   inject,
   Input,
   Output,
@@ -7,8 +9,9 @@ import {
   OnChanges,
   SimpleChanges,
   HostListener,
+  ViewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   FacetCount,
   FacetResponse,
@@ -20,17 +23,18 @@ import { DropdownToggleComponent } from '../../reactome-components/dropdown-togg
 @Component({
   selector: 'app-search-bar',
   standalone: true,
-  imports: [DropdownToggleComponent],
+  imports: [DropdownToggleComponent, RouterLink],
   templateUrl: './search-bar.component.html',
   styleUrl: './search-bar.component.scss',
 })
-export class SearchBarComponent implements OnChanges {
+export class SearchBarComponent implements OnChanges, AfterViewInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
   @Input() query: string = '';
-  @Input() currentMode: 'advanced' | 'reference' | 'simple' = 'simple';
   @Input() filters = false;
   @Output() queryChange = new EventEmitter<string>();
+
+  @ViewChild('queryInput') queryInput?: ElementRef<HTMLTextAreaElement>;
 
   suggestions: string[] = [];
   highlightedIndex: number = -1;
@@ -46,10 +50,34 @@ export class SearchBarComponent implements OnChanges {
     }
   }
 
+  ngAfterViewInit(): void {
+    // Initial size sync in case the bar mounted with a pre-filled query.
+    this.autoGrow();
+  }
+
   onInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.query = value;
+    const ta = event.target as HTMLTextAreaElement;
+    this.query = ta.value;
+    this.autoGrow();
     this.getSuggestions(this.query);
+  }
+
+  onEnter(event: Event): void {
+    // Plain Enter submits; Shift+Enter inserts a newline so a multi-line
+    // boolean query is still possible.
+    const kb = event as KeyboardEvent;
+    if (kb.shiftKey) return;
+    event.preventDefault();
+    this.onSubmit(event);
+  }
+
+  // Resize the textarea to match its content so the bar looks like a
+  // single-line input at rest and grows naturally for long boolean queries.
+  private autoGrow(): void {
+    const ta = this.queryInput?.nativeElement;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -58,6 +86,8 @@ export class SearchBarComponent implements OnChanges {
     }
     if (changes['query']) {
       this.query = this.query || '';
+      // Defer to next tick so the textarea has the bound value before measuring.
+      setTimeout(() => this.autoGrow(), 0);
     }
   }
 
@@ -72,8 +102,6 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: q,
-      advanced: this.currentMode === 'advanced' ? 'true' : null,
-      reference: this.currentMode === 'reference' ? 'true' : null,
       page: null,
     };
 
@@ -115,8 +143,6 @@ export class SearchBarComponent implements OnChanges {
 
     const params: Record<string, string | string[] | null> = {
       q: s,
-      advanced: this.currentMode === 'advanced' ? 'true' : null,
-      reference: this.currentMode === 'reference' ? 'true' : null,
       page: null,
     };
 

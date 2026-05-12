@@ -289,10 +289,6 @@
       "reactome-fiviz": {
         "label": "ReactomeFIViz",
         "link": "/tools/reactome-fiviz"
-      },
-      "search": {
-        "label": "Search",
-        "link": "/content/query"
       }
     }
   },
