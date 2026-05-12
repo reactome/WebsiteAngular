@@ -208,12 +208,15 @@
       <div class="results-area">
         @if (loading) {
         <div class="loading">Searching...</div>
-        } @if (error) {
-        <div class="error">{{ error }}</div>
-        } @if (hasNoResults && !loading && !error && suggestedTerms.length > 0)
+        } @if (!loading && (error || hasNoResults))
         {
         <div class="no-results">
+          @if (error) {
+          <h2>Something went wrong searching for "{{ query }}"</h2>
+          <p class="error-detail">{{ error }}</p>
+          } @else {
           <h2>No results found for "{{ query }}"</h2>
+          @if (suggestedTerms.length > 0) {
           <h3>Did you mean...</h3>
           <ul class="suggestions">
             @for (s of this.suggestedTerms; track s) {
@@ -222,6 +225,8 @@
             </li>
             }
           </ul>
+          }
+          }
           @if (formSubmitted) {
           <div class="thank-you-message">
             <h2>Thank you for contacting us.</h2>
@@ -316,7 +321,7 @@
                   id="subject"
                   name="subject"
                   class="favth-form-control"
-                  [value]="'No results found for ' + query"
+                  [value]="(error ? 'Search error for ' : 'No results found for ') + query"
                   readonly=""
                 />
               </div>
