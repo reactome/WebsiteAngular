@@ -1,6 +1,7 @@
 import { Component, AfterViewInit, OnDestroy, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { APP_CONFIG } from '../../config/config';
 
 declare const SwaggerUIBundle: any;
 
@@ -32,7 +33,7 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     await this.loadCss('assets/swagger-ui/swagger-ui.css');
     await this.loadScript('assets/swagger-ui/swagger-ui-bundle.js');
 
-    const url = `https://dev.reactome.org/${this.serviceName}/v3/api-docs`;
+    const url = `${APP_CONFIG.swaggerSpecBaseUrl}/${this.serviceName}/v3/api-docs`;
     SwaggerUIBundle({
       domNode: this.swaggerContainer.nativeElement,
       url,

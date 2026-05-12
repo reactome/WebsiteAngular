@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { ButtonComponent } from "../../reactome-components/button/button.component";
 import { MatIcon } from "@angular/material/icon";
@@ -7,7 +8,7 @@ import { NavOption } from '../../../types/link';
 
 @Component({
   selector: 'app-home-shortcuts',
-  imports: [CarouselComponent, ButtonComponent, MatIcon],
+  imports: [CarouselComponent, ButtonComponent, MatIcon, RouterLink],
   templateUrl: './home-shortcuts.component.html',
   styleUrl: './home-shortcuts.component.scss'
 })

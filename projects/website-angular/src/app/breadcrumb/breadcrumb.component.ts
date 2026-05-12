@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink} from '../../types/link';
@@ -7,7 +7,7 @@ import { ContentService } from '../../services/content.service';
 
 @Component({
   selector: 'app-breadcrumb',
-  imports: [MatIcon],
+  imports: [MatIcon, RouterLink],
   templateUrl: './breadcrumb.component.html',
   styleUrl: './breadcrumb.component.scss'
 })

@@ -2,14 +2,14 @@ import { Component, inject } from '@angular/core';
 import { KeyValuePipe, NgForOf } from '@angular/common';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink, NavOption} from '../../types/link';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { ContentService } from '../../services/content.service';
 import { ArticleIndexItem } from '../../types/article';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [NgForOf, KeyValuePipe, MatIcon],
+  imports: [NgForOf, KeyValuePipe, MatIcon, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })

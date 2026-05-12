@@ -9,6 +9,12 @@ export const APP_CONFIG = {
   baseUrl: 'https://reactome.org',
   downloadUrl: 'https://download.reactome.org',
 
+  // Base URL Swagger UI pulls OpenAPI specs from for the embedded
+  // ContentService / AnalysisService docs pages. Points at dev so the docs
+  // reflect the latest API regardless of which host (reactome.org,
+  // dev.reactome.org, release.reactome.org, localhost) is serving this app.
+  swaggerSpecBaseUrl: 'https://dev.reactome.org',
+
   // pathway browser config
   pathwayBrowser: {
     stablePath: '/PathwayBrowser',

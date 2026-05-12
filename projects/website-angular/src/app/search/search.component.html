@@ -218,7 +218,7 @@
           <ul class="suggestions">
             @for (s of this.suggestedTerms; track s) {
             <li>
-              <a [href]="'/content/query?q=' + s">{{ s }}</a>
+              <a [routerLink]="['/content/query']" [queryParams]="{ q: s }">{{ s }}</a>
             </li>
             }
           </ul>

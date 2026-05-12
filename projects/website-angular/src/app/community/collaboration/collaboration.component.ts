@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 
 interface PathwayEntry {
@@ -19,7 +20,7 @@ const HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRorn50RGvdhBf
 
 @Component({
   selector: 'app-collaboration',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './collaboration.component.html',
   styleUrl: './collaboration.component.scss'
 })

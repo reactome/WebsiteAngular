@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
 import { NgFor } from '@angular/common';
@@ -6,7 +7,7 @@ import { ArticleIndexItem } from 'projects/website-angular/src/types/article';
 
 @Component({
   selector: 'app-faq',
-  imports: [PageLayoutComponent, NgFor],
+  imports: [PageLayoutComponent, NgFor, RouterLink],
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })

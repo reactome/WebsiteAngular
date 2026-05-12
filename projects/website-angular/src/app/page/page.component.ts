@@ -4,6 +4,8 @@ import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
 import stripFirstH from '../../utils/stripFirstH';
+import addAnchorIds from '../../utils/addAnchorIds';
+import addJumpCards from '../../utils/addJumpCards';
 import sanitize from '../../utils/sanitize';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -53,7 +55,7 @@ export class PageComponent {
         if (page) {
           this.page = page;
           let html = await marked(page.body);
-          this.renderedContent = sanitize(stripFirstH(html), this.sanitizer);
+          this.renderedContent = sanitize(stripFirstH(addAnchorIds(addJumpCards(html))), this.sanitizer);
           this.loading = false;
         } else {
           this.error = 'Page not found.';

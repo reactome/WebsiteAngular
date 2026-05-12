@@ -7,6 +7,8 @@ import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
+import addAnchorIds from '../../../utils/addAnchorIds';
+import addJumpCards from '../../../utils/addJumpCards';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
@@ -51,7 +53,7 @@ export class ArticleComponent implements OnInit {
     this.contentService.getArticle(path,slug).subscribe({
       next: async (article) => {
         let html = await marked(article?.body as string || '');
-        let renderedContent = stripFirstH(html);
+        let renderedContent = stripFirstH(addAnchorIds(addJumpCards(html)));
         this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
         this.article = {

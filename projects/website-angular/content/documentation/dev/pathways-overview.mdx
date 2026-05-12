@@ -3,9 +3,11 @@ title: Pathways Overview
 category: "documentation"
 ---
 
-##  Pathways Overview 
+##  Pathways Overview
 
-The Pathways Overview is a genome-wide, hierarchical visualization of Reactome pathways in a space-filling graph. Each node represents a pathway, and the size of the node reflects the number of entities (proteins, small molecules, genes, etc) belonging to that pathway. The edges represent the connection between the different pathway nodes within the Reactome pathway hierarchy.
+The Pathways Overview is a genome-wide, hierarchical visualization of Reactome pathways rendered as a space-filling honeycomb. Each cell represents a pathway, and the area of the cell reflects the number of entities (proteins, small molecules, genes, etc) belonging to that pathway. Sibling pathways in the Reactome hierarchy share borders, and parent pathways enclose their children, so the entire hierarchy is visible in a single view.
+
+This replaces the legacy Fireworks visualization. The new honeycomb layout shows the same pathway hierarchy and analysis-overlay information, but uses Voronoi-treemap packing to make better use of screen real estate and to expose more of the hierarchy at a glance.
 
 [ __ ](<#MoreInfo>)
 
@@ -25,32 +27,31 @@ The Pathways Overview is a genome-wide, hierarchical visualization of Reactome p
 
 ### [__More Info](<#MoreInfo>)
 
-The central node within each pathway burst is the parent (or top-level) pathway node. Each child (or sub level) pathway belonging to the pathway hierarchy is represented as a node, which is projected outwards from the central node and connected to the subsequent pathway in the hierarchy, until the lowest level pathway is reached. When the graph initially loads, the Pathways Overview display automatically fits all the nodes and edges into the existing area.
+The honeycomb overview is built on top of the [FoamTree](<https://carrotsearch.com/foamtree/>) Voronoi-treemap library. Top-level pathways (TLPs) are arranged using a semantically meaningful initial layout — related pathways (for example *Neuronal System* and *Muscle contraction*) sit close together, and the largest TLPs are given more visual real-estate. Each TLP is colored according to its broad family so that families remain visually grouped after relaxation.
 
-The pathways overview retrieves the information directly from Reactome server, which mean that for third party resources it will be straight forward to include it in browser supporting CORS, or it will just work by adding a proxy mechanism in order to avoid SOP. Another important feature of the pathways overview that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</dev/analysis>) and later on have a look to the pathways overview [API](<#API>).
+The overview retrieves pathway hierarchy data directly from the Reactome server. Third-party resources can embed it in any browser that supports CORS, or by adding a server-side proxy to avoid same-origin restrictions. The overview also supports overlaying analysis results — for an introduction to Reactome's analysis tooling, see the [Analysis Service developers' guide](</dev/analysis>) and the [API](<#API>) section below.
 
 ### [__Get Started](<#GetStarted>)
 
-[ __ ](</dev/pathways-overview/js>)
+The honeycomb overview is implemented as an Angular component (`<cr-reacfoam>`) inside the Reactome Pathway Browser. There are two supported ways to use it from a third-party page:
 
-##  [ Fireworks JS ](</dev/pathways-overview/js>)
+1. **Embed the Pathway Browser**, which exposes the overview as part of its standard UI.
+2. **Build directly against [@carrotsearch/foamtree](<https://carrotsearch.com/foamtree/>)** and populate it with pathway hierarchy data fetched from the Reactome [Content Service](</dev/content-service>). The `ReacfoamComponent` source in this repository is the reference implementation and is the best starting point for a custom integration.
 
-[ __ ](</dev/pathways-overview/gwt>)
-
-##  [ Fireworks GWT ](</dev/pathways-overview/gwt>)
+The previous Fireworks JS and Fireworks GWT widgets have been retired. New integrations should target the Angular component or the underlying FoamTree library directly.
 
 ### [__API](<#API>)
 
-[ __ ](</dev/pathways-overview/js#API>)
+The `ReacfoamComponent` exposes the overview's state through Angular signals and accepts standard FoamTree configuration options. Typical integration points are:
 
-##  [ Fireworks JS API ](</dev/pathways-overview/js#API>)
+* **Selection / highlight / flag** — bound to Angular signals so host applications can react to user interaction without subscribing to legacy event callbacks.
+* **Analysis overlay** — set an analysis token (and optional resource) to repaint cells using analysis results; clearing the token removes the overlay.
+* **Layout & styling** — passed through to FoamTree as `InitialOptions`; see the FoamTree [options reference](<https://get.carrotsearch.com/foamtree/demo/api/>) for the full list.
 
-[ __ ](</dev/pathways-overview/gwt#API>)
-
-##  [ Fireworks GWT API ](</dev/pathways-overview/gwt#API>)
+For the complete surface area, refer to the `ReacfoamComponent` source under `projects/pathway-browser/src/app/reacfoam/` and the FoamTree TypeScript definitions in `src/types/@carrotsearch/foamtree/`.
 
 ### [__Resources](<#Resources>)
 
-  * [__GWT Fireworks code](<https://github.com/reactome-pwp/fireworks>)
-  * [__GWT Fireworks exporter to JavaSript](<https://github.com/reactome-pwp/fireworks-js>)
-  * [__Reactome Pathways Portal code](<https://github.com/reactome-pwp>)
+  * [__Reactome Pathway Browser code (Angular)](<https://github.com/reactome/WebsiteAngular>)
+  * [__FoamTree (Carrot Search)](<https://carrotsearch.com/foamtree/>)
+  * [__Reactome Content Service](</dev/content-service>)

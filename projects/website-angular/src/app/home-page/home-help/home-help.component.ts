@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
@@ -9,7 +10,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 @Component({
   selector: 'app-home-help',
   standalone: true,
-  imports: [CarouselComponent, ButtonComponent, MatIcon],
+  imports: [CarouselComponent, ButtonComponent, MatIcon, RouterLink],
   templateUrl: './home-help.component.html',
   styleUrl: './home-help.component.scss'
 })

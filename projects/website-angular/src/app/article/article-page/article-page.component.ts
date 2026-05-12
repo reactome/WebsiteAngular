@@ -5,14 +5,14 @@ import { ContentService  } from '../../../services/content.service';
 import { ArticleIndexItem } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { MatIcon } from "@angular/material/icon";
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import stripFirstH from '../../../utils/stripFirstH';
 import { marked } from 'marked';
 
 
 @Component({
   selector: 'app-article-page',
-  imports: [PageLayoutComponent, TileComponent, MatIcon],
+  imports: [PageLayoutComponent, TileComponent, MatIcon, RouterLink],
   templateUrl: './article-page.component.html',
   styleUrl: './article-page.component.scss'
 })
