@@ -27,7 +27,9 @@ import {
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { SiteSearchComponent } from '../site-search/site-search.component';
+import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 
 @Component({
   selector: 'app-search',
@@ -41,6 +43,7 @@ import { SiteSearchComponent } from '../site-search/site-search.component';
     FormsModule,
     DatePipe,
     MatIcon,
+    MatTooltip,
   ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
@@ -415,6 +418,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       ? 'Reaction'
       : rawType || 'Pathway';
     return `sprite sprite-resize sprite-${spriteType}`;
+  }
+
+  // Resolve the Reactome subject icon (Protein, Pathway, Complex, …) for a
+  // search result so the row renders the same SVG icon as the pathway-browser
+  // search.
+  getSubjectIcon(entry: SearchEntry): SubjectIcon {
+    return getSubjectIcon(entry.exactType || entry.type);
   }
 
   iconSvgUrl(entry: SearchEntry): string {

@@ -7,6 +7,8 @@ import { copyrightFooterComponent } from "./copyright-footer/copyright-footer.co
 import { CiteUsComponent } from "./cite-us/cite-us.component";
 import { ScrollToTopComponent } from "./scroll-to-top/scroll-to-top.component";
 import { MatIconRegistry } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
+import { SUBJECT_ICONS } from '../utils/subjectIcons';
 
 @Component({
   selector: 'app-root',
@@ -20,10 +22,29 @@ export class AppComponent implements OnInit {
 
   private viewportScroller = inject(ViewportScroller);
 
-  constructor(private matIconRegistry: MatIconRegistry) {}
+  constructor(
+    private matIconRegistry: MatIconRegistry,
+    private domSanitizer: DomSanitizer,
+  ) {}
 
   ngOnInit(): void {
     this.matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');
+
+    // Register Reactome subject SVGs (Protein, Pathway, Complex, ...) so the
+    // search results render the same icons as the pathway-browser. The SVGs
+    // live in projects/pathway-browser/src/assets/icons/reactome-subject/ and
+    // are served at /assets/icons/reactome-subject/<route>.svg via angular.json.
+    const registered = new Set<string>();
+    for (const icon of Object.values(SUBJECT_ICONS)) {
+      if (registered.has(icon.name)) continue;
+      registered.add(icon.name);
+      this.matIconRegistry.addSvgIcon(
+        icon.name,
+        this.domSanitizer.bypassSecurityTrustResourceUrl(
+          `assets/icons/reactome-subject/${icon.route}.svg`,
+        ),
+      );
+    }
   }
 
   // Intercept hash-only anchor clicks so Angular's <base href="/"> doesn't

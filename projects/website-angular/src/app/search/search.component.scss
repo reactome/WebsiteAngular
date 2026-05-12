@@ -250,6 +250,19 @@ $border-radius: 8px;
 .type-icon {
   align-self: flex-start;
   padding: 4px;
+
+  .subject-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    ::ng-deep svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
 }
 
 /** START - Sprite base configuration **/

@@ -437,8 +437,9 @@ NOTE: This is an automatically generated message.
               </div>
               } @for (entry of getGroupPageEntries(group); track entry.dbId) {
               <div class="search-entry">
+                @let entryIcon = getSubjectIcon(entry);
                 <div class="type-icon">
-                  <i [class]="getSpriteClass(entry)" title="Icon"></i>
+                  <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
                 </div>
                 <div class="entry-info">
                   <div class="entry-header">
@@ -617,8 +618,9 @@ NOTE: This is an automatically generated message.
             <div class="group-entries">
               @for (entry of group.entries; track entry.dbId) {
               <div class="search-entry">
+                @let entryIcon = getSubjectIcon(entry);
                 <div class="type-icon">
-                  <i [class]="getSpriteClass(entry)" title="Icon"></i>
+                  <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
                 </div>
                 <div class="entry-info">
                   <div class="entry-header">
