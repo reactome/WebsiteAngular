@@ -192,6 +192,56 @@ pre > code {
   font-size: inherit;
 }
 
+// Collapsible wrapper for long <pre> blocks on documentation pages. The
+// disclosure widget keeps long code samples (curl examples, JSON payloads)
+// from dominating the reading flow; readers click to expand.
+details.code-block {
+  margin: 1rem 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--on-surface) 6%, transparent);
+  overflow: hidden;
+
+  > summary {
+    cursor: pointer;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--primary);
+    user-select: none;
+    list-style: none;
+
+    &::-webkit-details-marker { display: none; }
+
+    &::before {
+      content: '▸';
+      display: inline-block;
+      margin-right: 0.55em;
+      transition: transform 0.15s ease;
+      font-size: 0.85em;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--on-surface) 9%, transparent);
+    }
+  }
+
+  &[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  > pre {
+    margin: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .code-block-meta {
+    color: color-mix(in srgb, var(--on-surface) 55%, transparent);
+    font-weight: 400;
+    margin-left: 0.25em;
+  }
+}
+
 // SHARED ACROSS MANY COMPONENTS
 .label-container {
   padding: 0;
