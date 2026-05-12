@@ -1,28 +1,34 @@
-  <app-carousel [dark]="false">
-    <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"
-      ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
-        ><mat-icon class="large-button-icon">account_tree</mat-icon>Pathway
-        Browser
-      </app-button></a
-    >
-    <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['species-comparison']?.link || '/PathwayBrowser/#TOOL=AT'"
+<app-carousel [dark]="false">
+  <a class="shortcut-link"
+    [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"><app-button
+      [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        class="large-button-icon">account_tree</mat-icon>Pathway
+      Browser
+    </app-button>
+  </a>
+  <a class="shortcut-link"
+    [href]="'https://curator.reactome.org/curatortool/home'"><app-button
+      [variant]="dark ? 'dark' : 'light'" size="large"><img
+        src="assets/icons/73F6975A-DB38-4141-992C-401F2A594F77.svg" class="large-button-icon webbench-icon" alt="Curation WebBench icon"/>Reactome WebBench
+    </app-button></a>
+  <!-- <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['species-comparison']?.link || '/PathwayBrowser/#TOOL=AT'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
         ><mat-icon class="large-button-icon">analytics</mat-icon>Analysis Tools
       </app-button></a
-    >
-    <a class="shortcut-link" href="/chat"
+    > -->
+  <!-- <a class="shortcut-link" href="/chat"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
         ><mat-icon class="large-button-icon">auto_awesome</mat-icon>AI Chatbot
       </app-button></a
-    >
-    <a class="shortcut-link" [href]="navOptions['documentation']?.dropdownLinks?.['userguide']?.dropdownLinks?.['reactome-fiviz']?.link || '/documentation/userguide/reactome-fiviz'"
+    > -->
+  <!-- <a class="shortcut-link" [href]="navOptions['documentation']?.dropdownLinks?.['userguide']?.dropdownLinks?.['reactome-fiviz']?.link || '/documentation/userguide/reactome-fiviz'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
         ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
       </app-button></a
-    >
-    <a class="shortcut-link" [href]="navOptions['documentation']?.link || '/documentation'"
+    > -->
+  <!-- <a class="shortcut-link" [href]="navOptions['documentation']?.link || '/documentation'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large">
         <mat-icon class="large-button-icon">school</mat-icon>Documentation
       </app-button></a
-    >
-  </app-carousel>
+    > -->
+</app-carousel>
