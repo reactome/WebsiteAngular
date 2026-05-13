@@ -34,7 +34,13 @@ export class SidebarComponent {
   items: Record<string, NavOption> = {};
   activeItem: string | null = null;
 
-  sidebarVisible: boolean = true;
+  // Sidebar drawer breakpoint -- below this, the sidebar overlays the
+  // content as a slide-in drawer and starts collapsed so it doesn't bury
+  // the page. Kept in sync with the @media query in sidebar.component.scss.
+  private static readonly NARROW_BREAKPOINT_PX = 1024;
+  sidebarVisible: boolean = typeof window !== 'undefined'
+    ? window.innerWidth > SidebarComponent.NARROW_BREAKPOINT_PX
+    : true;
 
   ngOnInit() {
     // Sections mode is fully controlled by inputs; no route-based loading.

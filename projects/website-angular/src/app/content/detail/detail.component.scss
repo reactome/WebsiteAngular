@@ -129,4 +129,26 @@
       grid-column: 1 / -1;
     }
   }
+
+  // At narrow widths the overview header packs Stable Identifier / Type /
+  // Species / Compartment / Synonyms into a flex row with a fixed-width
+  // label that's pinned to one of the 6 grid columns. Below ~700px the
+  // label text overflows leftward into the value, so stack the rows.
+  // Doubled .row/.label/.value selectors bump specificity to beat
+  // description-overview's own emulated-encapsulation [_ngcontent] rules.
+  @media (max-width: 700px) {
+    cr-description-overview .row.row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    cr-description-overview .label.label {
+      width: auto;
+      text-align: left;
+    }
+    cr-description-overview .value.value {
+      border-left: 0;
+      padding: 0;
+    }
+  }
 }
