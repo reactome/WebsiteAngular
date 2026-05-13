@@ -103,12 +103,17 @@
       display: none;
     }
 
+    // Hide the original in-card right-rail TOC -- the website surfaces
+    // the same section anchors in the left page sidebar instead.
     .toc {
-      height: auto;
-      max-height: calc(100vh - 100px);
-      overflow-y: auto;
-      position: sticky;
-      top: 80px;
+      display: none;
+    }
+
+    // With the right TOC gone, let the content area span the full grid
+    // (otherwise the rightmost column stays empty and the card looks
+    // unbalanced on the wider website detail page).
+    .content {
+      grid-column: 1 / -1;
     }
   }
 }

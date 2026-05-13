@@ -1,4 +1,14 @@
-<app-page-layout [showSidebar]="false" [showBreadcrumb]="true">
+<app-page-layout [showSidebar]="!!obj()" [showBreadcrumb]="true" [customSidebar]="true">
+  @if (obj()) {
+    <app-sidebar class="page-sidebar-slot"
+                 [sectionsMode]="true"
+                 sectionsTitle="On this page"
+                 sectionsIcon="list"
+                 [sections]="tocItems()"
+                 [activeSectionKey]="selectedTocKey()"
+                 (sectionSelected)="selectTocItem($event)" />
+  }
+
   @if (loading()) {
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>

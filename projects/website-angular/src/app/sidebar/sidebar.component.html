@@ -1,4 +1,4 @@
-@if (items != {} || null) {
+@if (sectionsMode || items != {} || null) {
   <aside class="sidebar" [class.collapsed]="!sidebarVisible">
     <button class="sidebar-toggle" (click)="toggleSidebar()" [attr.aria-label]="sidebarVisible ? 'Collapse sidebar' : 'Expand sidebar'">
       <mat-icon class="material-symbols-outlined">
@@ -8,20 +8,39 @@
 
     @if (sidebarVisible) {
       <nav class="sidebar-nav" aria-label="Section navigation">
-        <div class="sidebar-header">
-          @if (sectionIcon) {
-            <mat-icon class="material-symbols-outlined section-icon">{{ sectionIcon }}</mat-icon>
-          }
-          <h2 class="section-title">{{ sectionTitle }}</h2>
-        </div>
+        @if (sectionsMode) {
+          <div class="sidebar-header">
+            @if (sectionsIcon) {
+              <mat-icon class="material-symbols-outlined section-icon">{{ sectionsIcon }}</mat-icon>
+            }
+            <h2 class="section-title">{{ sectionsTitle }}</h2>
+          </div>
+          <ul class="sidebar-list">
+            @for (item of sections; track item.key) {
+              <li class="sidebar-item" [class.active]="activeSectionKey === item.key">
+                <button type="button" class="sidebar-link sidebar-link--button"
+                        (click)="sectionSelected.emit(item.key)">
+                  {{ item.label }}
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="sidebar-header">
+            @if (sectionIcon) {
+              <mat-icon class="material-symbols-outlined section-icon">{{ sectionIcon }}</mat-icon>
+            }
+            <h2 class="section-title">{{ sectionTitle }}</h2>
+          </div>
 
-        <ul class="sidebar-list">
-            <li *ngFor="let item of items | keyvalue:preserveOrder" class="sidebar-item" [class.active]="activeItem === item.key">
-                <a [routerLink]="item.value.link" class="sidebar-link" routerLinkActive="router-active">
-                    {{ item.value.label }}
-                </a>
-            </li>
-        </ul>
+          <ul class="sidebar-list">
+              <li *ngFor="let item of items | keyvalue:preserveOrder" class="sidebar-item" [class.active]="activeItem === item.key">
+                  <a [routerLink]="item.value.link" class="sidebar-link" routerLinkActive="router-active">
+                      {{ item.value.label }}
+                  </a>
+              </li>
+          </ul>
+        }
       </nav>
     }
   </aside>

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { KeyValuePipe, NgForOf } from '@angular/common';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink, NavOption} from '../../types/link';
@@ -14,6 +14,16 @@ import { ArticleIndexItem } from '../../types/article';
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
+  // "sections" mode: instead of route-driven peer navigation links, the
+  // sidebar renders a caller-supplied list of in-page section anchors and
+  // emits a click event for each. Used by entity detail pages to surface
+  // the TOC of the embedded cr-description-tab on the left rail.
+  @Input() sectionsMode = false;
+  @Input() sections: { key: string; label: string }[] = [];
+  @Input() sectionsTitle = '';
+  @Input() sectionsIcon = '';
+  @Input() activeSectionKey = '';
+  @Output() sectionSelected = new EventEmitter<string>();
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   navOptions: Record<string, NavOption> = {};
@@ -27,6 +37,8 @@ export class SidebarComponent {
   sidebarVisible: boolean = true;
 
   ngOnInit() {
+    // Sections mode is fully controlled by inputs; no route-based loading.
+    if (this.sectionsMode) return;
     //Get all nav options
     this.loadOptions();
 

@@ -1,7 +1,10 @@
 <div class="page-layout" [class.with-sidebar]="showSidebar">
-  @if (showSidebar) {
+  @if (showSidebar && !customSidebar) {
     <app-sidebar />
   }
+  <!-- Projected custom sidebar; renders only when a parent provides a
+       .page-sidebar-slot child (and showSidebar/customSidebar are true). -->
+  <ng-content select=".page-sidebar-slot"></ng-content>
 
   <div class="page-main">
     @if (showBreadcrumb) {

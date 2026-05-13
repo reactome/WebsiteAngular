@@ -11,4 +11,7 @@ import { BreadcrumbComponent } from "../breadcrumb/breadcrumb.component";
 export class PageLayoutComponent {
   @Input() showSidebar = true;
   @Input() showBreadcrumb = true;
+  // When true, the page projects its own sidebar content via the
+  // `[pageSidebar]` ng-content slot instead of the default nav sidebar.
+  @Input() customSidebar = false;
 }

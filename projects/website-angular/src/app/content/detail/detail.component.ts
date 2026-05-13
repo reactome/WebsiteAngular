@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {Component, effect, inject, OnInit, signal, viewChild} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {ActivatedRoute} from '@angular/router';
 import {DomSanitizer} from '@angular/platform-browser';
@@ -7,6 +7,7 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {of} from 'rxjs';
 
 import {PageLayoutComponent} from '../../page-layout/page-layout.component';
+import {SidebarComponent} from '../../sidebar/sidebar.component';
 import {
   DescriptionTabComponent
 } from '../../../../../pathway-browser/src/app/details/tabs/description-tab/description-tab.component';
@@ -32,7 +33,7 @@ import {DetailSpeciesService} from './providers/detail-species.provider';
 @Component({
   selector: 'app-detail',
   standalone: true,
-  imports: [PageLayoutComponent, DescriptionTabComponent, MatProgressSpinner],
+  imports: [PageLayoutComponent, DescriptionTabComponent, MatProgressSpinner, SidebarComponent],
   providers: [
     {provide: UrlStateService, useClass: DetailUrlState},
     {provide: DataStateService, useClass: DetailDataState},
@@ -59,8 +60,44 @@ export class DetailComponent implements OnInit {
   loading = signal(true);
   error = signal(false);
 
+  // Read the embedded description-tab so we can mirror its section TOC
+  // into the left sidebar.
+  private descriptionTab = viewChild(DescriptionTabComponent);
+  tocItems = signal<{ key: string; label: string }[]>([]);
+  selectedTocKey = signal('');
+
+  selectTocItem(key: string) {
+    this.descriptionTab()?.selectItem(key);
+  }
+
   constructor() {
     this.registerIcons();
+
+    // Sync the section TOC from the embedded cr-description-tab into the
+    // local sidebar via an effect (not a computed): an effect runs AFTER
+    // change detection, by which time the child's [obj] binding has
+    // resolved. Doing this in a computed would touch the child's required
+    // input mid-cycle and throw NG0950.
+    effect(() => {
+      const tab = this.descriptionTab();
+      const entity = this.obj();
+      if (!tab || !entity) {
+        this.tocItems.set([]);
+        this.selectedTocKey.set('');
+        return;
+      }
+      try {
+        this.tocItems.set(
+          tab.elements
+            .filter((e) => tab.isTOCIncluded(e.key))
+            .map((e) => ({ key: e.key, label: e.label })),
+        );
+        this.selectedTocKey.set(tab.selectedKey());
+      } catch {
+        // Defensive: if the child still isn't fully initialised the effect
+        // will re-run on the next cycle.
+      }
+    });
   }
 
   private registerIcons() {
