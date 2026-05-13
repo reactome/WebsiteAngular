@@ -9,7 +9,7 @@
       @for (crumb of breadcrumbs; track crumb.link) {
         <li class="breadcrumb-item">
           <mat-icon class="breadcrumb-separator material-symbols-outlined">chevron_right</mat-icon>
-          <a [routerLink]="crumb.link" class="breadcrumb-link">{{ crumb.label }}</a>
+          <a [routerLink]="crumb.link" [queryParams]="crumb.queryParams" class="breadcrumb-link">{{ crumb.label }}</a>
         </li>
       }
     </ol>

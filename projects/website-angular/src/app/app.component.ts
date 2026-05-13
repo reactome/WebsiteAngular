@@ -1,6 +1,8 @@
 import { Component, HostListener, OnInit, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { ViewportScroller } from '@angular/common';
+import { SearchHistoryService } from '../services/search-history.service';
 import { NavigationBarComponent } from "./navigation-bar/navigation-bar.component";
 import { InfoFooterComponent } from "./info-footer/info-footer.component";
 import { copyrightFooterComponent } from "./copyright-footer/copyright-footer.component";
@@ -21,11 +23,25 @@ export class AppComponent implements OnInit {
   title = 'WebsiteAngular';
 
   private viewportScroller = inject(ViewportScroller);
+  private router = inject(Router);
+  private searchHistory = inject(SearchHistoryService);
 
   constructor(
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer,
-  ) {}
+  ) {
+    // Capture the user's last /content/query URL (including ?q=, facets,
+    // etc.) so the breadcrumb on entity detail pages can route them back
+    // to their actual search state instead of an empty search form.
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        const url = (e as NavigationEnd).urlAfterRedirects;
+        if (url === '/content/query' || url.startsWith('/content/query?') || url.startsWith('/content/query/')) {
+          this.searchHistory.lastSearchUrl.set(url);
+        }
+      });
+  }
 
   ngOnInit(): void {
     this.matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');

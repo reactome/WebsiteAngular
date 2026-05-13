@@ -5,7 +5,15 @@ import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink} from '../../types/link';
 import { ContentService } from '../../services/content.service';
+import { SearchHistoryService } from '../../services/search-history.service';
 import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+
+// Breadcrumb entries used by this component carry an optional set of
+// query params so a link can preserve query-string state (notably the
+// Search crumb, which routes back to /content/query?q=...).
+interface BreadcrumbEntry extends NavLink {
+  queryParams?: Record<string, string>;
+}
 
 @Component({
   selector: 'app-breadcrumb',
@@ -17,8 +25,9 @@ export class BreadcrumbComponent {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private http = inject(HttpClient);
+  private searchHistory = inject(SearchHistoryService);
   navOptions: Record<string, NavLink> = {};
-  breadcrumbs: NavLink[] = [];
+  breadcrumbs: BreadcrumbEntry[] = [];
 
   ngOnInit() {
     //Get all nav options
@@ -62,9 +71,15 @@ export class BreadcrumbComponent {
           // Entity detail page (/content/detail/:id) -- /content and
           // /content/detail aren't landing pages, so we surface the search
           // page as the canonical parent: "Home > Search > <entity>". The
-          // leaf starts as the raw stId and is replaced with the entity
-          // displayName once /data/query/{id} responds.
-          this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
+          // Search link round-trips to whatever search URL the user last
+          // visited (preserving ?q= etc.), so they don't land on an empty
+          // search form. The leaf starts as the raw stId and is replaced
+          // with the entity displayName once /data/query/{id} responds.
+          const { path: searchPath, queryParams: searchQueryParams } =
+            this.splitUrl(this.searchHistory.lastSearchUrl());
+          this.breadcrumbs = [
+            { label: 'Search', link: searchPath, queryParams: searchQueryParams },
+          ];
           const id = path_segments[2];
           const fullPath = path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
@@ -170,6 +185,21 @@ export class BreadcrumbComponent {
     } else {
       this.breadcrumbs.push({ label, link });
     }
+  }
+
+  /**
+   * Split a (possibly query-stringed) relative URL into a path + a params
+   * record so it can be fed into Angular's [routerLink] + [queryParams].
+   * RouterLink doesn't accept query strings embedded in the link string.
+   */
+  private splitUrl(url: string): { path: string; queryParams?: Record<string, string> } {
+    const qIdx = url.indexOf('?');
+    if (qIdx < 0) return { path: url };
+    const path = url.substring(0, qIdx);
+    const params = new URLSearchParams(url.substring(qIdx + 1));
+    const queryParams: Record<string, string> = {};
+    params.forEach((v, k) => { queryParams[k] = v; });
+    return { path, queryParams };
   }
 
   /**
