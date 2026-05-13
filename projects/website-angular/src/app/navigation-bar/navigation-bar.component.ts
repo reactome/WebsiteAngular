@@ -17,6 +17,10 @@ import { APP_CONFIG } from '../../config/config'; // NEW import
   styleUrl: './navigation-bar.component.scss'
 })
 export class NavigationBarComponent implements OnInit, AfterViewInit {
+  // Width below which the full nav row no longer fits (logo + 6 dropdowns
+  // + dark toggle ~= 1050px) and we collapse to the hamburger menu. Keep
+  // this value in sync with the @media queries in navigation-bar.component.scss.
+  readonly hamburgerBreakpoint = 1100;
   windowWidth:number = window.innerWidth;
   navOptions: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
@@ -80,6 +84,11 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   showDropdown(label: string) {
+    // In hamburger mode the dropdown is offset from its parent nav-item, so
+    // hover between them briefly leaves the parent's bounding box and the
+    // dropdown ping-pongs as the mouse moves over neighbouring items.
+    // Restrict hover-to-open to wide layouts; click handles narrow mode.
+    if (this.windowWidth <= this.hamburgerBreakpoint) return;
     const option = this.navOptions[label];
     if (option && option.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
       this.activeDropdown = label;
@@ -91,6 +100,9 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   hideDropdown() {
+    // Symmetric with showDropdown: only auto-close on hover-out in wide
+    // layouts. In hamburger mode the user explicitly closes via click.
+    if (this.windowWidth <= this.hamburgerBreakpoint) return;
     this.activeDropdown = null;
   }
 

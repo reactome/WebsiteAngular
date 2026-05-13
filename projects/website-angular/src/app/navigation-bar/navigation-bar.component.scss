@@ -3,6 +3,9 @@ $nav-height: 50px;
 $nav-width: 150px;
 $nav-item-height: 50px;
 $shadow: rgba(0, 0, 0, 0.1);
+// Width below which the full nav row no longer fits and we collapse to a
+// hamburger menu. Keep in sync with NavigationBarComponent.hamburgerBreakpoint.
+$hamburger-breakpoint: 1100px;
 
 .menu-icon {
   font-size: 32px;
@@ -64,7 +67,7 @@ $shadow: rgba(0, 0, 0, 0.1);
   padding: 0;
   gap: 4px;
 
-  @media (max-width: 768px) {
+  @media (max-width: $hamburger-breakpoint) {
     position: absolute;
     flex-direction: column;
     top: $header-height;
@@ -141,10 +144,19 @@ $shadow: rgba(0, 0, 0, 0.1);
     transform: translateY(0);
   }
 
-  @media (max-width: 768px) {
-    top: $nav-item-height - 16px;
+  @media (max-width: $hamburger-breakpoint) {
+    // Anchor the dropdown to the viewport (not the nav-item) at hamburger
+    // widths so its starting position doesn't drift with how far down the
+    // nav-list the trigger sits. That lets the max-height calculation
+    // actually reach the bottom of the viewport and the trailing items
+    // stay scrollable inside the menu.
+    position: fixed;
+    top: $header-height + 4px;
     left: auto;
     right: $nav-width;
+    max-height: calc(100vh - #{$header-height} - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
@@ -256,22 +268,49 @@ $shadow: rgba(0, 0, 0, 0.1);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: $hamburger-breakpoint) {
+  // In hamburger mode the parent dropdown is already pinned to the right
+  // edge of the viewport (right: $nav-width), so a nested dropdown that
+  // opens to its left would run off the screen on narrow displays.
+  // Render nested menus inline (accordion style) instead, using an
+  // indented panel with a leading accent strip so it visually groups
+  // under its parent item.
   .nested-dropdown-menu {
-    position: absolute;
-    right: 100%;
-    left: auto;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateX(-10px);
-    box-shadow: 0 8px 16px $shadow;
-  }
-
-  .dropdown-item.has-submenu:hover > .nested-dropdown-menu,
-  .dropdown-item.has-submenu:focus-within > .nested-dropdown-menu {
+    position: static;
     opacity: 1;
     visibility: visible;
-    transform: translateX(0);
+    transform: none;
+    box-shadow: none;
+    background-color: rgba(0, 0, 0, 0.025);
+    border-left: 3px solid var(--primary);
+    margin-left: 20px;
+    min-width: 0;
+  }
+
+  .nested-dropdown-list {
+    padding: 4px 0;
+  }
+
+  .nested-dropdown-item {
+    border-bottom: none;
+  }
+
+  .nested-dropdown-link {
+    padding: 8px 20px;
+    font-size: 13px;
+    color: var(--on-surface);
+  }
+
+  // The parent dropdown item now contains its children inline -- a
+  // chevron-left arrow next to its label suggests an off-canvas submenu
+  // that no longer exists, so drop it. Bold the parent label instead to
+  // mark it as a group header.
+  .nested-arrow {
+    display: none;
+  }
+
+  .dropdown-item.has-submenu > .dropdown-link-wrapper > .dropdown-link {
+    font-weight: 600;
   }
 }
 
