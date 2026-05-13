@@ -59,11 +59,12 @@ export class BreadcrumbComponent {
               }
             })
         } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments.length >= 3) {
-          // Entity detail page (/content/detail/:id) -- segment 3 is a stable
-          // identifier like R-HSA-69488. Render the static prefix, then swap
-          // in the entity's displayName once it loads. The fetch is deferred
-          // until navOptions is loaded so updateBreadcrumbs has resolved.
-          this.updateBreadcrumbs(path_segments.slice(0, 2));
+          // Entity detail page (/content/detail/:id) -- /content and
+          // /content/detail aren't landing pages, so we surface the search
+          // page as the canonical parent: "Home > Search > <entity>". The
+          // leaf starts as the raw stId and is replaced with the entity
+          // displayName once /data/query/{id} responds.
+          this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
           const id = path_segments[2];
           const fullPath = path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
