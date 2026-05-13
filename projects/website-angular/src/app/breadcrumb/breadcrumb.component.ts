@@ -1,9 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink} from '../../types/link';
 import { ContentService } from '../../services/content.service';
+import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -14,6 +16,7 @@ import { ContentService } from '../../services/content.service';
 export class BreadcrumbComponent {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
+  private http = inject(HttpClient);
   navOptions: Record<string, NavLink> = {};
   breadcrumbs: NavLink[] = [];
 
@@ -55,6 +58,23 @@ export class BreadcrumbComponent {
                 this.updateBreadcrumbs(path_segments);
               }
             })
+        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments.length >= 3) {
+          // Entity detail page (/content/detail/:id) -- segment 3 is a stable
+          // identifier like R-HSA-69488. Render the static prefix, then swap
+          // in the entity's displayName once it loads. The fetch is deferred
+          // until navOptions is loaded so updateBreadcrumbs has resolved.
+          this.updateBreadcrumbs(path_segments.slice(0, 2));
+          const id = path_segments[2];
+          const fullPath = path_segments.join('/');
+          this.appendLeafBreadcrumb(id, fullPath);
+          this.http.get<{ displayName?: string; name?: string[] }>(
+            `${CONTENT_SERVICE}/data/query/${id}`,
+          ).subscribe({
+            next: (entity) => {
+              const label = entity?.displayName || entity?.name?.[0] || id;
+              this.replaceLeafBreadcrumb(label, fullPath);
+            },
+          });
         } else if (path_segments.includes('faq') && path_segments.length > 2) { //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)
           let faqIndex = path_segments.indexOf('faq');
@@ -120,6 +140,34 @@ export class BreadcrumbComponent {
         });
         currentNavLevel = {};
       }
+    }
+  }
+
+  /**
+   * Append a leaf entry to breadcrumbs after updateBreadcrumbs() finishes
+   * (it can be deferred while it polls for navOptions). Without this guard
+   * an immediate push gets clobbered when the deferred update resolves.
+   */
+  private appendLeafBreadcrumb(label: string, link: string) {
+    if (Object.keys(this.navOptions).length === 0) {
+      setTimeout(() => this.appendLeafBreadcrumb(label, link), 50);
+      return;
+    }
+    if (this.breadcrumbs[this.breadcrumbs.length - 1]?.link !== link) {
+      this.breadcrumbs.push({ label, link });
+    }
+  }
+
+  private replaceLeafBreadcrumb(label: string, link: string) {
+    if (Object.keys(this.navOptions).length === 0) {
+      setTimeout(() => this.replaceLeafBreadcrumb(label, link), 50);
+      return;
+    }
+    const last = this.breadcrumbs[this.breadcrumbs.length - 1];
+    if (last?.link === link) {
+      this.breadcrumbs[this.breadcrumbs.length - 1] = { label, link };
+    } else {
+      this.breadcrumbs.push({ label, link });
     }
   }
 
