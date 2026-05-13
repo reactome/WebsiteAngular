@@ -32,6 +32,14 @@
 }
 
 ::ng-deep cr-description-tab {
+  // The pathway-browser's details panel sits on a dark surface, where
+  // mat-tree's default container background (--mat-sys-surface, also that
+  // panel's surface tone) blends in. On the website's white detail-page
+  // card, the same surface tone reads as a pale-cyan block behind each
+  // mat-tree. Make the tree container transparent so it inherits the white
+  // card surface; leave the pill/container tones alone.
+  --mat-tree-container-background-color: transparent;
+
   // Double the ID selector to beat Angular's encapsulated
   // #details[_ngcontent-xxx] specificity (0,2,0) with (0,2,1)
   #details#details {
