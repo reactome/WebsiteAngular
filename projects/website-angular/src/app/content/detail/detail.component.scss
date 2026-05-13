@@ -83,6 +83,19 @@
     }
   }
 
+  // Cross references are dense lists of comma-separated identifiers
+  // (RefSeq, ENSEMBL, COSMIC, ...); the pathway-browser uses 2px margins
+  // for the panel, but the wider website detail card benefits from more
+  // breathing room and stable line wrapping.
+  cr-cross-references .composition-container {
+    line-height: 1.7;
+    column-gap: 0;
+
+    > span.margin-right {
+      margin-right: 8px;
+    }
+  }
+
   // Double the ID selector to beat Angular's encapsulated
   // #details[_ngcontent-xxx] specificity (0,2,0) with (0,2,1)
   #details#details {
