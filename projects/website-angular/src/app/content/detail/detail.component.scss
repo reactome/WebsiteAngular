@@ -40,6 +40,48 @@
   // card surface; leave the pill/container tones alone.
   --mat-tree-container-background-color: transparent;
 
+  // The website detail card has far more horizontal space than the
+  // pathway-browser's narrow details panel, so widen the rich-row layout
+  // (used by Other Forms) for comfortable reading. The default styling
+  // in description-tab.component.scss stays tight for the panel.
+  .other-forms {
+    gap: 24px;
+  }
+
+  .other-forms-facets {
+    font-size: 13px;
+  }
+
+  .other-forms-list {
+    max-height: 520px;
+    gap: 0;
+  }
+
+  .other-forms-row {
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+  }
+
+  .other-forms-meta {
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  // For the older Inferences list (still comma-separated), give names
+  // a touch more space so they don't run together.
+  .inferences .composition-container {
+    line-height: 1.7;
+
+    > span.margin-right {
+      margin-right: 8px;
+    }
+  }
+
   // Double the ID selector to beat Angular's encapsulated
   // #details[_ngcontent-xxx] specificity (0,2,0) with (0,2,1)
   #details#details {

@@ -354,6 +354,164 @@
   }
 }
 
+// otherForms layout: sidebar of faceted filters on the left, rich-row list
+// on the right. Uses flex wrapping so the same markup also collapses
+// gracefully when the available width is too narrow for two columns
+// (e.g. the pathway-browser's details panel).
+.other-forms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  // stretch (default) keeps the result list at least as tall as the
+  // facet sidebar so the two columns line up visually even when the
+  // filtered result set is small.
+  align-items: stretch;
+}
+
+.other-forms-facets {
+  flex: 0 1 200px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.facet-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.facet-group-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--on-surface-variant);
+}
+
+.facet-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.facet-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    font-weight: 500;
+  }
+
+  &:disabled {
+    color: var(--outline);
+    cursor: default;
+  }
+}
+
+.facet-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facet-option-count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+
+  .facet-option.active & {
+    color: inherit;
+  }
+}
+
+.other-forms-list {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 240px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-width: 0;
+}
+
+.other-forms-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.other-forms-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.other-forms-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.other-forms-compartment {
+  font-style: italic;
+}
+
+.other-forms-coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.other-forms-disease {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.other-forms-empty {
+  padding: 8px 0;
+  color: var(--on-surface-variant);
+  font-style: italic;
+}
+
 .disease {
   margin-left: 10px;
   @include mat.slide-toggle-overrides((

@@ -84,27 +84,34 @@ export class DetailComponent implements OnInit {
   }
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.loading.set(false);
-      this.error.set(true);
-      return;
-    }
-
-    this.detailDataService.fetchEnhancedData<SelectableObject>(id).subscribe({
-      next: (data) => {
-        if (data) {
-          this.obj.set(data);
-          this.dataState.selectedElement.set(data);
-        } else {
-          this.error.set(true);
-        }
+    // Subscribe (not snapshot) so navigation between entity detail pages
+    // -- /content/detail/A -> /content/detail/B reuses the same component
+    // and would otherwise never re-fetch.
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (!id) {
         this.loading.set(false);
-      },
-      error: () => {
         this.error.set(true);
-        this.loading.set(false);
+        return;
       }
+      this.loading.set(true);
+      this.error.set(false);
+      this.obj.set(undefined);
+      this.detailDataService.fetchEnhancedData<SelectableObject>(id).subscribe({
+        next: (data) => {
+          if (data) {
+            this.obj.set(data);
+            this.dataState.selectedElement.set(data);
+          } else {
+            this.error.set(true);
+          }
+          this.loading.set(false);
+        },
+        error: () => {
+          this.error.set(true);
+          this.loading.set(false);
+        }
+      });
     });
   }
 }
