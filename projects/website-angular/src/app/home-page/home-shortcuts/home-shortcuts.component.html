@@ -1,4 +1,12 @@
 <app-carousel [dark]="false">
+  <a class="shortcut-link" [href]="'/about'"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        class="large-button-icon">info</mat-icon>
+      About
+    </app-button></a>
+  <a class="shortcut-link" [href]="'/content/schema'"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        class="large-button-icon">data_table</mat-icon>
+      Data Schema
+    </app-button></a>
   <a class="shortcut-link"
     [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"><app-button
       [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
@@ -6,10 +14,9 @@
       Browser
     </app-button>
   </a>
-  <a class="shortcut-link"
-    [href]="'https://curator.reactome.org/curatortool/home'"><app-button
-      [variant]="dark ? 'dark' : 'light'" size="large"><img
-        src="assets/icons/73F6975A-DB38-4141-992C-401F2A594F77.svg" class="large-button-icon webbench-icon" alt="Curation WebBench icon"/>Reactome WebBench
+  <a class="shortcut-link" [href]="'https://curator.reactome.org/curatortool/home'"><app-button
+      [variant]="dark ? 'dark' : 'light'" size="large"><img src="assets/icons/curator-tool-logo.svg"
+        class="large-button-icon webbench-icon" alt="Curation WebBench icon" />Reactome WebBench
     </app-button></a>
   <!-- <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['species-comparison']?.link || '/PathwayBrowser/#TOOL=AT'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
