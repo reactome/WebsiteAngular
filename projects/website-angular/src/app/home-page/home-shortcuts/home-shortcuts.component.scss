@@ -1,15 +1,21 @@
 .shortcut-link {
   text-decoration: none !important;
+
+  ::ng-deep .large-button {
+    height: 139px;
+    width: 139px;
+    font-size: 18px;
+  }
 }
 
 .large-button-icon {
-  font-size: 48px;
-  height: 48px;
-  width: 48px;
+  font-size: 30px;
+  height: 30px;
+  width: 30px;
 }
 
 .webbench-icon {
-  width: 110px;
-  height: 110px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
 }
