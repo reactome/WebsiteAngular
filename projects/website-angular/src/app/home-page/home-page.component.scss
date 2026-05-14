@@ -13,7 +13,7 @@ $transition: all 0.3s ease;
   background-position: center;
   background-repeat: repeat-y;
   background-attachment: fixed;
-  min-height: 80vh;
+  min-height: 70vh;
   padding: $spacing-unit;
 }
 
@@ -33,6 +33,35 @@ $transition: all 0.3s ease;
 .pathway-link {
   color: var(--on-primary) !important;
   text-decoration: underline !important;
+}
+
+.home-logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.home-logo-image {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+.home-warning-title {
+  margin: 10px 0 6px;
+  text-align: center;
+  color: #b00020;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.home-warning-text {
+  margin: 0;
+  text-align: center;
+  color: #b00020;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .home-search-title {
