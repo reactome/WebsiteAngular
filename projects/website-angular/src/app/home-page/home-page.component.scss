@@ -13,7 +13,7 @@ $transition: all 0.3s ease;
   background-position: center;
   background-repeat: repeat-y;
   background-attachment: fixed;
-  min-height: 70vh;
+  min-height: 50vh;
   padding: $spacing-unit;
 }
 
@@ -44,14 +44,14 @@ $transition: all 0.3s ease;
 
 .home-logo-image {
   display: block;
-  height: 44px;
+  height: 57px;
   width: auto;
 }
 
 .home-warning-title {
   margin: 10px 0 6px;
   text-align: center;
-  color: #b00020;
+  color: #ff6b6b;
   font-size: 1.15rem;
   line-height: 1.25;
 }
@@ -59,7 +59,7 @@ $transition: all 0.3s ease;
 .home-warning-text {
   margin: 0;
   text-align: center;
-  color: #b00020;
+  color: #ff6b6b;
   font-size: 0.95rem;
   line-height: 1.4;
 }
