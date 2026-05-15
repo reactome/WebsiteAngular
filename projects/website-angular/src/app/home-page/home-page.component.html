@@ -27,8 +27,8 @@
   </app-button>
 </app-tile> -->
 
-<app-tile variant="dark-transparent" class="home-logo-tile" style="display: block">
-  <app-tile style="background-color: rgba(255, 255, 255, 0.7);">
+<app-tile variant="dark-transparent" class="home-shortcut-tile" id="tools" style="display: block">
+    <app-tile style="background-color: rgba(255, 255, 255, 0.7);">
     <div class="home-logo-wrap">
       <img src="assets/logo/logo.png" alt="Reactome Pathway Database" class="home-logo-image light-only" />
     </div>
@@ -38,9 +38,6 @@
     IT IS NOT STABLE, IS LINKED TO AN INCOMPLETE DATA SET, AND IS NOT MONITORED FOR PERFORMANCE. WE STRONGLY RECOMMEND
     THE USE OF OUR <a href="https://beta.reactome.org" class="home-warning-link">PUBLIC SITE</a>
   </p>
-</app-tile>
-
-<app-tile variant="dark-transparent" class="home-shortcut-tile" id="tools" style="display: block">
   <app-home-shortcuts [dark]="false" />
   <app-home-why-reactome />
 
