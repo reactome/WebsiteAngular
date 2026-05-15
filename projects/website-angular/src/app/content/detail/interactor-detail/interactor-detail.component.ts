@@ -4,23 +4,18 @@ import {ActivatedRoute, RouterLink} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {forkJoin, of} from 'rxjs';
-import {catchError, switchMap} from 'rxjs/operators';
+import {catchError} from 'rxjs/operators';
 import {PageLayoutComponent} from '../../../page-layout/page-layout.component';
 import {TileComponent} from '../../../reactome-components/tile/tile.component';
 import {CONTENT_SERVICE} from '../../../../../../pathway-browser/src/environments/environment';
 
 export interface CustomInteraction {
-  dbId: number;
   identifier: string;
   score: number;
   evidenceCount: number;
   url: string;
   evidenceURL: string;
-  geneName?: string[];
-  databaseName?: string;
   entitiesCount?: number;
-  speciesName?: string;
-  displayName?: string;
 }
 
 export interface ReactomeEntity {
@@ -28,9 +23,16 @@ export interface ReactomeEntity {
   displayName: string;
 }
 
-interface XrefMapping {
-  reference: string;
-  physicalEntities: string[];
+// Shape returned by /interactors/static/molecule/{acc}/withEntities --
+// each row is one interactor partner with its Reactome PhysicalEntities
+// pre-joined (no client-side fan-out to /references/mapping/{id}/xrefs).
+interface InteractionWithEntities {
+  score: number;
+  accession: string;
+  accessionURL: string;
+  physicalEntity: { dbId: number; stId: string; displayName: string; schemaClass: string }[];
+  evidences: number;
+  url: string;
 }
 
 interface SearchResult {
@@ -93,94 +95,47 @@ export class InteractorDetailComponent implements OnInit {
     this.acc.set(acc);
     const baseAcc = acc.split('-')[0];
 
+    // One backend round-trip pulls interactions WITH each partner's
+    // Reactome physical entities pre-resolved -- previously this fanned
+    // out a /references/mapping/{id}/xrefs call per interactor (TP53 has
+    // ~250) plus a batch /data/query/ids POST, all stitched client-side.
     forkJoin({
-      interactions: this.http.get<CustomInteraction[]>(
-        `${CONTENT_SERVICE}/interactors/static/molecule/enhanced/${encodeURIComponent(acc)}/details`
-      ).pipe(catchError(() => of(null))),
+      interactions: this.http.get<InteractionWithEntities[]>(
+        `${CONTENT_SERVICE}/interactors/static/molecule/${encodeURIComponent(acc)}/withEntities`
+      ).pipe(catchError(() => of<InteractionWithEntities[] | null>(null))),
       search: this.http.get<SearchResult>(
         `${CONTENT_SERVICE}/search/query`, {params: {query: acc, types: 'Interactor', cluster: 'true'}}
       ).pipe(catchError(() => of(null))),
       uniprot: this.http.get<UniProtResponse>(
         `https://rest.uniprot.org/uniprotkb/${encodeURIComponent(baseAcc)}.json`
       ).pipe(catchError(() => of(null))),
-    }).pipe(
-      switchMap(({interactions, search, uniprot}) => {
-        if (!interactions) {
-          return of({interactions: null, search, uniprot, entityMap: {}});
-        }
-
-        // Fetch xrefs for each unique interactor identifier to get Reactome entities
-        const identifiers = interactions.map(i => i.identifier).filter(Boolean);
-        if (!identifiers.length) {
-          return of({interactions, search, uniprot, entityMap: {}});
-        }
-
-        const xrefRequests: Record<string, ReturnType<typeof this.http.get>> = {};
-        for (const id of identifiers) {
-          xrefRequests[id] = this.http.get<XrefMapping[]>(
-            `${CONTENT_SERVICE}/references/mapping/${encodeURIComponent(id)}/xrefs`
-          ).pipe(catchError(() => of([])));
-        }
-
-        return forkJoin(xrefRequests).pipe(
-          switchMap((xrefResults: Record<string, XrefMapping[] | unknown>) => {
-            // Collect all physical entity stIds
-            const allStIds: string[] = [];
-            const idToStIds: Record<string, string[]> = {};
-
-            for (const [id, xrefs] of Object.entries(xrefResults)) {
-              const mappings = xrefs as XrefMapping[];
-              const stIds: string[] = [];
-              if (Array.isArray(mappings)) {
-                for (const m of mappings) {
-                  if (m.physicalEntities) stIds.push(...m.physicalEntities);
-                }
-              }
-              idToStIds[id] = stIds;
-              allStIds.push(...stIds);
-            }
-
-            if (!allStIds.length) {
-              return of({interactions, search, uniprot, entityMap: {}});
-            }
-
-            // Batch fetch display names for all physical entities
-            return this.http.post<{stId: string; displayName: string}[]>(
-              `${CONTENT_SERVICE}/data/query/ids`,
-              allStIds.join(','),
-              {headers: {'Content-Type': 'text/plain'}}
-            ).pipe(
-              catchError(() => of([])),
-              switchMap((entities) => {
-                const entityLookup: Record<string, string> = {};
-                if (Array.isArray(entities)) {
-                  for (const e of entities) {
-                    if (e?.stId) entityLookup[e.stId] = e.displayName;
-                  }
-                }
-
-                const entityMap: Record<string, ReactomeEntity[]> = {};
-                for (const [id, stIds] of Object.entries(idToStIds)) {
-                  entityMap[id] = stIds
-                    .filter(stId => entityLookup[stId])
-                    .map(stId => ({stId, displayName: entityLookup[stId]}));
-                }
-
-                return of({interactions, search, uniprot, entityMap});
-              })
-            );
-          })
-        );
-      })
-    ).subscribe({
-      next: ({interactions, search, uniprot, entityMap}) => {
+    }).subscribe({
+      next: ({interactions, search, uniprot}) => {
         if (!interactions) {
           this.error.set(true);
           this.loading.set(false);
           return;
         }
 
-        this.interactions.set(interactions);
+        // Project the backend rows into the template's CustomInteraction
+        // shape and build the entityMap inline.
+        const projected: CustomInteraction[] = [];
+        const entityMap: Record<string, ReactomeEntity[]> = {};
+        for (const row of interactions) {
+          projected.push({
+            identifier: row.accession,
+            score: row.score,
+            evidenceCount: row.evidences,
+            url: row.accessionURL,
+            evidenceURL: row.url,
+            entitiesCount: row.physicalEntity?.length ?? 0,
+          });
+          entityMap[row.accession] = (row.physicalEntity ?? []).map(pe => ({
+            stId: pe.stId,
+            displayName: pe.displayName,
+          }));
+        }
+        this.interactions.set(projected);
         this.entityMap.set(entityMap);
 
         // Extract summary from search result
