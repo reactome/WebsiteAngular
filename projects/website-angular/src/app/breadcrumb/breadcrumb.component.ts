@@ -73,7 +73,7 @@ export class BreadcrumbComponent {
           // ContentService person endpoint which accepts both forms.
           this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
           const id = path_segments[3];
-          const fullPath = path_segments.join('/');
+          const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
           this.http.get<{ displayName?: string }>(
             `${CONTENT_SERVICE}/data/person/${id}`,
@@ -96,7 +96,7 @@ export class BreadcrumbComponent {
             { label: 'Search', link: searchPath, queryParams: searchQueryParams },
           ];
           const id = path_segments[2];
-          const fullPath = path_segments.join('/');
+          const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
           this.http.get<{ displayName?: string; name?: string[] }>(
             `${CONTENT_SERVICE}/data/query/${id}`,
