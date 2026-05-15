@@ -82,7 +82,6 @@
                   Name
                   <span class="material-symbols-rounded sort-icon">{{ sortIcon('displayName') }}</span>
                 </th>
-                <th class="col-name">First Name</th>
                 <th class="col-orcid">ORCID</th>
                 <th class="col-num sortable" (click)="toggleSort('authoredPathways')">
                   Authored Pathways
@@ -108,7 +107,6 @@
                   <td class="col-name">
                     <a [href]="personUrl(c.person)" class="person-link">{{ c.person.displayName }}</a>
                   </td>
-                  <td class="col-name">{{ c.person.firstname }}</td>
                   <td class="col-orcid">
                     @if (c.person.orcidId) {
                       <a class="orcid-link" [href]="orcidUrl(c.person.orcidId)" target="_blank" rel="noopener">

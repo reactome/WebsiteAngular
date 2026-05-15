@@ -94,6 +94,31 @@
   margin-left: 4px;
 }
 
+.contributions-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0 -8px;
+}
+
+.expand-all-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+
+.event-export {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
+}
+
 .event-section {
   margin-top: 24px;
 

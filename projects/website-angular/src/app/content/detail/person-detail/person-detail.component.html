@@ -50,61 +50,112 @@
         }
       </dl>
 
+      @if (authoredPathways().length + authoredReactions().length + reviewedPathways().length + reviewedReactions().length > 0) {
+        <div class="contributions-actions">
+          <button mat-button type="button" class="expand-all-toggle" (click)="toggleExpandAll()">
+            <mat-icon fontSet="symbols">{{ expandAll() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+            {{ expandAll() ? 'Collapse all' : 'Expand all' }}
+          </button>
+        </div>
+      }
+
       @if (authoredPathways().length) {
         <section class="event-section">
           <h2>Authored Pathways ({{ authoredPathways().length }})</h2>
-          <ul class="event-list">
-            @for (e of authoredPathways(); track e.dbId) {
-              <li class="event-item">
-                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-              </li>
-            }
-          </ul>
+          @if (expandAll()) {
+            <ul class="event-list">
+              @for (e of authoredPathways(); track e.dbId) {
+                <li class="event-item">
+                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+                  <button mat-icon-button class="event-export"
+                          [matMenuTriggerFor]="exportMenu"
+                          [matMenuTriggerData]="{ dbId: e.dbId }"
+                          aria-label="Export citation">
+                    <mat-icon fontSet="symbols">download</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
 
       @if (authoredReactions().length) {
         <section class="event-section">
           <h2>Authored Reactions ({{ authoredReactions().length }})</h2>
-          <ul class="event-list">
-            @for (e of authoredReactions(); track e.dbId) {
-              <li class="event-item">
-                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-              </li>
-            }
-          </ul>
+          @if (expandAll()) {
+            <ul class="event-list">
+              @for (e of authoredReactions(); track e.dbId) {
+                <li class="event-item">
+                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+                  <button mat-icon-button class="event-export"
+                          [matMenuTriggerFor]="exportMenu"
+                          [matMenuTriggerData]="{ dbId: e.dbId }"
+                          aria-label="Export citation">
+                    <mat-icon fontSet="symbols">download</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
 
       @if (reviewedPathways().length) {
         <section class="event-section">
           <h2>Reviewed Pathways ({{ reviewedPathways().length }})</h2>
-          <ul class="event-list">
-            @for (e of reviewedPathways(); track e.dbId) {
-              <li class="event-item">
-                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-              </li>
-            }
-          </ul>
+          @if (expandAll()) {
+            <ul class="event-list">
+              @for (e of reviewedPathways(); track e.dbId) {
+                <li class="event-item">
+                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+                  <button mat-icon-button class="event-export"
+                          [matMenuTriggerFor]="exportMenu"
+                          [matMenuTriggerData]="{ dbId: e.dbId }"
+                          aria-label="Export citation">
+                    <mat-icon fontSet="symbols">download</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
 
       @if (reviewedReactions().length) {
         <section class="event-section">
           <h2>Reviewed Reactions ({{ reviewedReactions().length }})</h2>
-          <ul class="event-list">
-            @for (e of reviewedReactions(); track e.dbId) {
-              <li class="event-item">
-                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-              </li>
-            }
-          </ul>
+          @if (expandAll()) {
+            <ul class="event-list">
+              @for (e of reviewedReactions(); track e.dbId) {
+                <li class="event-item">
+                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+                  <button mat-icon-button class="event-export"
+                          [matMenuTriggerFor]="exportMenu"
+                          [matMenuTriggerData]="{ dbId: e.dbId }"
+                          aria-label="Export citation">
+                    <mat-icon fontSet="symbols">download</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
+
+      <!-- Shared export menu rendered once per page; mat-menu instantiates
+           a fresh copy with the row's dbId on each click. -->
+      <mat-menu #exportMenu="matMenu">
+        <ng-template matMenuContent let-dbId="dbId">
+          <a mat-menu-item [href]="citationExportUrl(dbId, 'bib')" target="_blank" rel="noopener" download>BibTeX</a>
+          <a mat-menu-item [href]="citationExportUrl(dbId, 'ris')" target="_blank" rel="noopener" download>RIS</a>
+          <a mat-menu-item [href]="citationExportUrl(dbId, 'txt')" target="_blank" rel="noopener" download>Text</a>
+        </ng-template>
+      </mat-menu>
 
       @if (publicationsSorted().length) {
         <section class="person-publications">

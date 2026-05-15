@@ -3,6 +3,10 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatIcon } from '@angular/material/icon';
+import { MatIconButton } from '@angular/material/button';
+import { MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
+import { MatButton } from '@angular/material/button';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import {
   CONTENT_SERVICE,
@@ -54,7 +58,18 @@ interface SimpleEvent {
 @Component({
   selector: 'app-person-detail',
   standalone: true,
-  imports: [PageLayoutComponent, MatProgressSpinner, RouterLink],
+  imports: [
+    PageLayoutComponent,
+    MatProgressSpinner,
+    RouterLink,
+    MatIcon,
+    MatIconButton,
+    MatButton,
+    MatMenu,
+    MatMenuContent,
+    MatMenuItem,
+    MatMenuTrigger,
+  ],
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
 })
@@ -128,5 +143,22 @@ export class PersonDetailComponent {
 
   pubMedUrl(pmid: number): string {
     return `https://pubmed.ncbi.nlm.nih.gov/${pmid}`;
+  }
+
+  // Build a /ContentService/citation/export?... URL for a given event so
+  // the per-row export menu items can be plain download links (the
+  // browser does the GET and saves the response). dateAccessed is the
+  // current UTC date in YYYY-MM-DD form.
+  citationExportUrl(dbId: number, format: 'bib' | 'ris' | 'txt'): string {
+    const date = new Date().toISOString().slice(0, 10);
+    return `${CONTENT_SERVICE}/citation/export?id=${dbId}&ext=${format}&isPathway=true&dateAccessed=${date}`;
+  }
+
+  // Single global toggle that collapses/expands every contribution
+  // section on the page. Useful for prolific contributors (e.g. Matthews
+  // has 76 + 273 + 105 + 178 rows; that's a lot of vertical scrolling).
+  expandAll = signal(true);
+  toggleExpandAll() {
+    this.expandAll.update(v => !v);
   }
 }
