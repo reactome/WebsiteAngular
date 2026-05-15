@@ -106,7 +106,7 @@
               @for (c of pagedContributors; track c.person.dbId) {
                 <tr>
                   <td class="col-name">
-                    <a [href]="personUrl(c.person.dbId)" class="person-link">{{ c.person.displayName }}</a>
+                    <a [href]="personUrl(c.person)" class="person-link">{{ c.person.displayName }}</a>
                   </td>
                   <td class="col-name">{{ c.person.firstname }}</td>
                   <td class="col-orcid">

@@ -168,7 +168,7 @@ export class DoiComponent implements OnInit, OnDestroy {
   }
 
   personUrl(person: SimplePerson): string {
-    return `/content/detail/person/${person.dbId}`;
+    return `/content/detail/person/${person.orcidId || person.dbId}`;
   }
 
   doiUrl(doi: string): string {

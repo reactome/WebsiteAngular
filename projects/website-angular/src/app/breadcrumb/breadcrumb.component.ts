@@ -67,6 +67,21 @@ export class BreadcrumbComponent {
                 this.updateBreadcrumbs(path_segments);
               }
             })
+        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments[2] === 'person' && path_segments.length >= 4) {
+          // Person profile page (/content/detail/person/:id where id is
+          // ORCID or numeric dbId). Resolve to displayName via the
+          // ContentService person endpoint which accepts both forms.
+          this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
+          const id = path_segments[3];
+          const fullPath = path_segments.join('/');
+          this.appendLeafBreadcrumb(id, fullPath);
+          this.http.get<{ displayName?: string }>(
+            `${CONTENT_SERVICE}/data/person/${id}`,
+          ).subscribe({
+            next: (p) => {
+              if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+            },
+          });
         } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments.length >= 3) {
           // Entity detail page (/content/detail/:id) -- /content and
           // /content/detail aren't landing pages, so we surface the search

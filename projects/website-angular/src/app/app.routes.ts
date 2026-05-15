@@ -186,6 +186,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'content/detail/person/:id',
+    loadComponent: () =>
+      import('./content/detail/person-detail/person-detail.component').then(
+        (m) => m.PersonDetailComponent
+      ),
+  },
+  {
     path: 'content/detail/:id',
     loadComponent: () =>
       import('./content/detail/detail.component').then(

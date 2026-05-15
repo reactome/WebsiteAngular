@@ -1,0 +1,180 @@
+:host {
+  display: block;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--on-surface);
+
+  h2 {
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--outline);
+  }
+}
+
+.person-detail {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+
+  :host-context(.dark) & {
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);
+  }
+}
+
+.person-header {
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.person-name {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+.person-fullname {
+  margin: 4px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 0.95rem;
+}
+
+.person-meta {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 16px;
+  margin: 0 0 24px;
+
+  dt {
+    font-weight: 600;
+    color: var(--on-surface);
+    text-align: right;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--on-surface);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+
+    dt {
+      text-align: left;
+      margin-top: 8px;
+    }
+  }
+}
+
+.affiliation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li + li {
+    margin-top: 4px;
+  }
+}
+
+.affiliation-address {
+  color: var(--on-surface-variant);
+  margin-left: 4px;
+}
+
+.event-section {
+  margin-top: 24px;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--outline-variant);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+}
+
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.event-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--outline-variant);
+  line-height: 1.4;
+}
+
+.event-link {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.event-species {
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--on-surface-variant);
+}
+
+.person-publications {
+  margin-top: 24px;
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--outline-variant);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+}
+
+.publication-list {
+  list-style: decimal inside;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.publication {
+  line-height: 1.5;
+}
+
+.publication-title {
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+.publication-meta {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  margin-top: 2px;
+}
+
+.publication-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.875rem;
+}

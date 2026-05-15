@@ -171,8 +171,12 @@ export class ContributorsComponent implements OnInit, OnDestroy {
     }
   }
 
-  personUrl(dbId: number): string {
-    return `/content/detail/person/${dbId}`;
+  personUrl(person: { dbId: number; orcidId?: string }): string {
+    // Prefer the ORCID in the URL (matches production reactome.org's
+    // /content/detail/person/<orcid> format); fall back to dbId when a
+    // person has no ORCID recorded. The /content/detail/person/:id
+    // route accepts both.
+    return `/content/detail/person/${person.orcidId || person.dbId}`;
   }
 
   orcidUrl(orcidId: string): string {

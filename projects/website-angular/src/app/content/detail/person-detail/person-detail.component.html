@@ -1,0 +1,139 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="true">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error() || !person()) {
+    <div class="error-container">
+      <h2>Person not found</h2>
+      <p>The requested contributor could not be loaded.</p>
+    </div>
+  } @else if (person()) {
+    @let p = person()!;
+    <article class="person-detail">
+      <header class="person-header">
+        <h1 class="person-name">{{ p.displayName }}</h1>
+        @if (p.firstname || p.surname) {
+          <p class="person-fullname">
+            {{ p.firstname }}{{ p.firstname && p.surname ? ' ' : '' }}{{ p.surname }}
+          </p>
+        }
+      </header>
+
+      <dl class="person-meta">
+        @if (p.orcidId) {
+          <dt>ORCID</dt>
+          <dd>
+            <a [href]="'https://orcid.org/' + p.orcidId" target="_blank" rel="noopener">
+              {{ p.orcidId }}
+            </a>
+          </dd>
+        }
+        @if (p.project) {
+          <dt>Project</dt>
+          <dd>{{ p.project }}</dd>
+        }
+        @if (p.affiliation?.length) {
+          <dt>Affiliation</dt>
+          <dd>
+            <ul class="affiliation-list">
+              @for (a of p.affiliation; track a.dbId) {
+                <li>
+                  <span class="affiliation-name">{{ a.displayName }}</span>
+                  @if (a.address) {
+                    <span class="affiliation-address">— {{ a.address }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          </dd>
+        }
+      </dl>
+
+      @if (authoredPathways().length) {
+        <section class="event-section">
+          <h2>Authored Pathways ({{ authoredPathways().length }})</h2>
+          <ul class="event-list">
+            @for (e of authoredPathways(); track e.dbId) {
+              <li class="event-item">
+                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (authoredReactions().length) {
+        <section class="event-section">
+          <h2>Authored Reactions ({{ authoredReactions().length }})</h2>
+          <ul class="event-list">
+            @for (e of authoredReactions(); track e.dbId) {
+              <li class="event-item">
+                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (reviewedPathways().length) {
+        <section class="event-section">
+          <h2>Reviewed Pathways ({{ reviewedPathways().length }})</h2>
+          <ul class="event-list">
+            @for (e of reviewedPathways(); track e.dbId) {
+              <li class="event-item">
+                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (reviewedReactions().length) {
+        <section class="event-section">
+          <h2>Reviewed Reactions ({{ reviewedReactions().length }})</h2>
+          <ul class="event-list">
+            @for (e of reviewedReactions(); track e.dbId) {
+              <li class="event-item">
+                <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (publicationsSorted().length) {
+        <section class="person-publications">
+          <h2>Publications</h2>
+          <ol class="publication-list">
+            @for (pub of publicationsSorted(); track pub.dbId) {
+              <li class="publication">
+                <span class="publication-title">{{ pub.title || pub.displayName }}</span>
+                @if (pub.journal || pub.year || pub.volume || pub.pages) {
+                  <span class="publication-meta">
+                    @if (pub.journal) { <em>{{ pub.journal }}</em> }
+                    @if (pub.year) { · {{ pub.year }} }
+                    @if (pub.volume) { · vol. {{ pub.volume }} }
+                    @if (pub.pages) { · pp. {{ pub.pages }} }
+                  </span>
+                }
+                @if (pub.pubMedIdentifier) {
+                  <a class="publication-link"
+                     [href]="pubMedUrl(pub.pubMedIdentifier)"
+                     target="_blank"
+                     rel="noopener">
+                    PubMed
+                  </a>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    </article>
+  }
+</app-page-layout>
