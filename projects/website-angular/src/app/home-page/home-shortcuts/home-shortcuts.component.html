@@ -1,14 +1,14 @@
 <app-carousel [dark]="false">
-  <a class="shortcut-link" [href]="'/about'"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+  <a class="shortcut-link" [href]="resolveShortcutLink('/about')"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
         class="large-button-icon">info</mat-icon>
       About
     </app-button></a>
-  <a class="shortcut-link" [href]="'/content/schema'"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+  <a class="shortcut-link" [href]="resolveShortcutLink('/content/schema')"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
         fontSet="symbols" class="large-button-icon">data_table</mat-icon>
       Data Schema
     </app-button></a>
   <a class="shortcut-link"
-    [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"><app-button
+    [href]="resolveShortcutLink(navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser')"><app-button
       [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
         class="large-button-icon">account_tree</mat-icon>Pathway
       Browser

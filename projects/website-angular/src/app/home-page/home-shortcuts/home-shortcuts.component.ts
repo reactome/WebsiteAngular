@@ -24,4 +24,16 @@ export class HomeShortcutsComponent {
       this.navOptions = mapNavOptions(data.default);
     });
   }
+
+  resolveShortcutLink(link: string | undefined): string {
+    if (!link) {
+      return '';
+    }
+
+    if (/^(https?:)?\/\//.test(link) || link.startsWith('mailto:')) {
+      return link;
+    }
+
+    return link.replace(/^\/+/, '');
+  }
 }

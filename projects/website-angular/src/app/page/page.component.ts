@@ -23,6 +23,26 @@ export class PageComponent {
   loading = false;
   error: string | null = null;
 
+  private rewriteContentUrls(html: string): string {
+    return html.replace(/\b(href|src)=("([^"]*)"|'([^']*)')/g, (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
+      const value = doubleQuoted ?? singleQuoted ?? '';
+      return `${attr}="${this.normalizeContentUrl(value)}"`;
+    });
+  }
+
+  private normalizeContentUrl(url: string): string {
+    const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
+    if (reactomeUrlMatch) {
+      return reactomeUrlMatch[1].replace(/^\//, '');
+    }
+
+    if (url.startsWith('/')) {
+      return url.replace(/^\/+/, '');
+    }
+
+    return url;
+  }
+
   ngOnInit() {
      this.route.url.subscribe(segments => {
       if (segments.length === 0) {
@@ -53,6 +73,7 @@ export class PageComponent {
         if (page) {
           this.page = page;
           let html = await marked(page.body);
+          html = this.rewriteContentUrls(html);
           this.renderedContent = sanitize(stripFirstH(html), this.sanitizer);
           this.loading = false;
         } else {

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 export interface SearchEntry {
   dbId: number;
@@ -64,7 +65,7 @@ export interface SearchFilters {
 })
 export class SearchService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://reactome.org/ContentService/search'; //TODO: alter in prod or make environment variable
+  private baseUrl = `${CONTENT_SERVICE}/search`;
 
   search(
     query: string,
