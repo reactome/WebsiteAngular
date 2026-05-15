@@ -53,98 +53,103 @@
       @if (authoredPathways().length + authoredReactions().length + reviewedPathways().length + reviewedReactions().length > 0) {
         <div class="contributions-actions">
           <button mat-button type="button" class="expand-all-toggle" (click)="toggleExpandAll()">
-            <mat-icon fontSet="symbols">{{ expandAll() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
-            {{ expandAll() ? 'Collapse all' : 'Expand all' }}
+            <mat-icon fontSet="symbols">{{ allExpanded() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+            {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
           </button>
         </div>
       }
 
+      <ng-template #sectionTpl let-key="key" let-title="title" let-rows="rows">
+        <section class="event-section">
+          <button type="button" class="section-header"
+                  (click)="toggleSection(key)"
+                  [attr.aria-expanded]="isSectionExpanded(key)">
+            <mat-icon fontSet="symbols" class="section-chevron">
+              {{ isSectionExpanded(key) ? 'expand_more' : 'chevron_right' }}
+            </mat-icon>
+            <h2>{{ title }}</h2>
+            <span class="section-count">{{ rows.length }}</span>
+          </button>
+          @if (isSectionExpanded(key)) {
+            @if (rows.length > FILTER_THRESHOLD) {
+              <div class="section-filter">
+                <mat-icon fontSet="symbols" class="filter-icon">search</mat-icon>
+                <input type="text"
+                       [placeholder]="'Search ' + (rows.length) + ' rows...'"
+                       [value]="getQuery(key)"
+                       (input)="onFilterInput(key, $event)" />
+                @if (getQuery(key)) {
+                  <button type="button" class="filter-clear"
+                          (click)="clearFilter(key)" aria-label="Clear search">
+                    <mat-icon fontSet="symbols">close</mat-icon>
+                  </button>
+                  <span class="filter-summary">
+                    {{ filteredCount(key, rows) }} of {{ rows.length }}
+                  </span>
+                }
+              </div>
+            }
+            @if (speciesFacets(key, rows).length > 1) {
+              <div class="section-species" role="group" aria-label="Filter by species">
+                <button type="button" class="species-chip"
+                        [class.active]="!getSpecies(key)"
+                        (click)="setSpecies(key, '')">
+                  All
+                  <span class="chip-count">{{ filteredCount(key, rows) }}</span>
+                </button>
+                @for (sp of speciesFacets(key, rows); track sp.name) {
+                  <button type="button" class="species-chip"
+                          [class.active]="getSpecies(key) === sp.name"
+                          (click)="setSpecies(key, sp.name)">
+                    <em>{{ sp.name }}</em>
+                    <span class="chip-count">{{ sp.count }}</span>
+                  </button>
+                }
+              </div>
+            }
+            <ul class="event-list">
+              @for (e of visibleRows(key, rows); track e.dbId) {
+                <li class="event-item">
+                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
+                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
+                  <button mat-icon-button class="event-export"
+                          [matMenuTriggerFor]="exportMenu"
+                          [matMenuTriggerData]="{ dbId: e.dbId }"
+                          matTooltip="Download citation"
+                          aria-label="Download citation">
+                    <mat-icon fontSet="symbols">download</mat-icon>
+                  </button>
+                </li>
+              } @empty {
+                <li class="event-empty">No matches.</li>
+              }
+            </ul>
+            @if (!getQuery(key) && rows.length > SECTION_TRUNCATE) {
+              <button mat-button type="button" class="show-more"
+                      (click)="toggleShowAll(key)">
+                <mat-icon fontSet="symbols">
+                  {{ isShowAll(key) ? 'expand_less' : 'expand_more' }}
+                </mat-icon>
+                {{ isShowAll(key)
+                    ? 'Show fewer'
+                    : 'Show all ' + rows.length }}
+              </button>
+            }
+          }
+        </section>
+      </ng-template>
+
       @if (authoredPathways().length) {
-        <section class="event-section">
-          <h2>Authored Pathways ({{ authoredPathways().length }})</h2>
-          @if (expandAll()) {
-            <ul class="event-list">
-              @for (e of authoredPathways(); track e.dbId) {
-                <li class="event-item">
-                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-                  <button mat-icon-button class="event-export"
-                          [matMenuTriggerFor]="exportMenu"
-                          [matMenuTriggerData]="{ dbId: e.dbId }"
-                          aria-label="Export citation">
-                    <mat-icon fontSet="symbols">download</mat-icon>
-                  </button>
-                </li>
-              }
-            </ul>
-          }
-        </section>
+        <ng-container *ngTemplateOutlet="sectionTpl; context: { key: 'authoredPathways', title: 'Authored Pathways', rows: authoredPathways() }"></ng-container>
       }
-
       @if (authoredReactions().length) {
-        <section class="event-section">
-          <h2>Authored Reactions ({{ authoredReactions().length }})</h2>
-          @if (expandAll()) {
-            <ul class="event-list">
-              @for (e of authoredReactions(); track e.dbId) {
-                <li class="event-item">
-                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-                  <button mat-icon-button class="event-export"
-                          [matMenuTriggerFor]="exportMenu"
-                          [matMenuTriggerData]="{ dbId: e.dbId }"
-                          aria-label="Export citation">
-                    <mat-icon fontSet="symbols">download</mat-icon>
-                  </button>
-                </li>
-              }
-            </ul>
-          }
-        </section>
+        <ng-container *ngTemplateOutlet="sectionTpl; context: { key: 'authoredReactions', title: 'Authored Reactions', rows: authoredReactions() }"></ng-container>
       }
-
       @if (reviewedPathways().length) {
-        <section class="event-section">
-          <h2>Reviewed Pathways ({{ reviewedPathways().length }})</h2>
-          @if (expandAll()) {
-            <ul class="event-list">
-              @for (e of reviewedPathways(); track e.dbId) {
-                <li class="event-item">
-                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-                  <button mat-icon-button class="event-export"
-                          [matMenuTriggerFor]="exportMenu"
-                          [matMenuTriggerData]="{ dbId: e.dbId }"
-                          aria-label="Export citation">
-                    <mat-icon fontSet="symbols">download</mat-icon>
-                  </button>
-                </li>
-              }
-            </ul>
-          }
-        </section>
+        <ng-container *ngTemplateOutlet="sectionTpl; context: { key: 'reviewedPathways', title: 'Reviewed Pathways', rows: reviewedPathways() }"></ng-container>
       }
-
       @if (reviewedReactions().length) {
-        <section class="event-section">
-          <h2>Reviewed Reactions ({{ reviewedReactions().length }})</h2>
-          @if (expandAll()) {
-            <ul class="event-list">
-              @for (e of reviewedReactions(); track e.dbId) {
-                <li class="event-item">
-                  <a class="event-link" [routerLink]="[CONTENT_DETAIL_PATH, e.stId]">{{ e.displayName }}</a>
-                  @if (e.speciesName) { <span class="event-species">{{ e.speciesName }}</span> }
-                  <button mat-icon-button class="event-export"
-                          [matMenuTriggerFor]="exportMenu"
-                          [matMenuTriggerData]="{ dbId: e.dbId }"
-                          aria-label="Export citation">
-                    <mat-icon fontSet="symbols">download</mat-icon>
-                  </button>
-                </li>
-              }
-            </ul>
-          }
-        </section>
+        <ng-container *ngTemplateOutlet="sectionTpl; context: { key: 'reviewedReactions', title: 'Reviewed Reactions', rows: reviewedReactions() }"></ng-container>
       }
 
       <!-- Shared export menu rendered once per page; mat-menu instantiates

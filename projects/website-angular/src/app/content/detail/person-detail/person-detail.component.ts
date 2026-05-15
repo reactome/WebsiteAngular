@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
@@ -7,6 +8,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import {
   CONTENT_SERVICE,
@@ -45,6 +47,12 @@ interface Person {
   publications?: Publication[];
 }
 
+type SectionKey =
+  | 'authoredPathways'
+  | 'authoredReactions'
+  | 'reviewedPathways'
+  | 'reviewedReactions';
+
 // Returned by /data/person/{id}/{authored,reviewed}{Pathways,Reactions}.
 // Matches Reactome's SimpleEventProjection DTO.
 interface SimpleEvent {
@@ -60,6 +68,7 @@ interface SimpleEvent {
   standalone: true,
   imports: [
     PageLayoutComponent,
+    NgTemplateOutlet,
     MatProgressSpinner,
     RouterLink,
     MatIcon,
@@ -69,6 +78,7 @@ interface SimpleEvent {
     MatMenuContent,
     MatMenuItem,
     MatMenuTrigger,
+    MatTooltip,
   ],
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
@@ -110,6 +120,7 @@ export class PersonDetailComponent {
       this.authoredReactions.set([]);
       this.reviewedPathways.set([]);
       this.reviewedReactions.set([]);
+      this.resetSectionExtras();
 
       // /data/person/{id} accepts either the numeric dbId or the ORCID.
       this.http.get<Person>(`${CONTENT_SERVICE}/data/person/${id}`).subscribe({
@@ -154,11 +165,136 @@ export class PersonDetailComponent {
     return `${CONTENT_SERVICE}/citation/export?id=${dbId}&ext=${format}&isPathway=true&dateAccessed=${date}`;
   }
 
-  // Single global toggle that collapses/expands every contribution
-  // section on the page. Useful for prolific contributors (e.g. Matthews
-  // has 76 + 273 + 105 + 178 rows; that's a lot of vertical scrolling).
-  expandAll = signal(true);
+  // Per-section expand/collapse state. Each section header is clickable
+  // and toggles independently; the bulk button at the top sets all four
+  // at once. Default: all expanded.
+  private sectionState = signal<Record<SectionKey, boolean>>({
+    authoredPathways: true,
+    authoredReactions: true,
+    reviewedPathways: true,
+    reviewedReactions: true,
+  });
+
+  // Per-section quick-filter query, species selection, and "show all"
+  // flag. Long lists (>20 rows) start truncated; the search box matches
+  // displayName (case-insensitive contains); species chips narrow to a
+  // single organism.
+  private sectionExtras = signal<Record<SectionKey, { showAll: boolean; query: string; species: string }>>({
+    authoredPathways: { showAll: false, query: '', species: '' },
+    authoredReactions: { showAll: false, query: '', species: '' },
+    reviewedPathways: { showAll: false, query: '', species: '' },
+    reviewedReactions: { showAll: false, query: '', species: '' },
+  });
+
+  private static readonly SECTION_TRUNCATE = 20;
+  private static readonly FILTER_THRESHOLD = 10;
+  readonly SECTION_TRUNCATE = PersonDetailComponent.SECTION_TRUNCATE;
+  readonly FILTER_THRESHOLD = PersonDetailComponent.FILTER_THRESHOLD;
+
+  isSectionExpanded(key: SectionKey): boolean {
+    return this.sectionState()[key];
+  }
+
+  toggleSection(key: SectionKey) {
+    this.sectionState.update(s => ({ ...s, [key]: !s[key] }));
+  }
+
+  allExpanded = computed(() => {
+    const s = this.sectionState();
+    return s.authoredPathways && s.authoredReactions && s.reviewedPathways && s.reviewedReactions;
+  });
+
   toggleExpandAll() {
-    this.expandAll.update(v => !v);
+    const target = !this.allExpanded();
+    this.sectionState.set({
+      authoredPathways: target,
+      authoredReactions: target,
+      reviewedPathways: target,
+      reviewedReactions: target,
+    });
+  }
+
+  getQuery(key: SectionKey): string {
+    return this.sectionExtras()[key].query;
+  }
+
+  getSpecies(key: SectionKey): string {
+    return this.sectionExtras()[key].species;
+  }
+
+  isShowAll(key: SectionKey): boolean {
+    return this.sectionExtras()[key].showAll;
+  }
+
+  onFilterInput(key: SectionKey, event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    // Reset showAll when the user types -- filtered results are
+    // usually small enough to render in full; the slice only kicks in
+    // for unfiltered views.
+    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: false, query: value } }));
+  }
+
+  clearFilter(key: SectionKey) {
+    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], query: '' } }));
+  }
+
+  setSpecies(key: SectionKey, species: string) {
+    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: false, species } }));
+  }
+
+  toggleShowAll(key: SectionKey) {
+    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: !s[key].showAll } }));
+  }
+
+  private matchQuery(row: SimpleEvent, query: string): boolean {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return row.displayName.toLowerCase().includes(q);
+  }
+
+  filteredRows(rows: SimpleEvent[], query: string, species: string): SimpleEvent[] {
+    if (!query.trim() && !species) return rows;
+    return rows.filter(r =>
+      this.matchQuery(r, query) && (!species || r.speciesName === species),
+    );
+  }
+
+  visibleRows(key: SectionKey, rows: SimpleEvent[]): SimpleEvent[] {
+    const { showAll, query, species } = this.sectionExtras()[key];
+    const filtered = this.filteredRows(rows, query, species);
+    if (showAll || query.trim() || species) return filtered;
+    return filtered.slice(0, PersonDetailComponent.SECTION_TRUNCATE);
+  }
+
+  filteredCount(key: SectionKey, rows: SimpleEvent[]): number {
+    const { query, species } = this.sectionExtras()[key];
+    return this.filteredRows(rows, query, species).length;
+  }
+
+  // Species facet counts honor the current search box (so if the user
+  // is searching "DNA", the chip count for Homo sapiens reflects only
+  // rows that match both). They ignore the currently-selected species
+  // -- otherwise selecting one would hide all other chips.
+  speciesFacets(key: SectionKey, rows: SimpleEvent[]): { name: string; count: number }[] {
+    const { query } = this.sectionExtras()[key];
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (!this.matchQuery(r, query)) continue;
+      const n = r.speciesName;
+      if (!n) continue;
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }
+
+  private resetSectionExtras() {
+    this.sectionExtras.set({
+      authoredPathways: { showAll: false, query: '', species: '' },
+      authoredReactions: { showAll: false, query: '', species: '' },
+      reviewedPathways: { showAll: false, query: '', species: '' },
+      reviewedReactions: { showAll: false, query: '', species: '' },
+    });
   }
 }
