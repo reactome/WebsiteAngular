@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  host: "https://dev.reactome.org",
+  host: "https://curator.reactome.org",
   s3: "https://download.reactome.org",
   gsaServer: "dev",
   gtagId: "G-96F1EYHQR3",

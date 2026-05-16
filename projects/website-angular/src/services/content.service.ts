@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
 import parseFrontmatter from '../utils/parseFrontmatter';
@@ -25,9 +26,11 @@ export interface TeamMember {
 })
 
 export class ContentService {
-  private contentBasePath = '/content';
+  private readonly contentBasePath: string;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, @Inject(DOCUMENT) private document: Document) {
+    this.contentBasePath = new URL('content/', this.document.baseURI).toString().replace(/\/$/, '');
+  }
 
   //Get any page by type and slug
   getPage(pageType:string, slug:string ): Observable<PageContent | null> {

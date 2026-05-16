@@ -6,59 +6,59 @@
     "dropdown-links": {
       "what-is-reactome": {
         "label": "What is Reactome?",
-        "link": "/about/what-is-reactome"
+        "link": "about/what-is-reactome"
       },
       "news": {
         "label": "News",
-        "link": "/about/news"
+        "link": "about/news"
       },
       "team": {
         "label": "Team",
-        "link": "/about/team"
+        "link": "about/team"
       },
       "scientific-advisory-board": {
         "label": "Scientific Advisory Board",
-        "link": "/about/sab"
+        "link": "about/sab"
       },
       "funding": {
         "label": "Funding",
-        "link": "/about/funding"
+        "link": "about/funding"
       },
       "editorial-calendar": {
         "label": "Editorial Calendar",
-        "link": "/about/editorial-calendar"
+        "link": "about/editorial-calendar"
       },
       "release-calendar": {
         "label": "Release Calendar",
-        "link": "/about/release-calendar"
+        "link": "about/release-calendar"
       },
       "statistics": {
         "label": "Statistics",
-        "link": "/about/statistics"
+        "link": "about/statistics"
       },
       "our-logo": {
         "label": "Our Logo",
-        "link": "/about/logo"
+        "link": "about/logo"
       },
       "license-agreement": {
         "label": "License Agreement",
-        "link": "/about/license"
+        "link": "about/license"
       },
       "privacy-notice": {
         "label": "Privacy Notice",
-        "link": "/about/privacy-notice"
+        "link": "about/privacy-notice"
       },
       "disclaimer": {
         "label": "Discalaimer",
-        "link": "/about/disclaimer"
+        "link": "about/disclaimer"
       },
       "digital-preservation": {
         "label": "Digital Preservation",
-        "link": "/about/digital-preservation"
+        "link": "about/digital-preservation"
       },
       "contact-us": {
         "label": "Contact Us",
-        "link": "/about/contact-us"
+        "link": "about/contact-us"
       }
     }
   },

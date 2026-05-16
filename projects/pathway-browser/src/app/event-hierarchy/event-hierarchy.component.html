@@ -159,7 +159,7 @@
                 </div>
               }
               <!--Only provide this subpathway tag for the first layer, ignore the nested subpathways-->
-              @if (!node.hasDiagram && node.parent.stId === this.pathwayId()) {
+              @if (!node.hasDiagram && node.parent?.stId === this.pathwayId()) {
                 <div class="subpathway"
                   [style.background]="node.subpathwayColor" (mouseover)="onTagHover(node)"
                   (mouseleave)="onTagHoverLeave(node)">
