@@ -29,14 +29,14 @@ This replaces the legacy Fireworks visualization. The new honeycomb layout shows
 
 The honeycomb overview is built on top of the [FoamTree](<https://carrotsearch.com/foamtree/>) Voronoi-treemap library. Top-level pathways (TLPs) are arranged using a semantically meaningful initial layout — related pathways (for example *Neuronal System* and *Muscle contraction*) sit close together, and the largest TLPs are given more visual real-estate. Each TLP is colored according to its broad family so that families remain visually grouped after relaxation.
 
-The overview retrieves pathway hierarchy data directly from the Reactome server. Third-party resources can embed it in any browser that supports CORS, or by adding a server-side proxy to avoid same-origin restrictions. The overview also supports overlaying analysis results — for an introduction to Reactome's analysis tooling, see the [Analysis Service developers' guide](</dev/analysis>) and the [API](<#API>) section below.
+The overview retrieves pathway hierarchy data directly from the Reactome server. Third-party resources can embed it in any browser that supports CORS, or by adding a server-side proxy to avoid same-origin restrictions. The overview also supports overlaying analysis results — for an introduction to Reactome's analysis tooling, see the [Analysis Service developers' guide](</documentation/dev/analysis>) and the [API](<#API>) section below.
 
 ### [__Get Started](<#GetStarted>)
 
 The honeycomb overview is implemented as an Angular component (`<cr-reacfoam>`) inside the Reactome Pathway Browser. There are two supported ways to use it from a third-party page:
 
 1. **Embed the Pathway Browser**, which exposes the overview as part of its standard UI.
-2. **Build directly against [@carrotsearch/foamtree](<https://carrotsearch.com/foamtree/>)** and populate it with pathway hierarchy data fetched from the Reactome [Content Service](</dev/content-service>). The `ReacfoamComponent` source in this repository is the reference implementation and is the best starting point for a custom integration.
+2. **Build directly against [@carrotsearch/foamtree](<https://carrotsearch.com/foamtree/>)** and populate it with pathway hierarchy data fetched from the Reactome [Content Service](</documentation/dev/content-service>). The `ReacfoamComponent` source in this repository is the reference implementation and is the best starting point for a custom integration.
 
 The previous Fireworks JS and Fireworks GWT widgets have been retired. New integrations should target the Angular component or the underlying FoamTree library directly.
 
@@ -54,4 +54,4 @@ For the complete surface area, refer to the `ReacfoamComponent` source under `pr
 
   * [__Reactome Pathway Browser code (Angular)](<https://github.com/reactome/WebsiteAngular>)
   * [__FoamTree (Carrot Search)](<https://carrotsearch.com/foamtree/>)
-  * [__Reactome Content Service](</dev/content-service>)
+  * [__Reactome Content Service](</documentation/dev/content-service>)
