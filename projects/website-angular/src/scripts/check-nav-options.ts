@@ -22,7 +22,8 @@ const LIST_SECTIONS = [
 // content root. Useful for archive/draft pages that exist on disk but
 // shouldn't surface in the menu.
 const NAV_OPT_OUT: Set<string> = new Set([
-  // Add page URLs here as needed, e.g. '/about/old-funding'.
+  // Search-results page. Reachable from the search bar; not a nav target.
+  '/content/query',
 ]);
 
 interface NavNode {
@@ -126,6 +127,7 @@ function main(): number {
   // App-routed pages (e.g. /content/toc) are valid nav targets even when
   // there's no backing MDX file. Treat them as content for diffing.
   for (const r of angularRoutes) {
+    if (NAV_OPT_OUT.has(r)) continue;
     if (isContentUrl(r)) contentUrls.add(r);
   }
 

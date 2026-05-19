@@ -139,6 +139,10 @@
           "reactome-fiviz": {
             "label": "ReactomeFIViz",
             "link": "/documentation/userguide/reactome-fiviz"
+          },
+          "claim-your-work": {
+            "label": "Claim Your Work in ORCID",
+            "link": "/documentation/userguide/claim-your-work"
           }
         }
       },
@@ -230,6 +234,10 @@
       "curator-guide": {
         "label": "Curator Guide",
         "link": "/documentation/curator-guide"
+      },
+      "release-documentation": {
+        "label": "Release Documentation",
+        "link": "/documentation/release-documentation"
       },
       "computationally-inferred-events": {
         "label": "Computationally Inferred Events",
