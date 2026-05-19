@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavLink, NavOption } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
-import { environment } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   standalone: true,
@@ -50,29 +49,7 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   loadNavOptions() {
     import('../../config/nav-options.json').then((navData) => {
       this.navOptions = mapNavOptions(navData.default);
-      this.resolveExternalLinks(environment.host);
     });
-  }
-
-  /**
-   * Prepend baseUrl to external links so they resolve to the correct domain
-   */
-  private resolveExternalLinks(baseUrl: string) {
-    const resolve = (links: Record<string, NavLink> | undefined) => {
-      if (!links) return;
-      for (const link of Object.values(links)) {
-        if (link.external) {
-          link.link = baseUrl + link.link;
-        }
-        resolve(link.dropdownLinks);
-      }
-    };
-    for (const option of Object.values(this.navOptions)) {
-      if (option.external) {
-        option.link = baseUrl + option.link;
-      }
-      resolve(option.dropdownLinks);
-    }
   }
 
   toggleHamburgerMenu() {
