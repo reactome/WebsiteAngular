@@ -31,31 +31,19 @@ The diagram viewer retrieves the information directly from Reactome server, whic
 
 ### [__Get Started](<#GetStarted>)
 
-Currently, there are two options for integrating Reactome’s pathway diagrams in your web application. The first is to use our [DiagramJs widget](</documentation/dev/diagram/js>), while the second option involves using our [GWT implementation](</documentation/dev/diagram/gwt>).
+The diagram viewer is implemented as part of the Reactome [Pathway Browser](</PathwayBrowser>). There are two supported ways to use it from a third-party page:
 
-[ __ ](</documentation/dev/diagram/js>)
+1. **Embed the Pathway Browser** (which exposes the diagram viewer as part of its standard UI) by linking to or iframing `https://reactome.org/PathwayBrowser/#/{stId}`.
+2. **Render a static diagram image** by calling the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
 
-##  [ Diagram JS ](</documentation/dev/diagram/js>)
-
-[ __ ](</documentation/dev/diagram/gwt>)
-
-##  [ Diagram GWT ](</documentation/dev/diagram/gwt>)
+The previous Diagram JS and Diagram GWT widgets have been retired. New integrations should target the embedded Pathway Browser or the diagram exporter API directly.
 
 ### [__API](<#API>)
 
-Whether you are a JavaScript or GWT developer, we have a tool that will suit you. Check out your option:
-
-[ __ ](</documentation/dev/diagram/js#API>)
-
-##  [ Diagram JS API ](</documentation/dev/diagram/js#API>)
-
-[ __ ](</documentation/dev/diagram/gwt#API>)
-
-##  [ Diagram GWT API ](</documentation/dev/diagram/gwt#API>)
+For interactive embedding, the Pathway Browser accepts URL fragments to set the displayed pathway and selected event (e.g. `/PathwayBrowser/#/R-HSA-69620?SEL=R-HSA-69231`). For programmatic image generation, see the diagram-exporter endpoints under the [Content Service](</documentation/dev/content-service>).
 
 ### [__Resources](<#Resources>)
 
-  * __[Pathway Diagram Specifications](</documentation/dev/diagram/pathway-diagram-specs>)
-  * [__GWT Diagram code](<https://github.com/reactome-pwp/diagram>)
-  * [__GWT Diagram exporter to JavaSript](<https://github.com/reactome-pwp/diagram-js>)
-  * [__Reactome Pathways Portal code](<https://github.com/reactome-pwp>)
+  * [__Pathway Diagram Specifications](</documentation/dev/diagram/pathway-diagram-specs>)
+  * [__Reactome Pathway Browser code (Angular)](<https://github.com/reactome/WebsiteAngular>)
+  * [__Reactome Content Service](</documentation/dev/content-service>)

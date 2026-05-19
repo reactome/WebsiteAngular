@@ -181,17 +181,7 @@
           },
           "pathways-overview": {
             "label": "Pathways Overview",
-            "link": "/documentation/dev/pathways-overview",
-            "dropdown-links": {
-              "js": {
-                "label": "Pathway JS",
-                "link": "/documentation/dev/pathways-overview/js"
-              },
-              "gwt": {
-                "label": "Pathway GWT",
-                "link": "/documentation/dev/pathways-overview/gwt"
-              }
-            }
+            "link": "/documentation/dev/pathways-overview"
           },
           "diagram": {
             "label": "Pathway Diagrams",
@@ -200,14 +190,6 @@
               "pathway-diagram-specs": {
                 "label": "Pathway Diagram Specs",
                 "link": "/documentation/dev/diagram/pathway-diagram-specs"
-              },
-              "js": {
-                "label": "Diagram JS",
-                "link": "/documentation/dev/diagram/js"
-              },
-              "gwt": {
-                "label": "Diagram GWT",
-                "link": "/documentation/dev/diagram/gwt"
               }
             }
           }
