@@ -30,7 +30,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
-import { environment } from '../../../../pathway-browser/src/environments/environment';
+import {
+  environment,
+  CONTENT_SERVICE,
+} from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-search',
@@ -752,8 +755,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const formData = new FormData(form);
     formData.set('h-captcha-response', this.captchaToken);
 
-    this.http.post('/content/contact', formData).subscribe({
-      //TODO: Post to the actual route
+    this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
       next: () => {
         this.formSubmitted = true;
         this.resetCaptcha();
