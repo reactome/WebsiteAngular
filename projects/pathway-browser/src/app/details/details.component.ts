@@ -47,7 +47,6 @@ export class DetailsComponent {
   tabs: string[] = [
     'details',
     'molecule',
-    'results',
     'expression',
     'info',
     'download',

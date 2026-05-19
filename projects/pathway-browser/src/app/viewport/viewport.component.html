@@ -54,13 +54,13 @@
           <div class="top-left">
 
             <div class="analysis-button-group">
-              <button (click)="dropdown.set(dropdown() ? null : 'analysis')" mat-ripple class="primary" [class.loading]="analysisLoading()">
-                <mat-icon>query_stats</mat-icon>
+              <!-- <button (click)="dropdown.set(dropdown() ? null : 'analysis')" mat-ripple class="primary" [class.loading]="analysisLoading()"> -->
+                <!-- <mat-icon>query_stats</mat-icon>
                 Analyze
                 @if (analysisLoading()) {
                   <mat-spinner [diameter]="18"></mat-spinner>
                 }
-              </button>
+              </button> -->
 
               @if (hasMultipleProfile()) {
                 <div class="profile-controls" [@appear]>
@@ -117,7 +117,7 @@
               <button mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
             </mat-menu>
 
-            @if (normalPathway()) {
+            <!-- @if (normalPathway()) {
               <button mat-stroked-button [routerLink]="['/', normalPathway()?.stId]" [queryParams]="{select: null}"
                       queryParamsHandling="merge">
                 <mat-icon>compare</mat-icon>
@@ -135,7 +135,7 @@
                      queryParamsHandling="merge">{{ comparablePathway.displayName }}</a>
                 }
               </mat-menu>
-            }
+            } -->
 
           </div>
 
@@ -157,7 +157,7 @@
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
             <div class="logo" matTooltip="Go to the main page">
-              <a href="/" id="main">
+              <a href="" id="main">
                 <mat-icon [svgIcon]="'logo'"></mat-icon>
               </a>
               <div class="version-container">
