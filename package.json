@@ -5,6 +5,7 @@
     "ng": "ng",
     "prepare-env": "cd projects/pathway-browser && rm -f ./package-lock.json && node ./foamtree_version_control.js && cd ../.. && npm install",
     "generate:indices": "npx tsx projects/website-angular/src/scripts/generate-index.ts",
+    "check:nav-options": "npx tsx projects/website-angular/src/scripts/check-nav-options.ts",
     "dev:reactome-cytoscape-style": "ng build reactome-cytoscape-style --watch --configuration development",
     "dev:serve": "wait-on dist/reactome-cytoscape-style/assets/index.scss && tinacms dev --rootPath projects/website-angular -c \"ng serve\"",
     "build:reactome-cytoscape-style": "ng build reactome-cytoscape-style",
