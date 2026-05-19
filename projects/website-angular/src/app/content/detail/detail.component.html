@@ -20,6 +20,7 @@
     </div>
   } @else if (obj()) {
     <div class="detail-container">
+      <app-detail-download-bar [obj]="obj()!" />
       <cr-description-tab [obj]="obj()!" [showLocations]="true" />
     </div>
   }

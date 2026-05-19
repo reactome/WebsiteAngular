@@ -11,6 +11,7 @@ import {SidebarComponent} from '../../sidebar/sidebar.component';
 import {
   DescriptionTabComponent
 } from '../../../../../pathway-browser/src/app/details/tabs/description-tab/description-tab.component';
+import { DetailDownloadBarComponent } from './detail-download-bar/detail-download-bar.component';
 import {SelectableObject} from '../../../../../pathway-browser/src/app/services/event.service';
 import {UrlStateService} from '../../../../../pathway-browser/src/app/services/url-state.service';
 import {DataStateService} from '../../../../../pathway-browser/src/app/services/data-state.service';
@@ -33,7 +34,7 @@ import {DetailSpeciesService} from './providers/detail-species.provider';
 @Component({
   selector: 'app-detail',
   standalone: true,
-  imports: [PageLayoutComponent, DescriptionTabComponent, MatProgressSpinner, SidebarComponent],
+  imports: [PageLayoutComponent, DescriptionTabComponent, DetailDownloadBarComponent, MatProgressSpinner, SidebarComponent],
   providers: [
     {provide: UrlStateService, useClass: DetailUrlState},
     {provide: DataStateService, useClass: DetailDataState},
