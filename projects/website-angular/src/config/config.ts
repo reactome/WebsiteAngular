@@ -5,8 +5,8 @@ export const APP_CONFIG = {
     releaseDate: '2026-04-01'
   },
 
-  // canonical site base / download base (choose prod by default)
-  baseUrl: 'https://reactome.org',
+  // canonical download base (separate from environment.host because static
+  // assets like .tar.gz dumps live on a CDN, not the application host).
   downloadUrl: 'https://download.reactome.org',
 
   // Base URL Swagger UI pulls OpenAPI specs from for the embedded

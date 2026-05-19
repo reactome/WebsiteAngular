@@ -1,4 +1,5 @@
 import { APP_CONFIG } from './config';
+import { environment } from '../../../pathway-browser/src/environments/environment';
 
 export const EXTERNAL_LINKS = {
   twitter: { label: 'Twitter', link: 'https://twitter.com/Reactome' },
@@ -14,7 +15,6 @@ export const EXTERNAL_LINKS = {
   nyu: { label: 'NYU', link: 'https://med.nyu.edu/' },
   ohsu: { label: 'OHSU', link: 'http://www.ohsu.edu/' },
   oicr: { label: 'OICR', link: 'https://oicr.on.ca/' },
-  // dynamically construct release notes link using APP_CONFIG
-  releaseNotes: { label: 'Release Notes', link: `${APP_CONFIG.baseUrl}${APP_CONFIG.releaseNotesPath}` },
+  releaseNotes: { label: 'Release Notes', link: `${environment.host}${APP_CONFIG.releaseNotesPath}` },
   feedback: { label: 'Feedback', link: 'https://forms.gle/TPBxaWnnVLLZj66p8' }
 } as const;

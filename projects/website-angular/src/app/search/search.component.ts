@@ -30,6 +30,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
+import { environment } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-search',
@@ -502,7 +503,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return `https://dev.reactome.org/icon/${entry.stId}.svg`;
+    return `${environment.host}/icon/${entry.stId}.svg`;
   }
 
   get allEntries(): SearchEntry[] {

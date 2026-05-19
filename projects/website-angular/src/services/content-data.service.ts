@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CONTENT_SERVICE } from '../../../pathway-browser/src/environments/environment';
 
 export interface SimplePerson {
   dbId: number;
@@ -82,8 +83,8 @@ export interface SimpleDatabaseObject {
 })
 export class ContentDataService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://dev.reactome.org/ContentService/data/content';
-  private schemaUrl = 'https://dev.reactome.org/ContentService/data/schema';
+  private baseUrl = `${CONTENT_SERVICE}/data/content`;
+  private schemaUrl = `${CONTENT_SERVICE}/data/schema`;
 
   getTocPathways(): Observable<TocPathway[]> {
     return this.http.get<TocPathway[]>(`${this.baseUrl}/toc`);
@@ -132,7 +133,7 @@ export class ContentDataService {
 
   getInstance(id: string | number): Observable<any> {
     return this.http.get<any>(
-      `https://dev.reactome.org/ContentService/data/query/enhanced/${id}`
+      `${CONTENT_SERVICE}/data/query/enhanced/${id}`
     );
   }
 }

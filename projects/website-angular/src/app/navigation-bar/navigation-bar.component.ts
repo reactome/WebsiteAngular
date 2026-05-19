@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavLink, NavOption } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
-import { APP_CONFIG } from '../../config/config'; // NEW import
+import { environment } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   standalone: true,
@@ -50,7 +50,7 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   loadNavOptions() {
     import('../../config/nav-options.json').then((navData) => {
       this.navOptions = mapNavOptions(navData.default);
-      this.resolveExternalLinks(APP_CONFIG.baseUrl);
+      this.resolveExternalLinks(environment.host);
     });
   }
 
