@@ -44,3 +44,70 @@ h1 {
   min-width: 100px;
   margin-right: 20px;
 }
+
+// Jump-card grid emitted by utils/addJumpCards.ts for the legacy Joomla
+// "icon + heading" section-anchor pattern in dev / doc MDX pages.
+.jump-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.jump-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
+  color: var(--on-surface);
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--surface-container, rgba(0, 0, 0, 0.06));
+    border-color: var(--primary);
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.jump-card-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  color: var(--primary);
+}
+
+.jump-card-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+.jump-card-desc {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--on-surface-variant, rgba(0, 0, 0, 0.6));
+  line-height: 1.35;
+}
+
+// Inline icon for the "[__Label](url)" placeholder pattern in resource
+// list bullets (Resources sections of dev / doc pages).
+.link-icon {
+  font-size: 1em;
+  vertical-align: middle;
+  margin-right: 0.25em;
+  color: var(--primary);
+}

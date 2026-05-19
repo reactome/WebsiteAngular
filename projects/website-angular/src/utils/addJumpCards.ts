@@ -51,11 +51,19 @@ function clean(label: string): string {
 }
 
 export default function addJumpCards(html: string): string {
-  const pairRe = /<p><a href="([^"]+)">\s*(?:__\s*)?<\/a><\/p>\s*<h([1-6])><a href="\1">([^<]+)<\/a><\/h\2>/g;
-  let out = html.replace(pairRe, (_m, href, _level, label) => {
+  // Match the icon-link + heading-link pair, plus an optional plain-text
+  // description paragraph immediately after. Pulling the description
+  // into the card itself means consecutive cards stay adjacent in the
+  // HTML (only whitespace between them), so the grid-wrapping pass below
+  // can group them.
+  const pairRe = /<p><a href="([^"]+)">\s*(?:__\s*)?<\/a><\/p>\s*<h([1-6])><a href="\1">([^<]+)<\/a><\/h\2>(?:\s*<p>([^<]*?)<\/p>)?/g;
+  let out = html.replace(pairRe, (_m, href, _level, label, desc) => {
     const text = clean(label);
     const icon = iconForLink(href, text);
-    return `<a class="jump-card" href="${href}"><span class="jump-card-icon material-symbols-rounded">${icon}</span><span class="jump-card-label">${text}</span></a>`;
+    const descSpan = desc && desc.trim()
+      ? `<span class="jump-card-desc">${desc.trim()}</span>`
+      : '';
+    return `<a class="jump-card" href="${href}"><span class="jump-card-icon material-symbols-rounded">${icon}</span><span class="jump-card-label">${text}</span>${descSpan}</a>`;
   });
 
   out = out.replace(
