@@ -1423,8 +1423,21 @@ $border-radius: 8px;
     flex-direction: column;
   }
 
+  // Below 1024px the sidebar floats as an overlay drawer instead of
+  // stacking above the results -- otherwise opening the filters
+  // pushes the entire result list off-screen on a phone.
   .facet-sidebar {
-    width: 100%;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(320px, 90vw);
+    height: 100vh;
+    background: var(--surface, #fff);
+    border-left: 1px solid var(--outline-variant, rgba(0, 0, 0, 0.12));
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.18);
+    padding: 16px;
+    overflow-y: auto;
+    z-index: 20;
 
     &.collapsed { display: none; }
   }

@@ -89,7 +89,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Filter panel visibility. Defaults to visible on desktop; on narrow
   // screens the user can collapse it via the toggle button.
-  filtersVisible = true;
+  // Default to the sidebar being open on wide layouts and collapsed on
+  // narrow layouts (kept in sync with the 1024px breakpoint in the
+  // component scss — see the .filters-toggle-btn / .facet-sidebar
+  // @media (max-width: 1024px) block).
+  filtersVisible = typeof window === 'undefined' || window.innerWidth > 1024;
 
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
@@ -270,6 +274,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         } else {
           // Successful API response - check if we have results
           const res = results as SearchResult;
+          // Solr's true total across the whole result set; per-group
+          // pagination chops each `group.entries` down to ~30, so we
+          // must NOT recompute this from entries.length later.
+          const biologyTotal = res.numberOfMatches ?? 0;
           const hasNonDeleted = res.results?.some((group) =>
             group.entries.some((e) => !e.deleted)
           );
@@ -349,10 +357,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
               } as ResultGroup,
             ];
           }
-          res.numberOfMatches = res.results.reduce(
-            (sum, g) => sum + g.entries.length,
-            0
-          );
+          // Keep Solr's biology total; add Pages count (when shown); zero
+          // out biology when the user selected a Pages-only filter.
+          res.numberOfMatches =
+            (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
