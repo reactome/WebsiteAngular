@@ -79,6 +79,18 @@
       padding-right: 2px;
     }
 
+    & .type-chip {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--secondary-container, rgba(0, 110, 144, 0.12));
+      color: var(--on-secondary-container, var(--primary));
+      line-height: 1.4;
+    }
   }
 
   .details-button {

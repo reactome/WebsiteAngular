@@ -194,6 +194,35 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly symbol = computed(() => this.getSymbol(this.obj()));
+
+  // Human-friendly schema-class label rendered as a chip beside the
+  // entity name in the description-tab header (e.g. "Pathway",
+  // "Reaction", "Protein"). Maps the few Reactome schema classes whose
+  // raw name is jargon; falls back to splitting CamelCase otherwise.
+  private static readonly TYPE_LABELS: Record<string, string> = {
+    TopLevelPathway: 'Pathway',
+    Pathway: 'Pathway',
+    Reaction: 'Reaction',
+    BlackBoxEvent: 'Reaction',
+    Polymerisation: 'Reaction',
+    Depolymerisation: 'Reaction',
+    FailedReaction: 'Reaction',
+    ReactionLikeEvent: 'Reaction',
+    EntityWithAccessionedSequence: 'Protein',
+    SimpleEntity: 'Small Molecule',
+    ChemicalDrug: 'Drug',
+    ProteinDrug: 'Drug',
+    RNADrug: 'Drug',
+    OtherEntity: 'Other Entity',
+  };
+  readonly typeLabel = computed(() => {
+    const sc = (this.obj() as DatabaseObject & { schemaClass?: string }).schemaClass;
+    if (!sc) return '';
+    if (DescriptionTabComponent.TYPE_LABELS[sc]) {
+      return DescriptionTabComponent.TYPE_LABELS[sc];
+    }
+    return sc.replace(/([a-z])([A-Z])/g, '$1 $2');
+  });
   readonly literatureRefs: Signal<LiteratureReference[]> = computed(() =>
     getProperty(this.obj(), DataKeys.LITERATURE_REFERENCE)
   );

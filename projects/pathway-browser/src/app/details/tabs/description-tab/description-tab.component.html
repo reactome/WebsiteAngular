@@ -14,7 +14,7 @@
 <div id="details" #details>
   <div class="content">
     <!-- Header -->
-    <div class="header" [id]=DataKeys.OVERVIEW>
+    <div class="header">
       <div class="label">
         <mat-icon
           class="custom-icon"
@@ -30,6 +30,9 @@
             </mat-slide-toggle>
           }
           </span>
+        @if (typeLabel()) {
+          <span class="type-chip">{{ typeLabel() }}</span>
+        }
       </div>
       <div class="details-button">
         <a mat-button [routerLink]="`${CONTENT_DETAIL}/${obj().stId}`" target="_blank">
@@ -40,17 +43,14 @@
     </div>
     @for (element of elements; track element.key; let i = $index) {
       @if (element.isPresent ? element.isPresent() : obj()[element.key]) {
-        <!-- Avoid overview label -->
-        @if (i > 0) {
-          <div class="divider-container" [id]="element.key">
-            <div class="divider-name-container">
-              <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: element.label }"></ng-container>
-            </div>
-            <div class="divider-line-container">
-              <mat-divider class="divider"></mat-divider>
-            </div>
+        <div class="divider-container" [id]="element.key">
+          <div class="divider-name-container">
+            <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: element.label }"></ng-container>
           </div>
-        }
+          <div class="divider-line-container">
+            <mat-divider class="divider"></mat-divider>
+          </div>
+        </div>
         @if (!element.manual) {
           <cr-controller-tree [type]="element.key" [data]="obj()[element.key]"
                               [depthControl]="element.hasDepthControl ?? false" [scope]="element.scope || 'entity'"
