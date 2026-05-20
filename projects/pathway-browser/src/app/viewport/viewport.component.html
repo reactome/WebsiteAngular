@@ -18,18 +18,18 @@
             </div>
             <mat-icon class="custom-icon">arrow_drop_down</mat-icon>
           </div>
-          <div class="interactor" (click)="toggleVisibility('interactor')"
+          <!-- <div class="interactor" (click)="toggleVisibility('interactor')"
                [ngClass]="{'selected': visibility.interactor}">
             <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
             <div class="overlay-content">
               <span>Overlay</span>
-              <!--todo: fix the space for long name-->
-              @if (currentInteractorResource().name) {
+              todo: fix the space for long name-->
+              <!-- @if (currentInteractorResource().name) {
                 <span>{{ currentInteractorResource().name }}</span>
-              }
-            </div>
+              } -->
+            <!-- </div>
             <mat-icon class="custom-icon">arrow_drop_down</mat-icon>
-          </div>
+          </div> -->
         </div>
 
         <div [style.display]="visibility.species ? 'block':'none'">
@@ -144,13 +144,13 @@
           </div>
 
           <div class="top-right">
-            <a [href]="formerPathwayBrowserURL()" mat-icon-button class="quote warn history" matTooltip="Open former Pathway Browser">
+            <!-- <a [href]="formerPathwayBrowserURL()" mat-icon-button class="quote warn history" matTooltip="Open former Pathway Browser">
               <mat-icon fontSet="symbols">history</mat-icon>
             </a>
             <a href="https://forms.gle/3238xqbShhF8t9BQA" target="_blank" mat-stroked-button class="feedback warn" matTooltip="Send feedback for the beta version">
               <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
               Feedback
-            </a>
+            </a> -->
             <mat-slide-toggle color="primary" [(ngModel)]="dark.isDark" #darkToggle [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
                               id="dark-toggle"></mat-slide-toggle>
             <button mat-icon-button class="quote" (click)="openCitationDialog()" matTooltip="Cite us">

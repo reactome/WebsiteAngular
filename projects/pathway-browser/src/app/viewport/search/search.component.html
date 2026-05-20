@@ -1,4 +1,4 @@
-<div class="input" [class.collapsed]=""
+<!-- <div class="input" [class.collapsed]=""
      (focusin)="focusIn($event, query)"
      (focusout)="focusOut($event)"
      (keydown.arrowDown)="nextSuggest($event)"
@@ -13,13 +13,13 @@
     }
     <input type="text" placeholder="Search protein, gene, pathway, reaction" [(ngModel)]="searchText" #query
            (keydown)="hasFocus.set(true)">
-  </div>
-  @if (scopes[currentScopeName()].found() || searchedNoResult()) {
+  </div> -->
+  <!-- @if (scopes[currentScopeName()].found() || searchedNoResult()) {
     <button mat-icon-button (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
-  }
-
+  } -->
+<!-- 
   @if (hasFocus() && suggestionResults().length >= 1) {
     <div class="suggestions" @suggest>
       @for (suggest of suggestionResults(); track suggest; let i = $index) {
@@ -30,7 +30,7 @@
       }
     </div>
   }
-</div>
+</div> -->
 
 
 @if (scopes.global.found() || searchedNoResult()) {
