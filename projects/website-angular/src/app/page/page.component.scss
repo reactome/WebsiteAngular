@@ -3,6 +3,20 @@
     max-width: 100%;
     height: auto;
   }
+
+  // Link-wrapped images on MDX landing pages are icon thumbnails
+  // (e.g. the For Users / For Developers / Citing us modules on
+  // /documentation). The source PNGs are ~459x459 even when their
+  // filename advertises 110x110, so the default max-width: 100%
+  // lets them dominate the page. Cap link-only image children at a
+  // sensible thumbnail size and centre them; legitimately wide
+  // content images (no surrounding link) keep the original behaviour.
+  ::ng-deep a > img:only-child {
+    display: block;
+    max-width: 110px;
+    max-height: 110px;
+    margin: 0 auto;
+  }
 }
 
 .page-content {
