@@ -106,6 +106,37 @@
     background: unset;
   }
 
+  // The pathway-browser's details panel uses a teal underline under the
+  // entity name as a tab separator. On the standalone website detail
+  // page the title is the page header, not a tab, so the underline
+  // reads as visual noise. Drop it and give the name h1 weight to
+  // match other top-level page titles on the site.
+  .header.header {
+    border-bottom: none;
+    padding: 0;
+    margin: 0 0 8px;
+    height: auto;
+    align-items: baseline;
+  }
+  .header.header .name {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  // Breathing room around the projected download bar + diagram.
+  // Description-tab puts both inside the Overview slot; on the panel
+  // version they're absent, so we only need to space them on the
+  // standalone page.
+  app-detail-download-bar {
+    display: block;
+    margin: 28px 0 0;
+  }
+  app-detail-diagram {
+    display: block;
+    margin: 16px 0 8px;
+  }
+
   #details {
     .content {
       min-width: 0;
