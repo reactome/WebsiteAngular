@@ -759,7 +759,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case 'locationsInPWB':
         return this.showLocations();
       case 'reactionDiagram':
-        return this.isReaction();
+        return this.isReaction() && this.showReactionDiagram();
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
