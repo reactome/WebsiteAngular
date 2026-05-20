@@ -747,14 +747,15 @@ export class DiagramService {
         this.addEdgeInfo(reaction, points, 'forward', targetP);
 
         let [from, to] = [points.shift()!, points.pop()!];
-        // Connectors whose segments are missing endpoints fall back to the
-        // underlying node and reaction positions (not source/target, which
-        // swap for OUTPUT connectors and pulled some edges the wrong way).
-        from = from ?? nodeP;
-        to = to ?? reactionP;
+        // Keep fallback aligned with the connector's actual source/target
+        // (which swap for OUTPUT). Earlier we tried forcing nodeP/reactionP
+        // here, but that pointed OUTPUT arrows at the reaction's centre
+        // where the reaction square covered the tip.
+        from = from ?? sourceP;
+        to = to ?? targetP;
         if (equal(from, to)) {
-          from = nodeP;
-          to = reactionP;
+          from = sourceP;
+          to = targetP;
         }
         if (connector.type === 'CATALYST' && connector.endShape) {
           to = scale(connector.endShape.centre || connector.endShape.c);

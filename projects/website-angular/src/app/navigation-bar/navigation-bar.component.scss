@@ -46,7 +46,11 @@ $hamburger-breakpoint: 1100px;
 
 .logo-image {
   height: $header-height - 20;
-  width: min-content;
+  // `width: auto` lets the browser size the logo by the PNG's intrinsic
+  // aspect ratio against the explicit height. Safari/WebKit treats
+  // `width: min-content` on a raster image as the minimum intrinsic
+  // width (often collapsing to 0), so the logo rendered wrong there.
+  width: auto;
   display: block;
 }
 
