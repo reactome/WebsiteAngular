@@ -20,9 +20,10 @@
     </div>
   } @else if (obj()) {
     <div class="detail-container">
-      <app-detail-download-bar [obj]="obj()!" />
-      <app-detail-diagram [obj]="obj()!" />
-      <cr-description-tab [obj]="obj()!" [showLocations]="true" />
+      <cr-description-tab [obj]="obj()!" [showLocations]="true">
+        <app-detail-download-bar [obj]="obj()!" />
+        <app-detail-diagram [obj]="obj()!" />
+      </cr-description-tab>
     </div>
   }
 </app-page-layout>

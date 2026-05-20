@@ -30,9 +30,6 @@
             </mat-slide-toggle>
           }
           </span>
-        @if (typeLabel()) {
-          <span class="type-chip">{{ typeLabel() }}</span>
-        }
       </div>
       <div class="details-button">
         <a mat-button [routerLink]="`${CONTENT_DETAIL}/${obj().stId}`" target="_blank">
@@ -118,6 +115,11 @@
       </div>
     </div>
   }
+  <!-- Caller-projected content (e.g. /content/detail puts the download
+       bar + pathway diagram here, so they sit after the Overview's
+       summation and before the next section divider). PathwayBrowser
+       passes no children, so this stays empty there. -->
+  <ng-content></ng-content>
 </ng-template>
 
 <!-- xRefs -->
