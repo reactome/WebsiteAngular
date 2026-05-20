@@ -9,15 +9,13 @@ export const APP_CONFIG = {
   // assets like .tar.gz dumps live on a CDN, not the application host).
   downloadUrl: 'https://download.reactome.org',
 
-  // Base URL Swagger UI pulls OpenAPI specs from for the embedded
-  // ContentService / AnalysisService docs pages. Points at dev so the docs
-  // reflect the latest API regardless of which host (reactome.org,
-  // dev.reactome.org, release.reactome.org, localhost) is serving this app.
+  // SSR / non-browser fallback for the Swagger spec source and the
+  // ContentService search API. In the browser both consumers prefer
+  // window.location.origin so requests stay same-origin (avoids the
+  // CORS / SSO 302 trap on dev.reactome.org/AnalysisService). This value
+  // only matters during server-side rendering and for any laptop dev
+  // workflow that doesn't run a local tomcat on :8080.
   swaggerSpecBaseUrl: 'https://dev.reactome.org',
-
-  // Base URL for the Solr-backed ContentService search API used by the main
-  // search page. Same rationale as swaggerSpecBaseUrl: pointing at dev means
-  // local development sees the latest indexed content.
   contentServiceBaseUrl: 'https://dev.reactome.org/ContentService',
 
   // pathway browser config

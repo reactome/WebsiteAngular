@@ -69,7 +69,13 @@ import { APP_CONFIG } from '../config/config';
 })
 export class SearchService {
   private http = inject(HttpClient);
-  private baseUrl = `${APP_CONFIG.contentServiceBaseUrl}/search`;
+  // Same-origin when running in the browser so search XHRs don't depend on
+  // dev.reactome.org's CORS headers. Falls back to APP_CONFIG during SSR
+  // (no window) and for any laptop dev workflow without a local tomcat.
+  private baseUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/ContentService/search`
+      : `${APP_CONFIG.contentServiceBaseUrl}/search`;
 
   search(
     query: string,
