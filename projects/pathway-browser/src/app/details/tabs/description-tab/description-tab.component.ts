@@ -507,7 +507,7 @@ export class DescriptionTabComponent implements OnDestroy {
     },
     {
       key: 'locationsInPWB',
-      label: 'Pathway Browser Locations',
+      label: 'Locations',
       manual: true,
       template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
       isPresent: computed(() => this.showLocations()),
