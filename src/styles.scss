@@ -472,3 +472,48 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+// Prominent button for primary downloads / actions emitted inline by
+// MDX pages (currently used on /documentation/dev/graph-database).
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 8px 18px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--on-primary, #fff);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: filter 0.15s, transform 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: none;
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    color: var(--on-primary, #fff);
+  }
+
+  .material-symbols-rounded {
+    font-size: 1.2em;
+  }
+}
+
+// Light-blue (or themed) callout box for inline notes inside MDX pages.
+// Modeled on the prod Joomla pages' info-box styling.
+.callout {
+  margin: 1rem 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 4px solid var(--primary);
+  background: var(--secondary-container, rgba(0, 110, 144, 0.08));
+  color: var(--on-surface);
+  line-height: 1.5;
+}
+
+.callout-info {
+  border-left-color: var(--primary);
+  background: rgba(0, 110, 144, 0.08);
+}

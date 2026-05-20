@@ -125,16 +125,15 @@
   }
 
   // Breathing room around the projected download bar + diagram.
-  // Description-tab puts both inside the Overview slot; on the panel
-  // version they're absent, so we only need to space them on the
-  // standalone page.
-  app-detail-download-bar {
-    display: block;
-    margin: 28px 0 0;
-  }
+  // Spacing hangs off the diagram, not the download bar, so pages
+  // without a diagram (most reactions, proteins, complexes) don't get
+  // an awkward gap below their Summation row.
+  app-detail-download-bar,
   app-detail-diagram {
     display: block;
-    margin: 16px 0 8px;
+  }
+  app-detail-diagram .detail-diagram {
+    margin: 28px 0 8px;
   }
 
 
