@@ -517,3 +517,117 @@ body {
   border-left-color: var(--primary);
   background: rgba(0, 110, 144, 0.08);
 }
+
+// Inline module-card grid used by MDX landing pages
+// (/documentation, /documentation/userguide). Each card is a single
+// anchor wrapping an icon, label, and optional description.
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin: 1.75rem 0 2rem;
+}
+
+.module-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 1.75rem 1.25rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
+  color: var(--on-surface);
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s,
+    box-shadow 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--surface-container, rgba(0, 0, 0, 0.06));
+    border-color: var(--primary);
+    text-decoration: none;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    color: var(--on-surface);
+  }
+
+  .module-icon {
+    font-size: 44px;
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .module-label {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--on-surface);
+  }
+
+  .module-desc {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--on-surface-variant, rgba(0, 0, 0, 0.65));
+    line-height: 1.45;
+  }
+}
+
+// Tutorial card variant -- shows a screenshot/thumbnail image at the
+// top instead of an icon glyph. Used by /documentation/userguide for
+// the EBI Online Tutorial section, where each card previews a real
+// course landing page.
+.tutorial-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
+  color: var(--on-surface);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--surface-container, rgba(0, 0, 0, 0.06));
+    border-color: var(--primary);
+    text-decoration: none;
+    transform: translateY(-2px);
+    color: var(--on-surface);
+  }
+
+  img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    border-radius: 6px;
+    display: block;
+  }
+
+  .module-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--on-surface);
+  }
+
+  .module-desc {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--on-surface-variant, rgba(0, 0, 0, 0.6));
+    line-height: 1.4;
+  }
+}
+
+// Tutorial grid wants slightly wider columns so the screenshot thumbs
+// have room to breathe.
+.module-grid.tutorial-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
