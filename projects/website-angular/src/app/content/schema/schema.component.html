@@ -55,8 +55,12 @@
                 }
                 <button class="node-label" (click)="onTreeNodeClick(node.className)">
                   <span class="node-name">{{ node.className }}</span>
-                  <span class="node-count">[{{ node.count }}]</span>
                 </button>
+                <button
+                  class="node-count"
+                  (click)="onTreeNodeCountClick(node.className, $event)"
+                  title="Show entries"
+                >[{{ node.count }}]</button>
               </div>
             }
           </div>

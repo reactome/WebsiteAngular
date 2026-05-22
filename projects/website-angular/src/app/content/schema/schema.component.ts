@@ -163,6 +163,15 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.sidebarOpen = false;
   }
 
+  onTreeNodeCountClick(className: string, event: Event) {
+    // Stop the parent .node-label button from also firing onTreeNodeClick.
+    event.stopPropagation();
+    this.router.navigate(['/content/schema', className], {
+      queryParams: { tab: 'entries' },
+    });
+    this.sidebarOpen = false;
+  }
+
   onTreeSearch(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.treeSearchQuery = value.toLowerCase().trim();
@@ -202,11 +211,19 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   selectClass(className: string) {
     this.selectedClass = className;
-    this.activeTab = 'properties';
     this.entries = [];
     this.entriesPage = 1;
     this.selectedInstanceId = null;
     this.loadAttributes(className);
+
+    // Respect ?tab=entries in the URL (set by the count-bracket click in
+    // the tree sidebar, or pasted directly) so the page lands straight
+    // on the Entries tab. Otherwise default to Properties.
+    if (this.route.snapshot.queryParamMap.get('tab') === 'entries') {
+      this.switchToEntries();
+    } else {
+      this.activeTab = 'properties';
+    }
 
     // Expand tree path to this node
     this.expandPathTo(className);
