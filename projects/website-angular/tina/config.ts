@@ -58,6 +58,9 @@ export default defineConfig({
         label: "Content",
         path: "content/content",
         format: "mdx",
+        match: {
+          exclude: "reactome-research-spotlight/**",
+        },
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
