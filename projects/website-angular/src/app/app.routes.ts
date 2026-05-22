@@ -169,6 +169,14 @@ export const routes: Routes = [
       ),
     pathMatch: 'full',
   },
+  {
+    path: 'content/schema/:className/instance/:dbId',
+    loadComponent: () =>
+      import('./content/schema/schema.component').then(
+        (m) => m.SchemaComponent
+      ),
+    pathMatch: 'full',
+  },
 
   //Detail Pages
   {
