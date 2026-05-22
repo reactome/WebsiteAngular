@@ -50,7 +50,7 @@
     "@ngrx/router-store": "^19.2.1",
     "@ngrx/store": "^19.2.1",
     "@swissprot/rhea-reaction-viz-test": "^0.0.25",
-    "@tinacms/cli": "^2.1.5",
+    "@tinacms/cli": "2.1.7",
     "angular-split": "^17.2.0",
     "canvas-to-svg": "^1.0.3",
     "chroma-js": "^3.1.2",
@@ -75,7 +75,7 @@
     "svg-pan-zoom": "^3.6.1",
     "svgcanvas": "^2.6.0",
     "swagger-ui-dist": "^5.32.0",
-    "tinacms": "^3.4.1",
+    "tinacms": "^3.8.1",
     "tslib": "^2.3.0",
     "vectorious": "^6.1.12",
     "zone.js": "~0.15.0"
