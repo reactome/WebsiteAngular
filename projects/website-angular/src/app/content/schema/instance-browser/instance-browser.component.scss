@@ -89,6 +89,25 @@
   word-break: break-word;
 }
 
+.referrals-section {
+  margin-top: 32px;
+
+  h3 {
+    margin-bottom: 4px;
+  }
+
+  .section-desc {
+    color: var(--on-surface-variant);
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .attr-name em {
+    color: var(--on-surface-variant);
+    font-style: italic;
+  }
+}
+
 .instance-link {
   color: var(--primary);
   text-decoration: none;

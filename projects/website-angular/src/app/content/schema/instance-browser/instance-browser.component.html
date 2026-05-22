@@ -51,4 +51,32 @@
       <p>No attributes found for this instance.</p>
     </div>
   }
+
+  @if (referrals.length > 0) {
+    <div class="referrals-section">
+      <h3>Referrals</h3>
+      <p class="section-desc">Other instances that reference this one, grouped by attribute:</p>
+      <table class="attr-table referrals">
+        <tbody>
+          @for (group of referrals; track group.referral) {
+            <tr>
+              <td class="attr-name">
+                <em>({{ group.referral }})</em>
+              </td>
+              <td class="attr-value">
+                @for (obj of group.objects; track obj.dbId; let last = $last) {
+                  <a
+                    class="instance-link"
+                    href="#"
+                    (click)="onLinkClick(obj.dbId, $event)"
+                  >[{{ obj.schemaClass }}:{{ obj.stId || obj.dbId }}] {{ obj.displayName }}</a>
+                  @if (!last) { <br /> }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 }

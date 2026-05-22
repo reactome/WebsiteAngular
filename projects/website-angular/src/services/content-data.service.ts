@@ -78,6 +78,11 @@ export interface SimpleDatabaseObject {
   schemaClass: string;
 }
 
+export interface InstanceReferrals {
+  referral: string;
+  objects: SimpleDatabaseObject[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -134,6 +139,12 @@ export class ContentDataService {
   getInstance(id: string | number): Observable<any> {
     return this.http.get<any>(
       `${CONTENT_SERVICE}/data/query/enhanced/${id}`
+    );
+  }
+
+  getInstanceReferrers(id: string | number): Observable<InstanceReferrals[]> {
+    return this.http.get<InstanceReferrals[]>(
+      `${CONTENT_SERVICE}/data/instance/${id}/referrers`
     );
   }
 }
