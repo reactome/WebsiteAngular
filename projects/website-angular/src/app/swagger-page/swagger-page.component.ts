@@ -1,6 +1,7 @@
 import { Component, AfterViewInit, OnDestroy, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { APP_CONFIG } from '../../config/config';
 
 declare const SwaggerUIBundle: any;
 
@@ -32,7 +33,16 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     await this.loadCss('assets/swagger-ui/swagger-ui.css');
     await this.loadScript('assets/swagger-ui/swagger-ui-bundle.js');
 
-    const url = `https://dev.reactome.org/${this.serviceName}/v3/api-docs`;
+    // Fetch the OpenAPI spec from the same origin we're served from, not
+    // APP_CONFIG.swaggerSpecBaseUrl. dev.reactome.org sits behind
+    // mod_auth_openidc which 302s /AnalysisService/v3/api-docs to Keycloak;
+    // that login response carries no Access-Control-Allow-Origin, so the
+    // browser blocks the cross-origin XHR even after the user has logged
+    // in. Every public host (beta, release, reactome.org) reverse-proxies
+    // its own /AnalysisService and /ContentService, so same-origin works.
+    const baseUrl =
+      typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.swaggerSpecBaseUrl;
+    const url = `${baseUrl}/${this.serviceName}/v3/api-docs`;
     SwaggerUIBundle({
       domNode: this.swaggerContainer.nativeElement,
       url,

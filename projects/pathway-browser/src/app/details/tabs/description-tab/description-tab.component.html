@@ -14,7 +14,7 @@
 <div id="details" #details>
   <div class="content">
     <!-- Header -->
-    <div class="header" [id]=DataKeys.OVERVIEW>
+    <div class="header">
       <div class="label">
         <mat-icon
           class="custom-icon"
@@ -32,7 +32,7 @@
           </span>
       </div>
       <div class="details-button">
-        <a mat-button [routerLink]="`${CONTENT_DETAIL}/${obj().stId}`" target="_blank">
+        <a mat-button [href]="`${CONTENT_DETAIL_PATH}/${obj().stId}`" target="_blank">
           <mat-icon class="custom-icon double-arrow" [svgIcon]="'double-arrow-right'"></mat-icon>
           <span class="details-label"> Details page</span>
         </a>
@@ -40,17 +40,14 @@
     </div>
     @for (element of elements; track element.key; let i = $index) {
       @if (element.isPresent ? element.isPresent() : obj()[element.key]) {
-        <!-- Avoid overview label -->
-        @if (i > 0) {
-          <div class="divider-container" [id]="element.key">
-            <div class="divider-name-container">
-              <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: element.label }"></ng-container>
-            </div>
-            <div class="divider-line-container">
-              <mat-divider class="divider"></mat-divider>
-            </div>
+        <div class="divider-container" [id]="element.key">
+          <div class="divider-name-container">
+            <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: element.label }"></ng-container>
           </div>
-        }
+          <div class="divider-line-container">
+            <mat-divider class="divider"></mat-divider>
+          </div>
+        </div>
         @if (!element.manual) {
           <cr-controller-tree [type]="element.key" [data]="obj()[element.key]"
                               [depthControl]="element.hasDepthControl ?? false" [scope]="element.scope || 'entity'"
@@ -118,6 +115,11 @@
       </div>
     </div>
   }
+  <!-- Caller-projected content (e.g. /content/detail puts the download
+       bar + pathway diagram here, so they sit after the Overview's
+       summation and before the next section divider). PathwayBrowser
+       passes no children, so this stays empty there. -->
+  <ng-content></ng-content>
 </ng-template>
 
 <!-- xRefs -->
@@ -157,33 +159,97 @@
 
 <!-- Other forms-->
 <ng-template #otherFormsTemplate>
-  <div class="element-container columns" [class.columns]="otherForms().size > 1 ? 'columns' : ''">
-    @for (item of otherForms()! |  keyvalue | sortByText :'key'; track item.key) {
-      <div class="row padding">
-        <div class="label-container">{{ item.key }}</div>
-        <div class="composition-container">
-          @for (pe of item.value; let i = $index; track pe.dbId) {
-            <a [routerLink]="`${CONTENT_DETAIL}/${pe.stId}`">{{ pe.name[0] }}</a>
-            <!-- Add separator except for last item -->
-            @if (i < item.value.length - 1) {
-              <span class="margin-right">,</span>
+  <div class="other-forms">
+    <aside class="other-forms-facets" aria-label="Filter other forms">
+      @if (otherFormsCategories().length > 2) {
+        <section class="facet-group">
+          <h4 class="facet-group-title">Modification</h4>
+          <ul class="facet-options">
+            @for (cat of otherFormsCategories(); track cat.key) {
+              <li>
+                <button type="button" class="facet-option"
+                        [class.active]="selectedOtherFormsCategory() === cat.key"
+                        [disabled]="cat.count === 0 && selectedOtherFormsCategory() !== cat.key"
+                        (click)="selectedOtherFormsCategory.set(cat.key)">
+                  <span class="facet-option-label">{{ cat.label }}</span>
+                  <span class="facet-option-count">{{ cat.count }}</span>
+                </button>
+              </li>
             }
-          }
+          </ul>
+        </section>
+      }
+      @if (otherFormsCompartmentFacets().length > 2) {
+        <section class="facet-group">
+          <h4 class="facet-group-title">Compartment</h4>
+          <ul class="facet-options">
+            @for (comp of otherFormsCompartmentFacets(); track comp.key) {
+              <li>
+                <button type="button" class="facet-option"
+                        [class.active]="selectedOtherFormsCompartment() === comp.key"
+                        [disabled]="comp.count === 0 && selectedOtherFormsCompartment() !== comp.key"
+                        (click)="selectedOtherFormsCompartment.set(comp.key)">
+                  <span class="facet-option-label">{{ comp.label }}</span>
+                  <span class="facet-option-count">{{ comp.count }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      @if (hasMixedDiseaseStatus()) {
+        <section class="facet-group">
+          <h4 class="facet-group-title">Disease status</h4>
+          <ul class="facet-options">
+            @for (d of otherFormsDiseaseFacets(); track d.key) {
+              <li>
+                <button type="button" class="facet-option"
+                        [class.active]="selectedOtherFormsDisease() === d.key"
+                        [disabled]="d.count === 0 && selectedOtherFormsDisease() !== d.key"
+                        (click)="selectedOtherFormsDisease.set(d.key)">
+                  <span class="facet-option-label">{{ d.label }}</span>
+                  <span class="facet-option-count">{{ d.count }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </aside>
+    <div class="other-forms-list">
+      @for (row of filteredOtherFormsList(); track row.entity.dbId) {
+        <div class="other-forms-row">
+          <a class="other-forms-name" [routerLink]="[CONTENT_DETAIL_PATH, row.entity.stId]">
+            {{ row.entity.name[0] }}
+          </a>
+          <div class="other-forms-meta">
+            <span class="other-forms-compartment">{{ row.compartment }}</span>
+            @if (row.entity.startCoordinate || row.entity.endCoordinate) {
+              <span class="other-forms-coords">
+                {{ row.entity.startCoordinate }}&ndash;{{ row.entity.endCoordinate }}
+              </span>
+            }
+            @if (row.entity.inDisease) {
+              <span class="other-forms-disease">disease</span>
+            }
+          </div>
         </div>
-      </div>
-    }
+      } @empty {
+        <div class="other-forms-empty">No matching forms.</div>
+      }
+    </div>
   </div>
 </ng-template>
 
 <!-- Inferences(Inferred To)-->
 <ng-template #inferencesTemplate>
-  <div class="element-container columns">
+  <div class="inferences element-container columns">
     @for (item of inferences()! | keyvalue | sortByText : 'key'; track item.key) {
       <div class="row padding">
         <div class="label-container">{{ item.key }}</div>
         <div class="composition-container">
           @for (pe of item.value; let i = $index; track pe.dbId) {
-            <a [routerLink]="`${CONTENT_DETAIL}/${pe.stId}`">{{ pe.name[0] }}</a>
+            <a [href]="`${CONTENT_DETAIL_PATH}/${pe.stId}`">{{ pe.name[0] }}</a>
             <!-- Add separator except for last item -->
             @if (i < item.value.length - 1) {
               <span class="margin-right">,</span>
@@ -251,7 +317,7 @@
           @for (ie of item.data; track $index) {
             <div class="authorship-item">
               @for (author of ie.author; let i = $index; track $index) {
-                <a [routerLink]="`${CONTENT_DETAIL}/${author.dbId}`"
+                <a [href]="`${CONTENT_DETAIL_PATH}/person/${author.dbId}`"
                    [ngClass]="{'margin-right': !author.orcidId}">
                   {{ author.firstname }} {{ author.surname }}
                 </a>

@@ -1,19 +1,29 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { KeyValuePipe, NgForOf } from '@angular/common';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink, NavOption} from '../../types/link';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { ContentService } from '../../services/content.service';
 import { ArticleIndexItem } from '../../types/article';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [NgForOf, KeyValuePipe, MatIcon],
+  imports: [NgForOf, KeyValuePipe, MatIcon, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
+  // "sections" mode: instead of route-driven peer navigation links, the
+  // sidebar renders a caller-supplied list of in-page section anchors and
+  // emits a click event for each. Used by entity detail pages to surface
+  // the TOC of the embedded cr-description-tab on the left rail.
+  @Input() sectionsMode = false;
+  @Input() sections: { key: string; label: string }[] = [];
+  @Input() sectionsTitle = '';
+  @Input() sectionsIcon = '';
+  @Input() activeSectionKey = '';
+  @Output() sectionSelected = new EventEmitter<string>();
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   navOptions: Record<string, NavOption> = {};
@@ -24,9 +34,17 @@ export class SidebarComponent {
   items: Record<string, NavOption> = {};
   activeItem: string | null = null;
 
-  sidebarVisible: boolean = true;
+  // Sidebar drawer breakpoint -- below this, the sidebar overlays the
+  // content as a slide-in drawer and starts collapsed so it doesn't bury
+  // the page. Kept in sync with the @media query in sidebar.component.scss.
+  private static readonly NARROW_BREAKPOINT_PX = 1024;
+  sidebarVisible: boolean = typeof window !== 'undefined'
+    ? window.innerWidth > SidebarComponent.NARROW_BREAKPOINT_PX
+    : true;
 
   ngOnInit() {
+    // Sections mode is fully controlled by inputs; no route-based loading.
+    if (this.sectionsMode) return;
     //Get all nav options
     this.loadOptions();
 

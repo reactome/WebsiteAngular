@@ -84,11 +84,24 @@ export class SchemaComponent implements OnInit, OnDestroy {
         this.rebuildFlatTree();
         this.loading = false;
 
-        // Listen for route changes
+        // Listen for route changes. The path can be either
+        //   /content/schema/:className
+        // or
+        //   /content/schema/:className/instance/:dbId
+        // so a single subscription has to keep both selectedClass and
+        // selectedInstanceId in sync with the URL.
         this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
           const className = params['className'] || 'DatabaseObject';
           if (className !== this.selectedClass) {
             this.selectClass(className);
+          }
+          const dbIdParam = params['dbId'];
+          const dbId = dbIdParam != null ? Number(dbIdParam) : null;
+          if (dbId !== this.selectedInstanceId) {
+            this.selectedInstanceId = dbId;
+            // If we deep-linked into an instance, make sure we're on the
+            // Entries tab so the <app-instance-browser> renders.
+            if (dbId != null) this.activeTab = 'entries';
           }
         });
       },
@@ -163,6 +176,15 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.sidebarOpen = false;
   }
 
+  onTreeNodeCountClick(className: string, event: Event) {
+    // Stop the parent .node-label button from also firing onTreeNodeClick.
+    event.stopPropagation();
+    this.router.navigate(['/content/schema', className], {
+      queryParams: { tab: 'entries' },
+    });
+    this.sidebarOpen = false;
+  }
+
   onTreeSearch(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.treeSearchQuery = value.toLowerCase().trim();
@@ -202,11 +224,19 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   selectClass(className: string) {
     this.selectedClass = className;
-    this.activeTab = 'properties';
     this.entries = [];
     this.entriesPage = 1;
     this.selectedInstanceId = null;
     this.loadAttributes(className);
+
+    // Respect ?tab=entries in the URL (set by the count-bracket click in
+    // the tree sidebar, or pasted directly) so the page lands straight
+    // on the Entries tab. Otherwise default to Properties.
+    if (this.route.snapshot.queryParamMap.get('tab') === 'entries') {
+      this.switchToEntries();
+    } else {
+      this.activeTab = 'properties';
+    }
 
     // Expand tree path to this node
     this.expandPathTo(className);
@@ -347,14 +377,25 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    this.selectedInstanceId = dbId;
+    this.router.navigate(
+      ['/content/schema', this.selectedClass, 'instance', dbId],
+      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
+    );
   }
 
   clearSelectedInstance() {
-    this.selectedInstanceId = null;
+    this.router.navigate(['/content/schema', this.selectedClass], {
+      queryParams: { tab: 'entries' },
+    });
   }
 
   onInstanceLinkClick(dbId: number) {
-    this.selectedInstanceId = dbId;
+    // Followed-from links inside the instance browser may point to objects
+    // of a different schema class; we'll fix the className segment after
+    // the instance loads and reveals its real class.
+    this.router.navigate(
+      ['/content/schema', this.selectedClass, 'instance', dbId],
+      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
+    );
   }
 }

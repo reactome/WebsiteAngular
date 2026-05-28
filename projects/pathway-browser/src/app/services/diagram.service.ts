@@ -747,13 +747,15 @@ export class DiagramService {
         this.addEdgeInfo(reaction, points, 'forward', targetP);
 
         let [from, to] = [points.shift()!, points.pop()!];
-        // Keep fallback direction aligned with edge source/target for connectors that have missing segment endpoints.
-        from = from ?? sourceP;
-        to = to ?? targetP;
-        if (equal(from, to)) {
-          from = sourceP;
-          to = targetP;
-        }
+        // Match upstream PathwayBrowser (github.com/reactome/PathwayBrowser):
+        // fall back to node/reaction positions, not source/target. The
+        // source/target fallback I previously chose for R-HSA-1296071
+        // broke diagrams whose connectors have empty segments and rely
+        // on the underlying node/reaction positions to find the right
+        // line geometry (e.g. R-HSA-112307 transmission across electrical
+        // synapses, where every K+ connector has zero segments).
+        from = from ?? nodeP;
+        to = to ?? reactionP;
         if (connector.type === 'CATALYST' && connector.endShape) {
           to = scale(connector.endShape.centre || connector.endShape.c);
         }
@@ -783,7 +785,7 @@ export class DiagramService {
           d -= ARROW_MULT * T;
         // console.assert(d > MIN_DIST, `The edge between reaction: R-HSA-${reaction.reactomeId} and entity: R-HSA-${node.reactomeId} in pathway ${id} has a visible length of ${d} which is shorter than ${MIN_DIST}`)
         console.assert(
-          Math.abs(d) >= MIN_DIST,
+          d >= MIN_DIST,
           `${id}\t${diagram.displayName}\t${hasFadeOut}\tR-HSA-${reaction.reactomeId}\tR-HSA-${node.reactomeId}\thttps://release.reactome.org/PathwayBrowser/#/${id}&SEL=R-HSA-${reaction.reactomeId}&FLG=R-HSA-${node.reactomeId}\thttps://reactome-pwp.github.io/PathwayBrowser/${id}?select=${reaction.reactomeId}&flag=${node.reactomeId}`
         );
 
@@ -864,10 +866,6 @@ export class DiagramService {
         let [from, to] = [points.shift()!, points.pop()!];
         from = from ?? sourceP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
         to = to ?? targetP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-        if (equal(from, to)) {
-          from = sourceP;
-          to = targetP;
-        }
 
         // points = addRoundness(from, to, points);
         const relatives = this.absoluteToRelative(from, to, points);
@@ -967,30 +965,27 @@ export class DiagramService {
   ) {
     const stopPos = posToStr(edge, stop);
     const visited = new Set<string>();
+    // Match upstream (github.com/reactome/PathwayBrowser): forward walks
+    // ONLY the extraLine map, backward walks ONLY the reverseExtraLine
+    // map. The cross-map fallback that used to live here picked up
+    // segments from the wrong direction and corrupted U-shape edges --
+    // visible on R-HSA-112307 transmission across electrical synapses,
+    // where K+ connector segments are empty so this routine is what
+    // builds the path through the edge's own segments.
     if (direction === 'forward') {
+      const map = this.extraLine;
       let pos = posToStr(edge, points.at(-1)!);
-      while (pos !== stopPos && !visited.has(pos)) {
+      while (map.has(pos) && pos !== stopPos && !visited.has(pos)) {
         visited.add(pos);
-        if (this.extraLine.has(pos)) {
-          points.push(this.extraLine.get(pos)!);
-        } else if (this.reverseExtraLine.has(pos)) {
-          points.push(this.reverseExtraLine.get(pos)!);
-        } else {
-          break;
-        }
+        points.push(map.get(pos)!);
         pos = posToStr(edge, points.at(-1)!);
       }
     } else {
+      const map = this.reverseExtraLine;
       let pos = posToStr(edge, points.at(0)!);
-      while (pos !== stopPos && !visited.has(pos)) {
+      while (map.has(pos) && pos !== stopPos && !visited.has(pos)) {
         visited.add(pos);
-        if (this.reverseExtraLine.has(pos)) {
-          points.unshift(this.reverseExtraLine.get(pos)!);
-        } else if (this.extraLine.has(pos)) {
-          points.unshift(this.extraLine.get(pos)!);
-        } else {
-          break;
-        }
+        points.unshift(map.get(pos)!);
         pos = posToStr(edge, points.at(0)!);
       }
     }

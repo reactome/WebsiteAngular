@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
+import { CONTENT_SERVICE } from '../../../pathway-browser/src/environments/environment';
 
 export interface SimplePerson {
   dbId: number;
@@ -78,6 +79,11 @@ export interface SimpleDatabaseObject {
   schemaClass: string;
 }
 
+export interface InstanceReferrals {
+  referral: string;
+  objects: SimpleDatabaseObject[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -133,7 +139,12 @@ export class ContentDataService {
 
   getInstance(id: string | number): Observable<any> {
     return this.http.get<any>(
-      `${this.baseUrl}/query/enhanced/${id}`
+      `${this.baseUrl}/query/enhanced/${id}`);
+  }
+
+  getInstanceReferrers(id: string | number): Observable<InstanceReferrals[]> {
+    return this.http.get<InstanceReferrals[]>(
+      `${this.baseUrl}/instance/${id}/referrers`
     );
   }
 }

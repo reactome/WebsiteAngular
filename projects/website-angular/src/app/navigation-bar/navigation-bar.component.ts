@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavLink, NavOption } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
-import { APP_CONFIG } from '../../config/config'; // NEW import
 
 @Component({
   standalone: true,
@@ -17,6 +16,10 @@ import { APP_CONFIG } from '../../config/config'; // NEW import
   styleUrl: './navigation-bar.component.scss'
 })
 export class NavigationBarComponent implements OnInit, AfterViewInit {
+  // Width below which the full nav row no longer fits (logo + 6 dropdowns
+  // + dark toggle ~= 1050px) and we collapse to the hamburger menu. Keep
+  // this value in sync with the @media queries in navigation-bar.component.scss.
+  readonly hamburgerBreakpoint = 1100;
   windowWidth:number = window.innerWidth;
   navOptions: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
@@ -46,29 +49,7 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   loadNavOptions() {
     import('../../config/nav-options.json').then((navData) => {
       this.navOptions = mapNavOptions(navData.default);
-      this.resolveExternalLinks(APP_CONFIG.baseUrl);
     });
-  }
-
-  /**
-   * Prepend baseUrl to external links so they resolve to the correct domain
-   */
-  private resolveExternalLinks(baseUrl: string) {
-    const resolve = (links: Record<string, NavLink> | undefined) => {
-      if (!links) return;
-      for (const link of Object.values(links)) {
-        if (link.external) {
-          link.link = baseUrl + link.link;
-        }
-        resolve(link.dropdownLinks);
-      }
-    };
-    for (const option of Object.values(this.navOptions)) {
-      if (option.external) {
-        option.link = baseUrl + option.link;
-      }
-      resolve(option.dropdownLinks);
-    }
   }
 
   toggleHamburgerMenu() {
@@ -80,6 +61,11 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   showDropdown(label: string) {
+    // In hamburger mode the dropdown is offset from its parent nav-item, so
+    // hover between them briefly leaves the parent's bounding box and the
+    // dropdown ping-pongs as the mouse moves over neighbouring items.
+    // Restrict hover-to-open to wide layouts; click handles narrow mode.
+    if (this.windowWidth <= this.hamburgerBreakpoint) return;
     const option = this.navOptions[label];
     if (option && option.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
       this.activeDropdown = label;
@@ -91,6 +77,9 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   }
 
   hideDropdown() {
+    // Symmetric with showDropdown: only auto-close on hover-out in wide
+    // layouts. In hamburger mode the user explicitly closes via click.
+    if (this.windowWidth <= this.hamburgerBreakpoint) return;
     this.activeDropdown = null;
   }
 

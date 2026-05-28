@@ -32,6 +32,70 @@
 }
 
 ::ng-deep cr-description-tab {
+  // The pathway-browser's details panel sits on a dark surface, where
+  // mat-tree's default container background (--mat-sys-surface, also that
+  // panel's surface tone) blends in. On the website's white detail-page
+  // card, the same surface tone reads as a pale-cyan block behind each
+  // mat-tree. Make the tree container transparent so it inherits the white
+  // card surface; leave the pill/container tones alone.
+  --mat-tree-container-background-color: transparent;
+  --mat-table-background-color: transparent;
+
+  // The website detail card has far more horizontal space than the
+  // pathway-browser's narrow details panel, so widen the rich-row layout
+  // (used by Other Forms) for comfortable reading. The default styling
+  // in description-tab.component.scss stays tight for the panel.
+  .other-forms {
+    gap: 24px;
+  }
+
+  .other-forms-facets {
+    font-size: 13px;
+  }
+
+  .other-forms-list {
+    max-height: 520px;
+    gap: 0;
+  }
+
+  .other-forms-row {
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+  }
+
+  .other-forms-meta {
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  // For the older Inferences list (still comma-separated), give names
+  // a touch more space so they don't run together.
+  .inferences .composition-container {
+    line-height: 1.7;
+
+    > span.margin-right {
+      margin-right: 8px;
+    }
+  }
+
+  // Cross references are dense lists of comma-separated identifiers
+  // (RefSeq, ENSEMBL, COSMIC, ...); the pathway-browser uses 2px margins
+  // for the panel, but the wider website detail card benefits from more
+  // breathing room and stable line wrapping.
+  cr-cross-references .composition-container {
+    line-height: 1.7;
+    column-gap: 0;
+
+    > span.margin-right {
+      margin-right: 8px;
+    }
+  }
+
   // Double the ID selector to beat Angular's encapsulated
   // #details[_ngcontent-xxx] specificity (0,2,0) with (0,2,1)
   #details#details {
@@ -41,6 +105,37 @@
     padding: 0;
     background: unset;
   }
+
+  // The pathway-browser's details panel uses a teal underline under the
+  // entity name as a tab separator. On the standalone website detail
+  // page the title is the page header, not a tab, so the underline
+  // reads as visual noise. Drop it and give the name h1 weight to
+  // match other top-level page titles on the site.
+  .header.header {
+    border-bottom: none;
+    padding: 0;
+    margin: 0 0 8px;
+    height: auto;
+    align-items: baseline;
+  }
+  .header.header .name {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  // Breathing room around the projected download bar + diagram.
+  // Spacing hangs off the diagram, not the download bar, so pages
+  // without a diagram (most reactions, proteins, complexes) don't get
+  // an awkward gap below their Summation row.
+  app-detail-download-bar,
+  app-detail-diagram {
+    display: block;
+  }
+  app-detail-diagram .detail-diagram {
+    margin: 28px 0 8px;
+  }
+
 
   #details {
     .content {
@@ -52,12 +147,39 @@
       display: none;
     }
 
+    // Hide the original in-card right-rail TOC -- the website surfaces
+    // the same section anchors in the left page sidebar instead.
     .toc {
-      height: auto;
-      max-height: calc(100vh - 100px);
-      overflow-y: auto;
-      position: sticky;
-      top: 80px;
+      display: none;
+    }
+
+    // With the right TOC gone, let the content area span the full grid
+    // (otherwise the rightmost column stays empty and the card looks
+    // unbalanced on the wider website detail page).
+    .content {
+      grid-column: 1 / -1;
+    }
+  }
+
+  // At narrow widths the overview header packs Stable Identifier / Type /
+  // Species / Compartment / Synonyms into a flex row with a fixed-width
+  // label that's pinned to one of the 6 grid columns. Below ~700px the
+  // label text overflows leftward into the value, so stack the rows.
+  // Doubled .row/.label/.value selectors bump specificity to beat
+  // description-overview's own emulated-encapsulation [_ngcontent] rules.
+  @media (max-width: 700px) {
+    cr-description-overview .row.row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    cr-description-overview .label.label {
+      width: auto;
+      text-align: left;
+    }
+    cr-description-overview .value.value {
+      border-left: 0;
+      padding: 0;
     }
   }
 }

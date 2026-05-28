@@ -46,6 +46,7 @@ import { camelCase, isArray } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
 import {
   CONTENT_DETAIL,
+  CONTENT_DETAIL_PATH,
   environment,
 } from '../../../../environments/environment';
 import { SpeciesService } from '../../../services/species.service';
@@ -267,6 +268,110 @@ export class DescriptionTabComponent implements OnDestroy {
     return this.getGroupedOtherForms(value);
   });
 
+  selectedOtherFormsCategory = signal<OtherFormsCategory>('all');
+  selectedOtherFormsCompartment = signal<string>('all');
+  selectedOtherFormsDisease = signal<OtherFormsDisease>('all');
+
+  // Flat list of all other forms (compartment + entity pairs) used as the
+  // source for both the row list and facet count computations.
+  private otherFormsRows = computed<OtherFormsRow[]>(() => {
+    const rows: OtherFormsRow[] = [];
+    for (const [compartment, entities] of this.otherForms()) {
+      for (const entity of entities) rows.push({ entity, compartment });
+    }
+    return rows;
+  });
+
+  // Facet counts cross-reflect the OTHER selected facets so that picking
+  // "cytosol" updates the modification chip counts to the cytosol subset
+  // (and so on). Each chip computes its own count by excluding only the
+  // facet it lives on -- otherwise toggling a chip would zero its own count.
+
+  otherFormsCategories = computed<OtherFormsFacet<OtherFormsCategory>[]>(() => {
+    const crossRows = this.rowsFiltered({ excludeCategory: true });
+    const crossCounts = new Map<OtherFormsCategory, number>();
+    for (const r of crossRows) {
+      const cat = categorizeOtherForm(r.entity);
+      crossCounts.set(cat, (crossCounts.get(cat) || 0) + 1);
+    }
+    // Show every category that exists in the full dataset, even when the
+    // cross-filtered count for it has dropped to 0. Otherwise the chip row
+    // would collapse and users would lose orientation.
+    const allKeys = new Set<OtherFormsCategory>();
+    for (const r of this.otherFormsRows()) allKeys.add(categorizeOtherForm(r.entity));
+    const cats: OtherFormsFacet<OtherFormsCategory>[] = [
+      { key: 'all', label: 'All', count: crossRows.length },
+    ];
+    for (const [key, label] of OTHER_FORMS_CATEGORY_ORDER) {
+      if (!allKeys.has(key)) continue;
+      cats.push({ key, label, count: crossCounts.get(key) || 0 });
+    }
+    return cats;
+  });
+
+  otherFormsCompartmentFacets = computed<OtherFormsFacet<string>[]>(() => {
+    const crossRows = this.rowsFiltered({ excludeCompartment: true });
+    const crossCounts = new Map<string, number>();
+    for (const r of crossRows) crossCounts.set(r.compartment, (crossCounts.get(r.compartment) || 0) + 1);
+    // Preserve every compartment present in the full dataset, sorted by its
+    // unfiltered size (so the row order stays stable across selections).
+    const stableOrder = new Map<string, number>();
+    for (const r of this.otherFormsRows()) {
+      stableOrder.set(r.compartment, (stableOrder.get(r.compartment) || 0) + 1);
+    }
+    const sorted = [...stableOrder.entries()].sort((a, b) => b[1] - a[1]);
+    return [
+      { key: 'all', label: 'All compartments', count: crossRows.length },
+      ...sorted.map(([key]) => ({ key, label: key, count: crossCounts.get(key) || 0 })),
+    ];
+  });
+
+  otherFormsDiseaseFacets = computed<OtherFormsFacet<OtherFormsDisease>[]>(() => {
+    const rows = this.rowsFiltered({ excludeDisease: true });
+    let disease = 0;
+    for (const r of rows) if (r.entity.inDisease) disease++;
+    const reference = rows.length - disease;
+    return [
+      { key: 'all', label: 'All', count: rows.length },
+      { key: 'disease', label: 'Disease variants', count: disease },
+      { key: 'reference', label: 'Reference', count: reference },
+    ];
+  });
+
+  // Whether the disease facet is meaningful at all for this entity:
+  // it only matters when the *full* dataset contains both kinds. Computed
+  // off the unfiltered rows so the facet doesn't blink off when a single
+  // selection (e.g. cytosol) happens to contain only one kind.
+  hasMixedDiseaseStatus = computed(() => {
+    let hasD = false, hasR = false;
+    for (const r of this.otherFormsRows()) {
+      if (r.entity.inDisease) hasD = true; else hasR = true;
+      if (hasD && hasR) return true;
+    }
+    return false;
+  });
+
+  filteredOtherFormsList = computed<OtherFormsRow[]>(() => this.rowsFiltered({}));
+
+  private rowsFiltered(opts: {
+    excludeCategory?: boolean;
+    excludeCompartment?: boolean;
+    excludeDisease?: boolean;
+  }): OtherFormsRow[] {
+    const cat = this.selectedOtherFormsCategory();
+    const comp = this.selectedOtherFormsCompartment();
+    const disease = this.selectedOtherFormsDisease();
+    return this.otherFormsRows().filter((r) => {
+      if (!opts.excludeCategory && cat !== 'all' && categorizeOtherForm(r.entity) !== cat) return false;
+      if (!opts.excludeCompartment && comp !== 'all' && r.compartment !== comp) return false;
+      if (!opts.excludeDisease && disease !== 'all') {
+        if (disease === 'disease' && !r.entity.inDisease) return false;
+        if (disease === 'reference' && r.entity.inDisease) return false;
+      }
+      return true;
+    });
+  }
+
   interactors = computed(() => this._interactors.value() || []);
   interactorsLength = computed(() => this._interactors.value()?.length || 0);
 
@@ -402,7 +507,7 @@ export class DescriptionTabComponent implements OnDestroy {
     },
     {
       key: 'locationsInPWB',
-      label: 'Locations in the Pathway Browser',
+      label: 'Locations',
       manual: true,
       template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
       isPresent: computed(() => this.showLocations()),
@@ -654,7 +759,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case 'locationsInPWB':
         return this.showLocations();
       case 'reactionDiagram':
-        return this.isReaction();
+        return this.isReaction() && this.showReactionDiagram();
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
@@ -691,5 +796,55 @@ export class DescriptionTabComponent implements OnDestroy {
   }
 
   protected readonly CONTENT_DETAIL = CONTENT_DETAIL;
+  protected readonly CONTENT_DETAIL_PATH = CONTENT_DETAIL_PATH;
   protected readonly environment = environment;
+}
+
+type OtherFormsCategory =
+  | 'all'
+  | 'phosphorylated'
+  | 'acetylated'
+  | 'methylated'
+  | 'ubiquitinated'
+  | 'sumoylated'
+  | 'unfolded'
+  | 'unmodified';
+
+type OtherFormsDisease = 'all' | 'disease' | 'reference';
+
+interface OtherFormsFacet<K> {
+  key: K;
+  label: string;
+  count: number;
+}
+
+interface OtherFormsRow {
+  entity: PhysicalEntity;
+  compartment: string;
+}
+
+// Display order for the modification chip listbox. "all" is prepended at
+// computed time. inDisease lives on its own axis -- a disease variant can
+// also carry a PTM (e.g. "Ac-K120-TP53 A119Qfs*5") -- so we no longer
+// short-circuit on it; the modification axis classifies purely by the
+// Reactome naming convention in PhysicalEntity.name[0].
+const OTHER_FORMS_CATEGORY_ORDER: [OtherFormsCategory, string][] = [
+  ['phosphorylated', 'Phosphorylated'],
+  ['acetylated', 'Acetylated'],
+  ['methylated', 'Methylated'],
+  ['ubiquitinated', 'Ubiquitinated'],
+  ['sumoylated', 'SUMOylated'],
+  ['unfolded', 'Unfolded'],
+  ['unmodified', 'Unmodified'],
+];
+
+function categorizeOtherForm(pe: PhysicalEntity): OtherFormsCategory {
+  const name = (pe.name?.[0] || pe.displayName || '').toLowerCase();
+  if (/^\d?x?p-[styw]\d/.test(name)) return 'phosphorylated';
+  if (name.startsWith('ac-')) return 'acetylated';
+  if (/^me\d?[-k]/.test(name)) return 'methylated';
+  if (/^(poly)?ub-/.test(name)) return 'ubiquitinated';
+  if (/^sumo\d?-/.test(name)) return 'sumoylated';
+  if (name.startsWith('unfolded ')) return 'unfolded';
+  return 'unmodified';
 }

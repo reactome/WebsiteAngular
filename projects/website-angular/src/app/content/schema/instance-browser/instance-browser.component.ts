@@ -12,6 +12,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   ContentDataService,
+  InstanceReferrals,
   SchemaAttribute,
 } from '../../../../services/content-data.service';
 
@@ -43,6 +44,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   schemaClass = '';
   dbId: number | string = '';
   rows: AttributeRow[] = [];
+  referrals: InstanceReferrals[] = [];
   loading = true;
   error = false;
 
@@ -63,6 +65,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     this.loading = true;
     this.error = false;
     this.rows = [];
+    this.referrals = [];
 
     this.contentDataService
       .getInstance(this.instanceId)
@@ -73,10 +76,27 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
           this.schemaClass = instance.schemaClass || instance.className || '';
           this.dbId = instance.dbId;
           this.loadAttributes();
+          this.loadReferrals();
         },
         error: () => {
           this.error = true;
           this.loading = false;
+        },
+      });
+  }
+
+  private loadReferrals() {
+    this.contentDataService
+      .getInstanceReferrers(this.instanceId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (groups) => {
+          this.referrals = groups || [];
+        },
+        error: () => {
+          // Endpoint absent or 500 -- silently degrade; the page is still
+          // useful without the referrals list.
+          this.referrals = [];
         },
       });
   }

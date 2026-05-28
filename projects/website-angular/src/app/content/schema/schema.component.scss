@@ -192,6 +192,16 @@ $sidebar-width: 320px;
   color: #999;
   font-size: 0.75rem;
   flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
 }
 
 // --- Main content ---

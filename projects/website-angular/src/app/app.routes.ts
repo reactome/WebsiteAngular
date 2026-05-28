@@ -169,6 +169,14 @@ export const routes: Routes = [
       ),
     pathMatch: 'full',
   },
+  {
+    path: 'content/schema/:className/instance/:dbId',
+    loadComponent: () =>
+      import('./content/schema/schema.component').then(
+        (m) => m.SchemaComponent
+      ),
+    pathMatch: 'full',
+  },
 
   //Detail Pages
   {
@@ -183,6 +191,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./content/detail/icon-detail/icon-detail.component').then(
         (m) => m.IconDetailComponent
+      ),
+  },
+  {
+    path: 'content/detail/person/:id',
+    loadComponent: () =>
+      import('./content/detail/person-detail/person-detail.component').then(
+        (m) => m.PersonDetailComponent
       ),
   },
   {

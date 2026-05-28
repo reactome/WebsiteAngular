@@ -1,9 +1,19 @@
 import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import {NavLink} from '../../types/link';
 import { ContentService } from '../../services/content.service';
+import { SearchHistoryService } from '../../services/search-history.service';
+import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+
+// Breadcrumb entries used by this component carry an optional set of
+// query params so a link can preserve query-string state (notably the
+// Search crumb, which routes back to /content/query?q=...).
+interface BreadcrumbEntry extends NavLink {
+  queryParams?: Record<string, string>;
+}
 
 @Component({
   selector: 'app-breadcrumb',
@@ -14,8 +24,10 @@ import { ContentService } from '../../services/content.service';
 export class BreadcrumbComponent {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
+  private http = inject(HttpClient);
+  private searchHistory = inject(SearchHistoryService);
   navOptions: Record<string, NavLink> = {};
-  breadcrumbs: NavLink[] = [];
+  breadcrumbs: BreadcrumbEntry[] = [];
 
   ngOnInit() {
     //Get all nav options
@@ -55,6 +67,45 @@ export class BreadcrumbComponent {
                 this.updateBreadcrumbs(path_segments);
               }
             })
+        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments[2] === 'person' && path_segments.length >= 4) {
+          // Person profile page (/content/detail/person/:id where id is
+          // ORCID or numeric dbId). Resolve to displayName via the
+          // ContentService person endpoint which accepts both forms.
+          this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
+          const id = path_segments[3];
+          const fullPath = '/' + path_segments.join('/');
+          this.appendLeafBreadcrumb(id, fullPath);
+          this.http.get<{ displayName?: string }>(
+            `${CONTENT_SERVICE}/data/person/${id}`,
+          ).subscribe({
+            next: (p) => {
+              if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+            },
+          });
+        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments.length >= 3) {
+          // Entity detail page (/content/detail/:id) -- /content and
+          // /content/detail aren't landing pages, so we surface the search
+          // page as the canonical parent: "Home > Search > <entity>". The
+          // Search link round-trips to whatever search URL the user last
+          // visited (preserving ?q= etc.), so they don't land on an empty
+          // search form. The leaf starts as the raw stId and is replaced
+          // with the entity displayName once /data/query/{id} responds.
+          const { path: searchPath, queryParams: searchQueryParams } =
+            this.splitUrl(this.searchHistory.lastSearchUrl());
+          this.breadcrumbs = [
+            { label: 'Search', link: searchPath, queryParams: searchQueryParams },
+          ];
+          const id = path_segments[2];
+          const fullPath = '/' + path_segments.join('/');
+          this.appendLeafBreadcrumb(id, fullPath);
+          this.http.get<{ displayName?: string; name?: string[] }>(
+            `${CONTENT_SERVICE}/data/query/${id}`,
+          ).subscribe({
+            next: (entity) => {
+              const label = entity?.displayName || entity?.name?.[0] || id;
+              this.replaceLeafBreadcrumb(label, fullPath);
+            },
+          });
         } else if (path_segments.includes('faq') && path_segments.length > 2) { //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)
           let faqIndex = path_segments.indexOf('faq');
@@ -121,6 +172,49 @@ export class BreadcrumbComponent {
         currentNavLevel = {};
       }
     }
+  }
+
+  /**
+   * Append a leaf entry to breadcrumbs after updateBreadcrumbs() finishes
+   * (it can be deferred while it polls for navOptions). Without this guard
+   * an immediate push gets clobbered when the deferred update resolves.
+   */
+  private appendLeafBreadcrumb(label: string, link: string) {
+    if (Object.keys(this.navOptions).length === 0) {
+      setTimeout(() => this.appendLeafBreadcrumb(label, link), 50);
+      return;
+    }
+    if (this.breadcrumbs[this.breadcrumbs.length - 1]?.link !== link) {
+      this.breadcrumbs.push({ label, link });
+    }
+  }
+
+  private replaceLeafBreadcrumb(label: string, link: string) {
+    if (Object.keys(this.navOptions).length === 0) {
+      setTimeout(() => this.replaceLeafBreadcrumb(label, link), 50);
+      return;
+    }
+    const last = this.breadcrumbs[this.breadcrumbs.length - 1];
+    if (last?.link === link) {
+      this.breadcrumbs[this.breadcrumbs.length - 1] = { label, link };
+    } else {
+      this.breadcrumbs.push({ label, link });
+    }
+  }
+
+  /**
+   * Split a (possibly query-stringed) relative URL into a path + a params
+   * record so it can be fed into Angular's [routerLink] + [queryParams].
+   * RouterLink doesn't accept query strings embedded in the link string.
+   */
+  private splitUrl(url: string): { path: string; queryParams?: Record<string, string> } {
+    const qIdx = url.indexOf('?');
+    if (qIdx < 0) return { path: url };
+    const path = url.substring(0, qIdx);
+    const params = new URLSearchParams(url.substring(qIdx + 1));
+    const queryParams: Record<string, string> = {};
+    params.forEach((v, k) => { queryParams[k] = v; });
+    return { path, queryParams };
   }
 
   /**

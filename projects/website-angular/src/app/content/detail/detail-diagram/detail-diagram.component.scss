@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.detail-diagram {
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  background: var(--surface-container-low, rgba(0, 0, 0, 0.02));
+  text-align: center;
+}
+
+.diagram-img {
+  max-width: 100%;
+  height: auto;
+}

@@ -34,7 +34,10 @@ export class ContentService {
 
   //Get any page by type and slug
   getPage(pageType:string, slug:string ): Observable<PageContent | null> {
+    // Try .mdx first; fall back to .md so the CMS pipeline can author in
+    // either flavour without renaming files.
     return this.http.get(`${this.contentBasePath}/${pageType}/${slug}.mdx`, { responseType: 'text' }).pipe(
+      catchError(() => this.http.get(`${this.contentBasePath}/${pageType}/${slug}.md`, { responseType: 'text' })),
       map(content => {
         const { frontmatter, body } = parseFrontmatter(content);
         return {

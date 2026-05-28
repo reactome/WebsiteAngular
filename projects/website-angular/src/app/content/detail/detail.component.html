@@ -1,4 +1,14 @@
-<app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
+<app-page-layout [showSidebar]="!!obj()" [showBreadcrumb]="true" [customSidebar]="true">
+  @if (obj()) {
+    <app-sidebar class="page-sidebar-slot"
+                 [sectionsMode]="true"
+                 sectionsTitle="On this page"
+                 sectionsIcon="list"
+                 [sections]="tocItems()"
+                 [activeSectionKey]="selectedTocKey()"
+                 (sectionSelected)="selectTocItem($event)" />
+  }
+
   @if (loading()) {
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>
@@ -10,7 +20,10 @@
     </div>
   } @else if (obj()) {
     <div class="detail-container">
-      <cr-description-tab [obj]="obj()!" [showLocations]="true" />
+      <cr-description-tab [obj]="obj()!" [showLocations]="true">
+        <app-detail-download-bar [obj]="obj()!" />
+        <app-detail-diagram [obj]="obj()!" />
+      </cr-description-tab>
     </div>
   }
 </app-page-layout>

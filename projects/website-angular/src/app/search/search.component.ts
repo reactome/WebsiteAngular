@@ -27,7 +27,13 @@ import {
 } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
-import { SiteSearchComponent } from '../site-search/site-search.component';
+import { MatTooltip } from '@angular/material/tooltip';
+import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
+import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
+import {
+  environment,
+  CONTENT_SERVICE,
+} from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-search',
@@ -37,10 +43,10 @@ import { SiteSearchComponent } from '../site-search/site-search.component';
     TileComponent,
     RouterLink,
     SearchBarComponent,
-    SiteSearchComponent,
     FormsModule,
     DatePipe,
     MatIcon,
+    MatTooltip,
   ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
@@ -49,6 +55,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchService = inject(SearchService);
+  private siteSearch = inject(SiteSearchService);
   private http = inject(HttpClient);
   private ngZone = inject(NgZone);
 
@@ -80,6 +87,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   grouped = true;
 
+  // Filter panel visibility. Defaults to visible on desktop; on narrow
+  // screens the user can collapse it via the toggle button.
+  // Default to the sidebar being open on wide layouts and collapsed on
+  // narrow layouts (kept in sync with the 1024px breakpoint in the
+  // component scss — see the .filters-toggle-btn / .facet-sidebar
+  // @media (max-width: 1024px) block).
+  filtersVisible = typeof window === 'undefined' || window.innerWidth > 1024;
+
   collapsedFacets: Record<string, boolean> = {};
   collapsedGroups: Record<string, boolean> = {};
   expandedForms: Record<string, boolean> = {};
@@ -88,13 +103,23 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   groupPageEntries: Record<string, SearchEntry[]> = {};
   groupLoading: Record<string, boolean> = {};
 
+  // Site-search hit counts by category, populated from the merged Pages
+  // results so the sidebar can offer them as a facet group.
+  pageCategoryCounts: FacetCount[] = [];
+
   // Protein deduplication: all forms grouped by referenceIdentifier
   proteinForms = new Map<string, SearchEntry[]>();
   uniqueProteins: SearchEntry[] = [];
   proteinTotalForms = 0;
   proteinLoading = false;
 
-  currentMode: 'simple' | 'advanced' | 'reference' | 'site-search' = 'simple';
+  // Unified search now always uses reference-style aggregation: one row per
+  // reference entity (e.g. one TP53) with modified forms / isoforms collapsed
+  // under it. The old simple/advanced/site-search tabs are gone — the
+  // `currentMode` field is retained as a compile-time-only constant so the
+  // existing template branches (and the URL params for inbound links)
+  // continue to work without conditional logic.
+  currentMode: 'reference' = 'reference';
 
   private paramsSub!: Subscription;
 
@@ -122,19 +147,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         types: toArray(params['types']),
         compartments: toArray(params['compartments']),
         keywords: toArray(params['keywords']),
+        pageCategories: toArray(params['pageCategories']),
       };
 
-      if (params['advanced'] === 'true') {
-        this.currentMode = 'advanced';
-      } else if (params['reference'] === 'true') {
-        this.currentMode = 'reference';
-      } else if (params['site-search'] === 'true') {
-        this.currentMode = 'site-search';
-      } else {
-        this.currentMode = 'simple';
-      }
+      // ?advanced / ?reference / ?site-search URL params from legacy inbound
+      // links are accepted silently — the unified search behaves the same
+      // regardless. Solr handles boolean / phrase / wildcard syntax natively.
 
-      if (this.query && this.currentMode !== 'site-search') {
+      if (this.query) {
         this.searchSubmitted = true;
         this.doSearch();
         this.getSuggestions(this.query);
@@ -240,8 +260,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
+      pages: this.siteSearch
+        .search(this.query)
+        .pipe(catchError(() => of([] as SitePageHit[]))),
     }).subscribe({
-      next: ({ results, facets }) => {
+      next: ({ results, facets, pages }) => {
         // If either API call failed, show error
         if (!results || !facets) {
           this.error = 'An error occurred while searching. Please try again.';
@@ -251,6 +274,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         } else {
           // Successful API response - check if we have results
           const res = results as SearchResult;
+          // Solr's true total across the whole result set; per-group
+          // pagination chops each `group.entries` down to ~30, so we
+          // must NOT recompute this from entries.length later.
+          const biologyTotal = res.numberOfMatches ?? 0;
           const hasNonDeleted = res.results?.some((group) =>
             group.entries.some((e) => !e.deleted)
           );
@@ -268,10 +295,72 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
                 };
               })
               .filter((group) => group.entries.length > 0) || [];
-          res.numberOfMatches = res.results.reduce(
-            (sum, g) => sum + g.entries.length,
-            0
+          // Build the Pages facet counts from the raw site-search hits so
+          // the sidebar shows the full set of categories even when one is
+          // currently selected (matches how Species / Types behave).
+          const countMap = new Map<string, number>();
+          for (const p of pages) {
+            countMap.set(p.category, (countMap.get(p.category) || 0) + 1);
+          }
+          this.pageCategoryCounts = Array.from(countMap.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
+          // Apply the user's Pages category filter (if any) before injecting
+          // the Pages group into the results. When a Pages category is
+          // selected, drop the biology groups entirely so the user only sees
+          // the page hits they asked for.
+          const selectedCats = this.filters.pageCategories || [];
+          const biologyFilterActive = !!(
+            this.filters.species?.length ||
+            this.filters.types?.length ||
+            this.filters.compartments?.length ||
+            this.filters.keywords?.length
           );
+          // Pages have no biology metadata, so any biology facet selection
+          // means the user is narrowing to biology results — drop Pages.
+          // Conversely, a Pages-category selection means the user is
+          // narrowing to documentation — drop biology groups.
+          const visiblePages = biologyFilterActive
+            ? []
+            : selectedCats.length
+              ? pages.filter((p) => selectedCats.includes(p.category))
+              : pages;
+          if (selectedCats.length) {
+            res.results = [];
+          }
+
+          // Append site-search hits as a "Pages" group at the bottom so
+          // documentation/news/blog hits show up alongside biology entities.
+          if (visiblePages.length) {
+            const pageEntries = visiblePages.map((p) => ({
+              dbId: -p.id,
+              id: p.url,
+              stId: p.url,
+              name: p.title,
+              referenceName: p.title,
+              exactType: 'Pages',
+              type: 'Pages',
+              species: [],
+              compartmentNames: [],
+              summation: p.excerpt,
+              pageCategory: p.category,
+              pageUrl: p.url,
+              pageExcerpt: p.excerpt,
+            } as unknown as SearchEntry));
+            res.results = [
+              ...res.results,
+              {
+                typeName: 'Pages',
+                entries: pageEntries,
+                entriesCount: pageEntries.length,
+              } as ResultGroup,
+            ];
+          }
+          // Keep Solr's biology total; add Pages count (when shown); zero
+          // out biology when the user selected a Pages-only filter.
+          res.numberOfMatches =
+            (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
@@ -417,8 +506,15 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return `sprite sprite-resize sprite-${spriteType}`;
   }
 
+  // Resolve the Reactome subject icon (Protein, Pathway, Complex, …) for a
+  // search result so the row renders the same SVG icon as the pathway-browser
+  // search.
+  getSubjectIcon(entry: SearchEntry): SubjectIcon {
+    return getSubjectIcon(entry.exactType || entry.type);
+  }
+
   iconSvgUrl(entry: SearchEntry): string {
-    return `https://dev.reactome.org/icon/${entry.stId}.svg`;
+    return `${environment.host}/icon/${entry.stId}.svg`;
   }
 
   get allEntries(): SearchEntry[] {
@@ -463,6 +559,24 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.collapsedGroups[group] = !this.collapsedGroups[group];
   }
 
+  collapseAllGroups(): void {
+    for (const group of this.results?.results || []) {
+      this.collapsedGroups[group.typeName] = true;
+    }
+  }
+
+  expandAllGroups(): void {
+    for (const group of this.results?.results || []) {
+      this.collapsedGroups[group.typeName] = false;
+    }
+  }
+
+  allGroupsCollapsed(): boolean {
+    const groups = this.results?.results || [];
+    if (!groups.length) return false;
+    return groups.every((g) => this.collapsedGroups[g.typeName]);
+  }
+
   // toggleAdvancedMode(): void {
   //   this.advancedMode = !this.advancedMode;
   // }
@@ -502,6 +616,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       types: 'Type',
       compartments: 'Compartment',
       keywords: 'Keyword',
+      pageCategories: 'Pages',
     };
     for (const [key, values] of Object.entries(this.filters)) {
       if (values?.length) {
@@ -514,6 +629,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getDetailLink(entry: SearchEntry): string {
+    // Site-search hits carry their own absolute URL into pageUrl.
+    if (entry.exactType === 'Pages') {
+      return (entry as any).pageUrl || '/';
+    }
     if (this.currentMode === 'reference') {
       const id = entry.id || entry.stId;
       if (entry.exactType === 'Interactor')
@@ -644,8 +763,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const formData = new FormData(form);
     formData.set('h-captcha-response', this.captchaToken);
 
-    this.http.post('/content/contact', formData).subscribe({
-      //TODO: Post to the actual route
+    this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
       next: () => {
         this.formSubmitted = true;
         this.resetCaptcha();

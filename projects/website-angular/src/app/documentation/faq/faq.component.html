@@ -45,7 +45,7 @@
                 )
               "
             >
-              <a [href]="'documentation/faq/' + category + '/' + activeTabs[category] + '/' + questionArticle.slug">
+              <a [routerLink]="['/documentation/faq', category, activeTabs[category], questionArticle.slug]">
                 {{ formatName(questionArticle.title) }}
               </a>
             </li>
@@ -59,7 +59,7 @@
               class="faq-item"
               *ngFor="let questionArticle of getArticles(category)"
             >
-              <a [href]="'documentation/faq/' + category + '/' + questionArticle.slug">
+              <a [routerLink]="['/documentation/faq', category, questionArticle.slug]">
                 {{ formatName(questionArticle.title) }}
               </a>
             </li>

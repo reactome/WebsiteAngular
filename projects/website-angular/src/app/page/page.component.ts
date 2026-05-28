@@ -1,11 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, inject } from '@angular/core';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
 import stripFirstH from '../../utils/stripFirstH';
+import addAnchorIds from '../../utils/addAnchorIds';
+import addJumpCards from '../../utils/addJumpCards';
+import wrapCodeBlocks from '../../utils/wrapCodeBlocks';
 import sanitize from '../../utils/sanitize';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
 
 @Component({
   selector: 'app-page',
@@ -17,6 +21,7 @@ export class PageComponent {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
+  private elementRef = inject(ElementRef);
 
   page: any | null = null;
   renderedContent: SafeHtml = '';
@@ -76,6 +81,9 @@ export class PageComponent {
           html = this.rewriteContentUrls(html);
           this.renderedContent = sanitize(stripFirstH(html), this.sanitizer);
           this.loading = false;
+          // Let Angular flush the bound innerHTML before we look for
+          // third-party embed placeholders inside it.
+          setTimeout(() => loadHubspotMeetingsIfPresent(this.elementRef.nativeElement), 0);
         } else {
           this.error = 'Page not found.';
           this.loading = false;

@@ -1,0 +1,46 @@
+@if (showEventExports()) {
+  <div class="download-bar" role="group" aria-label="Download">
+    <mat-icon fontSet="symbols" class="download-icon">download</mat-icon>
+    <span class="download-label">Download:</span>
+
+    <a class="dl-link" [href]="sbmlUrl()" [download]="stId() + '.sbml'"
+       matTooltip="Export as SBML">SBML</a>
+
+    <button type="button" class="dl-link dl-menu"
+            [matMenuTriggerFor]="biopaxMenu"
+            matTooltip="Export as BioPAX">
+      BioPAX<mat-icon fontSet="symbols">arrow_drop_down</mat-icon>
+    </button>
+    <mat-menu #biopaxMenu="matMenu">
+      <a mat-menu-item [href]="biopax2Url()" [download]="stId() + '_level2.owl'">Level 2</a>
+      <a mat-menu-item [href]="biopax3Url()" [download]="stId() + '_level3.owl'">Level 3</a>
+    </mat-menu>
+
+    @if (showDiagramExports()) {
+      <span class="dl-sep">|</span>
+
+      <a class="dl-link" [href]="pdfUrl()" [download]="stId() + '.pdf'"
+         matTooltip="Export diagram as PDF">PDF</a>
+
+      <a class="dl-link" [href]="svgUrl()" [download]="stId() + '.svg'"
+         matTooltip="Export diagram as SVG">SVG</a>
+
+      <button type="button" class="dl-link dl-menu"
+              [matMenuTriggerFor]="pngMenu"
+              matTooltip="Export diagram as PNG">
+        PNG<mat-icon fontSet="symbols">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #pngMenu="matMenu">
+        <a mat-menu-item [href]="pngUrl(2)" [download]="stId() + '.png'">Low</a>
+        <a mat-menu-item [href]="pngUrl(5)" [download]="stId() + '.png'">Medium</a>
+        <a mat-menu-item [href]="pngUrl(7)" [download]="stId() + '.png'">High</a>
+      </mat-menu>
+
+      <a class="dl-link" [href]="pptxUrl()" [download]="stId() + '.pptx'"
+         matTooltip="Export diagram as PowerPoint">PPTX</a>
+
+      <a class="dl-link" [href]="sbgnUrl()" [download]="stId() + '.sbgn'"
+         matTooltip="Export diagram as SBGN">SBGN</a>
+    }
+  </div>
+}

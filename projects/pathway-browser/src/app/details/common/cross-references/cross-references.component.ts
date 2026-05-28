@@ -20,7 +20,16 @@ export class CrossReferencesComponent {
 
     if (this._crossReferences().length == 0) return new Map<string, DatabaseIdentifier[]>();
     const crossRefs = [...this._crossReferences()];
-    return this.entity.getGroupedData(crossRefs, ref => ref.databaseName);
+    const grouped = this.entity.getGroupedData(crossRefs, ref => ref.databaseName);
+    // Sort the identifiers within each database group so e.g. RefSeq IDs
+    // come out in stable, human-friendly order. numeric: true keeps
+    // "NM_000546.5" before "NM_000546.10" instead of lexicographic.
+    for (const list of grouped.values()) {
+      list.sort((a, b) =>
+        a.identifier.localeCompare(b.identifier, undefined, { numeric: true, sensitivity: 'base' }),
+      );
+    }
+    return grouped;
   });
 
   constructor(private entity: EntityService) {

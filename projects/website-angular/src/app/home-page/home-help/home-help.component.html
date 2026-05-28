@@ -1,6 +1,6 @@
 <h1 class="home-help-header">Guides and Support</h1>
 <app-carousel class="home-help-container" [dark]="false">
-  <a class="home-help-link" [href]="navOptions['documentation']?.dropdownLinks?.['userguide']?.link || '/documentation/userguide'"><app-button
+  <a class="home-help-link" [routerLink]="navOptions['documentation']?.dropdownLinks?.['userguide']?.link || '/documentation/userguide'"><app-button
     variant="light"
     size="large"
     shape="circle"
@@ -10,7 +10,7 @@
     User Guide
   </app-button></a>
 
-  <a class="home-help-link" [href]="navOptions['documentation']?.dropdownLinks?.['developers-zone']?.link || '/documentation/dev'"><app-button
+  <a class="home-help-link" [routerLink]="navOptions['documentation']?.dropdownLinks?.['developers-zone']?.link || '/documentation/dev'"><app-button
     variant="light"
     size="large"
     shape="circle"
@@ -20,7 +20,7 @@
     Dev Zone
   </app-button></a>
 
-  <a class="home-help-link" [href]="navOptions['documentation']?.dropdownLinks?.['citing-us']?.link || '/documentation/cite'"><app-button
+  <a class="home-help-link" [routerLink]="navOptions['documentation']?.dropdownLinks?.['citing-us']?.link || '/documentation/cite'"><app-button
     variant="light"
     size="large"
     shape="circle"

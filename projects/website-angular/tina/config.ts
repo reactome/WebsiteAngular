@@ -25,6 +25,7 @@ export default defineConfig({
         match: {
           exclude: "news/**",
         },
+        // ui.router intentionally omitted -- see 'news' collection below.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
@@ -32,15 +33,20 @@ export default defineConfig({
           { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }: any) => `/about/${document._sys.filename}`,
-        }
       },
       { //News Articles
         name: "news",
         label: "News",
         path: "content/about/news",
         format: "mdx",
+        // ui.router is intentionally omitted. Defining it makes the admin
+        // list's title-click route to a visual-edit iframe that only
+        // surfaces form fields when the embedded page calls TinaCMS's
+        // useTina() hook. Our Angular pages don't (no Tina React
+        // integration), so the iframe shows the live page with an empty
+        // form panel and editors can't reach the fields. Without router,
+        // the title-click opens the form-only admin editor directly --
+        // same form the kebab menu's "Edit in Admin" option opens.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'datetime', name: "date", label: "Date Published", required: true },
@@ -49,15 +55,16 @@ export default defineConfig({
           { type: 'string', name: "tags", label: "Tags", list: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }: any) => `/about/news/${document._sys.filename}`,
-        }
       },
       { //Content Pages
         name: "content",
         label: "Content",
         path: "content/content",
         format: "mdx",
+        match: {
+          exclude: "reactome-research-spotlight/**",
+        },
+        // ui.router intentionally omitted -- see 'news' collection above.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
@@ -65,15 +72,13 @@ export default defineConfig({
           { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }: any) => `/content/${document._sys.filename}`,
-        }
       },
       {
         name: "reactome_research_spotlights",
         label: "Reactome Research Spotlights",
         path: "content/content/reactome-research-spotlight",
         format: "mdx",
+        // ui.router intentionally omitted -- see 'news' collection above.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'datetime', name: "date", label: "Date Published" },
@@ -82,15 +87,13 @@ export default defineConfig({
           { type: 'string', name: "tags", label: "Tags", list: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }: any) => `/content/reactome-research-spotlight/${document._sys.filename}`,
-        }
       },
       { //Documentation Pages
         name: "documentation",
         label: "Documentation",
         path: "content/documentation",
         format: "mdx",
+        // ui.router intentionally omitted -- see 'news' collection above.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
@@ -98,9 +101,6 @@ export default defineConfig({
           { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }: any) => `/documentation/${document._sys.filename}`,
-        }
       },
       {
         name: "faq",
@@ -119,6 +119,7 @@ export default defineConfig({
         label: "Community",
         path: "content/community",
         format: "mdx",
+        // ui.router intentionally omitted -- see 'news' collection above.
         fields: [
           { type: "string", name: "title", label: "Title", isTitle: true, required: true },
           { type: 'string', name: "description", label: "Description" },
@@ -126,9 +127,6 @@ export default defineConfig({
           { type: "rich-text", name: "body", label: "Body", isBody: true },
           { type: 'image', name: "image", label: "Image" },
         ],
-        ui: {
-          router: ({ document }:any) => `/community/${document._sys.filename}`,
-        }
       },
       
 

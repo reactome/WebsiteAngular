@@ -134,6 +134,18 @@ $transition-speed: 0.25s;
   }
 }
 
+// Button variant used by sections-mode entries: same look-and-feel as the
+// link variant but no browser defaults on the button element.
+.sidebar-link--button {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 // Mobile responsiveness
 @media (max-width: 1024px) {
   .sidebar {

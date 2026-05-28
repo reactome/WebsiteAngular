@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CONTENT_SERVICE } from '../../../pathway-browser/src/environments/environment';
 
 export interface IconCategory {
   name: string;
@@ -51,7 +52,7 @@ export interface IconResult {
 })
 export class IconService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://dev.reactome.org/ContentService/search'; //TODO: change in prod or make configurable (do ts to all sevices)
+  private baseUrl = `${CONTENT_SERVICE}/search`;
 
   getFacets(): Observable<IconFacetResponse> {
     return this.http.get<IconFacetResponse>(`${this.baseUrl}/icon/facet`);

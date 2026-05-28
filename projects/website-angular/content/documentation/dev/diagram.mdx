@@ -27,35 +27,23 @@ The Reactome Pathway Diagram Viewer provides an intuitive means of viewing and i
 
 Reactome is a curated database of pathways and reactions (pathway steps) in human biology. The Reactome definition of a ‘reaction’ includes many events in biology that are changes in state, such as binding, activation, translocation and degradation, in addition to classical biochemical reactions. Information in the database is authored by expert biologist researchers, maintained by Reactome editorial staff, and extensively cross-referenced to other resources e.g. NCBI, Ensembl, UniProt, UCSC Genome Browser, HapMap, KEGG (Gene and Compound), ChEBI, PubMed and GO. Inferred orthologous reactions are available for a number of non-human species including mouse, rat, chicken, puffer fish, worm, fly, yeast, rice and Arabidopsis.
 
-The diagram viewer retrieves the information directly from Reactome server, which mean that for third party resources it will be straight forward to include it in browser supporting CORS, or it will just work by adding a proxy mechanism in order to avoid SOP. Another important feature of the diagram viewer that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</dev/analysis>) and later on have a look to the Diagram viewer [API](<#API>).
+The diagram viewer retrieves the information directly from Reactome server, which mean that for third party resources it will be straight forward to include it in browser supporting CORS, or it will just work by adding a proxy mechanism in order to avoid SOP. Another important feature of the diagram viewer that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</documentation/dev/analysis>) and later on have a look to the Diagram viewer [API](<#API>).
 
 ### [__Get Started](<#GetStarted>)
 
-Currently, there are two options for integrating Reactome’s pathway diagrams in your web application. The first is to use our [DiagramJs widget](</dev/diagram/js>), while the second option involves using our [GWT implementation](</dev/diagram/gwt>).
+The diagram viewer is implemented as part of the Reactome [Pathway Browser](</PathwayBrowser>). There are two supported ways to use it from a third-party page:
 
-[ __ ](</dev/diagram/js>)
+1. **Embed the Pathway Browser** (which exposes the diagram viewer as part of its standard UI) by linking to or iframing `https://reactome.org/PathwayBrowser/#/{stId}`.
+2. **Render a static diagram image** by calling the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
 
-##  [ Diagram JS ](</dev/diagram/js>)
-
-[ __ ](</dev/diagram/gwt>)
-
-##  [ Diagram GWT ](</dev/diagram/gwt>)
+The previous Diagram JS and Diagram GWT widgets have been retired. New integrations should target the embedded Pathway Browser or the diagram exporter API directly.
 
 ### [__API](<#API>)
 
-Whether you are a JavaScript or GWT developer, we have a tool that will suit you. Check out your option:
-
-[ __ ](</dev/diagram/js#API>)
-
-##  [ Diagram JS API ](</dev/diagram/js#API>)
-
-[ __ ](</dev/diagram/gwt#API>)
-
-##  [ Diagram GWT API ](</dev/diagram/gwt#API>)
+For interactive embedding, the Pathway Browser accepts URL fragments to set the displayed pathway and selected event (e.g. `/PathwayBrowser/#/R-HSA-69620?SEL=R-HSA-69231`). For programmatic image generation, see the diagram-exporter endpoints under the [Content Service](</documentation/dev/content-service>).
 
 ### [__Resources](<#Resources>)
 
-  * __[Pathway Diagram Specifications](</dev/diagram/pathway-diagram-specs>)
-  * [__GWT Diagram code](<https://github.com/reactome-pwp/diagram>)
-  * [__GWT Diagram exporter to JavaSript](<https://github.com/reactome-pwp/diagram-js>)
-  * [__Reactome Pathways Portal code](<https://github.com/reactome-pwp>)
+  * [__Pathway Diagram Specifications](</documentation/dev/diagram/pathway-diagram-specs>)
+  * [__Reactome Pathway Browser code (Angular)](<https://github.com/reactome/WebsiteAngular>)
+  * [__Reactome Content Service](</documentation/dev/content-service>)

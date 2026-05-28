@@ -1,34 +1,30 @@
-@if (currentMode === 'simple' || currentMode === 'reference') {
 <form class="search-bar-container" (submit)="onSubmit($event)">
-  <input
-    type="text"
-    placeholder="e.g. O95631, NTN1, signaling by EGFR, glucose"
+  <textarea
+    #queryInput
+    rows="1"
+    placeholder='Search proteins, pathways, complexes'
     class="search-input"
     [value]="query"
     (input)="onInput($event)"
+    (keydown.enter)="onEnter($event)"
     (focus)="showDropdown()"
     (blur)="hideDropdownDelayed()"
     autocomplete="off"
-    (submit)="onSubmit($event)"
-  />
-  <button type="submit" class="search-button">Go!</button>
-</form>
-} @else {
-<form class="search-bar-container" (submit)="onSubmit($event)">
-  <textarea
-    type="text"
-    placeholder='e.g. "apoptotic process" AND TP53'
-    class="advanced-input"
-    [value]="query"
-    (input)="onInput($event)"
-    (focus)="showDropdown()"
-    (blur)="hideDropdownDelayed()"
-    autocomplete="off"
-    (submit)="onSubmit($event)"
+    aria-label="Search query"
   ></textarea>
+  <button
+    type="button"
+    class="syntax-help-button"
+    [class.active]="syntaxHelpOpen"
+    (click)="syntaxHelpOpen = !syntaxHelpOpen"
+    title="Query syntax help"
+    aria-label="Toggle query syntax help"
+  >
+    <span class="material-symbols-rounded">help_outline</span>
+  </button>
   <button type="submit" class="search-button">Go!</button>
 </form>
-} @if (query && suggestions.length > 0 && showSuggestions) {
+@if (query && suggestions.length > 0 && showSuggestions) {
 <div class="suggestions-container">
   <ul class="suggestions-list">
     @for (s of suggestions; track s; let i = $index) {
@@ -47,15 +43,8 @@
     }
   </ul>
 </div>
-} @if (currentMode === 'advanced') {
-<button class="syntax-help-toggle" (click)="syntaxHelpOpen = !syntaxHelpOpen">
-  <span class="material-symbols-rounded">help_outline</span>
-  Syntax Help
-  <span class="material-symbols-rounded">{{
-    syntaxHelpOpen ? "expand_less" : "expand_more"
-  }}</span>
-</button>
-} @if (syntaxHelpOpen) {
+}
+@if (syntaxHelpOpen) {
 <div class="syntax-help">
   <table class="syntax-table">
     <thead>
@@ -118,7 +107,8 @@
     >.
   </p>
 </div>
-} @if (filters && allFacets) {
+}
+@if (filters && allFacets) {
 <div class="advanced-facets">
   <h3 class="advanced-facets-title">Filter by</h3>
   <div class="">

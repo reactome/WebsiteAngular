@@ -17,11 +17,11 @@
   <nav class="navbar-nav">
     <mat-icon
       class="menu-icon"
-      *ngIf="windowWidth <= 768"
+      *ngIf="windowWidth <= hamburgerBreakpoint"
       (click)="toggleHamburgerMenu()"
       >menu</mat-icon
     >
-    <ul class="nav-list" *ngIf="windowWidth > 768 || activeHamburgerMenu">
+    <ul class="nav-list" *ngIf="windowWidth > hamburgerBreakpoint || activeHamburgerMenu">
       <li
         *ngFor="let option of navOptions | keyvalue : preserveOrder"
         class="nav-item"
@@ -35,7 +35,7 @@
             <a
               *ngIf="!navOption.external"
               [routerLink]="
-                windowWidth > 768 || navOption.label == 'Download'
+                windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
                   ? navOption.link
                   : null
               "
@@ -56,7 +56,7 @@
             <a
               *ngIf="navOption.external"
               [attr.href]="
-                windowWidth > 768 || navOption.label == 'Download'
+                windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
                   ? navOption.link
                   : null
               "

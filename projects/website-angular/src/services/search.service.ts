@@ -58,7 +58,12 @@ export interface SearchFilters {
   types?: string[];
   compartments?: string[];
   keywords?: string[];
+  // Client-side filter for the merged site-search "Pages" group. Values are
+  // page categories (e.g. "News", "Documentation").
+  pageCategories?: string[];
 }
+
+import { APP_CONFIG } from '../config/config';
 
 @Injectable({
   providedIn: 'root',

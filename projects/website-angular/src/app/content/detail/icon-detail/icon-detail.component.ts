@@ -4,6 +4,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import { TileComponent } from '../../../reactome-components/tile/tile.component';
 import { IconService, IconEntry } from '../../../../services/icon.service';
+import { environment } from '../../../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-icon-detail',
@@ -42,12 +43,12 @@ export class IconDetailComponent implements OnInit {
 
   getSvgUrl(): string {
     const stId = this.icon()?.stId;
-    return stId ? `https://reactome.org/icon/${stId}.svg` : '';
+    return stId ? `${environment.host}/icon/${stId}.svg` : '';
   }
 
   getPngUrl(): string {
     const stId = this.icon()?.stId;
-    return stId ? `https://reactome.org/icon/${stId}.png` : '';
+    return stId ? `${environment.host}/icon/${stId}.png` : '';
   }
 
   getUniProtReferences(): string[] {
