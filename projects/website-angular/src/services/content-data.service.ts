@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
-import { CONTENT_SERVICE } from '../../../pathway-browser/src/environments/environment';
 
 export interface SimplePerson {
   dbId: number;
