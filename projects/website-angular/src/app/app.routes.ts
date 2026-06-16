@@ -153,6 +153,8 @@ export const routes: Routes = [
       import('./content/doi/doi.component').then((m) => m.DoiComponent),
     pathMatch: 'full',
   },
+  // Keep legacy /content/schema routes working by loading the same
+  // SchemaComponent so parameter resolution works identically.
   {
     path: 'content/schema',
     loadComponent: () =>
@@ -171,6 +173,32 @@ export const routes: Routes = [
   },
   {
     path: 'content/schema/:className/instance/:dbId',
+    loadComponent: () =>
+      import('./content/schema/schema.component').then(
+        (m) => m.SchemaComponent
+      ),
+    pathMatch: 'full',
+  },
+
+  // New routes for dataSchema (replaces the previous content/schema)
+  {
+    path: 'dataSchema',
+    loadComponent: () =>
+      import('./content/schema/schema.component').then(
+        (m) => m.SchemaComponent
+      ),
+    pathMatch: 'full',
+  },
+  {
+    path: 'dataSchema/:className',
+    loadComponent: () =>
+      import('./content/schema/schema.component').then(
+        (m) => m.SchemaComponent
+      ),
+    pathMatch: 'full',
+  },
+  {
+    path: 'dataSchema/:className/instance/:dbId',
     loadComponent: () =>
       import('./content/schema/schema.component').then(
         (m) => m.SchemaComponent

@@ -85,9 +85,9 @@ export class SchemaComponent implements OnInit, OnDestroy {
         this.loading = false;
 
         // Listen for route changes. The path can be either
-        //   /content/schema/:className
+        //   /dataSchema/:className
         // or
-        //   /content/schema/:className/instance/:dbId
+        //   /dataSchema/:className/instance/:dbId
         // so a single subscription has to keep both selectedClass and
         // selectedInstanceId in sync with the URL.
         this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
@@ -172,14 +172,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   onTreeNodeClick(className: string) {
-    this.router.navigate(['/content/schema', className]);
+    this.router.navigate(['/dataSchema', className]);
     this.sidebarOpen = false;
   }
 
   onTreeNodeCountClick(className: string, event: Event) {
     // Stop the parent .node-label button from also firing onTreeNodeClick.
     event.stopPropagation();
-    this.router.navigate(['/content/schema', className], {
+    this.router.navigate(['/dataSchema', className], {
       queryParams: { tab: 'entries' },
     });
     this.sidebarOpen = false;
@@ -303,7 +303,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   navigateToClass(className: string) {
-    this.router.navigate(['/content/schema', className]);
+    this.router.navigate(['/dataSchema', className]);
   }
 
   // --- Entries ---
@@ -378,13 +378,13 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   selectInstance(dbId: number) {
     this.router.navigate(
-      ['/content/schema', this.selectedClass, 'instance', dbId],
+      ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }
 
   clearSelectedInstance() {
-    this.router.navigate(['/content/schema', this.selectedClass], {
+    this.router.navigate(['/dataSchema', this.selectedClass], {
       queryParams: { tab: 'entries' },
     });
   }
@@ -394,7 +394,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
     this.router.navigate(
-      ['/content/schema', this.selectedClass, 'instance', dbId],
+      ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }
