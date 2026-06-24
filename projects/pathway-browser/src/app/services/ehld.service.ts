@@ -1,5 +1,5 @@
 import {computed, ElementRef, Injectable} from '@angular/core';
-import {Observable} from "rxjs";
+import {Observable, switchMap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import type {Analysis} from "../model/analysis.model";
 import {isArray} from "lodash";
@@ -63,7 +63,11 @@ export class EhldService {
   }
 
   getSVGData(id: string): Observable<string> {
-    return this.http.get(`${this.general.download()}/ehld/${id}.svg`, {responseType: 'text'})
+    return this.general.download$.pipe(
+      switchMap((downloadBase) =>
+        this.http.get(`${downloadBase}/ehld/${id}.svg`, {responseType: 'text'})
+      )
+    )
   }
 
   // Hover an element

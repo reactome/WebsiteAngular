@@ -211,5 +211,15 @@ export class SidebarComponent {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
+  // Normalize a nav link to an absolute path. Some nav-options.json entries
+  // (notably the about/* items) are stored as relative paths (no leading
+  // slash). A relative routerLink resolves against the current route and
+  // accumulates segments (e.g. on /about/team it becomes
+  // /about/team/about/news), so force a leading slash here.
+  toAbsoluteLink(link: string | undefined | null): string {
+    if (!link) return '/';
+    return link.startsWith('/') ? link : '/' + link;
+  }
+
    preserveOrder = () => 0;
 }

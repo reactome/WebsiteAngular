@@ -70,7 +70,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.contentDataService.getSchemaModel().subscribe({
+    this.contentDataService
+      .getSchemaModel()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
       next: (root) => {
         this.treeRoot = root;
         // Expand first two levels by default

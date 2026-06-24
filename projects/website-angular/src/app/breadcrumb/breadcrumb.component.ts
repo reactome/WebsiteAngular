@@ -156,9 +156,13 @@ export class BreadcrumbComponent {
       }
 
       if (matchedLink) {
+        // Use currentPath (always absolute, built from URL segments) rather
+        // than matchedLink.link, which may be stored as a relative path in
+        // nav-options.json. A relative routerLink resolves against the
+        // current route and duplicates segments (e.g. /about/x/about/x).
         this.breadcrumbs.push({
           label: matchedLink.label,
-          link: matchedLink.link
+          link: currentPath
         });
 
         // Move to the next level of dropdown links if they exist

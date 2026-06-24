@@ -26,12 +26,12 @@
                 } -->
               </div>
               <h2>
-                <a [routerLink]="['/', articlePath, article.slug]">{{ article.title }}</a>
+                <a [routerLink]="articleLink(article.slug)">{{ article.title }}</a>
               </h2>
               @if (article.excerpt) {
                 <p class="excerpt" [innerHTML]="article.excerpt"></p>
               }
-              <a [routerLink]="['/', articlePath, article.slug]" class="read-more">
+              <a [routerLink]="articleLink(article.slug)" class="read-more">
                 Read more
                 <mat-icon class="material-symbols-outlined">arrow_forward</mat-icon>
               </a>

@@ -217,14 +217,19 @@ export class DiagramService {
   public getDiagram(
     id: number | string
   ): Observable<cytoscape.ElementsDefinition> {
-    return forkJoin({
-      diagram: this.http.get<Diagram>(
-        `${this.general.download()}/diagram/${id}.json`
-      ),
-      graph: this.http.get<Graph.Data>(
-        `${this.general.download()}/diagram/${id}.graph.json`
-      ),
-    }).pipe(
+    // Wait for the download base URL to settle before fetching. When S3 is
+    // preferred this ensures the version has resolved so requests go to the
+    // CORS-enabled S3 host instead of a non-CORS fallback host.
+    return this.general.download$.pipe(
+      switchMap((downloadBase) =>
+        forkJoin({
+          diagram: this.http.get<Diagram>(
+            `${downloadBase}/diagram/${id}.json`
+          ),
+          graph: this.http.get<Graph.Data>(
+            `${downloadBase}/diagram/${id}.graph.json`
+          ),
+        }).pipe(
       // tap(({diagram, graph}) => console.log('Original diagram:', diagram, 'Original graph', graph)),
       switchMap(({ diagram, graph }) => {
         if (diagram.forNormalDraw !== undefined && !diagram.forNormalDraw) {
@@ -232,10 +237,10 @@ export class DiagramService {
             switchMap((normalPathwayId) =>
               forkJoin({
                 normalDiagram: this.http.get<Diagram>(
-                  `${this.general.download()}/diagram/${normalPathwayId}.json`
+                  `${downloadBase}/diagram/${normalPathwayId}.json`
                 ),
                 normalGraph: this.http.get<Graph.Data>(
-                  `${this.general.download()}/diagram/${normalPathwayId}.graph.json`
+                  `${downloadBase}/diagram/${normalPathwayId}.graph.json`
                 ),
               })
             ),
@@ -288,6 +293,8 @@ export class DiagramService {
         this.diagramFromData(diagram, graph, id, chebiMapping)
       )
       // tap((output) => console.log('Output:', output)),
+        )
+      )
     );
   }
 
@@ -1202,9 +1209,13 @@ export class DiagramService {
   }
 
   getEHLDSvg(id: number | string): Observable<string> {
-    return this.http.get(`${this.general.download()}/ehld/${id}.svg`, {
-      responseType: 'text',
-    });
+    return this.general.download$.pipe(
+      switchMap((downloadBase) =>
+        this.http.get(`${downloadBase}/ehld/${id}.svg`, {
+          responseType: 'text',
+        })
+      )
+    );
   }
 }
 

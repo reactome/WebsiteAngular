@@ -94,8 +94,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   @ViewChild('cytoscape') cytoscapeContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('cytoscapeCompare') compareContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('legend') legendContainer?: ElementRef<HTMLDivElement>;
-  readonly thumbnailRef =
-    viewChild.required<ElementRef<HTMLImageElement>>('thumbnail');
+  readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
   readonly interactorsComponent = input<InteractorsComponent>(undefined, {
     alias: 'interactor',
@@ -425,21 +424,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           }
         }
 
-        if (entry.target === this.thumbnailRef().nativeElement)
+        if (entry.target === this.thumbnailRef()?.nativeElement)
           this.thumbnailSize.set(entry.contentRect);
       });
     });
 
     this.sizeObserver.observe(container);
-    this.sizeObserver.observe(this.thumbnailRef().nativeElement);
+    const thumbnail = this.thumbnailRef()?.nativeElement;
+    if (thumbnail) this.sizeObserver.observe(thumbnail);
 
     this.loadDiagram();
   }
 
   thumbnailLoaded() {
-    this.thumbnailSize.set(
-      this.thumbnailRef().nativeElement.getBoundingClientRect()
-    );
+    const thumbnail = this.thumbnailRef()?.nativeElement;
+    if (thumbnail) this.thumbnailSize.set(thumbnail.getBoundingClientRect());
   }
 
   ngOnDestroy(): void {

@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
+import { Observable, timer } from 'rxjs';
+import { catchError, retry, timeout } from 'rxjs/operators';
+import { CONTENT_SERVICE, CONTENT_SERVICE_FALLBACK } from '../../../../projects/pathway-browser/src/environments/environment';
 
 export interface SimplePerson {
   dbId: number;
@@ -90,6 +91,21 @@ export class ContentDataService {
   private http = inject(HttpClient);
   private baseUrl = `${CONTENT_SERVICE}/data`;
   private schemaUrl = `${CONTENT_SERVICE}/data/schema`;
+  private schemaUrlFallback = `${CONTENT_SERVICE_FALLBACK}/data/schema`;
+
+  // The curator schema /model endpoint is sometimes very slow or times out
+  // (and its error responses lack CORS headers, so the browser surfaces them
+  // as opaque failures, leaving the page stuck on "Loading data model...").
+  // The model is identical across content-service hosts for a given database
+  // release, so bound the request, retry briefly, then fall back to the
+  // CORS-enabled public content service so the data-schema page still loads.
+  private withModelFallback<T>(path: string): Observable<T> {
+    return this.http.get<T>(`${this.schemaUrl}/${path}`).pipe(
+      timeout(8000),
+      retry({ count: 1, delay: () => timer(500) }),
+      catchError(() => this.http.get<T>(`${this.schemaUrlFallback}/${path}`))
+    );
+  }
 
   getTocPathways(): Observable<TocPathway[]> {
     return this.http.get<TocPathway[]>(`${this.baseUrl}/toc`);
@@ -104,7 +120,7 @@ export class ContentDataService {
   }
 
   getSchemaModel(): Observable<SchemaNode> {
-    return this.http.get<SchemaNode>(`${this.schemaUrl}/model`);
+    return this.withModelFallback<SchemaNode>('model');
   }
 
   getSchemaAttributes(className: string): Observable<SchemaAttribute[]> {

@@ -27,6 +27,14 @@ export class ArticlePageComponent {
     articles: ArticleIndexItem[] = [];
     loading = true;
 
+    // Build the routerLink commands for a given article. Passing a single
+    // string containing slashes (e.g. 'about/news') as one routerLink segment
+    // makes Angular URL-encode the slash (-> /about%2Fnews/...), producing a
+    // broken route. Splitting into separate segments routes correctly.
+    articleLink(slug: string): string[] {
+      return ['/', ...this.articlePath.split('/').filter(Boolean), slug];
+    }
+
     ngOnInit() {
       this.route.url.subscribe(segments => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
@@ -82,3 +90,4 @@ export class ArticlePageComponent {
     return formatDate(date);
   }
 }
+
