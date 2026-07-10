@@ -1,6 +1,6 @@
 import {Injectable, signal} from '@angular/core';
 import {map, Observable, of, switchMap} from "rxjs";
-import {CONTENT_SERVICE, environment} from "../../environments/environment";
+import {CONTENT_SERVICE, ICON_HOST} from "../../environments/environment";
 import {HttpClient} from "@angular/common/http";
 import {isExactlyCellLineagePath, isRLE} from "./utils";
 import {DatabaseObject} from "../model/graph/database-object.model";
@@ -212,7 +212,7 @@ export class IconService {
   }
 
   loadIcon(id: string): Observable<string> {
-    return this.http.get(`${environment.host}/icon/${id}.svg`, {responseType: 'text'});
+    return this.http.get(`${ICON_HOST}/icon/${id}.svg`, {responseType: 'text'});
   }
 
   fetchIcon(identifier: string): Observable<string | null> {

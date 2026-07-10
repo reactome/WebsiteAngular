@@ -7,6 +7,10 @@ export const environment = {
   preferS3: false,
 };
 
+// Icon image files live on the Reactome backend and aren't proxied on every
+// front-end origin; use the dev backend host (see environment.ts).
+export const ICON_HOST = 'https://dev.reactome.org';
+
 export const CONTENT_SERVICE = `http://127.0.0.1:8686`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;

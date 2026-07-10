@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild, WritableSignal} from '@angular/core';
+import {ChangeDetectorRef, Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild, WritableSignal} from '@angular/core';
 import {MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
 import {FormsModule} from "@angular/forms";
@@ -100,6 +100,7 @@ export class SearchComponent {
   private species: SpeciesService = inject(SpeciesService);
   public state: UrlStateService = inject(UrlStateService);
   public icons: IconService = inject(IconService);
+  private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   searchText = signal('');
   hasFocus = signal<boolean>(false);
@@ -134,10 +135,6 @@ export class SearchComponent {
 
   constructor(
     ) {
-    effect(() => this.typeFilter() && this.searchParams.update(params => (params ? {
-      ...params,
-      types: this.typeFilter()
-    } : undefined)));
     effect(() => this.diagram() && this.searchParams.update(params => (params ? {
       ...params,
       diagram: this.diagram()
@@ -190,12 +187,16 @@ export class SearchComponent {
   search(searchText?: string, event?: Event) {
     searchText = searchText || this.searchText();
     this.query().nativeElement.blur();
+    this.hasFocus.set(false);
+    this.cdr.detectChanges(); // Close suggestions immediately; zone coalescing defers the normal CD tick
     this.searchText.set(searchText);
     if (event) event.preventDefault();
     this.collapsed.set('opened')
-    // console.log('searching', searchText);
     this.typeFilter.set([])
     this.selectedResult.set(undefined)
+    this.localHasNoResult.set(false);
+    this.globalHasNoResult.set(false);
+    this.searchErrorMessage.set('');
     this.searchParams.set({
       query: searchText,
       diagram: this.state.pathwayId() || '',
@@ -318,7 +319,8 @@ export class SearchComponent {
 
 
   toggleTypeFacet(name: string) {
-    this.typeFilter.update(filter => filter.includes(name) ? filter.filter(f => f !== name) : [...filter, name])
+    this.typeFilter.update(filter => filter.includes(name) ? filter.filter(f => f !== name) : [...filter, name]);
+    this.searchParams.update(params => params ? {...params, types: this.typeFilter()} : undefined);
   }
 
   collapsed = signal<'collapsed' | 'opened'>('opened')

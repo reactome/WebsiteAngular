@@ -15,6 +15,14 @@ export const environment = {
   preferS3: true,
 }
 
+// Icon image files (.svg/.png under /icon/) are static reference assets served
+// by the Reactome backend, not by the Angular app. Unlike /ContentService they
+// are NOT reverse-proxied on every front-end origin (e.g. beta.reactome.org
+// returns 404), so build their URLs from the dev backend host rather than
+// window.location.origin. The assets send Access-Control-Allow-Origin: *, so
+// cross-origin <img> loads work from any front-end.
+export const ICON_HOST = 'https://dev.reactome.org';
+
 export const CONTENT_SERVICE = `${environment.host}/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;

@@ -11,6 +11,10 @@ export const environment = {
   preferS3: env.preferS3
 };
 
+// Icon image files live on the Reactome backend and aren't proxied on every
+// front-end origin; use the dev backend host (see environment.ts).
+export const ICON_HOST = 'https://dev.reactome.org';
+
 export const CONTENT_SERVICE = `${environment.host}/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;

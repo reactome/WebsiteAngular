@@ -24,6 +24,7 @@
     <div class="suggestions" @suggest>
       @for (suggest of suggestionResults(); track suggest; let i = $index) {
         <div class="suggest-line" tabindex="0" [class.focused]="i === suggestionIndex()"
+             (mousedown)="$event.preventDefault()"
              (click)="search(suggest, $event)">
           {{ suggest }}
         </div>
