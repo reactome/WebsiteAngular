@@ -31,7 +31,7 @@
               <span>with</span>
               <div class="comparison" (click)="toggle(species)">
                 <div [matTooltip]="species.displayName" class="flex-column">
-                  <mat-icon class="custom-icon" [svgIcon]="species.taxId"></mat-icon>
+                  <mat-icon class="custom-icon" [svgIcon]="getSpeciesIconName(species)"></mat-icon>
                   <span class="species-name">{{ species.shortName }}</span>
                 </div>
               </div>
@@ -45,7 +45,7 @@
           <div class="species-button" matRipple (click)="toggle(species)"
                [matTooltip]="species.displayName"
                [class.selected]="selectedSpecies() === species">
-            <mat-icon class="custom-icon" [svgIcon]="species.taxId"></mat-icon>
+            <mat-icon class="custom-icon" [svgIcon]="getSpeciesIconName(species)"></mat-icon>
             <span class="species-name">{{ species.shortName }}</span>
           </div>
         }

@@ -15,7 +15,7 @@
   </div>
 
   <div class="composition-container">
-    @for (molecule of pagedData(); track molecule.entity.dbId) {
+    @for (molecule of pagedData(); track molecule?.entity?.dbId ?? $index) {
       <cr-object-tree [type]="group().category" [data]="[molecule.entity]"
                       [stoichiometry]=molecule.stoichiometry [highlight]="molecule.highlight"
                       [moleculeView]="true"></cr-object-tree>
