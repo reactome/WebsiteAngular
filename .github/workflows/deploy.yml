@@ -25,7 +25,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
+          PROD_VERSION=$(curl -sf https://newcurator.reactome.org/ContentService/data/database/version)
           echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"
 
           if [ "${{ github.ref_name }}" = "prod" ]; then

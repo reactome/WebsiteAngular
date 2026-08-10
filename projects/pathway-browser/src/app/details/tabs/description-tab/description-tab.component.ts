@@ -47,6 +47,7 @@ import { UrlStateService } from '../../../services/url-state.service';
 import {
   CONTENT_DETAIL,
   CONTENT_DETAIL_PATH,
+  CONTENT_SCHEMA,
   environment,
 } from '../../../../environments/environment';
 import { SpeciesService } from '../../../services/species.service';
@@ -797,6 +798,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   protected readonly CONTENT_DETAIL = CONTENT_DETAIL;
   protected readonly CONTENT_DETAIL_PATH = CONTENT_DETAIL_PATH;
+  protected readonly CONTENT_SCHEMA = CONTENT_SCHEMA;
   protected readonly environment = environment;
 }
 

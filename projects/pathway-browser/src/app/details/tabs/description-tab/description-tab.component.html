@@ -317,7 +317,8 @@
           @for (ie of item.data; track $index) {
             <div class="authorship-item">
               @for (author of ie.author; let i = $index; track $index) {
-                <a [href]="`${CONTENT_DETAIL_PATH}/person/${author.dbId}`"
+                <a [href]="`${CONTENT_SCHEMA}/Person/instance/${author.dbId}`"
+                   target="_blank"
                    [ngClass]="{'margin-right': !author.orcidId}">
                   {{ author.firstname }} {{ author.surname }}
                 </a>

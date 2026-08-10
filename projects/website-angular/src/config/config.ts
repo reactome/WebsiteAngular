@@ -12,11 +12,11 @@ export const APP_CONFIG = {
   // SSR / non-browser fallback for the Swagger spec source and the
   // ContentService search API. In the browser both consumers prefer
   // window.location.origin so requests stay same-origin (avoids the
-  // CORS / SSO 302 trap on dev.reactome.org/AnalysisService). This value
+  // CORS / SSO 302 trap on cross-host AnalysisService). This value
   // only matters during server-side rendering and for any laptop dev
   // workflow that doesn't run a local tomcat on :8080.
-  swaggerSpecBaseUrl: 'https://dev.reactome.org',
-  contentServiceBaseUrl: 'https://dev.reactome.org/ContentService',
+  swaggerSpecBaseUrl: 'https://newcurator.reactome.org',
+  contentServiceBaseUrl: 'https://newcurator.reactome.org/ContentService',
 
   // pathway browser config
   pathwayBrowser: {

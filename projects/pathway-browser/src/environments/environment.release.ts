@@ -8,6 +8,8 @@ export const environment = {
 };
 
 export const CONTENT_SERVICE = `${environment.host}/ContentService`;
+export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
+export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
@@ -15,4 +17,7 @@ export const DOWNLOAD = `${environment.host}/download/current`;
 export const OVERLAYS = `${environment.host}/overlays`;
 export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 export const CONTENT_DETAIL_PATH = '/content/detail';
+const schemaHost: string =
+  typeof window !== 'undefined' ? window.location.origin : environment.host;
+export const CONTENT_SCHEMA = `${schemaHost}/curatorgraph/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

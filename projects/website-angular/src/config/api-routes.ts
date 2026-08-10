@@ -3,7 +3,7 @@ import { getEnv } from './environments';
 const env = getEnv(process.env['APP_ENV'] || (typeof window !== 'undefined' && (window as any).__APP_ENV) || undefined);
 
 export const API_ROUTES = {
-  CONTENT_SERVICE: `https://curator.reactome.org/GraphContentService`,
+  CONTENT_SERVICE: `${env.host}/GraphContentService`,
   ANALYSIS_SERVICE: `${env.host}/AnalysisService`,
   EXPERIMENT_SERVICE: `${env.host}/experiment`,
   RESTFUL_API: `${env.host}/ReactomeRESTfulAPI`,

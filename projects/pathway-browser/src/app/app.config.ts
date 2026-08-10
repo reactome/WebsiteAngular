@@ -21,7 +21,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideRouterStore(),
     provideEffects([]),
-    provideGoogleAnalytics(environment.gtagId),
+    provideGoogleAnalytics(environment.gtagId ?? ''),
     provideGoogleAnalyticsRouter(),
     {
       provide: LOCALE_ID,
