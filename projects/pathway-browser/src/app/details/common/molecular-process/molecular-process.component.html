@@ -167,12 +167,12 @@
       }
     }
 
-    @if (item.catalystActivityReference && item.catalystActivityReference.catalystActivity.dbId === item.dbId) {
+    @if (item.catalystActivityReference?.catalystActivity?.dbId === item.dbId) {
       <div class="row">
         <div class="label-container">Reference</div>
         <div class="composition-container ref-padding">
 
-          @for (ref of item.catalystActivityReference.literatureReference | sortByDate:'year'; track ref.dbId) {
+          @for (ref of item.catalystActivityReference.literatureReference | sortByDate:'year'; track ref?.dbId ?? $index) {
             <cr-publication [publication]=ref [showYear]="true"></cr-publication>
           }
         </div>
@@ -181,12 +181,12 @@
 
 
     @if (item.regulationReference) {
-      @for (ref of item.regulationReference; track ref.dbId) {
-        @if (ref.regulatedBy.dbId === item.dbId) {
+      @for (ref of item.regulationReference; track ref?.dbId ?? $index) {
+        @if (ref?.regulatedBy?.dbId === item.dbId) {
           <div class="row">
             <div class="label-container">Reference</div>
             <div class="composition-container ref-padding">
-              @for (ref of ref.literatureReference | sortByDate:'year'; track ref.dbId) {
+              @for (ref of ref.literatureReference | sortByDate:'year'; track ref?.dbId ?? $index) {
                 <cr-publication [publication]=ref [showYear]="true"></cr-publication>
               }
             </div>

@@ -13,6 +13,7 @@ import {MatRipple} from "@angular/material/core";
 import {MatTooltip} from "@angular/material/tooltip";
 import {switchMap, take} from "rxjs";
 import {DarkService} from "../../../services/dark.service";
+import {IconService} from "../../../services/icon.service";
 
 @Component({
   selector: 'cr-species-analysis',
@@ -52,7 +53,9 @@ export class SpeciesAnalysisComponent {
     private speciesService: SpeciesService,
     private lottieService: LottieService,
     private darkService: DarkService,
+    private iconService: IconService,
   ) {
+    this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
     effect(() => this.speciesControl.setValue(this.selectedSpecies()));
     effect(async () => {
       if (!this.lottieCanvas() || this.lottie) return;
@@ -88,6 +91,7 @@ export class SpeciesAnalysisComponent {
 
   lottie?: DotLottie;
   token: string | null = null;
+  private readonly availableSpeciesIcons = new Set<string>();
 
   analysisLaunched = signal(false)
   analysisAvailable = signal(false)
@@ -106,5 +110,12 @@ export class SpeciesAnalysisComponent {
   loadAnalysis() {
     this.state.analysis.set(this.token);
     this.close.emit({status: 'finished'});
+  }
+
+  getSpeciesIconName(species: Species): string {
+    const normalizedTaxId = (species.taxId || '').replace(/\D/g, '');
+    return this.availableSpeciesIcons.has(normalizedTaxId)
+      ? normalizedTaxId
+      : this.speciesService.defaultSpecies.taxId;
   }
 }

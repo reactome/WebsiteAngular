@@ -4,7 +4,7 @@
       <mat-list-option [value]="s"
         (click)="onSpeciesChange(s)" [selected]="s.taxId === speciesService.currentSpecies().taxId">
         <div class="species">
-          <mat-icon class="custom-icon" [svgIcon]="s.taxId"></mat-icon>
+          <mat-icon class="custom-icon" [svgIcon]="getSpeciesIconName(s)"></mat-icon>
           <span>{{ s.displayName }}</span>
         </div>
       </mat-list-option>

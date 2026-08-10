@@ -7,6 +7,7 @@ import {isDefined} from "../services/utils";
 import {UrlStateService} from "../services/url-state.service";
 import {MatSelectionList, MatListOption} from "@angular/material/list";
 import {MatIcon} from "@angular/material/icon";
+import {IconService} from "../services/icon.service";
 
 
 @Component({
@@ -29,7 +30,13 @@ export class SpeciesComponent implements AfterViewInit {
     interactor: false
   });
 
-  constructor(public speciesService: SpeciesService, private dataState: DataStateService, private state: UrlStateService) {
+  private readonly availableSpeciesIcons = new Set<string>();
+
+  constructor(public speciesService: SpeciesService,
+              private dataState: DataStateService,
+              private state: UrlStateService,
+              private iconService: IconService) {
+    this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
 
   }
 
@@ -50,5 +57,12 @@ export class SpeciesComponent implements AfterViewInit {
       this.visibility().species = false;
     })
 
+  }
+
+  getSpeciesIconName(species: Species): string {
+    const normalizedTaxId = (species.taxId || '').replace(/\D/g, '');
+    return this.availableSpeciesIcons.has(normalizedTaxId)
+      ? normalizedTaxId
+      : this.speciesService.defaultSpecies.taxId;
   }
 }

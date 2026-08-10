@@ -560,7 +560,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   private requireNavigate(node: E) {
-    return isPathway(node) && (node.hasDiagram || !this.state.pathwayId()?.includes(node.species[0]?.abbreviation));
+    return isPathway(node) && (node.hasDiagram || !this.state.pathwayId()?.includes(node.species?.[0]?.abbreviation));
   }
 
   getUrl(element: E): string {

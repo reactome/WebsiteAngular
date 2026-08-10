@@ -51,7 +51,7 @@
         <div class="row">
           <div class="label">Compartment</div>
           <div class="value compartment-row">
-            @for (has of compartment(); track has.element.dbId; let i = $index; ) {
+            @for (has of compartment(); track has?.element?.dbId ?? $index; let i = $index; ) {
               <cr-ontology-term [term]="has.element"/>
               <!-- Add comma separator except for last item -->
               @if (i < compartment().length - 1) {
