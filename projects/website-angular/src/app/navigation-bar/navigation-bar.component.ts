@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormsModule } from '@angular/forms';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
-import { NavLink, NavOption } from '../../types/link';
+import { NavLink, NavOption, linkPath, linkQueryParams } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
 
 @Component({
@@ -24,6 +24,8 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   navOptions: Record<string, NavOption> = {};
   activeDropdown: string | null = null;
   activeHamburgerMenu: boolean = false;
+  readonly linkPath = linkPath;
+  readonly linkQueryParams = linkQueryParams;
   public dark: DarkService = inject(DarkService);
   darkToggle = viewChild<MatSlideToggle>('darkToggle');
 

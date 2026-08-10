@@ -1,7 +1,7 @@
 import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { KeyValuePipe, NgForOf } from '@angular/common';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
-import {NavLink, NavOption} from '../../types/link';
+import {NavLink, NavOption, linkPath, linkQueryParams} from '../../types/link';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
 import { ContentService } from '../../services/content.service';
@@ -14,6 +14,9 @@ import { ArticleIndexItem } from '../../types/article';
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
+  readonly linkPath = linkPath;
+  readonly linkQueryParams = linkQueryParams;
+
   // "sections" mode: instead of route-driven peer navigation links, the
   // sidebar renders a caller-supplied list of in-page section anchors and
   // emits a click event for each. Used by entity detail pages to surface

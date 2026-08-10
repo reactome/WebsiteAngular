@@ -124,7 +124,8 @@
         >
           <a
             *ngIf="!navLink.external"
-            [routerLink]="navLink.link"
+            [routerLink]="linkPath(navLink.link)"
+            [queryParams]="linkQueryParams(navLink.link)"
             class="dropdown-link"
             [class.nested-dropdown-link]="level > 0"
           >

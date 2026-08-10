@@ -35,7 +35,7 @@
 
           <ul class="sidebar-list">
               <li *ngFor="let item of items | keyvalue:preserveOrder" class="sidebar-item" [class.active]="activeItem === item.key">
-                  <a [routerLink]="item.value.link" class="sidebar-link" routerLinkActive="router-active">
+                  <a [routerLink]="linkPath(item.value.link)" [queryParams]="linkQueryParams(item.value.link)" class="sidebar-link" routerLinkActive="router-active">
                       {{ item.value.label }}
                   </a>
               </li>

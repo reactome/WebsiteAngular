@@ -254,9 +254,13 @@
         "label": "Pathway Browser",
         "link": "/PathwayBrowser"
       },
+      "analyse-gene-list": {
+        "label": "Analyze gene list",
+        "link": "/PathwayBrowser?analysisTab=qualitative"
+      },
       "analyse-gene-expression": {
         "label": "Analyse gene expression",
-        "link": "/gsa/home"
+        "link": "/PathwayBrowser?analysisTab=quantitative"
       },
       "species-comparison": {
         "label": "Species Comparison",
