@@ -54,7 +54,7 @@
           <div class="top-left">
 
             <div class="analysis-button-group">
-              <button (click)="dropdown.set(dropdown() ? null : 'analysis')" mat-ripple class="primary" [class.loading]="analysisLoading()">
+              <button (click)="toggleAnalysis()" mat-ripple class="primary" [class.loading]="analysisLoading()">
                 <mat-icon>query_stats</mat-icon>
                 Analyze
                 @if (analysisLoading()) {
@@ -187,10 +187,10 @@
                 <cr-reacfoam/>
               }
               @let analysisStatus = dropdown() === 'analysis' ? 'open' : 'closed';
-              <div class="dropdown" [@dropdown]="analysisStatus">
-                <cr-analysis-form (close)="dropdown.set(null)" [status]="analysisStatus"/>
+              <div class="dropdown" [class.open]="dropdown() === 'analysis'">
+                <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus"/>
               </div>
-              <div class="dropdown" [@dropdown]="dropdown()  === 'compare' ? 'open' : 'closed'">
+              <div class="dropdown" [class.open]="dropdown() === 'compare'">
                 <cr-compare-form (close)="dropdown.set(null)"/>
               </div>
 

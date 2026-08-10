@@ -25,7 +25,7 @@ import {GeneralService} from "../services/general.service";
 import {DataStateService} from "../services/data-state.service";
 import {isPathway} from "../services/utils";
 import {Pathway} from "../model/graph/event/pathway.model";
-import {animate, state, style, transition, trigger} from "@angular/animations";
+import {animate, style, transition, trigger} from "@angular/animations";
 import {CitationService} from "../services/citation.service";
 import {of} from "rxjs";
 import {rxResource} from "@angular/core/rxjs-interop";
@@ -101,24 +101,6 @@ const DROPDOWN_DURATION = 500;
           width: '0', padding: '0'
         })),
       ])
-    ]),
-    trigger('dropdown', [
-      state('closed', style({
-        bottom: '100%',
-        borderBottom: '0px solid var(--primary)',
-      })),
-      state('open', style({
-        bottom: '0%',
-        borderBottom: '0px solid var(--primary)',
-      })),
-      transition('closed => open', [
-        style({borderBottom: '4px solid var(--primary)'}),
-        animate(`${DROPDOWN_DURATION}ms ease-in`),
-      ]),
-      transition('open => closed', [
-        style({borderBottom: '4px solid var(--primary)'}),
-        animate(`${DROPDOWN_DURATION}ms ease-out`),
-      ])
     ])
   ]
 })
@@ -159,6 +141,16 @@ export class ViewportComponent implements AfterViewInit {
   dropdownDuration = DROPDOWN_DURATION
 
   dropdown = signal<'analysis' | 'compare' | null>(null)
+
+  toggleAnalysis() {
+    this.dropdown.set(this.dropdown() ? null : 'analysis');
+    if (this.dropdown() !== 'analysis') this.closeAnalysis();
+  }
+
+  closeAnalysis() {
+    this.dropdown.set(null);
+    if (this.state.analysisTab()) this.state.analysisTab.set(null);
+  }
 
   contentHeight = linkedSignal(() => this.content().nativeElement.clientHeight)
   sizeObserver = new ResizeObserver(() => {

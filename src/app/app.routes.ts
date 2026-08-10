@@ -1,8 +1,4 @@
 import { Routes } from '@angular/router';
-import { provideStore } from '@ngrx/store';
-import { routerReducer, provideRouterStore } from '@ngrx/router-store';
-import { provideEffects } from '@ngrx/effects';
-import { provideAnimations } from '@angular/platform-browser/animations';
 
 export const routes: Routes = [
     {
@@ -10,12 +6,14 @@ export const routes: Routes = [
         redirectTo: 'PathwayBrowser',
         pathMatch: 'full'
     },
-    { 
-        path: 'PathwayBrowser', 
-        providers: [
-            provideAnimations(),
-        ],
-        loadChildren: () => import('../../projects/pathway-browser/src/app/app-routing.module').then(m => m.routes) 
+    {
+        path: 'PathwayBrowser',
+        // provideAnimations() is already registered once for the whole app in
+        // src/app/app.config.ts. Registering it again here created a second,
+        // independent animation engine that queued animations on this route's
+        // elements but never flushed them (stuck "ng-animate-queued" forever) —
+        // that's what broke the analysis dropdown's open/close transition.
+        loadChildren: () => import('../../projects/pathway-browser/src/app/app-routing.module').then(m => m.routes)
     },
     { 
         path: '', 
