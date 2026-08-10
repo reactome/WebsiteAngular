@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, input, output} from '@angular/core';
 import {MatTab, MatTabGroup, MatTabLabel} from "@angular/material/tabs";
 import {AsyncPipe} from "@angular/common";
 import {QualitativeAnalysisComponent} from "./qualitative-analysis/qualitative-analysis.component";
@@ -42,4 +42,7 @@ export class AnalysisFormComponent {
 
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open'| 'closed'>()
+
+  private static readonly TAB_INDEX = {qualitative: 0, quantitative: 1, species: 2, tissue: 3} as const;
+  selectedTabIndex = computed(() => AnalysisFormComponent.TAB_INDEX[this.state.analysisTab() ?? 'qualitative'])
 }

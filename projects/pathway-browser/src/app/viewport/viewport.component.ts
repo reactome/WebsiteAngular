@@ -217,6 +217,9 @@ export class ViewportComponent implements AfterViewInit {
     effect(() => {
       if (this.exampleAnalysis.value()) this.state.example.set(null)
     });
+    effect(() => {
+      if (this.state.analysisTab()) this.dropdown.set('analysis');
+    });
     // effect(() => this.dropdown() === null && this.detailVisible.set(true));
   }
 

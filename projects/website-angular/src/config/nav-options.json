@@ -260,11 +260,11 @@
       },
       "species-comparison": {
         "label": "Species Comparison",
-        "link": "/PathwayBrowser/#TOOL=AT"
+        "link": "/PathwayBrowser?analysisTab=species"
       },
       "tissue-distribution": {
         "label": "Tissue Distribution",
-        "link": "/PathwayBrowser/#TOOL=AT"
+        "link": "/PathwayBrowser?analysisTab=tissue"
       },
       "analysis-service": {
         "label": "Analysis Service",

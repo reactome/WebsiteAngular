@@ -18,6 +18,7 @@ export class DetailUrlState implements Partial<UrlStateService> {
   tab = urlParam<string | null>(null, 'string');
   overlay = urlParam<string | null>(null, 'string');
   analysis = urlParam<string | null>(null, 'string');
+  analysisTab = urlParam<'qualitative' | 'quantitative' | 'species' | 'tissue' | null>(null, 'string');
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
   palette = urlParam<any>(null, 'string');
@@ -41,6 +42,7 @@ export class DetailUrlState implements Partial<UrlStateService> {
     flagInteractors: this.flagInteractors,
     overlay: this.overlay,
     analysis: this.analysis,
+    analysisTab: this.analysisTab,
     tab: this.tab,
     significance: this.significance,
     sample: this.sample,
