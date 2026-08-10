@@ -6,7 +6,7 @@ import {rxResource, toObservable} from "@angular/core/rxjs-interop";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {CONTENT_SERVICE} from "../../../environments/environment";
 import {BehaviorSubject, catchError, Observable, of, Subscription, switchMap, take, tap} from "rxjs";
-import {animate, sequence, state, style, transition, trigger} from "@angular/animations";
+import {animate, sequence, style, transition, trigger} from "@angular/animations";
 import {SpeciesService} from "../../services/species.service";
 import {UrlStateService} from "../../services/url-state.service";
 import {CollectionViewer, DataSource} from "@angular/cdk/collections";
@@ -81,17 +81,6 @@ type Scope = 'local' | 'global';
           animate('10ms linear', style({padding: '0 0', marginTop: '-4px'})),
         ])
       ])
-    ]),
-    trigger('collapse-button', [
-      state('collapsed', style({
-        bottom: '-13px',
-        transform: 'scale(1, -1)'
-      })),
-      state('opened', style({
-        bottom: '4px',
-        transform: 'scale(1, 1)'
-      })),
-      transition('* <=> *', animate('500ms ease-in-out')),
     ])
   ]
 })
