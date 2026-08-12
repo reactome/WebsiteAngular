@@ -45,8 +45,11 @@ $transition: all 0.3s ease;
   text-decoration: underline !important;
 }
 
-.home-logo-tile,
-.home-shortcut-tile {
+// Curator's homepage reuses .home-shortcut-tile for its compact logo/warning
+// box, but main's homepage also uses that class for its full-width Analysis
+// Tools carousel -- scope the narrower max-width to curator only so it
+// doesn't shrink main's tile too.
+:host(.curator) .home-shortcut-tile {
   width: 100%;
   max-width: 1040px;
   margin-left: auto;
