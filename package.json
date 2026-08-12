@@ -14,7 +14,7 @@
     "start:website": "cd projects/website-angular && npm run start",
     "start:pathway": "cd projects/pathway-browser && npm run start-with-deps",
     "build": "npm run generate:indices && ng build --configuration production",
-    "build:website": "cd projects/website-angular && npm run build && cd ../../dist/reactome/browser/ && tar czvf browser.tar.gz * && scp browser.tar.gz aws_curator_new:~/browser.tar.gz && rm browser.tar.gz",
+    "build:website": "cd projects/website-angular && npm run build",
     "build:pathway": "cd projects/pathway-browser && npm run build",
     "watch": "ng build --watch --configuration development",
     "test": "vitest run",

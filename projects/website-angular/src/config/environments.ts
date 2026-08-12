@@ -34,10 +34,3 @@ export const ENVIRONMENTS: Record<EnvName, { host: string; s3: string; gsaServer
     preferS3: false
   }
 } as const;
-
-// Helper: pick environment at runtime (fallback to production)
-export function getEnv(envName?: string) {
-  if (!envName) return ENVIRONMENTS.production;
-  const key = envName as EnvName;
-  return ENVIRONMENTS[key] ?? ENVIRONMENTS.production;
-}
