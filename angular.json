@@ -432,6 +432,142 @@
           }
         }
       }
+    },
+    "reactome-table": {
+      "projectType": "library",
+      "root": "projects/reactome-table",
+      "sourceRoot": "projects/reactome-table/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/reactome-table/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/reactome-table/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/reactome-table/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/reactome-table/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
+    "reactome-gsa-form": {
+      "projectType": "library",
+      "root": "projects/reactome-gsa-form",
+      "sourceRoot": "projects/reactome-gsa-form/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/reactome-gsa-form/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/reactome-gsa-form/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/reactome-gsa-form/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/reactome-gsa-form/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    },
+    "reactome-table-wc": {
+      "projectType": "application",
+      "root": "projects/reactome-table-wc",
+      "sourceRoot": "projects/reactome-table-wc/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": {
+              "base": "dist/reactome-table-wc"
+            },
+            "index": "projects/reactome-table-wc/src/index.html",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/reactome-table-wc/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [],
+            "styles": ["projects/reactome-table/src/assets/_index.scss"],
+            "scripts": [],
+            "browser": "projects/reactome-table-wc/src/main.ts"
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "5kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "reactome-table-wc:build:production"
+            },
+            "development": {
+              "buildTarget": "reactome-table-wc:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/reactome-table-wc/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "styles": [],
+            "scripts": []
+          }
+        }
+      }
     }
   },
   "cli": {

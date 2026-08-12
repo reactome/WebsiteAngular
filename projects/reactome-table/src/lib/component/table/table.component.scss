@@ -1,0 +1,314 @@
+@use '@angular/material' as mat;
+
+.table-container {
+  //overflow: auto;
+  //max-height: 20vh;
+
+  //border: 1px solid var(--outline);
+
+  //justify-content: safe center;
+  position: relative;
+  scrollbar-color: var(--primary) transparent;
+
+  .viewport {
+    width: 100%;
+  }
+}
+
+.drag-overlay {
+  position: absolute;
+  inset: 0 var(--sticky-offset-right, 0) var(--sticky-offset-bottom, 0) 0;
+  transition: all 500ms ease-in-out;
+  z-index: 10;
+  pointer-events: none;
+
+  &.dragging {
+    border: 1px solid var(--primary);
+    box-shadow: inset 0 0 5px 3px var(--primary);
+  }
+}
+
+:host {
+  ::ng-deep .cdk-virtual-scroll-content-wrapper {
+    transform: translateY(0px) !important;
+  }
+}
+
+.virtual-placeholder {
+  .cell {
+    height: 0 !important;
+    visibility: collapse;
+    line-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+    border-bottom: 0 !important;
+  }
+}
+
+table.spreadsheet {
+  margin: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  //border-collapse: collapse;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px; /* 128.571% */
+  letter-spacing: normal;
+  white-space: nowrap;
+
+  th.rows, th.columns {
+    position: sticky;
+    white-space: nowrap;
+  }
+
+  td.cell, th.rows, th.columns {
+    border-color: var(--outline-variant);
+    border-style: solid;
+    height: var(--row-height);
+    box-sizing: border-box;
+    scroll-margin-top: var(--sticky-offset-top);
+    scroll-margin-left: var(--sticky-offset-left);
+  }
+
+  th.columns {
+    top: 0;
+    border-width: 1px 1px 1px 0;
+    border-color: var(--primary);
+
+    &:nth-child(2) {
+      border-width: 1px 1px 1px 1px;
+    }
+  }
+
+  th.rows {
+    left: 0;
+    height: var(--row-height);
+    border-width: 0 1px 1px 1px;
+
+    &[y='0'] { // Top left corner
+      z-index: 6;
+      top: 0;
+      border-width: 1px 1px 1px 1px;
+
+      * {
+        visibility: hidden;
+      }
+    }
+  }
+
+  td.cell {
+    border-width: 0 1px 1px 0;
+    position: relative;
+  }
+}
+
+
+.no-padding {
+  padding: 0px;
+}
+
+.add-column-button-container {
+  //width: 100px;
+  height: 100px;
+  max-width: 5%;
+  border-color: var(--outline-variant);
+  border-style: solid;
+  border-top: 0;
+  border-left: 0;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.add-row-button-container {
+  height: var(--row-height, 25px);
+  max-height: 5%;
+  box-sizing: border-box;
+  border-color: var(--outline-variant);
+  border-style: solid;
+  border-top: 0;
+  border-left: 0;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.sticky-column {
+
+  height: 0;
+  position: sticky;
+  display: block;
+  bottom: 50%;
+  top: 50%;
+}
+
+.sticky-row {
+  width: 0;
+  position: sticky;
+  display: block;
+  left: 50%;
+  right: 50%;
+}
+
+.add-column-button,
+.add-row-button {
+  background: var(--surface);
+  margin: 0px;
+  border-radius: 0px;
+  height: 100%;
+  width: 100%;
+}
+
+.add-column-button {
+  ::ng-deep .mdc-button__label {
+    height: 100%;
+  }
+}
+
+.add-row-button {
+  ::ng-deep .mdc-button__label {
+    width: 100%;
+  }
+}
+
+.add-column-button:focus-visible {
+  border: 2px solid var(--primary) !important;
+}
+
+
+.bin-button:focus-visible {
+  outline: none !important;
+}
+
+.bin-button {
+  @include mat.icon-button-overrides((
+    icon-size: 16px,
+    state-layer-size: calc(var(--row-height) - 4px),
+    touch-target-display: none,
+    icon-color: currentColor,
+  ));
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.cell {
+  padding: 0.25em 10px;
+  z-index: 1;
+  background-color: var(--surface);
+  color: var(--on-surface);
+}
+
+.rows {
+  z-index: 5;
+  padding: 0 4px;
+  font-weight: normal;
+  font-size: 12px;
+  text-align: end;
+  color: var(--on-surface-variant);
+  background: var(--surface-variant);
+  //position: sticky !important; //TODO Try to make the row rename not subject to scroll
+  //left: 0!important;
+}
+
+.columns {
+  z-index: 3;
+  text-align: center;
+  padding: 0;
+  font-weight: 700;
+  color: var(--on-primary-container);
+  background: var(--primary-container);
+  //position: sticky !important; //TODO Try to make the col rename not subject to scroll
+  //top: 0!important;
+}
+
+.selected:after, .flying-rename:after {
+  content: " ";
+  z-index: 10;
+  display: block;
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--primary);
+  filter: opacity(0.07);
+  pointer-events: none;
+}
+
+.flying-rename {
+  position: absolute;
+  visibility: hidden;
+  font-family: "Roboto Mono", monospace;
+  font-size: 14px;
+  line-height: 18px;
+  border: none;
+  margin: 0;
+  white-space: normal;
+  letter-spacing: normal;
+
+  &.visible {
+    box-shadow: 0 0 0 1px var(--primary) inset, 0 0 0 1px var(--primary);
+    visibility: visible;
+  }
+}
+
+
+:focus-visible {
+  outline: -webkit-focus-ring-color auto 0px !important;
+}
+
+.margin-top-20 {
+  margin-top: 20px;
+}
+
+// Inset shadows
+.inset-shadow {
+  position: absolute;
+  z-index: 8;
+  //visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-in-out;
+
+  &.top, &.bottom {
+    height: 10px;
+    left: 0;
+    right: var(--sticky-offset-right, 0);
+  }
+
+  &.left, &.right {
+    width: 10px;
+    top: 0;
+    bottom: var(--sticky-offset-bottom, 0);
+  }
+
+  &.top {
+    top: var(--sticky-offset-top, 0);
+    background: linear-gradient(to bottom, var(--surface) 0%, transparent 100%);
+  }
+
+  &.bottom {
+    bottom: var(--sticky-offset-bottom, 0);
+    background: linear-gradient(to top, var(--surface) 0%, transparent 100%);
+  }
+
+  &.left {
+    left: var(--sticky-offset-left, 0);
+    background: linear-gradient(to right, var(--surface) 0%, transparent 100%);
+  }
+
+  &.right {
+    right: var(--sticky-offset-right, 0);
+    background: linear-gradient(to left, var(--surface) 0%, transparent 100%);
+  }
+
+  &.visible {
+    opacity: 1;
+  }
+
+}

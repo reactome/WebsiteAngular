@@ -22,7 +22,9 @@
     "importHelpers": true,
     "paths": {
       "reactome-cytoscape-style": [ "dist/reactome-cytoscape-style" ],
-      "reactome-gsa-form/lib/*": [ "node_modules/reactome-gsa-form/lib/*" ]
+      "reactome-table": [ "dist/reactome-table" ],
+      "reactome-gsa-form": [ "dist/reactome-gsa-form" ],
+      "reactome-gsa-form/lib/*": [ "dist/reactome-gsa-form/lib/*" ]
     },
     "target": "ES2022",
     "module": "ES2022",
