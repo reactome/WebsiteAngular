@@ -161,7 +161,7 @@ export class DatasetEffects {
     this.actions$.pipe(
       ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
       delay(2000),
-      tap(() => this.dialogRef.close())
+      tap(() => this.dialogRef?.close())
     ), {dispatch: false}
   );
 
@@ -193,7 +193,7 @@ export class DatasetEffects {
   summaryToAnnotate = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setSummary),
-      tap(() => setTimeout(() => this.dialogRef.close(), 500)),
+      tap(() => setTimeout(() => this.dialogRef?.close(), 500)),
       map(({summary, id}) => {
         setTimeout(() => this.tour.paused ? this.tour.resume() : null, 1000);
         const table: string[][] = !summary.sample_metadata
@@ -259,7 +259,7 @@ export class DatasetEffects {
   );
 
 
-  dialogRef: MatDialogRef<LoadingProgressComponent>;
+  dialogRef?: MatDialogRef<LoadingProgressComponent>;
 
   constructor(
     private actions$: Actions,

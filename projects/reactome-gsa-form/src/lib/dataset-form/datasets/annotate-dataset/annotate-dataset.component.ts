@@ -20,11 +20,11 @@ import {Settings} from "reactome-table";
 export class AnnotateDatasetComponent implements OnInit {
 
   readonly datasetId = input.required<number>();
-  dataset$: Observable<PDataset | undefined>
-  isRibo$: Observable<boolean>;
+  dataset$!: Observable<PDataset | undefined>
+  isRibo$!: Observable<boolean>;
 
   annotateDataStep: FormGroup;
-  tableSettings: Partial<Settings>;
+  tableSettings!: Partial<Settings>;
   screenIsSmall: boolean = false;
 
   constructor(private formBuilder: FormBuilder, private responsive: BreakpointObserver, private store: Store) {

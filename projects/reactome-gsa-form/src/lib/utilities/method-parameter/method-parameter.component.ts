@@ -18,7 +18,7 @@ export class MethodParameterComponent implements OnInit, OnChanges {
   readonly parameter = input.required<Parameter>();
   readonly infoTooltip = input<boolean>(true);
   types = ParameterType;
-  screenIsSmall$: Observable<boolean>;
+  screenIsSmall$!: Observable<boolean>;
 
   control = new FormControl('', {
     validators: [],

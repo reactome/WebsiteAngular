@@ -14,8 +14,8 @@ import {datasetActions} from "../../../state/dataset/dataset.actions";
 export class ParamDatasetComponent implements OnInit {
   readonly datasetId = input.required<number>();
 
-  parameters$: Observable<Parameter[]>;
-  sampleGroups$: Observable<SampleGroups>;
+  parameters$!: Observable<Parameter[]>;
+  sampleGroups$!: Observable<SampleGroups>;
 
 
   constructor(private store: Store) {

@@ -18,7 +18,7 @@ export class ExternalDataComponent implements OnInit {
 
   readonly source = input.required<PDatasetSource>();
   readonly datasetId = input.required<number>();
-  isSelected$: Observable<boolean>;
+  isSelected$!: Observable<boolean>;
 
   constructor(private store: Store) {
   }

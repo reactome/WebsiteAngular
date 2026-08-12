@@ -15,13 +15,13 @@ import {Covariate} from "../../../model/dataset.model";
 })
 export class StatisticalDesignComponent implements OnInit, AfterViewInit {
     readonly datasetId = input.required<number>();
-    dataset$: Observable<PDataset | undefined>;
+    dataset$!: Observable<PDataset | undefined>;
     statisticalDesignStep: FormGroup;
-    analysisGroups$: Observable<AnalysisGroups>;
-    covariates$: Observable<Covariate[]>;
+    analysisGroups$!: Observable<AnalysisGroups>;
+    covariates$!: Observable<Covariate[]>;
 
-    someSelected$: Observable<boolean>;
-    allSelected$: Observable<boolean>;
+    someSelected$!: Observable<boolean>;
+    allSelected$!: Observable<boolean>;
 
     constructor(private formBuilder: FormBuilder, public store: Store) {
         this.statisticalDesignStep = this.formBuilder.group({

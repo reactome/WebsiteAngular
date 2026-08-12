@@ -17,8 +17,8 @@ import {Parameter} from "../../model/parameter.model";
 export class MethodComponent implements OnInit {
   readonly methodName = input.required<string>();
   selected$ = this.store.select(methodFeature.selectSelectedMethodName).pipe(map(name => name === this.methodName()));
-  method$: Observable<Method>;
-  parameters$: Observable<Parameter[]>;
+  method$!: Observable<Method>;
+  parameters$!: Observable<Parameter[]>;
 
   ngOnInit(): void {
     this.method$ = this.store.select(methodFeature.selectMethod(this.methodName())).pipe(filter(isDefined))

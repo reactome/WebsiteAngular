@@ -11,8 +11,8 @@ export interface ParameterJSON {
 }
 
 export class MethodParameter implements ParameterJSON, Parameter {
-  id: string;
-  default: string;
+  id!: string;
+  default!: string;
   description: string;
   display_name: string;
   scope: Scope;
