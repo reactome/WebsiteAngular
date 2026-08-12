@@ -24,12 +24,12 @@ export interface SampleMetadata {
 }
 
 export class DataSummary {
-  id: string;
-  title: string;
-  type: string;
+  id!: string;
+  title!: string;
+  type!: string;
   description?: string;
   group?: string;
-  sample_ids: string[];
+  sample_ids!: string[];
   sample_metadata?: SampleMetadata[];
   default_parameters?: Parameter[];
   parameters?: Parameter[];

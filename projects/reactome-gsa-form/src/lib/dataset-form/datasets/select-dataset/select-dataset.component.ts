@@ -21,12 +21,12 @@ export class SelectDatasetComponent implements OnInit {
   readonly datasetId = input.required<number>();
   readonly method = input.required<Method>();
 
-  exampleSources$: Observable<PDatasetSource[]>
-  externalSources$: Observable<PDatasetSource[]>
-  localSources$: Observable<PDatasetSource[]>
+  exampleSources$!: Observable<PDatasetSource[]>
+  externalSources$!: Observable<PDatasetSource[]>
+  localSources$!: Observable<PDatasetSource[]>
 
   selectDatasetStep: FormGroup;
-  librarySearchData: SearchLibraryDataset;
+  librarySearchData!: SearchLibraryDataset;
 
   constructor(
     private formBuilder: FormBuilder, public store: Store, private responsive: BreakpointObserver) {

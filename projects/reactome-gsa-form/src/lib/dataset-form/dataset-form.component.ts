@@ -30,11 +30,11 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
   readonly statisticalDesignStep = viewChild.required<CdkStep>('statisticalDesignStep');
 
 
-  dataset$: Observable<PDataset | undefined>;
-  summaryComplete$: Observable<boolean>;
-  annotationComplete$: Observable<boolean>;
-  statisticalDesignComplete$: Observable<boolean>;
-  parametersComplete$: Observable<boolean>;
+  dataset$!: Observable<PDataset | undefined>;
+  summaryComplete$!: Observable<boolean>;
+  annotationComplete$!: Observable<boolean>;
+  statisticalDesignComplete$!: Observable<boolean>;
+  parametersComplete$!: Observable<boolean>;
 
   constructor(public dialog: MatDialog, public tour: TourUtilsService, public download: DownloadDatasetService,
               public scrollService: ScrollService, private store: Store) {

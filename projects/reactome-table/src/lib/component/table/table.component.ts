@@ -174,7 +174,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   );
 
   settings$: Observable<Settings> = this.tableStore.settings$;
-  value: string;
+  value!: string;
 
   @Output() tableChange: Observable<string[][]> = this.cleanData$.pipe(
     skip(1)
@@ -254,7 +254,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
 
-  private previousStop: Coords;
+  private previousStop?: Coords;
 
   mousemove($event: MouseEvent) {
     if (this.isDraggingMouse) {

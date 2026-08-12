@@ -12,7 +12,7 @@ export class DownloadTableComponent implements OnInit {
   readonly name = input.required<string>();
   readonly tableStore = input.required<TableStore>();
 
-  type$: Observable<false | 'icon' | 'text'>
+  type$!: Observable<false | 'icon' | 'text'>
 
   constructor() {
   }

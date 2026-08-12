@@ -14,7 +14,7 @@ import {MAT_DIALOG_DATA} from "@angular/material/dialog";
 })
 export class LoadingProgressComponent implements OnInit {
 
-  loadingStatus$: Observable<PLoadingStatus>
+  loadingStatus$!: Observable<PLoadingStatus>
 
 
   constructor(
