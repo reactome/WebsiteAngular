@@ -31,7 +31,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
 import {
-  environment,
+  ICON_HOST,
   CONTENT_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
 
@@ -514,7 +514,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return `${environment.host}/icon/${entry.stId}.svg`;
+    return `${ICON_HOST}/icon/${entry.stId}.svg`;
   }
 
   get allEntries(): SearchEntry[] {

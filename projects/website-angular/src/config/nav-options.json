@@ -226,17 +226,21 @@
         "label": "Pathway Browser",
         "link": "/PathwayBrowser"
       },
+      "analyse-gene-list": {
+        "label": "Analyze gene list",
+        "link": "/PathwayBrowser?analysisTab=qualitative"
+      },
       "analyse-gene-expression": {
         "label": "Analyse gene expression",
-        "link": "/gsa/home"
+        "link": "/PathwayBrowser?analysisTab=quantitative"
       },
       "species-comparison": {
         "label": "Species Comparison",
-        "link": "/PathwayBrowser/#TOOL=AT"
+        "link": "/PathwayBrowser?analysisTab=species"
       },
       "tissue-distribution": {
         "label": "Tissue Distribution",
-        "link": "/PathwayBrowser/#TOOL=AT"
+        "link": "/PathwayBrowser?analysisTab=tissue"
       },
       "analysis-service": {
         "label": "Analysis Service",

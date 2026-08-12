@@ -299,6 +299,13 @@
   height: 13px;
   z-index: 99;
   cursor: pointer;
+  transform: scale(1, 1);
+  transition: bottom 500ms ease-in-out, transform 500ms ease-in-out;
+
+  &.collapsed {
+    bottom: -13px;
+    transform: scale(1, -1);
+  }
 
   > svg {
     position: absolute;

@@ -61,6 +61,7 @@ export class UrlStateService implements State {
     flagInteractors: urlParam<boolean>(false, "boolean", ['FLGINT']),
     overlay: urlParam<string | null>(null, "string"),
     analysis: urlParam<string | null>(null, "string", ['ANALYSIS']),
+    analysisTab: urlParam<'qualitative' | 'quantitative' | 'species' | 'tissue' | null>(null, "string"),
     tab: urlParam<string | null>(null, "string", ['DTAB'], tab => this.oldToNewTab.get(tab)!),
     significance: urlParam<number>(0.05, "number"),
     sample: urlParam<string | null>(null, "string"),
@@ -86,6 +87,7 @@ export class UrlStateService implements State {
   public readonly flagInteractors = this.values.flagInteractors
   public readonly overlay = this.values.overlay
   public readonly analysis = this.values.analysis
+  public readonly analysisTab = this.values.analysisTab
   public readonly tab = this.values.tab
   public readonly significance = this.values.significance
   public readonly sample = this.values.sample

@@ -397,10 +397,21 @@
 
 .dropdown {
   position: absolute;
-  inset: 0 0 0 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 100%;
   background: var(--surface);
   z-index: 999;
   overflow: hidden;
+  // 500ms must match DROPDOWN_DURATION in viewport.component.ts, which times the
+  // detail-panel resize to this same slide.
+  transition: bottom 500ms ease-in;
+
+  &.open {
+    bottom: 0%;
+    transition: bottom 500ms ease-out;
+  }
 }
 
 .history {
