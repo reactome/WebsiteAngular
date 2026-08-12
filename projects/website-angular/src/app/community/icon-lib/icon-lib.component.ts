@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
-import { ICON_HOST } from '../../../../../pathway-browser/src/environments/environment';
+import { ICON_BASE } from '../../../../../pathway-browser/src/environments/environment';
 
 const ICONS_PER_PAGE = 28;
 
@@ -236,7 +236,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   }
 
   iconSvgUrl(icon: IconEntry): string {
-    return `${ICON_HOST}/icon/${icon.stId}.svg`;
+    return `${ICON_BASE}/icon/${icon.stId}.svg`;
   }
 
   formatCategoryName(name: string): string {

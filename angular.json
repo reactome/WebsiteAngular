@@ -61,7 +61,6 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/curatorgraph/",
               "budgets": [
                 {
                   "type": "initial",
@@ -80,6 +79,15 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "curator": {
+              "baseHref": "/curatorgraph/",
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/variant.ts",
+                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -95,6 +103,9 @@
             },
             "development": {
               "buildTarget": "reactome:build:development"
+            },
+            "curator": {
+              "buildTarget": "reactome:build:development,curator"
             }
           },
           "defaultConfiguration": "development"

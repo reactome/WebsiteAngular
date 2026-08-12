@@ -169,8 +169,12 @@
                 <mat-icon [svgIcon]="'logo'"></mat-icon>
               </a>
               <div class="version-container">
-                <span class="version">v{{ general.version.value() }}</span>
-                <span class="beta">beta</span>
+                @if (isCurator) {
+                  <span class="beta">curation</span>
+                } @else {
+                  <span class="version">v{{ general.version.value() }}</span>
+                  <span class="beta">beta</span>
+                }
               </div>
 
             </div>

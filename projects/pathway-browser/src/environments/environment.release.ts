@@ -1,6 +1,10 @@
+import { SITE_VARIANT } from './variant';
+
+export const IS_CURATOR = SITE_VARIANT === 'curator';
+
 export const environment = {
   production: true,
-  host: "../..", // For go back from /beta/PathwayBrowser
+  host: IS_CURATOR ? "https://newcurator.reactome.org" : "../..", // For go back from /beta/PathwayBrowser
   s3: "https://download.reactome.org",
   gsaServer: "dev",
   gtagId: "G-ZCVRDTGMQJ",
@@ -11,7 +15,7 @@ export const environment = {
 // front-end origin; use the dev backend host (see environment.ts).
 export const ICON_HOST = 'https://dev.reactome.org';
 
-export const CONTENT_SERVICE = `${environment.host}/ContentService`;
+export const CONTENT_SERVICE = `${environment.host}/${IS_CURATOR ? 'GraphContentService' : 'ContentService'}`;
 export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
 export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
@@ -21,7 +25,5 @@ export const DOWNLOAD = `${environment.host}/download/current`;
 export const OVERLAYS = `${environment.host}/overlays`;
 export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 export const CONTENT_DETAIL_PATH = '/content/detail';
-const schemaHost: string =
-  typeof window !== 'undefined' ? window.location.origin : environment.host;
-export const CONTENT_SCHEMA = `${schemaHost}/curatorgraph/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;
+export const CONTENT_SCHEMA = `${environment.host}/curatorgraph/dataSchema`;

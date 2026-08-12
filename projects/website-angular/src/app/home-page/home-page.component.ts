@@ -10,7 +10,9 @@ import { HomeRelatedComponent } from './home-related/home-related.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { NavOption} from '../../types/link';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
+import { CuratorHomeShortcutsComponent } from './curator-home-shortcuts/curator-home-shortcuts.component';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-home-page',
@@ -26,11 +28,16 @@ import { mapNavOptions } from '../../utils/nav-options-mapper';
     HomeRelatedComponent,
     TileComponent,
     HomeShortcutsComponent,
+    CuratorHomeShortcutsComponent,
   ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss',
+  host: {
+    '[class.curator]': 'isCurator',
+  },
 })
 export class HomePageComponent {
+  readonly isCurator = IS_CURATOR;
   navOptions: Record<string, NavOption> = {};
 
   pathwayBrowserLink: string = '';

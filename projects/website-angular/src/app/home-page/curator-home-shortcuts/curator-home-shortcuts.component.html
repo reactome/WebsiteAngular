@@ -1,0 +1,21 @@
+<app-carousel [dark]="false">
+  <a class="shortcut-link" [href]="resolveShortcutLink('/about')"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        class="large-button-icon">info</mat-icon>
+      About
+    </app-button></a>
+  <a class="shortcut-link" [href]="resolveShortcutLink('/dataSchema')"><app-button [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        fontSet="symbols" class="large-button-icon">data_table</mat-icon>
+      Data Schema
+    </app-button></a>
+  <a class="shortcut-link"
+    [href]="resolveShortcutLink(navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser')"><app-button
+      [variant]="dark ? 'dark' : 'light'" size="large"><mat-icon
+        class="large-button-icon">account_tree</mat-icon>Pathway
+      Browser
+    </app-button>
+  </a>
+  <a class="shortcut-link" [href]="webbenchLink"><app-button
+      [variant]="dark ? 'dark' : 'light'" size="large"><img src="assets/icons/curator-tool-logo.svg"
+        class="large-button-icon webbench-icon" alt="Curation WebBench icon" />Reactome WebBench
+    </app-button></a>
+</app-carousel>

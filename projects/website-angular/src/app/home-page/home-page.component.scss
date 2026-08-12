@@ -7,16 +7,24 @@ $transition: all 0.3s ease;
 
 // Main container
 :host {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: block;
   background-image: url("../../assets/reactome/bg-fireworks-colour.svg");
   background-size: cover;
   background-position: center;
   background-repeat: repeat-y;
   background-attachment: fixed;
-  min-height: 80vh;
+  min-height: 100vh;
   padding: $spacing-unit;
+}
+
+// The curator homepage has much less content (no stats/api-data/related
+// sections), so it gets a shorter, centered layout instead of main's
+// full-height block.
+:host(.curator) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80vh;
 }
 
 :host-context(.dark) {

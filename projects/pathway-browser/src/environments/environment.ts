@@ -1,13 +1,21 @@
 import { SITE_VARIANT } from './variant';
 
+export const IS_CURATOR = SITE_VARIANT === 'curator';
+
 // Resolve the host from the browser's current origin so URLs built from
 // environment.host stay on whatever site the user is on -- beta.reactome.org,
-// release.reactome.org, reactome.org, newcurator.reactome.org, localhost
-// during dev. The fallback applies when this module is imported in a
-// non-browser context (e.g. unit tests, build-time tooling) where window
-// doesn't exist.
-const host: string =
-  typeof window !== 'undefined' ? window.location.origin : 'https://dev.reactome.org';
+// release.reactome.org, reactome.org, localhost during dev. The fallback
+// applies when this module is imported in a non-browser context (e.g. unit
+// tests, build-time tooling) where window doesn't exist.
+//
+// The curator variant is the exception: it's a separate deployment
+// (newcurator.reactome.org) with its own backend, so it always points there
+// regardless of what domain the frontend bundle is actually being served
+// from -- e.g. when previewing the curator build under a path on a different
+// host for testing purposes.
+const host: string = IS_CURATOR
+  ? 'https://newcurator.reactome.org'
+  : typeof window !== 'undefined' ? window.location.origin : 'https://dev.reactome.org';
 
 export const environment = {
   production: false,
@@ -15,7 +23,11 @@ export const environment = {
   s3: "https://download.reactome.org",
   gsaServer: "dev",
   gtagId: "G-96F1EYHQR3",
-  preferS3: true,
+  // The curator database isn't released/versioned the way the public site's
+  // is -- data/database/version has nothing meaningful to return there (see
+  // general.service.ts) -- so don't route diagram downloads through the
+  // version-keyed S3 path for curator.
+  preferS3: !IS_CURATOR,
 }
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served
@@ -26,7 +38,10 @@ export const environment = {
 // cross-origin <img> loads work from any front-end.
 export const ICON_HOST = 'https://dev.reactome.org';
 
-export const IS_CURATOR = SITE_VARIANT === 'curator';
+// The curator host serves icon assets itself (no cross-origin proxying
+// limitation like beta/release/production have), so use it directly instead
+// of falling back to ICON_HOST.
+export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
 
 // The curator variant points at a separate graph database (curation data,
 // not the released production graph), served under a different context path

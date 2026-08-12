@@ -16,8 +16,12 @@ export interface NavOption extends NavLink {
 // "/PathwayBrowser?analysisTab=species" gets URL-encoded verbatim instead of
 // being parsed into a route + query params. Split it up front so templates
 // can bind [routerLink]="linkPath(x)" [queryParams]="linkQueryParams(x)".
+// Also normalizes a missing leading slash, since nav-options.json entries are
+// inconsistent about including one and a relative routerLink resolves
+// against the current route rather than the app root.
 export function linkPath(link: string): string {
-  return link.split('?')[0];
+  const path = link.split('?')[0];
+  return path.startsWith('/') ? path : '/' + path;
 }
 
 export function linkQueryParams(link: string): Record<string, string> {
