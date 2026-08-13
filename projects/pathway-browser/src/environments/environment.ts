@@ -56,7 +56,6 @@ export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/
 // CORS-enabled public content service. Used as a fallback for version-static
 // metadata endpoints (e.g. the data-schema model) when the primary curator
 // CONTENT_SERVICE is slow or unavailable, so those pages still render.
-export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;

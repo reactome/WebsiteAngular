@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, timer } from 'rxjs';
-import { catchError, retry, timeout } from 'rxjs/operators';
-import { CONTENT_SERVICE, CONTENT_SERVICE_FALLBACK } from '../../../../projects/pathway-browser/src/environments/environment';
+import { retry, timeout } from 'rxjs/operators';
+import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 export interface SimplePerson {
   dbId: number;
@@ -91,19 +91,17 @@ export class ContentDataService {
   private http = inject(HttpClient);
   private baseUrl = `${CONTENT_SERVICE}/data`;
   private schemaUrl = `${CONTENT_SERVICE}/data/schema`;
-  private schemaUrlFallback = `${CONTENT_SERVICE_FALLBACK}/data/schema`;
 
-  // The curator schema /model endpoint is sometimes very slow or times out
-  // (and its error responses lack CORS headers, so the browser surfaces them
-  // as opaque failures, leaving the page stuck on "Loading data model...").
-  // The model is identical across content-service hosts for a given database
-  // release, so bound the request, retry briefly, then fall back to the
-  // CORS-enabled public content service so the data-schema page still loads.
-  private withModelFallback<T>(path: string): Observable<T> {
+  // The schema must come from the same content-service as the rest of the page,
+  // so it stays in sync with that deployment's database -- notably for curator,
+  // where the curation database's model legitimately differs from the public
+  // one. Serving a different host's schema would quietly show the wrong model,
+  // which is worse than failing to load. So bound the request and retry once,
+  // but never fall back to another host.
+  private fetchModel<T>(path: string): Observable<T> {
     return this.http.get<T>(`${this.schemaUrl}/${path}`).pipe(
       timeout(8000),
-      retry({ count: 1, delay: () => timer(500) }),
-      catchError(() => this.http.get<T>(`${this.schemaUrlFallback}/${path}`))
+      retry({ count: 1, delay: () => timer(500) })
     );
   }
 
@@ -120,7 +118,7 @@ export class ContentDataService {
   }
 
   getSchemaModel(): Observable<SchemaNode> {
-    return this.withModelFallback<SchemaNode>('model');
+    return this.fetchModel<SchemaNode>('model');
   }
 
   getSchemaAttributes(className: string): Observable<SchemaAttribute[]> {

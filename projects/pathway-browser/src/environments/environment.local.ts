@@ -20,7 +20,6 @@ export const ICON_HOST = 'https://dev.reactome.org';
 // a locally-run ContentService instance.
 export const CONTENT_SERVICE = IS_CURATOR ? `${environment.host}/ContentService` : `http://127.0.0.1:8686`;
 export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
-export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
