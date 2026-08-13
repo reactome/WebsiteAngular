@@ -1,8 +1,6 @@
-import { getEnv } from '../../../website-angular/src/config/environments';
+import { getEnv, SELECTED_ENV_NAME } from '../../../website-angular/src/config/environments';
 
-const selectedEnv = getEnv(
-  (typeof window !== 'undefined' && (window as any).__APP_ENV) || undefined
-);
+const selectedEnv = getEnv(SELECTED_ENV_NAME);
 
 // Normalize host to avoid accidental double slashes when building URLs.
 const host = selectedEnv.host.replace(/\/+$/, '');
@@ -16,7 +14,10 @@ export const environment = {
   preferS3: selectedEnv.preferS3,
 }
 
-export const CONTENT_SERVICE = `${environment.host}/GraphContentService`;
+// Base URL the app appends /data, /search, /exporter and /interactors to. Comes
+// from the environment rather than being derived from `host` because a local
+// curator-service serves those routes at its root, with no path segment.
+export const CONTENT_SERVICE = selectedEnv.contentService.replace(/\/+$/, '');
 // CORS-enabled public endpoint used only as a fallback to resolve the current
 // database version when the primary CONTENT_SERVICE version call fails. The
 // version is needed to build CORS-enabled S3 diagram URLs.
@@ -36,12 +37,17 @@ export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 // Path-only form for use with Angular RouterLink (which interprets absolute
 // URLs as relative paths and concatenates them onto the current route).
 export const CONTENT_DETAIL_PATH = '/content/detail';
-// Build person/schema links from the current browser origin so they keep
-// working when the widget is deployed under different hosts.
+// Build person/schema links from the hosting app shell's base URL so they keep
+// working wherever the widget is deployed. document.baseURI resolves the page's
+// <base href> against the current origin, which yields "/" under `ng serve` and
+// "/curatorgraph/" on the deployed curator site - hardcoding "/curatorgraph"
+// here appended a second copy of that segment in local dev.
 const schemaHost: string =
-  typeof window !== 'undefined' ? window.location.origin : environment.host;
+  typeof document !== 'undefined'
+    ? document.baseURI.replace(/\/+$/, '')
+    : environment.host;
 // Full-host base for the curator data-schema instance browser, used to build
 // author/person links so they resolve on the deployed host regardless of where
 // the embeddable pathway-browser element is hosted.
-export const CONTENT_SCHEMA = `${schemaHost}/curatorgraph/dataSchema`;
+export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

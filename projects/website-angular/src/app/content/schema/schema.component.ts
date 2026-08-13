@@ -90,7 +90,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
         // Listen for route changes. The path can be either
         //   /dataSchema/:className
         // or
-        //   /dataSchema/:className/instance/:dbId
+        //   /dataSchema/:className/:dbId
         // so a single subscription has to keep both selectedClass and
         // selectedInstanceId in sync with the URL.
         this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
@@ -381,7 +381,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   selectInstance(dbId: number) {
     this.router.navigate(
-      ['/dataSchema', this.selectedClass, 'instance', dbId],
+      ['/dataSchema', this.selectedClass, dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }
@@ -397,7 +397,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
     this.router.navigate(
-      ['/dataSchema', this.selectedClass, 'instance', dbId],
+      ['/dataSchema', this.selectedClass, dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }

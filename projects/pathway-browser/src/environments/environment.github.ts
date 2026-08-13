@@ -19,7 +19,11 @@ export const DOWNLOAD = `${environment.host.replace(/\/curatorgraph\/?$/, '')}/d
 export const OVERLAYS = `${environment.host}/overlays`;
 export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 export const CONTENT_DETAIL_PATH = '/content/detail';
+// Resolve against the hosting page's <base href> ("/" locally, "/curatorgraph/"
+// when deployed) instead of hardcoding the deployed path segment.
 const schemaHost: string =
-  typeof window !== 'undefined' ? window.location.origin : environment.host;
-export const CONTENT_SCHEMA = `${schemaHost}/curatorgraph/dataSchema`;
+  typeof document !== 'undefined'
+    ? document.baseURI.replace(/\/+$/, '')
+    : environment.host;
+export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

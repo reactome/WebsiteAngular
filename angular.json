@@ -80,6 +80,14 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "local": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "define": {
+                "APP_ENV": "\"local\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -95,6 +103,9 @@
             },
             "development": {
               "buildTarget": "reactome:build:development"
+            },
+            "local": {
+              "buildTarget": "reactome:build:local"
             }
           },
           "defaultConfiguration": "development"

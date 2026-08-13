@@ -171,12 +171,18 @@ export const routes: Routes = [
       ),
     pathMatch: 'full',
   },
+  // The legacy schema browser addressed instances as
+  // /content/schema/:className/instance/:dbId. There is no /content/schema
+  // equivalent of the flat form, so send both instance shapes to the
+  // /dataSchema routes that replaced them.
   {
     path: 'content/schema/:className/instance/:dbId',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    redirectTo: 'dataSchema/:className/:dbId',
+    pathMatch: 'full',
+  },
+  {
+    path: 'content/schema/:className/instance',
+    redirectTo: 'dataSchema/:className',
     pathMatch: 'full',
   },
 
@@ -197,8 +203,22 @@ export const routes: Routes = [
       ),
     pathMatch: 'full',
   },
+  // The old form carried a literal "instance" segment that wasn't routable on
+  // its own (it showed up as a dead breadcrumb crumb), so redirect it to the
+  // flat /dataSchema/:className/:dbId form to keep existing links working.
   {
     path: 'dataSchema/:className/instance/:dbId',
+    redirectTo: 'dataSchema/:className/:dbId',
+    pathMatch: 'full',
+  },
+  // Same segment with no dbId behind it: fall back to the class page.
+  {
+    path: 'dataSchema/:className/instance',
+    redirectTo: 'dataSchema/:className',
+    pathMatch: 'full',
+  },
+  {
+    path: 'dataSchema/:className/:dbId',
     loadComponent: () =>
       import('./content/schema/schema.component').then(
         (m) => m.SchemaComponent

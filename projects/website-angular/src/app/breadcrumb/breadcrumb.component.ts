@@ -138,9 +138,18 @@ export class BreadcrumbComponent {
     this.breadcrumbs = [];
     let currentPath = '';
     let currentNavLevel: Record<string, NavLink> = this.navOptions;
+    const schemaPath = this.isSchemaPath(segments);
 
     for (const segment of segments) {
       currentPath += '/' + segment;
+
+      // Legacy schema instance URLs (/dataSchema/:className/instance/:dbId)
+      // carry a literal "instance" segment that isn't routable on its own, so
+      // it would render as a dead crumb. Skip it, but keep it in currentPath
+      // so the dbId crumb still links to the URL the user is actually on.
+      if (schemaPath && segment === 'instance') {
+        continue;
+      }
 
       // First, try to look up the nav link directly by segment key
       let matchedLink = currentNavLevel[segment];
@@ -176,6 +185,14 @@ export class BreadcrumbComponent {
         currentNavLevel = {};
       }
     }
+  }
+
+  /** True for the schema browser routes, new (/dataSchema) and legacy. */
+  private isSchemaPath(segments: string[]): boolean {
+    return (
+      segments[0] === 'dataSchema' ||
+      (segments[0] === 'content' && segments[1] === 'schema')
+    );
   }
 
   /**

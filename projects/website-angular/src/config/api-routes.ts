@@ -1,9 +1,9 @@
-import { getEnv } from './environments';
+import { getEnv, SELECTED_ENV_NAME } from './environments';
 
-const env = getEnv(process.env['APP_ENV'] || (typeof window !== 'undefined' && (window as any).__APP_ENV) || undefined);
+const env = getEnv(SELECTED_ENV_NAME);
 
 export const API_ROUTES = {
-  CONTENT_SERVICE: `${env.host}/GraphContentService`,
+  CONTENT_SERVICE: env.contentService,
   ANALYSIS_SERVICE: `${env.host}/AnalysisService`,
   EXPERIMENT_SERVICE: `${env.host}/experiment`,
   RESTFUL_API: `${env.host}/ReactomeRESTfulAPI`,

@@ -1,13 +1,19 @@
+import { ENVIRONMENTS } from '../../../website-angular/src/config/environments';
+
+const env = ENVIRONMENTS.local;
+
 export const environment = {
   production: false,
-  host: "https://newcurator.reactome.org",
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
+  host: env.host,
+  s3: env.s3,
+  gsaServer: env.gsaServer,
   gtagId: "G-96F1EYHQR3",
-  preferS3: false,
+  preferS3: env.preferS3,
 };
 
-export const CONTENT_SERVICE = `${environment.host}/ContentService`;
+// Points at the locally run curator-service, which serves /data, /search,
+// /exporter and /interactors at its root rather than under a path segment.
+export const CONTENT_SERVICE = env.contentService.replace(/\/+$/, '');
 export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
 export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
@@ -19,7 +25,11 @@ export const DOWNLOAD = `${environment.host.replace(/\/curatorgraph\/?$/, '')}/d
 export const OVERLAYS = `${environment.host}/overlays`;
 export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 export const CONTENT_DETAIL_PATH = '/content/detail';
+// Resolve against the hosting page's <base href> ("/" locally, "/curatorgraph/"
+// when deployed) instead of hardcoding the deployed path segment.
 const schemaHost: string =
-  typeof window !== 'undefined' ? window.location.origin : environment.host;
-export const CONTENT_SCHEMA = `${schemaHost}/curatorgraph/dataSchema`;
+  typeof document !== 'undefined'
+    ? document.baseURI.replace(/\/+$/, '')
+    : environment.host;
+export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

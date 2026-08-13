@@ -11,7 +11,7 @@
         <div class="authors">
           <!-- First author -->
           <!--        <a [href]="environment + '/content/detail/person/'+ firstAuthor.dbId" target="_blank"> -->
-          <span>{{ firstAuthor.surname }} {{ firstAuthor.initial }}</span>
+          <span>{{ firstAuthor.displayName }}</span>
         <!--        </a>-->
         <!-- Show the rest of the authors when expanded -->
         @if (isExpanded) {
@@ -19,7 +19,7 @@
             @for (author of ref().author.slice(1); track author) {
               <span>
                 <!--          <a [href]="environment + '/content/detail/person/'+ author.dbId" target="_blank">-->
-                , {{ author.surname }} {{ author.initial }}
+                ; {{ author.displayName }}
               <!--          </a>-->
             </span>
           }
