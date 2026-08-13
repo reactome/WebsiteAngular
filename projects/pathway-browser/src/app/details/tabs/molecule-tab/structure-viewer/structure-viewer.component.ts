@@ -16,7 +16,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { extract, Style } from 'reactome-cytoscape-style';
 import { DarkService } from '../../../../services/dark.service';
 import { ReferenceEntity } from '../../../../model/graph/reference-entity/reference-entity.model';
-import { catchError, EMPTY, map } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SafePipe } from '../../../../pipes/safe.pipe';
 import { SelectableObject } from '../../../../services/event.service';
@@ -162,13 +162,13 @@ export class StructureViewerComponent {
     params: this.chebiIdentifier,
     stream: ({params}) => {
       const id = params;
-      if (!id) return EMPTY;
+      if (!id) return of(undefined); // NG0991: must emit
       return this.http
         .get(
           `https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`,
           { responseType: 'text' }
         )
-        .pipe(catchError((err) => EMPTY));
+        .pipe(catchError(() => of(undefined)));
     },
   });
 
@@ -179,7 +179,7 @@ export class StructureViewerComponent {
   bestPdbStructure = rxResource({
     params: () => this.obj().identifier,
     stream: ({params}) => {
-      if (!this.isProtein()) return EMPTY;
+      if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
       return this.http
         .get<BestStructure>(
@@ -191,7 +191,7 @@ export class StructureViewerComponent {
             const ids = new Set(value.map((item) => item.pdb_id.toUpperCase()));
             return Array.from(ids);
           }),
-          catchError((err) => EMPTY)
+          catchError(() => of(undefined))
         );
     },
   });
@@ -199,7 +199,7 @@ export class StructureViewerComponent {
   alphafoldSummary = rxResource({
     params: () => this.obj().identifier,
     stream: ({params}) => {
-      if (!this.isProtein()) return EMPTY;
+      if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
       return this.http.get<AlphaFoldSummary>(
         `https://alphafold.ebi.ac.uk/api/uniprot/summary/${id}.json`

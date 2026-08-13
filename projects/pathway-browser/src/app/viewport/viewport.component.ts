@@ -177,7 +177,8 @@ export class ViewportComponent implements AfterViewInit {
 
   exampleAnalysis = rxResource({
     params: this.state.example,
-    stream: ({params}) => params ? this.analysis.loadDefaultExample(params) : of()
+    // NG0991: a resource stream must emit; of() completes empty.
+    stream: ({params}) => params ? this.analysis.loadDefaultExample(params) : of(undefined)
   })
 
   analysisLoading = computed(() => this.exampleAnalysis.isLoading() || this.analysis.isLoading())

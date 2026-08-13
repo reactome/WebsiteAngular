@@ -211,10 +211,16 @@
             <div *asSplitGutter="let isDragged = isDragged" class="custom-gutter" [class.dragged]="isDragged"
                  [class.hidden]="detailShare() === 0"></div>
 
-            <as-split-area [size]="detailShare()" [minSize]="detailMinSize()" [visible]="detailVisible()"
-                           id="bottom-panel">
-              <cr-details-panel></cr-details-panel>
-            </as-split-area>
+            <!-- angular-split 20 lays areas out with CSS grid but still allocates a
+                 grid row for areas hidden via [visible]=false (the collapsing rule
+                 behind .as-hidden was written for its old flexbox layout), leaving
+                 ~130px reserved. Removing the area from the DOM collapses it
+                 reliably and does not depend on the library's hidden handling. -->
+            @if (detailVisible()) {
+              <as-split-area [size]="detailShare()" [minSize]="detailMinSize()" id="bottom-panel">
+                <cr-details-panel></cr-details-panel>
+              </as-split-area>
+            }
           </as-split>
         </div>
       </div>

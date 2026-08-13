@@ -65,7 +65,8 @@ export class DataStateService {
       id: this.state.select() || this.state.pathwayId(),
       summariseDisease: this.state.summariseDisease()
     }),
-    stream: (params) => !params.params.id ? of() : this.fetchEnhancedData<SelectableObject>(params.params.id, {includeDisease: params.params.summariseDisease === true})
+    // NG0991: a resource stream must emit; of() completes empty.
+    stream: (params) => !params.params.id ? of(undefined) : this.fetchEnhancedData<SelectableObject>(params.params.id, {includeDisease: params.params.summariseDisease === true})
   })
 
   public selectedElement = this._selectedElement.asReadonly().value
@@ -168,7 +169,7 @@ export class DataStateService {
     includeDisease: boolean
   }>): Observable<T | undefined> {
     let url = `${CONTENT_SERVICE}/data/query/enhanced/v2/${id}`;
-    if (id === null) return of();
+    if (id === null) return of(undefined);
     if (!isReferenceEntityStId(id.toString()) && params) params.includeDisease = true; // Always include disease data for non summary elements
 
     return this.http.get<T>(url, {

@@ -76,9 +76,10 @@ export class FoundTableComponent {
       token: this.state.analysis(),
       resource: this.analysis.resourceFilter()
     }),
+    // NG0991: a resource stream must emit; of() completes empty.
     stream: ({params}) => params.pathway && params.token ?
       this.analysis.foundEntities(params.pathway, params.token, params.resource || undefined) :
-      of()
+      of(undefined)
   })
 
   foundEntities: Signal<FoundIdentifier[]> = computed(() => {

@@ -251,7 +251,8 @@ export class AnalysisService {
           resource: params.resource || undefined,
           species: params.species.join(',')
         }) :
-        EMPTY
+        // NG0991: a resource stream must emit; EMPTY completes empty.
+        of(undefined)
     }
   });
 
