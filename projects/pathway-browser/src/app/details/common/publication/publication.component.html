@@ -6,20 +6,20 @@
       <span class="publication-name" [innerHTML]="ref().displayName | safe"></span>
     </div>
 
-    @if (ref().author[0]; as firstAuthor) {
+    @if (authors()[0]; as firstAuthor) {
       <div class="authors-container">
         <div class="authors">
           <!-- First author -->
           <!--        <a [href]="environment + '/content/detail/person/'+ firstAuthor.dbId" target="_blank"> -->
-          <span>{{ firstAuthor.displayName }}</span>
+          <span>{{ firstAuthor.name }}</span>
         <!--        </a>-->
         <!-- Show the rest of the authors when expanded -->
         @if (isExpanded) {
           <ng-container class="additional-authors">
-            @for (author of ref().author.slice(1); track author) {
+            @for (author of authors().slice(1); track $index) {
               <span>
                 <!--          <a [href]="environment + '/content/detail/person/'+ author.dbId" target="_blank">-->
-                ; {{ author.displayName }}
+                ; {{ author.name }}
               <!--          </a>-->
             </span>
           }
@@ -34,7 +34,7 @@
         </span>
       }
       <!--et al.-->
-      @if (ref().author.length > 1 && !isExpanded) {
+      @if (authors().length > 1 && !isExpanded) {
         <span>&nbsp;et al.</span>
       }
       <!--year-->
@@ -42,7 +42,7 @@
         <span>&nbsp;{{ ref().year }}</span>
       }
       <!--icon-->
-      @if (ref().author.length > 1) {
+      @if (authors().length > 1) {
         <span>
           <mat-icon class="ref-icon" [svgIcon]="isExpanded ? 'collapse' : 'expand' " (click)="toggleAuthors()"></mat-icon>
         </span>

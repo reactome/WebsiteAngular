@@ -12,7 +12,9 @@ export class IncludeRefPipe implements PipeTransform {
 
   transform(text: string, refs: LiteratureReference[]): SafeHtml {
     refs
-      .filter(ref => ref && ref.url)
+      // Refs whose authors are only curated as free-text authorName values have
+      // no Person instances to build the citation pattern from.
+      .filter(ref => ref && ref.url && ref.author?.length > 0)
       .forEach(ref => {
         let replacer = (match: string) => `<a href="${ref.url}">${match}</a>`
         text = text.replaceAll(new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`, 'g'), replacer);
