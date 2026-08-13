@@ -13,6 +13,26 @@ npm start
 ## Usage
 Reactome has a wide range of features, to explore more of Reactome or get more information visit [the documentation page](https://reactome.org/documentation) or see the ````/documentation```` folder in the root directory.
 
+## Workspace libraries
+
+Four libraries live in this repo under `projects/` and build to `dist/`. The apps consume them from there (via the `dist/` entry in each project's `stylePreprocessorOptions.includePaths`, and the `paths` mappings in `tsconfig.json`), **not** from `node_modules` — so they must be built before the app will compile:
+
+| project | contents |
+| --- | --- |
+| `reactome-cytoscape-style` | diagram rendering styles + drawing helpers |
+| `ngx-reactome-style` | shared Angular Material theme (Sass only, no TypeScript) |
+| `reactome-table` | the editable data grid |
+| `reactome-gsa-form` | the ReactomeGSA analysis wizard (NgRx-backed) |
+
+`npm start` builds them for you. To build them by hand:
+
+```bash
+npm run build:libs                    # ngx-reactome-style, reactome-table, reactome-gsa-form
+ng build reactome-cytoscape-style     # or `npm run dev:reactome-cytoscape-style` to watch
+```
+
+The last three were previously separate npm packages (`reactome-gsa-form`, `reactome-table` and `reactome-table-wc` from `reactome/gsa-frontend`; `ngx-reactome-style` published standalone). They were absorbed here so their Angular/NgRx peer dependencies stay in lockstep with the rest of the workspace instead of pinning it to an older major. They can still be published to npm from this repo — build, then `npm publish dist/<name>`.
+
 ## Configuration
 
 The application configuration is centralized in TypeScript files under `projects/website-angular/src/config/`. Key configurations include:

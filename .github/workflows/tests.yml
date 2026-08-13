@@ -53,6 +53,7 @@ jobs:
       - name: Build workspace libraries
         run: |
           npx ng build reactome-cytoscape-style
+          npx ng build ngx-reactome-style
           npx ng build reactome-table
           npx ng build reactome-gsa-form
 

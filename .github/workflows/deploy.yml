@@ -42,6 +42,7 @@ jobs:
       - name: Build
         run: |
           npx ng build reactome-cytoscape-style
+          npx ng build ngx-reactome-style
           npx ng build reactome-table
           npx ng build reactome-gsa-form
           npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/

@@ -433,6 +433,29 @@
         }
       }
     },
+    "ngx-reactome-style": {
+      "projectType": "library",
+      "root": "projects/ngx-reactome-style",
+      "sourceRoot": "projects/ngx-reactome-style/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/ngx-reactome-style/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    },
     "reactome-table": {
       "projectType": "library",
       "root": "projects/reactome-table",
