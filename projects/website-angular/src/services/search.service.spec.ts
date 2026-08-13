@@ -2,11 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { SearchService, SearchFilters } from './search.service';
+import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 describe('SearchService', () => {
   let service: SearchService;
   let httpTesting: HttpTestingController;
-  const baseUrl = 'https://reactome.org/ContentService/search';
+  // Derived exactly as the service derives it. CONTENT_SERVICE is built from
+  // window.location.origin, so hardcoding a host here made every expectOne()
+  // miss under jsdom: the unmatched request then tripped verify() in afterEach,
+  // which cascaded into "TestBed already instantiated" for the whole file.
+  const baseUrl = `${CONTENT_SERVICE}/search`;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
