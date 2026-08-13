@@ -6,90 +6,79 @@
         alt="Reactome Pathway Database"
         class="logo-image light-only"
       />
-      <img 
-        src="assets/logo/logo-dark.png" 
-        alt="Reactome Pathway Database" 
-        class="logo-image dark-only" 
-        />
+      <img
+        src="assets/logo/logo-dark.png"
+        alt="Reactome Pathway Database"
+        class="logo-image dark-only"
+      />
     </a>
   </div>
 
   <nav class="navbar-nav">
-    <mat-icon
-      class="menu-icon"
-      *ngIf="windowWidth <= hamburgerBreakpoint"
-      (click)="toggleHamburgerMenu()"
-      >menu</mat-icon
-    >
-    <ul class="nav-list" *ngIf="windowWidth > hamburgerBreakpoint || activeHamburgerMenu">
+    @if (windowWidth <= hamburgerBreakpoint) {
+    <mat-icon class="menu-icon" (click)="toggleHamburgerMenu()">menu</mat-icon>
+    } @if (windowWidth > hamburgerBreakpoint || activeHamburgerMenu) {
+    <ul class="nav-list">
+      @for (option of navOptions | keyvalue : preserveOrder; track option) {
       <li
-        *ngFor="let option of navOptions | keyvalue : preserveOrder"
         class="nav-item"
         [class.active]="activeDropdown === option.key"
         (mouseenter)="showDropdown(option.key)"
         (mouseleave)="hideDropdown()"
         (click)="toggleDropdown(option.key)"
       >
-        <ng-container *ngIf="asNavOption(option.value) as navOption">
-          <div class="nav-link-wrapper">
-            <a
-              *ngIf="!navOption.external"
-              [routerLink]="
-                windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
-                  ? navOption.link
-                  : null
-              "
-              class="nav-link"
-              [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
-            >
-              <mat-icon>
-                {{ navOption.icon }}
-              </mat-icon>
-              {{ navOption.label }}
-              <mat-icon
-                *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
-                class="dropdown-arrow"
-              >
-                keyboard_arrow_down
-              </mat-icon>
-            </a>
-            <a
-              *ngIf="navOption.external"
-              [attr.href]="
-                windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
-                  ? navOption.link
-                  : null
-              "
-              class="nav-link"
-              [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
-            >
-              <mat-icon>
-                {{ navOption.icon }}
-              </mat-icon>
-              {{ navOption.label }}
-              <mat-icon
-                *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
-                class="dropdown-arrow"
-              >
-                keyboard_arrow_down
-              </mat-icon>
-            </a>
-          </div>
-
-          <div
-            *ngIf="hasDropdownLinks(navOption.dropdownLinks)"
-            class="dropdown-menu"
-            [class.show]="activeDropdown === option.key"
+        @if (asNavOption(option.value); as navOption) {
+        <div class="nav-link-wrapper">
+          @if (!navOption.external) {
+          <a
+            [routerLink]="
+              windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
+                ? navOption.link
+                : null
+            "
+            class="nav-link"
+            [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
           >
-            <ng-container
-              *ngTemplateOutlet="
-                dropdownItems;
-                context: { $implicit: navOption.dropdownLinks, level: 0 }
-              "
-            ></ng-container>
-          </div>
-        </ng-container>
+            <mat-icon>
+              {{ navOption.icon }}
+            </mat-icon>
+            {{ navOption.label }}
+            @if (hasDropdownLinks(navOption.dropdownLinks)) {
+            <mat-icon class="dropdown-arrow"> keyboard_arrow_down </mat-icon>
+            }
+          </a>
+          } @if (navOption.external) {
+          <a
+            [attr.href]="
+              windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
+                ? navOption.link
+                : null
+            "
+            class="nav-link"
+            [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
+          >
+            <mat-icon>
+              {{ navOption.icon }}
+            </mat-icon>
+            {{ navOption.label }}
+            @if (hasDropdownLinks(navOption.dropdownLinks)) {
+            <mat-icon class="dropdown-arrow"> keyboard_arrow_down </mat-icon>
+            }
+          </a>
+          }
+        </div>
+        @if (hasDropdownLinks(navOption.dropdownLinks)) {
+        <div class="dropdown-menu" [class.show]="activeDropdown === option.key">
+          <ng-container
+            *ngTemplateOutlet="
+              dropdownItems;
+              context: { $implicit: navOption.dropdownLinks, level: 0 }
+            "
+          ></ng-container>
+        </div>
+        } }
       </li>
+      }
       <li class="nav-item dark-toggle-item">
         <mat-slide-toggle
           color="primary"
@@ -104,61 +93,57 @@
         </mat-slide-toggle>
       </li>
     </ul>
+    }
   </nav>
 </header>
 
 <ng-template #dropdownItems let-links let-level="level">
   <ul class="dropdown-list" [class.nested-dropdown-list]="level > 0">
+    @for (linkItem of links | keyvalue : preserveOrder; track linkItem) {
     <li
-      *ngFor="let linkItem of links | keyvalue : preserveOrder"
       class="dropdown-item"
       [class.nested-dropdown-item]="level > 0"
       [class.has-submenu]="
         hasDropdownLinks(asNavLink(linkItem.value)?.dropdownLinks)
       "
     >
-      <ng-container *ngIf="asNavLink(linkItem.value) as navLink">
-        <div
-          class="dropdown-link-wrapper"
-          [class.opens-left]="hasDropdownLinks(navLink.dropdownLinks)"
+      @if (asNavLink(linkItem.value); as navLink) {
+      <div
+        class="dropdown-link-wrapper"
+        [class.opens-left]="hasDropdownLinks(navLink.dropdownLinks)"
+      >
+        @if (!navLink.external) {
+        <a
+          [routerLink]="linkPath(navLink.link)"
+          [queryParams]="linkQueryParams(navLink.link)"
+          class="dropdown-link"
+          [class.nested-dropdown-link]="level > 0"
         >
-          <a
-            *ngIf="!navLink.external"
-            [routerLink]="linkPath(navLink.link)"
-            [queryParams]="linkQueryParams(navLink.link)"
-            class="dropdown-link"
-            [class.nested-dropdown-link]="level > 0"
-          >
-            {{ navLink.label }}
-          </a>
-          <a
-            *ngIf="navLink.external"
-            [href]="navLink.link"
-            class="dropdown-link"
-            [class.nested-dropdown-link]="level > 0"
-          >
-            {{ navLink.label }}
-          </a>
-          <mat-icon
-            *ngIf="hasDropdownLinks(navLink.dropdownLinks)"
-            class="nested-arrow"
-          >
-            keyboard_arrow_left
-          </mat-icon>
-        </div>
-
-        <div
-          *ngIf="hasDropdownLinks(navLink.dropdownLinks)"
-          class="nested-dropdown-menu"
+          {{ navLink.label }}
+        </a>
+        } @if (navLink.external) {
+        <a
+          [href]="navLink.link"
+          class="dropdown-link"
+          [class.nested-dropdown-link]="level > 0"
         >
-          <ng-container
-            *ngTemplateOutlet="
-              dropdownItems;
-              context: { $implicit: navLink.dropdownLinks, level: level + 1 }
-            "
-          ></ng-container>
-        </div>
-      </ng-container>
+          {{ navLink.label }}
+        </a>
+        } @if (hasDropdownLinks(navLink.dropdownLinks)) {
+        <mat-icon class="nested-arrow"> keyboard_arrow_left </mat-icon>
+        }
+      </div>
+      @if (hasDropdownLinks(navLink.dropdownLinks)) {
+      <div class="nested-dropdown-menu">
+        <ng-container
+          *ngTemplateOutlet="
+            dropdownItems;
+            context: { $implicit: navLink.dropdownLinks, level: level + 1 }
+          "
+        ></ng-container>
+      </div>
+      } }
     </li>
+    }
   </ul>
 </ng-template>

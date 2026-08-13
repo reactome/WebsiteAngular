@@ -73,3 +73,4 @@ yarn.lock
 /test-results/
 /playwright-report/
 /playwright/.cache/
+projects/website-angular/content-dist/

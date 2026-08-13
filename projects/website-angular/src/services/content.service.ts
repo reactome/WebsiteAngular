@@ -2,7 +2,6 @@
 import { Inject, Injectable, DOCUMENT } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
-import parseFrontmatter from '../utils/parseFrontmatter';
 import { Article, ArticleIndexItem } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
 
@@ -34,18 +33,18 @@ export class ContentService {
 
   //Get any page by type and slug
   getPage(pageType:string, slug:string ): Observable<PageContent | null> {
-    // Try .mdx first; fall back to .md so the CMS pipeline can author in
-    // either flavour without renaming files.
-    return this.http.get(`${this.contentBasePath}/${pageType}/${slug}.mdx`, { responseType: 'text' }).pipe(
-      catchError(() => this.http.get(`${this.contentBasePath}/${pageType}/${slug}.md`, { responseType: 'text' })),
-      map(content => {
-        const { frontmatter, body } = parseFrontmatter(content);
+    // Content is authored as .mdx and compiled to JSON at build time by
+    // scripts/stage-content.ts. Frontmatter is already parsed server-side, so
+    // the browser just consumes structured data -- no raw markdown fetch, and
+    // nothing for vite to mistake for JSX source.
+    return this.http.get<Record<string, unknown>>(`${this.contentBasePath}/${pageType}/${slug}.json`).pipe(
+      map(frontmatter => {
         return {
           title: frontmatter['title'] as string || '',
           description: frontmatter['description'] as string,
           category: frontmatter['category'] as string,
           image: frontmatter['image'] as string,
-          body: body || '',
+          body: frontmatter['body'] as string || '',
         };
       })
     )
@@ -68,9 +67,10 @@ export class ContentService {
    * Get an article by slug
    */
   getArticle(path:string, slug: string): Observable<Article | null> {
-    return this.http.get(`${this.contentBasePath}/${path}/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = parseFrontmatter(content);
+    // See getPage(): content is compiled to JSON at build time.
+    return this.http.get<Record<string, unknown>>(`${this.contentBasePath}/${path}/${slug}.json`).pipe(
+      map(frontmatter => {
+        const body = frontmatter['body'] as string;
         let returnArticle: Article = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),
@@ -141,9 +141,10 @@ export class ContentService {
   }
 
   getFaqArticle(category: string, slug: string): Observable<Article | null> {
-    return this.http.get(`${this.contentBasePath}/documentation/faq/${category}/${slug}.mdx`, { responseType: 'text' }).pipe(
-      map(content => {
-        const { frontmatter, body } = parseFrontmatter(content);
+    // See getPage(): content is compiled to JSON at build time.
+    return this.http.get<Record<string, unknown>>(`${this.contentBasePath}/documentation/faq/${category}/${slug}.json`).pipe(
+      map(frontmatter => {
+        const body = frontmatter['body'] as string;
         let returnArticle: Article = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),

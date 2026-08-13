@@ -21,23 +21,13 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "paths": {
-      "reactome-cytoscape-style": [
-        "dist/reactome-cytoscape-style"
-      ],
-      "reactome-table": [
-        "dist/reactome-table"
-      ],
-      "reactome-gsa-form": [
-        "dist/reactome-gsa-form"
-      ]
+      "reactome-cytoscape-style": ["dist/reactome-cytoscape-style"],
+      "reactome-table": ["dist/reactome-table"],
+      "reactome-gsa-form": ["dist/reactome-gsa-form"]
     },
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "lib": [
-      "ES2022",
-      "dom"
-    ],
     "typeRoots": [
       "node_modules/@types",
       "node_modules/reactome-cytoscape-style/types",

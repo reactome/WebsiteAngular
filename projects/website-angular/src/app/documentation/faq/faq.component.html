@@ -10,65 +10,70 @@
       </p>
     </header>
     <section class="faq-section">
-      <div *ngFor="let category of categories">
+      @for (category of categories; track category) {
+      <div>
         <h2 class="faq-category-header" (click)="toggleCategory(category)">
-            <span class="category-name">{{ formatName(category) }}</span>
-            <button class="expand-button">
-              {{ isCategoryExpanded(category) ? '−' : '+' }}
-            </button>
+          <span class="category-name">{{ formatName(category) }}</span>
+          <button class="expand-button">
+            {{ isCategoryExpanded(category) ? "−" : "+" }}
+          </button>
         </h2>
-
         @if (isCategoryExpanded(category)) {
-            <div class="faq-category-content">
+        <div class="faq-category-content">
           @if (getSubcategories(category).length > 1) {
-
           <!-- Tabs Header -->
           <div class="faq-tabs">
+            @for (sub of getSubcategories(category); track sub) {
             <button
-              *ngFor="let sub of getSubcategories(category)"
               class="faq-tab"
               [class.active]="isActiveTab(category, sub)"
               (click)="setActiveTab(category, sub)"
             >
               {{ formatName(sub) }}
             </button>
+            }
           </div>
-
           <!-- Active Tab Content -->
           <ul class="faq-list">
-            <li
-              class="faq-item"
-              *ngFor="
-                let questionArticle of getArticles(
+            @for ( questionArticle of getArticles( category,
+            activeTabs[category] ) ; track questionArticle) {
+            <li class="faq-item">
+              <a
+                [routerLink]="[
+                  '/documentation/faq',
                   category,
-                  activeTabs[category]
-                )
-              "
-            >
-              <a [routerLink]="['/documentation/faq', category, activeTabs[category], questionArticle.slug]">
+                  activeTabs[category],
+                  questionArticle.slug
+                ]"
+              >
                 {{ formatName(questionArticle.title) }}
               </a>
             </li>
+            }
           </ul>
-
           } @else {
-
           <!-- No subcategories -->
           <ul class="faq-list">
-            <li
-              class="faq-item"
-              *ngFor="let questionArticle of getArticles(category)"
-            >
-              <a [routerLink]="['/documentation/faq', category, questionArticle.slug]">
+            @for (questionArticle of getArticles(category); track
+            questionArticle) {
+            <li class="faq-item">
+              <a
+                [routerLink]="[
+                  '/documentation/faq',
+                  category,
+                  questionArticle.slug
+                ]"
+              >
                 {{ formatName(questionArticle.title) }}
               </a>
             </li>
+            }
           </ul>
-
           }
         </div>
         }
       </div>
+      }
     </section>
   </article>
 </app-page-layout>

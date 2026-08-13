@@ -5,13 +5,16 @@
     (mouseenter)="viewMenu()"
     (click)="(toggleMenu)"
   >
-    <mat-icon class="dropdown-icon" *ngIf="buttonIcon">{{
-      buttonIcon
-    }}</mat-icon>
-    <span class="dropdown-label" *ngIf="buttonLabel">{{ buttonLabel }}</span>
+    @if (buttonIcon) {
+    <mat-icon class="dropdown-icon">{{ buttonIcon }}</mat-icon>
+    } @if (buttonLabel) {
+    <span class="dropdown-label">{{ buttonLabel }}</span>
+    }
     <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
   </div>
-  <div class="dropdown-menu" [style]="menuStyle" *ngIf="menuDown">
+  @if (menuDown) {
+  <div class="dropdown-menu" [style]="menuStyle">
     <ng-content></ng-content>
   </div>
+  }
 </div>

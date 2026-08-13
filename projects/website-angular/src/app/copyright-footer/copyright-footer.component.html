@@ -4,8 +4,8 @@
     <a class="link" href="https://reactome.org">Reactome</a>
   </div>
   <div class="socials">
+    @if (externalLinks['twitter']) {
     <a
-      *ngIf="externalLinks['twitter']"
       [href]="externalLinks['twitter'].link"
       target="_blank"
       rel="noopener noreferrer"
@@ -53,16 +53,16 @@
         </g>
       </svg>
     </a>
+    } @if (externalLinks['facebook']) {
     <a
-      *ngIf="externalLinks['facebook']"
       [href]="externalLinks['facebook'].link"
       target="_blank"
       rel="noopener noreferrer"
     >
       <mat-icon class="facebook">facebook</mat-icon>
     </a>
+    } @if (externalLinks['youtube']) {
     <a
-      *ngIf="externalLinks['youtube']"
       [href]="externalLinks['youtube'].link"
       target="_blank"
       rel="noopener noreferrer"
@@ -110,8 +110,8 @@
         </g>
       </svg>
     </a>
+    } @if (externalLinks['bluesky']) {
     <a
-      *ngIf="externalLinks['bluesky']"
       [href]="externalLinks['bluesky'].link"
       target="_blank"
       rel="noopener noreferrer"
@@ -130,8 +130,8 @@
         />
       </svg>
     </a>
+    } @if (externalLinks['github']) {
     <a
-      *ngIf="externalLinks['github']"
       [href]="externalLinks['github'].link"
       target="_blank"
       rel="noopener noreferrer"
@@ -153,9 +153,9 @@
         />
       </svg>
     </a>
+    } @if (externalLinks['linkedin']) {
     <a
       class="linkedin"
-      *ngIf="externalLinks['linkedin']"
       [href]="externalLinks['linkedin'].link"
       target="_blank"
       rel="noopener noreferrer"
@@ -174,5 +174,6 @@
         </g>
       </svg>
     </a>
+    }
   </div>
 </div>

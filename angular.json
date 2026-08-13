@@ -48,7 +48,7 @@
               },
               {
                 "glob": "**/*",
-                "input": "projects/website-angular/content",
+                "input": "projects/website-angular/content-dist",
                 "output": "/content"
               }
             ],

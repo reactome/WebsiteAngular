@@ -1,6 +1,6 @@
 import { Component, inject, Input, OnInit } from '@angular/core';
 import { ArticleIndexItem } from '../../../types/article';
-import { NgForOf, NgFor } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
@@ -10,9 +10,9 @@ import { NavOption } from '../../../types/link';
 @Component({
   selector: 'app-home-latest-news',
   standalone: true,
-  imports: [NgForOf, NgFor, RouterModule],
+  imports: [RouterModule],
   templateUrl: './home-latest-news.component.html',
-  styleUrl: './home-latest-news.component.scss'
+  styleUrl: './home-latest-news.component.scss',
 })
 export class HomeLatestNewsComponent implements OnInit {
   contentService = inject(ContentService);
@@ -37,15 +37,15 @@ export class HomeLatestNewsComponent implements OnInit {
           author: item.author,
           tags: item.tags || [],
           slug: item.slug,
-          excerpt: item.excerpt
-        } ));
+          excerpt: item.excerpt,
+        }));
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading articles:', err);
         this.newsList = [];
         this.loading = false;
-      }
+      },
     });
   }
 

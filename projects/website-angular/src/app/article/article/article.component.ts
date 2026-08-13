@@ -1,10 +1,10 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { ContentService } from '../../../services/content.service';
 import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
-import { PageLayoutComponent } from "../../page-layout/page-layout.component";
+import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import addAnchorIds from '../../../utils/addAnchorIds';
@@ -14,9 +14,9 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-article',
-  imports: [CommonModule, PageLayoutComponent],
+  imports: [PageLayoutComponent],
   templateUrl: './article.component.html',
-  styleUrl: './article.component.scss'
+  styleUrl: './article.component.scss',
 })
 export class ArticleComponent implements OnInit {
   article: Article | null = null;
@@ -24,38 +24,39 @@ export class ArticleComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
-  private route =  inject(ActivatedRoute);
+  private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
-
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (slug) {
-      this.route.url.subscribe(segments => {
-      // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path_segments = segments.map(s => s.path);
+      this.route.url.subscribe((segments) => {
+        // Build the path from URL segments (e.g., about/userguide/pathway-browser)
+        let path_segments = segments.map((s) => s.path);
 
-      if (path_segments.length > 0 && path_segments) {
-        if (path_segments.includes('about')) {
-          this.loadArticle('about/news', slug);
-
-        } else if (path_segments.includes('content')) {
-          this.loadArticle('content/reactome-research-spotlight', slug);
+        if (path_segments.length > 0 && path_segments) {
+          if (path_segments.includes('about')) {
+            this.loadArticle('about/news', slug);
+          } else if (path_segments.includes('content')) {
+            this.loadArticle('content/reactome-research-spotlight', slug);
+          }
         }
-      }
-    });
+      });
     }
   }
 
   loadArticle(path: string, slug: string) {
     this.loading = true;
 
-    this.contentService.getArticle(path,slug).subscribe({
+    this.contentService.getArticle(path, slug).subscribe({
       next: async (article) => {
-        let html = await marked(article?.body as string || '');
-        let renderedContent = stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html))));
-        this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
+        let html = await marked((article?.body as string) || '');
+        let renderedContent = stripFirstH(
+          addAnchorIds(addJumpCards(wrapCodeBlocks(html)))
+        );
+        this.renderedContent =
+          this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
         this.article = {
           title: article?.title || '',
@@ -64,7 +65,7 @@ export class ArticleComponent implements OnInit {
           body: renderedContent,
           slug: slug,
           image: article?.image,
-          tags: article?.tags
+          tags: article?.tags,
         };
 
         this.loading = false;
@@ -73,8 +74,8 @@ export class ArticleComponent implements OnInit {
         this.error = 'Error loading article.';
         this.loading = false;
         console.error('Error loading article:', err);
-      }
-    })
+      },
+    });
   }
 
   formatD(date: Date): string {

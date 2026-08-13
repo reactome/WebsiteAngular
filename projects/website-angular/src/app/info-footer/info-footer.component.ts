@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon } from '@angular/material/icon';
 import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { NavOption } from '../../types/link';
 
 @Component({
   selector: 'app-info-footer',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIcon],
+  imports: [RouterModule, MatIcon],
   templateUrl: './info-footer.component.html',
-  styleUrl: './info-footer.component.scss'
+  styleUrl: './info-footer.component.scss',
 })
 export class InfoFooterComponent {
   navOptions: Record<string, NavOption> = {};

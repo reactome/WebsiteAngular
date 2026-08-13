@@ -4,6 +4,9 @@
   (mouseenter)="showText = true"
   (mouseleave)="showText = false"
 >
-  <mat-icon class="cite-icon" *ngIf="showText === false">format_quote</mat-icon>
-  <span class="cite-text" *ngIf="showText === true"> Cite Us!</span>
+  @if (showText === false) {
+  <mat-icon class="cite-icon">format_quote</mat-icon>
+  } @if (showText === true) {
+  <span class="cite-text"> Cite Us!</span>
+  }
 </div>

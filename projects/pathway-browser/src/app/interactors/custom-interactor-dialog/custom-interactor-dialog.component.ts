@@ -22,7 +22,9 @@ import {ReactiveFormsModule} from "@angular/forms";
 import {MatTabGroup, MatTab} from "@angular/material/tabs";
 import {MatButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
-import {MaterialFileInputModule} from "ngx-custom-material-file-input";
+// v21 of this package dropped MaterialFileInputModule and went standalone;
+// only <ngx-mat-file-input> is used here, which is FileInputComponent.
+import {FileInputComponent} from "ngx-custom-material-file-input";
 import {MatCheckbox} from "@angular/material/checkbox";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 
@@ -48,7 +50,7 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
       MatRadioButton,
       MatButton,
       MatIcon,
-      MaterialFileInputModule,
+      FileInputComponent,
       MatProgressSpinner
     ]
 })
