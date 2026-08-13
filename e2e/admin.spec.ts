@@ -18,6 +18,33 @@ import { test, expect, Page } from '@playwright/test';
 // Note on the "Enter Edit Mode" modal: a fresh playwright context has
 // no Tina session cookie, so Tina shows a one-time modal before exposing
 // the sidebar/collections. A real human only sees this once.
+//
+// These tests only apply to a local content-editing environment. The admin
+// shell's script tags are hardcoded to http://localhost:4001/..., which
+// resolve against whichever machine is *viewing* the page -- so the admin
+// only functions for someone running `tinacms dev` themselves (or forwarding
+// 4001, which is what tina-ipv4-proxy.js is for). Against a public deployment,
+// a bare `ng serve`, or CI, there is no Tina to talk to and the whole suite is
+// inapplicable rather than failing. Skip in that case so a red run always means
+// a real regression.
+const TINA_DEV_URL = 'http://localhost:4001/@vite/client';
+let tinaReachable: boolean | undefined;
+
+test.beforeEach(async ({ request }) => {
+  if (tinaReachable === undefined) {
+    try {
+      const res = await request.get(TINA_DEV_URL, { timeout: 3000 });
+      tinaReachable = res.ok();
+    } catch {
+      tinaReachable = false;
+    }
+  }
+  test.skip(
+    !tinaReachable,
+    'TinaCMS dev server not reachable on :4001 -- the admin is a local content-editing surface only',
+  );
+});
+
 async function dismissEditModeModal(page: Page) {
   // Wait for the modal to actually render (networkidle fires before Tina's
   // React app mounts it). Short timeout because if no modal appears, we
