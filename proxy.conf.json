@@ -6,5 +6,20 @@
     "pathRewrite": {
       "^/reactome": ""
     }
+  },
+  "/ContentService": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/AnalysisService": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/GSAServer": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
   }
 }
