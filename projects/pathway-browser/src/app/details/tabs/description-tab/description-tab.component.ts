@@ -121,9 +121,9 @@ export class DescriptionTabComponent implements OnDestroy {
   public state: UrlStateService = inject(UrlStateService);
   private species: SpeciesService = inject(SpeciesService);
   icon = rxResource({
-    request: () => this.referenceEntity()?.identifier,
-    loader: (param) =>
-      param.request ? this.iconService.fetchIcon(param.request) : of(null),
+    params: () => this.referenceEntity()?.identifier,
+    stream: (param) =>
+      param.params ? this.iconService.fetchIcon(param.params) : of(null),
   });
 
   readonly figures = computed(() =>
@@ -135,21 +135,21 @@ export class DescriptionTabComponent implements OnDestroy {
   currentIcon = this.iconService.currentIcon;
 
   _otherForms = rxResource({
-    request: () =>
+    params: () =>
       isPhysicalEntity(this.obj()) &&
       !isReferenceSummary(this.obj()) &&
       this.referenceEntity() &&
       this.obj().stId,
-    loader: (param) =>
-      param.request ? this.entity.getOtherForms(param.request) : of(null),
+    stream: (param) =>
+      param.params ? this.entity.getOtherForms(param.params) : of(null),
   });
 
   _interactors = rxResource({
-    request: () =>
+    params: () =>
       isPhysicalEntity(this.obj()) && this.referenceEntity()?.identifier,
-    loader: (param) =>
-      param.request
-        ? this.interactorService.getCustomInteractorsByAcc(param.request)
+    stream: (param) =>
+      param.params
+        ? this.interactorService.getCustomInteractorsByAcc(param.params)
         : of(null),
   });
 

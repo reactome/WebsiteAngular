@@ -1,7 +1,7 @@
 
 .container, .mat-mdc-progress-bar {
-  --mdc-linear-progress-track-height: 10px ;
-  --mdc-linear-progress-active-indicator-height: var(--mdc-linear-progress-track-height);
+  --mat-progress-bar-track-height: 10px ;
+  --mat-progress-bar-active-indicator-height: var(--mat-progress-bar-track-height);
 }
 
 .container {

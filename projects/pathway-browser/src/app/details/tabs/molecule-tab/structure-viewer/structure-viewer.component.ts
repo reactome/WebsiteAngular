@@ -159,9 +159,9 @@ export class StructureViewerComponent {
   });
 
   chebiStructureSVGData = rxResource({
-    request: this.chebiIdentifier,
-    loader: ({ request }) => {
-      const id = request;
+    params: this.chebiIdentifier,
+    stream: ({params}) => {
+      const id = params;
       if (!id) return EMPTY;
       return this.http
         .get(
@@ -177,10 +177,10 @@ export class StructureViewerComponent {
   isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
   bestPdbStructure = rxResource({
-    request: () => this.obj().identifier,
-    loader: ({ request }) => {
+    params: () => this.obj().identifier,
+    stream: ({params}) => {
       if (!this.isProtein()) return EMPTY;
-      const id = request;
+      const id = params;
       return this.http
         .get<BestStructure>(
           `https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${id}/`
@@ -197,10 +197,10 @@ export class StructureViewerComponent {
   });
 
   alphafoldSummary = rxResource({
-    request: () => this.obj().identifier,
-    loader: ({ request }) => {
+    params: () => this.obj().identifier,
+    stream: ({params}) => {
       if (!this.isProtein()) return EMPTY;
-      const id = request;
+      const id = params;
       return this.http.get<AlphaFoldSummary>(
         `https://alphafold.ebi.ac.uk/api/uniprot/summary/${id}.json`
       );

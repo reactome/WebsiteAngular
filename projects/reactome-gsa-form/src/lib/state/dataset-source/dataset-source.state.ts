@@ -27,17 +27,20 @@ export interface DatasetSourceState extends EntityState<PDatasetSource> {
 
 export const datasetSourceAdapter = createEntityAdapter<PDatasetSource>();
 
-export const initialState: DatasetSourceState = datasetSourceAdapter.getInitialState({
-  ids: ['search'],
-  entities: {
-    search: {
-      id: 'search',
-      name: 'Search',
-      description: 'Search across Expression Atlas and GREIN dataset',
-      data_types: ['rnaseq_counts', 'proteomics_int', 'microarray_norm'],
-      source: 'External'
-    }
+// NgRx 20 narrowed getInitialState() to accept only the state's own extra keys
+// (Omit<S, keyof EntityState<T>>), so ids/entities can no longer be seeded by
+// hand. Adding the entity through the adapter is equivalent and keeps the
+// ids/entities invariants consistent.
+export const initialState: DatasetSourceState = datasetSourceAdapter.addOne(
+  {
+    id: 'search',
+    name: 'Search',
+    description: 'Search across Expression Atlas and GREIN dataset',
+    data_types: ['rnaseq_counts', 'proteomics_int', 'microarray_norm'],
+    source: 'External'
   },
-  selectedSourceId: null
-});
+  datasetSourceAdapter.getInitialState({
+    selectedSourceId: null
+  })
+);
 

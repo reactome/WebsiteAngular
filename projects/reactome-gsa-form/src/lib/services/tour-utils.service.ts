@@ -2,7 +2,9 @@ import {Injectable} from '@angular/core';
 import {TourService} from "ngx-ui-tour-md-menu";
 import {map, merge, Observable, shareReplay, startWith} from "rxjs";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {IMdStepOption} from "ngx-ui-tour-md-menu/lib/step-option.interface";
+// ngx-ui-tour-md-menu publishes this interface under the name IStepOption
+// (`export type { IMdStepOption as IStepOption }`); it is the same type.
+import {IStepOption as IMdStepOption} from "ngx-ui-tour-md-menu";
 
 export type TourStatus = 'on' | 'off' | 'pause';
 

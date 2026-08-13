@@ -58,7 +58,7 @@
 :host ::ng-deep {
   .mat-mdc-tab-label-container {
     border-bottom: 0;
-    border-right: var(--mat-tab-header-divider-height, 1px) solid var(--mat-tab-header-divider-color, var(--mat-sys-surface-variant));
+    border-right: var(--mat-tab-divider-height, 1px) solid var(--mat-tab-divider-color, var(--mat-sys-surface-variant));
   }
 
   .mat-mdc-tab-labels {
@@ -94,7 +94,7 @@
         height: 100%;
         width: 0;
         border-top-width: 0;
-        border-right-width: var(--mdc-tab-indicator-active-indicator-height, 2px);
+        border-right-width: var(--mat-tab-active-indicator-height, 2px);
         border-right-style: solid;
       }
     }

@@ -1,5 +1,8 @@
-import {EntityState, Update} from "@ngrx/entity";
-import {EntityStateAdapter} from "@ngrx/entity/src/models";
+// EntityAdapter is the public type; it extends the internal EntityStateAdapter,
+// which used to be deep-imported from "@ngrx/entity/src/models". NgRx 20 added
+// an "exports" map that blocks those deep paths, and EntityAdapter provides the
+// updateOne() this helper needs anyway.
+import {EntityAdapter, EntityState, Update} from "@ngrx/entity";
 import {EntityFetcher, EntityUpdater} from "../model/utils.model";
 import { HttpErrorResponse } from "@angular/common/http";
 
@@ -14,7 +17,7 @@ export function extractErrorMessage(err: HttpErrorResponse) {
 
 export class EntityHelper<T, S extends EntityState<T> = EntityState<T>> {
 
-  constructor(public readonly adapter: EntityStateAdapter<T>) {
+  constructor(public readonly adapter: EntityAdapter<T>) {
   }
 
   fetch: EntityFetcher<T, S> = (id, state) => state.entities[id]

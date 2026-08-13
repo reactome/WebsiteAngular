@@ -98,9 +98,9 @@ export class SearchComponent {
   query = viewChild.required<ElementRef<HTMLInputElement>>('query');
 
   suggestions = rxResource({
-    request: this.searchText,
-    loader: params => params.request.length >= MIN_SUGGEST_LENGTH
-      ? this.http.get<string[]>(`${CONTENT_SERVICE}/search/suggest`, {params: {query: params.request}})
+    params: this.searchText,
+    stream: params => params.params.length >= MIN_SUGGEST_LENGTH
+      ? this.http.get<string[]>(`${CONTENT_SERVICE}/search/suggest`, {params: {query: params.params}})
       : of([])
   });
 
@@ -282,8 +282,8 @@ export class SearchComponent {
   selectedResult = signal<Search.Entry | undefined>(undefined)
   selectedResultId = computed(() => this.selectedResult()?.dbId)
   selectedResultPathways = rxResource({
-    request: this.selectedResultId,
-    loader: ({request}) => this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${request}`, {
+    params: this.selectedResultId,
+    stream: ({params}) => this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
       params: {
         includeInteractors: false,
         directlyInDiagram: true,

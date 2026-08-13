@@ -71,13 +71,13 @@ export class FoundTableComponent {
   }
 
   pathwayFoundEntities = rxResource({
-    request: () => ({
+    params: () => ({
       pathway: this.pathway().stId,
       token: this.state.analysis(),
       resource: this.analysis.resourceFilter()
     }),
-    loader: ({request}) => request.pathway && request.token ?
-      this.analysis.foundEntities(request.pathway, request.token, request.resource || undefined) :
+    stream: ({params}) => params.pathway && params.token ?
+      this.analysis.foundEntities(params.pathway, params.token, params.resource || undefined) :
       of()
   })
 

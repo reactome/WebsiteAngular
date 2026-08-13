@@ -160,12 +160,12 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   _treeSource = rxResource({
-    request: () => ({depth: this.depthIndex()}),
-    loader: ({request}) => {
+    params: () => ({depth: this.depthIndex()}),
+    stream: ({params}) => {
       // Skip updating the tree when index changes is from the tree
       if (this.depthChangeSource() === 'tree') return of(this.dataSource.data);
 
-      const depth = request.depth;
+      const depth = params.depth;
 
       if (!depth) return of(this.dataSource.data);
 
@@ -185,20 +185,20 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   // TODO only query for the required data, no need to know where the molecule is acting in this view
   _selectedTreeNodeData = rxResource({
-    request: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
-    loader: (param) => {
+    params: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
+    stream: (param) => {
       const selectedNode = this.selectedTreeNode();
       // Check the condition to determine which method to call
       // Protein
       if (!this.isNestedView(selectedNode)) {
-        return this.dataStateService.fetchEnhancedData<SelectableObject>(param.request, {
+        return this.dataStateService.fetchEnhancedData<SelectableObject>(param.params, {
           fetchIncomingRelationships: false,
           summariseReferenceEntity: false,
           includeDisease: true
         }).pipe(map(result => result as unknown as E));
       } else {
         // PE -> Complex and Set
-        return this.inDepth(param.request, 1) // This is from user interaction on the tree itself, so the depth is always 1
+        return this.inDepth(param.params, 1) // This is from user interaction on the tree itself, so the depth is always 1
           .pipe(
             map(entityResult => {
               if (entityResult && entityResult.composedOf) {

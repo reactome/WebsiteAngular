@@ -39,8 +39,8 @@ type FlaggingResult = {
 })
 export class DataStateService {
   _currentPathway = rxResource({
-    request: () => this.state.pathwayId(),
-    loader: (params) => this.fetchEnhancedData<Pathway>(params.request, {
+    params: () => this.state.pathwayId(),
+    stream: (params) => this.fetchEnhancedData<Pathway>(params.params, {
       summariseReferenceEntity: false,
       fetchIncomingRelationships: true, // needed for compare mode
       includeDisease: true
@@ -56,16 +56,16 @@ export class DataStateService {
   })
 
   private _ancestors = rxResource({
-    request: () => ({id: this.state.pathwayId(), path: this.state.path()}),
-    loader: (params) => this.fetchAncestors(params.request.id, params.request.path)
+    params: () => ({id: this.state.pathwayId(), path: this.state.path()}),
+    stream: (params) => this.fetchAncestors(params.params.id, params.params.path)
   })
 
   private _selectedElement = rxResource({
-    request: () => ({
+    params: () => ({
       id: this.state.select() || this.state.pathwayId(),
       summariseDisease: this.state.summariseDisease()
     }),
-    loader: (params) => !params.request.id ? of() : this.fetchEnhancedData<SelectableObject>(params.request.id, {includeDisease: params.request.summariseDisease === true})
+    stream: (params) => !params.params.id ? of() : this.fetchEnhancedData<SelectableObject>(params.params.id, {includeDisease: params.params.summariseDisease === true})
   })
 
   public selectedElement = this._selectedElement.asReadonly().value
@@ -101,8 +101,8 @@ export class DataStateService {
   })
 
   flagResource = rxResource({
-    request: this.flagRequest,
-    loader: ({request: {diagram, tokens, species}}) => tokens.length === 0 ?
+    params: this.flagRequest,
+    stream: ({params: {diagram, tokens, species}}) => tokens.length === 0 ?
       of({matches: [], interactsWith: []}) // No tokens
       : forkJoin(tokens.map(query => { // Combine tokens
         return diagram// When in diagram / ehld view // When in reacfoam view

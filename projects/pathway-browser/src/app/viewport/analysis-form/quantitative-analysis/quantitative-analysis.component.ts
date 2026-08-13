@@ -1,5 +1,5 @@
 import {Component, inject, input, output, signal} from '@angular/core';
-import {AnalysisResult} from "reactome-gsa-form/lib/model/analysis-result.model";
+import {AnalysisResult} from "reactome-gsa-form";
 import {AnalysisService} from "../../../services/analysis.service";
 import {UrlStateService} from "../../../services/url-state.service";
 import {GsaFormModule} from "reactome-gsa-form";

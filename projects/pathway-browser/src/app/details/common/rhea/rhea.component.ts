@@ -144,10 +144,10 @@ export class RheaComponent {
 
 
   _rheaResources = rxResource({
-    request: () => this._xRefs(),
-    loader: (params) => {
+    params: () => this._xRefs(),
+    stream: (params) => {
 
-      const identifiers = params.request;
+      const identifiers = params.params;
 
       /*
        Remove duplicated object in the list when they have same identifier
@@ -171,9 +171,9 @@ export class RheaComponent {
   //todo: custom layout, remove it when dropping this layout
 
   // _structureSVGs = rxResource({
-  //   request: () => this.rheaResources() || [],
-  //   loader: (params) => {
-  //     const rheas = params.request;
+  //   params: () => this.rheaResources() || [],
+  //   stream: (params) => {
+  //     const rheas = params.params;
   //
   //     return forkJoin((
   //       rheas.map(rhea => {

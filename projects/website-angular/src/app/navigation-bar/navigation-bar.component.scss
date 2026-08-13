@@ -350,14 +350,14 @@ $hamburger-breakpoint: 1100px;
 
   #dark-toggle {
     ::ng-deep .mat-mdc-slide-toggle {
-      --mdc-switch-track-width: 38px;
-      --mdc-switch-track-height: 26px;
-      --mdc-switch-handle-width: 18px;
-      --mdc-switch-handle-height: 18px;
-      --mdc-switch-selected-icon-size: 18px;
-      --mdc-switch-unselected-icon-size: 18px;
-      --mdc-switch-track-shape: 26px;
-      --mdc-switch-handle-shape: 18px;
+      --mat-slide-toggle-track-width: 38px;
+      --mat-slide-toggle-track-height: 26px;
+      --mat-slide-toggle-handle-width: 18px;
+      --mat-slide-toggle-handle-height: 18px;
+      --mat-slide-toggle-selected-icon-size: 18px;
+      --mat-slide-toggle-unselected-icon-size: 18px;
+      --mat-slide-toggle-track-shape: 26px;
+      --mat-slide-toggle-handle-shape: 18px;
     }
   }
 }

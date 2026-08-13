@@ -31,7 +31,9 @@ import {of} from "rxjs";
 import {rxResource} from "@angular/core/rxjs-interop";
 import {environment, IS_CURATOR} from "../../environments/environment";
 import {FigureService} from "../details/tabs/description-tab/figure/figure.service";
-import {IOutputData, AngularSplitModule} from "angular-split";
+// angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
+// shape ({gutterNum, sizes}).
+import {SplitGutterInteractionEvent, AngularSplitModule} from "angular-split";
 import {EhldComponent} from "../ehld/ehld.component";
 import {ReacfoamComponent} from "../reacfoam/reacfoam.component";
 import {SpeciesComponent} from "../species/species.component";
@@ -174,8 +176,8 @@ export class ViewportComponent implements AfterViewInit {
   currentInteractorResource = this.interactorService.currentResource;
 
   exampleAnalysis = rxResource({
-    request: this.state.example,
-    loader: ({request}) => request ? this.analysis.loadDefaultExample(request) : of()
+    params: this.state.example,
+    stream: ({params}) => params ? this.analysis.loadDefaultExample(params) : of()
   })
 
   analysisLoading = computed(() => this.exampleAnalysis.isLoading() || this.analysis.isLoading())
@@ -324,7 +326,7 @@ export class ViewportComponent implements AfterViewInit {
     return url;
   })
 
-  onViewDetailDragEnd($event: IOutputData) {
+  onViewDetailDragEnd($event: SplitGutterInteractionEvent) {
     this.detailDraggedSize.set($event.sizes[1] as number)
   }
 }

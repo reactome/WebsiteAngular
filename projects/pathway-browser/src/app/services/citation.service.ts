@@ -86,8 +86,8 @@ export class CitationService {
 
 
   citationData = rxResource({
-    request: this.currentCitationId,
-    loader: (params) => this.getCitation(params.request)
+    params: this.currentCitationId,
+    stream: (params) => this.getCitation(params.params)
   })
 
   getCitation(id: string): Observable<string | PathwayCitation> {

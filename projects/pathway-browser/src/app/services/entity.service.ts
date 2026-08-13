@@ -24,12 +24,12 @@ export class EntityService {
   selectedElement$ = toObservable(this.dataStateService.selectedElement);
 
   _refEntities = rxResource({
-    request: this.eventId,
-    loader: ({request}) => {
-      return request
-        ? isReferenceEntityStId(request)
+    params: this.eventId,
+    stream: ({params}) => {
+      return params
+        ? isReferenceEntityStId(params)
           ? this.selectedElement$.pipe(filter(isDefined), filter(isRefEntity), map(ref => [ref]), take(1))
-          : this.participant.getReferenceEntities(request)
+          : this.participant.getReferenceEntities(params)
         : of(null);
     }
   });

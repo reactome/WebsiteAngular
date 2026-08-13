@@ -60,8 +60,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   hovering = signal(false)
 
   readonly svgData = rxResource({
-    request: () => ({id: this.pathwayId()}),
-    loader: params => this.ehldService.getSVGData(params.request.id).pipe(
+    params: () => ({id: this.pathwayId()}),
+    stream: params => this.ehldService.getSVGData(params.params.id).pipe(
       map(data => data
         .replaceAll('opacity="0.01"', 'opacity="0"')
         .replaceAll('opacity: 0.01', 'opacity: 0')

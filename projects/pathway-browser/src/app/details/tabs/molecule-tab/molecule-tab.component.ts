@@ -99,8 +99,8 @@ export class MoleculeTabComponent implements OnDestroy {
   }
 
   _pathwayParticipants = rxResource({
-    request: () => this.objStId(),
-    loader: () => this.participant.getParticipants(this.objStId())
+    params: () => this.objStId(),
+    stream: () => this.participant.getParticipants(this.objStId())
   });
 
   pathwayParticipants = this._pathwayParticipants.value

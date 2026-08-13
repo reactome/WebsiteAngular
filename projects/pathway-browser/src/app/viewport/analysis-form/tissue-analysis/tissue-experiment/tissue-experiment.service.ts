@@ -13,8 +13,8 @@ export class TissueExperimentService {
   }
 
   summaries = rxResource({
-    request: () => ({}),
-    loader: () => this.getExperimentsSummary()
+    params: () => ({}),
+    stream: () => this.getExperimentsSummary()
   })
 
   getExperimentsSummary(): Observable<TissueExperiment.Summaries> {

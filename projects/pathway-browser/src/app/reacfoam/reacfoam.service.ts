@@ -142,12 +142,12 @@ export class ReacfoamService {
 
 
   layoutMap = rxResource({
-    request: () => true,
-    loader: () => this.fetchTLPLayoutMap()
+    params: () => true,
+    stream: () => this.fetchTLPLayoutMap()
   })
 
   eventsHierarchyData = rxResource({
-    request: () => ({
+    params: () => ({
       species: this.species.currentSpecies(),
       params: {
         pathwaysOnly: true,
@@ -157,7 +157,7 @@ export class ReacfoamService {
         view: 'nested-aggregated',
       } as EventsHierarchy.QueryParams
     }),
-    loader: ({request}) => this.fetchEventsHierarchy(request.species, request.params)
+    stream: ({params}) => this.fetchEventsHierarchy(params.species, params.params)
   })
 
   mergedData = computed(() => {

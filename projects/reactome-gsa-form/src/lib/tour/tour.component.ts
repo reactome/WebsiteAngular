@@ -1,6 +1,8 @@
 import {Component} from '@angular/core';
 import {TourService} from "ngx-ui-tour-md-menu";
-import {IMdStepOption} from "ngx-ui-tour-md-menu/lib/step-option.interface";
+// ngx-ui-tour-md-menu publishes this interface under the name IStepOption
+// (`export type { IMdStepOption as IStepOption }`); it is the same type.
+import {IStepOption as IMdStepOption} from "ngx-ui-tour-md-menu";
 import {HeightService} from "../services/height.service";
 import {TourUtilsService} from "../services/tour-utils.service";
 

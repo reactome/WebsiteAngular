@@ -31,8 +31,8 @@ export class SpeciesService {
 
 
   private allSpecies = rxResource({
-      request: () => null,
-      loader: () => this.http.get<Species[]>(this._MAIN_SPECIES)
+      params: () => null,
+      stream: () => this.http.get<Species[]>(this._MAIN_SPECIES)
     }
   )
 

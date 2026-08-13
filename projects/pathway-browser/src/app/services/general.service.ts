@@ -13,11 +13,11 @@ export class GeneralService {
   constructor(private http: HttpClient) { }
 
   version = rxResource({
-    request: () => true,
+    params: () => true,
     // Resolve the current database version, falling back to a CORS-enabled
     // public endpoint when the primary content service version call fails.
     // The version is required to build CORS-enabled S3 diagram URLs.
-    loader: () => this.http.get<number>(`${CONTENT_SERVICE}/data/database/version`).pipe(
+    stream: () => this.http.get<number>(`${CONTENT_SERVICE}/data/database/version`).pipe(
       catchError(() => this.http.get<number>(VERSION_FALLBACK))
     )
   })

@@ -22,8 +22,8 @@ export class DetailDataState implements Partial<DataStateService> {
   readonly flagIdentifiers = computed<string[]>(() => []);
 
   flagResource = rxResource({
-    request: () => null,
-    loader: () => of({matches: [], interactsWith: []})
+    params: () => null,
+    stream: () => of({matches: [], interactsWith: []})
   });
 
   fetchEnhancedData<T extends DatabaseObject>(id: string | number | null, params?: Partial<{

@@ -12,7 +12,7 @@ import {DataStateService} from "./data-state.service";
 import {Params} from "@angular/router";
 import {cleanObject} from "../reacfoam/reacfoam.service";
 import {isDefined, shouldBeScientificFormat} from "./utils";
-import {Report} from "reactome-gsa-form/lib/model/report-status.model";
+import {Report} from "reactome-gsa-form";
 import {Species} from "../model/graph/species.model";
 import {SpeciesService} from "./species.service";
 type NotFoundIdentifier = Analysis.NotFoundIdentifier;
@@ -239,17 +239,17 @@ export class AnalysisService {
   ];
 
   resultResource = rxResource({
-    request: () => ({
+    params: () => ({
       token: this.state.analysis(),
       resource: this.state.resourceFilter(),
       species: this.state.speciesFilter()
     }),
-    loader: ({request, previous}) => {
-      //console.log("Loading ", request, previous)
-      return request.token ?
-        this.loadAnalysis(request.token, {
-          resource: request.resource || undefined,
-          species: request.species.join(',')
+    stream: ({params, previous}) => {
+      //console.log("Loading ", params, previous)
+      return params.token ?
+        this.loadAnalysis(params.token, {
+          resource: params.resource || undefined,
+          species: params.species.join(',')
         }) :
         EMPTY
     }
@@ -460,9 +460,9 @@ export class AnalysisService {
   notFoundPagination = signal<Pagination>({page: 1, pageSize: 40})
 
   notFoundIdentifiersResource = rxResource({
-    request: () => ({token: this.state.analysis(), pagination: this.notFoundPagination()}),
-    loader: ({request}) => request.token ?
-      this.notFound(request.token, request.pagination) :
+    params: () => ({token: this.state.analysis(), pagination: this.notFoundPagination()}),
+    stream: ({params}) => params.token ?
+      this.notFound(params.token, params.pagination) :
       of([])
   })
 
