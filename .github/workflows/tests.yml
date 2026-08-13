@@ -59,8 +59,10 @@ jobs:
 
       # site-search-index.json is generated, not committed, and the search
       # specs depend on it.
-      - name: Generate content indices
-        run: npm run generate:indices
+      - name: Generate content indices and compile content
+        run: |
+          npm run generate:indices
+          npm run stage:content
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

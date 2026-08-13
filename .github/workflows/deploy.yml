@@ -39,6 +39,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      # site-search-index.json and the compiled content JSON are both generated
+      # and gitignored. Without these the deployed bundle has no site-page
+      # search index (search silently returns no Pages) and no CMS content.
+      - name: Generate content indices and compile content
+        run: |
+          npm run generate:indices
+          npm run stage:content
+
       - name: Build
         run: |
           npx ng build reactome-cytoscape-style
