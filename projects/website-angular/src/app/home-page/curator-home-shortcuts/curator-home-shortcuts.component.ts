@@ -1,8 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { NavOptionsService } from '../../../services/nav-options.service';
+import { Component, Input, inject } from '@angular/core';
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { ButtonComponent } from "../../reactome-components/button/button.component";
 import { MatIcon } from "@angular/material/icon";
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { NavOption } from '../../../types/link';
 import { environment } from '../../../../../pathway-browser/src/environments/environment';
 
@@ -13,18 +13,12 @@ import { environment } from '../../../../../pathway-browser/src/environments/env
   styleUrl: './curator-home-shortcuts.component.scss'
 })
 export class CuratorHomeShortcutsComponent {
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
   @Input() dark: boolean = true;
   readonly webbenchLink = `${typeof window !== 'undefined' ? window.location.origin : environment.host}/curatortool/home`;
 
   ngOnInit() {
-    this.loadNavOptions();
-  }
-
-  loadNavOptions() {
-    import('../../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
   }
 
   // The curator build's baseHref is "/curatorgraph/", not "/". A plain

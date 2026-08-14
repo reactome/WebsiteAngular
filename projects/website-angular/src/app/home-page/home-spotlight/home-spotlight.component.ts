@@ -1,7 +1,7 @@
+import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, Input } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from "../../reactome-components/button/button.component";
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
@@ -23,10 +23,10 @@ export class HomeSpotlightComponent {
   loading = true;
   spotLightArticle: ArticleIndexItem = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
   renderedContent: string = '';
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
 
   ngOnInit() {
-    this.loadNavOptions();
     this.loadSpotLightArticle();
   }
 
@@ -58,12 +58,6 @@ export class HomeSpotlightComponent {
         this.spotLightArticle = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
         this.loading = false;
       }
-    });
-  }
-
-  loadNavOptions() {
-    import('../../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
     });
   }
 
