@@ -1,8 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, effect, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
-import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOptionsService } from '../../services/nav-options.service';
 import {NavLink} from '../../types/link';
 import { ContentService } from '../../services/content.service';
 import { SearchHistoryService } from '../../services/search-history.service';
@@ -23,15 +23,27 @@ interface BreadcrumbEntry extends NavLink {
 })
 export class BreadcrumbComponent {
   private route = inject(ActivatedRoute);
+  // These components build their state into plain fields from route
+  // subscriptions and an effect, so Angular is not told when it changes.
+  private cdr = inject(ChangeDetectorRef);
   private contentService = inject(ContentService);
   private http = inject(HttpClient);
   private searchHistory = inject(SearchHistoryService);
-  navOptions: Record<string, NavLink> = {};
+  readonly navOptions = inject(NavOptionsService).navOptions;
+
+  /** Last segments seen, so the effect can rebuild once navOptions resolves. */
+  private lastSegments: string[] | null = null;
+
+  constructor() {
+    effect(() => {
+      if (Object.keys(this.navOptions()).length === 0) return;
+      if (this.lastSegments) this.updateBreadcrumbs(this.lastSegments);
+    });
+  }
   breadcrumbs: BreadcrumbEntry[] = [];
 
   ngOnInit() {
     //Get all nav options
-    this.loadOptions();
 
     this.route.url.subscribe(segments => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
@@ -120,24 +132,15 @@ export class BreadcrumbComponent {
     });
   }
 
-  loadOptions() {
-      // Load nav options from the JSON file
-      import('../../config/nav-options.json').then((data) => {
-        this.navOptions = mapNavOptions(data.default);
-      });
-    }
-
   updateBreadcrumbs(segments: string[]) {
-    // Wait for navOptions to be loaded
-    if (Object.keys(this.navOptions).length === 0) {
-      // Retry after navOptions are loaded
-      setTimeout(() => this.updateBreadcrumbs(segments), 50);
-      return;
-    }
+    // navOptions arrives asynchronously; the effect in the constructor rebuilds
+    // these once it does, so there is no need to poll for it here.
+    this.lastSegments = segments;
+    if (Object.keys(this.navOptions()).length === 0) return;
 
     this.breadcrumbs = [];
     let currentPath = '';
-    let currentNavLevel: Record<string, NavLink> = this.navOptions;
+    let currentNavLevel: Record<string, NavLink> = this.navOptions();
 
     for (const segment of segments) {
       currentPath += '/' + segment;
@@ -176,6 +179,7 @@ export class BreadcrumbComponent {
         currentNavLevel = {};
       }
     }
+      this.cdr.markForCheck();
   }
 
   /**

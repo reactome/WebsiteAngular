@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormsModule } from '@angular/forms';
-import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOptionsService } from '../../services/nav-options.service';
 import { NavLink, NavOption, linkPath, linkQueryParams } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
 
@@ -21,7 +21,7 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   // this value in sync with the @media queries in navigation-bar.component.scss.
   readonly hamburgerBreakpoint = 1100;
   windowWidth:number = window.innerWidth;
-  navOptions: Record<string, NavOption> = {};
+  readonly navOptions = inject(NavOptionsService).navOptions;
   activeDropdown: string | null = null;
   activeHamburgerMenu: boolean = false;
   readonly linkPath = linkPath;
@@ -33,7 +33,6 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
   moon = 'M12.5 19.5001C10.4167 19.5001 8.646 18.7708 7.188 17.3121C5.72933 15.8541 5 14.0834 5 12.0001C5 10.1254 5.57633 8.51775 6.729 7.17708C7.88167 5.83708 9.361 5.00042 11.167 4.66708C11.6943 4.56975 12.0797 4.66342 12.323 4.94808C12.5663 5.23275 12.549 5.63908 12.271 6.16708C12.1043 6.48642 11.9757 6.81975 11.885 7.16708C11.795 7.51442 11.75 7.87542 11.75 8.25008C11.75 9.50008 12.1873 10.5627 13.062 11.4381C13.9373 12.3127 15 12.7501 16.25 12.7501C16.6247 12.7501 16.9857 12.7051 17.333 12.6151C17.6803 12.5244 18.0137 12.3958 18.333 12.2291C18.875 11.9511 19.2883 11.9234 19.573 12.1461C19.8577 12.3681 19.9513 12.7431 19.854 13.2711C19.5487 15.0491 18.7327 16.5318 17.406 17.7191C16.08 18.9064 14.4447 19.5001 12.5 19.5001Z';
 
   ngOnInit() {
-    this.loadNavOptions();
   }
 
   ngAfterViewInit(): void {
@@ -46,12 +45,6 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
         if (offIcon) offIcon.setAttribute('d', this.sun);
       }
     }, 500);
-  }
-
-  loadNavOptions() {
-    import('../../config/nav-options.json').then((navData) => {
-      this.navOptions = mapNavOptions(navData.default);
-    });
   }
 
   toggleHamburgerMenu() {
@@ -68,7 +61,7 @@ export class NavigationBarComponent implements OnInit, AfterViewInit {
     // dropdown ping-pongs as the mouse moves over neighbouring items.
     // Restrict hover-to-open to wide layouts; click handles narrow mode.
     if (this.windowWidth <= this.hamburgerBreakpoint) return;
-    const option = this.navOptions[label];
+    const option = this.navOptions()[label];
     if (option && option.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
       this.activeDropdown = label;
     }

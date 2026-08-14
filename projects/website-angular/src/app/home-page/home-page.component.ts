@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { SearchBarComponent } from '../search/search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
 import { HomeWhyReactomeComponent } from './home-why-reactome/home-why-reactome.component';
@@ -11,7 +11,7 @@ import { TileComponent } from '../reactome-components/tile/tile.component';
 import { NavOption} from '../../types/link';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { CuratorHomeShortcutsComponent } from './curator-home-shortcuts/curator-home-shortcuts.component';
-import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOptionsService } from '../../services/nav-options.service';
 import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
@@ -38,22 +38,13 @@ import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environ
 })
 export class HomePageComponent {
   readonly isCurator = IS_CURATOR;
-  navOptions: Record<string, NavOption> = {};
-
-  pathwayBrowserLink: string = '';
+  readonly navOptions = inject(NavOptionsService).navOptions;
+  /** Derived from navOptions; recomputes when the JSON resolves. */
+  readonly pathwayBrowserLink = computed(() =>
+    this.navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser');
 
   ngOnInit() {
-    this.loadNavOptions();
     // this.loadLatestNews();
   }
 
-  loadNavOptions() {
-    // Load nav options from the JSON file
-    import('../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-
-      const pathwayLink = this.navOptions['tools'].dropdownLinks?.['pathway-browser'];
-      this.pathwayBrowserLink = pathwayLink?.link || '/PathwayBrowser';
-    });
-  }
 }

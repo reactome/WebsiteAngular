@@ -1,6 +1,6 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output, effect, ChangeDetectorRef } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
-import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { NavOptionsService } from '../../services/nav-options.service';
 import {
   NavLink,
   NavOption,
@@ -33,8 +33,25 @@ export class SidebarComponent {
   @Input() activeSectionKey = '';
   @Output() sectionSelected = new EventEmitter<string>();
   private route = inject(ActivatedRoute);
+  // These components build their state into plain fields from route
+  // subscriptions and an effect, so Angular is not told when it changes.
+  private cdr = inject(ChangeDetectorRef);
   private contentService = inject(ContentService);
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService. */
+  readonly navOptions = inject(NavOptionsService).navOptions;
+
+  /** Last route segments seen, so the effect below can rebuild the items once
+   *  navOptions resolves (the route may emit before the JSON has loaded). */
+  private lastSegments: string[] | null = null;
+
+  constructor() {
+    // navOptions starts empty and fills in asynchronously. Rather than polling
+    // for it, rebuild the item list when it arrives.
+    effect(() => {
+      if (Object.keys(this.navOptions()).length === 0) return;
+      if (this.lastSegments) this.updateItems(this.lastSegments);
+    });
+  }
 
   sectionTitle = '';
   sectionIcon = '';
@@ -55,7 +72,6 @@ export class SidebarComponent {
     // Sections mode is fully controlled by inputs; no route-based loading.
     if (this.sectionsMode) return;
     //Get all nav options
-    this.loadOptions();
 
     this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
@@ -78,36 +94,29 @@ export class SidebarComponent {
             path_segments[path_segments.length - 1]
           );
         } else {
+          this.lastSegments = path_segments;
           this.updateItems(path_segments);
         }
       }
     });
   }
 
-  loadOptions() {
-    // Load nav options from the JSON file
-    import('../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
-  }
-
   updateItems(segments: string[]) {
-    // Wait for navOptions to be loaded
-    if (Object.keys(this.navOptions).length === 0) {
-      // Retry after navOptions are loaded
-      setTimeout(() => this.updateItems(segments), 50);
-      return;
-    }
+    // navOptions is a signal fed by NavOptionsService; it starts empty and
+    // fills in when the JSON resolves. This used to poll itself every 50ms
+    // waiting for that. Re-running via the effect in the constructor instead
+    // means no polling and no dependence on zone.js noticing the timer.
+    if (Object.keys(this.navOptions()).length === 0) return;
 
     // First segment is the main section (about, documentation, content, etc.)
     const mainSection = segments[0];
 
-    if (!this.navOptions[mainSection]) {
+    if (!this.navOptions()[mainSection]) {
       this.items = {};
       return;
     }
 
-    const section = this.navOptions[mainSection];
+    const section = this.navOptions()[mainSection];
 
     // If only one segment (e.g., /about), show the section's dropdown links
     if (segments.length === 1) {
@@ -181,17 +190,18 @@ export class SidebarComponent {
       this.items = sectionDropdownLinks;
       this.activeItem = matchedSubSectionKey || null;
     }
+      this.cdr.markForCheck();
   }
 
   updateItemsArticles(path: string, currentSlug: string) {
     if (path.includes('news')) {
       this.sectionTitle = 'News & Updates';
       this.sectionLink =
-        this.navOptions['about']?.dropdownLinks?.['news']?.link || '';
+        this.navOptions()['about']?.dropdownLinks?.['news']?.link || '';
     } else {
       this.sectionTitle = 'Reactome Research Spotlights';
       this.sectionLink =
-        this.navOptions['content']?.dropdownLinks?.[
+        this.navOptions()['content']?.dropdownLinks?.[
           'reactome-research-spotlight'
         ]?.link || '';
     }
@@ -218,6 +228,7 @@ export class SidebarComponent {
         this.items = {};
       },
     });
+      this.cdr.markForCheck();
   }
 
   /**

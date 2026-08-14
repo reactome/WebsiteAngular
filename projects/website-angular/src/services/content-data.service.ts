@@ -105,16 +105,20 @@ export class ContentDataService {
     );
   }
 
+  // ContentPageController is mapped at /data with paths /content/toc,
+  // /content/doi and /content/contributors. These were missing the /content
+  // segment, so all three requests 404'd and the pages rendered empty -- which
+  // is what curators saw as "on ToC, beta lists 0 new".
   getTocPathways(): Observable<TocPathway[]> {
-    return this.http.get<TocPathway[]>(`${this.baseUrl}/toc`);
+    return this.http.get<TocPathway[]>(`${this.baseUrl}/content/toc`);
   }
 
   getDoiPathways(): Observable<DoiPathway[]> {
-    return this.http.get<DoiPathway[]>(`${this.baseUrl}/doi`);
+    return this.http.get<DoiPathway[]>(`${this.baseUrl}/content/doi`);
   }
 
   getContributors(): Observable<Contributor[]> {
-    return this.http.get<Contributor[]>(`${this.baseUrl}/contributors`);
+    return this.http.get<Contributor[]>(`${this.baseUrl}/content/contributors`);
   }
 
   getSchemaModel(): Observable<SchemaNode> {

@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import {ExternalLink} from '../../../types/link';
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({
