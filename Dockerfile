@@ -3,7 +3,7 @@ FROM node:22
 WORKDIR /app
 
 # 1. Install Global Tools
-RUN npm install -g @angular/cli@19 tsx
+RUN npm install -g @angular/cli@21 tsx
 
 # 2. Copy Package files
 COPY package*.json ./
@@ -26,6 +26,9 @@ EXPOSE 4001
 # The IPv4 proxy runs in the background because `tinacms dev` only binds to
 # ::1:4001; docker port-publish is IPv4-only, so without this the admin UI
 # is unreachable from the host (and from any SSH tunnel into it).
+# stage-content compiles the authored .mdx into the JSON the app fetches; the
+# dev server cannot serve .mdx (vite treats that extension as JSX source).
 CMD npx tsx projects/website-angular/src/scripts/generate-index.ts && \
+    npx tsx projects/website-angular/src/scripts/stage-content.ts && \
     (node projects/website-angular/src/scripts/tina-ipv4-proxy.js &) && \
-    npx tinacms dev --rootPath projects/website-angular -c "ng serve --host 0.0.0.0 --poll 2000 --disable-host-check"
+    npx tinacms dev --rootPath projects/website-angular -c "ng serve --host 0.0.0.0 --poll 2000 --allowed-hosts beta.reactome.org --allowed-hosts localhost"

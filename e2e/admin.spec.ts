@@ -65,6 +65,14 @@ async function enterAdmin(page: Page) {
 }
 
 test.describe('TinaCMS admin shell', () => {
+  // Tina's dev server is a single Node process that indexes the filesystem, so
+  // several admin pages loading at once under playwright's default 4 workers
+  // starves it and these time out -- they pass every time the file runs alone.
+  // Serial + slow rather than looser assertions: a test that only passes on an
+  // idle machine is worse than no test.
+  test.describe.configure({ mode: 'serial' });
+  test.slow();
+
   test('loads without the "Failed loading assets" placeholder', async ({ page }) => {
     await page.goto('/admin/index.html', { waitUntil: 'networkidle' });
     await expect(page).toHaveTitle(/TinaCMS/i);
