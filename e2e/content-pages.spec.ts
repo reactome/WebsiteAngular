@@ -83,3 +83,45 @@ test.describe('Content pages render backend data', () => {
     await expect(page.getByText(/20\d\d/).first()).toBeVisible({ timeout: LOAD });
   });
 });
+
+test.describe('In-page table of contents', () => {
+  // The long userguide pages open with a table of contents linking each
+  // section. Those ids are added at render time by addAnchorIds; the call was
+  // once dropped from page.component while its import stayed, which left every
+  // one of these links dead with nothing failing. Assert the jump itself, not
+  // just that the ids exist, so the render pipeline and the click handler in
+  // app.component are both covered.
+  const PAGE = '/documentation/userguide/reactome-fiviz';
+
+  test('section headings receive ids for their table-of-contents links', async ({ page }) => {
+    await page.goto(PAGE);
+    await expect(page.locator('#Overview')).toHaveCount(1, { timeout: LOAD });
+    // MediaWiki-encoded anchor: the heading is "Gene Set/Mutation Analysis".
+    await expect(page.locator('#Gene_Set\\.2FMutation_Analysis')).toHaveCount(1);
+  });
+
+  test('clicking a table-of-contents link scrolls to that section', async ({ page }) => {
+    await page.goto(PAGE);
+    await expect(page.locator('#Overview')).toHaveCount(1, { timeout: LOAD });
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    await page.locator('a[href="#Gene_Set.2FMutation_Analysis"]').first().click();
+
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), { timeout: 10_000 })
+      .toBeGreaterThan(200);
+    // The heading should now be within the viewport, not merely somewhere below.
+    const offset = await page.evaluate(
+      () => document.getElementById('Gene_Set.2FMutation_Analysis')!.getBoundingClientRect().top,
+    );
+    expect(Math.abs(offset)).toBeLessThan(150);
+  });
+
+  test('a deep-linked anchor lands on the section', async ({ page }) => {
+    await page.goto(PAGE + '#Gene_Set.2FMutation_Analysis');
+    await expect(page.locator('#Gene_Set\\.2FMutation_Analysis')).toHaveCount(1, { timeout: LOAD });
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), { timeout: 10_000 })
+      .toBeGreaterThan(200);
+  });
+});
