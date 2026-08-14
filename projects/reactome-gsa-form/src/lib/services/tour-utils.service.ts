@@ -9,9 +9,12 @@ import {IStepOption as IMdStepOption} from "ngx-ui-tour-md-menu";
 export type TourStatus = 'on' | 'off' | 'pause';
 
 @UntilDestroy()
-@Injectable({
-  providedIn: 'root'
-})
+// Deliberately not providedIn: 'root'. This service injects TourService, and a
+// root-scoped service can only resolve root-scoped dependencies -- which would
+// force provideUiTour() into the root ApplicationConfig and drag ngx-ui-tour +
+// ngx-ui-tour-core (~275 kB) into the initial bundle. Provided by GsaFormModule
+// instead, so both resolve inside the lazily loaded Pathway Browser.
+@Injectable()
 export class TourUtilsService {
   on: boolean = false;
   paused: boolean = false;

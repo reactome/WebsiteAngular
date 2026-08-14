@@ -65,6 +65,7 @@ import {ReactomeTableModule} from "reactome-table";
 import {TourAnchorMatMenuDirective, TourStepTemplateComponent} from "ngx-ui-tour-md-menu";
 import {TourComponent} from "./tour/tour.component";
 import {config, DEFAULT_GSA_CONFIG, GsaConfig} from "./config/gsa-config";
+import {TourUtilsService} from "./services/tour-utils.service";
 import {CdkScrollable} from "@angular/cdk/scrolling";
 import {ParamDatasetComponent} from "./dataset-form/datasets/param-dataset/param-dataset.component";
 
@@ -133,6 +134,9 @@ import {ParamDatasetComponent} from "./dataset-form/datasets/param-dataset/param
     TourAnchorMatMenuDirective,
     TourStepTemplateComponent,
     CdkScrollable,
+  ],
+  providers: [
+    TourUtilsService
   ],
   exports: [
     GsaFormComponent

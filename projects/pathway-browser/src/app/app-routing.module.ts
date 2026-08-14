@@ -4,6 +4,7 @@ import {ENVIRONMENT_INITIALIZER, inject} from "@angular/core";
 import {DomSanitizer} from "@angular/platform-browser";
 import {MatIconRegistry} from "@angular/material/icon";
 import {IconService} from "./services/icon.service";
+import {provideUiTour} from "ngx-ui-tour-md-menu";
 
 const registerPathwayBrowserIcons = () => {
   const matIconRegistry = inject(MatIconRegistry);
@@ -42,6 +43,13 @@ export const routes: Routes = [
       ? {consumed: segments}
       : {consumed: segments, posParams: {pathwayId: segments[0]}},
     providers: [
+      // ngx-ui-tour 16 stopped providing TourService in root, so it has to be
+      // provided explicitly or the GSA form's tour anchors fail with NG0201 and
+      // take the whole viewport down. It belongs here rather than in the root
+      // ApplicationConfig: the tour is only reachable through the lazily loaded
+      // Pathway Browser, and providing it at the root pulled ngx-ui-tour +
+      // ngx-ui-tour-core (~275 kB) into the initial bundle.
+      provideUiTour(),
       {
         provide: ENVIRONMENT_INITIALIZER,
         multi: true,
