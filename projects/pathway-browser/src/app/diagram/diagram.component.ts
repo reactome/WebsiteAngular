@@ -1509,23 +1509,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    // Both remaining items land on a section of the Details tab. The section
+    // keys are rendered as element ids, and the fragment is what scrolls to
+    // them.
+    this.state.tab.set('details');
+
     if (action === 'interactors') {
-      // Switching the overlay on is what actually does something here: it
-      // draws the entity's interactors onto the diagram, and populates the
-      // Interactors section of the details panel as a side effect. Deep
-      // linking to that section alone did nothing, because it is not rendered
-      // until interactors have been loaded.
+      // Switching the overlay on as well, because the Interactors section is
+      // not rendered until interactors have actually been loaded -- the
+      // fragment alone would scroll to an element that does not exist yet.
       this.state.overlay.set(ResourceType.STATIC);
-      this.state.tab.set('details');
-      return;
     }
 
-    // 'locationsInPWB' is the section key the details tab renders as an
-    // element id; it scrolls to whichever one the fragment names.
-    this.state.tab.set('details');
     this.state.navigateTo(this.pathwayId() ?? null, {
       queryParamsHandling: 'merge',
-      fragment: 'locationsInPWB',
+      fragment: action === 'pathways' ? 'locationsInPWB' : 'interactors',
     });
   }
 

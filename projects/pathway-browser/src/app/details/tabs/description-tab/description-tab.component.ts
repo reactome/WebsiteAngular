@@ -717,6 +717,7 @@ export class DescriptionTabComponent implements OnDestroy {
       const section = this.state.section();
       if (section) {
         this.selectedKey.set(section);
+        this.scrollToSectionWhenRendered(section);
       }
     });
 
@@ -777,6 +778,26 @@ export class DescriptionTabComponent implements OnDestroy {
         return this.interactors() && this.interactors().length > 0;
       default:
         return obj[key] !== undefined && obj[key];
+    }
+  }
+
+  /**
+   * Scroll to a section named by the URL fragment.
+   *
+   * Selecting it in the side nav was never enough on its own: arriving with
+   * "#interactors" highlighted the entry but left the panel at the top, on
+   * Overview. Unlike a nav click, the element usually does not exist yet --
+   * sections render as their data arrives, and several are hidden entirely
+   * until then -- so poll briefly rather than assume it is already there.
+   */
+  private scrollToSectionWhenRendered(key: string, attemptsLeft = 30): void {
+    const element = document.getElementById(key);
+    if (element) {
+      this.selectItem(key);
+      return;
+    }
+    if (attemptsLeft > 0) {
+      setTimeout(() => this.scrollToSectionWhenRendered(key, attemptsLeft - 1), 100);
     }
   }
 
