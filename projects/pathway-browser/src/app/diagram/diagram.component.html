@@ -7,7 +7,15 @@
      (keydown.-)="zoomOut()"
 >
 
-  <div id="cytoscape" #cytoscape [class.pointer]="hovering()"></div>
+  <!-- Suppress the browser's own menu so the diagram's can take its place. -->
+  <div id="cytoscape" #cytoscape [class.pointer]="hovering()"
+       (contextmenu)="$event.preventDefault()"></div>
+
+  <cr-diagram-context-menu
+    [target]="contextTarget()"
+    (action)="onContextAction($event)"
+    (dismissed)="contextTarget.set(null)"
+  />
   <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex': 'none'">
     <div id="handle-limits"
          (mouseup)="dragEnd()" (mouseleave)="dragEnd()"

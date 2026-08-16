@@ -67,6 +67,11 @@ import { NgClass } from '@angular/common';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
+import {
+  DiagramContextAction,
+  DiagramContextMenuComponent,
+  DiagramContextTarget,
+} from './context-menu/diagram-context-menu.component';
 
 const INIT_RX = 2;
 
@@ -87,6 +92,7 @@ const FIT_PADDING = 100;
     MatSliderThumb,
     MatTooltip,
     AnalysisLegendComponent,
+    DiagramContextMenuComponent,
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
@@ -100,6 +106,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     alias: 'interactor',
   });
   readonly pathwayId = model.required<string>();
+
+  /** The entity a right-click landed on, or null when no menu is open. */
+  readonly contextTarget = signal<DiagramContextTarget | null>(null);
 
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
@@ -558,6 +567,27 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             preserveFragment: true,
           })
         );
+
+        // Right-click menu on entities. The old site offered Molecule /
+        // Pathways / Interactors here and curators still reach for it; each
+        // item is a shortcut to somewhere the details panel already goes.
+        this.cy.on('cxttap', '.PhysicalEntity', (e) => {
+          const stId = e.target.data('graph.stId');
+          if (!stId) return;
+          const pointer = e.originalEvent as MouseEvent | undefined;
+          if (!pointer) return;
+          this.contextTarget.set({
+            x: pointer.clientX,
+            y: pointer.clientY,
+            stId,
+            label: e.target.data('displayName') || e.target.data('graph.displayName') || stId,
+          });
+        });
+
+        // Right-clicking the background dismisses it.
+        this.cy.on('cxttap', (e) => {
+          if (e.target === this.cy) this.contextTarget.set(null);
+        });
 
         this.cy.on('dblclick', '.Interacting.Pathway', (e) =>
           this.state.navigateTo(e.target.data('graph.stId'), {
@@ -1459,4 +1489,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       )
     );
   }
+
+  /**
+   * Route a context-menu choice to the details panel.
+   *
+   * Each item selects the entity and then deep links to where that information
+   * already lives, so the menu stays a shortcut rather than a second
+   * implementation that can drift from the panel.
+   */
+  onContextAction(action: DiagramContextAction): void {
+    const target = this.contextTarget();
+    this.contextTarget.set(null);
+    if (!target) return;
+
+    this.state.select.set(target.stId);
+
+    if (action === 'molecule') {
+      this.state.tab.set('molecule');
+      return;
+    }
+
+    // 'locationsInPWB' and 'interactors' are the section keys the details tab
+    // renders as element ids; it scrolls to whichever one the fragment names.
+    this.state.tab.set('details');
+    this.state.navigateTo(this.pathwayId() ?? null, {
+      queryParamsHandling: 'merge',
+      fragment: action === 'pathways' ? 'locationsInPWB' : 'interactors',
+    });
+  }
+
 }
