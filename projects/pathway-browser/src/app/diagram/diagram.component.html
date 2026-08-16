@@ -13,6 +13,7 @@
 
   <cr-entity-popup
     [target]="contextTarget()"
+    [selected]="state.select()"
     (navigate)="onPopupNavigate($event)"
     (dismissed)="contextTarget.set(null)"
   />

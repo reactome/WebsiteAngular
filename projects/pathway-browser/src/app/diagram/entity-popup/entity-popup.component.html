@@ -11,10 +11,19 @@
       <button
         type="button"
         class="entity-popup__title"
-        [title]="'Back to ' + entity.label"
-        (click)="backToEntity()"
+        [title]="entity.label + ' -- click to bring the diagram back here'"
+        (click)="recentre()"
       >{{ entity.label }}</button>
 
+      <button
+        type="button"
+        class="entity-popup__icon"
+        [attr.aria-label]="'Bring the diagram back to ' + entity.label"
+        [title]="'Bring the diagram back to ' + entity.label"
+        (click)="recentre()"
+      >
+        <mat-icon>my_location</mat-icon>
+      </button>
       <button
         type="button"
         class="entity-popup__icon"
@@ -62,14 +71,37 @@
           <p class="entity-popup__note">{{ emptyMessage() }}</p>
         } @else {
           <ul>
-            @for (row of rows(); track $index) {
+            @for (row of rows(); track row.stId ?? row.href ?? row.label) {
               <li>
-                <button type="button" (click)="open(row)">
-                  <span class="row-label">{{ row.label }}</span>
-                  @if (row.detail) {
-                    <span class="row-detail">{{ row.detail }}</span>
-                  }
-                </button>
+                <!-- Only rows with somewhere to go are buttons. A component
+                     that came back without an stId is still worth listing --
+                     it answers "what is in here" -- but rendering it as a
+                     button would be one more control that does nothing. -->
+                @if (isNavigable(row)) {
+                  <button
+                    type="button"
+                    [class.current]="isCurrent(row)"
+                    [attr.aria-current]="isCurrent(row) ? 'true' : null"
+                    (click)="open(row)"
+                  >
+                    <span class="row-text">
+                      <span class="row-label">{{ row.label }}</span>
+                      @if (row.detail) {
+                        <span class="row-detail">{{ row.detail }}</span>
+                      }
+                    </span>
+                    @if (rowIcon(); as icon) {
+                      <mat-icon class="row-icon">{{ icon }}</mat-icon>
+                    }
+                  </button>
+                } @else {
+                  <span class="row-static">
+                    <span class="row-label">{{ row.label }}</span>
+                    @if (row.detail) {
+                      <span class="row-detail">{{ row.detail }}</span>
+                    }
+                  </span>
+                }
               </li>
             }
           </ul>

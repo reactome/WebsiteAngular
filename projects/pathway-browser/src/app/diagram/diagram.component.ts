@@ -125,7 +125,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     private diagram: DiagramService,
     public dark: DarkService,
     private interactorsService: InteractorService,
-    private state: UrlStateService,
+    // protected rather than private: the template binds the current selection
+    // into the entity popup, so it can mark the row the diagram is sitting on.
+    protected state: UrlStateService,
     public analysis: AnalysisService,
     private event: EventService,
     private router: Router,

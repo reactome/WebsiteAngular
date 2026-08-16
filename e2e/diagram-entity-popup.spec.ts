@@ -115,7 +115,12 @@ test.describe('Diagram entity popup', () => {
     await expect(rows.first().or(note)).toBeVisible({ timeout: 20_000 });
   });
 
-  test('title returns to the entity after following a component molecule', async ({ page }) => {
+  // The popup is an inspector: it stays anchored to the entity you
+  // right-clicked while the diagram is what travels. These two cover the
+  // consequences of that -- the view can always be brought back, and the popup
+  // shows where the view currently is.
+
+  test('brings the diagram back after following a component molecule', async ({ page }) => {
     await page.goto(PATHWAY);
     await openPopupOnAnyEntity(page);
 
@@ -123,21 +128,52 @@ test.describe('Diagram entity popup', () => {
     await expect(page).toHaveURL(/[?&]select=R-[A-Z]+-\d+/, { timeout: 15_000 });
     const origin = new URL(page.url()).searchParams.get('select')!;
 
-    // Following a component moves the diagram to that molecule -- useful, but
-    // it used to be a one-way trip: the title was inert, so there was no way
-    // back to the complex you right-clicked.
+    // Following a component moves the diagram to that molecule. Useful, but it
+    // was a one-way trip until the popup grew a way to re-aim the view.
     const rows = page.locator('.entity-popup__content li button');
     await expect(rows.first()).toBeVisible({ timeout: 20_000 });
     await rows.first().click();
 
     // The popup stays open and stays titled with the entity it is about.
     await expect(page.locator('.entity-popup')).toHaveCount(1);
-    await page.locator('.entity-popup__title').click();
+
+    await page.getByRole('button', { name: /^Bring the diagram back to / }).click();
 
     await expect
       .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: 15_000 })
       .toBe(origin);
     await expect(page.locator('.entity-popup')).toHaveCount(1);
+  });
+
+  test('marks the row the diagram is currently sitting on', async ({ page }) => {
+    await page.goto(PATHWAY);
+    await openPopupOnAnyEntity(page);
+
+    const rows = page.locator('.entity-popup__content li button');
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    await rows.first().click();
+
+    // Without this the popup cannot tell you where the diagram went, and
+    // re-centring looks like it does nothing.
+    await expect(rows.first()).toHaveAttribute('aria-current', 'true', { timeout: 15_000 });
+  });
+
+  test('the title is also a way back, since that is what people reach for', async ({ page }) => {
+    await page.goto(PATHWAY);
+    await openPopupOnAnyEntity(page);
+
+    await expect(page).toHaveURL(/[?&]select=R-[A-Z]+-\d+/, { timeout: 15_000 });
+    const origin = new URL(page.url()).searchParams.get('select')!;
+
+    const rows = page.locator('.entity-popup__content li button');
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    await rows.first().click();
+
+    await page.locator('.entity-popup__title').click();
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: 15_000 })
+      .toBe(origin);
   });
 
   test('closes on Escape without navigating', async ({ page }) => {

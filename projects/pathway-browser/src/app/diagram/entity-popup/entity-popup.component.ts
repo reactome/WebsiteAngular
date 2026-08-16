@@ -66,6 +66,15 @@ export class EntityPopupComponent {
 
   readonly target = input<EntityPopupTarget | null>(null);
 
+  /**
+   * What the diagram is currently sitting on.
+   *
+   * The popup is a lens on one entity and the diagram is what moves, so this
+   * is where the lens is presently pointed -- without it the popup cannot show
+   * you where you are, and re-centring appears to do nothing.
+   */
+  readonly selected = input<string | null>(null);
+
   /** A row was chosen; the diagram decides whether to select or navigate. */
   readonly navigate = output<{ stId: string; kind: EntityPopupTab }>();
   readonly dismissed = output<void>();
@@ -207,6 +216,23 @@ export class EntityPopupComponent {
     }
   });
 
+  /**
+   * Rows that take you away from the diagram say so.
+   *
+   * Molecules keep you here and only move the view, so they get no icon; a
+   * pathway replaces the diagram, and an interactor opens another site.
+   */
+  readonly rowIcon = computed(() => {
+    switch (this.tab()) {
+      case 'pathways':
+        return 'arrow_forward';
+      case 'interactors':
+        return 'open_in_new';
+      default:
+        return null;
+    }
+  });
+
   // --- interaction -----------------------------------------------------
 
   select(tab: EntityPopupTab): void {
@@ -221,16 +247,29 @@ export class EntityPopupComponent {
     if (row.stId) this.navigate.emit({ stId: row.stId, kind: this.tab() });
   }
 
+  /** True for the row the diagram is currently sitting on. */
+  isCurrent(row: PopupRow): boolean {
+    return !!row.stId && row.stId === this.selected();
+  }
+
+  /** True when the row actually has somewhere to take you. */
+  isNavigable(row: PopupRow): boolean {
+    return !!row.stId || !!row.href;
+  }
+
   /**
-   * The title stays naming the entity that was right-clicked even while you
-   * click through its components, so it doubles as the way back: clicking a
-   * component molecule moves the diagram to that molecule, and clicking the
-   * title brings you back to the complex you started from.
+   * Point the diagram back at the entity the popup is about.
+   *
+   * The popup stays anchored while the diagram travels, so following a
+   * component molecule is not a departure you undo -- it is the lens staying
+   * put while the view moves. Re-centring is how you bring the view back, and
+   * it is offered both on the title and as its own header button, because a
+   * title that happens to be clickable is not an affordance anyone finds.
    *
    * Emitted as an entity rather than a pathway, because that is what it is --
-   * the diagram selects it and re-centres, exactly as it does for a row.
+   * the diagram selects and re-centres, exactly as it does for a row.
    */
-  backToEntity(): void {
+  recentre(): void {
     const target = this.target();
     if (target) this.navigate.emit({ stId: target.stId, kind: 'molecules' });
   }

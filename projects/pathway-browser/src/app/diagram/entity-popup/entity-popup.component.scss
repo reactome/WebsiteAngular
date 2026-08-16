@@ -151,8 +151,8 @@
     border-radius: 3px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
+    align-items: center;
+    gap: 0.4rem;
 
     &:hover,
     &:focus-visible {
@@ -160,6 +160,28 @@
       color: var(--on-primary, #fff);
       outline: none;
     }
+
+    // Where the diagram is currently sitting. Marked with a bar rather than a
+    // fill, so it stays legible underneath the hover fill.
+    &.current {
+      box-shadow: inset 2px 0 0 var(--primary, #005a9c);
+      font-weight: 600;
+    }
+  }
+
+  .row-text,
+  .row-static {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  // Listed for information, with nowhere to go.
+  .row-static {
+    padding: 0.35rem 0.45rem;
+    opacity: 0.75;
   }
 
   .row-label {
@@ -169,6 +191,16 @@
   .row-detail {
     font-size: 0.68rem;
     opacity: 0.7;
+  }
+
+  // Rows that leave the diagram say so; molecules, which only move the view,
+  // carry no icon at all.
+  .row-icon {
+    flex: none;
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    opacity: 0.55;
   }
 }
 
