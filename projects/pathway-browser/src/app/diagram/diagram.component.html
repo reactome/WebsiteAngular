@@ -11,9 +11,9 @@
   <div id="cytoscape" #cytoscape [class.pointer]="hovering()"
        (contextmenu)="$event.preventDefault()"></div>
 
-  <cr-diagram-context-menu
+  <cr-entity-popup
     [target]="contextTarget()"
-    (action)="onContextAction($event)"
+    (navigate)="onPopupNavigate($event)"
     (dismissed)="contextTarget.set(null)"
   />
   <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex': 'none'">

@@ -68,10 +68,10 @@ import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
 import {
-  DiagramContextAction,
-  DiagramContextMenuComponent,
-  DiagramContextTarget,
-} from './context-menu/diagram-context-menu.component';
+  EntityPopupComponent,
+  EntityPopupTab,
+  EntityPopupTarget,
+} from './entity-popup/entity-popup.component';
 
 const INIT_RX = 2;
 
@@ -92,7 +92,7 @@ const FIT_PADDING = 100;
     MatSliderThumb,
     MatTooltip,
     AnalysisLegendComponent,
-    DiagramContextMenuComponent,
+    EntityPopupComponent,
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
@@ -107,8 +107,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   });
   readonly pathwayId = model.required<string>();
 
-  /** The entity a right-click landed on, or null when no menu is open. */
-  readonly contextTarget = signal<DiagramContextTarget | null>(null);
+  /** The entity a right-click landed on, or null when no popup is open. */
+  readonly contextTarget = signal<EntityPopupTarget | null>(null);
 
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
@@ -581,7 +581,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             y: pointer.clientY,
             stId,
             label: e.target.data('displayName') || e.target.data('graph.displayName') || stId,
+            acc: e.target.data('acc') || undefined,
           });
+          // Production also moves the details panel to the entity you
+          // right-clicked, so the popup and the panel agree. Flagged as an
+          // in-diagram selection, or the select effect animates a fit to the
+          // node and a right-click would yank the whole diagram around.
+          this.selecting = true;
+          this.state.select.set(stId);
         });
 
         // Right-clicking the background dismisses it.
@@ -1491,40 +1498,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Route a context-menu choice to the details panel.
+   * A row in the popup was clicked.
    *
-   * Each item selects the entity and then deep links to where that information
-   * already lives, so the menu stays a shortcut rather than a second
-   * implementation that can drift from the panel.
+   * Molecules and interactors are entities, so they get selected in place;
+   * a pathway is somewhere to go, so it navigates.
    */
-  onContextAction(action: DiagramContextAction): void {
-    const target = this.contextTarget();
-    this.contextTarget.set(null);
-    if (!target) return;
-
-    this.state.select.set(target.stId);
-
-    if (action === 'molecule') {
-      this.state.tab.set('molecule');
+  onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
+    if (event.kind === 'pathways') {
+      this.contextTarget.set(null);
+      this.state.navigateTo(event.stId, {
+        queryParamsHandling: 'preserve',
+        preserveFragment: true,
+      });
       return;
     }
-
-    // Both remaining items land on a section of the Details tab. The section
-    // keys are rendered as element ids, and the fragment is what scrolls to
-    // them.
-    this.state.tab.set('details');
-
-    if (action === 'interactors') {
-      // Switching the overlay on as well, because the Interactors section is
-      // not rendered until interactors have actually been loaded -- the
-      // fragment alone would scroll to an element that does not exist yet.
-      this.state.overlay.set(ResourceType.STATIC);
-    }
-
-    this.state.navigateTo(this.pathwayId() ?? null, {
-      queryParamsHandling: 'merge',
-      fragment: action === 'pathways' ? 'locationsInPWB' : 'interactors',
-    });
+    this.state.select.set(event.stId);
   }
 
 }

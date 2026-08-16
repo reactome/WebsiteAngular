@@ -1,0 +1,75 @@
+@if (target(); as entity) {
+  <div
+    #panel
+    class="entity-popup"
+    role="dialog"
+    [attr.aria-label]="entity.label"
+    [style.left.px]="position().x"
+    [style.top.px]="position().y"
+  >
+    <header class="entity-popup__header">
+      <span class="entity-popup__title" [title]="entity.label">{{ entity.label }}</span>
+
+      <button
+        type="button"
+        class="entity-popup__icon"
+        [class.active]="pinned()"
+        [attr.aria-pressed]="pinned()"
+        aria-label="Keep this open"
+        title="Keep this open"
+        (click)="togglePin()"
+      >
+        <mat-icon>push_pin</mat-icon>
+      </button>
+      <button
+        type="button"
+        class="entity-popup__icon"
+        aria-label="Close"
+        title="Close"
+        (click)="close()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    <div class="entity-popup__body">
+      <nav class="entity-popup__tabs" role="tablist" aria-label="Entity information">
+        @for (t of tabs; track t.id) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="tab() === t.id"
+            [class.active]="tab() === t.id"
+            (click)="select(t.id)"
+          >
+            <mat-icon>{{ t.icon }}</mat-icon>
+            <span>{{ t.label }}</span>
+          </button>
+        }
+      </nav>
+
+      <div class="entity-popup__content" role="tabpanel">
+        @if (loading()) {
+          <p class="entity-popup__note">Loading…</p>
+        } @else if (failed()) {
+          <p class="entity-popup__note">Could not load this.</p>
+        } @else if (rows().length === 0) {
+          <p class="entity-popup__note">{{ emptyMessage() }}</p>
+        } @else {
+          <ul>
+            @for (row of rows(); track $index) {
+              <li>
+                <button type="button" (click)="open(row)">
+                  <span class="row-label">{{ row.label }}</span>
+                  @if (row.detail) {
+                    <span class="row-detail">{{ row.detail }}</span>
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </div>
+}
