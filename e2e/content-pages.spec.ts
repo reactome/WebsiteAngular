@@ -74,8 +74,13 @@ test.describe('Content pages render backend data', () => {
     await page.goto('/documentation/userguide');
     const main = page.locator('app-page, article, main').first();
     await expect(main).toBeVisible({ timeout: LOAD });
-    const text = await main.innerText();
-    expect(text.trim().length).toBeGreaterThan(200);
+    // Poll rather than read once: the element is visible as soon as the page
+    // shell renders, which is before the body has been fetched and converted
+    // from markdown. Reading innerText immediately races that and fails
+    // intermittently for a page that is in fact fine.
+    await expect
+      .poll(async () => (await main.innerText()).trim().length, { timeout: LOAD })
+      .toBeGreaterThan(200);
   });
 
   test('release calendar renders entries', async ({ page }) => {
