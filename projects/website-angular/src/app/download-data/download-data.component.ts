@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
@@ -52,7 +52,10 @@ export class DownloadDataComponent implements OnInit {
   expandedPanels: Record<string, boolean> = {};
 
   // Active TOC section
-  activeTocId = '';
+  // A signal because it is set from an IntersectionObserver, which Angular
+  // cannot observe -- with zones off, a plain field would leave the table of
+  // contents never highlighting the section being read.
+  readonly activeTocId = signal('');
 
   private observer?: IntersectionObserver;
 
@@ -100,7 +103,7 @@ export class DownloadDataComponent implements OnInit {
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            this.activeTocId = entry.target.id;
+            this.activeTocId.set(entry.target.id);
           }
         }
       },

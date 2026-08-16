@@ -9,8 +9,7 @@ import {
   OnChanges,
   SimpleChanges,
   HostListener,
-  ViewChild,
-} from '@angular/core';
+  ViewChild, signal, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
   FacetCount,
@@ -30,6 +29,7 @@ import { DropdownToggleComponent } from '../../reactome-components/dropdown-togg
 export class SearchBarComponent implements OnChanges, AfterViewInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
+  private cdr = inject(ChangeDetectorRef);
   @Input() query: string = '';
   @Input() filters = false;
   @Output() queryChange = new EventEmitter<string>();
@@ -42,7 +42,10 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
   allFacets: FacetResponse | null = null;
   advancedFilters: SearchFilters = {};
 
-  showSuggestions = false;
+  // A signal because hideDropdownDelayed closes the dropdown from a
+  // setTimeout, which Angular cannot see -- with zones off, a plain field
+  // would leave the suggestions list stuck open after blur.
+  readonly showSuggestions = signal(false);
 
   ngOnInit(): void {
     if (this.filters) {
@@ -93,7 +96,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
 
   onSubmit(event: Event): void {
     event.preventDefault();
-    this.showSuggestions = false;
+    this.showSuggestions.set(false);
 
     const q = this.query.trim();
     if (!q) {
@@ -125,17 +128,17 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
 
   hideDropdownDelayed(): void {
     this.hideTimeout = window.setTimeout(() => {
-      this.showSuggestions = false;
+      this.showSuggestions.set(false);
     }, 150);
   }
 
   showDropdown(): void {
     clearTimeout(this.hideTimeout);
-    this.showSuggestions = true;
+    this.showSuggestions.set(true);
   }
 
   selectSuggestion(s: string): void {
-    this.showSuggestions = false;
+    this.showSuggestions.set(false);
     s = s.trim();
     if (!s) {
       return;
@@ -171,17 +174,25 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
     this.searchService.getSuggestedTerms(query).subscribe({
       next: (terms) => {
         this.suggestions = terms || [];
+        this.cdr.markForCheck();
       },
       error: () => {
         this.suggestions = [];
+        this.cdr.markForCheck();
       },
     });
   }
 
   private getAllFacets(): void {
     this.searchService.getAllFacets().subscribe({
-      next: (facets) => (this.allFacets = facets),
-      error: () => (this.allFacets = null),
+      next: (facets) => {
+        this.allFacets = facets;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.allFacets = null;
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -213,7 +224,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
   @HostListener('window:keydown.arrowdown', ['$event'])
   onKeyDownArrowDown(event: KeyboardEvent): void {
     event.preventDefault();
-    if (this.suggestions.length > 0 && this.showSuggestions) {
+    if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex + 1) % this.suggestions.length;
       this.query = this.suggestions[this.highlightedIndex];
@@ -223,7 +234,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit {
   @HostListener('window:keydown.arrowup', ['$event'])
   onKeyDownArrowUp(event: KeyboardEvent): void {
     event.preventDefault();
-    if (this.suggestions.length > 0 && this.showSuggestions) {
+    if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex - 1 + this.suggestions.length) %
         this.suggestions.length;
