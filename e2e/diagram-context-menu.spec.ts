@@ -86,7 +86,10 @@ test.describe('Diagram right-click menu', () => {
   for (const { item, expected } of [
     { item: 'Molecule', expected: /[?&]tab=molecule/ },
     { item: 'Pathways', expected: /[?&]tab=details.*#locationsInPWB/ },
-    { item: 'Interactors', expected: /[?&]tab=details.*#interactors/ },
+    // Interactors switches the diagram overlay on rather than deep linking to a
+    // details section: that section is not rendered until interactors have
+    // actually been loaded, so linking to it alone did nothing at all.
+    { item: 'Interactors', expected: /[?&]overlay=IntAct/ },
   ]) {
     test(`"${item}" selects the entity and opens its section`, async ({ page }) => {
       await page.goto(PATHWAY);

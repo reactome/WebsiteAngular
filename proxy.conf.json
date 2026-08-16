@@ -8,21 +8,21 @@
     }
   },
   "/ContentService": {
-    "target": "https://dev.reactome.org",
-    "secure": true,
+    "target": "http://localhost:8080",
+    "secure": false,
     "changeOrigin": true
   },
   "/AnalysisService": {
-    "target": "https://dev.reactome.org",
-    "secure": true,
-    "changeOrigin": true
-  },
-  "/GSAServer": {
-    "target": "https://dev.reactome.org",
-    "secure": true,
+    "target": "http://localhost:8080",
+    "secure": false,
     "changeOrigin": true
   },
   "/ExperimentDigester": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/GSAServer": {
     "target": "https://dev.reactome.org",
     "secure": true,
     "changeOrigin": true

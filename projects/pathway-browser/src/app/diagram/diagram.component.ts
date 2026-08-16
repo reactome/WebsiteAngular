@@ -61,7 +61,7 @@ import { DarkService } from '../services/dark.service';
 import { DownloadFormat, DownloadService } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
-import { Interactor } from '../interactors/model/interactor.model';
+import { Interactor, ResourceType } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { NgClass } from '@angular/common';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
@@ -1509,12 +1509,23 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // 'locationsInPWB' and 'interactors' are the section keys the details tab
-    // renders as element ids; it scrolls to whichever one the fragment names.
+    if (action === 'interactors') {
+      // Switching the overlay on is what actually does something here: it
+      // draws the entity's interactors onto the diagram, and populates the
+      // Interactors section of the details panel as a side effect. Deep
+      // linking to that section alone did nothing, because it is not rendered
+      // until interactors have been loaded.
+      this.state.overlay.set(ResourceType.STATIC);
+      this.state.tab.set('details');
+      return;
+    }
+
+    // 'locationsInPWB' is the section key the details tab renders as an
+    // element id; it scrolls to whichever one the fragment names.
     this.state.tab.set('details');
     this.state.navigateTo(this.pathwayId() ?? null, {
       queryParamsHandling: 'merge',
-      fragment: action === 'pathways' ? 'locationsInPWB' : 'interactors',
+      fragment: 'locationsInPWB',
     });
   }
 
