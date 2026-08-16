@@ -18,6 +18,34 @@ RUN npm install --legacy-peer-deps --ignore-scripts
 # 5. Copy the rest of the code
 COPY . .
 
+# The dev server runs against a bind-mounted working copy, so everything it
+# writes -- .angular/cache, generated content, dist -- lands in the developer's
+# own checkout. Running as root leaves those files root-owned, which then makes
+# host-side `ng build` collide with the container's build cache and leaves files
+# the developer cannot even delete. Re-point the image's existing `node` user at
+# the host's ids so the ownership simply matches.
+#
+# Pass the real values through .env (see .env.example); the 1000 defaults are
+# what a stock Linux desktop uses.
+ARG UID=1000
+ARG GID=1000
+RUN set -eu; \
+    if [ "$GID" != "1000" ] && ! getent group "$GID" >/dev/null; then \
+      groupmod -g "$GID" node; \
+    fi; \
+    if [ "$UID" != "1000" ] || [ "$GID" != "1000" ]; then \
+      usermod -u "$UID" -g "$GID" node; \
+    fi; \
+    mkdir -p /home/node; \
+    chown -R "$UID":"$GID" /home/node
+
+# 6. Hand the whole tree -- including the node_modules the anonymous volume is
+# seeded from -- to the unprivileged user, then stop being root. This comes
+# after the dependency install so that changing UID/GID does not invalidate
+# that layer and force a full reinstall.
+RUN chown -R "$UID":"$GID" /app
+USER node
+
 # Expose the ports
 EXPOSE 4200
 EXPOSE 4001

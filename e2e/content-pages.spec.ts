@@ -112,14 +112,23 @@ test.describe('In-page table of contents', () => {
 
     await page.locator('a[href="#Gene_Set.2FMutation_Analysis"]').first().click();
 
+    // The heading should come to rest within the viewport, not merely end up
+    // somewhere below. Poll rather than measure once: the scroll is smooth, so
+    // reading the offset the moment scrollY passes 200 catches it mid-flight
+    // whenever the machine is loaded.
     await expect
-      .poll(() => page.evaluate(() => window.scrollY), { timeout: 10_000 })
-      .toBeGreaterThan(200);
-    // The heading should now be within the viewport, not merely somewhere below.
-    const offset = await page.evaluate(
-      () => document.getElementById('Gene_Set.2FMutation_Analysis')!.getBoundingClientRect().top,
-    );
-    expect(Math.abs(offset)).toBeLessThan(150);
+      .poll(
+        () =>
+          page.evaluate(() =>
+            Math.abs(
+              document
+                .getElementById('Gene_Set.2FMutation_Analysis')!
+                .getBoundingClientRect().top,
+            ),
+          ),
+        { timeout: 15_000 },
+      )
+      .toBeLessThan(150);
   });
 
   test('a deep-linked anchor lands on the section', async ({ page }) => {
