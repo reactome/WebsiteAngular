@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 
@@ -28,6 +28,9 @@ const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQR7_-1pf24gjQh
   styleUrl: './release-calendar.component.scss'
 })
 export class ReleaseCalendarComponent implements OnInit {
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   yearGroups: YearGroup[] = [];
   loading = true;
   error = false;
@@ -40,10 +43,12 @@ export class ReleaseCalendarComponent implements OnInit {
       next: (csv) => {
         this.yearGroups = this.parseCsv(csv);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
