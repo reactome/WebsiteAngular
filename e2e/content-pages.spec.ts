@@ -44,7 +44,26 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
+  // ToC, DOI and Contributors read /data/content/* on the content service.
+  // Those endpoints exist only on the dev host, from an unmerged backend branch
+  // -- production still 404s them. Skip rather than fail where they are absent,
+  // so a red run always means a real regression. Checked once per worker.
+  let contentEndpoints: boolean | undefined;
+  test.beforeEach(async ({ request, baseURL }) => {
+    if (contentEndpoints === undefined) {
+      try {
+        const res = await request.get(`${baseURL}/ContentService/data/content/toc`, {
+          timeout: 30_000,
+        });
+        contentEndpoints = res.ok();
+      } catch {
+        contentEndpoints = false;
+      }
+    }
+  });
+
   test('table of contents lists pathways', async ({ page }) => {
+    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/content/toc');
     await expect(page.getByText(/Metabolism|Signal Transduction|Immune System/).first()).toBeVisible({
       timeout: LOAD,
@@ -52,12 +71,14 @@ test.describe('Content pages render backend data', () => {
   });
 
   test('DOI page lists pathways', async ({ page }) => {
+    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/content/doi');
     // Every row is a DOI-registered pathway; the prefix is stable.
     await expect(page.getByText(/10\.\d{4,}/).first()).toBeVisible({ timeout: LOAD });
   });
 
   test('contributors page lists people', async ({ page }) => {
+    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/community/contributors');
     const links = page.locator('a[href*="/content/detail/person/"]');
     await expect(links.first()).toBeVisible({ timeout: LOAD });

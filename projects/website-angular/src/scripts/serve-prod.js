@@ -8,8 +8,8 @@
  * frequently never finished at all. The production build is ~424 kB over about
  * a dozen requests, and is also what real users actually run.
  *
- * The proxy table is read from proxy.conf.json so it cannot drift from the dev
- * server's.
+ * The proxy table is required from proxy.conf.js so it cannot drift from the
+ * dev server's, and honours REACTOME_BACKEND the same way.
  */
 const express = require('express');
 const path = require('node:path');
@@ -31,7 +31,7 @@ app.disable('x-powered-by');
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
-const proxyConfig = JSON.parse(fs.readFileSync(path.join(ROOT, 'proxy.conf.json'), 'utf8'));
+const proxyConfig = require(path.join(ROOT, 'proxy.conf.js'));
 for (const [context, options] of Object.entries(proxyConfig)) {
   // Selected with pathFilter rather than mounted with app.use(context, ...):
   // mounting makes Express strip the prefix before the proxy sees the request,
