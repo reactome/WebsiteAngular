@@ -86,8 +86,7 @@
     "swagger-ui-dist": "^5.32.0",
     "tinacms": "^3.8.1",
     "tslib": "^2.3.0",
-    "vectorious": "^6.1.12",
-    "zone.js": "~0.15.0"
+    "vectorious": "^6.1.12"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.3.1",

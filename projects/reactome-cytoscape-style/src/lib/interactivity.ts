@@ -19,7 +19,6 @@ export class Interactivity {
     private properties: Properties
   ) {
     // console.log('is mobile', this.isMobile)
-    // @ts-expect-error
     cy.elements().ungrabify().panify();
     this.initHover(cy);
     this.initSelect(cy);

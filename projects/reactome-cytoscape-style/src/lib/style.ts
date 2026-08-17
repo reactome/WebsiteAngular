@@ -107,7 +107,6 @@ export class Style {
       {
         selector: 'node[?radius]',
         css: {
-          // @ts-expect-error
           'corner-radius': 'data(radius)',
         },
       },
@@ -167,7 +166,6 @@ export class Style {
           // @ts-expect-error
           'background-image-opacity': (node) =>
             this.imageBuilder(node)['background-image-opacity'] || 1,
-          // @ts-expect-error
           'bounds-expansion': (node) => this.imageBuilder(node)['bounds-expansion'][0] || 0,
           color: this.p('global', 'onPrimary'),
         },
@@ -235,7 +233,6 @@ export class Style {
           'border-width': this.p('global', 'thickness'),
           'text-wrap': 'ellipsis',
           'border-color': this.p('interactor', 'fill'),
-          //@ts-expect-error
           'border-position': 'inside',
         },
       },
@@ -410,7 +407,6 @@ export class Style {
           'background-color': this.p('pathway', 'fill'),
           'text-margin-x': 18,
           'border-color': this.p('pathway', 'stroke'),
-          // @ts-expect-error
           'border-position': 'inside',
           'border-width': this.pm('global', 'thickness', (t) => 3 * t),
         },
@@ -489,7 +485,6 @@ export class Style {
       {
         selector: 'node.reaction.flag',
         css: {
-          // @ts-expect-error
           'outline-width': this.pm('global', 'thickness', (t) => t * 1.5),
           'outline-color': this.p('global', 'flag'),
         },
@@ -531,7 +526,6 @@ export class Style {
         selector: 'node.loss-of-function',
         css: {
           'border-style': 'dashed',
-          //@ts-expect-error
           'border-dash-pattern': this.pm('global', 'thickness', (t) => [t, t * 2]),
           'border-cap': 'round',
         },
@@ -574,7 +568,6 @@ export class Style {
           'source-arrow-color': this.p('global', 'onSurface'),
           // @ts-expect-error
           'source-arrow-width': '100%',
-          // @ts-expect-error
           'target-arrow-width': '100%',
           'font-size': this.p('font', 'size'),
         },
@@ -599,7 +592,6 @@ export class Style {
           'target-arrow-color': this.p('global', 'hoverEdge'),
           // @ts-expect-error
           'source-arrow-width': '50%',
-          // @ts-expect-error
           'target-arrow-width': '50%',
           'z-index': 2,
         },
@@ -614,7 +606,6 @@ export class Style {
           'target-arrow-color': this.p('global', 'selectEdge'),
           // @ts-expect-error
           'source-arrow-width': '50%',
-          // @ts-expect-error
           'target-arrow-width': '50%',
           'z-index': 3,
         },
@@ -693,7 +684,6 @@ export class Style {
       {
         selector: 'edge.shadow[?color]',
         css: {
-          // @ts-expect-error
           'underlay-color': 'data(color)',
           'underlay-padding': this.p('shadow', 'padding'),
           'underlay-opacity': this.pm('shadow', 'opacity', (o) => o[0][1] / 100),
@@ -702,7 +692,6 @@ export class Style {
       {
         selector: 'edge.flag',
         css: {
-          // @ts-expect-error
           'underlay-color': this.p('global', 'flag'),
           'underlay-padding': 10,
           'underlay-opacity': 1,
@@ -711,7 +700,6 @@ export class Style {
       {
         selector: 'edge[?weights]',
         css: {
-          // @ts-expect-error
           'curve-style': 'round-segments',
           'segment-distances': 'data(distances)',
           'segment-weights': 'data(weights)',

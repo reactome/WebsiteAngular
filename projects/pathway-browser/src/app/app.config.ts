@@ -1,4 +1,4 @@
-import { ApplicationConfig, LOCALE_ID, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app-routing.module';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
     // ngx-ui-tour 16 no longer provides TourService in root; without this the
     // GSA form's tour anchors fail with NG0201 and the whole viewport dies.
     provideUiTour(),
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
