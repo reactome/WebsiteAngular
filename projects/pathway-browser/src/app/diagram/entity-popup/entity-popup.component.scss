@@ -156,6 +156,9 @@
 }
 
 .entity-popup__group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin: 0.35rem 0 0.1rem;
   padding: 0 0.45rem;
   font-size: 0.66rem;
@@ -166,6 +169,17 @@
 
   &:first-child {
     margin-top: 0.1rem;
+  }
+
+  // Production shows no counts here. They are free -- the rows are already
+  // loaded -- and tell you how big a group is before you scroll it, which
+  // matters for complexes with a long subunit list.
+  .count {
+    font-weight: 600;
+    letter-spacing: 0;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 16%, transparent);
   }
 }
 

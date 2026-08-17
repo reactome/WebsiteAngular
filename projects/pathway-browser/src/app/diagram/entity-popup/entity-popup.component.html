@@ -58,7 +58,10 @@
         } @else {
           @for (group of groups(); track group.label ?? $index) {
             @if (group.label) {
-              <h3 class="entity-popup__group">{{ group.label }}</h3>
+              <h3 class="entity-popup__group">
+                <span class="label">{{ group.label }}</span>
+                <span class="count">{{ group.rows.length }}</span>
+              </h3>
             }
             <ul>
               @for (row of group.rows; track $index) {

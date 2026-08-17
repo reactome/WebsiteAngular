@@ -103,12 +103,19 @@ test.describe('Diagram entity popup', () => {
       // Deriving the type from schemaClass alone once put "BBC3 gene" under
       // Proteins, because EntityWithAccessionedSequence covers proteins, DNA
       // and RNA alike -- so the type comes from the reference entity instead.
-      const headings = await page.locator('.entity-popup__group').allInnerTexts();
+      // Read the label element rather than the heading, which also carries the
+      // count.
+      const headings = await page.locator('.entity-popup__group .label').allInnerTexts();
       for (const heading of headings) {
         expect(['Proteins', 'DNA/RNA', 'Chemical Compounds', 'Drugs', 'Others']).toContain(
           heading.trim(),
         );
       }
+
+      // Each count must match the rows actually rendered beneath it.
+      const counts = await page.locator('.entity-popup__group .count').allInnerTexts();
+      const total = counts.reduce((sum, c) => sum + Number(c.trim()), 0);
+      expect(total).toBe(await page.locator('.entity-popup__content li').count());
     });
 
   test('lists the pathways containing the entity', async ({ page }) => {
