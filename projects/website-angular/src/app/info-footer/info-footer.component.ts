@@ -1,6 +1,7 @@
 import { NavOptionsService } from '../../services/nav-options.service';
 import { Component, inject } from '@angular/core';
 
+import { KeyValuePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { NavOption } from '../../types/link';
@@ -8,7 +9,7 @@ import { NavOption } from '../../types/link';
 @Component({
   selector: 'app-info-footer',
   standalone: true,
-  imports: [RouterModule, MatIcon],
+  imports: [RouterModule, MatIcon, KeyValuePipe],
   templateUrl: './info-footer.component.html',
   styleUrl: './info-footer.component.scss',
 })

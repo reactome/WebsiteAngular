@@ -24,12 +24,9 @@
               <div class="nav-link-wrapper">
                 @if (!navOption.external) {
                   <a
-                    [routerLink]=""
-                    ="
-              windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
-                ? navOption.link
-                : null
-            "
+                    [routerLink]="
+                      windowWidth > hamburgerBreakpoint || navOption.label == 'Download' ? navOption.link : null
+                    "
                     class="nav-link"
                     [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
                   >
@@ -44,12 +41,9 @@
                 }
                 @if (navOption.external) {
                   <a
-                    [attr.href]=""
-                    ="
-              windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
-                ? navOption.link
-                : null
-            "
+                    [attr.href]="
+                      windowWidth > hamburgerBreakpoint || navOption.label == 'Download' ? navOption.link : null
+                    "
                     class="nav-link"
                     [class.has-dropdown]="hasDropdownLinks(navOption.dropdownLinks)"
                   >

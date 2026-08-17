@@ -160,3 +160,45 @@ test.describe('In-page table of contents', () => {
       .toBeGreaterThan(200);
   });
 });
+
+test.describe('Site navigation chrome', () => {
+  // The header and the footer's links were commented out of AppComponent in May
+  // "updates to home page design/layout" -- to hide them on the curator build,
+  // which removed them from the public site too. Nothing failed, because
+  // nothing asserted they were there.
+  test('every page outside the pathway browser has the header and footer', async ({ page }) => {
+    for (const url of ['/', '/content/toc', '/documentation/userguide']) {
+      await page.goto(url);
+      await expect(page.locator('app-navigation-bar')).toHaveCount(1, { timeout: LOAD });
+
+      // Assert the menus, not just the bar: a render error in the template once
+      // left the bar present and completely empty.
+      const menus = page.locator('app-navigation-bar .nav-link');
+      await expect(menus.first()).toBeVisible({ timeout: LOAD });
+      expect(await menus.count()).toBeGreaterThanOrEqual(5);
+
+      // The footer carries the site's link directory, not just social icons.
+      expect(await page.locator('app-info-footer a').count()).toBeGreaterThan(20);
+    }
+  });
+
+  test('Data Schema sits under the Content menu', async ({ page }) => {
+    await page.goto('/');
+    const content = page
+      .locator('app-navigation-bar li.nav-item')
+      .filter({ hasText: 'Content' })
+      .first();
+    await expect(content).toBeVisible({ timeout: LOAD });
+    await content.hover();
+
+    const items = content.locator('.dropdown-link');
+    await expect(items.filter({ hasText: 'Data Schema' })).toHaveCount(1, { timeout: 10_000 });
+    await expect(items.filter({ hasText: 'Table of Contents' })).toHaveCount(1);
+  });
+
+  test('the pathway browser has no site header', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
+    await expect(page.locator('app-navigation-bar')).toHaveCount(0);
+  });
+});

@@ -62,9 +62,36 @@
       }
     }
   },
-  "data-schema": {
-    "label": "Data Schema",
-    "link": "/dataSchema"
+  "content": {
+    "label": "Content",
+    "link": "/content/toc",
+    "icon": "menu_book",
+    "dropdown-links": {
+      "table-of-contents": {
+        "label": "Table of Contents",
+        "link": "/content/toc"
+      },
+      "dois": {
+        "label": "DOIs",
+        "link": "/content/doi"
+      },
+      "data-schema": {
+        "label": "Data Schema",
+        "link": "/dataSchema"
+      },
+      "reactome-research-spotlight": {
+        "label": "Reactome Research Spotlight",
+        "link": "/content/reactome-research-spotlight"
+      },
+      "orcid-integration-project": {
+        "label": "ORCID Integration Project",
+        "link": "/content/orcid"
+      },
+      "covid-19-disease-pathways": {
+        "label": "COVID-19 Disease Pathways",
+        "link": "/content/covid-19"
+      }
+    }
   },
   "documentation": {
     "label": "Docs",

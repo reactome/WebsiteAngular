@@ -11,6 +11,7 @@ import { ScrollToTopComponent } from './scroll-to-top/scroll-to-top.component';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { SUBJECT_ICONS } from '../utils/subjectIcons';
+import { IS_CURATOR } from '../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -31,6 +32,14 @@ export class AppComponent implements OnInit {
   private domSanitizer = inject(DomSanitizer);
 
   title = 'WebsiteAngular';
+
+  /**
+   * The curator build has no site navigation: it is a tool, not the public
+   * site. These were commented out of the template to achieve that, which
+   * removed the header and the footer's links from the main site as well.
+   * Gate on the variant instead, the way the pathway browser already does.
+   */
+  readonly isCurator = IS_CURATOR;
 
   private viewportScroller = inject(ViewportScroller);
   private router = inject(Router);
