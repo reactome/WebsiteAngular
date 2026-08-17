@@ -2,6 +2,7 @@ import {DatabaseObject} from "../database-object.model";
 import {Person} from "../person.model";
 
 export interface Publication extends DatabaseObject {
-  author: Person[];
+  author?: Person[];
+  authorName?: string;
   title: string;
 }

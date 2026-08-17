@@ -12,12 +12,13 @@ export class IncludeRefPipe implements PipeTransform {
 
   transform(text: string, refs: LiteratureReference[]): SafeHtml {
     refs
-      .filter(ref => ref && ref.url)
+      .filter(ref => ref && ref.url && ref.author?.length)
       .forEach(ref => {
+        const author = ref.author!;
         const replacer = (match: string) => `<a href="${ref.url}">${match}</a>`
-        text = text.replaceAll(new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`, 'g'), replacer);
-        if (ref.author.length === 2) {
-          const regExp = new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?(and|\&) ${ref.author[1].surname} ?${this.initials(ref.author[1].initial)}\\.? ?,? ${ref.year}`, 'g');
+        text = text.replaceAll(new RegExp(`${author[0].surname} ?${this.initials(author[0].initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`, 'g'), replacer);
+        if (author.length === 2) {
+          const regExp = new RegExp(`${author[0].surname} ?${this.initials(author[0].initial)}\\.? ?(and|\&) ${author[1].surname} ?${this.initials(author[1].initial)}\\.? ?,? ${ref.year}`, 'g');
           text = text.replaceAll(regExp, replacer);
         }
       });
