@@ -1500,8 +1500,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   /**
    * A row in the popup was clicked.
    *
-   * Molecules and interactors are entities, so they get selected in place;
-   * a pathway is somewhere to go, so it navigates.
+   * A pathway is somewhere to go, so it navigates. A molecule is part of what
+   * you are already looking at, so it is selected where it stands: the details
+   * panel follows it, and the diagram deliberately does not fly to it.
+   *
+   * Moving the diagram is what made a way back to the original entity feel
+   * necessary. Staying put means there is nothing to go back from -- the popup
+   * still names the entity you right-clicked, and it is still on screen.
    */
   onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
     if (event.kind === 'pathways') {
@@ -1512,6 +1517,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       });
       return;
     }
+    // Flagged as an in-diagram selection, which is what suppresses the fit
+    // animation in the select effect.
+    this.selecting = true;
     this.state.select.set(event.stId);
   }
 
