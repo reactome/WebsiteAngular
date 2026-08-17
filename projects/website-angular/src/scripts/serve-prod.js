@@ -21,9 +21,28 @@ const DIST = path.join(ROOT, 'dist/reactome/browser');
 const PORT = Number(process.env.PORT) || 4200;
 const HOST = process.env.HOST || '0.0.0.0';
 
-if (!fs.existsSync(path.join(DIST, 'index.html'))) {
-  console.error(`No production build at ${DIST}.\nRun: npx ng build reactome --configuration production`);
-  process.exit(1);
+const INDEX = path.join(DIST, 'index.html');
+
+/**
+ * Serving starts before the build exists.
+ *
+ * This runs alongside `ng build --watch`, so on a cold start the output
+ * directory is empty for the minute or so the first build takes. Exiting then
+ * would mean the container dies before it ever serves anything; instead wait,
+ * and say so, since a silent wait looks identical to a hang.
+ */
+async function waitForBuild(timeoutMs = 15 * 60 * 1000) {
+  if (fs.existsSync(INDEX)) return true;
+  console.log(`Waiting for the production build to appear at ${DIST} ...`);
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (fs.existsSync(INDEX)) {
+      console.log(`Build ready after ${Math.round((Date.now() - startedAt) / 1000)}s.`);
+      return true;
+    }
+  }
+  return false;
 }
 
 const app = express();
@@ -74,7 +93,13 @@ app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(DIST, 'index.html'));
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Serving production build from ${DIST}`);
-  console.log(`  http://${HOST}:${PORT}/`);
+waitForBuild().then((ready) => {
+  if (!ready) {
+    console.error(`No production build appeared at ${DIST}. Giving up.`);
+    process.exit(1);
+  }
+  app.listen(PORT, HOST, () => {
+    console.log(`Serving production build from ${DIST}`);
+    console.log(`  http://${HOST}:${PORT}/`);
+  });
 });

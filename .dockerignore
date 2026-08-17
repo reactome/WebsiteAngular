@@ -7,3 +7,12 @@ npm-debug.log
 # Add these for TinaCMS
 .tina/__generated__
 .tina/out
+
+# Session scratch: .claude holds git worktrees (hundreds of MB) that have no
+# business in the image. Docker reads this file, not .gitignore, so listing it
+# there is not enough -- a stray worktree filled the disk mid-build.
+.claude
+test-results
+playwright-report
+content-dist
+.env
