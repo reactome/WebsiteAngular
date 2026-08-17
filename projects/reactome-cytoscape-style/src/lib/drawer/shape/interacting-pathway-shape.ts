@@ -8,7 +8,7 @@ export const interactingPathway: DrawerProvider = (properties, {width, height, d
   const flag = extract(properties.global.flag);
   const thick = extract(properties.global.thickness);
 
-  let realWidth = width;
+  const realWidth = width;
   const t = 3 * thick;
   return {
     hover: {

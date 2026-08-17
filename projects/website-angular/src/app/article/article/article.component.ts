@@ -33,7 +33,7 @@ export class ArticleComponent implements OnInit {
     if (slug) {
       this.route.url.subscribe((segments) => {
         // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-        let path_segments = segments.map((s) => s.path);
+        const path_segments = segments.map((s) => s.path);
 
         if (path_segments.length > 0 && path_segments) {
           if (path_segments.includes('about')) {
@@ -51,8 +51,8 @@ export class ArticleComponent implements OnInit {
 
     this.contentService.getArticle(path, slug).subscribe({
       next: async (article) => {
-        let html = await marked((article?.body as string) || '');
-        let renderedContent = stripFirstH(
+        const html = await marked((article?.body as string) || '');
+        const renderedContent = stripFirstH(
           addAnchorIds(addJumpCards(wrapCodeBlocks(html)))
         );
         this.renderedContent =

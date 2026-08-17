@@ -63,10 +63,14 @@ import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
 import { Interactor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
-import { NgClass } from '@angular/common';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
+import {
+  EntityPopupComponent,
+  EntityPopupTab,
+  EntityPopupTarget,
+} from './entity-popup/entity-popup.component';
 
 const INIT_RX = 2;
 
@@ -87,6 +91,7 @@ const FIT_PADDING = 100;
     MatSliderThumb,
     MatTooltip,
     AnalysisLegendComponent,
+    EntityPopupComponent,
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
@@ -100,6 +105,18 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     alias: 'interactor',
   });
   readonly pathwayId = model.required<string>();
+
+  /** The entity a right-click landed on, or null when no popup is open. */
+  readonly popupTarget = signal<EntityPopupTarget | null>(null);
+
+  /**
+   * The viewport as it was when the popup opened.
+   *
+   * Clicking a molecule flies the diagram to it, so going back has to mean
+   * "the view I was looking at", not "fit to the entity" -- the latter lands
+   * you at a zoom you were never at, which is its own kind of lost.
+   */
+  private popupViewport: { zoom: number; pan: cytoscape.Position } | null = null;
 
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
@@ -542,7 +559,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
                 leaf.standardIdentifier,
                 this.leafIdToParentIds.get(leaf.stId)!
               );
-            let parents = this.leafIdToParentIds.get(leaf.stId)!;
+            const parents = this.leafIdToParentIds.get(leaf.stId)!;
             parents.push(node.data('graph.stId'));
           });
         });
@@ -558,6 +575,35 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             preserveFragment: true,
           })
         );
+
+        // Right-click menu on entities. The old site offered Molecule /
+        // Pathways / Interactors here and curators still reach for it; each
+        // item is a shortcut to somewhere the details panel already goes.
+        this.cy.on('cxttap', '.PhysicalEntity', (e) => {
+          const stId = e.target.data('graph.stId');
+          if (!stId) return;
+          const pointer = e.originalEvent as MouseEvent | undefined;
+          if (!pointer) return;
+          this.popupTarget.set({
+            x: pointer.clientX,
+            y: pointer.clientY,
+            stId,
+            label: e.target.data('displayName') || e.target.data('graph.displayName') || stId,
+            acc: e.target.data('acc') || undefined,
+          });
+          // Production also moves the details panel to the entity you
+          // right-clicked, so the popup and the panel agree. Flagged as an
+          // in-diagram selection, or the select effect animates a fit to the
+          // node and a right-click would yank the whole diagram around.
+          this.popupViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
+          this.selecting = true;
+          this.state.select.set(stId);
+        });
+
+        // Right-clicking the background dismisses it.
+        this.cy.on('cxttap', (e) => {
+          if (e.target === this.cy) this.popupTarget.set(null);
+        });
 
         this.cy.on('dblclick', '.Interacting.Pathway', (e) =>
           this.state.navigateTo(e.target.data('graph.stId'), {
@@ -753,9 +799,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
           // Consider it as a subpathway when there are no elements found and get all reactions
           if (elements.length === 0) {
-            let allSubpathwaysElements = elements.or('[subpathways]');
+            const allSubpathwaysElements = elements.or('[subpathways]');
             allSubpathwaysElements.forEach((ele) => {
-              let pathwayList = ele.data('subpathways');
+              const pathwayList = ele.data('subpathways');
               if (pathwayList.includes(token)) {
                 elements.merge(ele);
               }
@@ -1078,7 +1124,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
     }).subscribe(({ entities, pathways, result }) => {
       this._loadAnalysisFn = (analysisIndex) => {
-        let analysisEntityMap = new Map<string, number>(
+        const analysisEntityMap = new Map<string, number>(
           entities.entities.flatMap((entity) =>
             entity.mapsTo
               .flatMap((diagramEntity) => diagramEntity.ids)
@@ -1086,7 +1132,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           )
         );
 
-        let analysisPathwayMap = new Map<number, Analysis.Pathway['entities']>(
+        const analysisPathwayMap = new Map<number, Analysis.Pathway['entities']>(
           pathways.map((p) => [p.dbId, p.entities])
         );
         const includeInteractors = result.summary.interactors;
@@ -1252,7 +1298,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     );
 
   private stateToDiagram() {
-    for (let cy of this.cys) {
+    for (const cy of this.cys) {
       this.flag(this.data.flagIdentifiers(), cy);
       this.select(this.state.select()!, cy);
     }
@@ -1339,7 +1385,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // Only get the first matched item in the classes, this help to filter out the polymer when hovering on a molecule
       let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection =
         this.legend.elements(`.${firstClassToMatch}`).filter((ele) => {
-          let classes = ele.classes();
+          const classes = ele.classes();
           return Array.isArray(classes) && classes[0] === firstClassToMatch;
         });
 
@@ -1370,7 +1416,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       delay(5) // allow for unselect to be processed before select when clicking on an already selected element
     )
     .subscribe((e) => {
-      let elements: cytoscape.NodeSingular = e.detail.element;
+      const elements: cytoscape.NodeSingular = e.detail.element;
       const reactomeIds = elements.map((el) => el.data('graph.stId'));
       this.selecting = true;
       this.state.select.set(reactomeIds[0]);
@@ -1403,7 +1449,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .subscribe((e) => {
       const event = e as ReactomeEvent;
       const classes = event.detail.element.classes();
-      for (let cy of [this.cy, this.cyCompare].filter(isDefined)) {
+      for (const cy of [this.cy, this.cyCompare].filter(isDefined)) {
         let matchingElement:
           | cytoscape.NodeCollection
           | cytoscape.EdgeCollection = cy.elements(`.${classes[0]}`);
@@ -1459,4 +1505,52 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       )
     );
   }
+
+  /**
+   * A row in the popup was clicked.
+   *
+   * A pathway is somewhere to go, so it navigates. A molecule is selected,
+   * which moves the diagram to it -- as production does. Deliberately NOT
+   * flagged as an in-diagram selection, so the select effect animates the fit.
+   *
+   * What production leaves you without is a way back, which is the confusing
+   * part rather than the movement itself; the popup title does that here.
+   */
+  onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
+    if (event.kind === 'pathways') {
+      this.popupTarget.set(null);
+      void this.state.navigateTo(event.stId, {
+        queryParamsHandling: 'preserve',
+        preserveFragment: true,
+      });
+      return;
+    }
+    this.state.select.set(event.stId);
+  }
+
+  /**
+   * The popup title was clicked: go back to the entity it is about.
+   *
+   * Clicking a molecule flies the diagram off to that component, and with the
+   * popup still titled by the original entity there was no obvious way back.
+   * Selecting it again returns the diagram there.
+   */
+  onPopupRecenter(): void {
+    const target = this.popupTarget();
+    if (!target) return;
+
+    // Re-select without letting the select effect fit, then put the viewport
+    // back exactly where it was.
+    this.selecting = true;
+    this.state.select.set(target.stId);
+
+    const viewport = this.popupViewport;
+    if (viewport) {
+      this.cy.animate(
+        { zoom: viewport.zoom, pan: viewport.pan },
+        { duration: 500, easing: 'ease-in-out' }
+      );
+    }
+  }
+
 }

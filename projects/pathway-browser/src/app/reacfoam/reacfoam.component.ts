@@ -108,7 +108,7 @@ export class ReacfoamComponent implements OnDestroy {
 
     onGroupDoubleClick: (event) => {
       event.preventDefault();
-      this.state.navigateTo(event.group.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
+      void this.state.navigateTo(event.group.stId, {queryParamsHandling: 'preserve', preserveFragment: true})
     },
 
     onGroupClick: (event) => {
@@ -147,13 +147,13 @@ export class ReacfoamComponent implements OnDestroy {
   sizeObserver = new ResizeObserver(throttle(50, () => {
       setTimeout(() => { // Avoid white flickering
         this.foamTree().set('exposeDuration', 0) // Make removal of exposure instant
-        this.foamTree().expose({
+        void this.foamTree().expose({
           groups: undefined,
           keepPrevious: false
         }).then(() => {
           this.foamTree().resize()
           if (this.correctedSelectedId()) {
-            this.foamTree().expose({
+            void this.foamTree().expose({
               groups: this.correctedSelectedId(),
               keepPrevious: false
             })
@@ -220,7 +220,7 @@ export class ReacfoamComponent implements OnDestroy {
     });
     effect(() => { // Upon selection (UI or URL), expos & select group
       this.foamTree().select({groups: this.correctedSelectedId(), keepPrevious: false})
-      this.foamTree().expose({groups: this.correctedSelectedId(), keepPrevious: false}) // Trigger on select update
+      void this.foamTree().expose({groups: this.correctedSelectedId(), keepPrevious: false}) // Trigger on select update
     });
 
     effect(() => {

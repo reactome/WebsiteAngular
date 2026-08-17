@@ -14,10 +14,10 @@ export class IncludeRefPipe implements PipeTransform {
     refs
       .filter(ref => ref && ref.url)
       .forEach(ref => {
-        let replacer = (match: string) => `<a href="${ref.url}">${match}</a>`
+        const replacer = (match: string) => `<a href="${ref.url}">${match}</a>`
         text = text.replaceAll(new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`, 'g'), replacer);
         if (ref.author.length === 2) {
-          let regExp = new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?(and|\&) ${ref.author[1].surname} ?${this.initials(ref.author[1].initial)}\\.? ?,? ${ref.year}`, 'g');
+          const regExp = new RegExp(`${ref.author[0].surname} ?${this.initials(ref.author[0].initial)}\\.? ?(and|\&) ${ref.author[1].surname} ?${this.initials(ref.author[1].initial)}\\.? ?,? ${ref.year}`, 'g');
           text = text.replaceAll(regExp, replacer);
         }
       });

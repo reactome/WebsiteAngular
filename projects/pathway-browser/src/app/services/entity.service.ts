@@ -77,7 +77,7 @@ export class EntityService {
     ];
     const results: { label: string, value: any }[] = [];
     for (const property of properties) {
-      let value = externalRef[property.key];
+      const value = externalRef[property.key];
       if (!value) continue;
       results.push({
         label: property.label || property.key,

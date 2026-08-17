@@ -42,8 +42,8 @@ import {SortByDatePipe} from "../../../pipes/sort-by-date.pipe";
 export class MolecularProcessComponent {
 
   readonly objects = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>({alias: 'entries'});
-  readonly catalystActivityReference = input.required<CatalystActivityReference>({alias: "catalystActivityReference"});
-  readonly regulationRefs = input.required<RegulationReference[]>({alias: 'regulationRefs'});
+  readonly catalystActivityReference = input.required<CatalystActivityReference>();
+  readonly regulationRefs = input.required<RegulationReference[]>();
 
   readonly perspective = input<'entity' | 'event'>('event');
 

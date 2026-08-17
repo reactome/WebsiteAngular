@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 
 interface ResourceEntry {
@@ -16,7 +16,7 @@ const HTML_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbRm3dc7Ms8Am
   templateUrl: './resources.component.html',
   styleUrl: './resources.component.scss'
 })
-export class ResourcesComponent {
+export class ResourcesComponent implements OnInit {
   entries: Record<string, ResourceEntry[]> = {};
   loading = true;
   error = false;

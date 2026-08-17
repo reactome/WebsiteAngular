@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { MatIcon } from "@angular/material/icon";
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { StatsService } from '../../../services/stats.service';
@@ -22,7 +22,7 @@ interface Stats {
   templateUrl: './home-stats.component.html',
   styleUrl: './home-stats.component.scss'
 })
-export class HomeStatsComponent {
+export class HomeStatsComponent implements OnInit {
   private statsService = inject(StatsService);
   private generalService = inject(GeneralService);
 
@@ -65,7 +65,10 @@ export class HomeStatsComponent {
         }
       })
       
-    });
+    })
+      // A failed stats load leaves the homepage counters blank; at least say
+      // why rather than showing nothing.
+      .catch((error) => console.error('Could not load homepage statistics', error));
   }
 
   formatNumber (num: number): string {

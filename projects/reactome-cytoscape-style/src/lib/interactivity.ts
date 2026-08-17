@@ -282,7 +282,7 @@ export class Interactivity {
 
     cy.on('tap', 'node.InteractorOccurrences', (e) => {
       const openClass = 'opened';
-      let eventType = !e.target.hasClass(openClass)
+      const eventType = !e.target.hasClass(openClass)
         ? ReactomeEventTypes.open
         : ReactomeEventTypes.close;
       e.target.toggleClass(openClass);
@@ -536,7 +536,7 @@ export class Interactivity {
     );
     cy.maxZoom(15);
 
-    let baseFontSize = extract(this.properties.font.size);
+    const baseFontSize = extract(this.properties.font.size);
     const structureOpacityArray = extract(this.properties.structure.opacity);
     const zoomStart = structureOpacityArray[0][0];
     const zoomEnd = structureOpacityArray[structureOpacityArray.length - 1][0];
@@ -662,7 +662,7 @@ export class Interactivity {
     if (x < points.at(0)!.x) return points.at(0)!.y;
     if (x > points.at(-1)!.x) return points.at(-1)!.y;
     for (let i = 0; i + 1 < points.length; i++) {
-      let y = this.lerp(x, points[i], points[i + 1]);
+      const y = this.lerp(x, points[i], points[i + 1]);
       if (y) return y;
     }
     console.assert(false, 'Should not arrive here');
@@ -706,7 +706,7 @@ class P extends Array<number> {
 }
 
 function isElementInViewport(el: HTMLElement) {
-  let rect = el.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&

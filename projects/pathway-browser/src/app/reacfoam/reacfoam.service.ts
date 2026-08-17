@@ -299,7 +299,7 @@ export class ReacfoamService {
   }
 }
 
-export function cleanObject<O extends Object>(object: O): O {
+export function cleanObject<O extends object>(object: O): O {
   for (const key in object) {
     if (object[key] === null || object[key] === undefined || (isArray(object[key]) && object[key].length === 0)) {
       delete object[key];

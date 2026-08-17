@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ChangeDetectorRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -35,6 +36,11 @@ describe('SearchComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        // The component is constructed directly (not via createComponent), so
+        // there is no host view and ChangeDetectorRef -- a node-level provider
+        // -- is not available. These tests exercise pure logic, so a no-op
+        // stub is sufficient and keeps them independent of change detection.
+        { provide: ChangeDetectorRef, useValue: { markForCheck: () => {}, detectChanges: () => {} } },
         {
           provide: ActivatedRoute,
           useValue: {

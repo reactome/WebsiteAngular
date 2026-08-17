@@ -96,13 +96,13 @@ export class EventService {
   }
 
   fetchTlpsBySpecies(taxId: string): Observable<TopLevelPathway[]> {
-    let url = `${this._TOP_LEVEL_PATHWAYS}${taxId}`;
+    const url = `${this._TOP_LEVEL_PATHWAYS}${taxId}`;
     return this.http.get<TopLevelPathway[]>(url);
   }
 
 
   fetchEventAncestors(stId: string): Observable<Pathway[][]> {
-    let url = `${this._ANCESTORS}${stId}/ancestors`;
+    const url = `${this._ANCESTORS}${stId}/ancestors`;
     return this.http.get<Pathway[][]>(url).pipe(map(ancestorsOptions => ancestorsOptions.map(ancestorsOption => ancestorsOption.reverse())))
   }
 

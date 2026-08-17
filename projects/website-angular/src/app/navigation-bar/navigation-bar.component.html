@@ -19,7 +19,7 @@
     <mat-icon class="menu-icon" (click)="toggleHamburgerMenu()">menu</mat-icon>
     } @if (windowWidth > hamburgerBreakpoint || activeHamburgerMenu) {
     <ul class="nav-list">
-      @for (option of navOptions | keyvalue : preserveOrder; track option) {
+      @for (option of navOptions() | keyvalue : preserveOrder; track option) {
       <li
         class="nav-item"
         [class.active]="activeDropdown === option.key"
@@ -31,7 +31,7 @@
         <div class="nav-link-wrapper">
           @if (!navOption.external) {
           <a
-            [routerLink]="
+            [routerLink]=="
               windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
                 ? navOption.link
                 : null
@@ -49,7 +49,7 @@
           </a>
           } @if (navOption.external) {
           <a
-            [attr.href]="
+            [attr.href]=="
               windowWidth > hamburgerBreakpoint || navOption.label == 'Download'
                 ? navOption.link
                 : null

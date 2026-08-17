@@ -1,10 +1,10 @@
+import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, Input, OnInit } from '@angular/core';
 import { ArticleIndexItem } from '../../../types/article';
 
 import { RouterModule } from '@angular/router';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { NavOption } from '../../../types/link';
 
 @Component({
@@ -16,13 +16,13 @@ import { NavOption } from '../../../types/link';
 })
 export class HomeLatestNewsComponent implements OnInit {
   contentService = inject(ContentService);
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
 
   loading = true;
   newsList: ArticleIndexItem[] = [];
 
   ngOnInit() {
-    this.loadNavOptions();
     this.loadLatestNews();
   }
 
@@ -46,12 +46,6 @@ export class HomeLatestNewsComponent implements OnInit {
         this.newsList = [];
         this.loading = false;
       },
-    });
-  }
-
-  loadNavOptions() {
-    import('../../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
     });
   }
 

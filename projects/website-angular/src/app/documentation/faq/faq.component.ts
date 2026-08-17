@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
@@ -11,7 +11,7 @@ import { ArticleIndexItem } from 'projects/website-angular/src/types/article';
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })
-export class FaqComponent {
+export class FaqComponent implements OnInit {
   contentService = inject(ContentService);
 
   categories: string[] = [];

@@ -210,7 +210,7 @@ export class EhldService {
     this.saturateRegion(regionElement, true, pathway);
 
     if (overlayElement) {
-      let container: SVGRectElement | SVGPathElement | null = overlayElement.querySelector('rect') || overlayElement.querySelector('path');
+      const container: SVGRectElement | SVGPathElement | null = overlayElement.querySelector('rect') || overlayElement.querySelector('path');
       if (!container) return;
 
       const entities = pathway?.entities || {fdr: 1, found: 0, total: 1, exp: undefined};

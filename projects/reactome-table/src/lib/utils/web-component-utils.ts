@@ -1,5 +1,5 @@
 export function safeInput<C>(component: C, attr: keyof C) {
-  let value = component[attr];
+  const value = component[attr];
   if (isString(value)) {
     try {
       component[attr] = JSON.parse(value);

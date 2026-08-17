@@ -10,6 +10,31 @@ npm install --legacy-peer-deps
 npm start
 ```
 
+### Running it in Docker
+
+```bash
+docker compose up
+```
+
+The container writes into your working copy — the build cache, the staged
+content, TinaCMS's generated client — so it runs as an unprivileged user rather
+than root, or those files come back owned by root and your own `ng build` then
+fights the container for `.angular/cache`.
+
+That user's ids default to `1000:1000`, which is what a stock Linux install
+gives the first account, and Docker Desktop on macOS and Windows maps ownership
+for you regardless. If `id -u` says anything else, point the build at your ids
+once and rebuild:
+
+```bash
+printf 'UID=%s\nGID=%s\n' "$(id -u)" "$(id -g)" > .env
+docker compose build && docker compose up -d
+```
+
+`.env` is not committed, so each machine sets its own. Changing it needs
+`docker compose down -v` as well, because the anonymous `node_modules` volume
+keeps whatever ownership it was first created with.
+
 ## Usage
 Reactome has a wide range of features, to explore more of Reactome or get more information visit [the documentation page](https://reactome.org/documentation) or see the ````/documentation```` folder in the root directory.
 

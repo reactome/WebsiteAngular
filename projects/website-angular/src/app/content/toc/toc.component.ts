@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -14,6 +14,9 @@ type SortDir = 'asc' | 'desc';
   styleUrl: './toc.component.scss'
 })
 export class TocComponent implements OnInit, OnDestroy {
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   loading = true;
   error = false;
 
@@ -55,10 +58,12 @@ export class TocComponent implements OnInit, OnDestroy {
         this.allPathways = data;
         this.filteredPathways = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }

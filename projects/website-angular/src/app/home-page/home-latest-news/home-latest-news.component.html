@@ -4,7 +4,7 @@
   <li class="news-list-option">
     <a
       class="news-link"
-      [routerLink]="(navOptions['about']?.dropdownLinks?.['news']?.link || '/about/news') + '/' + article.slug"
+      [routerLink]="(navOptions()['about']?.dropdownLinks?.['news']?.link || '/about/news') + '/' + article.slug"
       >{{ formatD(article.date) }} - {{ article.title }}</a
     >
   </li>

@@ -352,7 +352,7 @@ export class AnalysisService {
         if (!isValidPalette) this.state.palette.set(null)
       }
 
-      for (let summary of this.paletteOptions.values()) {
+      for (const summary of this.paletteOptions.values()) {
         //@ts-ignore
         summary.domain(
           result.expression.min === undefined ? this.state.significance() : result.expression.min,

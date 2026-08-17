@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
@@ -9,6 +9,7 @@ import addJumpCards from '../../utils/addJumpCards';
 import wrapCodeBlocks from '../../utils/wrapCodeBlocks';
 import sanitize from '../../utils/sanitize';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
 
 @Component({
@@ -17,16 +18,30 @@ import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPrese
   templateUrl: './page.component.html',
   styleUrl: './page.component.scss'
 })
-export class PageComponent {
+export class PageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
   private elementRef = inject(ElementRef);
+  private viewportScroller = inject(ViewportScroller);
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
 
   page: any | null = null;
   renderedContent: SafeHtml = '';
   loading = false;
   error: string | null = null;
+
+  // Landing directly on e.g. /documentation/userguide/reactome-fiviz#Overview
+  // can't be left to the router: the body arrives from an HTTP request well
+  // after navigation completes, so at the moment the router would scroll there
+  // is no element with that id yet. Re-try the scroll once the content has
+  // actually been rendered.
+  private scrollToRequestedAnchor(): void {
+    const fragment = this.route.snapshot.fragment;
+    if (fragment) this.viewportScroller.scrollToAnchor(fragment);
+  }
 
   private rewriteContentUrls(html: string): string {
     return html.replace(/\b(href|src)=("([^"]*)"|'([^']*)')/g, (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
@@ -52,6 +67,7 @@ export class PageComponent {
      this.route.url.subscribe(segments => {
       if (segments.length === 0) {
         this.error = 'Page not found.';
+        this.cdr.markForCheck();
         return;
       }
 
@@ -79,21 +95,40 @@ export class PageComponent {
           this.page = page;
           let html = await marked(page.body);
           html = this.rewriteContentUrls(html);
-          this.renderedContent = sanitize(stripFirstH(html), this.sanitizer);
+          // Keep this chain intact. Each step was added by a specific fix and
+          // the imports alone do nothing: wrapCodeBlocks collapses long code
+          // blocks (#98), addJumpCards builds the dev-page cards, and
+          // addAnchorIds gives headings the ids that same-page "#" links --
+          // including the table of contents at the top of the long userguide
+          // pages -- need to jump to (#89). Dropping the calls but keeping the
+          // imports is exactly how those regressed once already.
+          this.renderedContent = sanitize(
+            stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+            this.sanitizer,
+          );
           this.loading = false;
+          // `await marked(...)` resumes in a microtask, so this assignment is
+          // detached from the subscribe callback as far as Angular is
+          // concerned -- without this the rendered body never appears.
+          this.cdr.markForCheck();
           // Let Angular flush the bound innerHTML before we look for
-          // third-party embed placeholders inside it.
-          setTimeout(() => loadHubspotMeetingsIfPresent(this.elementRef.nativeElement), 0);
+          // third-party embed placeholders inside it, or for the anchor a
+          // deep link asked for.
+          setTimeout(() => {
+            loadHubspotMeetingsIfPresent(this.elementRef.nativeElement);
+            this.scrollToRequestedAnchor();
+          }, 0);
         } else {
           this.error = 'Page not found.';
           this.loading = false;
-
+          this.cdr.markForCheck();
         }
       }
       , error: (err) => {
         this.error = 'Error loading page.';
         this.loading = false;
         console.error("Issue Loading Page: ",err);
+        this.cdr.markForCheck();
       }
     })
   }

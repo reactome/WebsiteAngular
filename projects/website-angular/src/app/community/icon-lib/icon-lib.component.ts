@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
@@ -55,6 +55,9 @@ interface ParsedReference {
   styleUrl: './icon-lib.component.scss'
 })
 export class IconLibComponent implements OnInit, OnDestroy {
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   view: View = 'grid';
   loading = true;
   error = false;
@@ -127,6 +130,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
         this.categories = Array.from(merged, ([name, count]) => ({ name, count }))
           .sort((a, b) => a.name.localeCompare(b.name));
         this.totalIcons = data.totalNumFount;
+        this.cdr.markForCheck();
       },
       error: () => {}
     });
@@ -156,12 +160,14 @@ export class IconLibComponent implements OnInit, OnDestroy {
         );
         this.totalEntries = data.entriesCount;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.icons = [];
         this.totalEntries = 0;
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -189,17 +195,19 @@ export class IconLibComponent implements OnInit, OnDestroy {
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
-    this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
     this.iconService.getIcon(icon.stId).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
         this.detailLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.selectedIcon = icon;
         this.parsedReferences = this.prepareReferences(icon);
         this.detailLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -207,7 +215,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   backToGrid() {
     this.view = 'grid';
     this.selectedIcon = null;
-    this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
   }
 
   private loadIconById(id: string) {
@@ -219,11 +227,13 @@ export class IconLibComponent implements OnInit, OnDestroy {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
         this.detailLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.view = 'grid';
         this.detailLoading = false;
         this.loadIcons();
+        this.cdr.markForCheck();
       }
     });
   }

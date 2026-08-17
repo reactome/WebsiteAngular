@@ -28,7 +28,7 @@ export class DatabaseObjectService {
   }
 
   fetchEnhancedEntry<T extends DatabaseObject>(stId: string, summariseReferenceEntity = false): Observable<T> {
-    let url = `${this._ENHANCED_QUERY}${stId}`;
+    const url = `${this._ENHANCED_QUERY}${stId}`;
     return this.http.get<T>(url, {
       params: {
         includeRef: true,
@@ -47,7 +47,7 @@ export class DatabaseObjectService {
 
 
   fetchSimpleData<T extends DatabaseObject>(stId: string): Observable<T> {
-    let url = `${this._DATA_QUERY}${stId}`;
+    const url = `${this._DATA_QUERY}${stId}`;
     return this.http.get<T>(url).pipe(
       map((response: T) => {
         const deserializer = new JSOGDeserializer();

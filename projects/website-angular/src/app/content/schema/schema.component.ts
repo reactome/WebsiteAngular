@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -26,6 +26,9 @@ interface FlatTreeNode {
   styleUrl: './schema.component.scss',
 })
 export class SchemaComponent implements OnInit, OnDestroy {
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   // Tree state
@@ -107,10 +110,12 @@ export class SchemaComponent implements OnInit, OnDestroy {
             if (dbId != null) this.activeTab = 'entries';
           }
         });
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -175,14 +180,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   onTreeNodeClick(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
     this.sidebarOpen = false;
   }
 
   onTreeNodeCountClick(className: string, event: Event) {
     // Stop the parent .node-label button from also firing onTreeNodeClick.
     event.stopPropagation();
-    this.router.navigate(['/dataSchema', className], {
+    void this.router.navigate(['/dataSchema', className], {
       queryParams: { tab: 'entries' },
     });
     this.sidebarOpen = false;
@@ -276,16 +281,19 @@ export class SchemaComponent implements OnInit, OnDestroy {
       next: (attrs) => {
         this.attributes = attrs;
         this.loadingAttributes = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.attributesError = true;
         this.loadingAttributes = false;
+        this.cdr.markForCheck();
       },
     });
 
     this.contentDataService.getSchemaReferrals(className).subscribe({
       next: (refs) => {
         this.referrals = refs;
+        this.cdr.markForCheck();
       },
       error: () => {
         // Referrals may be empty, that's fine
@@ -306,7 +314,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   navigateToClass(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
   }
 
   // --- Entries ---
@@ -323,6 +331,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.contentDataService.getSchemaCount(this.selectedClass).subscribe({
       next: (count) => {
         this.entryCount = count;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -339,10 +348,12 @@ export class SchemaComponent implements OnInit, OnDestroy {
         next: (entries) => {
           this.entries = entries;
           this.loadingEntries = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.entries = [];
           this.loadingEntries = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -380,14 +391,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    this.router.navigate(
+    void this.router.navigate(
       ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }
 
   clearSelectedInstance() {
-    this.router.navigate(['/dataSchema', this.selectedClass], {
+    void this.router.navigate(['/dataSchema', this.selectedClass], {
       queryParams: { tab: 'entries' },
     });
   }
@@ -396,7 +407,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // Followed-from links inside the instance browser may point to objects
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
-    this.router.navigate(
+    void this.router.navigate(
       ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );

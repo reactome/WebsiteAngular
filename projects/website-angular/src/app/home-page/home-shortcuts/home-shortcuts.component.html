@@ -1,5 +1,5 @@
   <app-carousel [dark]="false">
-    <a class="shortcut-link" [href]="navOptions['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"
+    <a class="shortcut-link" [href]="navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
         ><mat-icon class="large-button-icon">account_tree</mat-icon>Pathway
         Browser
@@ -15,12 +15,12 @@
         ><mat-icon class="large-button-icon">auto_awesome</mat-icon>AI Chatbot
       </app-button></a
     >
-    <a class="shortcut-link" [routerLink]="navOptions['documentation']?.dropdownLinks?.['userguide']?.dropdownLinks?.['reactome-fiviz']?.link || '/documentation/userguide/reactome-fiviz'"
+    <a class="shortcut-link" [routerLink]="navOptions()['documentation']?.dropdownLinks?.['userguide']?.dropdownLinks?.['reactome-fiviz']?.link || '/documentation/userguide/reactome-fiviz'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
         ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
       </app-button></a
     >
-    <a class="shortcut-link" [routerLink]="navOptions['documentation']?.link || '/documentation'"
+    <a class="shortcut-link" [routerLink]="navOptions()['documentation']?.link || '/documentation'"
       ><app-button [variant]="dark ? 'dark' : 'light'" size="large">
         <mat-icon class="large-button-icon">school</mat-icon>Documentation
       </app-button></a

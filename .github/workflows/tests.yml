@@ -32,6 +32,28 @@ jobs:
       - name: Test
         run: npm test
 
+      # The type-aware lint rules and knip both need the workspace libraries to
+      # resolve. Without dist/ they report against a different graph than they do
+      # locally, so the baselines drift -- which already failed one run with
+      # "Cannot find module 'reactome-gsa-form'". Build them first so CI and a
+      # developer's machine are looking at the same code.
+      - name: Build workspace libraries
+        run: npm run build:libs
+
+      # Lint errors must be zero -- eslint.config.js only marks a rule "error"
+      # once the codebase is clean of it, so an error is always a new violation.
+      # Warnings are the ~1600 pre-existing findings, held to a baseline so they
+      # can only go down.
+      - name: Lint
+        run: npm run check:lint
+
+      # eslint sees unused symbols within a file; knip sees whole files and
+      # exports nothing imports, which was the bigger pile. Also baselined,
+      # because some findings need someone who knows the data model to judge --
+      # the graph classes are referenced by schemaClass name, not by import.
+      - name: Check unreachable code has not increased
+        run: npm run check:dead
+
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
@@ -68,10 +90,18 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # playwright.config.ts starts `ng serve` itself and waits for :4200.
-      # Backend calls go through proxy.conf.json to dev.reactome.org, so this
-      # exercises real data -- which also means a dev-backend outage will show
-      # up here as a failure. Retries are set to 2 under CI to absorb blips.
+      # Backend calls go through proxy.conf.js, which defaults to the Tomcat on
+      # localhost:8080 that the Reactome dev host runs. A CI runner has no such
+      # backend, so point it at production or every data-dependent test hangs
+      # until the job's 30 minute limit -- which is exactly what happened when
+      # the default was switched to localhost.
+      #
+      # Production lacks the content-page endpoints that only exist on the dev
+      # host's unreleased branch; the specs needing those skip themselves rather
+      # than fail here.
       - name: Run e2e
+        env:
+          REACTOME_BACKEND: https://reactome.org
         run: npm run e2e
 
       - name: Upload Playwright report

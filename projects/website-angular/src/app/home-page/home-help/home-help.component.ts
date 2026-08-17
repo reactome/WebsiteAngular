@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { NavOptionsService } from '../../../services/nav-options.service';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
 import { ExternalLink, NavOption } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
@@ -14,22 +14,15 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
   templateUrl: './home-help.component.html',
   styleUrl: './home-help.component.scss'
 })
-export class HomeHelpComponent {
-  navOptions: Record<string, NavOption> = {};
+export class HomeHelpComponent implements OnInit {
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
   externalLinks: Record<string, ExternalLink> = {};
   releaseNotesLink: string = '';
   feedbackLink: string = '';
 
   ngOnInit() {
-    this.loadNavOptions();
     this.loadExternalLinks();
-  }
-  
-  loadNavOptions() {
-    // Load nav options from the JSON file
-    import('../../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
   }
 
   loadExternalLinks() {

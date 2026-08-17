@@ -58,7 +58,7 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
-  @Output('initialiseReplaceElements') initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
+  @Output() initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
 
   ngAfterViewInit(): void {
     this.getPsicquicResources();
@@ -96,7 +96,7 @@ export class InteractorsComponent implements AfterViewInit {
   getStaticInteractors(resource: string | null) {
     if (resource) {
       this.clear = false
-      let type = resource === ResourceType.STATIC ? ResourceType.STATIC : ResourceType.DISGENET;
+      const type = resource === ResourceType.STATIC ? ResourceType.STATIC : ResourceType.DISGENET;
       this.updateCurrentResource(resource, type);
     } else {
       return;

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 import { TileComponent } from "../../reactome-components/tile/tile.component";
 import { ContentService  } from '../../../services/content.service';
@@ -16,7 +16,7 @@ import { marked } from 'marked';
   templateUrl: './article-page.component.html',
   styleUrl: './article-page.component.scss'
 })
-export class ArticlePageComponent {
+export class ArticlePageComponent implements OnInit {
     private route =  inject(ActivatedRoute);
     private contentService = inject(ContentService);
 
@@ -38,7 +38,7 @@ export class ArticlePageComponent {
     ngOnInit() {
       this.route.url.subscribe(segments => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path_segments = segments.map(s => s.path);
+      const path_segments = segments.map(s => s.path);
 
       if (path_segments.length > 0 && path_segments) {
         if (path_segments.includes('about')) {
@@ -71,8 +71,8 @@ export class ArticlePageComponent {
         } ));
 
         this.articles.forEach( async (article) => {
-          let html = await marked(article?.excerpt || '');
-          let renderedContent = stripFirstH(html);
+          const html = await marked(article?.excerpt || '');
+          const renderedContent = stripFirstH(html);
           article.excerpt = renderedContent;
         })
         this.loading = false;

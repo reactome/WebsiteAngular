@@ -71,7 +71,7 @@ export class ContentService {
     return this.http.get<Record<string, unknown>>(`${this.contentBasePath}/${path}/${slug}.json`).pipe(
       map(frontmatter => {
         const body = frontmatter['body'] as string;
-        let returnArticle: Article = {
+        const returnArticle: Article = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),
           author: frontmatter['author'] as string,
@@ -145,7 +145,7 @@ export class ContentService {
     return this.http.get<Record<string, unknown>>(`${this.contentBasePath}/documentation/faq/${category}/${slug}.json`).pipe(
       map(frontmatter => {
         const body = frontmatter['body'] as string;
-        let returnArticle: Article = {
+        const returnArticle: Article = {
           title: frontmatter['title'] as string || '',
           date: new Date(frontmatter['date'] as string),
           author: frontmatter['author'] as string,

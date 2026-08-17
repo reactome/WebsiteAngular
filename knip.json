@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.ts",
+    "projects/website-angular/src/main.ts",
+    "projects/pathway-browser/src/main.ts",
+    "projects/reactome-table-wc/src/main.ts",
+    "projects/website-angular/src/scripts/*.{ts,js}",
+    "scripts/*.mjs",
+    "e2e/**/*.spec.ts",
+    "**/*.spec.ts",
+    "playwright.config.ts",
+    "vitest.config.ts",
+    "eslint.config.js",
+    "proxy.conf.js",
+    "projects/*/src/public-api.ts",
+    "projects/*/src/index.ts",
+    "projects/website-angular/src/main.server.ts",
+    "projects/website-angular/src/server.ts",
+    "projects/website-angular/src/app/app.config.server.ts",
+    "projects/website-angular/tina/config.ts",
+    "src/app/app.elements.ts",
+    "projects/*/src/elements.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "projects/**/*.ts",
+    "scripts/**/*.mjs"
+  ],
+  "ignore": [
+    "**/*.d.ts",
+    "**/__generated__/**",
+    "web-component-demo/**",
+    ".claude/**",
+    "projects/*/src/types/**"
+  ],
+  "ignoreDependencies": [
+    "@angular/localize",
+    "zone.js",
+    "tinacms",
+    "swagger-ui-dist"
+  ]
+}

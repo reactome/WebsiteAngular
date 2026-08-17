@@ -6,7 +6,7 @@ import {
   AfterViewInit,
   ViewChild,
   ElementRef,
-  NgZone,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -57,7 +57,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private searchService = inject(SearchService);
   private siteSearch = inject(SiteSearchService);
   private http = inject(HttpClient);
-  private ngZone = inject(NgZone);
+  // This component keeps its state in plain fields (Records and Maps mutated
+  // in place), not signals, so nothing tells Angular when an async callback
+  // changes it. Under zones that worked by accident -- zone.js re-checked the
+  // whole tree after every completed XHR. Zoneless needs the notification to be
+  // explicit, hence markForCheck() at each async boundary below. Converting all
+  // ~20 fields to signals would be the idiomatic fix, but that is a rewrite of
+  // this component rather than a refactor.
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('captchaContainer') captchaContainer!: ElementRef<HTMLDivElement>;
 
@@ -159,6 +166,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.doSearch();
         this.getSuggestions(this.query);
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -178,9 +186,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.searchService.getSpellCheckTerms(query).subscribe({
       next: (terms) => {
         this.suggestedTerms = terms || [];
+        this.cdr.markForCheck();
       },
       error: () => {
         this.suggestedTerms = [];
+        this.cdr.markForCheck();
       },
     });
   }
@@ -189,7 +199,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     // Wait until the captcha container is available in the DOM
     const checkContainer = () => {
       if (this.captchaContainer?.nativeElement) {
-        this.loadHCaptchaScript().then(() => this.renderCaptcha());
+        this.loadHCaptchaScript()
+          .then(() => this.renderCaptcha())
+          // Without the widget the form cannot be submitted at all, so say so
+          // rather than leaving an empty box.
+          .catch((error) => console.error('Could not load hCaptcha', error));
       } else {
         setTimeout(checkContainer, 200);
       }
@@ -222,19 +236,16 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
         theme: 'light',
         callback: (token: string) => {
-          this.ngZone.run(() => {
-            this.captchaToken = token;
-          });
+          this.captchaToken = token;
+          this.cdr.markForCheck();
         },
         'expired-callback': () => {
-          this.ngZone.run(() => {
-            this.captchaToken = null;
-          });
+          this.captchaToken = null;
+          this.cdr.markForCheck();
         },
         'error-callback': () => {
-          this.ngZone.run(() => {
-            this.captchaToken = null;
-          });
+          this.captchaToken = null;
+          this.cdr.markForCheck();
         },
       }
     );
@@ -246,6 +257,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       hcaptcha.reset(this.captchaWidgetId);
     }
     this.captchaToken = null;
+    this.cdr.markForCheck();
   }
 
   private doSearch(): void {
@@ -392,6 +404,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           }
         }
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Search error:', err);
@@ -400,6 +413,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.results = null;
         this.facets = null;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -465,6 +479,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       this.uniqueProteins = [...representativeMap.values()];
       this.proteinTotalForms = allProteins.length;
       this.proteinLoading = false;
+      this.cdr.markForCheck();
     });
   }
 
@@ -595,7 +610,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private updateQueryParams(
     params: Record<string, string | string[] | null>
   ): void {
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       queryParamsHandling: 'merge',
@@ -653,7 +668,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const pages: number[] = [];
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(this.totalPages, start + maxVisible);
+    const end = Math.min(this.totalPages, start + maxVisible);
 
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);
@@ -739,8 +754,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(catchError(() => of(null)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        if (!result?.results?.length) return;
+        if (!result?.results?.length) {
+          this.cdr.markForCheck();
+          return;
+        }
         this.groupPageEntries[group.typeName] = result.results[0].entries;
+        this.cdr.markForCheck();
       });
   }
 
@@ -767,11 +786,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       next: () => {
         this.formSubmitted = true;
         this.resetCaptcha();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error submitting contact form:', err);
         this.formSubmitted = true; // Still show thank you message even if there's an error
         this.resetCaptcha();
+        this.cdr.markForCheck();
       },
     });
   }

@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 
 import { MatIcon } from '@angular/material/icon';
 import { NavLink } from '../../types/link';
-import { mapNavOptions } from '../../utils/nav-options-mapper';
 import { EXTERNAL_LINKS } from '../../config/external-links'; // NEW import
 
 @Component({

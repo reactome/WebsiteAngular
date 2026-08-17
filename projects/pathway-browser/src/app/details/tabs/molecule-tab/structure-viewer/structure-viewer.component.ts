@@ -298,9 +298,14 @@ export class StructureViewerComponent {
 
     // If only alfaFold data is available, check if the structure is available
     if (this.alphaFoldEntryId()) {
-      fetch(this.alphafoldUrl(), { method: 'HEAD' }).then(
-        (e) => !e.ok && this.alphaFoldEntryId.set(null)
-      );
+      // A failed request means the structure cannot be shown either, so treat
+      // it the same as a 404 rather than leaving the id set and rendering a
+      // viewer for something that is not there.
+      fetch(this.alphafoldUrl(), { method: 'HEAD' })
+        .then((response) => {
+          if (!response.ok) this.alphaFoldEntryId.set(null);
+        })
+        .catch(() => this.alphaFoldEntryId.set(null));
     }
 
     const finalOptions = selected.startsWith('AF-')

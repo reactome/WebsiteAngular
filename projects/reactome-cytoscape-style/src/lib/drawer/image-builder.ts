@@ -288,13 +288,13 @@ const classToDrawers = new Map<Node, Memo<DrawerProvider>>([
 ]);
 
 export function clearDrawersCache() {
-  for (let value of classToDrawers.values()) {
+  for (const value of classToDrawers.values()) {
     value.cache.clear!();
   }
   OMMITED_ICON.cache.clear!();
 }
 
-function aggregate<T extends Object, K extends keyof T>(
+function aggregate<T extends object, K extends keyof T>(
   toAggregate: T[],
   defaultValue: T
 ): Aggregated<T> {
@@ -341,7 +341,7 @@ const Pathway = (
     ? extract(properties.global.onPrimary)
     : extract(properties.global.negativeContrast);
 
-  let x = 5 * t;
+  const x = 5 * t;
 
   return {
     'background-image': `

@@ -18,7 +18,7 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    @Inject(PLATFORM_ID) platformId: Object,
+    @Inject(PLATFORM_ID) platformId: object,
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
     this.serviceName = this.route.snapshot.data['serviceName'] || 'ContentService';

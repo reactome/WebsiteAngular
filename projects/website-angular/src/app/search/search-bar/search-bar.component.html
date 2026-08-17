@@ -24,7 +24,7 @@
   </button>
   <button type="submit" class="search-button">Go!</button>
 </form>
-@if (query && suggestions.length > 0 && showSuggestions) {
+@if (query && suggestions.length > 0 && showSuggestions()) {
 <div class="suggestions-container">
   <ul class="suggestions-list">
     @for (s of suggestions; track s; let i = $index) {
@@ -35,7 +35,7 @@
       <a
         [routerLink]="['/content/query']"
         [queryParams]="{ q: s }"
-        (click)="showSuggestions = false"
+        (click)="showSuggestions.set(false)"
       >
         {{ s }}
       </a>

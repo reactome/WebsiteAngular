@@ -105,7 +105,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
     effect(async () => {
       const request = this.download.downloadRequest();
-      let options = request?.options || defaultDownloadOptions;
+      const options = request?.options || defaultDownloadOptions;
       if (request && this.download.isRasterFormat(request.format)) {
         this.ehldService.downloadImage(request.format);
         this.download.resetDownload();

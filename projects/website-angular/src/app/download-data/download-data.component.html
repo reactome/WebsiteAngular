@@ -21,7 +21,7 @@
           @for (item of tocItems; track item.id) {
             <li>
               <a
-                [class.active]="activeTocId === item.id"
+                [class.active]="activeTocId() === item.id"
                 (click)="scrollTo(item.id); $event.preventDefault()"
                 href="#"
               >{{ item.label }}</a>
