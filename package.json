@@ -25,7 +25,8 @@
     "e2e:ui": "playwright test --ui",
     "serve:ssr:website": "node dist/website-angular/server/server.mjs",
     "serve:prod": "node projects/website-angular/src/scripts/serve-prod.js",
-    "build:watch": "ng build reactome --configuration production --watch --delete-output-path false"
+    "build:watch": "ng build reactome --configuration production --watch --delete-output-path false",
+    "check:unused": "node scripts/check-unused.mjs"
   },
   "private": true,
   "dependencies": {

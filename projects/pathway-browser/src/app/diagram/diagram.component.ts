@@ -61,9 +61,8 @@ import { DarkService } from '../services/dark.service';
 import { DownloadFormat, DownloadService } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
-import { Interactor, ResourceType } from '../interactors/model/interactor.model';
+import { Interactor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
-import { NgClass } from '@angular/common';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
@@ -108,7 +107,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly pathwayId = model.required<string>();
 
   /** The entity a right-click landed on, or null when no popup is open. */
-  readonly contextTarget = signal<EntityPopupTarget | null>(null);
+  readonly popupTarget = signal<EntityPopupTarget | null>(null);
 
   /**
    * The viewport as it was when the popup opened.
@@ -117,7 +116,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * "the view I was looking at", not "fit to the entity" -- the latter lands
    * you at a zoom you were never at, which is its own kind of lost.
    */
-  private contextViewport: { zoom: number; pan: cytoscape.Position } | null = null;
+  private popupViewport: { zoom: number; pan: cytoscape.Position } | null = null;
 
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
@@ -585,7 +584,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (!stId) return;
           const pointer = e.originalEvent as MouseEvent | undefined;
           if (!pointer) return;
-          this.contextTarget.set({
+          this.popupTarget.set({
             x: pointer.clientX,
             y: pointer.clientY,
             stId,
@@ -596,14 +595,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // right-clicked, so the popup and the panel agree. Flagged as an
           // in-diagram selection, or the select effect animates a fit to the
           // node and a right-click would yank the whole diagram around.
-          this.contextViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
+          this.popupViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
           this.selecting = true;
           this.state.select.set(stId);
         });
 
         // Right-clicking the background dismisses it.
         this.cy.on('cxttap', (e) => {
-          if (e.target === this.cy) this.contextTarget.set(null);
+          if (e.target === this.cy) this.popupTarget.set(null);
         });
 
         this.cy.on('dblclick', '.Interacting.Pathway', (e) =>
@@ -1519,7 +1518,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    */
   onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
     if (event.kind === 'pathways') {
-      this.contextTarget.set(null);
+      this.popupTarget.set(null);
       this.state.navigateTo(event.stId, {
         queryParamsHandling: 'preserve',
         preserveFragment: true,
@@ -1537,7 +1536,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * Selecting it again returns the diagram there.
    */
   onPopupRecenter(): void {
-    const target = this.contextTarget();
+    const target = this.popupTarget();
     if (!target) return;
 
     // Re-select without letting the select effect fit, then put the viewport
@@ -1545,7 +1544,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.selecting = true;
     this.state.select.set(target.stId);
 
-    const viewport = this.contextViewport;
+    const viewport = this.popupViewport;
     if (viewport) {
       this.cy.animate(
         { zoom: viewport.zoom, pan: viewport.pan },

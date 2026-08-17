@@ -32,6 +32,13 @@ jobs:
       - name: Test
         run: npm test
 
+      # There is no linter in this repo, so dead code was only ever caught by
+      # review -- and review missed an import that outlived the code using it.
+      # This fails when the count goes up, without requiring the ~100
+      # pre-existing cases to be fixed first.
+      - name: Check dead code has not increased
+        run: npm run check:unused
+
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest

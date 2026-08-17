@@ -12,10 +12,10 @@
        (contextmenu)="$event.preventDefault()"></div>
 
   <cr-entity-popup
-    [target]="contextTarget()"
+    [target]="popupTarget()"
     (navigate)="onPopupNavigate($event)"
     (recenter)="onPopupRecenter()"
-    (dismissed)="contextTarget.set(null)"
+    (dismissed)="popupTarget.set(null)"
   />
   <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex': 'none'">
     <div id="handle-limits"
