@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
 import { Publication } from '../../../model/graph/publication/publication.model';
-import {Person} from "../../../model/graph/person.model";
+import { Person } from '../../../model/graph/person.model';
 import { SafePipe } from '../../../pipes/safe.pipe';
 import { MatIcon } from '@angular/material/icon';
 
@@ -19,8 +19,9 @@ export class PublicationComponent {
   /** Structured authors, when the ref has them. Falls back to authorName in the template. */
   readonly authors = computed<Person[]>(() => this.ref().author ?? []);
   /** Free-text author string, only used when no structured authors exist. */
-  readonly authorName = computed<string>(() => this.authors().length ? '' : (this.ref().authorName ?? ''));
-
+  readonly authorName = computed<string>(() =>
+    this.authors().length ? '' : (this.ref().authorName ?? '')
+  );
 
   toggleAuthors() {
     this.isExpanded = !this.isExpanded;

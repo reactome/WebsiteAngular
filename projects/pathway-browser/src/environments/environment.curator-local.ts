@@ -14,9 +14,9 @@ const host = 'https://newcurator.reactome.org';
 export const environment = {
   production: false,
   host,
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
-  gtagId: "G-96F1EYHQR3",
+  s3: 'https://download.reactome.org',
+  gsaServer: 'dev',
+  gtagId: 'G-96F1EYHQR3',
   // The local curation graph has no released version to key S3 diagram paths
   // on (see environment.ts), so fetch diagrams from the content service.
   preferS3: false,

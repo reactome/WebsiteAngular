@@ -48,24 +48,27 @@
           <!--icon-->
           @if (authors().length > 1) {
             <span>
-              <mat-icon class="ref-icon" [svgIcon]="isExpanded ? 'collapse' : 'expand' " (click)="toggleAuthors()"></mat-icon>
+              <mat-icon
+                class="ref-icon"
+                [svgIcon]="isExpanded ? 'collapse' : 'expand'"
+                (click)="toggleAuthors()"
+              ></mat-icon>
             </span>
           }
         </div>
       </div>
     }
-
-</div>
-<div class="right">
-  <div class="journal">
-    <span class="journal-name"> {{ ref().journal }}</span>
   </div>
-  @if (ref().url) {
-    <div class="quote-container">
-      <a [href]="ref().url" target="_blank">
-        <mat-icon class='quote-icon' [svgIcon]="'format-quote'"></mat-icon>
-      </a>
+  <div class="right">
+    <div class="journal">
+      <span class="journal-name"> {{ ref().journal }}</span>
     </div>
-  }
-</div>
+    @if (ref().url) {
+      <div class="quote-container">
+        <a [href]="ref().url" target="_blank">
+          <mat-icon class="quote-icon" [svgIcon]="'format-quote'"></mat-icon>
+        </a>
+      </div>
+    }
+  </div>
 </div>
