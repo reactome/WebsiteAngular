@@ -1,13 +1,219 @@
+// Latest News sits on the homepage's teal/green photographic band, so this is
+// light-on-dark throughout. The one bright colour is reserved for the release
+// markers -- the single thing worth noticing in the list.
+:host {
+  --news-ink: #ffffff;
+  --news-ink-soft: rgb(255 255 255 / 72%);
+  --news-ink-faint: rgb(255 255 255 / 55%);
+  --news-spine: rgb(255 255 255 / 22%);
+  --news-release: #7fe3c4; // mint: bright against teal without fighting it
+  --news-chip: rgb(255 255 255 / 12%);
+
+  display: block;
+  color: var(--news-ink);
+}
+
+.news-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
 .news-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.news-list {
-  min-width: fit-content;
+.news-all {
+  color: var(--news-ink-soft);
+  text-decoration: none;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  .news-all-arrow {
+    transition: transform 150ms ease;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--news-ink);
+
+    .news-all-arrow {
+      transform: translateX(3px);
+    }
+  }
+}
+
+// The spine: one vertical rule the markers sit on, so the release cadence
+// reads down the column.
+.news-spine {
   list-style: none;
-  padding: 0px;
+  margin: 0;
+  padding: 0 0 0 5.4rem;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 4.3rem;
+    top: 0.4rem;
+    bottom: 0.6rem;
+    width: 1px;
+    background: var(--news-spine);
+  }
 }
 
+.news-entry {
+  position: relative;
+  padding-bottom: 0.7rem;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+// Markers -----------------------------------------------------------------
+.news-marker {
+  position: absolute;
+  left: -5.4rem;
+  top: 0.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// A release: the version number itself, set in the mono face because it is an
+// identifier rather than prose, and because it aligns the column optically.
+.news-marker--release {
+  min-width: 2.9rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: rgb(127 227 196 / 14%);
+  border: 1px solid rgb(127 227 196 / 70%);
+  color: var(--news-release);
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+// Everything else: a quiet node on the spine.
+.news-marker--note {
+  left: -1.2rem;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.42rem;
+  border-radius: 50%;
+  background: var(--news-spine);
+  transition: background 150ms ease;
+}
+
+// Entries -----------------------------------------------------------------
 .news-link {
-  color: var(--on-primary);
+  display: grid;
+  gap: 0.1rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 4px;
+
+  &:focus-visible {
+    outline: 2px solid var(--news-release);
+    outline-offset: 3px;
+  }
+}
+
+.news-date {
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--news-ink-faint);
+}
+
+.news-headline {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.35;
   text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    text-decoration-color 150ms ease,
+    color 150ms ease;
+}
+
+// The newest item leads: larger, with one line of context. This is what breaks
+// the wall of identically sized links.
+.is-lead {
+  padding-bottom: 1.1rem;
+
+  .news-headline {
+    font-size: 1.22rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+.news-summary {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--news-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-entry:hover,
+.news-entry:focus-within {
+  .news-headline {
+    text-decoration-color: currentcolor;
+  }
+
+  .news-marker--note {
+    background: var(--news-release);
+  }
+}
+
+.news-empty {
+  margin: 0;
+  color: var(--news-ink-soft);
+  font-size: 0.9rem;
+}
+
+// Narrow columns cannot afford a 3.6rem gutter; drop the version chips onto
+// their own line rather than squeezing the headlines.
+@media (max-width: 640px) {
+  .news-spine {
+    padding-left: 1.2rem;
+
+    &::before {
+      left: 0.2rem;
+    }
+  }
+
+  .news-marker--release {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 0.2rem;
+  }
+
+  .news-marker--note {
+    left: -1.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .news-all-arrow,
+  .news-headline,
+  .news-marker--note {
+    transition: none;
+  }
 }

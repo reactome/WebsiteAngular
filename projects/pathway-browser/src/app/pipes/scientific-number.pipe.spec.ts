@@ -1,6 +1,5 @@
 import { ScientificNumberPipe } from './scientific-number.pipe';
 import { TestBed } from '@angular/core/testing';
-import { DomSanitizer } from '@angular/platform-browser';
 
 describe('ScientificNumberPipe', () => {
   let pipe: ScientificNumberPipe;

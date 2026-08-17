@@ -142,11 +142,14 @@ test.describe('In-page table of contents', () => {
     await expect
       .poll(
         () =>
-          page.evaluate(() =>
-            Math.abs(
-              document.getElementById('Gene_Set.2FMutation_Analysis')!.getBoundingClientRect().top
-            )
-          ),
+          page.evaluate(() => {
+            const heading = document.getElementById('Gene_Set.2FMutation_Analysis');
+            // Report a value that fails the assertion rather than throwing, so a
+            // missing heading reads as "never scrolled" instead of a crash.
+            return heading
+              ? Math.abs(heading.getBoundingClientRect().top)
+              : Number.MAX_SAFE_INTEGER;
+          }),
         { timeout: 15_000 }
       )
       .toBeLessThan(150);

@@ -1,12 +1,38 @@
-<h1 class="news-title">Latest News</h1>
-<ul class="news-list">
-  @for (article of newsList; track article) {
-    <li class="news-list-option">
-      <a
-        class="news-link"
-        [routerLink]="(navOptions()['about']?.dropdownLinks?.['news']?.link || '/about/news') + '/' + article.slug"
-        >{{ formatD(article.date) }} - {{ article.title }}</a
-      >
-    </li>
+<div class="news">
+  <div class="news-head">
+    <h2 class="news-title">Latest News</h2>
+    <a class="news-all" [routerLink]="newsRoot()">
+      All news
+      <span class="news-all-arrow" aria-hidden="true">→</span>
+    </a>
+  </div>
+
+  @if (newsList.length) {
+    <ol class="news-spine">
+      @for (article of newsList; track article.slug; let first = $first) {
+        <li class="news-entry" [class.is-lead]="first">
+          <!-- The marker carries the version when there is one: Reactome ships
+               numbered releases, so V96 is real sequence information, not
+               decoration. Everything else gets a plain node. -->
+          @if (releaseOf(article.title); as version) {
+            <span class="news-marker news-marker--release">{{ version }}</span>
+          } @else {
+            <span class="news-marker news-marker--note" aria-hidden="true"></span>
+          }
+
+          <a class="news-link" [routerLink]="newsRoot() + '/' + article.slug">
+            <time class="news-date" [attr.datetime]="article.date.toISOString()">
+              {{ formatD(article.date) }}
+            </time>
+            <span class="news-headline">{{ article.title }}</span>
+            @if (first && summaryOf(article); as summary) {
+              <span class="news-summary">{{ summary }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ol>
+  } @else if (!loading) {
+    <p class="news-empty">No news to show right now.</p>
   }
-</ul>
+</div>

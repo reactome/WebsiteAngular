@@ -8,10 +8,11 @@ $transition: all 0.3s ease;
 // Main container
 :host {
   display: block;
-  background-image: url('../../assets/reactome/bg-fireworks-colour.svg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: repeat-y;
+  // No background artwork. The fireworks illustration competed with the text
+  // on top of it, and dimming it only made it muddy rather than quiet. The page
+  // gets its depth from a brand-teal gradient instead, and its structure from
+  // the bands of content themselves.
+  background-image: linear-gradient(180deg, #00798f 0%, #006781 42%, #00485c 100%);
   background-attachment: fixed;
   min-height: 100vh;
   padding: $spacing-unit;
@@ -28,15 +29,13 @@ $transition: all 0.3s ease;
 }
 
 :host-context(.dark) {
-  background-image: url('../../assets/reactome/bg-fireworks-mono.svg');
+  background-image: linear-gradient(180deg, #003643 0%, #002b36 45%, #001a22 100%);
 }
 
 @media (max-width: 768px) {
   :host {
+    // Fixed attachment is janky on mobile and buys nothing for a gradient.
     background-attachment: scroll;
-    background-position: top center;
-    background-size: cover;
-    background-repeat: repeat-y;
   }
 }
 
