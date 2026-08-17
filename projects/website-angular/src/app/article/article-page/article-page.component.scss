@@ -150,7 +150,6 @@ $max-content-width: 1200px;
     flex: 1;
     overflow: hidden;
 
-
     ::ng-deep img {
       max-width: 100%;
       height: auto;
@@ -170,7 +169,11 @@ $max-content-width: 1200px;
 
     .material-symbols-outlined {
       font-size: 1.25rem;
-      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 500,
+        'GRAD' 0,
+        'opsz' 24;
       transition: transform 0.2s ease;
     }
 

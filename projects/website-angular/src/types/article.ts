@@ -1,5 +1,5 @@
 export interface ArticleIndexItem {
-   title: string;
+  title: string;
   author?: string;
   date: Date;
 

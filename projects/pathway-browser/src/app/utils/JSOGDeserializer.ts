@@ -32,7 +32,6 @@ export interface JSOGObject {
   '@ref'?: string;
 }
 
-
 export class JSOGDeserializer {
   private objectMap: { [id: string]: JSOGObject } = {};
 

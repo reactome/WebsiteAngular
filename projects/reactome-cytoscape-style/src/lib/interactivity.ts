@@ -1,10 +1,7 @@
 import cytoscape from 'cytoscape';
 import { extract } from './properties-utils';
 import { Properties } from './properties';
-import {
-  ReactomeEvent,
-  ReactomeEventTypes,
-} from './model/reactome-event.model';
+import { ReactomeEvent, ReactomeEventTypes } from './model/reactome-event.model';
 import Layers, { IHTMLLayer, layers, LayersPlugin } from 'cytoscape-layers';
 import * as _ from 'lodash';
 import { isPromise } from 'rxjs/internal/util/isPromise';
@@ -17,7 +14,10 @@ type RenderableHTMLElement = HTMLElement & {
 export class Interactivity {
   isMobile = 'ontouchstart' in document || navigator.maxTouchPoints > 0;
 
-  constructor(private cy: cytoscape.Core, private properties: Properties) {
+  constructor(
+    private cy: cytoscape.Core,
+    private properties: Properties
+  ) {
     // console.log('is mobile', this.isMobile)
     // @ts-ignore
     cy.elements().ungrabify().panify();
@@ -43,14 +43,8 @@ export class Interactivity {
     };
 
   initHover(cy: cytoscape.Core, mapper = <X>(x: X) => x) {
-    const hoverReaction = this.applyToReaction(
-      (col) => col.addClass('hover'),
-      'hovering'
-    );
-    const deHoverReaction = this.applyToReaction(
-      (col) => col.removeClass('hover'),
-      'deHovering'
-    );
+    const hoverReaction = this.applyToReaction((col) => col.addClass('hover'), 'hovering');
+    const deHoverReaction = this.applyToReaction((col) => col.removeClass('hover'), 'deHovering');
 
     const container = cy.container()!;
     cy.on('mouseover', 'node.PhysicalEntity', (e) =>
@@ -147,9 +141,7 @@ export class Interactivity {
 
         hoverReaction(mapped.connectedNodes('.reaction'));
       })
-      .on('mouseout', 'edge', (e) =>
-        deHoverReaction(mapper(e.target).connectedNodes('.reaction'))
-      )
+      .on('mouseout', 'edge', (e) => deHoverReaction(mapper(e.target).connectedNodes('.reaction')))
 
       .on('mouseover', 'node.Modification', (e) =>
         mapper(cy.nodes(`#${e.target.data('nodeId')}`)).addClass('hover')
@@ -167,10 +159,7 @@ export class Interactivity {
   }
 
   initSelect(cy: cytoscape.Core, mapper = <X>(x: X) => x) {
-    const selectReaction = this.applyToReaction(
-      (col) => col.select(),
-      'selecting'
-    );
+    const selectReaction = this.applyToReaction((col) => col.select(), 'selecting');
     const container = cy.container()!;
 
     cy.on('select', 'node.PhysicalEntity', (e) =>
@@ -255,23 +244,16 @@ export class Interactivity {
         )
       )
 
-      .on('select', 'edge', (e) =>
-        selectReaction(mapper(e.target).connectedNodes('.reaction'))
-      )
+      .on('select', 'edge', (e) => selectReaction(mapper(e.target).connectedNodes('.reaction')))
       .on('unselect', 'edge', () =>
         selectReaction(
           mapper(
-            cy
-              .edges(':selected')
-              .connectedNodes('.reaction')
-              .add(cy.nodes('.reaction:selected'))
+            cy.edges(':selected').connectedNodes('.reaction').add(cy.nodes('.reaction:selected'))
           )
         )
       ) // Avoid single element selection when double-clicking
 
-      .on('select', 'node.reaction', (event) =>
-        selectReaction(mapper(event.target))
-      )
+      .on('select', 'node.reaction', (event) => selectReaction(mapper(event.target)))
       .on('select', 'node.Modification', (e) =>
         mapper(cy.nodes(`#${e.target.data('nodeId')}`)).select()
       );
@@ -356,8 +338,7 @@ export class Interactivity {
                 sources.forEach((source) =>
                   source.addEventListener('error', (e) => {
                     errors++;
-                    if (errors === sources.length)
-                      this.removeStructureContainer(elem, node);
+                    if (errors === sources.length) this.removeStructureContainer(elem, node);
                   })
                 );
 
@@ -381,16 +362,12 @@ export class Interactivity {
     // Not async: nothing in here awaits, and returning a promise handed every
     // cytoscape listener built from this factory a value it ignores.
     const handler =
-      (action: (video: HTMLVideoElement) => void) =>
-      (event: cytoscape.EventObject) => {
+      (action: (video: HTMLVideoElement) => void) => (event: cytoscape.EventObject) => {
         const videoId = event.target.id();
         const videoElement = this.videoLayer?.node.querySelector(
           `#video-${videoId}`
         ) as HTMLVideoElement;
-        if (
-          videoElement &&
-          videoElement.readyState >= videoElement.HAVE_ENOUGH_DATA
-        ) {
+        if (videoElement && videoElement.readyState >= videoElement.HAVE_ENOUGH_DATA) {
           action(videoElement);
         }
       };
@@ -440,10 +417,7 @@ export class Interactivity {
     container.classList.remove('loading');
   }
 
-  removeStructureContainer(
-    loadingContainer: HTMLElement,
-    node: cytoscape.NodeSingular
-  ) {
+  removeStructureContainer(loadingContainer: HTMLElement, node: cytoscape.NodeSingular) {
     // console.log('Remove diagram structure container because not found', loadingContainer, node)
     loadingContainer.classList.remove('loading');
     this.removeLoading(loadingContainer);
@@ -478,8 +452,7 @@ export class Interactivity {
 
           const structure = node.data('chebiStructure') as string;
           const initStructure = (svgData: string) => {
-            if (svgData === undefined)
-              return this.removeStructureContainer(elem, node);
+            if (svgData === undefined) return this.removeStructureContainer(elem, node);
             elem.innerHTML = svgData;
             const svg = elem.querySelector('svg');
             if (!svg) return this.removeStructureContainer(elem, node);
@@ -538,12 +511,7 @@ export class Interactivity {
     const trivial = cy.elements('.trivial');
     this.updateProteins();
 
-    cy.minZoom(
-      Math.min(
-        cy.zoom(),
-        extract(this.properties.shadow.labelOpacity)[0][0] / 100
-      )
-    );
+    cy.minZoom(Math.min(cy.zoom(), extract(this.properties.shadow.labelOpacity)[0][0] / 100));
     cy.maxZoom(15);
 
     const baseFontSize = extract(this.properties.font.size);
@@ -592,8 +560,8 @@ export class Interactivity {
       node.removeStyle('background-position-y');
       node.removeStyle('background-width');
       node.removeStyle('background-height');
-      const i = (node.numericStyle('background-image') as string[]).findIndex(
-        (svg) => svg.includes('RX')
+      const i = (node.numericStyle('background-image') as string[]).findIndex((svg) =>
+        svg.includes('RX')
       );
 
       const xs = [...(node.numericStyle('background-position-x') as number[])];
@@ -623,14 +591,8 @@ export class Interactivity {
           extract(this.properties.structure.opacity).map((v) => this.p(...v))
         ) / 100;
 
-      const maxWidth = this.interpolate(z, [
-        this.p(zoomStart, 100),
-        this.p(zoomEnd, 50),
-      ]); //might need to be commented out (Jhaque)
-      this.margin = this.interpolate(z, [
-        this.p(zoomStart, 0),
-        this.p(zoomEnd, 0.25),
-      ]);
+      const maxWidth = this.interpolate(z, [this.p(zoomStart, 100), this.p(zoomEnd, 50)]); //might need to be commented out (Jhaque)
+      this.margin = this.interpolate(z, [this.p(zoomStart, 0), this.p(zoomEnd, 0.25)]);
       const fontSize = this.interpolate(z, [
         this.p(zoomStart, baseFontSize),
         this.p(zoomEnd, baseFontSize / 2),
@@ -644,16 +606,13 @@ export class Interactivity {
 
       this.structureContainers.nodes('.drug').forEach(updateDecorationPosition);
 
-      if (this.videoLayer)
-        this.videoLayer.node.style.opacity = videoOpacity + '';
-      if (this.moleculeLayer)
-        this.moleculeLayer.node.style.opacity = videoOpacity + '';
+      if (this.videoLayer) this.videoLayer.node.style.opacity = videoOpacity + '';
+      if (this.moleculeLayer) this.moleculeLayer.node.style.opacity = videoOpacity + '';
     };
 
     cy.on('zoom', this.onZoom.shadow);
     cy.on('zoom', this.onZoom.protein);
-    const handler = (e: cytoscape.EventObject) =>
-      updateDecorationPosition(e.target);
+    const handler = (e: cytoscape.EventObject) => updateDecorationPosition(e.target);
     cy.on('mouseover', '.drug', handler)
       .on('mouseout', '.drug', handler)
       .on('deselect', '.drug', handler)
@@ -720,8 +679,7 @@ function isElementInViewport(el: HTMLElement) {
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&
-    rect.bottom <=
-      (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
 }

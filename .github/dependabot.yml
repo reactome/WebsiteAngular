@@ -1,0 +1,43 @@
+# Dependency updates, grouped so the queue stays reviewable.
+#
+# The Angular 19 -> 21 upgrade was painful largely because of accumulated
+# drift; small regular updates are how that is avoided rather than repeated.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Angular releases in lockstep -- splitting these produces PRs that
+      # cannot pass on their own.
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - 'angular-eslint'
+          - 'ng-packagr'
+      ngrx:
+        patterns:
+          - '@ngrx/*'
+      tooling:
+        patterns:
+          - 'eslint*'
+          - 'prettier'
+          - 'typescript*'
+          - 'vitest'
+          - '@playwright/*'
+          - 'knip'
+          - 'husky'
+          - 'lint-staged'
+    ignore:
+      # Majors change behaviour and want a person driving them, as the Angular
+      # upgrade showed.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

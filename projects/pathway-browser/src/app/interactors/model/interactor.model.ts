@@ -1,4 +1,4 @@
-import cytoscape from "cytoscape";
+import cytoscape from 'cytoscape';
 
 export interface InteractorEntity {
   acc: string;
@@ -15,9 +15,8 @@ export interface Interactor {
   id: number;
   score: number;
   type: string;
-  existingNodes?: cytoscape.NodeCollection
+  existingNodes?: cytoscape.NodeCollection;
 }
-
 
 export interface Interactors {
   entities: InteractorEntity[];
@@ -28,35 +27,34 @@ export interface CustomInteraction {
   dbId: number;
   identifier: string;
   score: number;
-  evidenceCount: number
-  evidenceURL: string
+  evidenceCount: number;
+  evidenceURL: string;
   geneName?: string[];
-  databaseName: string
-  entitiesCount: number
-  speciesName: string
-  displayName: string
-  variantIdentifier?: string //Q99IB8-PRO_0000045603
+  databaseName: string;
+  entitiesCount: number;
+  speciesName: string;
+  displayName: string;
+  variantIdentifier?: string; //Q99IB8-PRO_0000045603
 
   // Additional properties
   finalGeneName?: string;
   formattedIdentifier?: string;
 }
 
-export interface PsicquicResource{
+export interface PsicquicResource {
   name: string;
   soapURL: string;
   restURL: string;
   active: boolean;
 }
 
-
-export interface InteractorToken{
+export interface InteractorToken {
   summary: Summary;
   warningMessage: string;
 }
 
 interface Summary {
-  token:string;
+  token: string;
   interactors: number;
   interactions: number;
   fileName: string;
@@ -72,7 +70,7 @@ export enum ResourceType {
   STATIC = 'IntAct',
   DISGENET = 'DisGeNet',
   PSICQUIC = 'PSICQUIC',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
-export type ResourceAndType = { name: string | null, type: ResourceType | null }
+export type ResourceAndType = { name: string | null; type: ResourceType | null };

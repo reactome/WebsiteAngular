@@ -25,7 +25,8 @@
             <mat-label>Experience</mat-label>
             <mat-select [(value)]="experiment">
               @for (summary of summaries(); track summary.id) {
-                <mat-option [value]="summary" [matTooltip]="tooltip(summary)">{{ summary.name }}- {{ summary.resource }}
+                <mat-option [value]="summary" [matTooltip]="tooltip(summary)"
+                  >{{ summary.name }}- {{ summary.resource }}
                 </mat-option>
               }
             </mat-select>
@@ -38,38 +39,53 @@
           <div class="header">Selected Tissues</div>
         </div>
 
-
         @if (experiment()) {
           @let available = availableTissues();
           @let selected = selectedTissues();
 
           <div class="tissue-selector-wrapper" [@.disabled]="!animate()">
             <div class="tissue-columns">
-              <div cdkDropList #availableList="cdkDropList"
-                   [cdkDropListData]="available"
-                   [cdkDropListConnectedTo]="[selectedList]"
-                   class="tissue-list"
-                   (cdkDropListDropped)="drop($event)">
+              <div
+                cdkDropList
+                #availableList="cdkDropList"
+                [cdkDropListData]="available"
+                [cdkDropListConnectedTo]="[selectedList]"
+                class="tissue-list"
+                (cdkDropListDropped)="drop($event)"
+              >
                 @for (tissue of available; track tissue) {
                   <div class="tissue-box" cdkDrag @left-column (click)="moveRight(tissue)">{{ tissue }}</div>
                 }
               </div>
 
               <div class="controls">
-                <button mat-icon-button (click)="addAll()" [disabled]="available.length === 0 || interval() !== undefined" matTooltip="Select all">
+                <button
+                  mat-icon-button
+                  (click)="addAll()"
+                  [disabled]="available.length === 0 || interval() !== undefined"
+                  matTooltip="Select all"
+                >
                   <mat-icon>fast_forward</mat-icon>
                 </button>
-                <button mat-icon-button (click)="removeAll()" [disabled]="selected.length === 0 || interval() !== undefined" matTooltip="Unselect all">
+                <button
+                  mat-icon-button
+                  (click)="removeAll()"
+                  [disabled]="selected.length === 0 || interval() !== undefined"
+                  matTooltip="Unselect all"
+                >
                   <mat-icon>fast_rewind</mat-icon>
                   <span></span>
                 </button>
               </div>
 
-              <div cdkDropList #selectedList="cdkDropList"
-                   [cdkDropListData]="selected"
-                   [cdkDropListConnectedTo]="[availableList]"
-                   class="tissue-list"
-                   (cdkDropListDropped)="drop($event)" >
+              <div
+                cdkDropList
+                #selectedList="cdkDropList"
+                [cdkDropListData]="selected"
+                [cdkDropListConnectedTo]="[availableList]"
+                class="tissue-list"
+                (cdkDropListDropped)="drop($event)"
+              >
                 @for (tissue of selected; track tissue) {
                   <div class="tissue-box" cdkDrag @right-column (click)="moveLeft(tissue)">{{ tissue }}</div>
                 }
@@ -81,33 +97,30 @@
 
       <div class="stepper-controls">
         <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-        <button mat-stroked-button (click)="close.emit({status: 'premature'})">
+        <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
           <mat-icon class="red">close</mat-icon>
           Close
         </button>
-        <button mat-flat-button matStepperNext [disabled]="selectedTissues().length === 0" (click)="analyse()">Next</button>
+        <button mat-flat-button matStepperNext [disabled]="selectedTissues().length === 0" (click)="analyse()">
+          Next
+        </button>
       </div>
     }
   </mat-step>
   <mat-step label="Analysis">
+    <div class="loader-container">
+      @if (analysisLaunched()) {
+        <canvas #lottie class="loader"></canvas>
+      }
+    </div>
 
-      <div class="loader-container" >
-        @if (analysisLaunched()) {
-          <canvas #lottie class="loader"></canvas>
-        }
-      </div>
-
-      <div class="stepper-controls">
-        <button mat-stroked-button matStepperPrevious>Previous</button>
-        <button mat-stroked-button (click)="close.emit({status: 'premature'})">
-          <mat-icon class="red">close</mat-icon>
-          Close
-        </button>
-        <button mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">See results</button>
-      </div>
-
+    <div class="stepper-controls">
+      <button mat-stroked-button matStepperPrevious>Previous</button>
+      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+        <mat-icon class="red">close</mat-icon>
+        Close
+      </button>
+      <button mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">See results</button>
+    </div>
   </mat-step>
 </mat-stepper>
-
-
-

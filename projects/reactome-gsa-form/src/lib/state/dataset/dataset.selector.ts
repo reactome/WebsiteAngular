@@ -1,9 +1,9 @@
-import {datasetAdapter} from './dataset.state';
-import {createFeature, createSelector} from '@ngrx/store';
-import {datasetReducer} from './dataset.reducer';
-import {transpose} from 'reactome-table';
-import {Covariate} from "../../model/dataset.model";
-import {Parameter} from "../../model/parameter.model";
+import { datasetAdapter } from './dataset.state';
+import { createFeature, createSelector } from '@ngrx/store';
+import { datasetReducer } from './dataset.reducer';
+import { transpose } from 'reactome-table';
+import { Covariate } from '../../model/dataset.model';
+import { Parameter } from '../../model/parameter.model';
 
 export type AnalysisGroups = Record<string, string[]>;
 export type SampleGroups = Record<string, string[]>;
@@ -11,56 +11,49 @@ export type SampleGroups = Record<string, string[]>;
 export const datasetFeature = createFeature({
   name: 'dataset',
   reducer: datasetReducer,
-  extraSelectors: ({selectDatasetState, selectEntities, selectLastId}) => ({
+  extraSelectors: ({ selectDatasetState, selectEntities, selectLastId }) => ({
     ...datasetAdapter.getSelectors(selectDatasetState),
     selectLastDataset: createSelector(
       selectEntities,
       selectLastId,
-      (entities, lastId) => entities[lastId],
+      (entities, lastId) => entities[lastId]
     ),
-    selectDataset: (id: number) =>
-      createSelector(selectEntities, (entities) => entities[id]),
+    selectDataset: (id: number) => createSelector(selectEntities, (entities) => entities[id]),
     selectIsSaved: (id: number) =>
-      createSelector(
-        selectEntities,
-        (entities) => !!(entities[id] && entities[id]!.saved),
-      ),
-    selectAllSaved: createSelector(selectEntities, (entities) => Object.values(entities).every((entity) => entity && entity.saved)),
+      createSelector(selectEntities, (entities) => !!(entities[id] && entities[id]!.saved)),
+    selectAllSaved: createSelector(selectEntities, (entities) =>
+      Object.values(entities).every((entity) => entity && entity.saved)
+    ),
 
     selectLoadingComplete: (id: number) =>
       createSelector(
         selectEntities,
-        (entities) =>
-          !!(
-            entities[id] && entities[id]!.loadingStatus!.status === 'complete'
-          ),
+        (entities) => !!(entities[id] && entities[id]!.loadingStatus!.status === 'complete')
       ),
 
     selectSummaryComplete: (id: number) =>
-      createSelector(
-        selectEntities,
-        (entities) => !!(entities[id] && entities[id]!.summary),
-      ),
+      createSelector(selectEntities, (entities) => !!(entities[id] && entities[id]!.summary)),
 
     selectAnnotationComplete: (id: number) =>
       createSelector(
         selectEntities,
         (entities) =>
           !!(
-            (
-              entities[id] &&
-              entities[id]!.annotations &&
-              transpose(entities[id]!.annotations as string[][]) // column by column
-                .slice(1) // exclude row headers
-                .map((col) => col.slice(1)) // exclude column headers
-                .filter((col) =>
+            entities[id] &&
+            entities[id]!.annotations &&
+            transpose(entities[id]!.annotations as string[][]) // column by column
+              .slice(1) // exclude row headers
+              .map((col) => col.slice(1)) // exclude column headers
+              .filter(
+                (col) =>
                   col
-                    .filter(s => s) // remove empty string
-                    .filter((value, i) => col.indexOf(value) === i) // distinct values
-                    .length >= 2,// only columns with at least 2 distinct values
-                ).length > 0
-            )
-          ),
+                    .filter((s) => s) // remove empty string
+                    .filter(
+                      (value, i) => col.indexOf(value) === i
+                    ) // distinct values
+                  .length >= 2 // only columns with at least 2 distinct values
+              ).length > 0
+          )
       ), // at least 1 column with at least 2 distinct values
 
     selectStatisticalDesignComplete: (id: number) =>
@@ -74,8 +67,8 @@ export const datasetFeature = createFeature({
             entities[id]!.statisticalDesign!.comparisonGroup1 &&
             entities[id]!.statisticalDesign!.comparisonGroup2 &&
             entities[id]!.statisticalDesign!.comparisonGroup1 !==
-            entities[id]!.statisticalDesign!.comparisonGroup2
-          ),
+              entities[id]!.statisticalDesign!.comparisonGroup2
+          )
       ),
 
     selectParametersComplete: (id: number) =>
@@ -84,16 +77,16 @@ export const datasetFeature = createFeature({
         (entities) => entities[id] !== undefined // TODO Check that all required dataset parameters are filled
       ),
 
-
     selectAnalysisGroups: (id: number) =>
       createSelector(selectEntities, (entities): AnalysisGroups => {
         const dataset = entities[id];
         if (!(dataset && dataset.annotations)) return {};
         return transpose(dataset.annotations) // Column by column
           .slice(1) // Remove row ids column
-          .map((column) => ({// Create groups with distinct values
+          .map((column) => ({
+            // Create groups with distinct values
             name: column[0],
-            values: new Set(column.slice(1).filter(s => s)),
+            values: new Set(column.slice(1).filter((s) => s)),
           }))
           .filter((group) => group.values.size >= 2) // Filter groups suitable for analysis
           .reduce(
@@ -101,7 +94,7 @@ export const datasetFeature = createFeature({
               ...groups,
               [group.name]: Array.from(group.values),
             }),
-            {},
+            {}
           );
       }),
 
@@ -114,34 +107,37 @@ export const datasetFeature = createFeature({
         const dataset = entities[id];
         if (!(dataset && dataset.annotations)) return {};
 
-        const analysisColumn = transpose(dataset.annotations).find(column => column[0] === dataset?.statisticalDesign?.analysisGroup)?.slice(1)
-        if (!analysisColumn) return {}
+        const analysisColumn = transpose(dataset.annotations)
+          .find((column) => column[0] === dataset?.statisticalDesign?.analysisGroup)
+          ?.slice(1);
+        if (!analysisColumn) return {};
 
         return transpose(dataset.annotations) // Column by column
           .slice(1) // Remove row ids column
-          .map((column) => ({// Create groups with distinct values
+          .map((column) => ({
+            // Create groups with distinct values
             name: column[0],
             values: column.slice(1),
           }))
           .filter((column) => dataset!.statisticalDesign!.analysisGroup !== column.name) // Remove analysis group
           .filter((column) => {
-            const group1Values = new Set<string>()
-            const group2Values = new Set<string>()
+            const group1Values = new Set<string>();
+            const group2Values = new Set<string>();
             for (let i = 0; i < analysisColumn.length; i++) {
               const analysedValue = analysisColumn[i];
               for (const [comparisonGroup, values] of [
                 [dataset!.statisticalDesign!.comparisonGroup1, group1Values],
-                [dataset!.statisticalDesign!.comparisonGroup2, group2Values]
+                [dataset!.statisticalDesign!.comparisonGroup2, group2Values],
               ] as [string, Set<string>][]) {
                 if (analysedValue === comparisonGroup) {
                   const value = column.values[i];
                   if (values.has(value)) return false; // remove columns where a "pair" is associated more than once to the same condition
-                  values.add(value)
+                  values.add(value);
                 }
               }
             }
 
-            return setsEqual(group1Values, group2Values) // Sample group columns should have one distinct value for each comparison value,
+            return setsEqual(group1Values, group2Values); // Sample group columns should have one distinct value for each comparison value,
             // and those values should be the same in each group to form pairs
           })
           .reduce(
@@ -149,28 +145,45 @@ export const datasetFeature = createFeature({
               ...groups,
               [group.name]: Array.from(group.values),
             }),
-            {},
+            {}
           );
       }),
 
+    selectCovariates: (id: number) =>
+      createSelector(selectEntities, (entities): Covariate[] => {
+        return (
+          (entities[id] &&
+            entities[id]!.statisticalDesign &&
+            entities[id]!.statisticalDesign!.covariances) ||
+          []
+        );
+      }),
 
-    selectCovariates: (id: number) => createSelector(selectEntities, (entities): Covariate[] => {
-      return entities[id] && entities[id]!.statisticalDesign && entities[id]!.statisticalDesign!.covariances || [];
-    }),
+    selectCovariancesAllSelected: (id: number) =>
+      createSelector(selectEntities, (entities): boolean => {
+        return (
+          (entities[id] &&
+            entities[id]?.statisticalDesign &&
+            entities[id]?.statisticalDesign?.covariances?.every((cov) => cov.value)) ||
+          false
+        );
+      }),
 
-    selectCovariancesAllSelected: (id: number) => createSelector(selectEntities, (entities): boolean => {
-      return entities[id] && entities[id]?.statisticalDesign && entities[id]?.statisticalDesign?.covariances?.every(cov => cov.value) || false;
-    }),
+    selectCovariancesSomeSelected: (id: number) =>
+      createSelector(selectEntities, (entities): boolean => {
+        return (
+          (entities[id] &&
+            entities[id]?.statisticalDesign &&
+            entities[id]?.statisticalDesign?.covariances?.some((cov) => cov.value)) ||
+          false
+        );
+      }),
 
-    selectCovariancesSomeSelected: (id: number) => createSelector(selectEntities, (entities): boolean => {
-      return entities[id] && entities[id]?.statisticalDesign && entities[id]?.statisticalDesign?.covariances?.some(cov => cov.value) || false;
-    }),
-
-    selectSummaryParameters: (id: number) => createSelector(selectEntities, (entities): Parameter[] => {
-      return entities[id] && entities[id]!.summary && entities[id]!.summary!.parameters || [];
-    })
+    selectSummaryParameters: (id: number) =>
+      createSelector(selectEntities, (entities): Parameter[] => {
+        return (entities[id] && entities[id]!.summary && entities[id]!.summary!.parameters) || [];
+      }),
   }),
 });
 
-const setsEqual = <T>(a: Set<T>, b: Set<T>) => a.size === b.size && [...a].every(v => b.has(v));
-
+const setsEqual = <T>(a: Set<T>, b: Set<T>) => a.size === b.size && [...a].every((v) => b.has(v));

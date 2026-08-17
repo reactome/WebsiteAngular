@@ -1,4 +1,3 @@
-import {Drug} from "./drug.model";
+import { Drug } from './drug.model';
 
-export interface RnaDrug extends Drug {
-}
+export interface RnaDrug extends Drug {}

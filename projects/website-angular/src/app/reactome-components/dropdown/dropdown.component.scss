@@ -1,24 +1,24 @@
 $shadow: rgba(0, 0, 0, 0.1);
 
 .dropdown-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    gap: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 4px;
 
-    &:hover {
-        mat-icon {
-            transform: rotate(180deg);
-            transition: transform 0.3s ease;
-        }
+  &:hover {
+    mat-icon {
+      transform: rotate(180deg);
+      transition: transform 0.3s ease;
     }
+  }
 }
 
 .dropdown-menu {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    z-index: 1000;
-    box-shadow: 0 8px 16px $shadow;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  z-index: 1000;
+  box-shadow: 0 8px 16px $shadow;
 }

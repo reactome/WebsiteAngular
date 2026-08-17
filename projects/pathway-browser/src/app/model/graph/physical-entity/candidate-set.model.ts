@@ -1,4 +1,3 @@
-import {EntitySet} from "./entity-set.model";
+import { EntitySet } from './entity-set.model';
 
-export interface CandidateSet extends EntitySet {
-}
+export interface CandidateSet extends EntitySet {}

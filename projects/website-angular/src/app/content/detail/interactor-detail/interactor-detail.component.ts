@@ -1,13 +1,13 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
-import {DecimalPipe} from '@angular/common';
-import {ActivatedRoute, RouterLink} from '@angular/router';
-import {HttpClient} from '@angular/common/http';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {forkJoin, of} from 'rxjs';
-import {catchError} from 'rxjs/operators';
-import {PageLayoutComponent} from '../../../page-layout/page-layout.component';
-import {TileComponent} from '../../../reactome-components/tile/tile.component';
-import {CONTENT_SERVICE} from '../../../../../../pathway-browser/src/environments/environment';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
+import { TileComponent } from '../../../reactome-components/tile/tile.component';
+import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
 
 export interface CustomInteraction {
   identifier: string;
@@ -100,17 +100,23 @@ export class InteractorDetailComponent implements OnInit {
     // out a /references/mapping/{id}/xrefs call per interactor (TP53 has
     // ~250) plus a batch /data/query/ids POST, all stitched client-side.
     forkJoin({
-      interactions: this.http.get<InteractionWithEntities[]>(
-        `${CONTENT_SERVICE}/interactors/static/molecule/${encodeURIComponent(acc)}/withEntities`
-      ).pipe(catchError(() => of<InteractionWithEntities[] | null>(null))),
-      search: this.http.get<SearchResult>(
-        `${CONTENT_SERVICE}/search/query`, {params: {query: acc, types: 'Interactor', cluster: 'true'}}
-      ).pipe(catchError(() => of(null))),
-      uniprot: this.http.get<UniProtResponse>(
-        `https://rest.uniprot.org/uniprotkb/${encodeURIComponent(baseAcc)}.json`
-      ).pipe(catchError(() => of(null))),
+      interactions: this.http
+        .get<InteractionWithEntities[]>(
+          `${CONTENT_SERVICE}/interactors/static/molecule/${encodeURIComponent(acc)}/withEntities`
+        )
+        .pipe(catchError(() => of<InteractionWithEntities[] | null>(null))),
+      search: this.http
+        .get<SearchResult>(`${CONTENT_SERVICE}/search/query`, {
+          params: { query: acc, types: 'Interactor', cluster: 'true' },
+        })
+        .pipe(catchError(() => of(null))),
+      uniprot: this.http
+        .get<UniProtResponse>(
+          `https://rest.uniprot.org/uniprotkb/${encodeURIComponent(baseAcc)}.json`
+        )
+        .pipe(catchError(() => of(null))),
     }).subscribe({
-      next: ({interactions, search, uniprot}) => {
+      next: ({ interactions, search, uniprot }) => {
         if (!interactions) {
           this.error.set(true);
           this.loading.set(false);
@@ -130,7 +136,7 @@ export class InteractorDetailComponent implements OnInit {
             evidenceURL: row.url,
             entitiesCount: row.physicalEntity?.length ?? 0,
           });
-          entityMap[row.accession] = (row.physicalEntity ?? []).map(pe => ({
+          entityMap[row.accession] = (row.physicalEntity ?? []).map((pe) => ({
             stId: pe.stId,
             displayName: pe.displayName,
           }));
@@ -143,9 +149,13 @@ export class InteractorDetailComponent implements OnInit {
         if (entry) {
           const cleanId = (entry.referenceIdentifier ?? acc).replace(/<[^>]*>/g, '');
           this.displayName.set(`${entry.databaseName}:${cleanId} ${entry.name}`);
-          this.interactorType.set(`${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`);
+          this.interactorType.set(
+            `${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`
+          );
           this.species.set(entry.species?.[0] ?? '');
-          this.referenceURL.set(entry.referenceURL ?? `https://www.uniprot.org/uniprotkb/${acc}/entry`);
+          this.referenceURL.set(
+            entry.referenceURL ?? `https://www.uniprot.org/uniprotkb/${acc}/entry`
+          );
         } else {
           this.displayName.set(`UniProt:${acc}`);
           this.interactorType.set('Interactor');

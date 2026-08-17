@@ -1,11 +1,8 @@
 // Http post:
 
-export namespace Abstract {
-}
-
+export namespace Abstract {}
 
 export namespace Library {
-
   export interface Dataset {
     species: string;
     categories: string[];
@@ -15,6 +12,4 @@ export namespace Library {
   }
 }
 
-export interface SearchLibraryDataset {
-
-}
+export interface SearchLibraryDataset {}

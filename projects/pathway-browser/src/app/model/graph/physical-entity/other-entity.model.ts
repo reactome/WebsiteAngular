@@ -1,4 +1,3 @@
-import {PhysicalEntity} from "./physical-entity.model";
+import { PhysicalEntity } from './physical-entity.model';
 
-export interface OtherEntity extends PhysicalEntity {
-}
+export interface OtherEntity extends PhysicalEntity {}

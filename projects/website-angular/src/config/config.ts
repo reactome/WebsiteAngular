@@ -2,7 +2,7 @@ export const APP_CONFIG = {
   // app-level version info
   version: {
     releaseNumber: '96',
-    releaseDate: '2026-04-01'
+    releaseDate: '2026-04-01',
   },
 
   // canonical download base (separate from environment.host because static
@@ -22,7 +22,7 @@ export const APP_CONFIG = {
   pathwayBrowser: {
     stablePath: '/PathwayBrowser',
     betaPath: '/beta/PathwayBrowser',
-    useBeta: false // default; can be toggled per env or flag
+    useBeta: false, // default; can be toggled per env or flag
   },
 
   // release notes (can be computed by the app using version.releaseNumber)
@@ -32,6 +32,6 @@ export const APP_CONFIG = {
   // default flags (feature flags)
   features: {
     betaPathwayBrowser: false,
-    useNewAnalysisService: false
-  }
+    useNewAnalysisService: false,
+  },
 } as const;

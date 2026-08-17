@@ -1,7 +1,8 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 @mixin configure-gsa-form() {
-  html, body {
+  html,
+  body {
     font: var(--mat-sys-body-medium);
     --hover: rgb(0 0 0 / 7%);
     --card: var(--mat-sys-surface-container-low);
@@ -9,21 +10,41 @@
     &.dark {
       --hover: rgb(255 255 255 / 7%);
       --shadow-color: rgb(5, 3, 3);
-      --mat-sys-level5: 0px 7px 8px -4px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 12px 17px 2px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 5px 22px 4px color-mix(in srgb, var(--shadow-color), transparent 12%);
-      --mat-sys-level4: 0px 5px 5px -3px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 8px 10px 1px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 3px 14px 2px color-mix(in srgb, var(--shadow-color), transparent 12%);
-      --mat-sys-level3: 0px 3px 5px -1px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 6px 10px 0px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 1px 18px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
-      --mat-sys-level2: 0px 3px 3px -2px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 3px 4px 0px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 1px 8px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
-      --mat-sys-level1: 0px 2px 1px -1px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 1px 1px 0px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 1px 3px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
-      --mat-sys-level0: 0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 20%), 0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 14%), 0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level5:
+        0px 7px 8px -4px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 12px 17px 2px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 5px 22px 4px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level4:
+        0px 5px 5px -3px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 8px 10px 1px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 3px 14px 2px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level3:
+        0px 3px 5px -1px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 6px 10px 0px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 1px 18px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level2:
+        0px 3px 3px -2px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 3px 4px 0px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 1px 8px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level1:
+        0px 2px 1px -1px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 1px 1px 0px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 1px 3px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
+      --mat-sys-level0:
+        0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 20%),
+        0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 14%),
+        0px 0px 0px 0px color-mix(in srgb, var(--shadow-color), transparent 12%);
     }
   }
 
   body {
-    @include mat.expansion-overrides((
-      header-text-size: var(--mat-sys-body-medium-size),
-      container-text-size: var(--mat-sys-body-medium-size),
-      container-text-weight: var(--mat-sys-body-medium-weight),
-    ));
+    @include mat.expansion-overrides(
+      (
+        header-text-size: var(--mat-sys-body-medium-size),
+        container-text-size: var(--mat-sys-body-medium-size),
+        container-text-weight: var(--mat-sys-body-medium-weight),
+      )
+    );
   }
 
   // Tour
@@ -67,20 +88,23 @@
   }
 
   .warning-snackbar {
-    @include mat.snack-bar-overrides((
-      container-color: var(--error-container),
-      supporting-text-color: var(--on-error-container),
-      button-color: var(--on-error-container),
-    ));
+    @include mat.snack-bar-overrides(
+      (
+        container-color: var(--error-container),
+        supporting-text-color: var(--on-error-container),
+        button-color: var(--on-error-container),
+      )
+    );
   }
 
-
   .error-snackbar {
-    @include mat.snack-bar-overrides((
-      container-color: var(--error),
-      supporting-text-color: var(--on-error),
-      button-color: var(--on-error)
-    ));
+    @include mat.snack-bar-overrides(
+      (
+        container-color: var(--error),
+        supporting-text-color: var(--on-error),
+        button-color: var(--on-error),
+      )
+    );
   }
 
   .outline-color:not([disabled]) {
@@ -88,7 +112,7 @@
   }
 
   .outline-variant-color:not([disabled]) {
-    color: var(--outline-variant)
+    color: var(--outline-variant);
   }
 
   .secondary-color:not([disabled]) {
@@ -108,7 +132,6 @@
   }
 
   gsa-form {
-
     .primary-color:not([disabled]) {
       color: var(--primary);
     }
@@ -122,7 +145,7 @@
     }
 
     a {
-      color: var(--primary)
+      color: var(--primary);
     }
 
     .mdc-tooltip__surface {
@@ -245,7 +268,8 @@
     }
 
     .dark {
-      .no-tour .mat-expansion-panel, .no-tour .mat-mdc-card {
+      .no-tour .mat-expansion-panel,
+      .no-tour .mat-mdc-card {
         background: rgb(255 255 255 / 5%) !important;
         backdrop-filter: blur(5px);
       }
@@ -255,8 +279,8 @@
       }
     }
 
-
-    mat-vertical-stepper, mat-horizontal-stepper {
+    mat-vertical-stepper,
+    mat-horizontal-stepper {
       background: transparent !important;
     }
 
@@ -275,7 +299,7 @@
       }
     }
 
-    div[tourAnchor="annotate.table"].touranchor--is-active {
+    div[tourAnchor='annotate.table'].touranchor--is-active {
       background: var(--card);
     }
   }

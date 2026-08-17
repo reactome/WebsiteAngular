@@ -42,16 +42,10 @@ export class Style {
     const dH = 360 / subPathways.length;
 
     subPathways.forEach((subPathway, i) => {
-      const edges = this.cy!.edges(
-        `[pathway=${subPathway.data('reactomeId')}]`
-      );
+      const edges = this.cy!.edges(`[pathway=${subPathway.data('reactomeId')}]`);
       subPathway.data('edges', edges);
 
-      const color = chroma.hsl(
-        dH * i,
-        1,
-        extract(this.properties.shadow.luminosity) / 100
-      );
+      const color = chroma.hsl(dH * i, 1, extract(this.properties.shadow.luminosity) / 100);
       const hex = color.hex();
       subPathway.data('color', hex);
       edges.forEach((edge) => {
@@ -140,8 +134,7 @@ export class Style {
         },
       },
       {
-        selector:
-          'node.PhysicalEntity, node.Pathway, node.Modification, node.Interactor',
+        selector: 'node.PhysicalEntity, node.Pathway, node.Modification, node.Interactor',
         css: {
           'font-size': this.p('font', 'size'),
           'text-margin-x': 0,
@@ -152,29 +145,22 @@ export class Style {
           'text-halign': 'center',
           'text-valign': 'center',
           'text-wrap': 'wrap',
-          'text-max-width': (node: cytoscape.NodeSingular) =>
-            node.data('width') + 'px',
+          'text-max-width': (node: cytoscape.NodeSingular) => node.data('width') + 'px',
           // @ts-ignore
           'background-image-smoothing': 'no no no no no no no no',
 
           // @ts-ignore
-          'background-image': (node) =>
-            this.imageBuilder(node)['background-image'],
+          'background-image': (node) => this.imageBuilder(node)['background-image'],
           // @ts-ignore
-          'background-position-y': (node) =>
-            this.imageBuilder(node)['background-position-y'] || [],
+          'background-position-y': (node) => this.imageBuilder(node)['background-position-y'] || [],
           // @ts-ignore
-          'background-position-x': (node) =>
-            this.imageBuilder(node)['background-position-x'] || [],
+          'background-position-x': (node) => this.imageBuilder(node)['background-position-x'] || [],
           // @ts-ignore
-          'background-height': (node) =>
-            this.imageBuilder(node)['background-height'] || '100%',
+          'background-height': (node) => this.imageBuilder(node)['background-height'] || '100%',
           // @ts-ignore
-          'background-width': (node) =>
-            this.imageBuilder(node)['background-width'] || '100%',
+          'background-width': (node) => this.imageBuilder(node)['background-width'] || '100%',
           // @ts-ignore
-          'background-clip': (node) =>
-            this.imageBuilder(node)['background-clip'] || 'node',
+          'background-clip': (node) => this.imageBuilder(node)['background-clip'] || 'node',
           // @ts-ignore
           'background-image-containment': (node) =>
             this.imageBuilder(node)['background-image-containment'] || 'inside',
@@ -182,16 +168,14 @@ export class Style {
           'background-image-opacity': (node) =>
             this.imageBuilder(node)['background-image-opacity'] || 1,
           // @ts-ignore
-          'bounds-expansion': (node) =>
-            this.imageBuilder(node)['bounds-expansion'][0] || 0,
+          'bounds-expansion': (node) => this.imageBuilder(node)['bounds-expansion'][0] || 0,
           color: this.p('global', 'onPrimary'),
         },
       },
       {
         selector: 'node.drug',
         css: {
-          'text-max-width': (node: cytoscape.NodeSingular) =>
-            node.width() - 36 * 2 + 'px',
+          'text-max-width': (node: cytoscape.NodeSingular) => node.width() - 36 * 2 + 'px',
           'text-margin-x': 4,
           'font-style': 'italic',
         },
@@ -275,8 +259,7 @@ export class Style {
           'font-family': 'Roboto Mono, monospace',
           color: this.p('global', 'onPrimary'),
           'text-wrap': 'ellipsis',
-          'text-max-width': (node: cytoscape.NodeSingular) =>
-            node.width() - 40 + 'px',
+          'text-max-width': (node: cytoscape.NodeSingular) => node.width() - 40 + 'px',
         },
       },
       {
@@ -298,11 +281,7 @@ export class Style {
           shape: 'round-rectangle',
           'background-opacity': 0,
           'background-color': this.p('genomeEncodedEntity', 'fill'),
-          'text-margin-y': this.pm(
-            'genomeEncodedEntity',
-            'topRadius',
-            (r) => r / 10
-          ),
+          'text-margin-y': this.pm('genomeEncodedEntity', 'topRadius', (r) => r / 10),
           'border-width': 0, // Avoid disease border
         },
       },
@@ -364,11 +343,7 @@ export class Style {
           'border-width': 0, // Avoid disease border
           'text-max-width': (node: cytoscape.NodeSingular) =>
             this.pm('global', 'thickness', (t) =>
-              this.pm(
-                'entitySet',
-                'radius',
-                (r) => `${node.width() - 2 * r - 6 * t}px`
-              )
+              this.pm('entitySet', 'radius', (r) => `${node.width() - 2 * r - 6 * t}px`)
             ),
         },
       },
@@ -377,11 +352,7 @@ export class Style {
         css: {
           'text-max-width': (node: cytoscape.NodeSingular) =>
             this.pm('global', 'thickness', (t) =>
-              this.pm(
-                'entitySet',
-                'radius',
-                (r) => `${node.width() - 2 * r - 6 * t - 44}px`
-              )
+              this.pm('entitySet', 'radius', (r) => `${node.width() - 2 * r - 6 * t - 44}px`)
             ),
         },
       },
@@ -415,11 +386,7 @@ export class Style {
         css: {
           'text-margin-x': 4,
           'text-max-width': (node: cytoscape.NodeSingular) =>
-            this.pm(
-              'global',
-              'thickness',
-              (t) => node.width() - t * 6 - 44 + 'px'
-            ),
+            this.pm('global', 'thickness', (t) => node.width() - t * 6 - 44 + 'px'),
         },
       },
       {
@@ -433,11 +400,7 @@ export class Style {
 
           'text-max-width': (node: cytoscape.NodeSingular) =>
             this.pm('global', 'thickness', (t) =>
-              this.pm(
-                'cell',
-                'thickness',
-                (ct) => node.width() - t * 2 - ct * 2 + 'px'
-              )
+              this.pm('cell', 'thickness', (ct) => node.width() - t * 2 - ct * 2 + 'px')
             ),
         },
       },
@@ -457,11 +420,7 @@ export class Style {
         css: {
           shape: 'rectangle',
           'text-max-width': (node: cytoscape.NodeSingular) =>
-            this.pm(
-              'global',
-              'thickness',
-              (t) => `${node.width() - (6 * t + 36) * 2}px`
-            ),
+            this.pm('global', 'thickness', (t) => `${node.width() - (6 * t + 36) * 2}px`),
         },
       },
       {
@@ -471,11 +430,7 @@ export class Style {
           'corner-radius': 99999,
           shape: 'round-rectangle',
           'text-max-width': (node: cytoscape.NodeSingular) =>
-            this.pm(
-              'global',
-              'thickness',
-              (t) => `${node.width() - (6 * t + 36) * 2}px`
-            ),
+            this.pm('global', 'thickness', (t) => `${node.width() - (6 * t + 36) * 2}px`),
         },
       },
       {
@@ -577,10 +532,7 @@ export class Style {
         css: {
           'border-style': 'dashed',
           //@ts-ignore
-          'border-dash-pattern': this.pm('global', 'thickness', (t) => [
-            t,
-            t * 2,
-          ]),
+          'border-dash-pattern': this.pm('global', 'thickness', (t) => [t, t * 2]),
           'border-cap': 'round',
         },
       },
@@ -721,11 +673,7 @@ export class Style {
           'text-border-opacity': 1,
           'text-border-color': this.p('global', 'onSurface'),
           'text-background-shape': 'roundrectangle',
-          'text-background-padding': this.pm(
-            'global',
-            'thickness',
-            (t) => t + 'px'
-          ),
+          'text-background-padding': this.pm('global', 'thickness', (t) => t + 'px'),
         },
       },
       {
@@ -748,11 +696,7 @@ export class Style {
           // @ts-ignore
           'underlay-color': 'data(color)',
           'underlay-padding': this.p('shadow', 'padding'),
-          'underlay-opacity': this.pm(
-            'shadow',
-            'opacity',
-            (o) => o[0][1] / 100
-          ),
+          'underlay-opacity': this.pm('shadow', 'opacity', (o) => o[0][1] / 100),
         },
       },
       {
@@ -847,8 +791,7 @@ export class Style {
       {
         selector: '[?labelColor]',
         css: {
-          color: (e: cytoscape.EdgeSingular) =>
-            extract(this.p('global', e.data('labelColor'))),
+          color: (e: cytoscape.EdgeSingular) => extract(this.p('global', e.data('labelColor'))),
         },
       },
       {

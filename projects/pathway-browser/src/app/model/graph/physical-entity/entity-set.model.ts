@@ -1,5 +1,5 @@
-import {PhysicalEntity} from "./physical-entity.model";
+import { PhysicalEntity } from './physical-entity.model';
 
 export interface EntitySet extends PhysicalEntity {
-  hasMember: PhysicalEntity[]
+  hasMember: PhysicalEntity[];
 }

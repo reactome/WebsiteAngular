@@ -1,13 +1,11 @@
-import {Pipe, PipeTransform} from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'formatClassName'
+  name: 'formatClassName',
 })
 export class FormatClassNamePipe implements PipeTransform {
-
   transform(value: string): string {
     if (!value) return '';
-    return value.replace(/(?!^)([A-Z]|\d+)/g, " $1");
+    return value.replace(/(?!^)([A-Z]|\d+)/g, ' $1');
   }
-
 }

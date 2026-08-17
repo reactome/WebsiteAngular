@@ -4,7 +4,7 @@
   --gap: 20px;
   --half-gap: calc(var(--gap) / 2);
   --columns: 6;
-  --column-width: calc((100cqw - var(--gap) * (var(--columns) + 1)) / var(--columns)) ;
+  --column-width: calc((100cqw - var(--gap) * (var(--columns) + 1)) / var(--columns));
 
   background: var(--surface);
   font-family: 'Roboto', sans-serif;
@@ -74,9 +74,11 @@
 .download-container {
   width: 100%;
 
-  @include mat.expansion-overrides((
-    header-indicator-color: var(--primary),
-  ));
+  @include mat.expansion-overrides(
+    (
+      header-indicator-color: var(--primary),
+    )
+  );
 
   mat-expansion-panel {
     margin-bottom: 8px; // make shadow visible

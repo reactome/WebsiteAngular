@@ -16,7 +16,6 @@ export class InfoFooterComponent {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
 
-
   // Preserve original insertion order for keyvalue pipe
   preserveOrder = () => 0;
 }

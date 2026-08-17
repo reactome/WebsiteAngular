@@ -7,7 +7,10 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { provideStore } from '@ngrx/store';
 import { routerReducer, provideRouterStore } from '@ngrx/router-store';
 import { provideEffects } from '@ngrx/effects';
-import { provideGoogleAnalytics, provideGoogleAnalyticsRouter } from '@hakimio/ngx-google-analytics';
+import {
+  provideGoogleAnalytics,
+  provideGoogleAnalyticsRouter,
+} from '@hakimio/ngx-google-analytics';
 import { environment } from '../environments/environment';
 import { DatePipe } from '@angular/common';
 
@@ -21,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
     provideStore({
-      router: routerReducer
+      router: routerReducer,
     }),
     provideRouterStore(),
     provideEffects([]),
@@ -29,8 +32,8 @@ export const appConfig: ApplicationConfig = {
     provideGoogleAnalyticsRouter(),
     {
       provide: LOCALE_ID,
-      useFactory: () => navigator.language || 'en-US'
+      useFactory: () => navigator.language || 'en-US',
     },
-    DatePipe
-  ]
+    DatePipe,
+  ],
 };

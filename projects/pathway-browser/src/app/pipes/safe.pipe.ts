@@ -1,28 +1,38 @@
 import { Pipe, PipeTransform, SecurityContext, inject } from '@angular/core';
-import {DomSanitizer, SafeHtml, SafeResourceUrl, SafeScript, SafeStyle, SafeUrl} from "@angular/platform-browser";
+import {
+  DomSanitizer,
+  SafeHtml,
+  SafeResourceUrl,
+  SafeScript,
+  SafeStyle,
+  SafeUrl,
+} from '@angular/platform-browser';
 
 @Pipe({
   standalone: true,
-  name: 'safe'
+  name: 'safe',
 })
 export class SafePipe implements PipeTransform {
   protected sanitizer = inject(DomSanitizer);
 
-
-  transform(value: string | null, type: 'html' | 'style' | 'script' | 'url' | 'resource' = "html", bypass: boolean = false): string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl {
+  transform(
+    value: string | null,
+    type: 'html' | 'style' | 'script' | 'url' | 'resource' = 'html',
+    bypass: boolean = false
+  ): string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl {
     if (value === null) value = '';
     const val: string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl = value;
     if (bypass) {
       switch (type) {
-        case "html":
+        case 'html':
           return this.sanitizer.bypassSecurityTrustHtml(value);
-        case "style":
+        case 'style':
           return this.sanitizer.bypassSecurityTrustStyle(value);
-        case "script":
+        case 'script':
           return this.sanitizer.bypassSecurityTrustScript(value);
-        case "url":
+        case 'url':
           return this.sanitizer.bypassSecurityTrustUrl(value);
-        case "resource":
+        case 'resource':
           return this.sanitizer.bypassSecurityTrustResourceUrl(value);
       }
     } else {

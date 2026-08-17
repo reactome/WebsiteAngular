@@ -12,11 +12,11 @@ export interface Parameter<T = any> {
 }
 
 export enum ParameterType {
-  bool = "bool",
-  float = "float",
-  string = "string",
-  int = "int",
-  email = "email"
+  bool = 'bool',
+  float = 'float',
+  string = 'string',
+  int = 'int',
+  email = 'email',
 }
 
 export type Scope = 'common' | 'analysis' | 'dataset';

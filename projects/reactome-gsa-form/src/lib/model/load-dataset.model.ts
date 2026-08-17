@@ -1,21 +1,21 @@
-import {Report} from "./report-status.model";
-import {PartialRequired} from "./utils.model";
-import {Parameter} from "./parameter.model";
+import { Report } from './report-status.model';
+import { PartialRequired } from './utils.model';
+import { Parameter } from './parameter.model';
 
 export interface LoadingStatus {
-  completed: number
-  dataset_id: string
-  description: string
-  id: string
-  reports: Report[]
+  completed: number;
+  dataset_id: string;
+  description: string;
+  id: string;
+  reports: Report[];
   status: 'failed' | 'complete' | 'running' | 'pending';
 }
 
-export type PLoadingStatus = PartialRequired<LoadingStatus, 'id' | 'status'>
+export type PLoadingStatus = PartialRequired<LoadingStatus, 'id' | 'status'>;
 
 export interface LoadParameter {
-  name: string
-  value: any
+  name: string;
+  value: any;
 }
 
 export interface SampleMetadata {
@@ -35,5 +35,3 @@ export class DataSummary {
   parameters?: Parameter[];
   complete?: boolean = false;
 }
-
-

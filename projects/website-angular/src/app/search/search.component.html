@@ -1,359 +1,309 @@
 <app-page-layout [showSidebar]="false" [showBreadcrumb]="false">
   <div class="search-page">
     @if (!query || !searchSubmitted) {
-    <div class="empty-state">
-      <h1>Search Reactome</h1>
-      <p>
-        Enter a search term to find pathways, reactions, proteins, and more.
-      </p>
-    </div>
+      <div class="empty-state">
+        <h1>Search Reactome</h1>
+        <p>Enter a search term to find pathways, reactions, proteins, and more.</p>
+      </div>
     }
     <!-- Search bar + filters above the two-column layout -->
     <div class="search-top">
-      
-      <app-search-bar
-        [query]="query"
-        (queryChange)="onQueryInput($event)"
-        [filters]="!(query && searchSubmitted)"
-      />
-      
+      <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [filters]="!(query && searchSubmitted)" />
     </div>
 
     <!-- Active filter chips -->
-    @if (getActiveFilters(); as activeFilters) { @if (activeFilters.length) {
-    <div class="active-filters">
-      @for (f of activeFilters; track f.category + f.value) {
-      <button class="filter-chip" (click)="toggleFacet(f.category, f.value)">
-        <span class="chip-label">{{ f.label }}:</span> {{ f.value }}
-        <span class="chip-remove">&times;</span>
-      </button>
+    @if (getActiveFilters(); as activeFilters) {
+      @if (activeFilters.length) {
+        <div class="active-filters">
+          @for (f of activeFilters; track f.category + f.value) {
+            <button class="filter-chip" (click)="toggleFacet(f.category, f.value)">
+              <span class="chip-label">{{ f.label }}:</span> {{ f.value }}
+              <span class="chip-remove">&times;</span>
+            </button>
+          }
+        </div>
       }
-    </div>
-    } }
+    }
 
     <!-- Result count + collapse/expand all -->
     @if (results && !loading) {
-    <div class="results-toolbar">
-      <p class="result-count">
-        {{ results.numberOfMatches }} results found for "{{ query }}"
-      </p>
-      @if (!hasNoResults) {
-      @if (allGroupsCollapsed()) {
-      <button class="group-toggle-btn" (click)="expandAllGroups()">
-        <span class="material-symbols-rounded">unfold_more</span>
-        Expand all
-      </button>
-      } @else {
-      <button class="group-toggle-btn" (click)="collapseAllGroups()">
-        <span class="material-symbols-rounded">unfold_less</span>
-        Collapse all
-      </button>
-      }
-      }
-    </div>
+      <div class="results-toolbar">
+        <p class="result-count">{{ results.numberOfMatches }} results found for "{{ query }}"</p>
+        @if (!hasNoResults) {
+          @if (allGroupsCollapsed()) {
+            <button class="group-toggle-btn" (click)="expandAllGroups()">
+              <span class="material-symbols-rounded">unfold_more</span>
+              Expand all
+            </button>
+          } @else {
+            <button class="group-toggle-btn" (click)="collapseAllGroups()">
+              <span class="material-symbols-rounded">unfold_less</span>
+              Collapse all
+            </button>
+          }
+        }
+      </div>
     }
-    
-    <button
-      class="filters-toggle-btn"
-      type="button"
-      (click)="filtersVisible = !filtersVisible"
-    >
+
+    <button class="filters-toggle-btn" type="button" (click)="filtersVisible = !filtersVisible">
       <span class="material-symbols-rounded">filter_list</span>
-      {{ filtersVisible ? "Hide" : "Show" }} filters
+      {{ filtersVisible ? 'Hide' : 'Show' }} filters
       @if (getActiveFilters().length) {
-      <span class="filters-toggle-count">({{ getActiveFilters().length }})</span>
+        <span class="filters-toggle-count">({{ getActiveFilters().length }})</span>
       }
     </button>
 
     <div class="search-layout">
       <!-- Facet sidebar -->
-      <aside
-        [class]="
-          'facet-sidebar' +
-          (hasNoResults ? ' no-results' : '') +
-          (filtersVisible ? '' : ' collapsed')
-        "
-      >
+      <aside [class]="'facet-sidebar' + (hasNoResults ? ' no-results' : '') + (filtersVisible ? '' : ' collapsed')">
         <!-- Species facet -->
-        @if (getFacetItems(facets?.speciesFacet); as items) { @if (items.length)
-        {
-        <div class="facet-section">
-          <button class="facet-title" (click)="toggleFacetSection('species')">
-            <span>Species</span>
-            <span class="facet-toggle">{{
-              collapsedFacets["species"] ? "+" : "−"
-            }}</span>
-          </button>
-          @if (!collapsedFacets['species']) {
-          <div class="facet-options">
-            @for (item of items; track item.name) {
-            <label class="facet-option">
-              <input
-                type="checkbox"
-                [checked]="isFacetSelected('species', item.name)"
-                (change)="toggleFacet('species', item.name)"
-              />
-              <span class="facet-name">{{ item.name }}</span>
-              <span class="facet-count">({{ item.count }})</span>
-            </label>
-            }
-          </div>
+        @if (getFacetItems(facets?.speciesFacet); as items) {
+          @if (items.length) {
+            <div class="facet-section">
+              <button class="facet-title" (click)="toggleFacetSection('species')">
+                <span>Species</span>
+                <span class="facet-toggle">{{ collapsedFacets['species'] ? '+' : '−' }}</span>
+              </button>
+              @if (!collapsedFacets['species']) {
+                <div class="facet-options">
+                  @for (item of items; track item.name) {
+                    <label class="facet-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isFacetSelected('species', item.name)"
+                        (change)="toggleFacet('species', item.name)"
+                      />
+                      <span class="facet-name">{{ item.name }}</span>
+                      <span class="facet-count">({{ item.count }})</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
           }
-        </div>
-        } }
+        }
 
         <!-- Types facet -->
-        @if (getFacetItems(facets?.typeFacet); as items) { @if (items.length) {
-        <div class="facet-section">
-          <button class="facet-title" (click)="toggleFacetSection('types')">
-            <span>Types</span>
-            <span class="facet-toggle">{{
-              collapsedFacets["types"] ? "+" : "−"
-            }}</span>
-          </button>
-          @if (!collapsedFacets['types']) {
-          <div class="facet-options">
-            @for (item of items; track item.name) {
-            <label class="facet-option">
-              <input
-                type="checkbox"
-                [checked]="isFacetSelected('types', item.name)"
-                (change)="toggleFacet('types', item.name)"
-              />
-              <span class="facet-name">{{ item.name }}</span>
-              <span class="facet-count">({{ item.count }})</span>
-            </label>
-            }
-          </div>
+        @if (getFacetItems(facets?.typeFacet); as items) {
+          @if (items.length) {
+            <div class="facet-section">
+              <button class="facet-title" (click)="toggleFacetSection('types')">
+                <span>Types</span>
+                <span class="facet-toggle">{{ collapsedFacets['types'] ? '+' : '−' }}</span>
+              </button>
+              @if (!collapsedFacets['types']) {
+                <div class="facet-options">
+                  @for (item of items; track item.name) {
+                    <label class="facet-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isFacetSelected('types', item.name)"
+                        (change)="toggleFacet('types', item.name)"
+                      />
+                      <span class="facet-name">{{ item.name }}</span>
+                      <span class="facet-count">({{ item.count }})</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
           }
-        </div>
-        } }
+        }
 
         <!-- Compartments facet -->
-        @if (getFacetItems(facets?.compartmentFacet); as items) { @if
-        (items.length) {
-        <div class="facet-section">
-          <button
-            class="facet-title"
-            (click)="toggleFacetSection('compartments')"
-          >
-            <span>Compartments</span>
-            <span class="facet-toggle">{{
-              collapsedFacets["compartments"] ? "+" : "−"
-            }}</span>
-          </button>
-          @if (!collapsedFacets['compartments']) {
-          <div class="facet-options">
-            @for (item of items; track item.name) {
-            <label class="facet-option">
-              <input
-                type="checkbox"
-                [checked]="isFacetSelected('compartments', item.name)"
-                (change)="toggleFacet('compartments', item.name)"
-              />
-              <span class="facet-name">{{ item.name }}</span>
-              <span class="facet-count">({{ item.count }})</span>
-            </label>
-            }
-          </div>
+        @if (getFacetItems(facets?.compartmentFacet); as items) {
+          @if (items.length) {
+            <div class="facet-section">
+              <button class="facet-title" (click)="toggleFacetSection('compartments')">
+                <span>Compartments</span>
+                <span class="facet-toggle">{{ collapsedFacets['compartments'] ? '+' : '−' }}</span>
+              </button>
+              @if (!collapsedFacets['compartments']) {
+                <div class="facet-options">
+                  @for (item of items; track item.name) {
+                    <label class="facet-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isFacetSelected('compartments', item.name)"
+                        (change)="toggleFacet('compartments', item.name)"
+                      />
+                      <span class="facet-name">{{ item.name }}</span>
+                      <span class="facet-count">({{ item.count }})</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
           }
-        </div>
-        } }
+        }
 
         <!-- Keywords facet -->
-        @if (getFacetItems(facets?.keywordFacet); as items) { @if (items.length)
-        {
-        <div class="facet-section">
-          <button class="facet-title" (click)="toggleFacetSection('keywords')">
-            <span>Keywords</span>
-            <span class="facet-toggle">{{
-              collapsedFacets["keywords"] ? "+" : "−"
-            }}</span>
-          </button>
-          @if (!collapsedFacets['keywords']) {
-          <div class="facet-options">
-            @for (item of items; track item.name) {
-            <label class="facet-option">
-              <input
-                type="checkbox"
-                [checked]="isFacetSelected('keywords', item.name)"
-                (change)="toggleFacet('keywords', item.name)"
-              />
-              <span class="facet-name">{{ item.name }}</span>
-              <span class="facet-count">({{ item.count }})</span>
-            </label>
-            }
-          </div>
+        @if (getFacetItems(facets?.keywordFacet); as items) {
+          @if (items.length) {
+            <div class="facet-section">
+              <button class="facet-title" (click)="toggleFacetSection('keywords')">
+                <span>Keywords</span>
+                <span class="facet-toggle">{{ collapsedFacets['keywords'] ? '+' : '−' }}</span>
+              </button>
+              @if (!collapsedFacets['keywords']) {
+                <div class="facet-options">
+                  @for (item of items; track item.name) {
+                    <label class="facet-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isFacetSelected('keywords', item.name)"
+                        (change)="toggleFacet('keywords', item.name)"
+                      />
+                      <span class="facet-name">{{ item.name }}</span>
+                      <span class="facet-count">({{ item.count }})</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
           }
-        </div>
-        } }
+        }
 
         <!-- Pages facet: page-category counts from merged site-search hits -->
         @if (pageCategoryCounts.length) {
-        <div class="facet-section">
-          <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
-            <span>Pages</span>
-            <span class="facet-toggle">{{
-              collapsedFacets["pageCategories"] ? "+" : "−"
-            }}</span>
-          </button>
-          @if (!collapsedFacets['pageCategories']) {
-          <div class="facet-options">
-            @for (item of pageCategoryCounts; track item.name) {
-            <label class="facet-option">
-              <input
-                type="checkbox"
-                [checked]="isFacetSelected('pageCategories', item.name)"
-                (change)="toggleFacet('pageCategories', item.name)"
-              />
-              <span class="facet-name">{{ item.name }}</span>
-              <span class="facet-count">({{ item.count }})</span>
-            </label>
+          <div class="facet-section">
+            <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
+              <span>Pages</span>
+              <span class="facet-toggle">{{ collapsedFacets['pageCategories'] ? '+' : '−' }}</span>
+            </button>
+            @if (!collapsedFacets['pageCategories']) {
+              <div class="facet-options">
+                @for (item of pageCategoryCounts; track item.name) {
+                  <label class="facet-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isFacetSelected('pageCategories', item.name)"
+                      (change)="toggleFacet('pageCategories', item.name)"
+                    />
+                    <span class="facet-name">{{ item.name }}</span>
+                    <span class="facet-count">({{ item.count }})</span>
+                  </label>
+                }
+              </div>
             }
           </div>
-          }
-        </div>
         }
       </aside>
 
       <!-- Results area -->
       <div class="results-area">
         @if (loading) {
-        <div class="loading">Searching...</div>
-        } @if (!loading && (error || hasNoResults))
-        {
-        <div class="no-results">
-          @if (error) {
-          <h2>Something went wrong searching for "{{ query }}"</h2>
-          <p class="error-detail">{{ error }}</p>
-          } @else {
-          <h2>No results found for "{{ query }}"</h2>
-          @if (suggestedTerms.length > 0) {
-          <h3>Did you mean...</h3>
-          <ul class="suggestions">
-            @for (s of this.suggestedTerms; track s) {
-            <li>
-              <a [routerLink]="['/content/query']" [queryParams]="{ q: s }">{{ s }}</a>
-            </li>
+          <div class="loading">Searching...</div>
+        }
+        @if (!loading && (error || hasNoResults)) {
+          <div class="no-results">
+            @if (error) {
+              <h2>Something went wrong searching for "{{ query }}"</h2>
+              <p class="error-detail">{{ error }}</p>
+            } @else {
+              <h2>No results found for "{{ query }}"</h2>
+              @if (suggestedTerms.length > 0) {
+                <h3>Did you mean...</h3>
+                <ul class="suggestions">
+                  @for (s of this.suggestedTerms; track s) {
+                    <li>
+                      <a [routerLink]="['/content/query']" [queryParams]="{ q: s }">{{ s }}</a>
+                    </li>
+                  }
+                </ul>
+              }
             }
-          </ul>
-          }
-          }
-          @if (formSubmitted) {
-          <div class="thank-you-message">
-            <h2>Thank you for contacting us.</h2>
-            <p>We will get back to you shortly.</p>
-          </div>
-          } @else {
-          <h2>Please report to us and we will get back shortly.</h2>
-          <form
-            class="favth-form-horizontal"
-            id="contact-form"
-            (ngSubmit)="submitContactForm($event)"
-            (submit)="submitContactForm($event)"
-          >
-            <p>&nbsp;</p>
-            <input type="hidden" name="source" id="source" value="W" />
-            <input type="hidden" name="exception" id="exception" value="" />
-            <input type="hidden" name="url" id="url" value="" />
+            @if (formSubmitted) {
+              <div class="thank-you-message">
+                <h2>Thank you for contacting us.</h2>
+                <p>We will get back to you shortly.</p>
+              </div>
+            } @else {
+              <h2>Please report to us and we will get back shortly.</h2>
+              <form
+                class="favth-form-horizontal"
+                id="contact-form"
+                (ngSubmit)="submitContactForm($event)"
+                (submit)="submitContactForm($event)"
+              >
+                <p>&nbsp;</p>
+                <input type="hidden" name="source" id="source" value="W" />
+                <input type="hidden" name="exception" id="exception" value="" />
+                <input type="hidden" name="url" id="url" value="" />
 
-            <div class="favth-form-group">
-              <label
-                for="contactName"
-                class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
-                >Name
-              </label>
-              <div
-                class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12"
-              >
-                <input
-                  type="text"
-                  class="favth-form-control"
-                  name="contactName"
-                  id="contactName"
-                  placeholder="your name"
-                />
-              </div>
-            </div>
-            <div class="favth-form-group mail-required">
-              <label
-                for="mailAddress"
-                class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
-                >From*
-              </label>
-              <div
-                class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12"
-              >
-                <input
-                  #mailAddress
-                  type="email"
-                  class="favth-form-control"
-                  name="mailAddress"
-                  id="mailAddress"
-                  placeholder="your-mail@domain.com"
-                  required=""
-                  pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
-                />
-                @if (mailAddress.value && !mailAddress.validity.valid) {
-                <span class="field-error"
-                  >Please enter a valid email address</span
-                >
-                }
-              </div>
-            </div>
-            <div class="favth-form-group">
-              <label
-                for="to"
-                class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
-                >To
-              </label>
-              <div
-                class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12"
-              >
-                <input
-                  type="text"
-                  class="favth-form-control"
-                  id="to"
-                  placeholder="Reactome Helpdesk"
-                  readonly=""
-                />
-              </div>
-            </div>
-            <div class="favth-form-group">
-              <label
-                for="subject"
-                class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
-                >Subject
-              </label>
-              <div
-                class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12"
-              >
-                <input
-                  type="text"
-                  id="subject"
-                  name="subject"
-                  class="favth-form-control"
-                  [value]="(error ? 'Search error for ' : 'No results found for ') + query"
-                  readonly=""
-                />
-              </div>
-            </div>
-            <div class="favth-form-group message-required">
-              <label
-                for="message"
-                class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
-                >Message*
-              </label>
-              <div
-                class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12"
-              >
-                <textarea
-                  #messageArea
-                  id="message"
-                  name="message"
-                  class="favth-form-control"
-                  rows="5"
-                >
+                <div class="favth-form-group">
+                  <label
+                    for="contactName"
+                    class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
+                    >Name
+                  </label>
+                  <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                    <input
+                      type="text"
+                      class="favth-form-control"
+                      name="contactName"
+                      id="contactName"
+                      placeholder="your name"
+                    />
+                  </div>
+                </div>
+                <div class="favth-form-group mail-required">
+                  <label
+                    for="mailAddress"
+                    class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
+                    >From*
+                  </label>
+                  <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                    <input
+                      #mailAddress
+                      type="email"
+                      class="favth-form-control"
+                      name="mailAddress"
+                      id="mailAddress"
+                      placeholder="your-mail@domain.com"
+                      required=""
+                      pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+                    />
+                    @if (mailAddress.value && !mailAddress.validity.valid) {
+                      <span class="field-error">Please enter a valid email address</span>
+                    }
+                  </div>
+                </div>
+                <div class="favth-form-group">
+                  <label
+                    for="to"
+                    class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
+                    >To
+                  </label>
+                  <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                    <input type="text" class="favth-form-control" id="to" placeholder="Reactome Helpdesk" readonly="" />
+                  </div>
+                </div>
+                <div class="favth-form-group">
+                  <label
+                    for="subject"
+                    class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
+                    >Subject
+                  </label>
+                  <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                    <input
+                      type="text"
+                      id="subject"
+                      name="subject"
+                      class="favth-form-control"
+                      [value]="(error ? 'Search error for ' : 'No results found for ') + query"
+                      readonly=""
+                    />
+                  </div>
+                </div>
+                <div class="favth-form-group message-required">
+                  <label
+                    for="message"
+                    class="favth-col-lg-2 favth-col-md-2 favth-col-sm-2 favth-col-xs-12 favth-control-label"
+                    >Message*
+                  </label>
+                  <div class="favth-col-lg-10 favth-col-md-10 favth-col-sm-10 favth-col-xs-12">
+                    <textarea #messageArea id="message" name="message" class="favth-form-control" rows="5">
 Dear help desk,
 
 I've searched for "{{ query }}" and couldn't find it.
@@ -363,543 +313,498 @@ We will try to get back to you as soon as possible.
 
 NOTE: This is an automatically generated message.
 
-</textarea
-                >
-              </div>
-            </div>
-            <div class="favth-form-group">
-              <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                <div class="checkbox">
-                  <label>
-                    <input
-                      type="checkbox"
-                      id="sendEmailCopy"
-                      name="sendEmailCopy"
-                      checked=""
-                    />
-                    Send me a copy
-                  </label>
+</textarea>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="favth-form-group">
-              <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                <div #captchaContainer class="h-captcha"></div>
-              </div>
-            </div>
-
-            <div class="favth-form-group">
-              <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                <button
-                  type="submit"
-                  id="send"
-                  class="btn btn-default"
-                  [disabled]="
-                    !mailAddress.value ||
-                    !mailAddress.validity.valid ||
-                    !messageArea.value ||
-                    !captchaToken
-                  "
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </form>
-          }
-        </div>
-        } @if (!loading && !error && !hasNoResults && results) { @if
-        (results.results && results.results.length) { @if (grouped) {
-        <!-- Grouped view -->
-        @for (group of results.results; track group.typeName) {
-        <app-tile variant="light">
-          <div class="result-group">
-            <button class="group-header" (click)="toggleGroup(group.typeName)">
-              @if (currentMode === 'reference') { @if (group.typeName ===
-              'Protein' && !proteinLoading && uniqueProteins.length) {
-              <h2>
-                {{ group.typeName }} — {{ uniqueProteins.length }} protein{{
-                  uniqueProteins.length === 1 ? "" : "s"
-                }}, {{ proteinTotalForms }} form{{
-                  proteinTotalForms === 1 ? "" : "s"
-                }}
-              </h2>
-              } @else {
-              <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
-              } } @else {
-              <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
-              }
-              <span class="group-toggle">{{
-                collapsedGroups[group.typeName] ? "+" : "−"
-              }}</span>
-            </button>
-            @if (!collapsedGroups[group.typeName]) { @if (currentMode ===
-            'reference') {
-            <div
-              class="group-entries"
-              [class.loading]="
-                groupLoading[group.typeName] ||
-                (group.typeName === 'Protein' && proteinLoading)
-              "
-            >
-              @if (group.typeName === 'Protein' && proteinLoading) {
-              <div class="protein-loading-msg">
-                Loading all protein forms...
-              </div>
-              } @for (entry of getGroupPageEntries(group); track entry.dbId) {
-              <div class="search-entry">
-                <div class="type-icon">
-                  @if (entry.exactType === 'Pages') {
-                    <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page">description</span>
-                  } @else {
-                    @let entryIcon = getSubjectIcon(entry);
-                    <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
-                  }
-                </div>
-                <div class="entry-info">
-                  <div class="entry-header">
-                    @if (entry.deleted) {
-                    <mat-icon class="deleted-icon">delete</mat-icon>
-                    <span class="deleted" [innerHTML]="entry.stId"></span>
-                    @if (entry.replacementStIds?.length) { ⇒
-                    <a
-                      [routerLink]="[
-                        '/content/detail',
-                        entry.replacementStIds[0]
-                      ]"
-                      title="Go to replacement"
-                    >
-                      {{ entry.replacementStIds[0] }}
-                    </a>
-                    } } @else {
-                    <a
-                      class="entry-name"
-                      [routerLink]="getDetailLink(entry)"
-                      [innerHTML]="entry.name || entry.referenceName"
-                    >
-                    </a>
-                    <span
-                      class="entry-id"
-                      [innerHTML]="entry.stId || entry.id"
-                    ></span>
-                    }
-                  </div>
-                  @if (entry.deleted && entry.date) {
-                  <div class="deleted-date">
-                    <b>Deleted on</b>
-                    {{ entry.date | date : "MMM d, y, h:mm:ss a" }}
-                  </div>
-                  } @if (entry.species?.length) {
-                  <div class="entry-species">
-                    @for (sp of entry.species; track sp; let last = $last) {
-                    <span class="species-tag">{{ sp }}</span>
-                    }
-                  </div>
-                  } @if (entry.compartmentNames?.length) {
-                  <div class="entry-compartments">
-                    Compartments: {{ entry.compartmentNames.join(", ") }}
-                  </div>
-                  } @if (entry.iconCuratorName) {
-                  <div class="entry-compartments">
-                    Curator:
-                    <a
-                      [href]="'https://orcid.org/' + entry.iconCuratorOrcidId"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      {{ entry.iconCuratorName }}
-                    </a>
-                  </div>
-                  } @if (entry.iconDesignerName) {
-                  <div class="entry-compartments">
-                    Designer:
-                    <a
-                      [href]="entry.iconDesignerUrl"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      {{ entry.iconDesignerName }}
-                    </a>
-                  </div>
-                  } @if (entry.summation) {
-                  <p class="entry-summation" [innerHTML]="entry.summation"></p>
-                  } @if (entry.referenceName || entry.databaseName) {
-                  <div class="entry-reference">
-                    Reference:
-                    <a
-                      [href]="entry.referenceURL"
-                      target="_blank"
-                      rel="noopener"
-                      ><span
-                        [innerHTML]="entry.referenceName ?? entry.databaseName"
-                      ></span>
-                      ({{ entry.referenceIdentifier }})</a
-                    >
-                  </div>
-                  } @if (entry.type === 'Protein' && entry.referenceIdentifier
-                  && getProteinFormCount(entry) > 1) {
-                  <button class="forms-toggle" (click)="toggleForms(entry)">
-                    <span class="material-symbols-rounded">{{
-                      isFormsExpanded(entry) ? "expand_less" : "expand_more"
-                    }}</span>
-                    {{ getProteinFormCount(entry) }} modified form{{
-                      getProteinFormCount(entry) === 1 ? "" : "s"
-                    }}
-                  </button>
-                  @if (isFormsExpanded(entry)) {
-                  <div class="protein-forms">
-                    @for (form of getProteinForms(entry); track form.dbId) {
-                    <div class="protein-form-entry">
-                      <a
-                        class="form-name"
-                        [routerLink]="getDetailLink(form)"
-                        [innerHTML]="form.name"
-                      ></a>
-                      <span class="form-id">{{ form.id || form.stId }}</span>
-                      @if (form.compartmentNames?.length) {
-                      <span class="form-compartment">{{
-                        form.compartmentNames.join(", ")
-                      }}</span>
-                      }
+                <div class="favth-form-group">
+                  <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" id="sendEmailCopy" name="sendEmailCopy" checked="" />
+                        Send me a copy
+                      </label>
                     </div>
-                    }
                   </div>
-                  } }
                 </div>
-                @if (entry.exactType === "Icon") {
-                <div class="icon-preview">
-                  <img
-                    [src]="iconSvgUrl(entry)"
-                    [alt]="entry.stId"
-                    loading="lazy"
-                    (error)="onImgError($event)"
-                    width="100"
-                    height="auto"
-                  />
+
+                <div class="favth-form-group">
+                  <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                    <div #captchaContainer class="h-captcha"></div>
+                  </div>
                 </div>
-                }
-              </div>
-              }
-            </div>
-            @if (getGroupTotalPages(group) > 1 && !(group.typeName === 'Protein'
-            && proteinLoading)) {
-            <nav class="group-pagination">
-              <button
-                class="page-btn"
-                [disabled]="getGroupPage(group) === 0"
-                (click)="goToGroupPage(group, 0)"
-              >
-                First
-              </button>
-              <button
-                class="page-btn"
-                [disabled]="getGroupPage(group) === 0"
-                (click)="goToGroupPage(group, getGroupPage(group) - 1)"
-              >
-                Prev
-              </button>
-              @for (p of getGroupPageNumbers(group); track $index) { @if (p ===
-              '...') {
-              <span class="page-ellipsis">...</span>
-              } @else {
-              <button
-                class="page-btn"
-                [class.active]="p === getGroupPage(group)"
-                (click)="goToGroupPage(group, +p)"
-              >
-                {{ +p + 1 }}
-              </button>
-              } }
-              <button
-                class="page-btn"
-                [disabled]="
-                  getGroupPage(group) === getGroupTotalPages(group) - 1
-                "
-                (click)="goToGroupPage(group, getGroupPage(group) + 1)"
-              >
-                Next
-              </button>
-              <button
-                class="page-btn"
-                [disabled]="
-                  getGroupPage(group) === getGroupTotalPages(group) - 1
-                "
-                (click)="goToGroupPage(group, getGroupTotalPages(group) - 1)"
-              >
-                Last
-              </button>
-            </nav>
-            } } @else {
-            <div class="group-entries">
-              @for (entry of group.entries; track entry.dbId) {
-              <div class="search-entry">
-                <div class="type-icon">
-                  @if (entry.exactType === 'Pages') {
-                    <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page">description</span>
-                  } @else {
-                    @let entryIcon = getSubjectIcon(entry);
-                    <mat-icon class="subject-icon" [svgIcon]="entryIcon.name" [matTooltip]="entryIcon.tooltip"></mat-icon>
-                  }
-                </div>
-                <div class="entry-info">
-                  <div class="entry-header">
-                    @if (entry.deleted) {
-                    <mat-icon class="deleted-icon">delete</mat-icon>
-                    <span class="deleted" [innerHTML]="entry.stId"></span>
-                    @if (entry.replacementStIds?.length) { ⇒
-                    <a
-                      [routerLink]="[
-                        '/content/detail',
-                        entry.replacementStIds[0]
-                      ]"
-                      title="Go to replacement"
+
+                <div class="favth-form-group">
+                  <div class="favth-col-sm-offset-2 favth-col-sm-10">
+                    <button
+                      type="submit"
+                      id="send"
+                      class="btn btn-default"
+                      [disabled]="
+                        !mailAddress.value || !mailAddress.validity.valid || !messageArea.value || !captchaToken
+                      "
                     >
-                      {{ entry.replacementStIds[0] }}
-                    </a>
-                    } } @else {
-                    <a
-                      class="entry-name"
-                      [routerLink]="getDetailLink(entry)"
-                      [innerHTML]="entry.name || entry.referenceName"
-                    >
-                    </a>
-                    <span
-                      class="entry-id"
-                      [innerHTML]="entry.stId || entry.id"
-                    ></span>
-                    }
+                      Send
+                    </button>
                   </div>
-                  @if (entry.deleted && entry.date) {
-                  <div class="deleted-date">
-                    <b>Deleted on</b>
-                    {{ entry.date | date : "MMM d, y, h:mm:ss a" }}
-                  </div>
-                  } @if (entry.species?.length) {
-                  <div class="entry-species">
-                    @for (sp of entry.species; track sp; let last = $last) {
-                    <span class="species-tag">{{ sp }}</span>
-                    }
-                  </div>
-                  } @if (entry.compartmentNames?.length) {
-                  <div class="entry-compartments">
-                    Compartments: {{ entry.compartmentNames.join(", ") }}
-                  </div>
-                  } @if (entry.iconCuratorName) {
-                  <div class="entry-compartments">
-                    Curator:
-                    <a
-                      [href]="'https://orcid.org/' + entry.iconCuratorOrcidId"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      {{ entry.iconCuratorName }}
-                    </a>
-                  </div>
-                  } @if (entry.iconDesignerName) {
-                  <div class="entry-compartments">
-                    Designer:
-                    <a
-                      [href]="entry.iconDesignerUrl"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      {{ entry.iconDesignerName }}
-                    </a>
-                  </div>
-                  } @if (entry.summation) {
-                  <p class="entry-summation" [innerHTML]="entry.summation"></p>
-                  } @if (entry.referenceName || entry.databaseName) {
-                  <div class="entry-reference">
-                    Reference:
-                    <a
-                      [href]="entry.referenceURL"
-                      target="_blank"
-                      rel="noopener"
-                      ><span
-                        [innerHTML]="entry.referenceName ?? entry.databaseName"
-                      ></span>
-                      ({{ entry.referenceIdentifier }})</a
-                    >
-                  </div>
-                  }
                 </div>
-                @if (entry.exactType === "Icon") {
-                <div class="icon-preview">
-                  <img
-                    [src]="iconSvgUrl(entry)"
-                    [alt]="entry.stId"
-                    loading="lazy"
-                    (error)="onImgError($event)"
-                    width="100"
-                    height="auto"
-                  />
-                </div>
-                }
-              </div>
-              }
-            </div>
-            } }
-          </div>
-        </app-tile>
-        } } @else {
-        <!-- Ungrouped (flat) view -->
-        <app-tile variant="light">
-          <div class="flat-entries">
-            @for (entry of allEntries; track entry.dbId) {
-            <div class="search-entry">
-              <div class="entry-header">
-                <a
-                  class="entry-name"
-                  [routerLink]="getDetailLink(entry)"
-                  [innerHTML]="entry.name"
-                ></a>
-                <span class="entry-id" [innerHTML]="entry.stId"></span>
-              </div>
-              @if (entry.species?.length) {
-              <div class="entry-species">
-                @for (sp of entry.species; track sp; let last = $last) {
-                <span class="species-tag" [innerHTML]="sp"></span>
-                }
-              </div>
-              } @if (entry.compartmentNames?.length) {
-              <div class="entry-compartments">
-                Compartments: {{ entry.compartmentNames.join(", ") }}
-              </div>
-              } @if (entry.summation) {
-              <p class="entry-summation" [innerHTML]="entry.summation"></p>
-              } @if (entry.referenceName) {
-              <div class="entry-reference">
-                Reference:
-                <a [href]="entry.referenceURL" target="_blank" rel="noopener"
-                  ><span [innerHTML]="entry.referenceName"></span> ({{
-                    entry.referenceIdentifier
-                  }})</a
-                >
-              </div>
-              } @if (currentMode === 'reference' && entry.type === 'Protein' &&
-              entry.referenceIdentifier && getProteinFormCount(entry) > 1) {
-              <button class="forms-toggle" (click)="toggleForms(entry)">
-                <span class="material-symbols-rounded">{{
-                  isFormsExpanded(entry) ? "expand_less" : "expand_more"
-                }}</span>
-                {{ getProteinFormCount(entry) }} modified form{{
-                  getProteinFormCount(entry) === 1 ? "" : "s"
-                }}
-              </button>
-              @if (isFormsExpanded(entry)) {
-              <div class="protein-forms">
-                @for (form of getProteinForms(entry); track form.dbId) {
-                <div class="protein-form-entry">
-                  <a
-                    class="form-name"
-                    [routerLink]="getDetailLink(form)"
-                    [innerHTML]="form.name"
-                  ></a>
-                  <span class="form-id">{{ form.id || form.stId }}</span>
-                  @if (form.compartmentNames?.length) {
-                  <span class="form-compartment">{{
-                    form.compartmentNames.join(", ")
-                  }}</span>
-                  }
-                </div>
-                }
-              </div>
-              } }
-            </div>
+              </form>
             }
           </div>
-        </app-tile>
-        } }
-
-        <!-- Pagination -->
-        @if (totalPages > 1) { @if (currentMode === 'reference') {
-        <nav class="pagination">
-          <button
-            class="page-btn"
-            [disabled]="currentPage === 0"
-            (click)="goToPage(0)"
-          >
-            First
-          </button>
-          <button
-            class="page-btn"
-            [disabled]="currentPage === 0"
-            (click)="goToPage(currentPage - 1)"
-          >
-            Prev
-          </button>
-
-          @for (p of getPageNumbers(); track $index) { @if (p === '...') {
-          <span class="page-ellipsis">...</span>
-          } @else {
-          <button
-            class="page-btn"
-            [class.active]="p === currentPage"
-            (click)="goToPage(+p)"
-          >
-            {{ +p + 1 }}
-          </button>
-          } }
-
-          <button
-            class="page-btn"
-            [disabled]="currentPage === totalPages - 1"
-            (click)="goToPage(currentPage + 1)"
-          >
-            Next
-          </button>
-          <button
-            class="page-btn"
-            [disabled]="currentPage === totalPages - 1"
-            (click)="goToPage(totalPages - 1)"
-          >
-            Last
-          </button>
-        </nav>
-        } @else {
-        <nav class="pagination">
-          <button
-            class="page-btn"
-            [disabled]="currentPage === 0"
-            (click)="goToPage(0)"
-          >
-            First
-          </button>
-          <button
-            class="page-btn"
-            [disabled]="currentPage === 0"
-            (click)="goToPage(currentPage - 1)"
-          >
-            Prev
-          </button>
-
-          @for (p of getPageNumbers(); track p) {
-          <button
-            class="page-btn"
-            [class.active]="p === currentPage"
-            (click)="goToPage(p)"
-          >
-            {{ p + 1 }}
-          </button>
+        }
+        @if (!loading && !error && !hasNoResults && results) {
+          @if (results.results && results.results.length) {
+            @if (grouped) {
+              <!-- Grouped view -->
+              @for (group of results.results; track group.typeName) {
+                <app-tile variant="light">
+                  <div class="result-group">
+                    <button class="group-header" (click)="toggleGroup(group.typeName)">
+                      @if (currentMode === 'reference') {
+                        @if (group.typeName === 'Protein' && !proteinLoading && uniqueProteins.length) {
+                          <h2>
+                            {{ group.typeName }} — {{ uniqueProteins.length }} protein{{
+                              uniqueProteins.length === 1 ? '' : 's'
+                            }}, {{ proteinTotalForms }} form{{ proteinTotalForms === 1 ? '' : 's' }}
+                          </h2>
+                        } @else {
+                          <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                        }
+                      } @else {
+                        <h2>{{ group.typeName }} ({{ group.entriesCount }})</h2>
+                      }
+                      <span class="group-toggle">{{ collapsedGroups[group.typeName] ? '+' : '−' }}</span>
+                    </button>
+                    @if (!collapsedGroups[group.typeName]) {
+                      @if (currentMode === 'reference') {
+                        <div
+                          class="group-entries"
+                          [class.loading]="
+                            groupLoading[group.typeName] || (group.typeName === 'Protein' && proteinLoading)
+                          "
+                        >
+                          @if (group.typeName === 'Protein' && proteinLoading) {
+                            <div class="protein-loading-msg">Loading all protein forms...</div>
+                          }
+                          @for (entry of getGroupPageEntries(group); track entry.dbId) {
+                            <div class="search-entry">
+                              <div class="type-icon">
+                                @if (entry.exactType === 'Pages') {
+                                  <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page"
+                                    >description</span
+                                  >
+                                } @else {
+                                  @let entryIcon = getSubjectIcon(entry);
+                                  <mat-icon
+                                    class="subject-icon"
+                                    [svgIcon]="entryIcon.name"
+                                    [matTooltip]="entryIcon.tooltip"
+                                  ></mat-icon>
+                                }
+                              </div>
+                              <div class="entry-info">
+                                <div class="entry-header">
+                                  @if (entry.deleted) {
+                                    <mat-icon class="deleted-icon">delete</mat-icon>
+                                    <span class="deleted" [innerHTML]="entry.stId"></span>
+                                    @if (entry.replacementStIds?.length) {
+                                      ⇒
+                                      <a
+                                        [routerLink]="['/content/detail', entry.replacementStIds[0]]"
+                                        title="Go to replacement"
+                                      >
+                                        {{ entry.replacementStIds[0] }}
+                                      </a>
+                                    }
+                                  } @else {
+                                    <a
+                                      class="entry-name"
+                                      [routerLink]="getDetailLink(entry)"
+                                      [innerHTML]="entry.name || entry.referenceName"
+                                    >
+                                    </a>
+                                    <span class="entry-id" [innerHTML]="entry.stId || entry.id"></span>
+                                  }
+                                </div>
+                                @if (entry.deleted && entry.date) {
+                                  <div class="deleted-date">
+                                    <b>Deleted on</b>
+                                    {{ entry.date | date: 'MMM d, y, h:mm:ss a' }}
+                                  </div>
+                                }
+                                @if (entry.species?.length) {
+                                  <div class="entry-species">
+                                    @for (sp of entry.species; track sp; let last = $last) {
+                                      <span class="species-tag">{{ sp }}</span>
+                                    }
+                                  </div>
+                                }
+                                @if (entry.compartmentNames?.length) {
+                                  <div class="entry-compartments">
+                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                  </div>
+                                }
+                                @if (entry.iconCuratorName) {
+                                  <div class="entry-compartments">
+                                    Curator:
+                                    <a
+                                      [href]="'https://orcid.org/' + entry.iconCuratorOrcidId"
+                                      target="_blank"
+                                      rel="noopener"
+                                    >
+                                      {{ entry.iconCuratorName }}
+                                    </a>
+                                  </div>
+                                }
+                                @if (entry.iconDesignerName) {
+                                  <div class="entry-compartments">
+                                    Designer:
+                                    <a [href]="entry.iconDesignerUrl" target="_blank" rel="noopener">
+                                      {{ entry.iconDesignerName }}
+                                    </a>
+                                  </div>
+                                }
+                                @if (entry.summation) {
+                                  <p class="entry-summation" [innerHTML]="entry.summation"></p>
+                                }
+                                @if (entry.referenceName || entry.databaseName) {
+                                  <div class="entry-reference">
+                                    Reference:
+                                    <a [href]="entry.referenceURL" target="_blank" rel="noopener"
+                                      ><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{
+                                        entry.referenceIdentifier
+                                      }})</a
+                                    >
+                                  </div>
+                                }
+                                @if (
+                                  entry.type === 'Protein' &&
+                                  entry.referenceIdentifier &&
+                                  getProteinFormCount(entry) > 1
+                                ) {
+                                  <button class="forms-toggle" (click)="toggleForms(entry)">
+                                    <span class="material-symbols-rounded">{{
+                                      isFormsExpanded(entry) ? 'expand_less' : 'expand_more'
+                                    }}</span>
+                                    {{ getProteinFormCount(entry) }} modified form{{
+                                      getProteinFormCount(entry) === 1 ? '' : 's'
+                                    }}
+                                  </button>
+                                  @if (isFormsExpanded(entry)) {
+                                    <div class="protein-forms">
+                                      @for (form of getProteinForms(entry); track form.dbId) {
+                                        <div class="protein-form-entry">
+                                          <a
+                                            class="form-name"
+                                            [routerLink]="getDetailLink(form)"
+                                            [innerHTML]="form.name"
+                                          ></a>
+                                          <span class="form-id">{{ form.id || form.stId }}</span>
+                                          @if (form.compartmentNames?.length) {
+                                            <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                          }
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                }
+                              </div>
+                              @if (entry.exactType === 'Icon') {
+                                <div class="icon-preview">
+                                  <img
+                                    [src]="iconSvgUrl(entry)"
+                                    [alt]="entry.stId"
+                                    loading="lazy"
+                                    (error)="onImgError($event)"
+                                    width="100"
+                                    height="auto"
+                                  />
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                        @if (getGroupTotalPages(group) > 1 && !(group.typeName === 'Protein' && proteinLoading)) {
+                          <nav class="group-pagination">
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === 0"
+                              (click)="goToGroupPage(group, 0)"
+                            >
+                              First
+                            </button>
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === 0"
+                              (click)="goToGroupPage(group, getGroupPage(group) - 1)"
+                            >
+                              Prev
+                            </button>
+                            @for (p of getGroupPageNumbers(group); track $index) {
+                              @if (p === '...') {
+                                <span class="page-ellipsis">...</span>
+                              } @else {
+                                <button
+                                  class="page-btn"
+                                  [class.active]="p === getGroupPage(group)"
+                                  (click)="goToGroupPage(group, +p)"
+                                >
+                                  {{ +p + 1 }}
+                                </button>
+                              }
+                            }
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === getGroupTotalPages(group) - 1"
+                              (click)="goToGroupPage(group, getGroupPage(group) + 1)"
+                            >
+                              Next
+                            </button>
+                            <button
+                              class="page-btn"
+                              [disabled]="getGroupPage(group) === getGroupTotalPages(group) - 1"
+                              (click)="goToGroupPage(group, getGroupTotalPages(group) - 1)"
+                            >
+                              Last
+                            </button>
+                          </nav>
+                        }
+                      } @else {
+                        <div class="group-entries">
+                          @for (entry of group.entries; track entry.dbId) {
+                            <div class="search-entry">
+                              <div class="type-icon">
+                                @if (entry.exactType === 'Pages') {
+                                  <span class="subject-icon page-icon material-symbols-rounded" matTooltip="Page"
+                                    >description</span
+                                  >
+                                } @else {
+                                  @let entryIcon = getSubjectIcon(entry);
+                                  <mat-icon
+                                    class="subject-icon"
+                                    [svgIcon]="entryIcon.name"
+                                    [matTooltip]="entryIcon.tooltip"
+                                  ></mat-icon>
+                                }
+                              </div>
+                              <div class="entry-info">
+                                <div class="entry-header">
+                                  @if (entry.deleted) {
+                                    <mat-icon class="deleted-icon">delete</mat-icon>
+                                    <span class="deleted" [innerHTML]="entry.stId"></span>
+                                    @if (entry.replacementStIds?.length) {
+                                      ⇒
+                                      <a
+                                        [routerLink]="['/content/detail', entry.replacementStIds[0]]"
+                                        title="Go to replacement"
+                                      >
+                                        {{ entry.replacementStIds[0] }}
+                                      </a>
+                                    }
+                                  } @else {
+                                    <a
+                                      class="entry-name"
+                                      [routerLink]="getDetailLink(entry)"
+                                      [innerHTML]="entry.name || entry.referenceName"
+                                    >
+                                    </a>
+                                    <span class="entry-id" [innerHTML]="entry.stId || entry.id"></span>
+                                  }
+                                </div>
+                                @if (entry.deleted && entry.date) {
+                                  <div class="deleted-date">
+                                    <b>Deleted on</b>
+                                    {{ entry.date | date: 'MMM d, y, h:mm:ss a' }}
+                                  </div>
+                                }
+                                @if (entry.species?.length) {
+                                  <div class="entry-species">
+                                    @for (sp of entry.species; track sp; let last = $last) {
+                                      <span class="species-tag">{{ sp }}</span>
+                                    }
+                                  </div>
+                                }
+                                @if (entry.compartmentNames?.length) {
+                                  <div class="entry-compartments">
+                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                  </div>
+                                }
+                                @if (entry.iconCuratorName) {
+                                  <div class="entry-compartments">
+                                    Curator:
+                                    <a
+                                      [href]="'https://orcid.org/' + entry.iconCuratorOrcidId"
+                                      target="_blank"
+                                      rel="noopener"
+                                    >
+                                      {{ entry.iconCuratorName }}
+                                    </a>
+                                  </div>
+                                }
+                                @if (entry.iconDesignerName) {
+                                  <div class="entry-compartments">
+                                    Designer:
+                                    <a [href]="entry.iconDesignerUrl" target="_blank" rel="noopener">
+                                      {{ entry.iconDesignerName }}
+                                    </a>
+                                  </div>
+                                }
+                                @if (entry.summation) {
+                                  <p class="entry-summation" [innerHTML]="entry.summation"></p>
+                                }
+                                @if (entry.referenceName || entry.databaseName) {
+                                  <div class="entry-reference">
+                                    Reference:
+                                    <a [href]="entry.referenceURL" target="_blank" rel="noopener"
+                                      ><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{
+                                        entry.referenceIdentifier
+                                      }})</a
+                                    >
+                                  </div>
+                                }
+                              </div>
+                              @if (entry.exactType === 'Icon') {
+                                <div class="icon-preview">
+                                  <img
+                                    [src]="iconSvgUrl(entry)"
+                                    [alt]="entry.stId"
+                                    loading="lazy"
+                                    (error)="onImgError($event)"
+                                    width="100"
+                                    height="auto"
+                                  />
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
+                </app-tile>
+              }
+            } @else {
+              <!-- Ungrouped (flat) view -->
+              <app-tile variant="light">
+                <div class="flat-entries">
+                  @for (entry of allEntries; track entry.dbId) {
+                    <div class="search-entry">
+                      <div class="entry-header">
+                        <a class="entry-name" [routerLink]="getDetailLink(entry)" [innerHTML]="entry.name"></a>
+                        <span class="entry-id" [innerHTML]="entry.stId"></span>
+                      </div>
+                      @if (entry.species?.length) {
+                        <div class="entry-species">
+                          @for (sp of entry.species; track sp; let last = $last) {
+                            <span class="species-tag" [innerHTML]="sp"></span>
+                          }
+                        </div>
+                      }
+                      @if (entry.compartmentNames?.length) {
+                        <div class="entry-compartments">Compartments: {{ entry.compartmentNames.join(', ') }}</div>
+                      }
+                      @if (entry.summation) {
+                        <p class="entry-summation" [innerHTML]="entry.summation"></p>
+                      }
+                      @if (entry.referenceName) {
+                        <div class="entry-reference">
+                          Reference:
+                          <a [href]="entry.referenceURL" target="_blank" rel="noopener"
+                            ><span [innerHTML]="entry.referenceName"></span> ({{ entry.referenceIdentifier }})</a
+                          >
+                        </div>
+                      }
+                      @if (
+                        currentMode === 'reference' &&
+                        entry.type === 'Protein' &&
+                        entry.referenceIdentifier &&
+                        getProteinFormCount(entry) > 1
+                      ) {
+                        <button class="forms-toggle" (click)="toggleForms(entry)">
+                          <span class="material-symbols-rounded">{{
+                            isFormsExpanded(entry) ? 'expand_less' : 'expand_more'
+                          }}</span>
+                          {{ getProteinFormCount(entry) }} modified form{{
+                            getProteinFormCount(entry) === 1 ? '' : 's'
+                          }}
+                        </button>
+                        @if (isFormsExpanded(entry)) {
+                          <div class="protein-forms">
+                            @for (form of getProteinForms(entry); track form.dbId) {
+                              <div class="protein-form-entry">
+                                <a class="form-name" [routerLink]="getDetailLink(form)" [innerHTML]="form.name"></a>
+                                <span class="form-id">{{ form.id || form.stId }}</span>
+                                @if (form.compartmentNames?.length) {
+                                  <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              </app-tile>
+            }
           }
 
-          <button
-            class="page-btn"
-            [disabled]="currentPage === totalPages - 1"
-            (click)="goToPage(currentPage + 1)"
-          >
-            Next
-          </button>
-          <button
-            class="page-btn"
-            [disabled]="currentPage === totalPages - 1"
-            (click)="goToPage(totalPages - 1)"
-          >
-            Last
-          </button>
-        </nav>
-        } } }
+          <!-- Pagination -->
+          @if (totalPages > 1) {
+            @if (currentMode === 'reference') {
+              <nav class="pagination">
+                <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(0)">First</button>
+                <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">
+                  Prev
+                </button>
+
+                @for (p of getPageNumbers(); track $index) {
+                  @if (p === '...') {
+                    <span class="page-ellipsis">...</span>
+                  } @else {
+                    <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(+p)">
+                      {{ +p + 1 }}
+                    </button>
+                  }
+                }
+
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === totalPages - 1"
+                  (click)="goToPage(currentPage + 1)"
+                >
+                  Next
+                </button>
+                <button class="page-btn" [disabled]="currentPage === totalPages - 1" (click)="goToPage(totalPages - 1)">
+                  Last
+                </button>
+              </nav>
+            } @else {
+              <nav class="pagination">
+                <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(0)">First</button>
+                <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">
+                  Prev
+                </button>
+
+                @for (p of getPageNumbers(); track p) {
+                  <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">
+                    {{ p + 1 }}
+                  </button>
+                }
+
+                <button
+                  class="page-btn"
+                  [disabled]="currentPage === totalPages - 1"
+                  (click)="goToPage(currentPage + 1)"
+                >
+                  Next
+                </button>
+                <button class="page-btn" [disabled]="currentPage === totalPages - 1" (click)="goToPage(totalPages - 1)">
+                  Last
+                </button>
+              </nav>
+            }
+          }
+        }
       </div>
     </div>
   </div>

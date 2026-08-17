@@ -3,14 +3,29 @@ import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
 import {
-  TOC_ITEMS, SERVICE_CARDS, GRAPH_DB_DOWNLOADS, MYSQL_DOWNLOADS,
-  MAPPING_DATABASES, MAPPING_CATEGORIES, PE_MAPPING_CATEGORIES,
-  OTHER_MAPPINGS, PATHWAY_DOWNLOADS, DIAGRAM_DOWNLOADS,
-  GENE_ONTOLOGY_DOWNLOADS, SYSTEMS_BIOLOGY_DOWNLOADS,
-  GENE_SET_DOWNLOADS, ONTOLOGY_DOWNLOADS,
-  PPI_MITAB_DOWNLOADS, PPI_TAB_DOWNLOADS,
-  FUNCTIONAL_INTERACTIONS, CURATOR_TOOL, TEXTBOOK, INFO_PANELS,
-  buildUrl, buildMappingUrl, buildCurrentUrl,
+  TOC_ITEMS,
+  SERVICE_CARDS,
+  GRAPH_DB_DOWNLOADS,
+  MYSQL_DOWNLOADS,
+  MAPPING_DATABASES,
+  MAPPING_CATEGORIES,
+  PE_MAPPING_CATEGORIES,
+  OTHER_MAPPINGS,
+  PATHWAY_DOWNLOADS,
+  DIAGRAM_DOWNLOADS,
+  GENE_ONTOLOGY_DOWNLOADS,
+  SYSTEMS_BIOLOGY_DOWNLOADS,
+  GENE_SET_DOWNLOADS,
+  ONTOLOGY_DOWNLOADS,
+  PPI_MITAB_DOWNLOADS,
+  PPI_TAB_DOWNLOADS,
+  FUNCTIONAL_INTERACTIONS,
+  CURATOR_TOOL,
+  TEXTBOOK,
+  INFO_PANELS,
+  buildUrl,
+  buildMappingUrl,
+  buildCurrentUrl,
 } from './download-data.data';
 
 @Component({
@@ -62,9 +77,7 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Angular ignores whatever ngOnInit returns, so an async one hides its own
     // failures; the page would just keep its default version and base URL.
-    void this.load().catch((error) =>
-      console.error('Could not load download metadata', error)
-    );
+    void this.load().catch((error) => console.error('Could not load download metadata', error));
   }
 
   private async load() {

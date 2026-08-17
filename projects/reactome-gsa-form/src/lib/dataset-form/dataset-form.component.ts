@@ -1,17 +1,23 @@
 import { Component, input, OnDestroy, OnInit, viewChild, inject } from '@angular/core';
-import { MatStepper, MatStep, MatStepLabel, MatStepperNext, MatStepperPrevious } from "@angular/material/stepper";
-import {MatDialog} from "@angular/material/dialog";
-import {ScrollService} from "../services/scroll.service";
-import {CdkStep, StepperSelectionEvent} from "@angular/cdk/stepper";
-import {Store} from "@ngrx/store";
-import {datasetFeature} from "../state/dataset/dataset.selector";
-import {delay, distinctUntilChanged, Observable, share} from "rxjs";
-import {PDataset} from "../state/dataset/dataset.state";
-import {datasetActions} from "../state/dataset/dataset.actions";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {Method} from "../state/method/method.state";
-import {DownloadDatasetService} from "../services/download-dataset.service";
-import {TourUtilsService} from "../services/tour-utils.service";
+import {
+  MatStepper,
+  MatStep,
+  MatStepLabel,
+  MatStepperNext,
+  MatStepperPrevious,
+} from '@angular/material/stepper';
+import { MatDialog } from '@angular/material/dialog';
+import { ScrollService } from '../services/scroll.service';
+import { CdkStep, StepperSelectionEvent } from '@angular/cdk/stepper';
+import { Store } from '@ngrx/store';
+import { datasetFeature } from '../state/dataset/dataset.selector';
+import { delay, distinctUntilChanged, Observable, share } from 'rxjs';
+import { PDataset } from '../state/dataset/dataset.state';
+import { datasetActions } from '../state/dataset/dataset.actions';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { Method } from '../state/method/method.state';
+import { DownloadDatasetService } from '../services/download-dataset.service';
+import { TourUtilsService } from '../services/tour-utils.service';
 import { MatExpansionPanel, MatExpansionPanelHeader } from '@angular/material/expansion';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
@@ -24,10 +30,29 @@ import { ParamDatasetComponent } from './datasets/param-dataset/param-dataset.co
 import { AsyncPipe } from '@angular/common';
 
 @Component({
-    selector: 'gsa-dataset-form',
-    templateUrl: './dataset-form.component.html',
-    styleUrls: ['./dataset-form.component.scss'],
-    imports: [MatExpansionPanel, MatExpansionPanelHeader, MatTooltip, MatIcon, MatIconButton, MatStepper, MatStep, MatStepLabel, SelectDatasetComponent, MatFabButton, MatStepperNext, MatStepperPrevious, AnnotateDatasetComponent, TourAnchorMatMenuDirective, StatisticalDesignComponent, ParamDatasetComponent, MatButton, AsyncPipe]
+  selector: 'gsa-dataset-form',
+  templateUrl: './dataset-form.component.html',
+  styleUrls: ['./dataset-form.component.scss'],
+  imports: [
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatTooltip,
+    MatIcon,
+    MatIconButton,
+    MatStepper,
+    MatStep,
+    MatStepLabel,
+    SelectDatasetComponent,
+    MatFabButton,
+    MatStepperNext,
+    MatStepperPrevious,
+    AnnotateDatasetComponent,
+    TourAnchorMatMenuDirective,
+    StatisticalDesignComponent,
+    ParamDatasetComponent,
+    MatButton,
+    AsyncPipe,
+  ],
 })
 @UntilDestroy()
 export class DatasetFormComponent implements OnInit, OnDestroy {
@@ -45,7 +70,6 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
   readonly annotateStep = viewChild.required<CdkStep>('annotateStep');
   readonly statisticalDesignStep = viewChild.required<CdkStep>('statisticalDesignStep');
 
-
   dataset$!: Observable<PDataset | undefined>;
   summaryComplete$!: Observable<boolean>;
   annotationComplete$!: Observable<boolean>;
@@ -54,24 +78,34 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.dataset$ = this.store.select(datasetFeature.selectDataset(this.datasetId()));
-    this.summaryComplete$ = this.store.select(datasetFeature.selectSummaryComplete(this.datasetId())).pipe(distinctUntilChanged(), share());
-    this.summaryComplete$.pipe(delay(0), untilDestroyed(this)).subscribe(() => this.stepper().next());
-    this.annotationComplete$ = this.store.select(datasetFeature.selectAnnotationComplete(this.datasetId())).pipe(distinctUntilChanged(), share());
-    this.statisticalDesignComplete$ = this.store.select(datasetFeature.selectStatisticalDesignComplete(this.datasetId())).pipe(distinctUntilChanged(), share());
-    this.parametersComplete$ = this.store.select(datasetFeature.selectParametersComplete(this.datasetId())).pipe(distinctUntilChanged(), share());
+    this.summaryComplete$ = this.store
+      .select(datasetFeature.selectSummaryComplete(this.datasetId()))
+      .pipe(distinctUntilChanged(), share());
+    this.summaryComplete$
+      .pipe(delay(0), untilDestroyed(this))
+      .subscribe(() => this.stepper().next());
+    this.annotationComplete$ = this.store
+      .select(datasetFeature.selectAnnotationComplete(this.datasetId()))
+      .pipe(distinctUntilChanged(), share());
+    this.statisticalDesignComplete$ = this.store
+      .select(datasetFeature.selectStatisticalDesignComplete(this.datasetId()))
+      .pipe(distinctUntilChanged(), share());
+    this.parametersComplete$ = this.store
+      .select(datasetFeature.selectParametersComplete(this.datasetId()))
+      .pipe(distinctUntilChanged(), share());
   }
 
   ngOnDestroy(): void {
-    this.store.dispatch(datasetActions.delete({id: this.datasetId()}))
+    this.store.dispatch(datasetActions.delete({ id: this.datasetId() }));
   }
 
   deleteDataset($event: MouseEvent) {
     $event.stopPropagation();
-    this.store.dispatch(datasetActions.delete({id: this.datasetId()}))
+    this.store.dispatch(datasetActions.delete({ id: this.datasetId() }));
   }
 
   saveData() {
-    this.store.dispatch(datasetActions.save({id: this.datasetId()}))
+    this.store.dispatch(datasetActions.save({ id: this.datasetId() }));
   }
 
   updateScroll() {
@@ -81,7 +115,7 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
   stepChange($event: StepperSelectionEvent) {
     switch ($event.selectedStep) {
       case this.selectStep():
-        this.store.dispatch(datasetActions.clear({id: this.datasetId()}))
+        this.store.dispatch(datasetActions.clear({ id: this.datasetId() }));
         break;
       case this.annotateStep():
         break;

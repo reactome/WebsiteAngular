@@ -1,4 +1,4 @@
-import {AfterViewInit, Directive, ElementRef, inject, OnDestroy, output} from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, output } from '@angular/core';
 
 @Directive({
   selector: '[item-resize]',
@@ -6,9 +6,9 @@ import {AfterViewInit, Directive, ElementRef, inject, OnDestroy, output} from "@
 export class ItemResizeObserverDirective implements AfterViewInit, OnDestroy {
   private el = inject(ElementRef);
 
-  heightChange = output<number>()
+  heightChange = output<number>();
 
-  private ro = new ResizeObserver(entries => {
+  private ro = new ResizeObserver((entries) => {
     for (const entry of entries) {
       this.heightChange.emit(entry.contentRect.height);
     }

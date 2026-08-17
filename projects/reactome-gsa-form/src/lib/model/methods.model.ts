@@ -1,4 +1,4 @@
-import {Parameter, Scope} from "./parameter.model";
+import { Parameter, Scope } from './parameter.model';
 
 export interface ParameterJSON {
   default: string;
@@ -22,18 +22,17 @@ export class MethodParameter implements ParameterJSON, Parameter {
   value: any;
 
   constructor(definition: ParameterJSON) {
-
     this.display_name = definition.display_name;
-    this.description = definition.description
-    this.scope = definition.scope
-    this.type = definition.type
-    this.values = definition.values
-    this.name = definition.name
+    this.description = definition.description;
+    this.scope = definition.scope;
+    this.type = definition.type;
+    this.values = definition.values;
+    this.name = definition.name;
 
     switch (definition.type) {
       case ParameterType.bool:
-        this.value = definition.default.toLowerCase() === "true";
-        break
+        this.value = definition.default.toLowerCase() === 'true';
+        break;
       case ParameterType.float:
         this.value = parseFloat(definition.default);
         break;
@@ -44,25 +43,27 @@ export class MethodParameter implements ParameterJSON, Parameter {
         this.value = definition.default;
     }
   }
-
 }
 
 export enum ParameterType {
-  bool = "bool",
-  float = "float",
-  string = "string",
-  int = "int",
-  email = "email",
+  bool = 'bool',
+  float = 'float',
+  string = 'string',
+  int = 'int',
+  email = 'email',
 }
 
 export class Method {
   parameters: MethodParameter[];
 
-  constructor(public name: string, public description: string, parameters: ParameterJSON[], public data_types: string[]) {
+  constructor(
+    public name: string,
+    public description: string,
+    parameters: ParameterJSON[],
+    public data_types: string[]
+  ) {
     this.name = name;
     this.description = description;
-    this.parameters = parameters.map(param => new MethodParameter(param));
+    this.parameters = parameters.map((param) => new MethodParameter(param));
   }
 }
-
-

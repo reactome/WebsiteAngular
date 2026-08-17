@@ -1,0 +1,4 @@
+# Formatting and lint on staged files only: fast enough to run every commit,
+# and it keeps CI from failing on things a second of local work would have
+# caught. The full check still runs in CI.
+npx lint-staged

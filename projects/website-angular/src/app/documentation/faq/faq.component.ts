@@ -30,7 +30,6 @@ export class FaqComponent implements OnInit {
           Object.keys(result).forEach((category) => {
             this.toggleCategory(category);
           });
-
         })().catch((error) => console.error('Could not render FAQ', error));
       },
       error: (err) => {
@@ -70,19 +69,12 @@ export class FaqComponent implements OnInit {
 
   getArticles(category: string, subcategory?: string): ArticleIndexItem[] {
     //Articles array is stored in record["articles"]
-    const record = subcategory
-      ? this.faqIndex[category][subcategory]
-      : this.faqIndex[category];
-    console.log(
-      `Getting articles for category: ${category}, subcategory: ${subcategory}`,
-      record
-    );
+    const record = subcategory ? this.faqIndex[category][subcategory] : this.faqIndex[category];
+    console.log(`Getting articles for category: ${category}, subcategory: ${subcategory}`, record);
     return record['articles'] || [];
   }
 
   formatName(name: string): string {
-    return name
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return name.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   }
 }

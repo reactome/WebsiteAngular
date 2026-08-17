@@ -1,6 +1,6 @@
-import {computed, Injectable, signal} from '@angular/core';
-import {SpeciesService} from '../../../../../../pathway-browser/src/app/services/species.service';
-import {Species} from '../../../../../../pathway-browser/src/app/model/graph/species.model';
+import { computed, Injectable, signal } from '@angular/core';
+import { SpeciesService } from '../../../../../../pathway-browser/src/app/services/species.service';
+import { Species } from '../../../../../../pathway-browser/src/app/model/graph/species.model';
 
 @Injectable()
 export class DetailSpeciesService implements Partial<SpeciesService> {
@@ -10,7 +10,7 @@ export class DetailSpeciesService implements Partial<SpeciesService> {
     dbId: 48887,
     shortName: 'H. sapiens',
     abbreviation: 'HSA',
-    schemaClass: 'Species'
+    schemaClass: 'Species',
   };
 
   readonly currentSpecies = signal<Species>(this.defaultSpecies);

@@ -1,6 +1,6 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, OnInit } from '@angular/core';
-import {ExternalLink, NavOption} from '../../../types/link';
+import { ExternalLink, NavOption } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({
@@ -8,7 +8,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
   standalone: true,
   imports: [],
   templateUrl: './home-why-reactome.component.html',
-  styleUrl: './home-why-reactome.component.scss'
+  styleUrl: './home-why-reactome.component.scss',
 })
 export class HomeWhyReactomeComponent implements OnInit {
   externalLinks: Record<string, ExternalLink> = {};

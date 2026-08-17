@@ -41,7 +41,7 @@ test.beforeEach(async ({ request }) => {
   }
   test.skip(
     !tinaReachable,
-    'TinaCMS dev server not reachable on :4001 -- the admin is a local content-editing surface only',
+    'TinaCMS dev server not reachable on :4001 -- the admin is a local content-editing surface only'
   );
 });
 

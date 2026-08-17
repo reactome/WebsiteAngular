@@ -1,5 +1,3 @@
-import {PhysicalEntity} from "./physical-entity.model";
+import { PhysicalEntity } from './physical-entity.model';
 
-export interface GenomeEncodedEntity extends PhysicalEntity {
-
-}
+export interface GenomeEncodedEntity extends PhysicalEntity {}

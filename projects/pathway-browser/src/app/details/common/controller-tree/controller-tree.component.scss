@@ -23,7 +23,6 @@
   letter-spacing: 0.25px;
 
   --padding: 2px;
-
 }
 
 .controllers {
@@ -60,11 +59,9 @@
   overflow: hidden;
 }
 
-
 .paginator {
   max-width: 100%;
 }
-
 
 .counter {
   display: flex;
@@ -81,14 +78,14 @@
 }
 
 .arrow {
-  @include mat.icon-button-overrides((
-    state-layer-size: 24px,
-    icon-color: var(--primary)
-  ));
-
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px,
+      icon-color: var(--primary),
+    )
+  );
 }
 
 .flipped {
   transform: rotate(180deg);
 }
-

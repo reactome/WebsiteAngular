@@ -1,5 +1,3 @@
-import {TranslationalModification} from "./translational-modification.model";
+import { TranslationalModification } from './translational-modification.model';
 
-export interface ModifiedResidue extends TranslationalModification {
-
-}
+export interface ModifiedResidue extends TranslationalModification {}

@@ -54,7 +54,10 @@ try {
 const errors = report.flatMap((file) =>
   file.messages
     .filter((m) => m.severity === 2)
-    .map((m) => `${relative(ROOT, file.filePath)}:${m.line}  ${m.ruleId ?? 'parse-error'}  ${m.message}`)
+    .map(
+      (m) =>
+        `${relative(ROOT, file.filePath)}:${m.line}  ${m.ruleId ?? 'parse-error'}  ${m.message}`
+    )
 );
 const warningCount = report.reduce((sum, file) => sum + file.warningCount, 0);
 
@@ -74,8 +77,7 @@ try {
 
 if (errors.length > 0) {
   console.error(
-    `${errors.length} lint error(s). These rules had no violations, so each of ` +
-      'these is new:\n'
+    `${errors.length} lint error(s). These rules had no violations, so each of ` + 'these is new:\n'
   );
   console.error(errors.join('\n'));
   process.exit(1);

@@ -55,11 +55,8 @@ export class ArticleComponent implements OnInit {
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
           const html = await marked((article?.body as string) || '');
-          const renderedContent = stripFirstH(
-            addAnchorIds(addJumpCards(wrapCodeBlocks(html)))
-          );
-          this.renderedContent =
-            this.sanitizer.bypassSecurityTrustHtml(renderedContent);
+          const renderedContent = stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html))));
+          this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
           this.article = {
             title: article?.title || '',
@@ -72,7 +69,6 @@ export class ArticleComponent implements OnInit {
           };
 
           this.loading = false;
-
         })().catch((error) => console.error('Could not render article', error));
       },
       error: (err) => {

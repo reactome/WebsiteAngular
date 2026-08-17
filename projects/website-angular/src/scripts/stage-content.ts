@@ -46,7 +46,7 @@ async function compile(from: string, to: string): Promise<{ pages: number; asset
       const slug = entry.name.replace(/\.mdx?$/, '');
       await fs.writeFile(
         path.join(to, `${slug}.json`),
-        JSON.stringify({ ...frontmatter, body: body ?? '' }),
+        JSON.stringify({ ...frontmatter, body: body ?? '' })
       );
       pages++;
     } else {

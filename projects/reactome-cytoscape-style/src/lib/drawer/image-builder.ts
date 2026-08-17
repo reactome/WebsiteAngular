@@ -14,13 +14,7 @@ import { diseaseInteractor } from './shape/disease-interactor-shape';
 import { subPathway } from './shape/sub-pathway-shape';
 import { extract } from '../properties-utils';
 import { Node } from '../types';
-import {
-  Aggregated,
-  DrawerParameters,
-  DrawerProvider,
-  Image,
-  Memo,
-} from './types';
+import { Aggregated, DrawerParameters, DrawerProvider, Image, Memo } from './types';
 import { Properties } from '../properties';
 import { Style } from '../style';
 import chroma from 'chroma-js';
@@ -29,9 +23,7 @@ export const imageBuilder = (properties: Properties, style: Style) =>
   memoize(
     (node: cytoscape.NodeSingular): Aggregated<Image> => {
       let layers: Image[] = [];
-      const clazz = node
-        .classes()
-        .find((clazz) => classToDrawers.has(clazz as Node)) as Node;
+      const clazz = node.classes().find((clazz) => classToDrawers.has(clazz as Node)) as Node;
       if (!clazz) return aggregate(layers, defaultBg);
 
       const provider = classToDrawers.get(clazz)!;
@@ -77,8 +69,7 @@ export const imageBuilder = (properties: Properties, style: Style) =>
 
       if (node.hasClass('flag') && drawer.flag) layers.push(drawer.flag);
 
-      if (drawer.background && !drawer.background.optional)
-        layers.push(drawer.background);
+      if (drawer.background && !drawer.background.optional) layers.push(drawer.background);
 
       if (exps && drawer.analysis) layers.push(drawer.analysis);
 
@@ -98,33 +89,21 @@ export const imageBuilder = (properties: Properties, style: Style) =>
 
       if (drawerParams.crossed) layers.push(CROSS(properties, drawerParams));
 
-      const gradient = expToGradient(
-        node.id(),
-        exps,
-        properties,
-        style.currentPalette
-      );
+      const gradient = expToGradient(node.id(), exps, properties, style.currentPalette);
 
       // Convert raw HTML to string encoded images
       layers = layers
         .map((l) => {
           if (l.requireGradient && gradient)
-            l['background-image'] = addGradient(
-              l['background-image'] as string,
-              gradient
-            );
+            l['background-image'] = addGradient(l['background-image'] as string, gradient);
           return l;
         })
         .map((l) => ({
           ...l,
           'background-image': svgStr(
             l['background-image'] as string,
-            isNumber(l['background-width'])
-              ? l['background-width']
-              : drawerParams.width,
-            isNumber(l['background-height'])
-              ? l['background-height']
-              : drawerParams.height
+            isNumber(l['background-width']) ? l['background-width'] : drawerParams.width,
+            isNumber(l['background-height']) ? l['background-height'] : drawerParams.height
           ),
         }));
 
@@ -159,11 +138,7 @@ const defaultBg: Image = {
   'bounds-expansion': 0,
 };
 
-function addGradient(
-  svgText: string,
-  gradient: string,
-  single: boolean = false
-): string {
+function addGradient(svgText: string, gradient: string, single: boolean = false): string {
   // if (single) {
   //   const s = `<style>.gradient{fill: ${gradient}!important;}</style>${svgText}`;
   //   console.log(s)
@@ -189,10 +164,7 @@ function _expToGradient(
     exp: number | undefined;
     width: number;
   }[] = [];
-  const size = exps.reduce(
-    (l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1),
-    0
-  );
+  const size = exps.reduce((l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1), 0);
   const delta = 1 / size;
   exps.forEach((exp, i) => {
     const p = stops.length - 1;
@@ -231,9 +203,7 @@ function _expToGradient(
     stops
       .map(
         (stop, i) =>
-          `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${
-            stop.width + 0.01
-          }"/>`
+          `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`
       )
       .join('') +
     '</pattern></defs>';
@@ -260,15 +230,10 @@ function svg(svgStr: string, width = 100, height = 100) {
   return s;
 }
 
-function svgStr(
-  svgText: string,
-  viewPortWidth: number,
-  viewPortHeight: number
-) {
+function svgStr(svgText: string, viewPortWidth: number, viewPortHeight: number) {
   // return svg(svgText, viewPortWidth, viewPortHeight);
   return (
-    'data:image/svg+xml;utf8,' +
-    encodeURIComponent(svg(svgText, viewPortWidth, viewPortHeight))
+    'data:image/svg+xml;utf8,' + encodeURIComponent(svg(svgText, viewPortWidth, viewPortHeight))
   );
 }
 
@@ -301,25 +266,15 @@ function aggregate<T extends object, K extends keyof T>(
   const aggregate: Aggregated<T> = {} as Aggregated<T>;
   //@ts-ignore
   const keys = new Set<K>(Object.keys(defaultValue));
-  keys.forEach(
-    (key) =>
-      (aggregate[key] = toAggregate.map((t) => t[key] ?? defaultValue[key]))
-  );
+  keys.forEach((key) => (aggregate[key] = toAggregate.map((t) => t[key] ?? defaultValue[key])));
   return aggregate;
 }
 
-const RX = (
-  properties: Properties,
-  { height }: DrawerParameters,
-  clazz: Node
-): Image => {
+const RX = (properties: Properties, { height }: DrawerParameters, clazz: Node): Image => {
   const t = extract(properties.global.thickness);
   const color =
-    clazz !== 'Molecule'
-      ? extract(properties.global.onPrimary)
-      : extract(properties.molecule.drug);
-  const x =
-    (clazz !== 'EntitySet' ? 0 : extract(properties.entitySet.radius)) + 3 * t;
+    clazz !== 'Molecule' ? extract(properties.global.onPrimary) : extract(properties.molecule.drug);
+  const x = (clazz !== 'EntitySet' ? 0 : extract(properties.entitySet.radius)) + 3 * t;
 
   return {
     'background-image': `
@@ -332,10 +287,7 @@ const RX = (
   };
 };
 
-const Pathway = (
-  properties: Properties,
-  { height, disease }: DrawerParameters
-): Image => {
+const Pathway = (properties: Properties, { height, disease }: DrawerParameters): Image => {
   const t = extract(properties.global.thickness);
   const color = !disease
     ? extract(properties.global.onPrimary)
@@ -361,9 +313,7 @@ export const CROSS = memoize(
     return {
       'background-image': `<line x1="${t}" y1="${t}" x2="${width - t}" y2="${
         height - t
-      }" stroke-width="${
-        2 * t
-      }" stroke-linecap="round" stroke="${s}"/><line x1="${t}" y1="${
+      }" stroke-width="${2 * t}" stroke-linecap="round" stroke="${s}"/><line x1="${t}" y1="${
         height - t
       }" x2="${width - t}" y2="${t}" stroke-width="${
         2 * t

@@ -132,9 +132,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       const raw = this.instance[attr.name];
       if (raw === undefined || raw === null) continue;
 
-      const hasDatabaseObjectType = attr.valueTypes.some(
-        (vt) => vt.databaseObject
-      );
+      const hasDatabaseObjectType = attr.valueTypes.some((vt) => vt.databaseObject);
       const values = this.resolveValues(raw, hasDatabaseObjectType);
       if (values.length > 0) {
         rows.push({ name: attr.name, values });
@@ -156,10 +154,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     return rows;
   }
 
-  private resolveValues(
-    raw: any,
-    hasDatabaseObjectType: boolean
-  ): AttributeValue[] {
+  private resolveValues(raw: any, hasDatabaseObjectType: boolean): AttributeValue[] {
     if (Array.isArray(raw)) {
       const result: AttributeValue[] = [];
       for (const item of raw) {
@@ -170,10 +165,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     return this.resolveSingleValue(raw, hasDatabaseObjectType);
   }
 
-  private resolveSingleValue(
-    val: any,
-    hasDatabaseObjectType: boolean
-  ): AttributeValue[] {
+  private resolveSingleValue(val: any, hasDatabaseObjectType: boolean): AttributeValue[] {
     // Database object with dbId
     if (val !== null && typeof val === 'object' && val.dbId) {
       return [

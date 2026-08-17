@@ -1,28 +1,22 @@
-import {Component, computed, effect, input, signal} from '@angular/core';
-import {
-  EntityWithAccessionedSequence
-} from "../../../model/graph/physical-entity/entity-with-accessioned-sequence.model";
-import {DataKeys, SchemaClasses} from "../../../constants/constants";
-import {MarkerReference} from "../../../model/graph/control-reference/marker-reference.model";
-import {ObjectTreeComponent} from "../object-tree/object-tree.component";
+import { Component, computed, effect, input, signal } from '@angular/core';
+import { EntityWithAccessionedSequence } from '../../../model/graph/physical-entity/entity-with-accessioned-sequence.model';
+import { DataKeys, SchemaClasses } from '../../../constants/constants';
+import { MarkerReference } from '../../../model/graph/control-reference/marker-reference.model';
+import { ObjectTreeComponent } from '../object-tree/object-tree.component';
 
 @Component({
   selector: 'cr-cell-marker',
   templateUrl: './cell-marker.component.html',
   styleUrl: './cell-marker.component.scss',
   standalone: true,
-  imports: [
-    ObjectTreeComponent
-  ]
+  imports: [ObjectTreeComponent],
 })
 export class CellMarkerComponent {
   readonly proteinMarkers = input.required<EntityWithAccessionedSequence[]>();
   readonly rnaMarkers = input.required<EntityWithAccessionedSequence[]>();
   readonly markerRefs = input.required<MarkerReference[]>();
 
-  constructor() {
-  }
-
+  constructor() {}
 
   refs = computed(() => {
     const map = new Map<number, MarkerReference>();
@@ -37,5 +31,4 @@ export class CellMarkerComponent {
 
   protected readonly SchemaClasses = SchemaClasses;
   protected readonly DataKeys = DataKeys;
-
 }

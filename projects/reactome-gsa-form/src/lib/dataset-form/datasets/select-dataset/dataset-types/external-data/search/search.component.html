@@ -1,12 +1,11 @@
 <form [formGroup]="searchForm" (click)="$event.stopPropagation()">
-
   <mat-form-field id="species" appearance="outline">
     <mat-label>species</mat-label>
     <mat-select formControlName="species" (selectionChange)="search()">
       <mat-option>No species</mat-option>
       @for (species of species$ | async; track species) {
         <mat-option [value]="species">
-          <i>{{species}}</i>
+          <i>{{ species }}</i>
         </mat-option>
       }
     </mat-select>
@@ -14,7 +13,7 @@
 
   <mat-form-field id="keywords" appearance="outline" subscriptSizing="dynamic">
     <mat-label>keywords</mat-label>
-    <input matInput type="text" formControlName="keywords">
+    <input matInput type="text" formControlName="keywords" />
     <button type="submit" mat-icon-button matIconSuffix (click)="search()" [disabled]="!searchForm.valid">
       <mat-icon fontSet="gsa">search</mat-icon>
     </button>
@@ -27,11 +26,17 @@
         @if ((results$ | async)?.length !== 0) {
           @for (result of results$ | async; track result.id; let last = $last) {
             <div (click)="select(result)" class="result-card">
-              <p class="bold">{{result.title}}</p>
-              {{result.resource_name}} - {{result.id}} - {{result.species}}
+              <p class="bold">{{ result.title }}</p>
+              {{ result.resource_name }} - {{ result.id }} - {{ result.species }}
               @if (result.web_link) {
                 -
-                <a [href]="result.web_link" matTooltip="Open dataset origin" style="vertical-align: top" target="_blank" (click)="$event.stopPropagation()">
+                <a
+                  [href]="result.web_link"
+                  matTooltip="Open dataset origin"
+                  style="vertical-align: top"
+                  target="_blank"
+                  (click)="$event.stopPropagation()"
+                >
                   <mat-icon [inline]="true">open_in_new</mat-icon>
                 </a>
               }
@@ -52,4 +57,3 @@
     }
   }
 </div>
-

@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import {TourService} from "ngx-ui-tour-md-menu";
-import {map, merge, Observable, shareReplay, startWith} from "rxjs";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import { TourService } from 'ngx-ui-tour-md-menu';
+import { map, merge, Observable, shareReplay, startWith } from 'rxjs';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 // ngx-ui-tour-md-menu publishes this interface under the name IStepOption
 // (`export type { IMdStepOption as IStepOption }`); it is the same type.
-import {IStepOption as IMdStepOption} from "ngx-ui-tour-md-menu";
+import { IStepOption as IMdStepOption } from 'ngx-ui-tour-md-menu';
 
 export type TourStatus = 'on' | 'off' | 'pause';
 
@@ -25,15 +25,12 @@ export class TourUtilsService {
     this.tourService.start$.pipe(map(() => 'on')) as Observable<TourStatus>,
     this.tourService.end$.pipe(map(() => 'off')) as Observable<TourStatus>,
     this.tourService.pause$.pipe(map(() => 'pause')) as Observable<TourStatus>,
-    this.tourService.resume$.pipe(map(() => 'on')) as Observable<TourStatus>,
-  ).pipe(
-    startWith('off' as TourStatus),
-    shareReplay(1)
-  );
+    this.tourService.resume$.pipe(map(() => 'on')) as Observable<TourStatus>
+  ).pipe(startWith('off' as TourStatus), shareReplay(1));
 
   constructor() {
     this.tourService.setDefaults({
-      placement: {yPosition: 'above', xPosition:'after'},
+      placement: { yPosition: 'above', xPosition: 'after' },
       enableBackdrop: false,
       smoothScroll: true,
       centerAnchorOnScroll: true,
@@ -51,10 +48,9 @@ export class TourUtilsService {
       this.on = false;
       this.paused = false;
     });
-    this.tourService.pause$.pipe(untilDestroyed(this)).subscribe(() => this.paused = true);
-    this.tourService.resume$.pipe(untilDestroyed(this)).subscribe(() => this.paused = false);
+    this.tourService.pause$.pipe(untilDestroyed(this)).subscribe(() => (this.paused = true));
+    this.tourService.resume$.pipe(untilDestroyed(this)).subscribe(() => (this.paused = false));
   }
-
 
   end() {
     this.tourService.end();
@@ -65,18 +61,18 @@ export class TourUtilsService {
   }
 
   next() {
-    this.tourService.next()
+    this.tourService.next();
   }
 
   pause() {
-    this.tourService.pause()
+    this.tourService.pause();
   }
 
   resume() {
-    this.tourService.resume()
+    this.tourService.resume();
   }
 
   start() {
-    this.tourService.start()
+    this.tourService.start();
   }
 }

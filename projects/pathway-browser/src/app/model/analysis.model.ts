@@ -1,12 +1,19 @@
 export namespace Analysis {
-  export type SortBy = 'NAME' |
-    'TOTAL_ENTITIES' | 'TOTAL_INTERACTORS' | 'TOTAL_REACTIONS' |
-    'FOUND_ENTITIES' | 'FOUND_INTERACTORS' | 'FOUND_REACTIONS' |
-    'ENTITIES_RATIO' | 'ENTITIES_PVALUE' | 'ENTITIES_FDR' |
-    'REACTION_RATIO';
+  export type SortBy =
+    | 'NAME'
+    | 'TOTAL_ENTITIES'
+    | 'TOTAL_INTERACTORS'
+    | 'TOTAL_REACTIONS'
+    | 'FOUND_ENTITIES'
+    | 'FOUND_INTERACTORS'
+    | 'FOUND_REACTIONS'
+    | 'ENTITIES_RATIO'
+    | 'ENTITIES_PVALUE'
+    | 'ENTITIES_FDR'
+    | 'REACTION_RATIO';
 
   export type Resource =
-    'TOTAL'
+    | 'TOTAL'
     | 'UNIPROT'
     | 'ENSEMBL'
     | 'CHEBI'
@@ -92,113 +99,113 @@ export namespace Analysis {
   }
 
   export interface Pathway {
-    dbId: number,
-    stId: string,
-    name: string,
+    dbId: number;
+    stId: string;
+    name: string;
     /**
      * Lower Level Pathway
      */
-    llp: boolean,
-    inDisease: boolean,
+    llp: boolean;
+    inDisease: boolean;
     entities: {
-      resource: Resource,
-      total: number,
-      found: number,
-      ratio: number,
-      pValue: number,
-      fdr: number,
-      exp: number[],
-      curatedFound?: number,
-      curatedTotal?: number,
-      interactorsFound?: number,
-      interactorsTotal?: number,
-    }
+      resource: Resource;
+      total: number;
+      found: number;
+      ratio: number;
+      pValue: number;
+      fdr: number;
+      exp: number[];
+      curatedFound?: number;
+      curatedTotal?: number;
+      interactorsFound?: number;
+      interactorsTotal?: number;
+    };
     reactions: {
-      resource: Resource,
-      total: number,
-      found: number,
-      ratio: number,
-    },
+      resource: Resource;
+      total: number;
+      found: number;
+      ratio: number;
+    };
     species: {
-      dbId: number,
-      taxId: string,
-      name: string
-    }
+      dbId: number;
+      taxId: string;
+      name: string;
+    };
   }
 
-  export type Type = 'OVERREPRESENTATION' | 'EXPRESSION' | 'GSA_REGULATION' | 'GSVA' | 'SPECIES_COMPARISON';
+  export type Type =
+    'OVERREPRESENTATION' | 'EXPRESSION' | 'GSA_REGULATION' | 'GSVA' | 'SPECIES_COMPARISON';
 
   export interface Result {
     expression: {
-      columnNames: string[],
-      min: number
-      max: number,
-    },
-    identifiersNotFound: number,
-    pathwaysFound: number,
-    warnings?: string[],
+      columnNames: string[];
+      min: number;
+      max: number;
+    };
+    identifiersNotFound: number;
+    pathwaysFound: number;
+    warnings?: string[];
     pathways: Pathway[];
 
     resourceSummary: {
-      resource: Resource,
-      pathways: number,
-      filtered: number
+      resource: Resource;
+      pathways: number;
+      filtered: number;
     }[];
 
     speciesSummary: {
-      dbId: number,
-      taxId: string,
-      name: string,
-      pathways: number,
-      filtered: number,
+      dbId: number;
+      taxId: string;
+      name: string;
+      pathways: number;
+      filtered: number;
     }[];
 
     summary: {
-      token: string,
-      type: Type | string,
-      sampleName: string,
-      text: boolean,
-      projection: boolean,
-      interactors: boolean,
-      includeDisease: boolean,
+      token: string;
+      type: Type | string;
+      sampleName: string;
+      text: boolean;
+      projection: boolean;
+      interactors: boolean;
+      includeDisease: boolean;
 
-      species?: number,
-      fileName?: string,
-      gsaMethod?: string,
-      gsaToken?: string,
-    }
-
+      species?: number;
+      fileName?: string;
+      gsaMethod?: string;
+      gsaToken?: string;
+    };
   }
 
   type Identifiers = {
-    ids: string[],
-    resource: Resource
+    ids: string[];
+    resource: Resource;
   };
 
   export interface FoundEntities {
-    pathway: string,
-    foundEntities: number,
-    foundInteractors: number,
+    pathway: string;
+    foundEntities: number;
+    foundInteractors: number;
 
-    expNames: string[],
-    resources: Resource[]
-    entities: FoundEntity[],
+    expNames: string[];
+    resources: Resource[];
+    entities: FoundEntity[];
     interactors?: {
-      id: string,
-      interactsWith: Identifiers,
-      mapsTo: string[],
-      exp: number[]
-    }[]
+      id: string;
+      interactsWith: Identifiers;
+      mapsTo: string[];
+      exp: number[];
+    }[];
   }
 
   export interface FoundEntity {
-    id: string,
-    mapsTo: Identifiers[],
-    exp: number[]
+    id: string;
+    mapsTo: Identifiers[];
+    exp: number[];
   }
 
   export interface NotFoundIdentifier {
-    id: string,
-    exp: number[]
+    id: string;
+    exp: number[];
   }
 }

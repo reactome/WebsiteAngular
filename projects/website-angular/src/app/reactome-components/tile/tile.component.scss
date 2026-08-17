@@ -19,19 +19,19 @@ $transition: all 0.3s ease;
 }
 
 .light-tile {
-    background: var(--on-primary);
-    color: var(--primary);
-    box-shadow: $shadow;
+  background: var(--on-primary);
+  color: var(--primary);
+  box-shadow: $shadow;
 }
 
 .dark-transparent-tile {
-    background: color-mix(in srgb, var(--primary) 25%, transparent);
-    backdrop-filter: blur(4px);
-    color: var(--on-primary);
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+  backdrop-filter: blur(4px);
+  color: var(--on-primary);
 }
 
 .light-transparent-tile {
-    background: color-mix(in srgb, var(--on-primary) 25%, transparent);
-    backdrop-filter: blur(4px);
-    color: var(--primary);
+  background: color-mix(in srgb, var(--on-primary) 25%, transparent);
+  backdrop-filter: blur(4px);
+  color: var(--primary);
 }

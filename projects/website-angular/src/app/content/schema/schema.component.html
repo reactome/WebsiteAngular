@@ -56,11 +56,9 @@
                 <button class="node-label" (click)="onTreeNodeClick(node.className)">
                   <span class="node-name">{{ node.className }}</span>
                 </button>
-                <button
-                  class="node-count"
-                  (click)="onTreeNodeCountClick(node.className, $event)"
-                  title="Show entries"
-                >[{{ node.count }}]</button>
+                <button class="node-count" (click)="onTreeNodeCountClick(node.className, $event)" title="Show entries">
+                  [{{ node.count }}]
+                </button>
               </div>
             }
           </div>
@@ -75,20 +73,10 @@
             </div>
 
             <div class="tab-bar">
-              <button
-                class="tab"
-                [class.active]="activeTab === 'properties'"
-                (click)="activeTab = 'properties'"
-              >
+              <button class="tab" [class.active]="activeTab === 'properties'" (click)="activeTab = 'properties'">
                 Properties
               </button>
-              <button
-                class="tab"
-                [class.active]="activeTab === 'entries'"
-                (click)="switchToEntries()"
-              >
-                Entries
-              </button>
+              <button class="tab" [class.active]="activeTab === 'entries'" (click)="switchToEntries()">Entries</button>
             </div>
 
             @if (activeTab === 'properties') {
@@ -126,7 +114,9 @@
                                   } @else {
                                     <span class="type-name primitive">{{ vt.name }}</span>
                                   }
-                                  @if (!last) { <span class="type-sep">, </span> }
+                                  @if (!last) {
+                                    <span class="type-sep">, </span>
+                                  }
                                 }
                               </td>
                             </tr>
@@ -167,13 +157,17 @@
                                 <td class="attr-types">
                                   @for (vt of attr.valueTypes; track vt.name; let last = $last) {
                                     @if (vt.databaseObject && isClassInTree(vt.name)) {
-                                      <a class="type-link db-object" (click)="navigateToClass(vt.name)">{{ vt.name }}</a>
+                                      <a class="type-link db-object" (click)="navigateToClass(vt.name)">{{
+                                        vt.name
+                                      }}</a>
                                     } @else if (vt.databaseObject) {
                                       <span class="type-name db-object">{{ vt.name }}</span>
                                     } @else {
                                       <span class="type-name primitive">{{ vt.name }}</span>
                                     }
-                                    @if (!last) { <span class="type-sep">, </span> }
+                                    @if (!last) {
+                                      <span class="type-sep">, </span>
+                                    }
                                   }
                                 </td>
                                 <td class="attr-origin">
@@ -245,18 +239,17 @@
                     <a routerLink="/documentation/data-model">here</a>.
                   </p>
                   <p>
-                    The sidebar on the left shows the hierarchy of Reactome classes. The number
-                    of instances of each class is shown in square brackets and links to a listing
-                    of all instances of that class.
+                    The sidebar on the left shows the hierarchy of Reactome classes. The number of instances of each
+                    class is shown in square brackets and links to a listing of all instances of that class.
                   </p>
                   <p>
                     The main panel shows attributes of the selected class.
-                    <span class="own-highlight">Own attributes</span>, i.e. the ones which are
-                    not inherited from a parent class, are shown separately from inherited ones.
+                    <span class="own-highlight">Own attributes</span>, i.e. the ones which are not inherited from a
+                    parent class, are shown separately from inherited ones.
                   </p>
                   <p>
-                    <span class="cardinality-badge">+</span> in the Cardinality column indicates
-                    a multi-value attribute.
+                    <span class="cardinality-badge">+</span> in the Cardinality column indicates a multi-value
+                    attribute.
                   </p>
                 </div>
               }
@@ -268,7 +261,8 @@
                 </button>
                 <app-instance-browser
                   [instanceId]="selectedInstanceId"
-                  (instanceLinkClick)="onInstanceLinkClick($event)" />
+                  (instanceLinkClick)="onInstanceLinkClick($event)"
+                />
               } @else {
                 @if (loadingEntries) {
                   <div class="loading-state small">
@@ -310,27 +304,15 @@
 
                     @if (totalPages > 1) {
                       <div class="pagination">
-                        <button
-                          class="page-btn"
-                          [disabled]="entriesPage === 1"
-                          (click)="goToPage(1)"
-                        >
+                        <button class="page-btn" [disabled]="entriesPage === 1" (click)="goToPage(1)">
                           <span class="material-symbols-rounded">first_page</span>
                         </button>
-                        <button
-                          class="page-btn"
-                          [disabled]="entriesPage === 1"
-                          (click)="goToPage(entriesPage - 1)"
-                        >
+                        <button class="page-btn" [disabled]="entriesPage === 1" (click)="goToPage(entriesPage - 1)">
                           <span class="material-symbols-rounded">chevron_left</span>
                         </button>
 
                         @for (p of visiblePages; track p) {
-                          <button
-                            class="page-btn"
-                            [class.active]="p === entriesPage"
-                            (click)="goToPage(p)"
-                          >
+                          <button class="page-btn" [class.active]="p === entriesPage" (click)="goToPage(p)">
                             {{ p }}
                           </button>
                         }
@@ -342,11 +324,7 @@
                         >
                           <span class="material-symbols-rounded">chevron_right</span>
                         </button>
-                        <button
-                          class="page-btn"
-                          [disabled]="entriesPage === totalPages"
-                          (click)="goToPage(totalPages)"
-                        >
+                        <button class="page-btn" [disabled]="entriesPage === totalPages" (click)="goToPage(totalPages)">
                           <span class="material-symbols-rounded">last_page</span>
                         </button>
                       </div>

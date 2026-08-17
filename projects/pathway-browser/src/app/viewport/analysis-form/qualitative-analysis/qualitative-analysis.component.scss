@@ -38,7 +38,6 @@
     color: var(--on-surface);
     font: var(--mat-sys-body-medium);
   }
-
 }
 
 .stepper {
@@ -56,7 +55,6 @@
       display: flex;
       flex-direction: column;
     }
-
   }
 }
 
@@ -88,7 +86,7 @@
 
             .drag-overlay {
               //border-radius: 10px 0 0 0;
-              left: var(--sticky-offset-left, 0)
+              left: var(--sticky-offset-left, 0);
             }
 
             .cdk-virtual-scrollable {
@@ -103,7 +101,7 @@
 
             .spreadsheet {
               //table-layout: fixed;
-              th.rows[y="0"] {
+              th.rows[y='0'] {
                 border-radius: 10px 0 0 0;
                 box-shadow: -5px -5px var(--surface); // Hides bellow rows when scrolling
               }
@@ -112,7 +110,6 @@
         }
       }
     }
-
 
     .table-controls {
       display: flex;
@@ -270,7 +267,6 @@
         }
       }
 
-
       .illustration {
         width: 100%;
 
@@ -317,7 +313,6 @@
   }
 }
 
-
 // Step 3 Loading
 .loader-container {
   flex: 1;
@@ -335,5 +330,3 @@
     margin-right: 10%;
   }
 }
-
-

@@ -64,7 +64,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-   text-decoration: none;
+  text-decoration: none;
 
   border: 1px solid var(--primary);
 
@@ -80,13 +80,15 @@
 
   &:hover {
     background-color: #f0f0f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     border-color: var(--primary);
-    transition: background 0.2s, box-shadow 0.2s;
+    transition:
+      background 0.2s,
+      box-shadow 0.2s;
 
     :host-context(.dark) & {
       background-color: #23272e;
-      box-shadow: 0 4px 12px rgba(255,255,255,0.18);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.18);
     }
   }
 
@@ -100,7 +102,6 @@
     font-size: 18px;
     margin: 0 0 8px;
     color: var(--primary);
-   
   }
 
   p {
@@ -108,7 +109,6 @@
     line-height: 1.5;
     color: var(--primary);
     margin: 0;
-   
 
     a {
       color: var(--primary);

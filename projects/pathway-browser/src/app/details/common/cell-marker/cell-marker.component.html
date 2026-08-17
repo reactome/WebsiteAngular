@@ -1,14 +1,11 @@
 <div id="markers">
-
   @if (rnaMarkers().length !== 0) {
     <div class="marker-container">
       <div class="row">
         <div class="label-container">RNA Marker</div>
         <div class="composition-container">
           @for (marker of rnaMarkers(); track marker.dbId) {
-            <cr-object-tree
-              [type]=" DataKeys.RNA_MARKERS"
-              [data]="[marker]"></cr-object-tree>
+            <cr-object-tree [type]="DataKeys.RNA_MARKERS" [data]="[marker]"></cr-object-tree>
 
             @let literatureRefs = refs().get(marker.dbId);
             @if (literatureRefs) {
@@ -26,9 +23,7 @@
         <div class="label-container">Protein Marker</div>
         <div class="composition-container">
           @for (marker of proteinMarkers(); track marker.dbId) {
-            <cr-object-tree
-              [type]="DataKeys.PROTEIN_MARKER"
-              [data]="[marker]"></cr-object-tree>
+            <cr-object-tree [type]="DataKeys.PROTEIN_MARKER" [data]="[marker]"></cr-object-tree>
 
             @let literatureRefs = refs().get(marker.dbId);
             @if (literatureRefs) {
@@ -39,5 +34,4 @@
       </div>
     </div>
   }
-
 </div>

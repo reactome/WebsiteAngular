@@ -38,22 +38,22 @@
 }
 
 .faq-category-header {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .category-name {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .expand-button {
-    background: none;
-    border: none;
-    font-weight: bold;
-    font-size: large;
+  background: none;
+  border: none;
+  font-weight: bold;
+  font-size: large;
 }
 
 /* Tabs */

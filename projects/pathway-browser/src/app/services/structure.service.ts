@@ -1,14 +1,11 @@
-import {Injectable, signal} from '@angular/core';
-
+import { Injectable, signal } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class StructureService {
-
   //todo: move structure logic here?
   hasAnyStructure = signal<boolean>(true);
 
   constructor() {}
-
 }

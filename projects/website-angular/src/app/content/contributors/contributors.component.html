@@ -2,9 +2,7 @@
   <article class="contributors-page">
     <header class="page-header">
       <h1>Contributors</h1>
-      <p class="description">
-        Reactome authors and reviewers who have contributed pathways and reactions.
-      </p>
+      <p class="description">Reactome authors and reviewers who have contributed pathways and reactions.</p>
     </header>
 
     <!-- Search bar -->
@@ -28,17 +26,11 @@
     <!-- Letter filter bar -->
     @if (!loading && !error) {
       <div class="letter-filter">
-        <button
-          class="letter-chip"
-          [class.active]="!activeLetter && !searchQuery"
-          (click)="selectAll()"
-        >All</button>
+        <button class="letter-chip" [class.active]="!activeLetter && !searchQuery" (click)="selectAll()">All</button>
         @for (letter of letters; track letter) {
-          <button
-            class="letter-chip"
-            [class.active]="activeLetter === letter"
-            (click)="selectLetter(letter)"
-          >{{ letter }}</button>
+          <button class="letter-chip" [class.active]="activeLetter === letter" (click)="selectLetter(letter)">
+            {{ letter }}
+          </button>
         }
       </div>
 

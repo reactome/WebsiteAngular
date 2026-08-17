@@ -48,10 +48,7 @@ interface Person {
 }
 
 type SectionKey =
-  | 'authoredPathways'
-  | 'authoredReactions'
-  | 'reviewedPathways'
-  | 'reviewedReactions';
+  'authoredPathways' | 'authoredReactions' | 'reviewedPathways' | 'reviewedReactions';
 
 // Returned by /data/person/{id}/{authored,reviewed}{Pathways,Reactions}.
 // Matches Reactome's SimpleEventProjection DTO.
@@ -138,10 +135,22 @@ export class PersonDetailComponent implements OnInit {
       // endpoints. We fire them in parallel and tolerate 404s (some persons
       // have no contributions of a given type, or the backend may not have
       // the new endpoints deployed yet -- the section just stays empty).
-      this.fetchEvents(`${CONTENT_SERVICE}/data/person/${id}/authoredPathways`, this.authoredPathways);
-      this.fetchEvents(`${CONTENT_SERVICE}/data/person/${id}/authoredReactions`, this.authoredReactions);
-      this.fetchEvents(`${CONTENT_SERVICE}/data/person/${id}/reviewedPathways`, this.reviewedPathways);
-      this.fetchEvents(`${CONTENT_SERVICE}/data/person/${id}/reviewedReactions`, this.reviewedReactions);
+      this.fetchEvents(
+        `${CONTENT_SERVICE}/data/person/${id}/authoredPathways`,
+        this.authoredPathways
+      );
+      this.fetchEvents(
+        `${CONTENT_SERVICE}/data/person/${id}/authoredReactions`,
+        this.authoredReactions
+      );
+      this.fetchEvents(
+        `${CONTENT_SERVICE}/data/person/${id}/reviewedPathways`,
+        this.reviewedPathways
+      );
+      this.fetchEvents(
+        `${CONTENT_SERVICE}/data/person/${id}/reviewedReactions`,
+        this.reviewedReactions
+      );
     });
   }
 
@@ -179,7 +188,9 @@ export class PersonDetailComponent implements OnInit {
   // flag. Long lists (>20 rows) start truncated; the search box matches
   // displayName (case-insensitive contains); species chips narrow to a
   // single organism.
-  private sectionExtras = signal<Record<SectionKey, { showAll: boolean; query: string; species: string }>>({
+  private sectionExtras = signal<
+    Record<SectionKey, { showAll: boolean; query: string; species: string }>
+  >({
     authoredPathways: { showAll: false, query: '', species: '' },
     authoredReactions: { showAll: false, query: '', species: '' },
     reviewedPathways: { showAll: false, query: '', species: '' },
@@ -196,7 +207,7 @@ export class PersonDetailComponent implements OnInit {
   }
 
   toggleSection(key: SectionKey) {
-    this.sectionState.update(s => ({ ...s, [key]: !s[key] }));
+    this.sectionState.update((s) => ({ ...s, [key]: !s[key] }));
   }
 
   allExpanded = computed(() => {
@@ -231,19 +242,22 @@ export class PersonDetailComponent implements OnInit {
     // Reset showAll when the user types -- filtered results are
     // usually small enough to render in full; the slice only kicks in
     // for unfiltered views.
-    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: false, query: value } }));
+    this.sectionExtras.update((s) => ({
+      ...s,
+      [key]: { ...s[key], showAll: false, query: value },
+    }));
   }
 
   clearFilter(key: SectionKey) {
-    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], query: '' } }));
+    this.sectionExtras.update((s) => ({ ...s, [key]: { ...s[key], query: '' } }));
   }
 
   setSpecies(key: SectionKey, species: string) {
-    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: false, species } }));
+    this.sectionExtras.update((s) => ({ ...s, [key]: { ...s[key], showAll: false, species } }));
   }
 
   toggleShowAll(key: SectionKey) {
-    this.sectionExtras.update(s => ({ ...s, [key]: { ...s[key], showAll: !s[key].showAll } }));
+    this.sectionExtras.update((s) => ({ ...s, [key]: { ...s[key], showAll: !s[key].showAll } }));
   }
 
   private matchQuery(row: SimpleEvent, query: string): boolean {
@@ -254,9 +268,7 @@ export class PersonDetailComponent implements OnInit {
 
   filteredRows(rows: SimpleEvent[], query: string, species: string): SimpleEvent[] {
     if (!query.trim() && !species) return rows;
-    return rows.filter(r =>
-      this.matchQuery(r, query) && (!species || r.speciesName === species),
-    );
+    return rows.filter((r) => this.matchQuery(r, query) && (!species || r.speciesName === species));
   }
 
   visibleRows(key: SectionKey, rows: SimpleEvent[]): SimpleEvent[] {

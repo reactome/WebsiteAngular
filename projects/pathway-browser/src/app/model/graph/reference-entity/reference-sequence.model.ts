@@ -1,5 +1,5 @@
-import {ReferenceEntity} from "./reference-entity.model";
-import {Species} from "../species.model";
+import { ReferenceEntity } from './reference-entity.model';
+import { Species } from '../species.model';
 
 export interface ReferenceSequence extends ReferenceEntity {
   description: string;

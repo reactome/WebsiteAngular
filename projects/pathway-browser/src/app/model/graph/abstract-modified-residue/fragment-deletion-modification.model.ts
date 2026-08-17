@@ -1,5 +1,3 @@
-import {FragmentModification} from "./fragment-modification.model";
+import { FragmentModification } from './fragment-modification.model';
 
-export interface FragmentDeletionModification extends FragmentModification {
-
-}
+export interface FragmentDeletionModification extends FragmentModification {}

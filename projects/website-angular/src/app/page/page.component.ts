@@ -16,7 +16,7 @@ import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPrese
   selector: 'app-page',
   imports: [PageLayoutComponent],
   templateUrl: './page.component.html',
-  styleUrl: './page.component.scss'
+  styleUrl: './page.component.scss',
 })
 export class PageComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -44,10 +44,13 @@ export class PageComponent implements OnInit {
   }
 
   private rewriteContentUrls(html: string): string {
-    return html.replace(/\b(href|src)=("([^"]*)"|'([^']*)')/g, (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
-      const value = doubleQuoted ?? singleQuoted ?? '';
-      return `${attr}="${this.normalizeContentUrl(value)}"`;
-    });
+    return html.replace(
+      /\b(href|src)=("([^"]*)"|'([^']*)')/g,
+      (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
+        const value = doubleQuoted ?? singleQuoted ?? '';
+        return `${attr}="${this.normalizeContentUrl(value)}"`;
+      }
+    );
   }
 
   private normalizeContentUrl(url: string): string {
@@ -64,7 +67,7 @@ export class PageComponent implements OnInit {
   }
 
   ngOnInit() {
-     this.route.url.subscribe(segments => {
+    this.route.url.subscribe((segments) => {
       if (segments.length === 0) {
         this.error = 'Page not found.';
         this.cdr.markForCheck();
@@ -72,7 +75,7 @@ export class PageComponent implements OnInit {
       }
 
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path = segments.map(s => s.path).join('/');
+      let path = segments.map((s) => s.path).join('/');
       // Strip the '{pageType}/' prefix since content is in content/{pageType}/
       if (path.startsWith(segments[0].path + '/')) {
         path = path.substring(segments[0].path.length + 1);
@@ -86,7 +89,7 @@ export class PageComponent implements OnInit {
     });
   }
 
-  private async loadPage(pageType:string, slug: string) {
+  private async loadPage(pageType: string, slug: string) {
     this.loading = true;
     this.error = null;
 
@@ -108,7 +111,7 @@ export class PageComponent implements OnInit {
             // imports is exactly how those regressed once already.
             this.renderedContent = sanitize(
               stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
-              this.sanitizer,
+              this.sanitizer
             );
             this.loading = false;
             // `await marked(...)` resumes in a microtask, so this assignment is
@@ -127,15 +130,14 @@ export class PageComponent implements OnInit {
             this.loading = false;
             this.cdr.markForCheck();
           }
-
         })().catch((error) => console.error('Could not render page content', error));
-      }
-      , error: (err) => {
+      },
+      error: (err) => {
         this.error = 'Error loading page.';
         this.loading = false;
-        console.error("Issue Loading Page: ",err);
+        console.error('Issue Loading Page: ', err);
         this.cdr.markForCheck();
-      }
-    })
+      },
+    });
   }
 }

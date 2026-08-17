@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 .controls {
   display: flex;
   justify-content: space-around;
@@ -12,13 +12,15 @@
   flex-direction: row;
   align-items: center;
   gap: 5px;
-  padding:0 5px;
+  padding: 0 5px;
 }
 
 mat-checkbox {
-  @include mat.checkbox-overrides((
-    state-layer-size: 18px
-  ));
+  @include mat.checkbox-overrides(
+    (
+      state-layer-size: 18px,
+    )
+  );
 }
 
 .button {

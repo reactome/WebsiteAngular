@@ -17,6 +17,8 @@ describe('SafePipe', () => {
 
   it('marks html as trusted so it survives sanitisation', () => {
     const safe = pipe.transform('<b>bold</b>', 'html');
-    expect(TestBed.inject(DomSanitizer).sanitize(1 /* SecurityContext.HTML */, safe)).toContain('<b>bold</b>');
+    expect(TestBed.inject(DomSanitizer).sanitize(1 /* SecurityContext.HTML */, safe)).toContain(
+      '<b>bold</b>'
+    );
   });
 });

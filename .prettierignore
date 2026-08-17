@@ -1,1 +1,23 @@
-.github/**
+# Build output and dependencies
+dist
+node_modules
+.angular
+out-tsc
+coverage
+playwright-report
+test-results
+
+# Generated, not authored
+projects/website-angular/content-dist
+projects/website-angular/tina/__generated__
+projects/website-angular/tina/tina-lock.json
+web-component-demo
+# Vendored third-party bundle
+projects/website-angular/src/assets/swagger-ui
+package-lock.json
+
+# Authored content, formatted by TinaCMS rather than by us
+projects/website-angular/content
+
+# Session scratch
+.claude

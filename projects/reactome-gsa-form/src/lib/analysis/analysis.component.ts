@@ -1,13 +1,27 @@
 import { Component, output, input, computed, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import {Store} from "@ngrx/store";
-import {analysisFeature} from "../state/analysis/analysis.selector";
-import { formatDate, NgSwitch, NgSwitchCase, NgIf, NgFor, AsyncPipe, DecimalPipe } from "@angular/common";
-import {methodFeature} from "../state/method/method.selector";
-import {combineLatest, map} from "rxjs";
-import {datasetFeature} from "../state/dataset/dataset.selector";
-import {isDefined} from "../utilities/utils";
-import {AnalysisResult} from "../model/analysis-result.model";
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import { Store } from '@ngrx/store';
+import { analysisFeature } from '../state/analysis/analysis.selector';
+import {
+  formatDate,
+  NgSwitch,
+  NgSwitchCase,
+  NgIf,
+  NgFor,
+  AsyncPipe,
+  DecimalPipe,
+} from '@angular/common';
+import { methodFeature } from '../state/method/method.selector';
+import { combineLatest, map } from 'rxjs';
+import { datasetFeature } from '../state/dataset/dataset.selector';
+import { isDefined } from '../utilities/utils';
+import { AnalysisResult } from '../model/analysis-result.model';
 import { LetDirective } from '@ngrx/component';
 import { MatCard, MatCardTitle, MatCardFooter } from '@angular/material/card';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -15,57 +29,74 @@ import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
 import { MatProgressBar } from '@angular/material/progress-bar';
 
-
 @Component({
-    selector: 'gsa-analysis',
-    templateUrl: './analysis.component.html',
-    styleUrls: ['./analysis.component.scss'],
-    imports: [LetDirective, FormsModule, ReactiveFormsModule, MatCard, MatCardTitle, NgSwitch, NgSwitchCase, MatProgressSpinner, MatIcon, MatButton, NgIf, MatCardFooter, MatProgressBar, NgFor, AsyncPipe, DecimalPipe]
+  selector: 'gsa-analysis',
+  templateUrl: './analysis.component.html',
+  styleUrls: ['./analysis.component.scss'],
+  imports: [
+    LetDirective,
+    FormsModule,
+    ReactiveFormsModule,
+    MatCard,
+    MatCardTitle,
+    NgSwitch,
+    NgSwitchCase,
+    MatProgressSpinner,
+    MatIcon,
+    MatButton,
+    NgIf,
+    MatCardFooter,
+    MatProgressBar,
+    NgFor,
+    AsyncPipe,
+    DecimalPipe,
+  ],
 })
 export class AnalysisComponent {
   private formBuilder = inject(FormBuilder);
   store = inject(Store);
 
   analysisStep: FormGroup;
-  reportsRequired$ = this.store.select(analysisFeature.selectReportsRequired)
-  analysisLoadingStatus$ = this.store.select(analysisFeature.selectAnalysisLoadingStatus)
-  reportLoadingStatus$ = this.store.select(analysisFeature.selectReportLoadingStatus)
-  result$ = this.store.select(analysisFeature.selectAnalysisResult)
+  reportsRequired$ = this.store.select(analysisFeature.selectReportsRequired);
+  analysisLoadingStatus$ = this.store.select(analysisFeature.selectAnalysisLoadingStatus);
+  reportLoadingStatus$ = this.store.select(analysisFeature.selectReportLoadingStatus);
+  result$ = this.store.select(analysisFeature.selectAnalysisResult);
 
   statusString$ = combineLatest([
     this.store.select(methodFeature.selectSelectedMethod),
-    this.store.select(datasetFeature.selectEntities)]
-  ).pipe(
+    this.store.select(datasetFeature.selectEntities),
+  ]).pipe(
     map(([method, datasets]) => {
       const datasetString = Object.values(datasets)
         .filter(isDefined)
-        .filter(dataset => dataset.saved)
-        .map(dataset => `${dataset.summary?.title} - ${dataset.statisticalDesign?.comparisonGroup1} vs ${dataset.statisticalDesign?.comparisonGroup2}`)
-        .join(" | ")
-      return `${method?.name} | ${datasetString}`
+        .filter((dataset) => dataset.saved)
+        .map(
+          (dataset) =>
+            `${dataset.summary?.title} - ${dataset.statisticalDesign?.comparisonGroup1} vs ${dataset.statisticalDesign?.comparisonGroup2}`
+        )
+        .join(' | ');
+      return `${method?.name} | ${datasetString}`;
     })
-  )
+  );
 
   readonly datasetId = input<number>();
   readonly restart = output<void>();
 
-  seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>()
+  seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>();
 
   constructor() {
     this.analysisStep = this.formBuilder.group({
-      name: ['', Validators.required]
+      name: ['', Validators.required],
     });
-
   }
-
 
   goToSelectMethod() {
     // TODO: The 'emit' function requires a mandatory void argument
-    this.restart.emit()
+    this.restart.emit();
   }
 
   mail(statusString: string | null): string {
-    return `mailto:help@reactome.org?subject=${encodeURIComponent(`Reactome GSA failed [${statusString || 'No status'}] on ${formatDate(new Date(), 'short', 'en-US')}`)}`
+    return `mailto:help@reactome.org?subject=${encodeURIComponent(`Reactome GSA failed [${statusString || 'No status'}] on ${formatDate(new Date(), 'short', 'en-US')}`)}`;
   }
 
   applyAction(result: AnalysisResult) {

@@ -1,7 +1,7 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, Input, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ButtonComponent } from "../../reactome-components/button/button.component";
+import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
@@ -15,13 +15,19 @@ import { NavOption } from '../../../types/link';
   standalone: true,
   imports: [RouterModule, ButtonComponent],
   templateUrl: './home-spotlight.component.html',
-  styleUrl: './home-spotlight.component.scss'
+  styleUrl: './home-spotlight.component.scss',
 })
 export class HomeSpotlightComponent implements OnInit {
   contentService = inject(ContentService);
 
   loading = true;
-  spotLightArticle: ArticleIndexItem = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
+  spotLightArticle: ArticleIndexItem = {
+    title: '',
+    date: new Date(),
+    author: '',
+    slug: '',
+    excerpt: '',
+  };
   renderedContent: string = '';
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
@@ -41,32 +47,31 @@ export class HomeSpotlightComponent implements OnInit {
           author: item.author,
           tags: item.tags || [],
           slug: item.slug,
-          excerpt: item.excerpt
-        } ))[0];
+          excerpt: item.excerpt,
+        }))[0];
         this.loading = false;
-        
-        // Load the full article content using the slug
-        this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
-          next: (article) => {
-            // Callback kept synchronous: an async one hands a promise to code
-            // that ignores it, so any rejection in here would vanish.
-            void (async () => {
-              const html = await marked(article?.body || '');
-              this.renderedContent = truncateHtml(stripFirstH(html), 150);
 
-            })().catch((error) => console.error('Could not render spotlight', error));
-          }
-        });
+        // Load the full article content using the slug
+        this.contentService
+          .getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug)
+          .subscribe({
+            next: (article) => {
+              // Callback kept synchronous: an async one hands a promise to code
+              // that ignores it, so any rejection in here would vanish.
+              void (async () => {
+                const html = await marked(article?.body || '');
+                this.renderedContent = truncateHtml(stripFirstH(html), 150);
+              })().catch((error) => console.error('Could not render spotlight', error));
+            },
+          });
       },
       error: (err) => {
         console.error('Error loading articles:', err);
-        this.spotLightArticle = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
+        this.spotLightArticle = { title: '', date: new Date(), author: '', slug: '', excerpt: '' };
         this.loading = false;
-      }
+      },
     });
   }
-
-  
 
   formatD(date: Date): string {
     return formatDate(date);

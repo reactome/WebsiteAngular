@@ -4,11 +4,11 @@ export function safeInput<C>(component: C, attr: keyof C) {
     try {
       component[attr] = JSON.parse(value);
     } catch (e) {
-      console.error("Failed to parse input", e)
+      console.error('Failed to parse input', e);
     }
   }
 }
 
-function isString(s: any) : s is string {
+function isString(s: any): s is string {
   return typeof s === 'string';
 }

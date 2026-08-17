@@ -1,5 +1,5 @@
-@use "@angular/material" as mat;
-@use "../../details/common/flag-button/flag-button.customise" as flag-button;
+@use '@angular/material' as mat;
+@use '../../details/common/flag-button/flag-button.customise' as flag-button;
 
 :host {
   width: 100%;
@@ -20,8 +20,7 @@
   position: relative;
   z-index: 1000; // Above collapse button
 
-
-  &:has(>input:focus-visible) {
+  &:has(> input:focus-visible) {
     > .search-icon > mat-icon {
       text-shadow: 0 0 4px var(--on-primary);
     }
@@ -45,7 +44,6 @@
       vertical-align: sub;
       padding: 0;
 
-
       &::placeholder {
         color: light-dark(var(--on-primary), var(--on-primary-container));
         opacity: 0.8;
@@ -63,13 +61,11 @@
       vertical-align: sub;
       opacity: 0.5;
     }
-
   }
 
   mat-icon {
     color: light-dark(var(--on-primary), var(--on-primary-container));
   }
-
 }
 
 .suggestions {
@@ -86,7 +82,6 @@
   overflow: clip;
   box-sizing: border-box;
   padding: 5px 33px;
-
 
   .suggest-line {
     padding: 2px 10px;
@@ -142,7 +137,6 @@
   background: var(--outline);
   font: var(--mat-sys-label-medium);
 
-
   &.active {
     background: var(--primary);
     color: var(--on-primary);
@@ -166,19 +160,20 @@
     color: var(--outline);
     cursor: pointer;
 
-
     &.active {
       color: var(--on-primary-container);
     }
 
-    @include mat.checkbox-overrides((
-      state-layer-size: 12px,
-      //label-text-color: currentColor,
-      touch-target-display: none,
-      label-text-line-height: var(--mat-sys-label-medium-line-height),
-      label-text-size: var(--mat-sys-label-medium-size),
-      label-text-weight: var(--mat-sys-label-medium-weight),
-    ));
+    @include mat.checkbox-overrides(
+      (
+        state-layer-size: 12px,
+        //label-text-color: currentColor,
+        touch-target-display: none,
+        label-text-line-height: var(--mat-sys-label-medium-line-height),
+        label-text-size: var(--mat-sys-label-medium-size),
+        label-text-weight: var(--mat-sys-label-medium-weight),
+      )
+    );
 
     ::ng-deep {
       .mdc-checkbox {
@@ -186,14 +181,20 @@
         flex: 0 0 var(--mat-checkbox-size);
         width: var(--mat-checkbox-size, 18px);
         height: var(--mat-checkbox-size, 18px);
-        padding: calc((var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2);
+        padding: calc(
+          (var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2
+        );
       }
 
       .mdc-checkbox__background {
         width: var(--mat-checkbox-size, 18px);
         height: var(--mat-checkbox-size, 18px);
-        top: calc((var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2);
-        left: calc((var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2);
+        top: calc(
+          (var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2
+        );
+        left: calc(
+          (var(--mat-checkbox-state-layer-size, 40px) - var(--mat-checkbox-size, 18px)) / 2
+        );
       }
     }
   }
@@ -227,7 +228,7 @@
   }
 
   > mat-icon {
-    flex: 0 0 auto
+    flex: 0 0 auto;
   }
 
   > span {
@@ -257,11 +258,13 @@
         color: var(--on-primary);
       }
 
-      @include mat.icon-button-overrides((
-        state-layer-size: 20px,
-        touch-target-display: none,
-        icon-size: var(--size)
-      ));
+      @include mat.icon-button-overrides(
+        (
+          state-layer-size: 20px,
+          touch-target-display: none,
+          icon-size: var(--size),
+        )
+      );
 
       mat-icon {
         width: var(--size);
@@ -270,7 +273,6 @@
         line-height: var(--size);
       }
     }
-
   }
 }
 
@@ -300,7 +302,9 @@
   z-index: 99;
   cursor: pointer;
   transform: scale(1, 1);
-  transition: bottom 500ms ease-in-out, transform 500ms ease-in-out;
+  transition:
+    bottom 500ms ease-in-out,
+    transform 500ms ease-in-out;
 
   &.collapsed {
     bottom: -13px;
@@ -335,7 +339,6 @@
     width: 50%;
   }
 }
-
 
 .ehld {
   color: var(--primary);

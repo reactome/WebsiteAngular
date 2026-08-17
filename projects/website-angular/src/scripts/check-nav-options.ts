@@ -12,11 +12,7 @@ const CONTENT_ROOTS = ['about', 'community', 'documentation', 'tools', 'content'
 // should never show up in nav-options.json. Any URL nested under one of
 // these prefixes (but not equal to it) is filtered out of the "missing
 // from nav" report.
-const LIST_SECTIONS = [
-  '/about/news',
-  '/content/reactome-research-spotlight',
-  '/documentation/faq',
-];
+const LIST_SECTIONS = ['/about/news', '/content/reactome-research-spotlight', '/documentation/faq'];
 
 // Pages we deliberately keep out of the nav even though they live under a
 // content root. Useful for archive/draft pages that exist on disk but
@@ -61,7 +57,7 @@ function isContentUrl(url: string): boolean {
 }
 
 function isUnderListSection(url: string): boolean {
-  return LIST_SECTIONS.some(prefix => url.startsWith(prefix + '/'));
+  return LIST_SECTIONS.some((prefix) => url.startsWith(prefix + '/'));
 }
 
 // Pull the static `path:` strings out of app.routes.ts. We don't need a
@@ -100,10 +96,20 @@ function main(): number {
   const repoRoot = process.cwd();
   const contentRoot = path.resolve(repoRoot, 'projects', 'website-angular', 'content');
   const navOptionsPath = path.resolve(
-    repoRoot, 'projects', 'website-angular', 'src', 'config', 'nav-options.json',
+    repoRoot,
+    'projects',
+    'website-angular',
+    'src',
+    'config',
+    'nav-options.json'
   );
   const routesFile = path.resolve(
-    repoRoot, 'projects', 'website-angular', 'src', 'app', 'app.routes.ts',
+    repoRoot,
+    'projects',
+    'website-angular',
+    'src',
+    'app',
+    'app.routes.ts'
   );
 
   if (!fs.existsSync(contentRoot)) {
@@ -134,12 +140,8 @@ function main(): number {
   const navTree = JSON.parse(fs.readFileSync(navOptionsPath, 'utf-8')) as Record<string, NavNode>;
   const navLinks = collectNavLinks(navTree);
 
-  const missing = [...contentUrls]
-    .filter(u => !navLinks.has(u))
-    .sort();
-  const stale = [...navLinks]
-    .filter(u => isContentUrl(u) && !contentUrls.has(u))
-    .sort();
+  const missing = [...contentUrls].filter((u) => !navLinks.has(u)).sort();
+  const stale = [...navLinks].filter((u) => isContentUrl(u) && !contentUrls.has(u)).sort();
 
   const RED = '\x1b[31m';
   const YELLOW = '\x1b[33m';
@@ -147,7 +149,9 @@ function main(): number {
   const RESET = '\x1b[0m';
 
   if (missing.length === 0 && stale.length === 0) {
-    console.log(`${GREEN}nav-options.json is in sync with content/ (${contentUrls.size} pages, ${navLinks.size} nav entries).${RESET}`);
+    console.log(
+      `${GREEN}nav-options.json is in sync with content/ (${contentUrls.size} pages, ${navLinks.size} nav entries).${RESET}`
+    );
     return 0;
   }
 
@@ -161,7 +165,9 @@ function main(): number {
     for (const url of stale) console.log(`  ${url}`);
   }
   console.log('');
-  console.log(`Fix by editing ${path.relative(repoRoot, navOptionsPath)}, or add the URL to NAV_OPT_OUT in this script if intentional.`);
+  console.log(
+    `Fix by editing ${path.relative(repoRoot, navOptionsPath)}, or add the URL to NAV_OPT_OUT in this script if intentional.`
+  );
   return 1;
 }
 

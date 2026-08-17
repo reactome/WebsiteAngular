@@ -1,4 +1,3 @@
-
 export interface Result {
   name: string;
   pathways: string;
@@ -24,4 +23,3 @@ export interface AnalysisResult {
   reactome_links: ReactomeLink[];
   mappings: Mapping[];
 }
-

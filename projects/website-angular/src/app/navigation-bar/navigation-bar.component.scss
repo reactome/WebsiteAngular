@@ -210,7 +210,9 @@ $hamburger-breakpoint: 1100px;
   color: var(--primary);
   margin-right: 12px;
   margin-left: 0;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .dropdown-link-wrapper.opens-left .nested-arrow {

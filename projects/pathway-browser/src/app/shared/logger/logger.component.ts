@@ -2,14 +2,10 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'cr-logger',
   imports: [],
-  template: ''
+  template: '',
 })
 export class LoggerComponent {
-  toLog = input<any>()
+  toLog = input<any>();
 
-  constructor() {
-  }
-
-
-
+  constructor() {}
 }

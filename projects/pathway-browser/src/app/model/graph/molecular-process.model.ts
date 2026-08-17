@@ -1,14 +1,14 @@
-import {DatabaseObject} from "./database-object.model";
-import {GO_MolecularFunction} from "./go-term/go-molecular-function.model";
-import {PhysicalEntity} from "./physical-entity/physical-entity.model";
-import {PsiMod} from "./external-ontology/psi-mod.model";
-import {EntitySet} from "./physical-entity/entity-set.model";
-import {Polymer} from "./physical-entity/polymer.model";
-import {ReferenceGroup} from "./reference-entity/reference-group.model";
-import {CatalystActivityReference} from "./control-reference/catalyst-activity-reference.model";
-import {RegulationReference} from "./control-reference/regulation-reference.model";
-import {ReferenceMolecule} from "./reference-entity/reference-molecule.model";
-import {ReactionLikeEvent} from "./event/reaction-like-event.model";
+import { DatabaseObject } from './database-object.model';
+import { GO_MolecularFunction } from './go-term/go-molecular-function.model';
+import { PhysicalEntity } from './physical-entity/physical-entity.model';
+import { PsiMod } from './external-ontology/psi-mod.model';
+import { EntitySet } from './physical-entity/entity-set.model';
+import { Polymer } from './physical-entity/polymer.model';
+import { ReferenceGroup } from './reference-entity/reference-group.model';
+import { CatalystActivityReference } from './control-reference/catalyst-activity-reference.model';
+import { RegulationReference } from './control-reference/regulation-reference.model';
+import { ReferenceMolecule } from './reference-entity/reference-molecule.model';
+import { ReactionLikeEvent } from './event/reaction-like-event.model';
 
 /**
  * This Generic type is for rendering data in Molecular Process component and used by catalystActivity, Regulation and ModifiedResidue

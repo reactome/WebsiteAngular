@@ -49,11 +49,9 @@ export class ExternalReferenceComponent {
   });
 
   hasStructure = computed(() =>
-    [
-      MoleculeType.CHEMICAL,
-      MoleculeType.CHEMICAL_DRUG,
-      MoleculeType.PROTEIN,
-    ].includes(this.moleculeType() as MoleculeType)
+    [MoleculeType.CHEMICAL, MoleculeType.CHEMICAL_DRUG, MoleculeType.PROTEIN].includes(
+      this.moleculeType() as MoleculeType
+    )
   );
 
   protected readonly isString = isString;

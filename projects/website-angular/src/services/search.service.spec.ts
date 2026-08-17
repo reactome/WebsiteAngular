@@ -29,7 +29,7 @@ describe('SearchService', () => {
     it('should send correct query, cluster, and pagination params', () => {
       service.search('TP53', {}, 2, 30).subscribe();
 
-      const req = httpTesting.expectOne(r => r.url === `${baseUrl}/query`);
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/query`);
       expect(req.request.params.get('query')).toBe('TP53');
       expect(req.request.params.get('cluster')).toBe('true');
       expect(req.request.params.get('Start row')).toBe('60');
@@ -46,7 +46,7 @@ describe('SearchService', () => {
       };
       service.search('BRCA1', filters, 0, 10).subscribe();
 
-      const req = httpTesting.expectOne(r => r.url === `${baseUrl}/query`);
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/query`);
       expect(req.request.params.getAll('species')).toEqual(['Homo sapiens', 'Mus musculus']);
       expect(req.request.params.getAll('types')).toEqual(['Pathway', 'Reaction']);
       expect(req.request.params.getAll('compartments')).toEqual(['cytosol', 'nucleus']);
@@ -57,7 +57,7 @@ describe('SearchService', () => {
     it('should use default pagination params when not provided', () => {
       service.search('apoptosis').subscribe();
 
-      const req = httpTesting.expectOne(r => r.url === `${baseUrl}/query`);
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/query`);
       expect(req.request.params.get('query')).toBe('apoptosis');
       expect(req.request.params.get('Start row')).toBe('0');
       expect(req.request.params.get('rows')).toBe('30');
@@ -70,7 +70,7 @@ describe('SearchService', () => {
       const filters: SearchFilters = { species: ['Homo sapiens'] };
       service.getFacets('TP53', filters).subscribe();
 
-      const req = httpTesting.expectOne(r => r.url === `${baseUrl}/facet_query`);
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/facet_query`);
       expect(req.request.params.get('query')).toBe('TP53');
       expect(req.request.params.getAll('species')).toEqual(['Homo sapiens']);
       req.flush({});
@@ -81,7 +81,7 @@ describe('SearchService', () => {
     it('should URL-encode the query', () => {
       service.getSpellCheckTerms('foo bar&baz').subscribe();
 
-      const req = httpTesting.expectOne(r => r.url.includes('/spellcheck'));
+      const req = httpTesting.expectOne((r) => r.url.includes('/spellcheck'));
       expect(req.request.url).toContain('query=foo%20bar%26baz');
       req.flush([]);
     });

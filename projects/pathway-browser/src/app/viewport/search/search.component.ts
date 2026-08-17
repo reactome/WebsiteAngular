@@ -1,22 +1,47 @@
-import {ChangeDetectorRef, Component, computed, effect, ElementRef, inject, input, linkedSignal, signal, viewChild, WritableSignal} from '@angular/core';
-import {MatIconButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {FormsModule} from "@angular/forms";
-import {rxResource, toObservable} from "@angular/core/rxjs-interop";
-import {HttpClient, HttpErrorResponse} from "@angular/common/http";
-import {CONTENT_SERVICE} from "../../../environments/environment";
-import {BehaviorSubject, catchError, Observable, of, Subscription, switchMap, take, tap} from "rxjs";
-import {animate, sequence, style, transition, trigger} from "@angular/animations";
-import {SpeciesService} from "../../services/species.service";
-import {UrlStateService} from "../../services/url-state.service";
-import {CollectionViewer, DataSource} from "@angular/cdk/collections";
-import {CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport} from "@angular/cdk/scrolling";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {IconService} from "../../services/icon.service";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatCheckbox} from "@angular/material/checkbox";
-import {FlagButtonComponent} from "../../details/common/flag-button/flag-button.component";
-import {ShadowScrollComponent} from "../../shared/shadow-scroll/shadow-scroll.component";
+import {
+  ChangeDetectorRef,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  viewChild,
+  WritableSignal,
+} from '@angular/core';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { FormsModule } from '@angular/forms';
+import { rxResource, toObservable } from '@angular/core/rxjs-interop';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { CONTENT_SERVICE } from '../../../environments/environment';
+import {
+  BehaviorSubject,
+  catchError,
+  Observable,
+  of,
+  Subscription,
+  switchMap,
+  take,
+  tap,
+} from 'rxjs';
+import { animate, sequence, style, transition, trigger } from '@angular/animations';
+import { SpeciesService } from '../../services/species.service';
+import { UrlStateService } from '../../services/url-state.service';
+import { CollectionViewer, DataSource } from '@angular/cdk/collections';
+import {
+  CdkFixedSizeVirtualScroll,
+  CdkVirtualForOf,
+  CdkVirtualScrollViewport,
+} from '@angular/cdk/scrolling';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { IconService } from '../../services/icon.service';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { FlagButtonComponent } from '../../details/common/flag-button/flag-button.component';
+import { ShadowScrollComponent } from '../../shared/shadow-scroll/shadow-scroll.component';
 import Entry = Search.Entry;
 
 const MIN_SUGGEST_LENGTH = 2;
@@ -44,45 +69,39 @@ type Scope = 'local' | 'global';
   animations: [
     trigger('suggest', [
       transition(':enter', [
-        style({height: '0'}),
-        animate('500ms ease-in-out', style({height: '*'})),
+        style({ height: '0' }),
+        animate('500ms ease-in-out', style({ height: '*' })),
       ]),
-      transition(':leave', [
-        animate('500ms ease-in-out', style({height: '0'})),
-      ])
+      transition(':leave', [animate('500ms ease-in-out', style({ height: '0' }))]),
     ]),
     trigger('results', [
       transition(':enter', [
-        style({height: '0'}),
-        animate('500ms ease-in-out', style({height: '*'})),
+        style({ height: '0' }),
+        animate('500ms ease-in-out', style({ height: '*' })),
       ]),
-      transition(':leave', [
-        animate('500ms ease-in-out', style({height: '0'})),
-      ])
+      transition(':leave', [animate('500ms ease-in-out', style({ height: '0' }))]),
     ]),
     trigger('result-pathways', [
       transition(':enter', [
-        style({width: 0, minWidth: '0%'}),
-        animate('500ms linear', style({width: '50%', minWidth: '50%'})),
+        style({ width: 0, minWidth: '0%' }),
+        animate('500ms linear', style({ width: '50%', minWidth: '50%' })),
       ]),
-      transition(':leave', [
-        animate('500ms linear', style({minWidth: '0%'})),
-      ])
+      transition(':leave', [animate('500ms linear', style({ minWidth: '0%' }))]),
     ]),
     trigger('collapsable', [
       transition(':enter', [
-        style({height: '0'}),
-        animate('500ms ease-in-out', style({height: '*'})),
+        style({ height: '0' }),
+        animate('500ms ease-in-out', style({ height: '*' })),
       ]),
       transition(':leave', [
-        style({height: '*'}),
+        style({ height: '*' }),
         sequence([
-          animate('500ms ease-in', style({height: '0'})),
-          animate('10ms linear', style({padding: '0 0', marginTop: '-4px'})),
-        ])
-      ])
-    ])
-  ]
+          animate('500ms ease-in', style({ height: '0' })),
+          animate('10ms linear', style({ padding: '0 0', marginTop: '-4px' })),
+        ]),
+      ]),
+    ]),
+  ],
 })
 export class SearchComponent {
   private http: HttpClient = inject(HttpClient);
@@ -99,35 +118,48 @@ export class SearchComponent {
 
   suggestions = rxResource({
     params: this.searchText,
-    stream: params => params.params.length >= MIN_SUGGEST_LENGTH
-      ? this.http.get<string[]>(`${CONTENT_SERVICE}/search/suggest`, {params: {query: params.params}})
-      : of([])
+    stream: (params) =>
+      params.params.length >= MIN_SUGGEST_LENGTH
+        ? this.http.get<string[]>(`${CONTENT_SERVICE}/search/suggest`, {
+            params: { query: params.params },
+          })
+        : of([]),
   });
 
-  suggestionResults = linkedSignal<{ value?: string[], loading: boolean }, string[]>({
-    source: () => ({value: this.suggestions.value(), loading: this.suggestions.isLoading()}),
+  suggestionResults = linkedSignal<{ value?: string[]; loading: boolean }, string[]>({
+    source: () => ({ value: this.suggestions.value(), loading: this.suggestions.isLoading() }),
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
-  })
+  });
 
-  suggestionIndex:WritableSignal<number> = linkedSignal(() => this.suggestionResults() && -1)
-  currentSuggest = computed(() => this.suggestionIndex() !== -1
-    ? this.searchText() + this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
-    : undefined);
+  suggestionIndex: WritableSignal<number> = linkedSignal(() => this.suggestionResults() && -1);
+  currentSuggest = computed(() =>
+    this.suggestionIndex() !== -1
+      ? this.searchText() +
+        this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
+      : undefined
+  );
 
-  resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll')
-  resultPathways = viewChild<ShadowScrollComponent>('resultPathways')
+  resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll');
+  resultPathways = viewChild<ShadowScrollComponent>('resultPathways');
 
   localHasNoResult = signal<boolean>(false);
   globalHasNoResult = signal<boolean>(false);
   searchErrorMessage = signal<string>('');
   searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
 
-  constructor(
-    ) {
-    effect(() => this.diagram() && this.searchParams.update(params => (params ? {
-      ...params,
-      diagram: this.diagram()
-    } : undefined)));
+  constructor() {
+    effect(
+      () =>
+        this.diagram() &&
+        this.searchParams.update((params) =>
+          params
+            ? {
+                ...params,
+                diagram: this.diagram(),
+              }
+            : undefined
+        )
+    );
     effect(() => {
       const subs = [this.resultHeight(), this.resultsScroll()];
       setTimeout(() => this.resultsScroll()?.checkViewportSize(), 500); // After opening animation
@@ -139,37 +171,41 @@ export class SearchComponent {
       const loading = this.scopes.local.isLoading();
       const local = this.scopes.local.found();
       const global = this.scopes.global.found();
-      if (!loading && local === 0 && global !== 0) this.currentScopeName.set('global')
+      if (!loading && local === 0 && global !== 0) this.currentScopeName.set('global');
     });
     effect(() => {
-      const [active, inactive] = this.currentScopeName() === 'global'
-        ? [this.scopes.global, this.scopes.local]
-        : [this.scopes.local, this.scopes.global];
+      const [active, inactive] =
+        this.currentScopeName() === 'global'
+          ? [this.scopes.global, this.scopes.local]
+          : [this.scopes.local, this.scopes.global];
       active.active = true;
       inactive.active = false;
-    })
+    });
     effect(() => {
       if (this.selectedResultPathwaysStable().length === 1) {
         this.selectAndSetPathway(this.selectedResultPathwaysStable().at(0)!.stId);
       }
-    })
+    });
 
     effect(() => {
-      this.selectedResultPathwaysStable().length > 1 && setTimeout(() => {
-        this.resultPathways()?.elementRef?.nativeElement?.querySelector('.selected')?.scrollIntoView({behavior: 'smooth'})
-        setTimeout(() => this.resultPathways()?.updateShadows(), 100)
-      }, 500)
+      this.selectedResultPathwaysStable().length > 1 &&
+        setTimeout(() => {
+          this.resultPathways()
+            ?.elementRef?.nativeElement?.querySelector('.selected')
+            ?.scrollIntoView({ behavior: 'smooth' });
+          setTimeout(() => this.resultPathways()?.updateShadows(), 100);
+        }, 500);
     });
   }
 
   nextSuggest(event?: Event) {
     const length = this.suggestionResults().length - 1;
-    this.suggestionIndex.update(i => i + 1 <= length ? i + 1 : length);
+    this.suggestionIndex.update((i) => (i + 1 <= length ? i + 1 : length));
     event?.preventDefault();
   }
 
   previousSuggest(event?: Event) {
-    this.suggestionIndex.update(i => i > 0 ? i - 1 : 0);
+    this.suggestionIndex.update((i) => (i > 0 ? i - 1 : 0));
     event?.preventDefault();
   }
 
@@ -180,17 +216,17 @@ export class SearchComponent {
     this.cdr.detectChanges(); // Close suggestions immediately; zone coalescing defers the normal CD tick
     this.searchText.set(searchText);
     if (event) event.preventDefault();
-    this.collapsed.set('opened')
-    this.typeFilter.set([])
-    this.selectedResult.set(undefined)
+    this.collapsed.set('opened');
+    this.typeFilter.set([]);
+    this.selectedResult.set(undefined);
     this.localHasNoResult.set(false);
     this.globalHasNoResult.set(false);
     this.searchErrorMessage.set('');
     this.searchParams.set({
       query: searchText,
       diagram: this.state.pathwayId() || '',
-      species: this.species.currentSpecies().displayName
-    })
+      species: this.species.currentSpecies().displayName,
+    });
   }
 
   clear($event: Event) {
@@ -209,118 +245,137 @@ export class SearchComponent {
   }
 
   focusOut($event: FocusEvent) {
-    if (!this.inputBox().nativeElement.contains($event.relatedTarget as Node)) this.hasFocus.set(false);
+    if (!this.inputBox().nativeElement.contains($event.relatedTarget as Node))
+      this.hasFocus.set(false);
   }
 
-  typeFilter = signal<string[]>([])
-  diagram = this.state.pathwayId
-  searchParams = signal<Search.Params | undefined>(undefined)
-  searchParams$ = toObservable(this.searchParams)
+  typeFilter = signal<string[]>([]);
+  diagram = this.state.pathwayId;
+  searchParams = signal<Search.Params | undefined>(undefined);
+  searchParams$ = toObservable(this.searchParams);
 
-  currentScopeName = signal<Scope>('local')
+  currentScopeName = signal<Scope>('local');
 
   scopes: Record<Scope, SearchDataSource> = {
-    local: new SearchDataSource(this.searchParams$,
-      (page, pageSize, params) => {
-        if (params.diagram && params.query.length === 0) {
-          this.localHasNoResult.set(false);
-          return of(Search.EMPTY_RESULTS);
-        }
-        return this.http.get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
+    local: new SearchDataSource(this.searchParams$, (page, pageSize, params) => {
+      if (params.diagram && params.query.length === 0) {
+        this.localHasNoResult.set(false);
+        return of(Search.EMPTY_RESULTS);
+      }
+      return this.http
+        .get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
           params: {
             ...params,
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
-            scope: 'REFERENCE_ENTITY'
-          } as Search.Paginated<Search.Params>
-        }).pipe(
+            scope: 'REFERENCE_ENTITY',
+          } as Search.Paginated<Search.Params>,
+        })
+        .pipe(
           catchError((error: HttpErrorResponse) => {
             return this.handleSearchError('local', error);
           }),
           tap((result) => {
             this.setNoSearchResult('local', result);
           })
-        )
+        );
+    }),
+    global: new SearchDataSource(this.searchParams$, (page, pageSize, params) => {
+      if (params.query.length === 0) {
+        this.globalHasNoResult.set(false);
+        return of(Search.EMPTY_RESULTS);
       }
-    ),
-    global: new SearchDataSource(this.searchParams$,
-      (page, pageSize, params) => {
-        if (params.query.length === 0) {
-          this.globalHasNoResult.set(false);
-          return of(Search.EMPTY_RESULTS);
-        }
-        return this.http.get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks/`, {
+      return this.http
+        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks/`, {
           params: {
             ...params,
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
-            scope: 'REFERENCE_ENTITY'
-          } as Search.Paginated<Search.Params>
-        }).pipe(
+            scope: 'REFERENCE_ENTITY',
+          } as Search.Paginated<Search.Params>,
+        })
+        .pipe(
           catchError((error: HttpErrorResponse) => {
             return this.handleSearchError('global', error);
           }),
           tap((result) => {
             this.setNoSearchResult('global', result);
           })
-        )
-      }
-    )
-  }
+        );
+    }),
+  };
 
-  currentScope = computed(() => this.scopes[this.currentScopeName()])
+  currentScope = computed(() => this.scopes[this.currentScopeName()]);
 
   resultHeight = computed(() => {
-    const [scope, ...sources] = [this.currentScopeName(), this.scopes.local.found(), this.scopes.global.found()]
-    return Math.min(this.scopes[scope].found(), 10) * this.entryHeight()
-  })
+    const [scope, ...sources] = [
+      this.currentScopeName(),
+      this.scopes.local.found(),
+      this.scopes.global.found(),
+    ];
+    return Math.min(this.scopes[scope].found(), 10) * this.entryHeight();
+  });
 
-  resultPathwaysHeight = computed(() => AVAILABLE_IN_HEIGHT + Math.min(this.selectedResultPathwaysStable().length, 10) * this.entryHeight())
+  resultPathwaysHeight = computed(
+    () =>
+      AVAILABLE_IN_HEIGHT +
+      Math.min(this.selectedResultPathwaysStable().length, 10) * this.entryHeight()
+  );
 
-  selectedResult = signal<Search.Entry | undefined>(undefined)
-  selectedResultId = computed(() => this.selectedResult()?.dbId)
+  selectedResult = signal<Search.Entry | undefined>(undefined);
+  selectedResultId = computed(() => this.selectedResult()?.dbId);
   selectedResultPathways = rxResource({
     params: this.selectedResultId,
-    stream: ({params}) => this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
-      params: {
-        includeInteractors: false,
-        directlyInDiagram: true,
-        species: this.species.currentSpecies().displayName,
-        fields: [' DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD']
-      }
-    }),
-  })
+    stream: ({ params }) =>
+      this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
+        params: {
+          includeInteractors: false,
+          directlyInDiagram: true,
+          species: this.species.currentSpecies().displayName,
+          fields: [' DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD'],
+        },
+      }),
+  });
 
-  selectedResultPathwaysStable = linkedSignal<{ results?: Search.Entry[], loading: boolean }, Search.Entry[]>({
-    source: () => ({results: this.selectedResultPathways.value(), loading: this.selectedResultPathways.isLoading()}),
-    computation: ({results, loading}, previous) => (loading ? previous?.value : results) || [],
-  })
+  selectedResultPathwaysStable = linkedSignal<
+    { results?: Search.Entry[]; loading: boolean },
+    Search.Entry[]
+  >({
+    source: () => ({
+      results: this.selectedResultPathways.value(),
+      loading: this.selectedResultPathways.isLoading(),
+    }),
+    computation: ({ results, loading }, previous) => (loading ? previous?.value : results) || [],
+  });
 
   selectAndSetPathway(pathwayId: string) {
-    this.state.select.set(this.selectedResult()?.stId || null)
-    this.state.pathwayId.set(pathwayId)
+    this.state.select.set(this.selectedResult()?.stId || null);
+    this.state.pathwayId.set(pathwayId);
   }
 
-  entryHeight = input(24)
-  trackEntry = (index: number, value: Search.Entry | undefined) => value?.dbId || index
-
+  entryHeight = input(24);
+  trackEntry = (index: number, value: Search.Entry | undefined) => value?.dbId || index;
 
   toggleTypeFacet(name: string) {
-    this.typeFilter.update(filter => filter.includes(name) ? filter.filter(f => f !== name) : [...filter, name]);
-    this.searchParams.update(params => params ? {...params, types: this.typeFilter()} : undefined);
+    this.typeFilter.update((filter) =>
+      filter.includes(name) ? filter.filter((f) => f !== name) : [...filter, name]
+    );
+    this.searchParams.update((params) =>
+      params ? { ...params, types: this.typeFilter() } : undefined
+    );
   }
 
-  collapsed = signal<'collapsed' | 'opened'>('opened')
+  collapsed = signal<'collapsed' | 'opened'>('opened');
 
   toggleCollapse() {
-    this.collapsed.update(c => c === 'collapsed' ? 'opened' : 'collapsed')
+    this.collapsed.update((c) => (c === 'collapsed' ? 'opened' : 'collapsed'));
   }
 
   toggleSelection(entry: Entry | undefined) {
-    if (entry) this.selectedResult.update(current => current === entry ? undefined : entry)
-    this.state.select.set(this.selectedResult()?.stId || null)
+    if (entry) this.selectedResult.update((current) => (current === entry ? undefined : entry));
+    this.state.select.set(this.selectedResult()?.stId || null);
   }
 
   handleSearchError(scope: Scope, error: HttpErrorResponse) {
@@ -344,14 +399,12 @@ export class SearchComponent {
   }
 }
 
-
 // TODO find a way to avoid the break in scroll when loading a new page
 export class SearchDataSource extends DataSource<Search.Entry | undefined> {
-
-  private _result = signal<Search.Result | undefined>(undefined)
-  facets = computed(() => this._result()?.facets || [])
-  found = computed(() => this._result()?.found || 0)
-  isLoading = signal<boolean>(false)
+  private _result = signal<Search.Result | undefined>(undefined);
+  facets = computed(() => this._result()?.facets || []);
+  found = computed(() => this._result()?.found || 0);
+  isLoading = signal<boolean>(false);
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -362,7 +415,11 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
 
   constructor(
     private param$: Observable<Search.Params | undefined>,
-    private fetcher: (page: number, pageSize: number, params: Search.Params) => Observable<Search.Result>
+    private fetcher: (
+      page: number,
+      pageSize: number,
+      params: Search.Params
+    ) => Observable<Search.Result>
   ) {
     super();
     param$.subscribe(() => this.clear());
@@ -371,11 +428,11 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   clear(): void {
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
-    this.fetchPage(0)
+    this.fetchPage(0);
   }
 
   override connect(collectionViewer: CollectionViewer): Observable<(Search.Entry | undefined)[]> {
-    const subscribe = collectionViewer.viewChange.subscribe(range => {
+    const subscribe = collectionViewer.viewChange.subscribe((range) => {
       if (!this.active) return;
       const startPage = this.getPageForIndex(range.start);
       const endPage = this.getPageForIndex(range.end - 1);
@@ -404,36 +461,39 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
     this.isLoading.set(true);
     this.fetchedPages.add(page);
     // Use `setTimeout` to simulate fetching data from server.
-    this.param$.pipe(
-      take(1),
-      switchMap(param => param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)),
-      catchError(err => of(Search.EMPTY_RESULTS))
-    ).subscribe(result => {
-      this._result.set(result);
-      if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
-      this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
-      this.dataStream.next(this.cachedEntries);
-      this.isLoading.set(false);
-    })
+    this.param$
+      .pipe(
+        take(1),
+        switchMap((param) =>
+          param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
+        ),
+        catchError((err) => of(Search.EMPTY_RESULTS))
+      )
+      .subscribe((result) => {
+        this._result.set(result);
+        if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
+        this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
+        this.dataStream.next(this.cachedEntries);
+        this.isLoading.set(false);
+      });
   }
 }
 
-
 export namespace Search {
-  export const EMPTY_RESULTS = {found: 0, facets: [], entries: []} as Search.Result;
+  export const EMPTY_RESULTS = { found: 0, facets: [], entries: [] } as Search.Result;
 
   export interface Params extends Record<string, any> {
-    query: string
-    species?: string
-    diagram?: string
-    types?: string[],
-    includeInteractors?: boolean
+    query: string;
+    species?: string;
+    diagram?: string;
+    types?: string[];
+    includeInteractors?: boolean;
   }
 
   export type Paginated<T> = T & {
-    start: number,
-    rows: number
-  }
+    start: number;
+    rows: number;
+  };
 
   export interface Entry {
     dbId: string;
@@ -460,12 +520,11 @@ export namespace Search {
   export interface Result {
     entries: Entry[];
     facets: Facet[];
-    found: number
+    found: number;
   }
 
-// Add a sub-namespace for Icon-specific results
+  // Add a sub-namespace for Icon-specific results
   export namespace Icon {
-
     export interface Entry {
       stId: string;
       dbId: string;
@@ -498,4 +557,3 @@ export namespace Search {
     }
   }
 }
-

@@ -1,20 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, input, inject } from '@angular/core';
-import {ReferenceEntity} from "../../../../model/graph/reference-entity/reference-entity.model";
-import {SelectableObject} from "../../../../services/event.service";
-import {DatabaseIdentifier} from "../../../../model/graph/database-identifier.model";
-import {MatDivider} from "@angular/material/divider";
-import {
-  DescriptionOverviewComponent
-} from "../../../tabs/description-tab/description-overview/description-overview.component";
-import {ExternalReferenceComponent} from "../../external-reference/external-reference.component";
-import {CrossReferencesComponent} from "../../cross-references/cross-references.component";
-import {isMolecule, isRefEntity} from "../../../../services/utils";
-import {MoleculeType} from "../../../tabs/molecule-tab/molecule-tab.component";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {NoticeInfoComponent} from "../../notice-info/notice-info.component";
-import {EntityService} from "../../../../services/entity.service";
-import {Labels} from "../../../../constants/constants";
-import {StructureService} from "../../../../services/structure.service";
+import { ReferenceEntity } from '../../../../model/graph/reference-entity/reference-entity.model';
+import { SelectableObject } from '../../../../services/event.service';
+import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.model';
+import { MatDivider } from '@angular/material/divider';
+import { DescriptionOverviewComponent } from '../../../tabs/description-tab/description-overview/description-overview.component';
+import { ExternalReferenceComponent } from '../../external-reference/external-reference.component';
+import { CrossReferencesComponent } from '../../cross-references/cross-references.component';
+import { isMolecule, isRefEntity } from '../../../../services/utils';
+import { MoleculeType } from '../../../tabs/molecule-tab/molecule-tab.component';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { NoticeInfoComponent } from '../../notice-info/notice-info.component';
+import { EntityService } from '../../../../services/entity.service';
+import { Labels } from '../../../../constants/constants';
+import { StructureService } from '../../../../services/structure.service';
 
 @Component({
   selector: 'cr-object-tree-details',
@@ -24,16 +22,15 @@ import {StructureService} from "../../../../services/structure.service";
     ExternalReferenceComponent,
     CrossReferencesComponent,
     MatProgressSpinner,
-    NoticeInfoComponent
+    NoticeInfoComponent,
   ],
   templateUrl: './object-tree-details.component.html',
   styleUrl: './object-tree-details.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ObjectTreeDetailsComponent {
   private entity = inject(EntityService);
   private structure = inject(StructureService);
-
 
   readonly obj = input.required<SelectableObject>();
   readonly className = input<string>();
@@ -48,11 +45,14 @@ export class ObjectTreeDetailsComponent {
       return entity.moleculeType;
     }
     return null;
-  })
+  });
 
-  hasStructure = computed(() => this.moleculeType() === MoleculeType.PROTEIN || this.moleculeType() === MoleculeType.CHEMICAL);
+  hasStructure = computed(
+    () =>
+      this.moleculeType() === MoleculeType.PROTEIN || this.moleculeType() === MoleculeType.CHEMICAL
+  );
 
-  hasStructureData  = computed(() => this.structure.hasAnyStructure());
+  hasStructureData = computed(() => this.structure.hasAnyStructure());
 
   displayNotice = computed(() => {
     if (!isMolecule(this.obj())) return false;
@@ -62,13 +62,19 @@ export class ObjectTreeDetailsComponent {
 
     const displayedExternalRef = this.entity.getTransformedExternalRef(referenceEntity);
     const otherKeys = ['geneName', 'chain', 'referenceGene', 'referenceTranscript'];
-    const onlyDisplayName = displayedExternalRef.length === 1 && displayedExternalRef[0].label === Labels.EXTERNAL_REFERENCE;
-    const hasOtherFields = otherKeys.some(key => referenceEntity[key]);
+    const onlyDisplayName =
+      displayedExternalRef.length === 1 &&
+      displayedExternalRef[0].label === Labels.EXTERNAL_REFERENCE;
+    const hasOtherFields = otherKeys.some((key) => referenceEntity[key]);
     const emptyExternalRef = onlyDisplayName && !hasOtherFields;
 
-    return this.isMoleculeView() && emptyExternalRef && this.xRefs().length === 0 && !this.hasStructureData();
+    return (
+      this.isMoleculeView() &&
+      emptyExternalRef &&
+      this.xRefs().length === 0 &&
+      !this.hasStructureData()
+    );
   });
-
 
   protected readonly MoleculeType = MoleculeType;
 }

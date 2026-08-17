@@ -75,47 +75,47 @@ export class SchemaComponent implements OnInit, OnDestroy {
       .getSchemaModel()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-      next: (root) => {
-        this.treeRoot = root;
-        // Expand first two levels by default
-        this.expandedNodes.add(root.className);
-        if (root.children) {
-          for (const child of root.children) {
-            this.expandedNodes.add(child.className);
+        next: (root) => {
+          this.treeRoot = root;
+          // Expand first two levels by default
+          this.expandedNodes.add(root.className);
+          if (root.children) {
+            for (const child of root.children) {
+              this.expandedNodes.add(child.className);
+            }
           }
-        }
-        this.buildClassIndex(root);
-        this.rebuildFlatTree();
-        this.loading = false;
+          this.buildClassIndex(root);
+          this.rebuildFlatTree();
+          this.loading = false;
 
-        // Listen for route changes. The path can be either
-        //   /dataSchema/:className
-        // or
-        //   /dataSchema/:className/instance/:dbId
-        // so a single subscription has to keep both selectedClass and
-        // selectedInstanceId in sync with the URL.
-        this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-          const className = params['className'] || 'DatabaseObject';
-          if (className !== this.selectedClass) {
-            this.selectClass(className);
-          }
-          const dbIdParam = params['dbId'];
-          const dbId = dbIdParam != null ? Number(dbIdParam) : null;
-          if (dbId !== this.selectedInstanceId) {
-            this.selectedInstanceId = dbId;
-            // If we deep-linked into an instance, make sure we're on the
-            // Entries tab so the <app-instance-browser> renders.
-            if (dbId != null) this.activeTab = 'entries';
-          }
-        });
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = true;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-    });
+          // Listen for route changes. The path can be either
+          //   /dataSchema/:className
+          // or
+          //   /dataSchema/:className/instance/:dbId
+          // so a single subscription has to keep both selectedClass and
+          // selectedInstanceId in sync with the URL.
+          this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+            const className = params['className'] || 'DatabaseObject';
+            if (className !== this.selectedClass) {
+              this.selectClass(className);
+            }
+            const dbIdParam = params['dbId'];
+            const dbId = dbIdParam != null ? Number(dbIdParam) : null;
+            if (dbId !== this.selectedInstanceId) {
+              this.selectedInstanceId = dbId;
+              // If we deep-linked into an instance, make sure we're on the
+              // Entries tab so the <app-instance-browser> renders.
+              if (dbId != null) this.activeTab = 'entries';
+            }
+          });
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = true;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   ngOnDestroy() {
@@ -159,9 +159,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     });
 
     if (hasChildren && expanded) {
-      const sorted = [...node.children].sort((a, b) =>
-        a.className.localeCompare(b.className)
-      );
+      const sorted = [...node.children].sort((a, b) => a.className.localeCompare(b.className));
       for (const child of sorted) {
         this.buildFlatTreeRecursive(child, depth + 1);
       }
@@ -337,11 +335,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   loadEntries() {
     this.loadingEntries = true;
     this.contentDataService
-      .getSchemaEntries(
-        this.selectedClass,
-        this.entriesPage,
-        this.entriesPageSize
-      )
+      .getSchemaEntries(this.selectedClass, this.entriesPage, this.entriesPageSize)
       .subscribe({
         next: (entries) => {
           this.entries = entries;
@@ -389,10 +383,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    void this.router.navigate(
-      ['/dataSchema', this.selectedClass, 'instance', dbId],
-      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
-    );
+    void this.router.navigate(['/dataSchema', this.selectedClass, 'instance', dbId], {
+      queryParams: { tab: 'entries' },
+      queryParamsHandling: 'merge',
+    });
   }
 
   clearSelectedInstance() {
@@ -405,9 +399,9 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // Followed-from links inside the instance browser may point to objects
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
-    void this.router.navigate(
-      ['/dataSchema', this.selectedClass, 'instance', dbId],
-      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
-    );
+    void this.router.navigate(['/dataSchema', this.selectedClass, 'instance', dbId], {
+      queryParams: { tab: 'entries' },
+      queryParamsHandling: 'merge',
+    });
   }
 }

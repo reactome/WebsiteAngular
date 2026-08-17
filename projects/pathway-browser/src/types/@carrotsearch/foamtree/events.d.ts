@@ -1,18 +1,16 @@
 /// <reference path="./core.d.ts" />
 
-declare module "@carrotsearch/foamtree" {
+declare module '@carrotsearch/foamtree' {
   namespace FoamTree {
-    type Listeners<D extends DataObject> =
-      VisualizationListeners<D>
-      & GroupStateListeners<D>
-      & InteractionListeners<D>;
+    type Listeners<D extends DataObject> = VisualizationListeners<D> &
+      GroupStateListeners<D> &
+      InteractionListeners<D>;
 
     type EventType = keyof Listeners<DataObject>;
     type EventListener<E extends EventType, D extends DataObject> = Listeners<D>[E];
     type EventOptions<D extends DataObject> = {
-      [E in EventType]: EventListener<E, D> | EventListener<E, D>[]
-    }
-
+      [E in EventType]: EventListener<E, D> | EventListener<E, D>[];
+    };
 
     /**
      * This section describes events that relate to the life cycle of the whole visualization.
@@ -46,7 +44,7 @@ declare module "@carrotsearch/foamtree" {
        *   { count: 7  }
        * ]});
        */
-      onModelChanging: (data: D) => any
+      onModelChanging: (data: D) => any;
       /**
        * Called after the pullback animation of the previous data model has completed and the visualization has parsed the new data model provided in the dataObject option, but before the new data has been rendered. The listeners will be called with one argument – the new data object the visualization is about to show.
        *
@@ -73,7 +71,7 @@ declare module "@carrotsearch/foamtree" {
        *
        * In the context of each callback, this points to the involved instance of FoamTree.
        */
-      onModelChanged: (data: D) => any
+      onModelChanged: (data: D) => any;
 
       /**
        * Called just before the visualization starts the animated rollout.
@@ -81,14 +79,14 @@ declare module "@carrotsearch/foamtree" {
        * If the application implements some sort of loading indicator, the indicator should be hidden once this event is fired.
        * @remarks This listener will not be called when an empty (null, undefined) dataObject is set. To get a notification in such cases, register a listener for the onModelChanging or the onModelChanged event.
        */
-      onRolloutStart: () => any
+      onRolloutStart: () => any;
       /**
        * Called after the rollout animation has completed.
        * Please note that this listener will not be called when an empty dataObject is set, see onRolloutStart for an alternative for such cases.
        * @see onRolloutStart
        * @remarks This listener will not be called when an empty (null, undefined) dataObject is set. To get a notification in such cases, register a listener for the onModelChanging or the onModelChanged event.
        */
-      onRolloutComplete: () => any
+      onRolloutComplete: () => any;
 
       /**
        * Invoked once per layout relaxation step, but only when relaxationVisible is true.
@@ -98,7 +96,11 @@ declare module "@carrotsearch/foamtree" {
        * @param relaxationComplete - When true, this is the last step of relaxation because the requested relaxationQualityThreshold has been achieved.
        * @param relaxationTimeout - When true, this is the last step of relaxation because the relaxationMaxDuration has been exceeded.
        */
-      onRelaxationStep: (relaxationProgress: number, relaxationComplete: boolean, relaxationTimeout: boolean) => any
+      onRelaxationStep: (
+        relaxationProgress: number,
+        relaxationComplete: boolean,
+        relaxationTimeout: boolean
+      ) => any;
 
       /**
        * Called after the internal- or API-triggered redraw of the visualization.
@@ -133,13 +135,13 @@ declare module "@carrotsearch/foamtree" {
        *   { label: "" }, { label: "" }
        * ]});
        */
-      onRedraw: (incremental: boolean) => any
+      onRedraw: (incremental: boolean) => any;
 
       /**
        * Invoked after the view has been reset by a user interaction.
        * @see FoamTree.reset()
        */
-      onViewReset: () => any
+      onViewReset: () => any;
     }
 
     /**
@@ -153,12 +155,12 @@ declare module "@carrotsearch/foamtree" {
         /**
          * Reference to the data object which is subject to selection state change.
          */
-        group: D,
+        group: D;
         /**
          * true if the group has just been selected, false otherwise
          */
-        selected: boolean
-      }) => any
+        selected: boolean;
+      }) => any;
 
       /**
        * Called once after the selection has changed. The callback receives one parameter: an object containing the groups property with an array of references to the data objects representing the groups that are currently selected.
@@ -167,9 +169,7 @@ declare module "@carrotsearch/foamtree" {
        *
        * The listener will not be invoked for API-initiated state changes, only for user interactions. In the context of the callback, this points to the involved instance of FoamTree.
        */
-      onGroupSelectionChanged: (info: {
-        groups: D[]
-      }) => any
+      onGroupSelectionChanged: (info: { groups: D[] }) => any;
 
       /**
        * Called during group exposure changes.
@@ -178,16 +178,16 @@ declare module "@carrotsearch/foamtree" {
         /**
          * Reference to the data object which is subject to exposure state change.
          */
-        group: D,
+        group: D;
         /**
          * true if the group has just been exposed, false otherwise
          */
-        exposed: boolean,
+        exposed: boolean;
         /**
          * true if the exposure change is a side effect of some other user interaction, such as view reset.
          */
-        indirect: boolean
-      }) => any
+        indirect: boolean;
+      }) => any;
 
       /**
        * Called once after the exposure has changed.
@@ -207,12 +207,12 @@ declare module "@carrotsearch/foamtree" {
         /**
          * an array of references to the data objects representing the groups that are currently exposed
          */
-        groups: D[],
+        groups: D[];
         /**
          * true if the exposure change is a side effect of some other user interaction, such as view reset.
          */
-        indirect: boolean
-      }) => any
+        indirect: boolean;
+      }) => any;
 
       /**
        * Called during group opening state changes.
@@ -221,16 +221,16 @@ declare module "@carrotsearch/foamtree" {
         /**
          * Reference to the data object which is subject to opening state change.
          */
-        group: D,
+        group: D;
         /**
          * true if the group has just been opened, false otherwise
          */
-        open: boolean,
+        open: boolean;
         /**
          * true if the state change is a side effect of some other user interaction, such as group exposure change or view reset.
          */
-        indirect: boolean
-      }) => any
+        indirect: boolean;
+      }) => any;
 
       /**
        * Called once after some groups have been opened or closed.
@@ -243,12 +243,12 @@ declare module "@carrotsearch/foamtree" {
         /**
          * an array of references to the data objects representing the groups that are currently open
          */
-        groups: D[],
+        groups: D[];
         /**
          * true if the state change is a side effect of some other user interaction, such as group exposure change or view reset.
          */
-        indirect: boolean
-      }) => any
+        indirect: boolean;
+      }) => any;
     }
 
     /**
@@ -282,7 +282,7 @@ declare module "@carrotsearch/foamtree" {
        *   }
        * });
        */
-      onGroupClick: (event: LowLevelEvent<D>) => any
+      onGroupClick: (event: LowLevelEvent<D>) => any;
       /**
        * Called after a double click (or double tap gesture) was detected on a group.
        * The callback will be invoked with one parameter – the event details object.
@@ -291,7 +291,7 @@ declare module "@carrotsearch/foamtree" {
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        */
-      onGroupDoubleClick: (event: LowLevelEvent<D>) => any
+      onGroupDoubleClick: (event: LowLevelEvent<D>) => any;
       /**
        * Called after a click-and-hold (or tap-and-hold gesture) was detected on a group.
        * The callback will be invoked with one parameter – the event details object.
@@ -300,13 +300,13 @@ declare module "@carrotsearch/foamtree" {
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        */
-      onGroupHold: (event: LowLevelEvent<D>) => any
+      onGroupHold: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the mouse pointer enters the area covered by a group or leaves the visualization area completely. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action, which is highlighting of the hovered-on group.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        */
-      onGroupHover: (event: LowLevelEvent<D>) => any
+      onGroupHover: (event: LowLevelEvent<D>) => any;
       /**
        * Called when the mouse pointer moves over the area of some group. The provided callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group and screen- and visualization-relative coordinates of the mouse pointer.
        *
@@ -315,82 +315,86 @@ declare module "@carrotsearch/foamtree" {
        * You can use this event in combination with groupContentDecorator to make the custom-drawn elements of each group interactive. See the Interactive custom content demo for some example implementation.
        * @param event
        */
-      onGroupMouseMove: (event: LowLevelEvent<D>) => any
+      onGroupMouseMove: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the mouse wheel is rotated over a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseWheel: (event: LowLevelEvent<D>) => any
+      onGroupMouseWheel: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the mouse pointer is pressed. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseDown: (event: LowLevelEvent<D>) => any
+      onGroupMouseDown: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the mouse pointer is released. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseUp: (event: LowLevelEvent<D>) => any
+      onGroupMouseUp: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the user starts dragging a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseDragStart: (event: LowLevelEvent<D>) => any
+      onGroupMouseDragStart: (event: LowLevelEvent<D>) => any;
       /**
        * Called when the user is dragging a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseDrag: (event: LowLevelEvent<D>) => any
+      onGroupMouseDrag: (event: LowLevelEvent<D>) => any;
       /**
        * Called when group dragging is complete. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupMouseDragEnd: (event: LowLevelEvent<D>) => any
+      onGroupMouseDragEnd: (event: LowLevelEvent<D>) => any;
       /**
        * Called after the user starts touch-based zooming over a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        */
-      onGroupTransformStart: (event: LowLevelEvent<D>) => any
+      onGroupTransformStart: (event: LowLevelEvent<D>) => any;
       /**
        * Called when the user is performing touch-based zooming over a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupTransform: (event: LowLevelEvent<D>) => any
+      onGroupTransform: (event: LowLevelEvent<D>) => any;
       /**
        * Called when the user has completed touch-based zooming over a group. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onGroupTransformEnd: (event: LowLevelEvent<D>) => any
+      onGroupTransformEnd: (event: LowLevelEvent<D>) => any;
       /**
        * Called when the user pressed a key. The callback will be invoked with one parameter – the event details object. You can use that object to get more information about the affected group. You can also use it to prevent the default action.
        *
        * In the context of the callback, this points to the involved instance of FoamTree.
        * @param event
        */
-      onKeyUp: (event: LowLevelEvent<D>) => any
+      onKeyUp: (event: LowLevelEvent<D>) => any;
     }
 
-
     type LowLevelEventType = keyof LowLevelEvents;
-    type LowLevelEventValue<E extends LowLevelEventType, D extends DataObject> = LowLevelEvents<D>[E];
-    type LowLevelEventListener<E extends LowLevelEventType, D extends DataObject> = (value: LowLevelEventValue<E, D>) => any;
+    type LowLevelEventValue<
+      E extends LowLevelEventType,
+      D extends DataObject,
+    > = LowLevelEvents<D>[E];
+    type LowLevelEventListener<E extends LowLevelEventType, D extends DataObject> = (
+      value: LowLevelEventValue<E, D>
+    ) => any;
 
     interface LowLevelEvent<D extends DataObject> {
       /**
@@ -400,28 +404,28 @@ declare module "@carrotsearch/foamtree" {
       /**
        * a reference to the data object corresponding to the group over which the event was triggered
        */
-      group: D
+      group: D;
       /**
        * an alias to the group property
        */
-      topmostClosedGroup: D
+      topmostClosedGroup: D;
       /**
        * a reference to the data object corresponding to the closest open parent of the group over which the event was triggered
        */
-      bottommostOpenGroup: D
+      bottommostOpenGroup: D;
 
       /**
        * coordinates of the point over which the event was triggered.
        * The coordinates are relative to the visualization container element.
        * Use those coordinates to, for example, show a popup dialog near the mouse pointer.
        */
-      x: number
+      x: number;
       /**
        * coordinates of the point over which the event was triggered.
        * The coordinates are relative to the visualization container element.
        * Use those coordinates to, for example, show a popup dialog near the mouse pointer.
        */
-      y: number
+      y: number;
 
       /**
        * Since 3.4.4 coordinates of the point over which the event was triggered, relative to the visualization area.
@@ -429,59 +433,59 @@ declare module "@carrotsearch/foamtree" {
        * independent of zoom, pan and expose transformations.
        * You can use these coordinates to make custom content interactive.
        */
-      xAbsolute: number
+      xAbsolute: number;
       /**
        * Since 3.4.4 coordinates of the point over which the event was triggered, relative to the visualization area.
        * These coordinates are in the same space as the one used to draw content in the groupContentDecorator and are
        * independent of zoom, pan and expose transformations.
        * You can use these coordinates to make custom content interactive.
        */
-      yAbsolute: number
+      yAbsolute: number;
 
       /**
        * true if the event was triggered by the right mouse button or a two-finger gesture on touch devices.
        */
-      secondary: boolean
+      secondary: boolean;
 
       /**
        * the number of touches involved in the gesture.
        * On non-touch devices, always equal to 1.
        */
-      touches: number
+      touches: number;
       /**
        * the scale factor associated with the event. Meaningful only for the onGroupTransform and onGroupTransformEnd events, for other events the scale is 1.
        */
-      scale: number
+      scale: number;
       /**
        * The direction in which the mouse wheel was rotated. Positive values mean the upwards rotation, negative values mean downwards rotation. Meaningful only for the onGroupMouseWheel event, equal to 0 for other events.
        */
-      delta: number
+      delta: number;
 
       /**
        * true if the Ctrl key was pressed during the event
        */
-      ctrlKey: boolean
+      ctrlKey: boolean;
       /**
        * true if the Alt key was pressed during the event
        */
-      altKey: boolean
+      altKey: boolean;
       /**
        * true if the Meta key was pressed during the event
        */
-      metaKey: boolean
+      metaKey: boolean;
       /**
        * true if the Shift key was pressed during the event
        */
-      shiftKey: boolean
+      shiftKey: boolean;
 
       /**
        * a function that can be called to prevent the default FoamTree action, such as group selection on mouse click, associated with the event.
        */
-      preventDefault: () => any
+      preventDefault: () => any;
       /**
        * a function that can be called to prevent the default browser's action, such as page scrolling on mouse wheel, associated with the original event.
        */
-      preventOriginalEventDefault: () => any
+      preventOriginalEventDefault: () => any;
 
       /**
        * a function that can be called to allow the default browser's action associated with the original event.
@@ -489,22 +493,22 @@ declare module "@carrotsearch/foamtree" {
        * it possible to use them for visualization interactions.
        * You can restore the default browser's actions by calling this method as shown in the scrollable content example.
        */
-      allowOriginalEventDefault: () => any
+      allowOriginalEventDefault: () => any;
     }
 
     interface LowLevelEvents<D extends DataObject = DataObject> {
-      click: LowLevelEvent<D>
-      doubleclick: LowLevelEvent<D>
-      hold: LowLevelEvent<D>
-      mousedown: LowLevelEvent<D>
-      mousewheel: LowLevelEvent<D>
-      hover: LowLevelEvent<D>
-      dragstart: LowLevelEvent<D>
-      drag: LowLevelEvent<D>
-      dragend: LowLevelEvent<D>
-      transformstart: LowLevelEvent<D>
-      transform: LowLevelEvent<D>
-      transformend: LowLevelEvent<D>
+      click: LowLevelEvent<D>;
+      doubleclick: LowLevelEvent<D>;
+      hold: LowLevelEvent<D>;
+      mousedown: LowLevelEvent<D>;
+      mousewheel: LowLevelEvent<D>;
+      hover: LowLevelEvent<D>;
+      dragstart: LowLevelEvent<D>;
+      drag: LowLevelEvent<D>;
+      dragend: LowLevelEvent<D>;
+      transformstart: LowLevelEvent<D>;
+      transform: LowLevelEvent<D>;
+      transformend: LowLevelEvent<D>;
     }
   }
 }

@@ -8,7 +8,6 @@ import { formatDate } from '@angular/common';
 export class AuthorshipDateFormatPipe implements PipeTransform {
   private locale = inject(LOCALE_ID);
 
-
   transform(dateTime: string) {
     if (!dateTime) return;
     try {

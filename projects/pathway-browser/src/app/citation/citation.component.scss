@@ -5,25 +5,29 @@
   justify-content: space-between;
   align-items: center;
   height: 50px;
-  background: var(--primary-container);;
+  background: var(--primary-container);
 
   .close-button {
     margin-right: 15px;
     color: var(--primary);
 
-    @include mat.icon-button-overrides((
-      focus-state-layer-opacity: 0
-    ));
+    @include mat.icon-button-overrides(
+      (
+        focus-state-layer-opacity: 0,
+      )
+    );
   }
 }
 
 .dialog-container {
-  @include mat.dialog-overrides((
-    subhead-color: var(--primary),
-  ));
+  @include mat.dialog-overrides(
+    (
+      subhead-color: var(--primary),
+    )
+  );
 
   .mat-mdc-dialog-actions {
-    gap: 20px
+    gap: 20px;
   }
 }
 

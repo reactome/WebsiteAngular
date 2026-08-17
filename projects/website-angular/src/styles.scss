@@ -1,13 +1,13 @@
-@use "@angular/material" as mat;
-@use "ngx-reactome-style/theme-colors" as colors;
-@use "ngx-reactome-style/index" as ngx-reactome-style;
-@use "ngx-reactome-style/variables" as variablesq;
+@use '@angular/material' as mat;
+@use 'ngx-reactome-style/theme-colors' as colors;
+@use 'ngx-reactome-style/index' as ngx-reactome-style;
+@use 'ngx-reactome-style/variables' as variablesq;
 
 @include ngx-reactome-style.theme();
 
 html {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -67,7 +67,10 @@ h1 {
   color: var(--on-surface);
   text-decoration: none;
   text-align: center;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
 
   &:hover,
   &:focus-visible {

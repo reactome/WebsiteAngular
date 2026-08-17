@@ -65,7 +65,9 @@ test.describe('Content pages render backend data', () => {
   test('table of contents lists pathways', async ({ page }) => {
     test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/content/toc');
-    await expect(page.getByText(/Metabolism|Signal Transduction|Immune System/).first()).toBeVisible({
+    await expect(
+      page.getByText(/Metabolism|Signal Transduction|Immune System/).first()
+    ).toBeVisible({
       timeout: LOAD,
     });
   });
@@ -142,12 +144,10 @@ test.describe('In-page table of contents', () => {
         () =>
           page.evaluate(() =>
             Math.abs(
-              document
-                .getElementById('Gene_Set.2FMutation_Analysis')!
-                .getBoundingClientRect().top,
-            ),
+              document.getElementById('Gene_Set.2FMutation_Analysis')!.getBoundingClientRect().top
+            )
           ),
-        { timeout: 15_000 },
+        { timeout: 15_000 }
       )
       .toBeLessThan(150);
   });

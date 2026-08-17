@@ -2,7 +2,11 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angula
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import { ContentDataService, DoiPathway, SimplePerson } from '../../../services/content-data.service';
+import {
+  ContentDataService,
+  DoiPathway,
+  SimplePerson,
+} from '../../../services/content-data.service';
 
 type SortKey = 'displayName' | 'doi' | 'releaseDate' | 'species';
 type SortDir = 'asc' | 'desc';
@@ -13,7 +17,7 @@ const PAGE_SIZE = 25;
   selector: 'app-doi',
   imports: [PageLayoutComponent],
   templateUrl: './doi.component.html',
-  styleUrl: './doi.component.scss'
+  styleUrl: './doi.component.scss',
 })
 export class DoiComponent implements OnInit, OnDestroy {
   private contentDataService = inject(ContentDataService);
@@ -38,13 +42,11 @@ export class DoiComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   ngOnInit() {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.applyFilter();
-    });
+    this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.applyFilter();
+      });
 
     this.loadData();
   }
@@ -68,7 +70,7 @@ export class DoiComponent implements OnInit, OnDestroy {
         this.error = true;
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
@@ -93,17 +95,18 @@ export class DoiComponent implements OnInit, OnDestroy {
     let results = this.allPathways;
 
     if (this.statusFilter) {
-      results = results.filter(p => p.releaseStatus === this.statusFilter);
+      results = results.filter((p) => p.releaseStatus === this.statusFilter);
     }
 
     if (q) {
-      results = results.filter(p =>
-        p.displayName.toLowerCase().includes(q) ||
-        p.species?.toLowerCase().includes(q) ||
-        p.doi?.toLowerCase().includes(q) ||
-        this.personsMatch(p.authors, q) ||
-        this.personsMatch(p.reviewers, q) ||
-        this.personsMatch(p.editors, q)
+      results = results.filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(q) ||
+          p.species?.toLowerCase().includes(q) ||
+          p.doi?.toLowerCase().includes(q) ||
+          this.personsMatch(p.authors, q) ||
+          this.personsMatch(p.reviewers, q) ||
+          this.personsMatch(p.editors, q)
       );
     }
     this.filteredPathways = this.sortList(results);
@@ -112,10 +115,11 @@ export class DoiComponent implements OnInit, OnDestroy {
   }
 
   private personsMatch(persons: SimplePerson[], q: string): boolean {
-    return persons?.some(p =>
-      p.displayName?.toLowerCase().includes(q) ||
-      p.surname?.toLowerCase().includes(q) ||
-      p.firstname?.toLowerCase().includes(q)
+    return persons?.some(
+      (p) =>
+        p.displayName?.toLowerCase().includes(q) ||
+        p.surname?.toLowerCase().includes(q) ||
+        p.firstname?.toLowerCase().includes(q)
     );
   }
 
@@ -169,7 +173,7 @@ export class DoiComponent implements OnInit, OnDestroy {
 
   personNames(persons: SimplePerson[]): string {
     if (!persons?.length) return '';
-    return persons.map(p => p.displayName).join(', ');
+    return persons.map((p) => p.displayName).join(', ');
   }
 
   personUrl(person: SimplePerson): string {
@@ -185,10 +189,10 @@ export class DoiComponent implements OnInit, OnDestroy {
   }
 
   get newCount(): number {
-    return this.allPathways.filter(p => p.releaseStatus === 'NEW').length;
+    return this.allPathways.filter((p) => p.releaseStatus === 'NEW').length;
   }
 
   get updatedCount(): number {
-    return this.allPathways.filter(p => p.releaseStatus === 'UPDATED').length;
+    return this.allPathways.filter((p) => p.releaseStatus === 'UPDATED').length;
   }
 }

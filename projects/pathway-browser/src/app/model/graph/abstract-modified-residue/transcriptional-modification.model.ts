@@ -1,5 +1,3 @@
-import {AbstractModifiedResidue} from "./abstract-modified-residue.model";
+import { AbstractModifiedResidue } from './abstract-modified-residue.model';
 
-export interface TranscriptionalModification extends AbstractModifiedResidue {
-
-}
+export interface TranscriptionalModification extends AbstractModifiedResidue {}

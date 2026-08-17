@@ -44,7 +44,7 @@ export class SiteSearchService {
           score: r.score,
         }));
         return of(hits);
-      }),
+      })
     );
   }
 
@@ -75,9 +75,7 @@ export class SiteSearchService {
       },
       error: () => {
         // Resolve with an empty index so subscribers don't hang on failure.
-        this.index$.next(
-          new MiniSearch<SiteSearchIndexItem>({ fields: ['title', 'body'] }),
-        );
+        this.index$.next(new MiniSearch<SiteSearchIndexItem>({ fields: ['title', 'body'] }));
       },
     });
   }

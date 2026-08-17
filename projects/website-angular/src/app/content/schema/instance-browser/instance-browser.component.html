@@ -10,7 +10,7 @@
   </div>
 } @else {
   <div class="instance-header">
-      <h2>
+    <h2>
       <a class="schema-link" [routerLink]="'/dataSchema/' + schemaClass">{{ schemaClass }}</a>
       <span class="dbid">{{ dbId }}</span>
     </h2>
@@ -65,12 +65,12 @@
               </td>
               <td class="attr-value">
                 @for (obj of group.objects; track obj.dbId; let last = $last) {
-                  <a
-                    class="instance-link"
-                    href="#"
-                    (click)="onLinkClick(obj.dbId, $event)"
-                  >[{{ obj.schemaClass }}:{{ obj.stId || obj.dbId }}] {{ obj.displayName }}</a>
-                  @if (!last) { <br /> }
+                  <a class="instance-link" href="#" (click)="onLinkClick(obj.dbId, $event)"
+                    >[{{ obj.schemaClass }}:{{ obj.stId || obj.dbId }}] {{ obj.displayName }}</a
+                  >
+                  @if (!last) {
+                    <br />
+                  }
                 }
               </td>
             </tr>

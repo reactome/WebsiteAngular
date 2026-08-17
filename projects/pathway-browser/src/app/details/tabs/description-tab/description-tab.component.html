@@ -10,26 +10,21 @@
   </div>
 </ng-template>
 
-
 <div id="details" #details>
   <div class="content">
     <!-- Header -->
     <div class="header">
       <div class="label">
-        <mat-icon
-          class="custom-icon"
-          [matTooltip]="symbol().tooltip"
-          [svgIcon]="symbol().name">
-        </mat-icon>
+        <mat-icon class="custom-icon" [matTooltip]="symbol().tooltip" [svgIcon]="symbol().name"> </mat-icon>
         <span class="name">
-            {{ name() }}
+          {{ name() }}
           @if (isReferenceSummary()) {
             · <i>summary</i>
             <mat-slide-toggle class="disease" [(ngModel)]="state.summariseDisease">
               Include disease data
             </mat-slide-toggle>
           }
-          </span>
+        </span>
       </div>
       <div class="details-button">
         <a mat-button [href]="`${CONTENT_DETAIL_PATH}/${obj().stId}`" target="_blank">
@@ -49,9 +44,13 @@
           </div>
         </div>
         @if (!element.manual) {
-          <cr-controller-tree [type]="element.key" [data]="obj()[element.key]"
-                              [depthControl]="element.hasDepthControl ?? false" [scope]="element.scope || 'entity'"
-                              [disableNavigation]="element.disableNavigation?.() ?? false"/>
+          <cr-controller-tree
+            [type]="element.key"
+            [data]="obj()[element.key]"
+            [depthControl]="element.hasDepthControl ?? false"
+            [scope]="element.scope || 'entity'"
+            [disableNavigation]="element.disableNavigation?.() ?? false"
+          />
         } @else if (element.template) {
           <ng-container *ngTemplateOutlet="element.template!()"></ng-container>
         }
@@ -61,11 +60,14 @@
   <div class="toc">
     @for (element of elements; track element) {
       @if (isTOCIncluded(element.key)) {
-        <a class="toc-item"
-           [class.selected]="selectedKey() == element.key"
-           [routerLink]="[]"
-           [fragment]="element.key" [queryParamsHandling]="'preserve'"
-           (click)="selectItem(element.key)">
+        <a
+          class="toc-item"
+          [class.selected]="selectedKey() == element.key"
+          [routerLink]="[]"
+          [fragment]="element.key"
+          [queryParamsHandling]="'preserve'"
+          (click)="selectItem(element.key)"
+        >
           {{ element.label }}
         </a>
       }
@@ -75,18 +77,22 @@
 
 <ng-template #overviewTemplate>
   <!-- Overview -->
-  <div class="overview" #overview [class.update-layout]="hasIllustration()"
-       [style.--icon-height.px]="overview?.clientHeight">
+  <div
+    class="overview"
+    #overview
+    [class.update-layout]="hasIllustration()"
+    [style.--icon-height.px]="overview?.clientHeight"
+  >
     <cr-description-overview [obj]="obj()" [showSpecies]="true"></cr-description-overview>
     @if (!icon.isLoading() && icon.value() && currentIcon()) {
       <div class="icon-container">
-        <cr-icon [iconSVG]="icon.value()!" [icon]="currentIcon()!"/>
+        <cr-icon [iconSVG]="icon.value()!" [icon]="currentIcon()!" />
       </div>
     }
     @for (f of figures(); track f.url) {
       @let expanded = figure.expanded() === f;
       <div class="icon-container figure" (click)="figure.toggle(f)" [class.expanded]="expanded">
-        <img class="icon" [src]="environment.host + f.url" [alt]="f.displayName">
+        <img class="icon" [src]="environment.host + f.url" [alt]="f.displayName" />
       </div>
     }
   </div>
@@ -95,7 +101,12 @@
     <div class="row summation">
       <div class="label-container">Figure</div>
       <div class="composition-container flex-grow">
-        <img class="icon figure expanded" [src]="environment.host + f.url" [alt]="f.displayName" (click)="figure.toggle(f)">
+        <img
+          class="icon figure expanded"
+          [src]="environment.host + f.url"
+          [alt]="f.displayName"
+          (click)="figure.toggle(f)"
+        />
       </div>
     </div>
   }
@@ -108,7 +119,7 @@
           <!--Display summation refs if is available-->
           @if (summation.literatureReference && summation.literatureReference.length > 0) {
             <div class="summation-refs-container">
-              <cr-refs-tree [referenceHolder]=summation></cr-refs-tree>
+              <cr-refs-tree [referenceHolder]="summation"></cr-refs-tree>
             </div>
           }
         }
@@ -124,36 +135,34 @@
 
 <!-- xRefs -->
 <ng-template #crossReferencesTemplate>
-  <cr-cross-references [crossRefs]=crossReference()></cr-cross-references>
+  <cr-cross-references [crossRefs]="crossReference()"></cr-cross-references>
 </ng-template>
 
 <!-- rhea structure -->
 <ng-template #rheaTemplate>
-  <cr-rhea [crossRefs]=crossReference()></cr-rhea>
+  <cr-rhea [crossRefs]="crossReference()"></cr-rhea>
 </ng-template>
 
 <!-- Cell markers -->
 <ng-template #markerTemplate>
   <div class="element-container">
-    <cr-cell-marker
-      [proteinMarkers]="proteinMarkers()"
-      [rnaMarkers]="rnaMarkers()"
-      [markerRefs]="markerReference()"/>
+    <cr-cell-marker [proteinMarkers]="proteinMarkers()" [rnaMarkers]="rnaMarkers()" [markerRefs]="markerReference()" />
   </div>
 </ng-template>
 
-
 <!-- External Reference -->
 <ng-template #referenceTemplate>
-  <cr-external-reference [referenceEntity]=referenceEntity() [xRefs]="crossReference()"></cr-external-reference>
+  <cr-external-reference [referenceEntity]="referenceEntity()" [xRefs]="crossReference()"></cr-external-reference>
 </ng-template>
-
 
 <!-- Modifications-->
 <ng-template #modificationsTemplate>
   <div class="element-container">
-    <cr-molecular-process [entries]="modifications()" [catalystActivityReference]="catalystRef()"
-                          [regulationRefs]="regulationRefs()"></cr-molecular-process>
+    <cr-molecular-process
+      [entries]="modifications()"
+      [catalystActivityReference]="catalystRef()"
+      [regulationRefs]="regulationRefs()"
+    ></cr-molecular-process>
   </div>
 </ng-template>
 
@@ -167,10 +176,13 @@
           <ul class="facet-options">
             @for (cat of otherFormsCategories(); track cat.key) {
               <li>
-                <button type="button" class="facet-option"
-                        [class.active]="selectedOtherFormsCategory() === cat.key"
-                        [disabled]="cat.count === 0 && selectedOtherFormsCategory() !== cat.key"
-                        (click)="selectedOtherFormsCategory.set(cat.key)">
+                <button
+                  type="button"
+                  class="facet-option"
+                  [class.active]="selectedOtherFormsCategory() === cat.key"
+                  [disabled]="cat.count === 0 && selectedOtherFormsCategory() !== cat.key"
+                  (click)="selectedOtherFormsCategory.set(cat.key)"
+                >
                   <span class="facet-option-label">{{ cat.label }}</span>
                   <span class="facet-option-count">{{ cat.count }}</span>
                 </button>
@@ -185,10 +197,13 @@
           <ul class="facet-options">
             @for (comp of otherFormsCompartmentFacets(); track comp.key) {
               <li>
-                <button type="button" class="facet-option"
-                        [class.active]="selectedOtherFormsCompartment() === comp.key"
-                        [disabled]="comp.count === 0 && selectedOtherFormsCompartment() !== comp.key"
-                        (click)="selectedOtherFormsCompartment.set(comp.key)">
+                <button
+                  type="button"
+                  class="facet-option"
+                  [class.active]="selectedOtherFormsCompartment() === comp.key"
+                  [disabled]="comp.count === 0 && selectedOtherFormsCompartment() !== comp.key"
+                  (click)="selectedOtherFormsCompartment.set(comp.key)"
+                >
                   <span class="facet-option-label">{{ comp.label }}</span>
                   <span class="facet-option-count">{{ comp.count }}</span>
                 </button>
@@ -203,10 +218,13 @@
           <ul class="facet-options">
             @for (d of otherFormsDiseaseFacets(); track d.key) {
               <li>
-                <button type="button" class="facet-option"
-                        [class.active]="selectedOtherFormsDisease() === d.key"
-                        [disabled]="d.count === 0 && selectedOtherFormsDisease() !== d.key"
-                        (click)="selectedOtherFormsDisease.set(d.key)">
+                <button
+                  type="button"
+                  class="facet-option"
+                  [class.active]="selectedOtherFormsDisease() === d.key"
+                  [disabled]="d.count === 0 && selectedOtherFormsDisease() !== d.key"
+                  (click)="selectedOtherFormsDisease.set(d.key)"
+                >
                   <span class="facet-option-label">{{ d.label }}</span>
                   <span class="facet-option-count">{{ d.count }}</span>
                 </button>
@@ -244,7 +262,7 @@
 <!-- Inferences(Inferred To)-->
 <ng-template #inferencesTemplate>
   <div class="inferences element-container columns">
-    @for (item of inferences()! | keyvalue | sortByText : 'key'; track item.key) {
+    @for (item of inferences()! | keyvalue | sortByText: 'key'; track item.key) {
       <div class="row padding">
         <div class="label-container">{{ item.key }}</div>
         <div class="composition-container">
@@ -264,33 +282,47 @@
 <!-- Catalyst Activity-->
 <ng-template #catalystActivityTemplate>
   <div class="element-container">
-    <cr-molecular-process [entries]="catalystActivity()" [catalystActivityReference]="catalystRef()"
-                          [regulationRefs]="regulationRefs()"></cr-molecular-process>
+    <cr-molecular-process
+      [entries]="catalystActivity()"
+      [catalystActivityReference]="catalystRef()"
+      [regulationRefs]="regulationRefs()"
+    ></cr-molecular-process>
   </div>
 </ng-template>
 
 <ng-template #catalystActivitiesTemplate>
   <div class="element-container">
-    <cr-molecular-process [entries]="catalystActivities()" [catalystActivityReference]="catalystRef()"
-                          [regulationRefs]="regulationRefs()" perspective="entity"></cr-molecular-process>
+    <cr-molecular-process
+      [entries]="catalystActivities()"
+      [catalystActivityReference]="catalystRef()"
+      [regulationRefs]="regulationRefs()"
+      perspective="entity"
+    ></cr-molecular-process>
   </div>
 </ng-template>
 
 <!-- Regulation-->
 <ng-template #regulationTemplate>
   <div class="element-container">
-    <cr-molecular-process [entries]="regulations()" [catalystActivityReference]="catalystRef()"
-                          [regulationRefs]="regulationRefs()" perspective="event"></cr-molecular-process>
+    <cr-molecular-process
+      [entries]="regulations()"
+      [catalystActivityReference]="catalystRef()"
+      [regulationRefs]="regulationRefs()"
+      perspective="event"
+    ></cr-molecular-process>
   </div>
 </ng-template>
 
 <ng-template #regulatesTemplate>
   <div class="element-container">
-    <cr-molecular-process [entries]="regulates()" [catalystActivityReference]="catalystRef()"
-                          [regulationRefs]="regulationRefs()" perspective="entity"></cr-molecular-process>
+    <cr-molecular-process
+      [entries]="regulates()"
+      [catalystActivityReference]="catalystRef()"
+      [regulationRefs]="regulationRefs()"
+      perspective="entity"
+    ></cr-molecular-process>
   </div>
 </ng-template>
-
 
 <!-- Literature References-->
 <ng-template #literatureRefsTemplate>
@@ -300,7 +332,7 @@
         <div class="label-container">{{ group.key }}</div>
         <div class="composition-container">
           @for (ref of group.elements; track ref.dbId) {
-            <cr-publication [publication]=ref [showYear]="true"></cr-publication>
+            <cr-publication [publication]="ref" [showYear]="true"></cr-publication>
           }
         </div>
       </div>
@@ -317,9 +349,11 @@
           @for (ie of item.data; track $index) {
             <div class="authorship-item">
               @for (author of ie.author; let i = $index; track $index) {
-                <a [href]="`${CONTENT_SCHEMA}/Person/instance/${author.dbId}`"
-                   target="_blank"
-                   [ngClass]="{'margin-right': !author.orcidId}">
+                <a
+                  [href]="`${CONTENT_SCHEMA}/Person/instance/${author.dbId}`"
+                  target="_blank"
+                  [ngClass]="{ 'margin-right': !author.orcidId }"
+                >
                   {{ author.firstname }} {{ author.surname }}
                 </a>
 
@@ -359,4 +393,3 @@
     <cr-reaction-diagram [stId]="obj().stId" />
   </div>
 </ng-template>
-

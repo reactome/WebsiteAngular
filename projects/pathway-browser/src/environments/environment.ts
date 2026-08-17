@@ -15,20 +15,22 @@ export const IS_CURATOR = SITE_VARIANT === 'curator';
 // host for testing purposes.
 const host: string = IS_CURATOR
   ? 'https://newcurator.reactome.org'
-  : typeof window !== 'undefined' ? window.location.origin : 'https://dev.reactome.org';
+  : typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://dev.reactome.org';
 
 export const environment = {
   production: false,
   host,
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
-  gtagId: "G-96F1EYHQR3",
+  s3: 'https://download.reactome.org',
+  gsaServer: 'dev',
+  gtagId: 'G-96F1EYHQR3',
   // The curator database isn't released/versioned the way the public site's
   // is -- data/database/version has nothing meaningful to return there (see
   // general.service.ts) -- so don't route diagram downloads through the
   // version-keyed S3 path for curator.
   preferS3: !IS_CURATOR,
-}
+};
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served
 // by the Reactome backend, not by the Angular app. Unlike /ContentService they

@@ -2,15 +2,19 @@
   <article class="collaboration-page">
     <header class="page-header">
       <span class="category-badge">Community</span>
-      <h1>Resources Guide </h1>
+      <h1>Resources Guide</h1>
       <p class="description">
-        We actively seek collaborations with other data resources and users to improve data integration, share efforts, and make our data maximally useful to biologists and bioinformaticians. Here are a list of software tools, websites, databases and research projects that: i) support the use of Reactome data, ii) have integrated Reactome data, or iii) provide data linkages to the Reactome website. 
+        We actively seek collaborations with other data resources and users to improve data integration, share efforts,
+        and make our data maximally useful to biologists and bioinformaticians. Here are a list of software tools,
+        websites, databases and research projects that: i) support the use of Reactome data, ii) have integrated
+        Reactome data, or iii) provide data linkages to the Reactome website.
       </p>
     </header>
 
     <div class="intro-text">
       <p>
-        If we are missing your website, database, software tool and project, please contact our <a href="mailto:help@reactome.org">help desk</a>.
+        If we are missing your website, database, software tool and project, please contact our
+        <a href="mailto:help@reactome.org">help desk</a>.
       </p>
     </div>
 
@@ -30,7 +34,8 @@
 
     @if (!loading && !error) {
       <div class="summary">
-        <span class="summary-count">{{ getNumberOfEntries() }}</span> resources from <span class="summary-count">{{ getKeys(entries).length }}</span> categories
+        <span class="summary-count">{{ getNumberOfEntries() }}</span> resources from
+        <span class="summary-count">{{ getKeys(entries).length }}</span> categories
       </div>
 
       @for (category of getKeys(entries); track category) {
@@ -51,9 +56,7 @@
                 @for (entry of entries[category]; track entry.number) {
                   <tr>
                     <td class="pathway-name">
-                      
                       <span class="entry-name">{{ entry.name }}</span>
-                      
                     </td>
                     <td class="entry-description">{{ entry.description }}</td>
                   </tr>

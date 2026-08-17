@@ -1,28 +1,30 @@
 import { Injectable, ResourceRef, inject } from '@angular/core';
-import {HttpClient} from "@angular/common/http";
-import type {TissueExperiment} from "./tissue-experiment.model";
-import {Observable} from "rxjs";
-import {environment} from "../../../../../environments/environment";
-import {rxResource} from "@angular/core/rxjs-interop";
+import { HttpClient } from '@angular/common/http';
+import type { TissueExperiment } from './tissue-experiment.model';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
+import { rxResource } from '@angular/core/rxjs-interop';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TissueExperimentService {
   private http = inject(HttpClient);
 
-
   summaries = rxResource({
     params: () => ({}),
-    stream: () => this.getExperimentsSummary()
-  })
+    stream: () => this.getExperimentsSummary(),
+  });
 
   getExperimentsSummary(): Observable<TissueExperiment.Summaries> {
     return this.http.get<TissueExperiment.Summaries>(`/ExperimentDigester/experiments/summaries`);
   }
 
-  getSampleURL(id: number, {omitNulls, columns}: { omitNulls: boolean, columns: number[] } ): string {
-    return `https://127.0.0.1/ExperimentDigester/experiments/${id}/sample?omitNulls=${omitNulls}&${columns.map(c => `included=${c}`).join('&')}`;
+  getSampleURL(
+    id: number,
+    { omitNulls, columns }: { omitNulls: boolean; columns: number[] }
+  ): string {
+    return `https://127.0.0.1/ExperimentDigester/experiments/${id}/sample?omitNulls=${omitNulls}&${columns.map((c) => `included=${c}`).join('&')}`;
   }
 
   /**
@@ -31,13 +33,17 @@ export class TissueExperimentService {
    * @param omitNulls
    * @param columns
    */
-  getSample(id: number, {omitNulls, columns}: { omitNulls: boolean, columns: number[] }): Observable<string> {
+  getSample(
+    id: number,
+    { omitNulls, columns }: { omitNulls: boolean; columns: number[] }
+  ): Observable<string> {
     const params: TissueExperiment.SampleParams = {
       omitNulls,
-      included: columns
+      included: columns,
     };
     return this.http.get(`${environment.host}/experiments/${id}/sample`, {
-      responseType: "text", params
+      responseType: 'text',
+      params,
     });
   }
 }

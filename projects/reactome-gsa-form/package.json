@@ -6,7 +6,6 @@
     "@angular/core": "^19.0.0",
     "@angular/forms": "^19.0.0",
     "@angular/material": "^19.0.0",
-
     "reactome-table": "^19.0.0",
     "@ngneat/until-destroy": "^10.0.0",
     "@ngrx/component": "^19.0.0",

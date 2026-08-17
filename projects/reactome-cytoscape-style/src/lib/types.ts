@@ -7,22 +7,16 @@ export type PathwayEntityDefinition = [PathwayEntity, 'Pathway', ...string[]];
 export type DiseaseInteractorEntity = 'Interactor';
 export type Node = PhysicalEntity | PathwayEntity | DiseaseInteractorEntity;
 
-export type NodeDefinition = PathwayEntityDefinition | PhysicalEntityDefinition ;
+export type NodeDefinition = PathwayEntityDefinition | PhysicalEntityDefinition;
 
 export type CompartmentDefinition = ['Compartment', ...string[]];
 export type ModificationDefinition = ['Modification', ...string[]];
 
-
 export type Reaction = 'association' | 'dissociation' | 'transition' | 'uncertain' | 'omitted';
 export type ReactionDefinition = [Reaction, 'reaction', ...string[]];
 
-
 export type IncomingEdge =
-  'consumption'
-  | 'catalysis'
-  | 'positive-regulation'
-  | 'negative-regulation'
-  | 'set-to-member';
+  'consumption' | 'catalysis' | 'positive-regulation' | 'negative-regulation' | 'set-to-member';
 export type OutgoingEdge = 'production';
 export type EdgeType = IncomingEdge | OutgoingEdge;
 export type IncomingEdgeDefinition = [IncomingEdge, 'incoming', ...string[]];

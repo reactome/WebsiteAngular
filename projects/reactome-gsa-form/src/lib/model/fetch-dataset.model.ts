@@ -5,13 +5,11 @@ export interface Dataset {
   get name(): string;
 }
 
-
 export interface ImportParameter {
   description: string;
   display_name: string;
   name: string;
   required: boolean;
   type: string;
-  value: any
+  value: any;
 }
-

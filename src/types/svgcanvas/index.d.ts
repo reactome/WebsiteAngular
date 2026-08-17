@@ -1,4 +1,4 @@
-declare module 'svgcanvas'{
+declare module 'svgcanvas' {
   export interface Options {
     /**
      * falsy values get converted to 500
@@ -29,7 +29,7 @@ declare module 'svgcanvas'{
     getSvg: () => SVGSVGElement;
   }
   export interface Element extends HTMLCanvasElement {
-    ctx : Context;
+    ctx: Context;
     wrapper: HTMLDivElement;
     svg: SVGSVGElement;
   }

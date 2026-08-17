@@ -20,7 +20,9 @@ describe('linkPath', () => {
 
 describe('linkQueryParams', () => {
   it('parses a single param', () => {
-    expect(linkQueryParams('/PathwayBrowser?analysisTab=species')).toEqual({ analysisTab: 'species' });
+    expect(linkQueryParams('/PathwayBrowser?analysisTab=species')).toEqual({
+      analysisTab: 'species',
+    });
   });
 
   it('parses multiple params', () => {

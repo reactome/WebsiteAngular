@@ -13,7 +13,10 @@ describe('addAnchorIds', () => {
   it('matches MediaWiki "." encoded anchors', () => {
     for (const [heading, fragment] of [
       ['Gene Set/Mutation Analysis', 'Gene_Set.2FMutation_Analysis'],
-      ['Use the Reactome Functional Interaction (FI) Network', 'Use_the_Reactome_Functional_Interaction_.28FI.29_Network'],
+      [
+        'Use the Reactome Functional Interaction (FI) Network',
+        'Use_the_Reactome_Functional_Interaction_.28FI.29_Network',
+      ],
     ] as const) {
       const html = `<a href="#${fragment}">x</a><h3>${heading}</h3>`;
       expect(addAnchorIds(html)).toContain(`<h3 id="${fragment}">${heading}</h3>`);

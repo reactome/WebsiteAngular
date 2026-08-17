@@ -59,12 +59,15 @@ table.spreadsheet {
   letter-spacing: normal;
   white-space: nowrap;
 
-  th.rows, th.columns {
+  th.rows,
+  th.columns {
     position: sticky;
     white-space: nowrap;
   }
 
-  td.cell, th.rows, th.columns {
+  td.cell,
+  th.rows,
+  th.columns {
     border-color: var(--outline-variant);
     border-style: solid;
     height: var(--row-height);
@@ -88,7 +91,8 @@ table.spreadsheet {
     height: var(--row-height);
     border-width: 0 1px 1px 1px;
 
-    &[y='0'] { // Top left corner
+    &[y='0'] {
+      // Top left corner
       z-index: 6;
       top: 0;
       border-width: 1px 1px 1px 1px;
@@ -104,7 +108,6 @@ table.spreadsheet {
     position: relative;
   }
 }
-
 
 .no-padding {
   padding: 0px;
@@ -135,7 +138,6 @@ table.spreadsheet {
 }
 
 .sticky-column {
-
   height: 0;
   position: sticky;
   display: block;
@@ -176,18 +178,19 @@ table.spreadsheet {
   border: 2px solid var(--primary) !important;
 }
 
-
 .bin-button:focus-visible {
   outline: none !important;
 }
 
 .bin-button {
-  @include mat.icon-button-overrides((
-    icon-size: 16px,
-    state-layer-size: calc(var(--row-height) - 4px),
-    touch-target-display: none,
-    icon-color: currentColor,
-  ));
+  @include mat.icon-button-overrides(
+    (
+      icon-size: 16px,
+      state-layer-size: calc(var(--row-height) - 4px),
+      touch-target-display: none,
+      icon-color: currentColor,
+    )
+  );
 
   .mat-icon {
     width: 16px;
@@ -226,8 +229,9 @@ table.spreadsheet {
   //top: 0!important;
 }
 
-.selected:after, .flying-rename:after {
-  content: " ";
+.selected:after,
+.flying-rename:after {
+  content: ' ';
   z-index: 10;
   display: block;
   position: absolute;
@@ -243,7 +247,7 @@ table.spreadsheet {
 .flying-rename {
   position: absolute;
   visibility: hidden;
-  font-family: "Roboto Mono", monospace;
+  font-family: 'Roboto Mono', monospace;
   font-size: 14px;
   line-height: 18px;
   border: none;
@@ -252,11 +256,12 @@ table.spreadsheet {
   letter-spacing: normal;
 
   &.visible {
-    box-shadow: 0 0 0 1px var(--primary) inset, 0 0 0 1px var(--primary);
+    box-shadow:
+      0 0 0 1px var(--primary) inset,
+      0 0 0 1px var(--primary);
     visibility: visible;
   }
 }
-
 
 :focus-visible {
   outline: -webkit-focus-ring-color auto 0px !important;
@@ -275,13 +280,15 @@ table.spreadsheet {
   pointer-events: none;
   transition: opacity 200ms ease-in-out;
 
-  &.top, &.bottom {
+  &.top,
+  &.bottom {
     height: 10px;
     left: 0;
     right: var(--sticky-offset-right, 0);
   }
 
-  &.left, &.right {
+  &.left,
+  &.right {
     width: 10px;
     top: 0;
     bottom: var(--sticky-offset-bottom, 0);
@@ -310,5 +317,4 @@ table.spreadsheet {
   &.visible {
     opacity: 1;
   }
-
 }

@@ -8,7 +8,7 @@ This Angular library embeds UI to query Reactome GSA APIs and create reactome an
 ## Compatibility
 
 | reactome-gsa-form version | angular version |
-|---------------------------|-----------------|
+| ------------------------- | --------------- |
 | 19.X.X                    | 19.X.X          |
 
 ## Install
@@ -21,9 +21,9 @@ npm install --save reactome-gsa-form reactome-table
 
 ### styles.scss
 
- ```scss
-@use "reactome-table";
-@use "reactome-gsa-form";
+```scss
+@use 'reactome-table';
+@use 'reactome-gsa-form';
 
 @include reactome-table.configure-table-globals; // Important as reactome-gsa-form relies on reactome-table styles
 @include reactome-gsa-form.configure-gsa-form();
@@ -39,49 +39,47 @@ body {
 #### Eager loading
 
 ```ts
-import {NgModule} from '@angular/core';
-import {GsaFormModule} from "reactome-table";
-
+import { NgModule } from '@angular/core';
+import { GsaFormModule } from 'reactome-table';
 
 @NgModule({
   imports: [
     GsaFormModule.forRoot({
       apiRoot: environment.ApiRoot, // Needs proxy to access API
       apiSecretRoot: environment.ApiSecretRoot, // Needs proxy to access API
-      server: environment.server as "dev" | "production",
+      server: environment.server as 'dev' | 'production',
     }),
-  ]
+  ],
 })
-export class AppModule {
-}
-
+export class AppModule {}
 ```
 
 #### Lazy loading
 
 ```ts
-import {RouterModule, Routes} from "@angular/router";
-import {NgModule} from "@angular/core";
-import {environment} from "../environments/environment";
+import { RouterModule, Routes } from '@angular/router';
+import { NgModule } from '@angular/core';
+import { environment } from '../environments/environment';
 
-export const routes: Routes = [{
-  path: 'form',
-  loadChildren: () => import('reactome-table').then(m => m.GsaFormModule.forChild(
-    {
-      apiRoot: environment.ApiRoot, // Needs proxy to access API
-      apiSecretRoot: environment.ApiSecretRoot, // Needs proxy to access API
-      server: environment.server as "dev" | "production",
-    }
-  )),
-},
-]
+export const routes: Routes = [
+  {
+    path: 'form',
+    loadChildren: () =>
+      import('reactome-table').then((m) =>
+        m.GsaFormModule.forChild({
+          apiRoot: environment.ApiRoot, // Needs proxy to access API
+          apiSecretRoot: environment.ApiSecretRoot, // Needs proxy to access API
+          server: environment.server as 'dev' | 'production',
+        })
+      ),
+  },
+];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class RoutingModule {
-}
+export class RoutingModule {}
 ```
 
 ### Main component
@@ -103,4 +101,3 @@ const tourService: TourUtilsService;
 
 tourService.start()
 ```
-

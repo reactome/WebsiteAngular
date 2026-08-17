@@ -1,46 +1,52 @@
-import {Event} from "../model/graph/event/event.model";
-import {DatabaseObject} from "../model/graph/database-object.model";
-import {Pathway} from "../model/graph/event/pathway.model";
-import {ReactionLikeEvent} from "../model/graph/event/reaction-like-event.model";
-import {PhysicalEntity} from "../model/graph/physical-entity/physical-entity.model";
-import {TopLevelPathway} from "../model/graph/event/top-level-pathway.model";
-import {CellLineagePath} from "../model/graph/event/cell-lineage-path.model";
-import {EntityWithAccessionedSequence} from "../model/graph/physical-entity/entity-with-accessioned-sequence.model";
-import {LiteratureReference} from "../model/graph/publication/literature-reference.model";
-import {SchemaClasses} from "../constants/constants";
-import {CatalystActivity} from "../model/graph/catalyst-activity.model";
-import {Regulation} from "../model/graph/Regulation/regulation.model";
-import type {Relationship} from "../model/graph/relationship.model";
-import {ReferenceGroup} from "../model/graph/reference-entity/reference-group.model";
-import {ReplacedResidue} from "../model/graph/abstract-modified-residue/replaced-residue.model";
-import {FragmentModification} from "../model/graph/abstract-modified-residue/fragment-modification.model";
-import {ReferenceMolecule} from "../model/graph/reference-entity/reference-molecule.model";
-import {Publication} from "../model/graph/publication/publication.model";
-import {Book} from "../model/graph/publication/book.model";
-import {ReferenceEntity} from "../model/graph/reference-entity/reference-entity.model";
-import {Molecule} from "./participant.service";
-import {SimpleEntity} from "../model/graph/physical-entity/simple-entity.model";
-import {SummaryEntity} from "../model/graph/physical-entity/summary-entity.model";
-import {ReferenceSequence} from "../model/graph/reference-entity/reference-sequence.model";
-import {ReferenceGeneProduct} from "../model/graph/reference-entity/reference-gene-product.model";
-import {WritableSignal} from "@angular/core";
+import { Event } from '../model/graph/event/event.model';
+import { DatabaseObject } from '../model/graph/database-object.model';
+import { Pathway } from '../model/graph/event/pathway.model';
+import { ReactionLikeEvent } from '../model/graph/event/reaction-like-event.model';
+import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
+import { TopLevelPathway } from '../model/graph/event/top-level-pathway.model';
+import { CellLineagePath } from '../model/graph/event/cell-lineage-path.model';
+import { EntityWithAccessionedSequence } from '../model/graph/physical-entity/entity-with-accessioned-sequence.model';
+import { LiteratureReference } from '../model/graph/publication/literature-reference.model';
+import { SchemaClasses } from '../constants/constants';
+import { CatalystActivity } from '../model/graph/catalyst-activity.model';
+import { Regulation } from '../model/graph/Regulation/regulation.model';
+import type { Relationship } from '../model/graph/relationship.model';
+import { ReferenceGroup } from '../model/graph/reference-entity/reference-group.model';
+import { ReplacedResidue } from '../model/graph/abstract-modified-residue/replaced-residue.model';
+import { FragmentModification } from '../model/graph/abstract-modified-residue/fragment-modification.model';
+import { ReferenceMolecule } from '../model/graph/reference-entity/reference-molecule.model';
+import { Publication } from '../model/graph/publication/publication.model';
+import { Book } from '../model/graph/publication/book.model';
+import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
+import { Molecule } from './participant.service';
+import { SimpleEntity } from '../model/graph/physical-entity/simple-entity.model';
+import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
+import { ReferenceSequence } from '../model/graph/reference-entity/reference-sequence.model';
+import { ReferenceGeneProduct } from '../model/graph/reference-entity/reference-gene-product.model';
+import { WritableSignal } from '@angular/core';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
 
 export function isDefined<T>(value: T | undefined | null): value is T {
-  return value !== undefined && value !== null
+  return value !== undefined && value !== null;
 }
 
 export function isDefinedAndNotEmpty<T>(value: T[] | undefined | null): value is T[] {
-  return value !== undefined && value !== null && value.length > 0
+  return value !== undefined && value !== null && value.length > 0;
 }
 
-export function groupAndSortBy<E, K>(elements: E[], getKey: (element: E) => K, orderBy: (key1: K, key2: K) => number): {
-  key: K,
-  elements: E[]
+export function groupAndSortBy<E, K>(
+  elements: E[],
+  getKey: (element: E) => K,
+  orderBy: (key1: K, key2: K) => number
+): {
+  key: K;
+  elements: E[];
 }[] {
   const grouped = new Map<K, E[]>();
-  elements.forEach(element => grouped.set(getKey(element), [...(grouped.get(getKey(element)) || []), element]))
-  return [...grouped.keys()].sort(orderBy).map(key => ({key, elements: grouped.get(key)!}));
+  elements.forEach((element) =>
+    grouped.set(getKey(element), [...(grouped.get(getKey(element)) || []), element])
+  );
+  return [...grouped.keys()].sort(orderBy).map((key) => ({ key, elements: grouped.get(key)! }));
 }
 
 export function sortByYearDescending(refs: Publication[]) {
@@ -55,7 +61,7 @@ export function sortByYearDescending(refs: Publication[]) {
   });
 
   // Return the sorted items along with the others (without year) at the end
-  const withoutYear = refs.filter(ref => !isRefOrBook(ref));
+  const withoutYear = refs.filter((ref) => !isRefOrBook(ref));
   return [...withYear, ...withoutYear];
 }
 
@@ -80,8 +86,24 @@ export function isPathway(obj: DatabaseObject): obj is Pathway | TopLevelPathway
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj);
 }
 
-const physicalEntityClasses: Set<string> = new Set([SchemaClasses.PE, SchemaClasses.COMPLEX, SchemaClasses.DRUG, SchemaClasses.CHEMICAL_DRUG, SchemaClasses.PROTEIN_DRUG, SchemaClasses.RNA_DRUG, SchemaClasses.ENTITY_SET, SchemaClasses.DEFINED_SET, SchemaClasses.CANDIDATE_SET, SchemaClasses.GENOME_ENCODED_ENTITY,
-  SchemaClasses.EWAS, SchemaClasses.OTHER_ENTITY, SchemaClasses.POLYMER, SchemaClasses.SIMPLE_ENTITY, SchemaClasses.CELL, SchemaClasses.SUMMARY_ENTITY]);
+const physicalEntityClasses: Set<string> = new Set([
+  SchemaClasses.PE,
+  SchemaClasses.COMPLEX,
+  SchemaClasses.DRUG,
+  SchemaClasses.CHEMICAL_DRUG,
+  SchemaClasses.PROTEIN_DRUG,
+  SchemaClasses.RNA_DRUG,
+  SchemaClasses.ENTITY_SET,
+  SchemaClasses.DEFINED_SET,
+  SchemaClasses.CANDIDATE_SET,
+  SchemaClasses.GENOME_ENCODED_ENTITY,
+  SchemaClasses.EWAS,
+  SchemaClasses.OTHER_ENTITY,
+  SchemaClasses.POLYMER,
+  SchemaClasses.SIMPLE_ENTITY,
+  SchemaClasses.CELL,
+  SchemaClasses.SUMMARY_ENTITY,
+]);
 
 export function isPhysicalEntity(obj: DatabaseObject): obj is PhysicalEntity {
   return physicalEntityClasses.has(obj.schemaClass);
@@ -109,7 +131,7 @@ export function isRefEntity(obj: DatabaseObject): obj is ReferenceEntity {
 }
 
 export function isReferenceEntityStId(id: string | undefined | null): boolean {
-  return id?.includes(':') || false
+  return id?.includes(':') || false;
 }
 export function isEWAS(obj: DatabaseObject): obj is EntityWithAccessionedSequence {
   return obj.schemaClass === SchemaClasses.EWAS;
@@ -125,7 +147,7 @@ const reactionLikeEventClasses: Set<string> = new Set([
   SchemaClasses.POLYMERISATION,
   SchemaClasses.DEPOLYMERISATION,
   SchemaClasses.FAILED_REACTION,
-  SchemaClasses.CELL_DEVELOPMENT_STEP
+  SchemaClasses.CELL_DEVELOPMENT_STEP,
 ]);
 
 export function isRLE(obj: DatabaseObject): obj is ReactionLikeEvent {
@@ -142,47 +164,68 @@ const moleculeClasses: Set<string> = new Set([
   SchemaClasses.REFERENCE_DNA_SEQUENCE,
   SchemaClasses.SIMPLE_ENTITY,
   SchemaClasses.REFERENCE_MOLECULE,
-  SchemaClasses.REFERENCE_THERAPEUTIC
-])
+  SchemaClasses.REFERENCE_THERAPEUTIC,
+]);
 
 export function isMolecule(obj: DatabaseObject): obj is Molecule {
   return moleculeClasses.has(obj.schemaClass);
 }
 
-
 export function isPathwayWithDiagram(obj: DatabaseObject): obj is Pathway {
   return isPathway(obj) && obj.hasDiagram;
 }
 
-const regulationClasses: Set<string> = new Set([SchemaClasses.REGULATION, SchemaClasses.NEGATIVE_REGULATION, SchemaClasses.NEGATIVE_GENE_EXPRESSION_REGULATION, SchemaClasses.POSITIVE_REGULATION, SchemaClasses.POSITIVE_GENE_EXPRESSION_REGULATION, SchemaClasses.REQUIREMENT]);
+const regulationClasses: Set<string> = new Set([
+  SchemaClasses.REGULATION,
+  SchemaClasses.NEGATIVE_REGULATION,
+  SchemaClasses.NEGATIVE_GENE_EXPRESSION_REGULATION,
+  SchemaClasses.POSITIVE_REGULATION,
+  SchemaClasses.POSITIVE_GENE_EXPRESSION_REGULATION,
+  SchemaClasses.REQUIREMENT,
+]);
 
-export function isRegulation(obj: Regulation | CatalystActivity | HasModifiedResidue): obj is Regulation {
+export function isRegulation(
+  obj: Regulation | CatalystActivity | HasModifiedResidue
+): obj is Regulation {
   return 'schemaClass' in obj && regulationClasses.has(obj.schemaClass);
 }
 
-export function isCatalystActivity(obj: Regulation | CatalystActivity | HasModifiedResidue): obj is CatalystActivity {
+export function isCatalystActivity(
+  obj: Regulation | CatalystActivity | HasModifiedResidue
+): obj is CatalystActivity {
   return 'schemaClass' in obj && obj.schemaClass === SchemaClasses.CATALYST_ACTIVITY;
 }
 
-export function isHasModifiedResidue(obj: Regulation | CatalystActivity | HasModifiedResidue): obj is HasModifiedResidue {
+export function isHasModifiedResidue(
+  obj: Regulation | CatalystActivity | HasModifiedResidue
+): obj is HasModifiedResidue {
   return 'type' in obj && obj.type === 'modifiedResidue';
 }
 
-
 // Checks whether a given property exists in an object
-export function hasProperty<K extends keyof DatabaseObject>(obj: DatabaseObject, property: K): obj is DatabaseObject & Record<K, unknown> {
+export function hasProperty<K extends keyof DatabaseObject>(
+  obj: DatabaseObject,
+  property: K
+): obj is DatabaseObject & Record<K, unknown> {
   return property in obj;
 }
 
-const fragmentModificationClasses: Set<string> = new Set([SchemaClasses.FRAGMENT_MODIFICATION, SchemaClasses.FRAGMENT_DELETION_MODIFICATION, SchemaClasses.FRAGMENT_INSERTION_MODIFICATION, SchemaClasses.FRAGMENT_REPLACED_MODIFICATION]);
+const fragmentModificationClasses: Set<string> = new Set([
+  SchemaClasses.FRAGMENT_MODIFICATION,
+  SchemaClasses.FRAGMENT_DELETION_MODIFICATION,
+  SchemaClasses.FRAGMENT_INSERTION_MODIFICATION,
+  SchemaClasses.FRAGMENT_REPLACED_MODIFICATION,
+]);
 
 export function isFragmentModification(obj: DatabaseObject): obj is FragmentModification {
   return fragmentModificationClasses.has(obj.schemaClass);
 }
 
-
 export function isReplacedResidue(obj: DatabaseObject): obj is ReplacedResidue {
-  return obj.schemaClass === SchemaClasses.REPLACED_RESIDUE || obj.schemaClass === SchemaClasses.NONSENSE_MUTATION;
+  return (
+    obj.schemaClass === SchemaClasses.REPLACED_RESIDUE ||
+    obj.schemaClass === SchemaClasses.NONSENSE_MUTATION
+  );
 }
 
 export function isReferenceGroup(obj: DatabaseObject): obj is ReferenceGroup {
@@ -190,23 +233,37 @@ export function isReferenceGroup(obj: DatabaseObject): obj is ReferenceGroup {
 }
 
 export function isReferenceMolecule(obj: DatabaseObject): obj is ReferenceMolecule {
-  return obj.schemaClass === SchemaClasses.REFERENCE_MOLECULE
+  return obj.schemaClass === SchemaClasses.REFERENCE_MOLECULE;
 }
 
-const referenceSequenceClasses: Set<string> = new Set([SchemaClasses.REFERENCE_SEQUENCE, SchemaClasses.REFERENCE_DNA_SEQUENCE, SchemaClasses.REFERENCE_DNA_SEQUENCE, SchemaClasses.REFERENCE_GENE_PRODUCT, SchemaClasses.REFERENCE_ISOFORM]);
+const referenceSequenceClasses: Set<string> = new Set([
+  SchemaClasses.REFERENCE_SEQUENCE,
+  SchemaClasses.REFERENCE_DNA_SEQUENCE,
+  SchemaClasses.REFERENCE_DNA_SEQUENCE,
+  SchemaClasses.REFERENCE_GENE_PRODUCT,
+  SchemaClasses.REFERENCE_ISOFORM,
+]);
 
-export function isReferenceSequence(obj: DatabaseObject | ReferenceEntity): obj is ReferenceSequence {
+export function isReferenceSequence(
+  obj: DatabaseObject | ReferenceEntity
+): obj is ReferenceSequence {
   return referenceSequenceClasses.has(obj.schemaClass);
 }
 
-const referenceGeneProductClasses: Set<string> = new Set([SchemaClasses.REFERENCE_GENE_PRODUCT, SchemaClasses.REFERENCE_ISOFORM]);
+const referenceGeneProductClasses: Set<string> = new Set([
+  SchemaClasses.REFERENCE_GENE_PRODUCT,
+  SchemaClasses.REFERENCE_ISOFORM,
+]);
 
 export function isReferenceGeneProduct(obj: DatabaseObject): obj is ReferenceGeneProduct {
   return referenceGeneProductClasses.has(obj.schemaClass);
 }
 
 export function isRefOrBook(publication: Publication): publication is LiteratureReference | Book {
-  return publication.schemaClass === SchemaClasses.LITERATURE_REFERENCE || publication.schemaClass === SchemaClasses.BOOK
+  return (
+    publication.schemaClass === SchemaClasses.LITERATURE_REFERENCE ||
+    publication.schemaClass === SchemaClasses.BOOK
+  );
 }
 
 export function isSelectableObject(obj: DatabaseObject): obj is Event | PhysicalEntity {
@@ -220,40 +277,52 @@ export function isSelectableObject(obj: DatabaseObject): obj is Event | Physical
  *  If it does, it returns the value of the property. Otherwise, it returns undefined.
  */
 
-export function getProperty<T extends DatabaseObject, K extends keyof T>(obj: T, key: K): T[K] | undefined {
+export function getProperty<T extends DatabaseObject, K extends keyof T>(
+  obj: T,
+  key: K
+): T[K] | undefined {
   return key in obj ? obj[key] : undefined;
 }
-
 
 /**
  * If any value among the representative sample has an exponent part above +3 or bellow -3, then it should be scientificFormat.
  *
  * @param representativeSample e.g. [firstValue, lastValue, min, max]
  */
-export const shouldBeScientificFormat = (representativeSample: number[]) => representativeSample.some(shouldBeScientificFormatValue)
+export const shouldBeScientificFormat = (representativeSample: number[]) =>
+  representativeSample.some(shouldBeScientificFormatValue);
 
 /**
  * if value has an exponent part above +3 or bellow -3, then it should be scientificFormat
  * @param value a number
  */
-const shouldBeScientificFormatValue = (value: number) => parseInt(value.toExponential(0).split(/e[+-]/)[1]) > 3;
+const shouldBeScientificFormatValue = (value: number) =>
+  parseInt(value.toExponential(0).split(/e[+-]/)[1]) > 3;
 
-
-export type ArrayStats = { min: number, max: number, average: number, sum: number, multiValued?: boolean };
+export type ArrayStats = {
+  min: number;
+  max: number;
+  average: number;
+  sum: number;
+  multiValued?: boolean;
+};
 
 export function getArrayStats(values: number[]): ArrayStats {
-  if (values === undefined || values.length === 0) return {min: 0, max: 0, average: 0, sum: 0, multiValued: false};
-  const summary: ArrayStats = values.reduce((acc: ArrayStats, value) => {
-    if (value < acc.min) acc.min = value;
-    if (value > acc.max) acc.max = value;
-    acc.sum += value;
-    return acc;
-  }, {min: Number.MAX_VALUE, max: Number.MIN_VALUE, sum: 0, average: 0});
-  summary.average = summary.sum / values.length
-  summary.multiValued = values.length > 1
+  if (values === undefined || values.length === 0)
+    return { min: 0, max: 0, average: 0, sum: 0, multiValued: false };
+  const summary: ArrayStats = values.reduce(
+    (acc: ArrayStats, value) => {
+      if (value < acc.min) acc.min = value;
+      if (value > acc.max) acc.max = value;
+      acc.sum += value;
+      return acc;
+    },
+    { min: Number.MAX_VALUE, max: Number.MIN_VALUE, sum: 0, average: 0 }
+  );
+  summary.average = summary.sum / values.length;
+  summary.multiValued = values.length > 1;
   return summary;
 }
-
 
 /**
  * J01866EMBL:J01866 5.8S rRNA ➡️ J01866
@@ -273,7 +342,6 @@ export function extractIdAfterColon(value: string): string {
   return spaceIndex !== -1 ? afterColon.substring(0, spaceIndex) : afterColon;
 }
 
-
 /**
  * ripasudil  [Guide to Pharmacology:10423] ➡️ 10423
  * rosiglitazone [Guide to Pharmacology:1056] ➡️ 1056
@@ -283,7 +351,6 @@ export function extractIdInBrackets(value: string): string {
   const match = value.match(/\[.*?:([^\]\s]+)\]/);
   return match ? match[1] : '';
 }
-
 
 /**
  * UniProt:P11142 HSPA8 ➡️ (default behavior) HSPA8
@@ -309,7 +376,6 @@ export function average(numbers: number[]): number {
   return numbers.reduce((a, b) => a + b, 0) / numbers.length;
 }
 
-
 // ideas => https://levelup.gitconnected.com/building-a-html-table-of-contents-with-automatic-highlighting-7bf51ec4c972
 export function observeSections(
   elementIds: string[],
@@ -320,13 +386,13 @@ export function observeSections(
   const options = {
     root: null,
     rootMargin: '0px', // no offset
-    threshold: 0,  // trigger as soon as any pixel is visible
+    threshold: 0, // trigger as soon as any pixel is visible
   };
-  const observer = new IntersectionObserver(entries => {
+  const observer = new IntersectionObserver((entries) => {
     if (manualSelection) return;
     // filtering visible elements
     const visibles = entries
-      .filter(e => e.isIntersecting)
+      .filter((e) => e.isIntersecting)
       .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
 
     if (visibles.length > 0) {
@@ -338,7 +404,7 @@ export function observeSections(
   });
 
   queueMicrotask(() => {
-    elementIds.forEach(id => {
+    elementIds.forEach((id) => {
       const section = document.getElementById(id);
       if (section) observer.observe(section);
     });
@@ -353,4 +419,3 @@ export function observeSections(
   // return cleanup function
   return () => observer.disconnect();
 }
-

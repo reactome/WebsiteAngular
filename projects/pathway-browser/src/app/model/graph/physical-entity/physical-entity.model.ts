@@ -1,17 +1,16 @@
-import {DatabaseObject} from "../database-object.model";
-import {InstanceEdit} from "../instance-edit.model";
-import {CatalystActivity} from "../catalyst-activity.model";
-import {CellType} from "../external-ontology/cell-type.model";
-import type {Relationship} from "../relationship.model";
-import {DatabaseIdentifier} from "../database-identifier.model";
-import {Disease} from "../external-ontology/disease.model";
-import {MarkerReference} from "../control-reference/marker-reference.model";
-import {InDepth} from "../in-depth.model";
-import {HasFigure} from "../figure.model";
-
+import { DatabaseObject } from '../database-object.model';
+import { InstanceEdit } from '../instance-edit.model';
+import { CatalystActivity } from '../catalyst-activity.model';
+import { CellType } from '../external-ontology/cell-type.model';
+import type { Relationship } from '../relationship.model';
+import { DatabaseIdentifier } from '../database-identifier.model';
+import { Disease } from '../external-ontology/disease.model';
+import { MarkerReference } from '../control-reference/marker-reference.model';
+import { InDepth } from '../in-depth.model';
+import { HasFigure } from '../figure.model';
 
 export interface PhysicalEntity extends DatabaseObject, InDepth, HasFigure {
-  stId: string
+  stId: string;
   definition: string;
   compartment: Relationship.HasCompartment[];
 
@@ -28,13 +27,9 @@ export interface PhysicalEntity extends DatabaseObject, InDepth, HasFigure {
   disease?: Disease[];
   markingReferences?: MarkerReference[];
 
-
   speciesName: string;
-
 
   //Tree building
   composedOf: Relationship.Has<PhysicalEntity>[];
   type: string;
-
-
 }

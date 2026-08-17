@@ -12,7 +12,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
   standalone: true,
   imports: [CarouselComponent, ButtonComponent, MatIcon, RouterLink],
   templateUrl: './home-help.component.html',
-  styleUrl: './home-help.component.scss'
+  styleUrl: './home-help.component.scss',
 })
 export class HomeHelpComponent implements OnInit {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */

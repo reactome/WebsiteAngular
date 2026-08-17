@@ -56,15 +56,14 @@ export const DataKeys = {
   MARKER_REFERENCE: 'markerReference',
   REPEATED_UNIT: 'repeatedUnits',
   CELL_TYPE: 'cellType',
-  ORGAN:'organ',
-  TISSUE_LAYER:'tissueLayer',
+  ORGAN: 'organ',
+  TISSUE_LAYER: 'tissueLayer',
   IDENTIFIER: 'identifier',
-  NORMAL_PATHWAY: "normalPathway",
-  NORMAL_REACTION: "normalReaction",
-  DISEASE_PATHWAYS: "diseasePathways",
-  DISEASE_REACTIONS: "diseaseReactions"
+  NORMAL_PATHWAY: 'normalPathway',
+  NORMAL_REACTION: 'normalReaction',
+  DISEASE_PATHWAYS: 'diseasePathways',
+  DISEASE_REACTIONS: 'diseaseReactions',
 } as const;
-
 
 // Labels
 export const Labels = {
@@ -107,10 +106,10 @@ export const Labels = {
   CANDIDATES: 'Candidates',
   MARKERS: 'Markers',
   BIOCHEMICAL_REACTION: 'Biochemical Reaction',
-  NORMAL_REACTION: "Normal reaction",
-  NORMAL_PATHWAY: "Normal pathway",
-  DISEASE_PATHWAYS: "Disease variants",
-  DISEASE_REACTIONS: "Disease variants"
+  NORMAL_REACTION: 'Normal reaction',
+  NORMAL_PATHWAY: 'Normal pathway',
+  DISEASE_PATHWAYS: 'Disease variants',
+  DISEASE_REACTIONS: 'Disease variants',
 } as const;
 
 export enum SchemaClasses {
@@ -130,8 +129,6 @@ export enum SchemaClasses {
   POLYMER = 'Polymer',
   SIMPLE_ENTITY = 'SimpleEntity',
   SUMMARY_ENTITY = 'SummaryEntity',
-
-
 
   PATHWAY = 'Pathway',
   TLP = 'TopLevelPathway',
@@ -172,7 +169,7 @@ export enum SchemaClasses {
 
   REFERENCE_ENTITY = 'ReferenceEntity',
   REFERENCE_GROUP = 'ReferenceGroup',
-  REFERENCE_MOLECULE='ReferenceMolecule',
+  REFERENCE_MOLECULE = 'ReferenceMolecule',
   REFERENCE_SEQUENCE = 'ReferenceSequence',
   REFERENCE_RNA_SEQUENCE = 'ReferenceRNASequence',
   REFERENCE_DNA_SEQUENCE = 'ReferenceDNASequence',
@@ -181,9 +178,7 @@ export enum SchemaClasses {
   REFERENCE_THERAPEUTIC = 'ReferenceTherapeutic',
 
   LITERATURE_REFERENCE = 'LiteratureReference',
-  BOOK = 'Book'
-
-
+  BOOK = 'Book',
 }
 
 export enum Type {

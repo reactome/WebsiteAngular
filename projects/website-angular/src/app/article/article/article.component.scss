@@ -46,7 +46,6 @@
 }
 
 .article-body {
-  
 }
 
 .article-image {
@@ -56,14 +55,14 @@
 }
 
 .article-text {
-line-height: 1.6;
+  line-height: 1.6;
   white-space: pre-wrap;
 
   ::ng-deep img {
     max-width: 100%;
     height: auto;
   }
-} 
+}
 
 .error-message,
 .loading-message {

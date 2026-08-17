@@ -1,6 +1,6 @@
 @if (isCurator) {
   <app-tile variant="dark-transparent" class="home-shortcut-tile" id="tools" style="display: block">
-    <app-tile style="background-color: rgba(255, 255, 255, 0.7);">
+    <app-tile style="background-color: rgba(255, 255, 255, 0.7)">
       <div class="home-logo-wrap">
         <img src="assets/logo/logo.png" alt="Reactome Pathway Database" class="home-logo-image light-only" />
       </div>
@@ -14,11 +14,7 @@
     <app-home-why-reactome />
   </app-tile>
 } @else {
-  <app-tile
-    variant="light"
-    class="home-search-tile"
-    style="flex-direction: column !important; gap: 0px"
-  >
+  <app-tile variant="light" class="home-search-tile" style="flex-direction: column !important; gap: 0px">
     <h1 class="home-search-title">Find Reactions, Proteins, and Pathways</h1>
     <app-search-bar />
   </app-tile>
@@ -42,13 +38,8 @@
       </a>
     </app-button>
   </app-tile> -->
-  <app-tile
-    variant="dark"
-    class="home-shortcut-tile"
-    id="tools"
-    style="display: block"
-  >
-    <app-home-shortcuts [dark]="false"/>
+  <app-tile variant="dark" class="home-shortcut-tile" id="tools" style="display: block">
+    <app-home-shortcuts [dark]="false" />
   </app-tile>
 
   <app-tile variant="dark-transparent">

@@ -1,41 +1,40 @@
-import {Event} from "./event.model";
-import {PhysicalEntity} from "../physical-entity/physical-entity.model";
-import type {Relationship} from "../relationship.model";
-import {Anatomy} from "../external-ontology/anatomy.model";
+import { Event } from './event.model';
+import { PhysicalEntity } from '../physical-entity/physical-entity.model';
+import type { Relationship } from '../relationship.model';
+import { Anatomy } from '../external-ontology/anatomy.model';
 
 export interface ReactionLikeEvent extends Event {
   input: PhysicalEntity[];
   output: PhysicalEntity[];
-  category: string
+  category: string;
   reactionType: string;
 
-  composedOf : Relationship.Has<Event>[]
-
+  composedOf: Relationship.Has<Event>[];
 }
 
 export interface BlackBoxEvent extends ReactionLikeEvent {
   templateEvent: Event;
-  schemaClass: 'BlackBoxEvent'
+  schemaClass: 'BlackBoxEvent';
 }
 
 export interface CellDevelopmentStep extends ReactionLikeEvent {
-  tissue: Anatomy
-  schemaClass: 'CellDevelopmentStep'
+  tissue: Anatomy;
+  schemaClass: 'CellDevelopmentStep';
 }
 
 export interface Polymerisation extends ReactionLikeEvent {
-  schemaClass: 'Polymerisation'
+  schemaClass: 'Polymerisation';
 }
 
 export interface Depolymerisation extends ReactionLikeEvent {
-  schemaClass: 'Depolymerisation'
+  schemaClass: 'Depolymerisation';
 }
 
 export interface FailedReaction extends ReactionLikeEvent {
-  schemaClass: 'FailedReaction'
+  schemaClass: 'FailedReaction';
 }
 
 export interface Reaction extends ReactionLikeEvent {
   reverseReaction: Reaction;
-  schemaClass: 'Reaction'
+  schemaClass: 'Reaction';
 }

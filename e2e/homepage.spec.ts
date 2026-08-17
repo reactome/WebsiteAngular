@@ -21,12 +21,19 @@ test.describe('Homepage', () => {
   test('renders all of its sections', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { name: 'Find Reactions, Proteins, and Pathways' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Find Reactions, Proteins, and Pathways' })
+    ).toBeVisible();
     await expect(page.locator('app-search-bar')).toBeVisible();
 
     // These come from separate components; if one throws during render, Angular
     // drops just that subtree and the rest of the page still looks fine.
-    for (const heading of ['Reactome Research Spotlight', 'Why Reactome?', 'Latest News', 'API and Data Access']) {
+    for (const heading of [
+      'Reactome Research Spotlight',
+      'Why Reactome?',
+      'Latest News',
+      'API and Data Access',
+    ]) {
       await expect(page.getByRole('heading', { name: heading })).toBeVisible();
     }
   });
@@ -73,6 +80,8 @@ test.describe('Homepage', () => {
     await expect(page).toHaveURL(/PathwayBrowser/);
     await expect(page).toHaveURL(/analysisTab=qualitative/);
     // The panel should genuinely open, not just put a param in the URL.
-    await expect(page.getByText('Qualitative Entity Enrichment Analysis')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Qualitative Entity Enrichment Analysis')).toBeVisible({
+      timeout: 30_000,
+    });
   });
 });

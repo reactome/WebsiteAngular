@@ -22,11 +22,7 @@
     "src/app/app.elements.ts",
     "projects/*/src/elements.ts"
   ],
-  "project": [
-    "src/**/*.ts",
-    "projects/**/*.ts",
-    "scripts/**/*.mjs"
-  ],
+  "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs"],
   "ignore": [
     "**/*.d.ts",
     "**/__generated__/**",
@@ -34,10 +30,5 @@
     ".claude/**",
     "projects/*/src/types/**"
   ],
-  "ignoreDependencies": [
-    "@angular/localize",
-    "zone.js",
-    "tinacms",
-    "swagger-ui-dist"
-  ]
+  "ignoreDependencies": ["@angular/localize", "zone.js", "tinacms", "swagger-ui-dist"]
 }

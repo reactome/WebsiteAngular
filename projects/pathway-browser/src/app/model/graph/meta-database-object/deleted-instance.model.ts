@@ -1,4 +1,3 @@
-import {MetaDatabaseObject} from "./meta-database-object.model";
+import { MetaDatabaseObject } from './meta-database-object.model';
 
-export interface DeletedInstance extends MetaDatabaseObject {
-}
+export interface DeletedInstance extends MetaDatabaseObject {}

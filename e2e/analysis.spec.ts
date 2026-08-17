@@ -20,7 +20,9 @@ test.describe('Qualitative analysis (reactome-table)', () => {
   test('renders the wizard and the data grid', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=qualitative');
 
-    await expect(page.getByText('Qualitative Entity Enrichment Analysis')).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.getByText('Qualitative Entity Enrichment Analysis')).toBeVisible({
+      timeout: BOOT_TIMEOUT,
+    });
     await expect(page.locator('reactome-table')).toBeVisible({ timeout: BOOT_TIMEOUT });
   });
 
@@ -37,7 +39,9 @@ test.describe('Qualitative analysis (reactome-table)', () => {
 
     await expect(next).toBeEnabled({ timeout: 20_000 });
     // The fetched example is a gene-name list; A2M is its first row.
-    await expect(page.locator('reactome-table').getByText('A2M', { exact: true }).first()).toBeVisible();
+    await expect(
+      page.locator('reactome-table').getByText('A2M', { exact: true }).first()
+    ).toBeVisible();
   });
 
   test('advances to the options step', async ({ page }) => {
@@ -58,7 +62,9 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
   test('loads the analysis methods from GSAServer', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
-    await expect(page.getByText('Step 1: Select one of the available analysis methods')).toBeVisible({
+    await expect(
+      page.getByText('Step 1: Select one of the available analysis methods')
+    ).toBeVisible({
       timeout: BOOT_TIMEOUT,
     });
 
@@ -83,7 +89,9 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
     await expect(continueBtn).toBeEnabled({ timeout: 20_000 });
     await continueBtn.click();
 
-    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible({
+      timeout: 20_000,
+    });
     // Dataset sources are a second backend-backed NgRx feature.
     await expect(page.getByText('Example Dataset')).toBeVisible({ timeout: 20_000 });
   });

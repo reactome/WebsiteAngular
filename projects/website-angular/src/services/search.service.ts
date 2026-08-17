@@ -82,10 +82,7 @@ export class SearchService {
     return this.http.get<SearchResult>(`${this.baseUrl}/query`, { params });
   }
 
-  getFacets(
-    query: string,
-    filters: SearchFilters = {}
-  ): Observable<FacetResponse> {
+  getFacets(query: string, filters: SearchFilters = {}): Observable<FacetResponse> {
     const params = this.buildParams(query, filters);
     return this.http.get<FacetResponse>(`${this.baseUrl}/facet_query`, {
       params,
@@ -97,15 +94,11 @@ export class SearchService {
   }
 
   getSuggestedTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(
-      `${this.baseUrl}/suggest?query=${encodeURIComponent(query)}`
-    );
+    return this.http.get<string[]>(`${this.baseUrl}/suggest?query=${encodeURIComponent(query)}`);
   }
 
   getSpellCheckTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(
-      `${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`
-    );
+    return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
   }
 
   private buildParams(

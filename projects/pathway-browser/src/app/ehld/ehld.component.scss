@@ -91,7 +91,7 @@
     color: var(--on-surface);
 
     &:before {
-      content: "";
+      content: '';
       height: 100%;
       width: 2px;
       background-color: var(--primary);
@@ -106,7 +106,6 @@
       font-weight: 400;
       font-size: 15px;
       padding-top: 5px;
-
     }
 
     .legend-item {
@@ -166,7 +165,6 @@ body.dark :host ::ng-deep {
     //transition: all .9s ease-in-out;
   }
 
-
   .analysis-text {
     alignment-baseline: central;
     text-anchor: middle;
@@ -177,7 +175,6 @@ body.dark :host ::ng-deep {
     paint-order: stroke;
     stroke-linejoin: round;
   }
-
 }
 
 .pointer {

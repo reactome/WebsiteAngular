@@ -1,12 +1,16 @@
-import { Component, EventEmitter, inject, Input, Output, effect, ChangeDetectorRef, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  Output,
+  effect,
+  ChangeDetectorRef,
+  OnInit,
+} from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { NavOptionsService } from '../../services/nav-options.service';
-import {
-  NavLink,
-  NavOption,
-  linkPath,
-  linkQueryParams,
-} from '../../types/link';
+import { NavLink, NavOption, linkPath, linkQueryParams } from '../../types/link';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { ContentService } from '../../services/content.service';
@@ -80,14 +84,9 @@ export class SidebarComponent implements OnInit {
       if (path_segments.length > 0 && path_segments) {
         //If 2nd last item is news or reactome-research-spotlight, load articles as items
         const secondLastSegment =
-          path_segments.length >= 2
-            ? path_segments[path_segments.length - 2]
-            : null;
+          path_segments.length >= 2 ? path_segments[path_segments.length - 2] : null;
         if (secondLastSegment === 'news') {
-          this.updateItemsArticles(
-            'about/news',
-            path_segments[path_segments.length - 1]
-          );
+          this.updateItemsArticles('about/news', path_segments[path_segments.length - 1]);
         } else if (secondLastSegment === 'reactome-research-spotlight') {
           this.updateItemsArticles(
             'content/reactome-research-spotlight',
@@ -141,10 +140,7 @@ export class SidebarComponent implements OnInit {
     for (const [key, navLink] of Object.entries(sectionDropdownLinks)) {
       // Check if the link ends with the segment or if the key matches
       const linkSegments = navLink.link.split('/').filter((s) => s);
-      if (
-        linkSegments[linkSegments.length - 1] === secondSegment ||
-        key === secondSegment
-      ) {
+      if (linkSegments[linkSegments.length - 1] === secondSegment || key === secondSegment) {
         matchedSubSection = navLink;
         matchedSubSectionKey = key;
         break;
@@ -170,9 +166,7 @@ export class SidebarComponent implements OnInit {
       // If we didn't find an active item and there are 3+ segments,
       // check if any of the matched subsection's items are parents of the current route
       if (!this.activeItem && segments.length > 2) {
-        for (const [key, navLink] of Object.entries(
-          matchedSubSection.dropdownLinks
-        )) {
+        for (const [key, navLink] of Object.entries(matchedSubSection.dropdownLinks)) {
           if (navLink.dropdownLinks) {
             // Check if current route is within this item's nested links
             const currentPath = '/' + segments.join('/');
@@ -190,20 +184,17 @@ export class SidebarComponent implements OnInit {
       this.items = sectionDropdownLinks;
       this.activeItem = matchedSubSectionKey || null;
     }
-      this.cdr.markForCheck();
+    this.cdr.markForCheck();
   }
 
   updateItemsArticles(path: string, currentSlug: string) {
     if (path.includes('news')) {
       this.sectionTitle = 'News & Updates';
-      this.sectionLink =
-        this.navOptions()['about']?.dropdownLinks?.['news']?.link || '';
+      this.sectionLink = this.navOptions()['about']?.dropdownLinks?.['news']?.link || '';
     } else {
       this.sectionTitle = 'Reactome Research Spotlights';
       this.sectionLink =
-        this.navOptions()['content']?.dropdownLinks?.[
-          'reactome-research-spotlight'
-        ]?.link || '';
+        this.navOptions()['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '';
     }
 
     this.contentService.getAllArticles(path).subscribe({
@@ -228,7 +219,7 @@ export class SidebarComponent implements OnInit {
         this.items = {};
       },
     });
-      this.cdr.markForCheck();
+    this.cdr.markForCheck();
   }
 
   /**

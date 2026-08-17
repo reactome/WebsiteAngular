@@ -1,6 +1,7 @@
 <div
   [style.--sticky-offset-bottom.px]="scrollDimensions().bottom"
-  [style.--sticky-offset-right.px]="scrollDimensions().right">
+  [style.--sticky-offset-right.px]="scrollDimensions().right"
+>
   @for (side of visibility | keyvalue; track side.key) {
     <div class="shadow" [ngClass]="side.key" [class.visible]="side.value"></div>
   }

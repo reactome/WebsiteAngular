@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 #details-container {
   color: var(--on-surface);
@@ -26,7 +26,6 @@
   padding: 4px 0;
   gap: 8px;
 
-
   .tab-icon {
     width: 20px;
     height: 20px;
@@ -42,13 +41,11 @@
     line-height: 20px;
     text-align: center;
   }
-
 }
 
 :host ::ng-deep .mat-mdc-tab-header {
   padding: 0 20px;
 }
-
 
 .tab-description-container {
   padding: 0 20px;

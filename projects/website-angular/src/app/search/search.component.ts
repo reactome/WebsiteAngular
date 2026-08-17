@@ -136,13 +136,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       let q = params['q'] || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
-        if (
-          pathSegments.length === 2 &&
-          pathSegments[1].path.startsWith('query=')
-        ) {
-          q = decodeURIComponent(
-            pathSegments[1].path.substring('query='.length)
-          );
+        if (pathSegments.length === 2 && pathSegments[1].path.startsWith('query=')) {
+          q = decodeURIComponent(pathSegments[1].path.substring('query='.length));
         }
       }
 
@@ -230,25 +225,22 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const hcaptcha = (window as any).hcaptcha;
     if (!hcaptcha || !this.captchaContainer?.nativeElement) return;
 
-    this.captchaWidgetId = hcaptcha.render(
-      this.captchaContainer.nativeElement,
-      {
-        sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-        theme: 'light',
-        callback: (token: string) => {
-          this.captchaToken = token;
-          this.cdr.markForCheck();
-        },
-        'expired-callback': () => {
-          this.captchaToken = null;
-          this.cdr.markForCheck();
-        },
-        'error-callback': () => {
-          this.captchaToken = null;
-          this.cdr.markForCheck();
-        },
-      }
-    );
+    this.captchaWidgetId = hcaptcha.render(this.captchaContainer.nativeElement, {
+      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
+      theme: 'light',
+      callback: (token: string) => {
+        this.captchaToken = token;
+        this.cdr.markForCheck();
+      },
+      'expired-callback': () => {
+        this.captchaToken = null;
+        this.cdr.markForCheck();
+      },
+      'error-callback': () => {
+        this.captchaToken = null;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private resetCaptcha(): void {
@@ -272,9 +264,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
-      pages: this.siteSearch
-        .search(this.query)
-        .pipe(catchError(() => of([] as SitePageHit[]))),
+      pages: this.siteSearch.search(this.query).pipe(catchError(() => of([] as SitePageHit[]))),
     }).subscribe({
       next: ({ results, facets, pages }) => {
         // If either API call failed, show error
@@ -290,9 +280,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           // pagination chops each `group.entries` down to ~30, so we
           // must NOT recompute this from entries.length later.
           const biologyTotal = res.numberOfMatches ?? 0;
-          const hasNonDeleted = res.results?.some((group) =>
-            group.entries.some((e) => !e.deleted)
-          );
+          const hasNonDeleted = res.results?.some((group) => group.entries.some((e) => !e.deleted));
           res.results =
             res.results
               ?.map((group) => {
@@ -345,21 +333,24 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           // Append site-search hits as a "Pages" group at the bottom so
           // documentation/news/blog hits show up alongside biology entities.
           if (visiblePages.length) {
-            const pageEntries = visiblePages.map((p) => ({
-              dbId: -p.id,
-              id: p.url,
-              stId: p.url,
-              name: p.title,
-              referenceName: p.title,
-              exactType: 'Pages',
-              type: 'Pages',
-              species: [],
-              compartmentNames: [],
-              summation: p.excerpt,
-              pageCategory: p.category,
-              pageUrl: p.url,
-              pageExcerpt: p.excerpt,
-            } as unknown as SearchEntry));
+            const pageEntries = visiblePages.map(
+              (p) =>
+                ({
+                  dbId: -p.id,
+                  id: p.url,
+                  stId: p.url,
+                  name: p.title,
+                  referenceName: p.title,
+                  exactType: 'Pages',
+                  type: 'Pages',
+                  species: [],
+                  compartmentNames: [],
+                  summation: p.excerpt,
+                  pageCategory: p.category,
+                  pageUrl: p.url,
+                  pageExcerpt: p.excerpt,
+                }) as unknown as SearchEntry
+            );
             res.results = [
               ...res.results,
               {
@@ -371,8 +362,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           }
           // Keep Solr's biology total; add Pages count (when shown); zero
           // out biology when the user selected a Pages-only filter.
-          res.numberOfMatches =
-            (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
+          res.numberOfMatches = (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
@@ -381,8 +371,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
             ),
             0
           );
-          this.hasNoResults =
-            ((results as SearchResult).numberOfMatches || 0) === 0;
+          this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
           this.error = '';
 
           // Reset per-group pagination state
@@ -392,9 +381,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.expandedForms = {};
 
           // If there's a Protein group, fetch ALL protein entries for deduplication
-          const proteinGroup = this.results.results.find(
-            (g) => g.typeName === 'Protein'
-          );
+          const proteinGroup = this.results.results.find((g) => g.typeName === 'Protein');
           if (proteinGroup && proteinGroup.entriesCount > 0) {
             this.fetchAllProteins(proteinGroup.entriesCount);
           } else {
@@ -420,10 +407,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private handleSearchError(err: any): Observable<SearchResult | null> {
     // Check if this is a 404 with "No entries found" message
-    if (
-      err.status === 404 &&
-      err.error?.messages?.[0]?.includes('No entries found')
-    ) {
+    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
       // Return empty results instead of throwing error
       return of({
         results: [],
@@ -534,9 +518,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
-    return this.results.results.flatMap((g) =>
-      this.filterDeletedEntries(g.entries)
-    );
+    return this.results.results.flatMap((g) => this.filterDeletedEntries(g.entries));
   }
 
   toggleFacet(category: string, value: string): void {
@@ -607,9 +589,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return entries;
   }
 
-  private updateQueryParams(
-    params: Record<string, string | string[] | null>
-  ): void {
+  private updateQueryParams(params: Record<string, string | string[] | null>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
@@ -650,16 +630,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.currentMode === 'reference') {
       const id = entry.id || entry.stId;
-      if (entry.exactType === 'Interactor')
-        return '/content/detail/interactor/' + id;
+      if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
       if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
       return '/content/detail/' + id;
     }
     //Remove HTML tags from entry.stId if present
     entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
 
-    if (entry.exactType === 'Interactor')
-      return '/content/detail/interactor/' + entry.stId;
+    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
     if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
     return '/content/detail/' + entry.stId;
   }
@@ -729,10 +707,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       const start = page * this.groupPageSize;
       return this.uniqueProteins.slice(start, start + this.groupPageSize);
     }
-    return (
-      this.groupPageEntries[group.typeName] ||
-      group.entries.slice(0, this.groupPageSize)
-    );
+    return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
   goToGroupPage(group: ResultGroup, page: number): void {
@@ -745,12 +720,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.groupLoading[group.typeName] = true;
     this.searchService
-      .search(
-        this.query,
-        { ...this.filters, types: [group.typeName] },
-        page,
-        this.groupPageSize
-      )
+      .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
       .pipe(catchError(() => of(null)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
@@ -764,10 +734,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
-    return this.buildPageNumbers(
-      this.getGroupPage(group),
-      this.getGroupTotalPages(group)
-    );
+    return this.buildPageNumbers(this.getGroupPage(group), this.getGroupTotalPages(group));
   }
 
   submitContactForm(event: Event): void {

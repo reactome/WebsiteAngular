@@ -1,61 +1,48 @@
 <h1 class="home-help-header">Guides and Support</h1>
 <app-carousel class="home-help-container" [dark]="false">
-  <a class="home-help-link" [routerLink]="navOptions()['documentation']?.dropdownLinks?.['userguide']?.link || '/documentation/userguide'"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a
+    class="home-help-link"
+    [routerLink]="navOptions()['documentation']?.dropdownLinks?.['userguide']?.link || '/documentation/userguide'"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">favorite</mat-icon>
+      User Guide
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">favorite</mat-icon>
-    User Guide
-  </app-button></a>
 
-  <a class="home-help-link" [routerLink]="navOptions()['documentation']?.dropdownLinks?.['developers-zone']?.link || '/documentation/dev'"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a
+    class="home-help-link"
+    [routerLink]="navOptions()['documentation']?.dropdownLinks?.['developers-zone']?.link || '/documentation/dev'"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">code</mat-icon>
+      Dev Zone
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">code</mat-icon>
-    Dev Zone
-  </app-button></a>
 
-  <a class="home-help-link" [routerLink]="navOptions()['documentation']?.dropdownLinks?.['citing-us']?.link || '/documentation/cite'"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a
+    class="home-help-link"
+    [routerLink]="navOptions()['documentation']?.dropdownLinks?.['citing-us']?.link || '/documentation/cite'"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">format_quote</mat-icon>
+      Citing Us
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">format_quote</mat-icon>
-    Citing Us
-  </app-button></a>
 
-  <a class="home-help-link" href="mailto:help@reactome.org"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a class="home-help-link" href="mailto:help@reactome.org"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">email</mat-icon>
+      Contact Us
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">email</mat-icon>
-    Contact Us
-  </app-button></a>
-  <a class="home-help-link" [href]="releaseNotesLink"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a class="home-help-link" [href]="releaseNotesLink"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">update</mat-icon>
+      Release Notes
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">update</mat-icon>
-    Release Notes
-  </app-button></a>
-  <a class="home-help-link" [href]="feedbackLink"><app-button
-    variant="light"
-    size="large"
-    shape="circle"
-    class="home-help-button"
+  <a class="home-help-link" [href]="feedbackLink"
+    ><app-button variant="light" size="large" shape="circle" class="home-help-button">
+      <mat-icon class="home-help-icon">feedback</mat-icon>
+      Feedback
+    </app-button></a
   >
-    <mat-icon class="home-help-icon">feedback</mat-icon>
-    Feedback
-  </app-button></a>
 </app-carousel>
-

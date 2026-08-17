@@ -11,7 +11,7 @@ export const environment = {
   s3: env.s3,
   gsaServer: env.gsaServer,
   gtagId: env.gtagId,
-  preferS3: IS_CURATOR ? false : env.preferS3
+  preferS3: IS_CURATOR ? false : env.preferS3,
 };
 
 // Icon image files live on the Reactome backend and aren't proxied on every

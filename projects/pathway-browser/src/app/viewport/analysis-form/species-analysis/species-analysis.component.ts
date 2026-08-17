@@ -1,19 +1,29 @@
-import { Component, computed, effect, ElementRef, input, output, signal, viewChild, inject } from '@angular/core';
-import {MatStep, MatStepper, MatStepperNext, MatStepperPrevious} from "@angular/material/stepper";
-import {MatButton} from "@angular/material/button";
-import type {DotLottie} from "@lottiefiles/dotlottie-web";
-import {MatIcon} from "@angular/material/icon";
-import {UrlStateService} from "../../../services/url-state.service";
-import {AnalysisService} from "../../../services/analysis.service";
-import {Species} from "../../../model/graph/species.model";
-import {SpeciesService} from "../../../services/species.service";
-import {FormControl} from "@angular/forms";
-import {LottieService} from "../../../services/lottie.service";
-import {MatRipple} from "@angular/material/core";
-import {MatTooltip} from "@angular/material/tooltip";
-import {switchMap, take} from "rxjs";
-import {DarkService} from "../../../services/dark.service";
-import {IconService} from "../../../services/icon.service";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  input,
+  output,
+  signal,
+  viewChild,
+  inject,
+} from '@angular/core';
+import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
+import { MatButton } from '@angular/material/button';
+import type { DotLottie } from '@lottiefiles/dotlottie-web';
+import { MatIcon } from '@angular/material/icon';
+import { UrlStateService } from '../../../services/url-state.service';
+import { AnalysisService } from '../../../services/analysis.service';
+import { Species } from '../../../model/graph/species.model';
+import { SpeciesService } from '../../../services/species.service';
+import { FormControl } from '@angular/forms';
+import { LottieService } from '../../../services/lottie.service';
+import { MatRipple } from '@angular/material/core';
+import { MatTooltip } from '@angular/material/tooltip';
+import { switchMap, take } from 'rxjs';
+import { DarkService } from '../../../services/dark.service';
+import { IconService } from '../../../services/icon.service';
 
 @Component({
   selector: 'cr-species-analysis',
@@ -25,10 +35,10 @@ import {IconService} from "../../../services/icon.service";
     MatStepperPrevious,
     MatRipple,
     MatStepperNext,
-    MatTooltip
+    MatTooltip,
   ],
   templateUrl: './species-analysis.component.html',
-  styleUrl: './species-analysis.component.scss'
+  styleUrl: './species-analysis.component.scss',
 })
 export class SpeciesAnalysisComponent {
   private analysis = inject(AnalysisService);
@@ -38,24 +48,29 @@ export class SpeciesAnalysisComponent {
   private darkService = inject(DarkService);
   private iconService = inject(IconService);
 
-  close = output<{ status: 'finished' | 'premature' }>()
-  status = input.required<'open'| 'closed'>()
+  close = output<{ status: 'finished' | 'premature' }>();
+  status = input.required<'open' | 'closed'>();
 
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie')
+  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
 
-  comparableSpecies = computed(() => (this.speciesService.allShortenSpecies() || []).filter(s => s.taxId !== '9606'));
-  selectedSpecies = signal<Species | null>(null)
-  speciesControl = new FormControl<Species | null>(null, control => control.getRawValue() !== undefined ? null : {invalid: true});
+  comparableSpecies = computed(() =>
+    (this.speciesService.allShortenSpecies() || []).filter((s) => s.taxId !== '9606')
+  );
+  selectedSpecies = signal<Species | null>(null);
+  speciesControl = new FormControl<Species | null>(null, (control) =>
+    control.getRawValue() !== undefined ? null : { invalid: true }
+  );
 
   toggle(species: Species): void {
-    this.selectedSpecies.update(s => s === species ? null : species)
+    this.selectedSpecies.update((s) => (s === species ? null : species));
   }
 
-  theme = computed(() => this.darkService.isDark() ? 'dark' : 'light')
-
+  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   constructor() {
-    this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
+    this.availableSpeciesIcons = new Set(
+      this.iconService.getSpeciesIcons().map((icon) => icon.name)
+    );
     effect(() => this.speciesControl.setValue(this.selectedSpecies()));
     effect(() => {
       // Kept synchronous so a rejection cannot vanish. Signals read before
@@ -66,25 +81,28 @@ export class SpeciesAnalysisComponent {
         this.lottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
-            freezeOnOffscreen: true
+            freezeOnOffscreen: true,
           },
           autoplay: true,
           loop: !this.analysisAvailable(),
           canvas: this.lottieCanvas()!.nativeElement,
-          src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`
-        })
-
+          src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`,
+        });
       })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {
-      const [theme, analysisLaunched, analysisAvailable] = [this.theme(), this.analysisLaunched(), this.analysisAvailable()];
+      const [theme, analysisLaunched, analysisAvailable] = [
+        this.theme(),
+        this.analysisLaunched(),
+        this.analysisAvailable(),
+      ];
       if (analysisLaunched && this.lottie) {
         this.lottie.load({
           src: `assets/animations/${theme}/${analysisAvailable ? 'success' : 'loader'}-animation.json`,
           loop: !analysisAvailable,
-          autoplay: true
-        })
+          autoplay: true,
+        });
       }
     });
 
@@ -99,23 +117,23 @@ export class SpeciesAnalysisComponent {
   token: string | null = null;
   private readonly availableSpeciesIcons = new Set<string>();
 
-  analysisLaunched = signal(false)
-  analysisAvailable = signal(false)
+  analysisLaunched = signal(false);
+  analysisAvailable = signal(false);
 
   analyse() {
-    if (this.selectedSpecies() === null) return
+    if (this.selectedSpecies() === null) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
     this.analysis.analyseSpecies(this.selectedSpecies()!).subscribe((result) => {
       this.analysisAvailable.set(true);
       this.token = result.summary.token;
-      this.close.emit({status: 'finished'})
-    })
+      this.close.emit({ status: 'finished' });
+    });
   }
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({status: 'finished'});
+    this.close.emit({ status: 'finished' });
   }
 
   getSpeciesIconName(species: Species): string {
