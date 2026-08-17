@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { PageLayoutComponent } from "../../page-layout/page-layout.component";
 
 interface ResourceEntry {
@@ -17,11 +17,11 @@ const HTML_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbRm3dc7Ms8Am
   styleUrl: './resources.component.scss'
 })
 export class ResourcesComponent implements OnInit {
+  private http = inject(HttpClient);
+
   entries: Record<string, ResourceEntry[]> = {};
   loading = true;
   error = false;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(HTML_URL, { responseType: 'text' }).subscribe({

@@ -1,5 +1,5 @@
 
-import { Inject, Injectable, DOCUMENT } from '@angular/core';
+import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
 import { Article, ArticleIndexItem } from '../types/article';
@@ -25,9 +25,12 @@ export interface TeamMember {
 })
 
 export class ContentService {
+  private http = inject(HttpClient);
+  private document = inject<Document>(DOCUMENT);
+
   private readonly contentBasePath: string;
 
-  constructor(private http: HttpClient, @Inject(DOCUMENT) private document: Document) {
+  constructor() {
     this.contentBasePath = new URL('content/', this.document.baseURI).toString().replace(/\/$/, '');
   }
 

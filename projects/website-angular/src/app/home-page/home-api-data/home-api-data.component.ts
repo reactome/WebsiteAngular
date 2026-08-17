@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CarouselComponent } from "../../reactome-components/carousel/carousel.component";
 import { MatIcon } from "@angular/material/icon";
 import { ButtonComponent } from "../../reactome-components/button/button.component";
@@ -12,11 +12,8 @@ import { NavOption } from '../../../types/link';
   templateUrl: './home-api-data.component.html',
   styleUrl: './home-api-data.component.scss'
 })
-export class HomeApiDataComponent implements OnInit {
+export class HomeApiDataComponent {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
 
-  ngOnInit() {
-    
-  }
 }

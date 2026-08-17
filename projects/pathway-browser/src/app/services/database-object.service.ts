@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {map, Observable, Subject} from "rxjs";
 import {DatabaseObject} from "../model/graph/database-object.model";
 import {JSOGDeserializer} from "../utils/JSOGDeserializer";
@@ -9,6 +9,8 @@ import {HttpClient} from "@angular/common/http";
   providedIn: 'root'
 })
 export class DatabaseObjectService {
+  private http = inject(HttpClient);
+
 
 
   private readonly _ENHANCED_QUERY = `${CONTENT_SERVICE}/data/query/enhanced/v2/`;
@@ -17,10 +19,6 @@ export class DatabaseObjectService {
 
   private _selectedObj: Subject<DatabaseObject> = new Subject<DatabaseObject>();
   public selectedObj$ = this._selectedObj.asObservable();
-
-
-  constructor(private http: HttpClient) {
-  }
 
 
   setCurrentObj(obj: DatabaseObject) {

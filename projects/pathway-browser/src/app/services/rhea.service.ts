@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {map} from "rxjs";
 import {DatabaseIdentifier} from "../model/graph/database-identifier.model";
@@ -27,10 +27,8 @@ export interface Participant {
   providedIn: 'root'
 })
 export class RheaService {
+  private http = inject(HttpClient);
 
-
-  constructor(private http: HttpClient) {
-  }
 
   getRheaJson(xRef: DatabaseIdentifier) {
 

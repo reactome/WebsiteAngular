@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, input, linkedSignal, output, signal, viewChild} from '@angular/core';
+import { Component, computed, effect, ElementRef, input, linkedSignal, output, signal, viewChild, inject } from '@angular/core';
 import {MatFormField, MatLabel, MatOption, MatSelect} from "@angular/material/select";
 import {TissueExperimentService} from "./tissue-experiment/tissue-experiment.service";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
@@ -126,6 +126,13 @@ import {DarkService} from "../../../services/dark.service";
   ]
 })
 export class TissueAnalysisComponent {
+  tissue = inject(TissueExperimentService);
+  private analysis = inject(AnalysisService);
+  private state = inject(UrlStateService);
+  private lottieService = inject(LottieService);
+  private fb = inject(FormBuilder);
+  private darkService = inject(DarkService);
+
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open'| 'closed'>()
 
@@ -144,14 +151,7 @@ export class TissueAnalysisComponent {
 
   selectTissuesControl: FormControl
 
-  constructor(
-    public tissue: TissueExperimentService,
-    private analysis: AnalysisService,
-    private state: UrlStateService,
-    private lottieService: LottieService,
-    private fb: FormBuilder,
-    private darkService: DarkService,
-  ) {
+  constructor() {
     this.selectTissuesControl = this.fb.nonNullable.control([] as string[], selected => selected.getRawValue().length === 0 ? {invalid: true} : null)
     effect(() => this.selectTissuesControl.setValue(this.selectedTissues()));
 

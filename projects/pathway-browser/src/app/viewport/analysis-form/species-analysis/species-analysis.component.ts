@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, input, output, signal, viewChild} from '@angular/core';
+import { Component, computed, effect, ElementRef, input, output, signal, viewChild, inject } from '@angular/core';
 import {MatStep, MatStepper, MatStepperNext, MatStepperPrevious} from "@angular/material/stepper";
 import {MatButton} from "@angular/material/button";
 import type {DotLottie} from "@lottiefiles/dotlottie-web";
@@ -31,6 +31,13 @@ import {IconService} from "../../../services/icon.service";
   styleUrl: './species-analysis.component.scss'
 })
 export class SpeciesAnalysisComponent {
+  private analysis = inject(AnalysisService);
+  private state = inject(UrlStateService);
+  private speciesService = inject(SpeciesService);
+  private lottieService = inject(LottieService);
+  private darkService = inject(DarkService);
+  private iconService = inject(IconService);
+
   close = output<{ status: 'finished' | 'premature' }>()
   status = input.required<'open'| 'closed'>()
 
@@ -47,14 +54,7 @@ export class SpeciesAnalysisComponent {
   theme = computed(() => this.darkService.isDark() ? 'dark' : 'light')
 
 
-  constructor(
-    private analysis: AnalysisService,
-    private state: UrlStateService,
-    private speciesService: SpeciesService,
-    private lottieService: LottieService,
-    private darkService: DarkService,
-    private iconService: IconService,
-  ) {
+  constructor() {
     this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
     effect(() => this.speciesControl.setValue(this.selectedSpecies()));
     effect(() => {

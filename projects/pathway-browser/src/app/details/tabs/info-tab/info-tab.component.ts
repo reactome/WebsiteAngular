@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {UrlStateService} from "../../../services/url-state.service";
 import {EhldService} from "../../../services/ehld.service";
 import {InteractorService} from "../../../interactors/services/interactor.service";
@@ -11,11 +11,7 @@ import {InteractorService} from "../../../interactors/services/interactor.servic
   styleUrl: './info-tab.component.scss'
 })
 export class InfoTabComponent {
-
-  constructor(
-    public state: UrlStateService,
-    public ehld: EhldService,
-    public interactor: InteractorService
-  ) {
-  }
+  state = inject(UrlStateService);
+  ehld = inject(EhldService);
+  interactor = inject(InteractorService);
 }

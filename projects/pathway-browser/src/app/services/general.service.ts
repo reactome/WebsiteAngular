@@ -1,4 +1,4 @@
-import {computed, Injectable, resource} from '@angular/core';
+import { computed, Injectable, resource, inject } from '@angular/core';
 import {CONTENT_SERVICE, DOWNLOAD, VERSION_FALLBACK, environment} from "../../environments/environment";
 import {HttpClient} from "@angular/common/http";
 import {rxResource} from "@angular/core/rxjs-interop";
@@ -9,8 +9,8 @@ import {toObservable} from "@angular/core/rxjs-interop";
   providedIn: 'root'
 })
 export class GeneralService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
 
   version = rxResource({
     params: () => true,

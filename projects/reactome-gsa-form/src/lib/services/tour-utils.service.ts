@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {TourService} from "ngx-ui-tour-md-menu";
 import {map, merge, Observable, shareReplay, startWith} from "rxjs";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
@@ -16,6 +16,8 @@ export type TourStatus = 'on' | 'off' | 'pause';
 // instead, so both resolve inside the lazily loaded Pathway Browser.
 @Injectable()
 export class TourUtilsService {
+  private tourService = inject(TourService);
+
   on: boolean = false;
   paused: boolean = false;
 
@@ -29,7 +31,7 @@ export class TourUtilsService {
     shareReplay(1)
   );
 
-  constructor(private tourService: TourService) {
+  constructor() {
     this.tourService.setDefaults({
       placement: {yPosition: 'above', xPosition:'after'},
       enableBackdrop: false,

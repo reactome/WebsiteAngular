@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {DomSanitizer} from "@angular/platform-browser";
 import {MatIconRegistry} from "@angular/material/icon";
 import {IconService} from "./services/icon.service";
@@ -12,10 +12,11 @@ import {RouterOutlet} from "@angular/router";
   imports: [RouterOutlet]
 })
 export class AppComponent implements OnInit {
-  title = 'PathwayBrowser'
+  private matIconRegistry = inject(MatIconRegistry);
+  private domSanitizer = inject(DomSanitizer);
+  private iconService = inject(IconService);
 
-  constructor(private matIconRegistry: MatIconRegistry, private domSanitizer: DomSanitizer, private iconService: IconService) {
-  }
+  title = 'PathwayBrowser'
 
 
   ngOnInit(): void {

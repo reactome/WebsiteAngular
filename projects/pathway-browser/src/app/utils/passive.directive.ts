@@ -1,11 +1,14 @@
-import {computed, Directive, effect, ElementRef, input, OnDestroy, OnInit, Renderer2} from '@angular/core';
+import { computed, Directive, effect, ElementRef, input, OnDestroy, Renderer2, inject } from '@angular/core';
 
 type EventType = keyof HTMLElementEventMap;
 
 @Directive({
   selector: '[passive]'
 })
-export class PassiveDirective implements OnInit, OnDestroy {
+export class PassiveDirective implements OnDestroy {
+  private element = inject(ElementRef);
+  private renderer = inject(Renderer2);
+
   listeners = input.required<{
     [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void
   }>({alias: 'passive'})
@@ -16,7 +19,7 @@ export class PassiveDirective implements OnInit, OnDestroy {
 
   private removers: (() => void)[] = []
 
-  constructor(private element: ElementRef, private renderer: Renderer2) {
+  constructor() {
     effect(() => {
       this.clear();
       const [listeners, options] = [this.listeners(), this.options()];
@@ -28,8 +31,6 @@ export class PassiveDirective implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {
-  }
 
   ngOnDestroy(): void {
     this.clear()

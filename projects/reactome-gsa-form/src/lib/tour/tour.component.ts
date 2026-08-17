@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {TourService} from "ngx-ui-tour-md-menu";
 // ngx-ui-tour-md-menu publishes this interface under the name IStepOption
 // (`export type { IMdStepOption as IStepOption }`); it is the same type.
@@ -13,8 +13,12 @@ import {TourUtilsService} from "../services/tour-utils.service";
     standalone: false
 })
 export class TourComponent {
+  tourService = inject(TourService);
+  tour = inject(TourUtilsService);
+  height = inject(HeightService);
 
-  constructor(public tourService: TourService, public tour: TourUtilsService, public height: HeightService) {
+
+  constructor() {
     this.tourService.initialize([
       {
         anchorId: 'Camera',

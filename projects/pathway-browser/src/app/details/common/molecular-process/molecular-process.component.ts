@@ -1,4 +1,4 @@
-import {Component, computed, input} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import {CatalystActivityReference} from "../../../model/graph/control-reference/catalyst-activity-reference.model";
 import {CatalystActivity} from "../../../model/graph/catalyst-activity.model";
 import type {Relationship} from "../../../model/graph/relationship.model";
@@ -40,15 +40,14 @@ import {SortByDatePipe} from "../../../pipes/sort-by-date.pipe";
  * This is a shared component for regulation, catalystActivity and modifiedResidue(modifications)
  */
 export class MolecularProcessComponent {
+  private iconService = inject(IconService);
+
 
   readonly objects = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>({alias: 'entries'});
   readonly catalystActivityReference = input.required<CatalystActivityReference>();
   readonly regulationRefs = input.required<RegulationReference[]>();
 
   readonly perspective = input<'entity' | 'event'>('event');
-
-  constructor(private iconService: IconService) {
-  }
 
   getSymbol(obj: DatabaseObject) {
     return this.iconService.getIconDetails(obj);

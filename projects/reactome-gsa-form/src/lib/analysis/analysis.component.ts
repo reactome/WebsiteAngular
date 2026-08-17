@@ -1,4 +1,4 @@
-import {Component, OnInit, output, input, computed} from '@angular/core';
+import { Component, output, input, computed, inject } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {analysisFeature} from "../state/analysis/analysis.selector";
@@ -16,7 +16,10 @@ import {AnalysisResult} from "../model/analysis-result.model";
   styleUrls: ['./analysis.component.scss'],
   standalone: false
 })
-export class AnalysisComponent implements OnInit {
+export class AnalysisComponent {
+  private formBuilder = inject(FormBuilder);
+  store = inject(Store);
+
   analysisStep: FormGroup;
   reportsRequired$ = this.store.select(analysisFeature.selectReportsRequired)
   analysisLoadingStatus$ = this.store.select(analysisFeature.selectAnalysisLoadingStatus)
@@ -42,16 +45,13 @@ export class AnalysisComponent implements OnInit {
 
   seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>()
 
-  constructor(private formBuilder: FormBuilder, public store: Store) {
+  constructor() {
     this.analysisStep = this.formBuilder.group({
       name: ['', Validators.required]
     });
 
   }
 
-  ngOnInit(): void {
-
-  }
 
   goToSelectMethod() {
     // TODO: The 'emit' function requires a mandatory void argument

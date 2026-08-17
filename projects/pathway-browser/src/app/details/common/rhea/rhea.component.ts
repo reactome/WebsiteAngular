@@ -1,4 +1,4 @@
-import {Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, input, viewChildren} from '@angular/core';
+import { Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, input, viewChildren, inject } from '@angular/core';
 import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
 import {rxResource} from "@angular/core/rxjs-interop";
 import {RheaService} from "../../../services/rhea.service";
@@ -33,6 +33,10 @@ interface SvgLayout {
   ],
 })
 export class RheaComponent {
+  private rheaService = inject(RheaService);
+  private http = inject(HttpClient);
+  private dark = inject(DarkService);
+
 
   readonly _xRefs = input.required<DatabaseIdentifier[]>({alias: 'crossRefs'});
 
@@ -42,9 +46,7 @@ export class RheaComponent {
   //layouts = signal<Layout[]>([{columns: '', areas: ''}]);
 
 
-  constructor(private rheaService: RheaService,
-              private http: HttpClient,
-              private dark: DarkService) {
+  constructor() {
 
     //todo: custom layout, remove it when dropping this layout
 

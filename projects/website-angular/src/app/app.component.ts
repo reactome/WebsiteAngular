@@ -20,16 +20,16 @@ import { SUBJECT_ICONS } from '../utils/subjectIcons';
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit {
+  private matIconRegistry = inject(MatIconRegistry);
+  private domSanitizer = inject(DomSanitizer);
+
   title = 'WebsiteAngular';
 
   private viewportScroller = inject(ViewportScroller);
   private router = inject(Router);
   private searchHistory = inject(SearchHistoryService);
 
-  constructor(
-    private matIconRegistry: MatIconRegistry,
-    private domSanitizer: DomSanitizer,
-  ) {
+  constructor() {
     // Capture the user's last /content/query URL (including ?q=, facets,
     // etc.) so the breadcrumb on entity detail pages can route them back
     // to their actual search state instead of an empty search form.

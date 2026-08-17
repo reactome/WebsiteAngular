@@ -1,4 +1,4 @@
-import {computed, Inject, Injectable} from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import {Method} from "../model/methods.model";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {catchError, Observable, throwError} from "rxjs";
@@ -19,14 +19,11 @@ export const typeToParse: { [p: string]: (value: string) => any } = {
   providedIn: 'root'
 })
 export class AnalysisMethodsService {
-  methodsUrl = computed(() =>`${this.config().apiRoot}/methods`);
+  private http = inject(HttpClient);
+  private snackBar = inject(MatSnackBar);
+  private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
 
-  constructor(
-    private http: HttpClient,
-    private snackBar: MatSnackBar,
-    @Inject(REACTOME_GSA_CONFIG) private config: ConfigProvider
-  ) {
-  }
+  methodsUrl = computed(() =>`${this.config().apiRoot}/methods`);
 
   getAll(): Observable<Method[]> {
     return this.http.get<Method[]>(this.methodsUrl())

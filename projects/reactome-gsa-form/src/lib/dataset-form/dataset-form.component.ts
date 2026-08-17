@@ -1,4 +1,4 @@
-import {Component, input, OnDestroy, OnInit, viewChild} from '@angular/core';
+import { Component, input, OnDestroy, OnInit, viewChild, inject } from '@angular/core';
 import {MatStepper} from "@angular/material/stepper";
 import {MatDialog} from "@angular/material/dialog";
 import {ScrollService} from "../services/scroll.service";
@@ -21,6 +21,12 @@ import {TourUtilsService} from "../services/tour-utils.service";
 })
 @UntilDestroy()
 export class DatasetFormComponent implements OnInit, OnDestroy {
+  dialog = inject(MatDialog);
+  tour = inject(TourUtilsService);
+  download = inject(DownloadDatasetService);
+  scrollService = inject(ScrollService);
+  private store = inject(Store);
+
   readonly datasetId = input.required<number>();
   readonly method = input.required<Method>();
 
@@ -35,10 +41,6 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
   annotationComplete$!: Observable<boolean>;
   statisticalDesignComplete$!: Observable<boolean>;
   parametersComplete$!: Observable<boolean>;
-
-  constructor(public dialog: MatDialog, public tour: TourUtilsService, public download: DownloadDatasetService,
-              public scrollService: ScrollService, private store: Store) {
-  }
 
   ngOnInit(): void {
     this.dataset$ = this.store.select(datasetFeature.selectDataset(this.datasetId()));

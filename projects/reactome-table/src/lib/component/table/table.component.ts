@@ -1,20 +1,4 @@
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  ElementRef,
-  input,
-  linkedSignal,
-  OnChanges,
-  OnDestroy,
-  OnInit,
-  Output,
-  signal,
-  Signal,
-  SimpleChanges,
-  TrackByFunction,
-  viewChild
-} from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, input, linkedSignal, OnChanges, OnDestroy, OnInit, Output, signal, Signal, SimpleChanges, TrackByFunction, viewChild, inject } from '@angular/core';
 import {Settings} from "../../model/table.model";
 import {Clipboard} from '@angular/cdk/clipboard';
 import {Cell, Coords, Ranges, TableStore} from "../../state/table.store";
@@ -63,6 +47,9 @@ type Range = { start: Coord, stop?: Coord };
   standalone: false
 })
 export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+  private clipboard = inject(Clipboard);
+  readonly tableStore = inject(TableStore);
+
   readonly input = viewChild.required<ElementRef<HTMLInputElement>>('flyingRename');
   readonly rootRef = viewChild.required<ElementRef<HTMLDivElement>>('root');
   readonly cornerRef = viewChild<ElementRef<HTMLTableCellElement>>('corner');
@@ -180,7 +167,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     skip(1)
   );
 
-  constructor(private clipboard: Clipboard, public readonly tableStore: TableStore) {
+  constructor() {
     this.data = toSignal(this.tableStore.data$, {
       initialValue: [[{
         value: '',

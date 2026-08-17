@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { forkJoin } from 'rxjs';
@@ -21,12 +21,12 @@ const PIPELINE_CSV = `${SPREADSHEET_BASE}?gid=6&single=true&output=csv`;
   styleUrl: './editorial-calendar.component.scss'
 })
 export class EditorialCalendarComponent implements OnInit {
+  private http = inject(HttpClient);
+
   currentEntries: EditorialEntry[] = [];
   pipelineEntries: EditorialEntry[] = [];
   loading = true;
   error = false;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     forkJoin({

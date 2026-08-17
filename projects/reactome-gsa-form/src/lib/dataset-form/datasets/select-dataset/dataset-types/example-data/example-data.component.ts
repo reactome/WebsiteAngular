@@ -1,4 +1,4 @@
-import {Component, input} from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import {PDatasetSource} from "../../../../../state/dataset-source/dataset-source.state";
 import {Store} from "@ngrx/store";
 import {datasetSourceActions} from "../../../../../state/dataset-source/dataset-source.action";
@@ -13,11 +13,12 @@ import {TourUtilsService} from "../../../../../services/tour-utils.service";
     standalone: false
 })
 export class ExampleDataComponent {
+  store = inject(Store);
+  private tour = inject(TourUtilsService);
+  download = inject(DownloadDatasetService);
+
   readonly source = input.required<PDatasetSource>();
   readonly datasetId = input.required<number>();
-
-  constructor(public store: Store, private tour: TourUtilsService, public download: DownloadDatasetService) {
-  }
 
   select() {
     this.store.dispatch(datasetSourceActions.select({toBeSelected: this.source()}));

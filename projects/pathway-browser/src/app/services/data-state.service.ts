@@ -1,4 +1,4 @@
-import {computed, effect, Injectable, linkedSignal} from '@angular/core';
+import { computed, effect, Injectable, linkedSignal, inject } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {catchError, forkJoin, map, Observable, of} from "rxjs";
 import {rxResource} from "@angular/core/rxjs-interop";
@@ -38,6 +38,10 @@ type FlaggingResult = {
   providedIn: 'root'
 })
 export class DataStateService {
+  private state = inject(UrlStateService);
+  private http = inject(HttpClient);
+  private species = inject(SpeciesService);
+
   _currentPathway = rxResource({
     params: () => this.state.pathwayId(),
     stream: (params) => this.fetchEnhancedData<Pathway>(params.params, {
@@ -155,7 +159,7 @@ export class DataStateService {
   })
 
 
-  constructor(private state: UrlStateService, private http: HttpClient, private species: SpeciesService) {
+  constructor() {
     // effect(() => console.log('Flagging', this.flagIdentifiers()));
     // effect(() => console.log('Flagging error', this.flagResource.error()));
     effect(() => {

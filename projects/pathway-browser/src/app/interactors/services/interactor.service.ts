@@ -1,4 +1,4 @@
-import {Injectable, signal} from "@angular/core";
+import { Injectable, signal, inject } from "@angular/core";
 import {HttpClient, HttpHeaders, HttpParams} from "@angular/common/http";
 import cytoscape, {NodeCollection, NodeSingular} from "cytoscape";
 import {catchError, map, Observable, of, switchMap} from "rxjs";
@@ -22,6 +22,9 @@ import {CONTENT_SERVICE, OVERLAYS} from "../../../environments/environment";
 })
 
 export class InteractorService {
+  private http = inject(HttpClient);
+  private diagramService = inject(DiagramService);
+
 
   private readonly _PREFIX_INTERACTOR = `${CONTENT_SERVICE}/interactors/`;
   private readonly _PREFIX_DISEASE = `${OVERLAYS}/disgenet/`;
@@ -47,9 +50,6 @@ export class InteractorService {
   cyToSelectedResource = new Map<cytoscape.Core, string>();
 
   currentResource = signal<ResourceAndType>({type: null, name: null})
-
-  constructor(private http: HttpClient, private diagramService: DiagramService) {
-  }
   private getIdentifiers(cy: cytoscape.Core): void {
     this.identifiers = this.getIdentifiersFromGraph(cy);
   }

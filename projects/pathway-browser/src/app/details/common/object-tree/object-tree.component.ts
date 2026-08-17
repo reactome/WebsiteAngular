@@ -1,14 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  input,
-  model,
-  signal,
-  TrackByFunction,
-  ViewChild
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, model, signal, TrackByFunction, ViewChild, inject } from '@angular/core';
 import {
   isChemical,
   isEvent,
@@ -68,6 +58,12 @@ type Connector = { type: string, shape: 'L' | 'I' | 'T' } | null;
 
 })
 export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationship.Has<E>> {
+  private iconService = inject(IconService);
+  private entity = inject(EntityService);
+  private dataStateService = inject(DataStateService);
+  private state = inject(UrlStateService);
+  private extractCompartmentPipe = inject(ExtractCompartmentPipe);
+
 
   hasDepthControl = input<boolean>(false);
   depthIndex = model<number | undefined>();
@@ -114,12 +110,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   dataSource = new MatTreeNestedDataSource<R>();
 
 
-  constructor(private iconService: IconService,
-              private entity: EntityService,
-              private dataStateService: DataStateService,
-              private state: UrlStateService,
-              private extractCompartmentPipe: ExtractCompartmentPipe,
-  ) {
+  constructor() {
 
     // Initial tree data
     effect(() => {

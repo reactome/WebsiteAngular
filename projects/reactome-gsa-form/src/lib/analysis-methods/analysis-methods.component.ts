@@ -1,4 +1,4 @@
-import {Component, effect, Inject, OnInit} from '@angular/core';
+import { Component, effect, OnInit, inject } from '@angular/core';
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
@@ -15,12 +15,11 @@ import {ConfigProvider, REACTOME_GSA_CONFIG} from "../config/gsa-config";
   standalone: false
 })
 export class AnalysisMethodsComponent implements OnInit {
+  private store = inject(Store);
+
 
   methodNames$: Observable<string[]> = this.store.select(methodFeature.selectIds) as Observable<string[]>;
   methods$: Observable<Method[]> = this.store.select(methodFeature.selectAll);
-
-  constructor(private store: Store) {
-  }
 
   ngOnInit(): void {
     this.store.dispatch(methodActions.load());

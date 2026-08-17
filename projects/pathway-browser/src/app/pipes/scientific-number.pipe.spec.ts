@@ -6,9 +6,9 @@ describe('ScientificNumberPipe', () => {
   let pipe: ScientificNumberPipe;
 
   beforeEach(() => {
-    // See safe.pipe.spec.ts -- DomSanitizer is an abstract platform token and
-    // cannot be supplied via providers.
-    pipe = new ScientificNumberPipe(TestBed.inject(DomSanitizer));
+    // Built inside an injection context: the pipe takes its DomSanitizer
+    // through inject() rather than the constructor.
+    pipe = TestBed.runInInjectionContext(() => new ScientificNumberPipe());
   });
 
   it('creates an instance', () => {

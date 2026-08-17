@@ -1,5 +1,5 @@
 import {Actions, createEffect, ofType} from "@ngrx/effects";
-import {Injectable} from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import {catchError, exhaustMap, map, mergeMap, of, take} from "rxjs";
 import {FetchDatasetService} from "../../services/fetch-dataset.service";
 import {datasetSourceActions} from "./dataset-source.action";
@@ -7,6 +7,9 @@ import {typeToParse} from "../../services/analysis-methods.service";
 
 @Injectable()
 export class DatasetSourceEffects {
+  private actions$ = inject(Actions);
+  private service = inject(FetchDatasetService);
+
   loadLocals = createEffect(() => this.actions$.pipe(
     ofType(datasetSourceActions.loadLocals),
     take(1),
@@ -44,10 +47,4 @@ export class DatasetSourceEffects {
       catchError((err) => of(datasetSourceActions.loadExternalFailure({error: err})))
     )),
   ))
-
-  constructor(
-    private actions$: Actions,
-    private service: FetchDatasetService
-  ) {
-  }
 }

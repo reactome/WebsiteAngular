@@ -1,4 +1,4 @@
-import {Injectable, signal} from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import {map, Observable, of, switchMap} from "rxjs";
 import {CONTENT_SERVICE, ICON_BASE} from "../../environments/environment";
 import {HttpClient} from "@angular/common/http";
@@ -12,11 +12,10 @@ import {Search} from "../viewport/search/search.component";
   providedIn: 'root'
 })
 export class IconService {
+  private http = inject(HttpClient);
+
 
   currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
-
-  constructor(private http: HttpClient) {
-  }
 
   protein = {name: 'protein', tooltip: 'Protein', route: 'protein'};
   negativeRegulation = {

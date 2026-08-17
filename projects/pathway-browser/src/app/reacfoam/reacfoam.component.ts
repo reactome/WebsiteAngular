@@ -1,15 +1,4 @@
-import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  linkedSignal,
-  OnDestroy,
-  signal,
-  Signal,
-  untracked,
-  viewChild
-} from '@angular/core';
+import { Component, computed, effect, ElementRef, linkedSignal, OnDestroy, signal, Signal, untracked, viewChild, inject } from '@angular/core';
 import {FoamTree} from "@carrotsearch/foamtree";
 import {PathwayGroup, ReacfoamService} from "./reacfoam.service";
 import {Router} from "@angular/router";
@@ -37,6 +26,17 @@ import {SvgExporterService} from "./svg-exporter.service";
   styleUrl: './reacfoam.component.scss'
 })
 export class ReacfoamComponent implements OnDestroy {
+  private reacfoam = inject(ReacfoamService);
+  private state = inject(UrlStateService);
+  private data = inject(DataStateService);
+  analysis = inject(AnalysisService);
+  private species = inject(SpeciesService);
+  private dark = inject(DarkService);
+  private router = inject(Router);
+  private download = inject(DownloadService);
+  private svgExporter = inject(SvgExporterService);
+  private dialog = inject(MatDialog);
+
 
   container = viewChild.required<ElementRef<HTMLDivElement>>('container');
 
@@ -174,17 +174,7 @@ export class ReacfoamComponent implements OnDestroy {
     })
   }
 
-  constructor(
-    private reacfoam: ReacfoamService,
-    private state: UrlStateService,
-    private data: DataStateService,
-    public analysis: AnalysisService,
-    private species: SpeciesService,
-    private dark: DarkService,
-    private router: Router,
-    private download: DownloadService,
-    private svgExporter: SvgExporterService,
-    private dialog: MatDialog,) {
+  constructor() {
     effect(() => { // Initialise
       this.reacfoam.data(); // Set data whenever it is updated
       // if (!untracked(this.relaxing)) // Avoid errors happening when setting data while relaxing

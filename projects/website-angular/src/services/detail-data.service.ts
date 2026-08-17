@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {map, Observable, of} from 'rxjs';
 import {CONTENT_SERVICE} from '../../../../projects/pathway-browser/src/environments/environment';
@@ -9,9 +9,8 @@ import {DatabaseObject} from '../../../../projects/pathway-browser/src/app/model
   providedIn: 'root'
 })
 export class DetailDataService {
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {
-  }
 
   fetchEnhancedData<T extends DatabaseObject>(id: string | number | null): Observable<T | undefined> {
     if (id === null) return of(undefined);

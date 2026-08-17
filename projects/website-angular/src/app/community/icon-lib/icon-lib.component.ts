@@ -55,6 +55,10 @@ interface ParsedReference {
   styleUrl: './icon-lib.component.scss'
 })
 export class IconLibComponent implements OnInit, OnDestroy {
+  private iconService = inject(IconService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -81,12 +85,6 @@ export class IconLibComponent implements OnInit, OnDestroy {
   // Debounced search
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
-
-  constructor(
-    private iconService: IconService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
 
   ngOnInit() {
     this.searchSubject.pipe(

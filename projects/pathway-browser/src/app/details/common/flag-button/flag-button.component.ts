@@ -1,4 +1,4 @@
-import {Component, computed, input} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import {UrlStateService} from "../../../services/url-state.service";
 import {MatIconButton} from "@angular/material/button";
 import {MatIcon} from "@angular/material/icon";
@@ -13,11 +13,10 @@ import {MatIcon} from "@angular/material/icon";
   styleUrl: './flag-button.component.scss'
 })
 export class FlagButtonComponent {
+  state = inject(UrlStateService);
+
   id = input.required<string>()
   flagged = computed(() => this.state.flag().includes(this.id()))
-
-  constructor(public state: UrlStateService) {
-  }
 
   toggle(): void {
     if (!this.flagged()) {

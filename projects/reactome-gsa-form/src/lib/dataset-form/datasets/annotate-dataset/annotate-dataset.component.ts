@@ -1,4 +1,4 @@
-import {Component, input, OnInit, ChangeDetectorRef} from '@angular/core';
+import { Component, input, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 
 import {BreakpointObserver, Breakpoints} from "@angular/cdk/layout";
@@ -18,6 +18,10 @@ import {Settings} from "reactome-table";
   standalone: false
 })
 export class AnnotateDatasetComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  private responsive = inject(BreakpointObserver);
+  private store = inject(Store);
+
 
   readonly datasetId = input.required<number>();
   dataset$!: Observable<PDataset | undefined>
@@ -27,7 +31,7 @@ export class AnnotateDatasetComponent implements OnInit {
   tableSettings!: Partial<Settings>;
   screenIsSmall: boolean = false;
 
-  constructor(private formBuilder: FormBuilder, private responsive: BreakpointObserver, private store: Store) {
+  constructor() {
     this.annotateDataStep = this.formBuilder.group({
       address: ['', Validators.required]
     });

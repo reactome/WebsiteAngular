@@ -1,4 +1,4 @@
-import {Component, OnInit, input} from '@angular/core';
+import { Component, OnInit, input, inject } from '@angular/core';
 import {PDatasetSource} from "../../../../../state/dataset-source/dataset-source.state";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
@@ -15,13 +15,12 @@ import {Parameter} from "../../../../../model/parameter.model";
     standalone: false
 })
 export class ExternalDataComponent implements OnInit {
+  private store = inject(Store);
+
 
   readonly source = input.required<PDatasetSource>();
   readonly datasetId = input.required<number>();
   isSelected$!: Observable<boolean>;
-
-  constructor(private store: Store) {
-  }
 
   ngOnInit(): void {
     this.isSelected$ = this.store.select(datasetSourceFeature.selectIsSelected(this.source()));

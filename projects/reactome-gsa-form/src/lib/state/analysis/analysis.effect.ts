@@ -5,10 +5,13 @@ import {catchError, delay, delayWhen, filter, map, mergeMap, of, switchMap, tap,
 import {AnalysisService} from "../../services/analysis.service";
 import {analysisActions} from "./analysis.actions";
 import { Action } from '@ngrx/store';
-import {Injectable} from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 
 @Injectable()
 export class AnalysisEffects {
+  private actions$ = inject(Actions);
+  private analysisService = inject(AnalysisService);
+
 
   analysisLoad$ = createEffect(() => this.actions$.pipe(
     ofType(analysisActions.load),
@@ -95,10 +98,4 @@ export class AnalysisEffects {
 
 
   reportsRequired = false;
-
-  constructor(
-    private actions$: Actions,
-    private analysisService: AnalysisService
-  ) {
-  }
 }

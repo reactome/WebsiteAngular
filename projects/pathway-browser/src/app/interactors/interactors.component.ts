@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectorRef, Component, EventEmitter, inject, input, OnDestroy, Output} from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, EventEmitter, inject, input, Output } from '@angular/core';
 import {InteractorToken, PsicquicResource, ResourceAndType, ResourceType} from "./model/interactor.model";
 import cytoscape from "cytoscape";
 import {DiagramService} from "../services/diagram.service";

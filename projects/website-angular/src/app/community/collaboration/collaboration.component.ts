@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -25,11 +25,11 @@ const HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRorn50RGvdhBf
   styleUrl: './collaboration.component.scss'
 })
 export class CollaborationComponent implements OnInit {
+  private http = inject(HttpClient);
+
   entries: PathwayEntry[] = [];
   loading = true;
   error = false;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(HTML_URL, { responseType: 'text' }).subscribe({

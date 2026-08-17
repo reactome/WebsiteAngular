@@ -1,14 +1,4 @@
-import {
-  AfterViewInit,
-  Component,
-  contentChild,
-  effect,
-  ElementRef,
-  input,
-  linkedSignal,
-  OnDestroy,
-  viewChild
-} from '@angular/core';
+import { AfterViewInit, Component, contentChild, effect, ElementRef, input, linkedSignal, OnDestroy, viewChild, inject } from '@angular/core';
 import {CdkScrollable} from "@angular/cdk/scrolling";
 import {KeyValuePipe, NgClass} from "@angular/common";
 import {Subscription} from "rxjs";
@@ -26,6 +16,8 @@ export type Side = "top" | "bottom" | "left" | "right";
   styleUrl: './shadow-scroll.component.scss'
 })
 export class ShadowScrollComponent implements AfterViewInit, OnDestroy {
+  elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
   marginDetection = input(5)
   scroll = viewChild.required(CdkScrollable)
   height = input<number | undefined>(undefined)
@@ -49,9 +41,6 @@ export class ShadowScrollComponent implements AfterViewInit, OnDestroy {
       bottom: scrollPanel.offsetHeight - scrollPanel.clientHeight,
       right: scrollPanel.offsetWidth - scrollPanel.clientWidth,
     };
-  }
-
-  constructor(public elementRef: ElementRef<HTMLElement>) {
   }
 
   private onScroll!: Subscription;

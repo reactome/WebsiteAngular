@@ -1,14 +1,4 @@
-import {
-  AfterViewInit,
-  ChangeDetectorRef,
-  Component,
-  effect,
-  input,
-  OnDestroy,
-  OnInit,
-  Output,
-  viewChild
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, effect, input, OnDestroy, Output, viewChild, inject } from '@angular/core';
 import {MatStepper} from "@angular/material/stepper";
 import {Store} from "@ngrx/store";
 import {methodFeature} from "./state/method/method.selector";
@@ -35,7 +25,15 @@ import {TourComponent} from "./tour/tour.component";
   styleUrls: ['./gsa-form.component.scss'],
   standalone: false
 })
-export class GsaFormComponent implements AfterViewInit, OnInit, OnDestroy {
+export class GsaFormComponent implements AfterViewInit, OnDestroy {
+  private cdr = inject(ChangeDetectorRef);
+  private store = inject(Store);
+  tour = inject(TourUtilsService);
+  height = inject(HeightService);
+  private dialog = inject(MatDialog);
+  private icons = inject(MatIconRegistry);
+  private route = inject(ActivatedRoute);
+
   readonly stepper = viewChild.required<MatStepper>('stepper');
 
   readonly setMethodStep = viewChild.required<CdkStep>('setMethodStep');
@@ -66,15 +64,9 @@ export class GsaFormComponent implements AfterViewInit, OnInit, OnDestroy {
   tourComponent = viewChild.required(TourComponent);
   editable = true;
 
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private store: Store,
-    public tour: TourUtilsService,
-    public height: HeightService,
-    private dialog: MatDialog,
-    private icons: MatIconRegistry,
-    private route: ActivatedRoute,
-  ) {
+  constructor() {
+    const icons = this.icons;
+
     effect(() => this.tourComponent() && this.route.snapshot.queryParams['gsa-tour'] && this.tour.start())
     icons.registerFontClassAlias('gsa', 'reactome-icon')
   }
@@ -83,8 +75,6 @@ export class GsaFormComponent implements AfterViewInit, OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  ngOnInit(): void {
-  }
 
   ngOnDestroy(): void {
     this.analysisId$.pipe(take(1)).subscribe(analysisId => this.store.dispatch(analysisActions.cancel({analysisId})))

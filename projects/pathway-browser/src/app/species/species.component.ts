@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, input, model} from '@angular/core';
+import { Component, input, model, inject } from '@angular/core';
 import {Species} from "../model/graph/species.model";
 import {SpeciesService} from "../services/species.service";
 import {UntilDestroy} from "@ngneat/until-destroy";
@@ -22,7 +22,12 @@ import {IconService} from "../services/icon.service";
   ]
 })
 @UntilDestroy()
-export class SpeciesComponent implements AfterViewInit {
+export class SpeciesComponent {
+  speciesService = inject(SpeciesService);
+  private dataState = inject(DataStateService);
+  private state = inject(UrlStateService);
+  private iconService = inject(IconService);
+
 
   readonly pathwayId = model.required<string>();
   readonly visibility = input({
@@ -32,16 +37,11 @@ export class SpeciesComponent implements AfterViewInit {
 
   private readonly availableSpeciesIcons = new Set<string>();
 
-  constructor(public speciesService: SpeciesService,
-              private dataState: DataStateService,
-              private state: UrlStateService,
-              private iconService: IconService) {
+  constructor() {
     this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
 
   }
 
-  ngAfterViewInit(): void {
-  }
 
   onSpeciesChange(newSpecies: Species) {
     this.speciesService.currentSpecies.set(newSpecies);

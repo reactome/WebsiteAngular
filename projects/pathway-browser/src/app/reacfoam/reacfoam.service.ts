@@ -1,4 +1,4 @@
-import {computed, Injectable, signal, Signal} from '@angular/core';
+import { computed, Injectable, signal, Signal, inject } from '@angular/core';
 import {SpeciesService} from "../services/species.service";
 import {CONTENT_SERVICE, environment} from "../../environments/environment";
 import {map, Observable} from "rxjs";
@@ -99,17 +99,14 @@ export interface PathwayGroup extends FoamTree.DataObject {
   providedIn: 'root'
 })
 export class ReacfoamService {
+  private http = inject(HttpClient);
+  private species = inject(SpeciesService);
+  private state = inject(UrlStateService);
+  private dark = inject(DarkService);
+  private analysis = inject(AnalysisService);
+
 
   style: Style = new Style(document.body);
-
-  constructor(
-    private http: HttpClient,
-    private species: SpeciesService,
-    private state: UrlStateService,
-    private dark: DarkService,
-    private analysis: AnalysisService
-  ) {
-  }
 
   speciesName = computed(() => this.species.currentSpecies().displayName.replaceAll(" ", "_"))
 

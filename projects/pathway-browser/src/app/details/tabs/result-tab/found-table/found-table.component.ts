@@ -1,4 +1,4 @@
-import {Component, computed, effect, input, Signal, untracked, viewChild} from '@angular/core';
+import { Component, computed, effect, input, Signal, untracked, viewChild, inject } from '@angular/core';
 import {ExpressionTagComponent} from "../expression-tag/expression-tag.component";
 import {MatTableDataSource, MatTableModule} from "@angular/material/table";
 import {TypeSafeMatCellDef} from "../../../../utils/type-safe-mat-cell-def.directive";
@@ -37,6 +37,9 @@ type FoundIdentifier = {
   styleUrl: './found-table.component.scss'
 })
 export class FoundTableComponent {
+  analysis = inject(AnalysisService);
+  state = inject(UrlStateService);
+
 
   pathway = input.required<Analysis.Pathway>()
 
@@ -47,7 +50,7 @@ export class FoundTableComponent {
 
   sort = viewChild.required(MatSort)
 
-  constructor(public analysis: AnalysisService, public state: UrlStateService) {
+  constructor() {
     this.dataSource.sortingDataAccessor = (data, header) => {
       const value = header.split('-').reduce((a: any, b) => a?.[b], data);
       if (value instanceof Array) return arrayToSortableString(value); // Interactors

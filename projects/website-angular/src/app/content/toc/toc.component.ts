@@ -14,6 +14,8 @@ type SortDir = 'asc' | 'desc';
   styleUrl: './toc.component.scss'
 })
 export class TocComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -30,8 +32,6 @@ export class TocComponent implements OnInit, OnDestroy {
 
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
-
-  constructor(private contentDataService: ContentDataService) {}
 
   ngOnInit() {
     this.searchSubject.pipe(

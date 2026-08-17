@@ -1,4 +1,4 @@
-import {Component, OnChanges, OnInit, input, effect, ChangeDetectionStrategy} from '@angular/core';
+import { Component, OnInit, input, effect, ChangeDetectionStrategy, inject } from '@angular/core';
 import {Observable} from "rxjs";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {BreakpointObserver} from "@angular/cdk/layout";
@@ -18,6 +18,10 @@ import {Method} from "../../../state/method/method.state";
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SelectDatasetComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  store = inject(Store);
+  private responsive = inject(BreakpointObserver);
+
   readonly datasetId = input.required<number>();
   readonly method = input.required<Method>();
 
@@ -28,8 +32,7 @@ export class SelectDatasetComponent implements OnInit {
   selectDatasetStep: FormGroup;
   librarySearchData!: SearchLibraryDataset;
 
-  constructor(
-    private formBuilder: FormBuilder, public store: Store, private responsive: BreakpointObserver) {
+  constructor() {
     this.selectDatasetStep = this.formBuilder.group({
       address: ['', Validators.required]
     });

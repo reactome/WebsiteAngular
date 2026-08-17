@@ -1,5 +1,5 @@
 import {Actions, createEffect, ofType} from "@ngrx/effects";
-import {Inject, Injectable} from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import {AnalysisMethodsService, typeToParse} from "../../services/analysis-methods.service";
 import {methodActions} from "./method.action";
 import {catchError, exhaustMap, map, of} from "rxjs";
@@ -8,6 +8,10 @@ import {ConfigProvider, GsaConfig, REACTOME_GSA_CONFIG} from "../../config/gsa-c
 
 @Injectable({providedIn: 'root'})
 export class MethodEffects {
+  private actions$ = inject(Actions);
+  private methodService = inject(AnalysisMethodsService);
+  private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
+
   loadMethods$ = createEffect(() => this.actions$.pipe(
       ofType(methodActions.load),
       exhaustMap(() => this.methodService.getAll().pipe(
@@ -28,11 +32,4 @@ export class MethodEffects {
       )
     )
   )
-
-  constructor(
-    private actions$: Actions,
-    private methodService: AnalysisMethodsService,
-    @Inject(REACTOME_GSA_CONFIG) private config: ConfigProvider
-  ) {
-  }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   catchError,
   forkJoin,
@@ -90,10 +90,11 @@ const closestToAverage = (positions: Position[]): Position => {
   providedIn: 'root',
 })
 export class DiagramService {
+  private http = inject(HttpClient);
+  private general = inject(GeneralService);
+
   extraLine: Map<string, Position> = new Map<string, Position>();
   reverseExtraLine: Map<string, Position> = new Map<string, Position>();
-
-  constructor(private http: HttpClient, private general: GeneralService) {}
 
   nodeTypeMap = new Map<string, NodeDefinition>([
     ['Gene', ['Gene', 'PhysicalEntity']],

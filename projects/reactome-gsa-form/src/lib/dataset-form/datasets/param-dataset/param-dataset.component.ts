@@ -1,4 +1,4 @@
-import {Component, input, OnInit} from '@angular/core';
+import { Component, input, OnInit, inject } from '@angular/core';
 import {Store} from "@ngrx/store";
 import {combineLatestWith, distinctUntilChanged, map, Observable, share} from "rxjs";
 import {Parameter} from "../../../model/parameter.model";
@@ -12,14 +12,12 @@ import {datasetActions} from "../../../state/dataset/dataset.actions";
   standalone: false,
 })
 export class ParamDatasetComponent implements OnInit {
+  private store = inject(Store);
+
   readonly datasetId = input.required<number>();
 
   parameters$!: Observable<Parameter[]>;
   sampleGroups$!: Observable<SampleGroups>;
-
-
-  constructor(private store: Store) {
-  }
 
   ngOnInit(): void {
     this.sampleGroups$ = this.store.select(datasetFeature.selectSampleGroups(this.datasetId())).pipe(distinctUntilChanged(), share());

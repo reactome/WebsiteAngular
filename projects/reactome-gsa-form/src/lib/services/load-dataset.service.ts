@@ -1,4 +1,4 @@
-import {computed, Inject, Injectable} from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {DataSummary, LoadingStatus, PLoadingStatus} from "../model/load-dataset.model";
 import {UploadData} from "../model/upload-dataset-model";
@@ -12,19 +12,16 @@ import {ConfigProvider, REACTOME_GSA_CONFIG} from "../config/gsa-config";
   providedIn: 'root'
 })
 export class LoadDatasetService {
+  private http = inject(HttpClient);
+  private snackBar = inject(MatSnackBar);
+  private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
+
   // stepper: MatStepper;
   loadDataUrl = computed(() => `${this.config().apiRoot}/data/load/`);
   loadingStatusUrl = computed(() => `${this.config().apiRoot}/data/status/`);
   summaryDataUrl = computed(() => `${this.config().apiRoot}/data/summary/`);
   uploadDataUrl = computed(() => `${this.config().apiSecretRoot}/upload`);
   uploadRiboDataUrl = computed(() => `${this.config().apiSecretRoot}/uploadRibo`);
-
-  constructor(
-    private http: HttpClient,
-    private snackBar: MatSnackBar,
-    @Inject(REACTOME_GSA_CONFIG) private config: ConfigProvider
-  ) {
-  }
 
   snackError<T>(err: HttpErrorResponse, failValue$: Observable<T>): Observable<T> {
     this.snackBar.open("The chosen dataset could not been loaded: \n" + extractErrorMessage(err), "Close", {

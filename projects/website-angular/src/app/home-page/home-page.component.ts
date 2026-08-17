@@ -1,4 +1,4 @@
-import { Component, inject, computed, OnInit } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { SearchBarComponent } from '../search/search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
 import { HomeWhyReactomeComponent } from './home-why-reactome/home-why-reactome.component';
@@ -36,15 +36,12 @@ import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environ
     '[class.curator]': 'isCurator',
   },
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent {
   readonly isCurator = IS_CURATOR;
   readonly navOptions = inject(NavOptionsService).navOptions;
   /** Derived from navOptions; recomputes when the JSON resolves. */
   readonly pathwayBrowserLink = computed(() =>
     this.navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser');
 
-  ngOnInit() {
-    // this.loadLatestNews();
-  }
 
 }

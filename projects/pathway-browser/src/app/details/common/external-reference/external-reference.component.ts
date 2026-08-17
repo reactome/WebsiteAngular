@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { EntityService } from '../../../services/entity.service';
 import { isArray, isString } from 'lodash';
@@ -29,6 +29,11 @@ import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
   ],
 })
 export class ExternalReferenceComponent {
+  private entity = inject(EntityService);
+  private state = inject(UrlStateService);
+  data = inject(DataStateService);
+  private structure = inject(StructureService);
+
   readonly referenceEntity = input.required<ReferenceEntity>();
   readonly xRefs = input<DatabaseIdentifier[]>([]);
 
@@ -50,13 +55,6 @@ export class ExternalReferenceComponent {
       MoleculeType.PROTEIN,
     ].includes(this.moleculeType() as MoleculeType)
   );
-
-  constructor(
-    private entity: EntityService,
-    private state: UrlStateService,
-    public data: DataStateService,
-    private structure: StructureService
-  ) {}
 
   protected readonly isString = isString;
   protected readonly isArray = isArray;

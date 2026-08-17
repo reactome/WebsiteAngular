@@ -44,18 +44,16 @@ export enum ExportFormat {
   providedIn: 'root'
 })
 export class CitationService {
+  private http = inject(HttpClient);
+  private dataState = inject(DataStateService);
+  private analysis = inject(AnalysisService);
+
 
   readonly dialog = inject(MatDialog);
 
   currentCitationId = signal<string | undefined>(undefined);
   currentCitationExportURLS = computed(() => this.currentCitationId() ? this.getExportUrls(this.currentCitationId()!) : [])
   currentDate = new Date().toDateString();
-
-  constructor(private http: HttpClient,
-              private dataState: DataStateService,
-              private analysis: AnalysisService,) {
-
-  }
 
   updatedCitationId() {
     // If pathway detail is available

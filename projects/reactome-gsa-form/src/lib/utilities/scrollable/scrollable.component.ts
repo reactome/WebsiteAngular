@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectionStrategy, Component, input, OnDestroy, signal, viewChild} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, input, OnDestroy, signal, viewChild, inject } from '@angular/core';
 import {ScrollService} from "../../services/scroll.service";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {map} from "rxjs";
@@ -15,6 +15,10 @@ import {CdkScrollable} from "@angular/cdk/scrolling";
   standalone: false
 })
 export class ScrollableComponent implements AfterViewInit, OnDestroy {
+  private scrollService = inject(ScrollService);
+  tour = inject(TourUtilsService);
+  height = inject(HeightService);
+
   readonly topMargin = input<number>(2);
   readonly bottomMargin = input<number>(2);
   readonly name = input<string>('');
@@ -29,7 +33,7 @@ export class ScrollableComponent implements AfterViewInit, OnDestroy {
 
   readonly shadows = {top: signal(false), bottom: signal(true)};
 
-  constructor(private scrollService: ScrollService, public tour: TourUtilsService, public height: HeightService) {
+  constructor() {
     this.scrollService.resize$.pipe(untilDestroyed(this)).subscribe(() => this.updateShadows());
   }
 

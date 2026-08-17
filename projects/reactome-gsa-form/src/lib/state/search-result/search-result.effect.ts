@@ -1,4 +1,4 @@
-import {Injectable} from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import {Actions, createEffect, ofType} from "@ngrx/effects";
 import {searchResultActions} from "./search-result.action";
 import {catchError, exhaustMap, map, of, switchMap} from "rxjs";
@@ -7,6 +7,9 @@ import {FetchDatasetService} from "../../services/fetch-dataset.service";
 
 @Injectable()
 export class SearchResultEffects {
+  private actions$ = inject(Actions);
+  private service = inject(FetchDatasetService);
+
   loadSpecies = createEffect(() => this.actions$.pipe(
     ofType(searchResultActions.loadSpecies),
     exhaustMap(() => this.service.fetchSpeciesDataSources().pipe(
@@ -22,12 +25,6 @@ export class SearchResultEffects {
       catchError((err) => of(searchResultActions.searchError({error: err})))
     )),
   ))
-
-
-  constructor(
-    private actions$: Actions,
-    private service: FetchDatasetService
-  ){}
 }
 
 

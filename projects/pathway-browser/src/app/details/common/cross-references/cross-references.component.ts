@@ -1,4 +1,4 @@
-import {Component, computed, input} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import {EntityService} from "../../../services/entity.service";
 import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
 import {KeyValuePipe} from "@angular/common";
@@ -14,6 +14,8 @@ import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
   styleUrl: './cross-references.component.scss'
 })
 export class CrossReferencesComponent {
+  private entity = inject(EntityService);
+
   readonly _crossReferences = input.required<DatabaseIdentifier[]>({alias: 'crossRefs'});
 
   readonly crossReferences = computed(() => {
@@ -31,8 +33,4 @@ export class CrossReferencesComponent {
     }
     return grouped;
   });
-
-  constructor(private entity: EntityService) {
-
-  }
 }

@@ -1,4 +1,4 @@
-import {computed, effect, Injectable, signal} from '@angular/core';
+import { computed, effect, Injectable, signal, inject } from '@angular/core';
 import {HttpClient, HttpHeaders} from "@angular/common/http";
 import {catchError, map, Observable, of} from "rxjs";
 import {CONTENT_SERVICE, environment} from "../../environments/environment";
@@ -14,6 +14,11 @@ import {SelectableObject} from "./event.service";
   providedIn: 'root'
 })
 export class SpeciesService {
+  private http = inject(HttpClient);
+  private state = inject(UrlStateService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
 
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
   private readonly _ORTHOLOGIES = `${CONTENT_SERVICE}/data/orthologies/ids/species/`
@@ -52,7 +57,7 @@ export class SpeciesService {
 
   abbreviationToSpecies = computed(() => new Map(this.allShortenSpecies()?.map(s => ([s.abbreviation, s]))))
 
-  constructor(private http: HttpClient, private state: UrlStateService, private router: Router, private route: ActivatedRoute) {
+  constructor() {
     effect(() => {
       const newSpecies = this.abbreviationToSpecies().get(this.state.pathwayId()?.substring(2, 5) || '');
       if (newSpecies) this.currentSpecies.set(newSpecies);

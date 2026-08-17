@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {methodActions} from "../state/method/method.action";
@@ -13,10 +13,13 @@ import {methodFeature} from "../state/method/method.selector";
     standalone: false
 })
 export class OptionsComponent {
+  private formBuilder = inject(FormBuilder);
+  store = inject(Store);
+
   analysisOptionsStep: FormGroup;
   parameters$: Observable<Parameter[]> = this.store.select(methodFeature.selectCommonParameters);
 
-  constructor(private formBuilder: FormBuilder, public store: Store) {
+  constructor() {
     this.analysisOptionsStep = this.formBuilder.group({
       name: ['', Validators.required]
     });

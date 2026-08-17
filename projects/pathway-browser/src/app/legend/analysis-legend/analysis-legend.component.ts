@@ -1,4 +1,4 @@
-import {Component, computed, input} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import {AnalysisService, PaletteName} from "../../services/analysis.service";
 import {UrlStateService} from "../../services/url-state.service";
 import {DecimalPipe, NgTemplateOutlet} from "@angular/common";
@@ -30,6 +30,9 @@ import {getArrayStats} from "../../services/utils";
   ]
 })
 export class AnalysisLegendComponent {
+  analysis = inject(AnalysisService);
+  state = inject(UrlStateService);
+
 
   radius = input(10);
   viewBox = computed(() => `0 -1 ${this.radius() * 2} ${this.radius()}`)
@@ -50,9 +53,6 @@ export class AnalysisLegendComponent {
   name = computed(() => this.state.sample() || "FDR")
 
   selectingPalette = false;
-
-  constructor(public analysis: AnalysisService, public state: UrlStateService) {
-  }
 
   selectPalette(palette: PaletteName) {
     this.state.palette.set(palette);

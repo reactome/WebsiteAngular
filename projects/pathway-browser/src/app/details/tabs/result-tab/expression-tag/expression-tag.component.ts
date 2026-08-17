@@ -1,4 +1,4 @@
-import {Component, computed, input} from '@angular/core';
+import { Component, computed, input, inject } from '@angular/core';
 import {AnalysisService} from "../../../../services/analysis.service";
 import {MatTooltip} from "@angular/material/tooltip";
 import {MatIcon} from "@angular/material/icon";
@@ -30,6 +30,10 @@ export const gsaValueToLabel = new Map<number, Label>([
   styleUrl: './expression-tag.component.scss'
 })
 export class ExpressionTagComponent {
+  private analysis = inject(AnalysisService);
+  private state = inject(UrlStateService);
+  private dark = inject(DarkService);
+
 
   value = input.required<number>()
   scientificFormat = input.required<boolean>()
@@ -57,9 +61,6 @@ export class ExpressionTagComponent {
     'color': 'var(--on-surface)',
     'border': `2px solid ${this.color().hex()}`
   })
-
-  constructor(private analysis: AnalysisService, private state: UrlStateService, private dark: DarkService) {
-  }
 
   protected readonly gsaValueToLabel = gsaValueToLabel;
 }

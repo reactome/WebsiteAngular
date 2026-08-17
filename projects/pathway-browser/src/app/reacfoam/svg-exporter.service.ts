@@ -1,4 +1,4 @@
-import {computed, Injectable, untracked} from '@angular/core';
+import { computed, Injectable, untracked, inject } from '@angular/core';
 import {AnalysisService} from "../services/analysis.service";
 import {DownloadOptions} from "../services/download.service";
 import {Context} from "svgcanvas";
@@ -43,12 +43,11 @@ type Padding = { left: number; right: number; top: number; bottom: number };
   providedIn: 'root'
 })
 export class SvgExporterService {
+  private analysis = inject(AnalysisService);
+  private reacfoam = inject(ReacfoamService);
+  private state = inject(UrlStateService);
+  private ehld = inject(EhldService);
 
-  constructor(private analysis: AnalysisService,
-              private reacfoam: ReacfoamService,
-              private state: UrlStateService,
-              private ehld:EhldService) {
-  }
 
   style!: SvgDecoration.Style;
   options!: DownloadOptions & { halfTransition: number, totalTime: number };

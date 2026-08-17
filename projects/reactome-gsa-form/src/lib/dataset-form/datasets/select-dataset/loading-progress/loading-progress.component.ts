@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {Store} from "@ngrx/store";
 import {datasetFeature} from "../../../../state/dataset/dataset.selector";
 import {filter, map, Observable} from "rxjs";
@@ -13,14 +13,13 @@ import {MAT_DIALOG_DATA} from "@angular/material/dialog";
     standalone: false
 })
 export class LoadingProgressComponent implements OnInit {
+  store = inject(Store);
+  data = inject<{
+    datasetId: number;
+}>(MAT_DIALOG_DATA);
+
 
   loadingStatus$!: Observable<PLoadingStatus>
-
-
-  constructor(
-    public store: Store,
-    @Inject(MAT_DIALOG_DATA) public data: { datasetId: number }) {
-  }
 
   ngOnInit(): void {
 

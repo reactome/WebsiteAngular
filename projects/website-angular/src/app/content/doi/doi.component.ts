@@ -16,6 +16,8 @@ const PAGE_SIZE = 25;
   styleUrl: './doi.component.scss'
 })
 export class DoiComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -34,8 +36,6 @@ export class DoiComponent implements OnInit, OnDestroy {
 
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
-
-  constructor(private contentDataService: ContentDataService) {}
 
   ngOnInit() {
     this.searchSubject.pipe(

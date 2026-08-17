@@ -1,4 +1,4 @@
-import {Injectable, ResourceRef} from '@angular/core';
+import { Injectable, ResourceRef, inject } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import type {TissueExperiment} from "./tissue-experiment.model";
 import {Observable} from "rxjs";
@@ -9,8 +9,8 @@ import {rxResource} from "@angular/core/rxjs-interop";
   providedIn: 'root'
 })
 export class TissueExperimentService {
-  constructor(private http: HttpClient) {
-  }
+  private http = inject(HttpClient);
+
 
   summaries = rxResource({
     params: () => ({}),

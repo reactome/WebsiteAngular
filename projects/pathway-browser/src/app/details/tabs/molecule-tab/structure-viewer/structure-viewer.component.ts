@@ -1,14 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  input,
-  linkedSignal,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, input, linkedSignal, signal, viewChild, inject } from '@angular/core';
 import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.model';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
@@ -111,6 +101,10 @@ declare const PDBeMolstarPlugin: any;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StructureViewerComponent {
+  private dark = inject(DarkService);
+  private http = inject(HttpClient);
+  private structure = inject(StructureService);
+
   readonly obj = input.required<ReferenceEntity | SelectableObject>();
   readonly xRefs = input.required<DatabaseIdentifier[]>();
   readonly moleculeType = input.required<string | null>();
@@ -224,11 +218,7 @@ export class StructureViewerComponent {
     return extract(this.reactomeStyle.properties.global.surface);
   });
 
-  constructor(
-    private dark: DarkService,
-    private http: HttpClient,
-    private structure: StructureService
-  ) {
+  constructor() {
     effect(() => {
       const [isProtein, isChemical] = [this.isProtein(), this.isChemical()];
 

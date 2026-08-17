@@ -1,14 +1,4 @@
-import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  linkedSignal,
-  signal,
-  Signal,
-  untracked,
-  viewChild
-} from '@angular/core';
+import { Component, computed, effect, ElementRef, linkedSignal, signal, Signal, untracked, viewChild, inject } from '@angular/core';
 import {AnalysisService} from "../../../services/analysis.service";
 import {MatTableDataSource, MatTableModule} from "@angular/material/table";
 import type {Analysis} from "../../../model/analysis.model";
@@ -72,6 +62,11 @@ import {MatFormField, MatOption, MatSelect} from "@angular/material/select";
   styleUrl: './result-tab.component.scss'
 })
 export class ResultTabComponent {
+  analysis = inject(AnalysisService);
+  state = inject(UrlStateService);
+  data = inject(DataStateService);
+  private router = inject(Router);
+
 
   analysisType = computed(() => this.analysis.summary()?.gsaMethod?.toUpperCase() || titleCase(this.analysis.summary()?.type || '').replace("_", ' '));
 
@@ -208,12 +203,7 @@ export class ResultTabComponent {
     return [2, 1, 0, -1, -2].map(exp => ({exp, value: activatedFilters.has(exp), label: gsaValueToLabel.get(exp)!}))
   })
 
-  constructor(
-    public analysis: AnalysisService,
-    public state: UrlStateService,
-    public data: DataStateService,
-    private router: Router
-  ) {
+  constructor() {
     this.dataSource.sortingDataAccessor = (data, header) => header.split('-').reduce((a: any, b) => a?.[b], data);
     effect(() => {
       this.sizeObserver.observe(this.container().nativeElement)

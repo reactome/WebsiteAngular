@@ -1,4 +1,4 @@
-import {computed, Inject, Injectable} from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import {LoadingStatus} from "../model/load-dataset.model";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {AnalysisResult} from "../model/analysis-result.model";
@@ -15,18 +15,15 @@ import {ConfigProvider, REACTOME_GSA_CONFIG} from "../config/gsa-config";
   providedIn: 'root'
 })
 export class AnalysisService {
+  private http = inject(HttpClient);
+  private snackBar = inject(MatSnackBar);
+  private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
+
 
   submitAnalysisUrl = computed(() => `${this.config().apiRoot}/analysis`);
   analysisStatusUrl = computed(() => `${this.config().apiRoot}/status/`);
   analysisResultUrl = computed(() => `${this.config().apiRoot}/result/`);
   reportStatusUrl = computed(() => `${this.config().apiRoot}/report_status/`);
-
-  constructor(
-    private http: HttpClient,
-    private snackBar: MatSnackBar,
-    @Inject(REACTOME_GSA_CONFIG) private config: ConfigProvider
-  ) {
-  }
 
   submitQuery(method: Method, parameters: Parameter[], datasets: Dataset[]): Observable<string> {
     const query: Request.Query = {

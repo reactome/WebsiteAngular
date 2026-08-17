@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -55,6 +55,13 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
     ]
 })
 export class CustomInteractorDialogComponent implements OnInit {
+  private interactorService = inject(InteractorService);
+  private dialogRef = inject<MatDialogRef<CustomInteractorDialogComponent>>(MatDialogRef);
+  private fb = inject(FormBuilder);
+  data = inject<{
+    cy: cytoscape.Core;
+}>(MAT_DIALOG_DATA);
+
 
   cy!: cytoscape.Core;
   name = new FormControl('', [Validators.required, Validators.pattern(/^[a-zA-Z_]+[a-zA-Z0-9_]*$/)]);
@@ -69,9 +76,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     {'name': 'content', 'content': 'Copy & Paste'},
     {'name': 'url', 'content': 'URL'}]
 
-  constructor(private interactorService: InteractorService, private dialogRef: MatDialogRef<CustomInteractorDialogComponent>, private fb: FormBuilder, @Inject(MAT_DIALOG_DATA) public data: {
-    cy: cytoscape.Core
-  }) {
+  constructor() {
     this.resourceForm = this.fb.group({
       selectedValue: [''],
       form: [''], // file uploader

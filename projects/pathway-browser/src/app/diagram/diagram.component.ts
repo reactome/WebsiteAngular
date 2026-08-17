@@ -1,17 +1,4 @@
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  input,
-  model,
-  OnDestroy,
-  Output,
-  signal,
-  viewChild,
-  ViewChild,
-} from '@angular/core';
+import { AfterViewInit, Component, computed, effect, ElementRef, input, model, OnDestroy, Output, signal, viewChild, ViewChild, inject } from '@angular/core';
 import { DiagramService } from '../services/diagram.service';
 import {
   extract,
@@ -95,6 +82,17 @@ const FIT_PADDING = 100;
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
+  private diagram = inject(DiagramService);
+  dark = inject(DarkService);
+  private interactorsService = inject(InteractorService);
+  private state = inject(UrlStateService);
+  analysis = inject(AnalysisService);
+  private event = inject(EventService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private download = inject(DownloadService);
+  private data = inject(DataStateService);
+
   title = 'pathway-browser';
   @ViewChild('cytoscape') cytoscapeContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('cytoscapeCompare') compareContainer?: ElementRef<HTMLDivElement>;
@@ -129,18 +127,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   comparing: boolean = false;
   isInitialLoad: boolean = true;
 
-  constructor(
-    private diagram: DiagramService,
-    public dark: DarkService,
-    private interactorsService: InteractorService,
-    private state: UrlStateService,
-    public analysis: AnalysisService,
-    private event: EventService,
-    private router: Router,
-    private route: ActivatedRoute,
-    private download: DownloadService,
-    private data: DataStateService
-  ) {
+  constructor() {
     this.isInitialLoad = Boolean(
       !this.router.getCurrentNavigation()?.previousNavigation
     );

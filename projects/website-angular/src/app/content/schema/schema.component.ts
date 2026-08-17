@@ -26,6 +26,10 @@ interface FlatTreeNode {
   styleUrl: './schema.component.scss',
 })
 export class SchemaComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -65,12 +69,6 @@ export class SchemaComponent implements OnInit, OnDestroy {
   loading = true;
   error = false;
   sidebarOpen = false;
-
-  constructor(
-    private contentDataService: ContentDataService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
 
   ngOnInit() {
     this.contentDataService

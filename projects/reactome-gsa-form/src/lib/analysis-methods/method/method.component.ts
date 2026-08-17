@@ -1,4 +1,4 @@
-import {Component, input, OnInit} from '@angular/core';
+import { Component, input, OnInit, inject } from '@angular/core';
 import {ScrollService} from "../../services/scroll.service";
 import {Method} from "../../state/method/method.state";
 import {Store} from "@ngrx/store";
@@ -15,6 +15,9 @@ import {Parameter} from "../../model/parameter.model";
     standalone: false
 })
 export class MethodComponent implements OnInit {
+  private scrollService = inject(ScrollService);
+  private store = inject(Store);
+
   readonly methodName = input.required<string>();
   selected$ = this.store.select(methodFeature.selectSelectedMethodName).pipe(map(name => name === this.methodName()));
   method$!: Observable<Method>;
@@ -25,9 +28,6 @@ export class MethodComponent implements OnInit {
     this.parameters$ = this.method$.pipe(
       map(method => Object.values(method.parameters).filter(p => p.scope === 'analysis'))
     )
-  }
-
-  constructor(private scrollService: ScrollService, private store: Store) {
   }
 
   selectMethod() {

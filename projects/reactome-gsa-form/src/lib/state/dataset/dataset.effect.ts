@@ -1,4 +1,4 @@
-import {Injectable} from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import {Actions, createEffect, ofType} from "@ngrx/effects";
 import {
   catchError,
@@ -27,6 +27,12 @@ import {TourUtilsService} from "../../services/tour-utils.service";
 
 @Injectable()
 export class DatasetEffects {
+  private actions$ = inject(Actions);
+  private dialog = inject(MatDialog);
+  private loadDatasetService = inject(LoadDatasetService);
+  private store = inject(Store);
+  private tour = inject(TourUtilsService);
+
 
   upload = createEffect(() =>
     this.actions$.pipe(
@@ -260,13 +266,4 @@ export class DatasetEffects {
 
 
   dialogRef?: MatDialogRef<LoadingProgressComponent>;
-
-  constructor(
-    private actions$: Actions,
-    private dialog: MatDialog,
-    private loadDatasetService: LoadDatasetService,
-    private store: Store,
-    private tour: TourUtilsService
-  ) {
-  }
 }

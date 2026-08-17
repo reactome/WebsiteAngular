@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, inject } from '@angular/core';
 import {ReferenceEntity} from "../../../../model/graph/reference-entity/reference-entity.model";
 import {SelectableObject} from "../../../../services/event.service";
 import {DatabaseIdentifier} from "../../../../model/graph/database-identifier.model";
@@ -31,6 +31,9 @@ import {StructureService} from "../../../../services/structure.service";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ObjectTreeDetailsComponent {
+  private entity = inject(EntityService);
+  private structure = inject(StructureService);
+
 
   readonly obj = input.required<SelectableObject>();
   readonly className = input<string>();
@@ -50,10 +53,6 @@ export class ObjectTreeDetailsComponent {
   hasStructure = computed(() => this.moleculeType() === MoleculeType.PROTEIN || this.moleculeType() === MoleculeType.CHEMICAL);
 
   hasStructureData  = computed(() => this.structure.hasAnyStructure());
-
-  constructor(private entity: EntityService,
-              private structure: StructureService) {
-  }
 
   displayNotice = computed(() => {
     if (!isMolecule(this.obj())) return false;

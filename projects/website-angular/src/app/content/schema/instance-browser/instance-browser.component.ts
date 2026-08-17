@@ -37,6 +37,8 @@ interface AttributeValue {
   styleUrl: './instance-browser.component.scss',
 })
 export class InstanceBrowserComponent implements OnChanges, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -52,8 +54,6 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   referrals: InstanceReferrals[] = [];
   loading = true;
   error = false;
-
-  constructor(private contentDataService: ContentDataService) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['instanceId'] && this.instanceId != null) {

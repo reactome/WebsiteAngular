@@ -83,12 +83,14 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-require-imports': 'warn',
       'prefer-const': 'warn',
       'no-useless-escape': 'warn',
-      // Modernisation, not defects: constructor injection still works.
-      '@angular-eslint/prefer-inject': 'warn',
+      // Migrated in full with ng generate @angular/core:inject-migration, so
+      // any new constructor injection is a step backwards.
+      '@angular-eslint/prefer-inject': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
-      '@angular-eslint/no-empty-lifecycle-method': 'warn',
+      // All twelve removed, so a new empty hook is a new mistake.
+      '@angular-eslint/no-empty-lifecycle-method': 'error',
       '@angular-eslint/use-lifecycle-interface': 'warn',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-wrapper-object-types': 'warn',

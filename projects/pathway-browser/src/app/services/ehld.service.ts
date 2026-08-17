@@ -1,4 +1,4 @@
-import {computed, ElementRef, Injectable} from '@angular/core';
+import { computed, ElementRef, Injectable, inject } from '@angular/core';
 import {Observable, switchMap} from "rxjs";
 import {HttpClient} from "@angular/common/http";
 import type {Analysis} from "../model/analysis.model";
@@ -25,6 +25,13 @@ export interface LegendGroup {
   providedIn: 'root'
 })
 export class EhldService {
+  private http = inject(HttpClient);
+  private analysis = inject(AnalysisService);
+  private data = inject(DataStateService);
+  private state = inject(UrlStateService);
+  private general = inject(GeneralService);
+  private download = inject(DownloadService);
+
 
   hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
   select = computed(() => this.state.select());
@@ -53,14 +60,6 @@ export class EhldService {
       ]
     }
   ];
-
-  constructor(private http: HttpClient,
-              private analysis: AnalysisService,
-              private data: DataStateService,
-              private state: UrlStateService,
-              private general: GeneralService,
-              private download: DownloadService) {
-  }
 
   getSVGData(id: string): Observable<string> {
     return this.general.download$.pipe(

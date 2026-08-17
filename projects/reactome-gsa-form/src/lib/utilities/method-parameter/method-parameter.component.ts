@@ -1,4 +1,4 @@
-import {Component, input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
+import { Component, input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import {ParameterType} from "../../model/methods.model";
 import {BreakpointObserver, Breakpoints} from "@angular/cdk/layout";
 import {FormControl, Validators} from "@angular/forms";
@@ -15,6 +15,8 @@ import {Parameter} from "../../model/parameter.model";
     standalone: false
 })
 export class MethodParameterComponent implements OnInit, OnChanges {
+  private responsive = inject(BreakpointObserver);
+
   readonly parameter = input.required<Parameter>();
   readonly infoTooltip = input<boolean>(true);
   types = ParameterType;
@@ -29,9 +31,6 @@ export class MethodParameterComponent implements OnInit, OnChanges {
   @Output() parameterChange: Observable<Parameter> = this.control.valueChanges.pipe(
     map(value => ({...this.parameter(), value})),
   )
-
-  constructor(private responsive: BreakpointObserver) {
-  }
 
   ngOnInit(): void {
     const parameter = this.parameter();

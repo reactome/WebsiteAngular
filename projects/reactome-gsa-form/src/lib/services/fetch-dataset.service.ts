@@ -1,4 +1,4 @@
-import {computed, Inject, Injectable} from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {catchError, Observable, throwError} from "rxjs";
 import {MatSnackBar} from "@angular/material/snack-bar";
@@ -11,17 +11,15 @@ import {ConfigProvider, REACTOME_GSA_CONFIG} from "../config/gsa-config";
   providedIn: 'root'
 })
 export class FetchDatasetService {
+  private http = inject(HttpClient);
+  private snackBar = inject(MatSnackBar);
+  private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
+
   exampleDataUrl = computed(() => `${this.config().apiRoot}/data/examples`);
   localDataUrl = computed(() =>`${this.config().apiRoot}/types`);
   inputDataUrl = computed(() =>`${this.config().apiRoot}/data/sources`);
   searchDataUrl = computed(() =>`${this.config().apiRoot}/data/search`);
   speciesDataUrl = computed(() =>`${this.config().apiRoot}/data/search/species`);
-
-  constructor(
-    private http: HttpClient,
-    private snackBar: MatSnackBar,
-    @Inject(REACTOME_GSA_CONFIG) private config: ConfigProvider) {
-  }
 
   fetchExampleDataSources(): Observable<DatasetSource[]> {
     return this.http.get<DatasetSource[]>(this.exampleDataUrl())

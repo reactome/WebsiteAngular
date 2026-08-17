@@ -28,6 +28,8 @@ const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQR7_-1pf24gjQh
   styleUrl: './release-calendar.component.scss'
 })
 export class ReleaseCalendarComponent implements OnInit {
+  private http = inject(HttpClient);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -35,8 +37,6 @@ export class ReleaseCalendarComponent implements OnInit {
   loading = true;
   error = false;
   latestVersion = 0;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(CSV_URL, { responseType: 'text' }).subscribe({

@@ -1,4 +1,4 @@
-import {Component, OnInit, input} from '@angular/core';
+import { Component, OnInit, input, inject } from '@angular/core';
 import {FormBuilder} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
@@ -14,6 +14,9 @@ import {datasetActions} from "../../../../../../state/dataset/dataset.actions";
     standalone: false
 })
 export class SearchComponent implements OnInit {
+  private store = inject(Store);
+  private builder = inject(FormBuilder);
+
 
   readonly datasetId = input.required<number>();
 
@@ -29,10 +32,6 @@ export class SearchComponent implements OnInit {
   searchStatus$: Observable<'pending' | 'finished' | 'waiting'> = this.store.select(searchResultFeature.selectSearchStatus);
   species$: Observable<string[]> = this.store.select(searchResultFeature.selectSpeciesList);
   results$: Observable<SearchResult[]> = this.store.select(searchResultFeature.selectAll);
-
-  constructor(private store: Store, private builder: FormBuilder) {
-
-  }
 
   ngOnInit(): void {
     this.store.dispatch(searchResultActions.loadSpecies());

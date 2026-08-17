@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, input, OnInit} from '@angular/core';
+import { Component, input, OnInit, inject } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Observable} from 'rxjs';
 import {PDataset} from '../../../state/dataset/dataset.state';
@@ -13,7 +13,10 @@ import {Covariate} from "../../../model/dataset.model";
     styleUrls: ['./statistical-design.component.scss'],
     standalone: false
 })
-export class StatisticalDesignComponent implements OnInit, AfterViewInit {
+export class StatisticalDesignComponent implements OnInit {
+    private formBuilder = inject(FormBuilder);
+    store = inject(Store);
+
     readonly datasetId = input.required<number>();
     dataset$!: Observable<PDataset | undefined>;
     statisticalDesignStep: FormGroup;
@@ -23,7 +26,7 @@ export class StatisticalDesignComponent implements OnInit, AfterViewInit {
     someSelected$!: Observable<boolean>;
     allSelected$!: Observable<boolean>;
 
-    constructor(private formBuilder: FormBuilder, public store: Store) {
+    constructor() {
         this.statisticalDesignStep = this.formBuilder.group({
             address: ['', Validators.required],
         });
@@ -37,7 +40,6 @@ export class StatisticalDesignComponent implements OnInit, AfterViewInit {
         this.allSelected$ = this.store.select(datasetFeature.selectCovariancesAllSelected(this.datasetId()));
     }
 
-    ngAfterViewInit() {}
 
     changeAllCovariates(value: boolean) {
         this.store.dispatch(

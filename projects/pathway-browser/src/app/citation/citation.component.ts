@@ -33,6 +33,8 @@ import {FormsModule} from "@angular/forms";
   styleUrl: './citation.component.scss'
 })
 export class CitationComponent {
+  citation = inject(CitationService);
+
 
   data: Citation = inject(MAT_DIALOG_DATA);
 
@@ -67,9 +69,6 @@ export class CitationComponent {
   });
 
   citationToMail = computed(() => encodeURI(this.citationToCopy()));
-
-  constructor(public citation: CitationService) {
-  }
 
   onCopyClick() {
     this.copyLabel.set('Copied');
