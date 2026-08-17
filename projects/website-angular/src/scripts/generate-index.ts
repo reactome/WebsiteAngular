@@ -179,7 +179,7 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
             ? frontmatter['tags']
                 .split(',')
                 .map((t: string) =>
-                  t.trim().replace(/^[\[\["']+|[\]'"]+$/g, '')
+                  t.trim().replace(/^[["']+|[\]'"]+$/g, '')
                 )
             : frontmatter['tags'],
       } as ArticleIndexItem;
