@@ -91,6 +91,26 @@ test.describe('Diagram entity popup', () => {
     expect(page.url()).toBe(before);
   });
 
+  test('groups molecules by type, using the reference entity not the schema class',
+    async ({ page }) => {
+      await page.goto(PATHWAY);
+      await openPopupOnAnyEntity(page);
+
+      const rows = page.locator('.entity-popup__content li');
+      await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+
+      // Every heading must come from the vocabulary the Molecule tab uses.
+      // Deriving the type from schemaClass alone once put "BBC3 gene" under
+      // Proteins, because EntityWithAccessionedSequence covers proteins, DNA
+      // and RNA alike -- so the type comes from the reference entity instead.
+      const headings = await page.locator('.entity-popup__group').allInnerTexts();
+      for (const heading of headings) {
+        expect(['Proteins', 'DNA/RNA', 'Chemical Compounds', 'Drugs', 'Others']).toContain(
+          heading.trim(),
+        );
+      }
+    });
+
   test('lists the pathways containing the entity', async ({ page }) => {
     await page.goto(PATHWAY);
     await openPopupOnAnyEntity(page);

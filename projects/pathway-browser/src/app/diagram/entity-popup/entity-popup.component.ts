@@ -13,9 +13,11 @@ import {
 } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { CONTENT_SERVICE } from '../../../environments/environment';
+import { SchemaClasses } from '../../constants/constants';
+import { PropertyType } from '../../details/tabs/molecule-tab/molecule-tab.component';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
 
@@ -35,7 +37,7 @@ export interface EntityPopupTarget {
 /** One row of any of the three lists, normalised so the template stays simple. */
 interface PopupRow {
   label: string;
-  /** Secondary text: a compartment, a species, or an interaction score. */
+  /** Secondary text: a species, or an interaction's evidence count and score. */
   detail?: string;
   /** Diagram entity or pathway to go to when clicked. */
   stId?: string;
@@ -43,14 +45,70 @@ interface PopupRow {
   href?: string;
 }
 
+/** Rows under an optional heading. Only the Molecules tab groups its rows. */
+interface PopupGroup {
+  label?: string;
+  rows: PopupRow[];
+}
+
+/**
+ * Molecule type of a component, where its own schema class settles it.
+ *
+ * Returns undefined for EntityWithAccessionedSequence, which covers proteins,
+ * DNA and RNA alike; those need the reference entity to tell apart, and
+ * guessing is how an earlier attempt labelled "BBC3 gene" a protein.
+ */
+function typeFromSchemaClass(schemaClass?: string): string | undefined {
+  switch (schemaClass) {
+    case SchemaClasses.SIMPLE_ENTITY:
+      return PropertyType.CHEMICAL_COMPOUNDS;
+    case SchemaClasses.DRUG:
+    case SchemaClasses.CHEMICAL_DRUG:
+    case SchemaClasses.PROTEIN_DRUG:
+    case SchemaClasses.RNA_DRUG:
+      return PropertyType.DRUG;
+    case SchemaClasses.EWAS:
+      return undefined;
+    default:
+      return PropertyType.OTHERS;
+  }
+}
+
+/** Molecule type from a reference entity's schema class. */
+function typeFromReferenceClass(referenceClass?: string): string {
+  switch (referenceClass) {
+    case 'ReferenceGeneProduct':
+    case 'ReferenceIsoform':
+      return PropertyType.PROTEINS;
+    case 'ReferenceDNASequence':
+    case 'ReferenceRNASequence':
+      return PropertyType.SEQUENCES;
+    case 'ReferenceMolecule':
+      return PropertyType.CHEMICAL_COMPOUNDS;
+    case 'ReferenceTherapeutic':
+      return PropertyType.DRUG;
+    default:
+      return PropertyType.OTHERS;
+  }
+}
+
+/** Display order, so headings do not jump around between entities. */
+const TYPE_ORDER: string[] = [
+  PropertyType.PROTEINS,
+  PropertyType.SEQUENCES,
+  PropertyType.CHEMICAL_COMPOUNDS,
+  PropertyType.DRUG,
+  PropertyType.OTHERS,
+];
+
 /**
  * The right-click inspector on diagram entities.
  *
- * Modelled on the popup in the current production Pathway Browser: it is
- * titled with the entity, has Molecules / Pathways / Interactors tabs down the
- * side, and shows their contents **in place** rather than sending you off to
- * the details panel. Keeping the answer on the diagram is the point of it --
- * an earlier attempt that merely deep linked into the details panel read, to
+ * Modelled on the popup in the current production Pathway Browser: titled with
+ * the entity, Molecules / Pathways / Interactors as tabs down the side, and
+ * their contents rendered **in place** rather than sending you off to the
+ * details panel. Keeping the answer on the diagram is the point of it -- an
+ * earlier attempt that merely deep linked into the details panel read, to
  * curators, as "it just changes the tab".
  */
 @Component({
@@ -110,51 +168,93 @@ export class EntityPopupComponent {
 
   // --- data ------------------------------------------------------------
   // Each tab loads only when it is the visible one, so opening the popup costs
-  // a single request rather than three.
+  // one request rather than three.
 
   private readonly molecules = rxResource({
     params: () => (this.tab() === 'molecules' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
         ? this.http.get<any>(`${CONTENT_SERVICE}/data/query/enhanced/${params}`).pipe(
-            map((entity): PopupRow[] => {
-              const components: any[] = entity?.hasComponent ?? entity?.hasMember ?? [];
+            switchMap((entity) => {
+              const components = [
+                ...(entity?.hasComponent ?? []),
+                ...(entity?.hasMember ?? []),
+                ...(entity?.hasCandidate ?? []),
+              ].filter((c) => c && typeof c === 'object');
+
               // A protein or small molecule has no components; show itself so
               // the tab is never mysteriously blank.
               const source = components.length > 0 ? components : entity ? [entity] : [];
-              return source
-                // No type label: displayName already carries the compartment,
-                // and schemaClass cannot be turned into an accurate one --
-                // EntityWithAccessionedSequence covers proteins, RNA and genes
-                // alike, so "BBC3 gene" came out labelled "Protein".
-                .map((c) => ({
-                  label: c.displayName ?? c.name?.[0] ?? c.stId,
-                  stId: c.stId,
-                }))
-                // Components occasionally come back without a name; a blank
-                // row is worse than no row.
-                .filter((row) => !!row.label);
+
+              // Only EntityWithAccessionedSequence needs a second look, and an
+              // entity typically has none or one of those, so this is a request
+              // or two rather than one per row.
+              const ambiguous = source.filter(
+                (c: any) => c.schemaClass === SchemaClasses.EWAS && c.stId
+              );
+              if (ambiguous.length === 0) return of(this.group(source, new Map()));
+
+              return forkJoin(
+                ambiguous.map((c: any) =>
+                  this.http.get<any>(`${CONTENT_SERVICE}/data/query/${c.stId}`).pipe(
+                    map(
+                      (full) =>
+                        [c.stId, full?.referenceEntity?.schemaClass] as [string, string | undefined]
+                    ),
+                    // One failed lookup should not empty the whole tab; that
+                    // row just falls back to Others.
+                    catchError(() => of([c.stId, undefined] as [string, string | undefined]))
+                  )
+                )
+              ).pipe(map((pairs) => this.group(source, new Map(pairs))));
             })
           )
-        : of<PopupRow[] | undefined>(undefined),
+        : of<PopupGroup[] | undefined>(undefined),
   });
+
+  /** Group components by molecule type, in a stable order, as production does. */
+  private group(
+    components: any[],
+    referenceClasses: Map<string, string | undefined>
+  ): PopupGroup[] {
+    const byType = new Map<string, PopupRow[]>();
+
+    for (const component of components) {
+      const label = component.displayName ?? component.name?.[0] ?? component.stId;
+      // Components occasionally come back without a name; a blank row is worse
+      // than no row.
+      if (!label) continue;
+
+      const type =
+        typeFromSchemaClass(component.schemaClass) ??
+        typeFromReferenceClass(referenceClasses.get(component.stId));
+
+      const rows = byType.get(type) ?? [];
+      rows.push({ label, stId: component.stId });
+      byType.set(type, rows);
+    }
+
+    return [...byType.entries()]
+      .sort(([a], [b]) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b))
+      .map(([label, rows]) => ({ label, rows }));
+  }
 
   private readonly pathways = rxResource({
     params: () => (this.tab() === 'pathways' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
-        ? this.http
-            .get<any[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
-            .pipe(
-              map((items): PopupRow[] =>
-                (items ?? []).map((p) => ({
+        ? this.http.get<any[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`).pipe(
+            map((items): PopupGroup[] => [
+              {
+                rows: (items ?? []).map((p) => ({
                   label: p.displayName,
                   detail: p.speciesName,
                   stId: p.stId,
-                }))
-              )
-            )
-        : of<PopupRow[] | undefined>(undefined),
+                })),
+              },
+            ])
+          )
+        : of<PopupGroup[] | undefined>(undefined),
   });
 
   private readonly interactors = rxResource({
@@ -164,22 +264,24 @@ export class EntityPopupComponent {
         ? this.http
             .get<any>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
             .pipe(
-              map((result): PopupRow[] =>
-                // Production lists evidence count alongside the score, and
-                // both matter when judging an interaction, so show both.
-                (result?.entities?.[0]?.interactors ?? []).map((i: any) => ({
-                  label: i.alias || i.acc,
-                  detail: [
-                    i.evidences != null ? `${i.evidences} evidence` : null,
-                    i.score != null ? `score ${i.score}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · '),
-                  href: i.accURL,
-                }))
-              )
+              map((result): PopupGroup[] => [
+                {
+                  // Production lists evidence count alongside the score, and
+                  // both matter when judging an interaction.
+                  rows: (result?.entities?.[0]?.interactors ?? []).map((i: any) => ({
+                    label: i.alias || i.acc,
+                    detail: [
+                      i.evidences != null ? `${i.evidences} evidence` : null,
+                      i.score != null ? `score ${i.score}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · '),
+                    href: i.accURL,
+                  })),
+                },
+              ])
             )
-        : of<PopupRow[] | undefined>(undefined),
+        : of<PopupGroup[] | undefined>(undefined),
   });
 
   private readonly active = computed(() => {
@@ -193,7 +295,9 @@ export class EntityPopupComponent {
     }
   });
 
-  readonly rows = computed(() => this.active().value() ?? []);
+  readonly groups = computed(() =>
+    (this.active().value() ?? []).filter((g) => g.rows.length > 0)
+  );
   readonly loading = computed(() => this.active().isLoading());
   readonly failed = computed(() => this.active().status() === 'error');
 
@@ -206,9 +310,9 @@ export class EntityPopupComponent {
     if (this.interactorsUnavailable()) return 'No accession for this entity, so no interactors.';
     switch (this.tab()) {
       case 'pathways':
-        return 'Not found in any other pathway.';
+        return 'Not present in any other pathway.';
       case 'interactors':
-        return 'No interactors found.';
+        return 'No interactors to display.';
       default:
         return 'No component molecules.';
     }

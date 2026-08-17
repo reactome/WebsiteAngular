@@ -53,21 +53,26 @@
           <p class="entity-popup__note">Loading…</p>
         } @else if (failed()) {
           <p class="entity-popup__note">Could not load this.</p>
-        } @else if (rows().length === 0) {
+        } @else if (groups().length === 0) {
           <p class="entity-popup__note">{{ emptyMessage() }}</p>
         } @else {
-          <ul>
-            @for (row of rows(); track $index) {
-              <li>
-                <button type="button" (click)="open(row)">
-                  <span class="row-label">{{ row.label }}</span>
-                  @if (row.detail) {
-                    <span class="row-detail">{{ row.detail }}</span>
-                  }
-                </button>
-              </li>
+          @for (group of groups(); track group.label ?? $index) {
+            @if (group.label) {
+              <h3 class="entity-popup__group">{{ group.label }}</h3>
             }
-          </ul>
+            <ul>
+              @for (row of group.rows; track $index) {
+                <li>
+                  <button type="button" (click)="open(row)">
+                    <span class="row-label">{{ row.label }}</span>
+                    @if (row.detail) {
+                      <span class="row-detail">{{ row.detail }}</span>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         }
       </div>
     </div>
