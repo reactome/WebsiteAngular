@@ -1,17 +1,25 @@
 import { Component, input, OnInit, inject } from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {Observable} from 'rxjs';
 import {PDataset} from '../../../state/dataset/dataset.state';
 import {Store} from '@ngrx/store';
 import {AnalysisGroups, datasetFeature,} from '../../../state/dataset/dataset.selector';
 import {datasetActions} from '../../../state/dataset/dataset.actions';
 import {Covariate} from "../../../model/dataset.model";
+import { LetDirective } from '@ngrx/component';
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatFormField } from '@angular/material/form-field';
+import { MatSelect, MatOption } from '@angular/material/select';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { KeyValuePipe } from '@angular/common';
 
 @Component({
     selector: 'gsa-statistical-design',
     templateUrl: './statistical-design.component.html',
     styleUrls: ['./statistical-design.component.scss'],
-    standalone: false
+    imports: [LetDirective, FormsModule, ReactiveFormsModule, TourAnchorMatMenuDirective, MatIcon, MatTooltip, MatFormField, MatSelect, MatOption, MatCheckbox, KeyValuePipe]
 })
 export class StatisticalDesignComponent implements OnInit {
     private formBuilder = inject(FormBuilder);

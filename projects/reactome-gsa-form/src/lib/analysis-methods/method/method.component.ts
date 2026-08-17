@@ -7,12 +7,17 @@ import {filter, map, Observable} from "rxjs";
 import {methodFeature} from "../../state/method/method.selector";
 import {isDefined} from "../../utilities/utils";
 import {Parameter} from "../../model/parameter.model";
+import { LetDirective } from '@ngrx/component';
+import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription } from '@angular/material/expansion';
+import { NgClass } from '@angular/common';
+import { MethodParameterComponent } from '../../utilities/method-parameter/method-parameter.component';
+import { MatButton } from '@angular/material/button';
 
 @Component({
     selector: 'gsa-method',
     templateUrl: './method.component.html',
     styleUrls: ['./method.component.scss'],
-    standalone: false
+    imports: [LetDirective, MatExpansionPanel, NgClass, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription, MethodParameterComponent, MatButton]
 })
 export class MethodComponent implements OnInit {
   private scrollService = inject(ScrollService);

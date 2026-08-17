@@ -1,10 +1,18 @@
 import { Component, input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import {ParameterType} from "../../model/methods.model";
 import {BreakpointObserver, Breakpoints} from "@angular/cdk/layout";
-import {FormControl, Validators} from "@angular/forms";
+import { FormControl, Validators, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import {map, Observable} from "rxjs";
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {Parameter} from "../../model/parameter.model";
+import { LetDirective } from '@ngrx/component';
+import { NgClass } from '@angular/common';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { MatFormField, MatError } from '@angular/material/form-field';
+import { MatSelect, MatOption } from '@angular/material/select';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { MatInput } from '@angular/material/input';
 
 
 @UntilDestroy()
@@ -12,7 +20,7 @@ import {Parameter} from "../../model/parameter.model";
     selector: 'gsa-method-parameter',
     templateUrl: './method-parameter.component.html',
     styleUrls: ['./method-parameter.component.scss'],
-    standalone: false
+    imports: [LetDirective, NgClass, MatTooltip, MatIcon, MatFormField, MatSelect, FormsModule, ReactiveFormsModule, MatOption, MatSlideToggle, MatInput, MatError]
 })
 export class MethodParameterComponent implements OnInit, OnChanges {
   private responsive = inject(BreakpointObserver);

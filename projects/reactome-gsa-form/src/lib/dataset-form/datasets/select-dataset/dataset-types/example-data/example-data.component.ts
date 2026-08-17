@@ -5,12 +5,16 @@ import {datasetSourceActions} from "../../../../../state/dataset-source/dataset-
 import {datasetActions} from "../../../../../state/dataset/dataset.actions";
 import {DownloadDatasetService} from "../../../../../services/download-dataset.service";
 import {TourUtilsService} from "../../../../../services/tour-utils.service";
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+import { MatIconButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
     selector: 'gsa-example-data',
     templateUrl: './example-data.component.html',
     styleUrls: ['./example-data.component.scss'],
-    standalone: false
+    imports: [TourAnchorMatMenuDirective, MatIconButton, MatTooltip, MatIcon]
 })
 export class ExampleDataComponent {
   store = inject(Store);

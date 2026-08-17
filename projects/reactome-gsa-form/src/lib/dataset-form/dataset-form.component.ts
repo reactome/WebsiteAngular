@@ -1,5 +1,5 @@
 import { Component, input, OnDestroy, OnInit, viewChild, inject } from '@angular/core';
-import {MatStepper} from "@angular/material/stepper";
+import { MatStepper, MatStep, MatStepLabel, MatStepperNext, MatStepperPrevious } from "@angular/material/stepper";
 import {MatDialog} from "@angular/material/dialog";
 import {ScrollService} from "../services/scroll.service";
 import {CdkStep, StepperSelectionEvent} from "@angular/cdk/stepper";
@@ -12,12 +12,22 @@ import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {Method} from "../state/method/method.state";
 import {DownloadDatasetService} from "../services/download-dataset.service";
 import {TourUtilsService} from "../services/tour-utils.service";
+import { MatExpansionPanel, MatExpansionPanelHeader } from '@angular/material/expansion';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { MatIconButton, MatFabButton, MatButton } from '@angular/material/button';
+import { SelectDatasetComponent } from './datasets/select-dataset/select-dataset.component';
+import { AnnotateDatasetComponent } from './datasets/annotate-dataset/annotate-dataset.component';
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+import { StatisticalDesignComponent } from './datasets/statistical-design/statistical-design.component';
+import { ParamDatasetComponent } from './datasets/param-dataset/param-dataset.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'gsa-dataset-form',
     templateUrl: './dataset-form.component.html',
     styleUrls: ['./dataset-form.component.scss'],
-    standalone: false
+    imports: [MatExpansionPanel, MatExpansionPanelHeader, MatTooltip, MatIcon, MatIconButton, MatStepper, MatStep, MatStepLabel, SelectDatasetComponent, MatFabButton, MatStepperNext, MatStepperPrevious, AnnotateDatasetComponent, TourAnchorMatMenuDirective, StatisticalDesignComponent, ParamDatasetComponent, MatButton, AsyncPipe]
 })
 @UntilDestroy()
 export class DatasetFormComponent implements OnInit, OnDestroy {

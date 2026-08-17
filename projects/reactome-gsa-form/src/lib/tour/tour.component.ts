@@ -1,16 +1,21 @@
 import { Component, inject } from '@angular/core';
-import {TourService} from "ngx-ui-tour-md-menu";
+import { TourService, TourStepTemplateComponent } from "ngx-ui-tour-md-menu";
 // ngx-ui-tour-md-menu publishes this interface under the name IStepOption
 // (`export type { IMdStepOption as IStepOption }`); it is the same type.
 import {IStepOption as IMdStepOption} from "ngx-ui-tour-md-menu";
 import {HeightService} from "../services/height.service";
 import {TourUtilsService} from "../services/tour-utils.service";
+import { MatCard, MatCardHeader, MatCardTitle, MatCardContent, MatCardActions } from '@angular/material/card';
+import { MatIcon } from '@angular/material/icon';
+import { MatIconButton, MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'gsa-tour',
     templateUrl: './tour.component.html',
     styleUrls: ['./tour.component.scss'],
-    standalone: false
+    imports: [TourStepTemplateComponent, MatCard, MatCardHeader, MatCardTitle, MatIcon, MatIconButton, MatCardContent, MatCardActions, MatButton, MatTooltip, AsyncPipe]
 })
 export class TourComponent {
   tourService = inject(TourService);

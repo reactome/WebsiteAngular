@@ -1,20 +1,26 @@
 import { Component, output, input, computed, inject } from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {analysisFeature} from "../state/analysis/analysis.selector";
-import {formatDate} from "@angular/common";
+import { formatDate, NgSwitch, NgSwitchCase, NgIf, NgFor, AsyncPipe, DecimalPipe } from "@angular/common";
 import {methodFeature} from "../state/method/method.selector";
 import {combineLatest, map} from "rxjs";
 import {datasetFeature} from "../state/dataset/dataset.selector";
 import {isDefined} from "../utilities/utils";
 import {AnalysisResult} from "../model/analysis-result.model";
+import { LetDirective } from '@ngrx/component';
+import { MatCard, MatCardTitle, MatCardFooter } from '@angular/material/card';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatIcon } from '@angular/material/icon';
+import { MatButton } from '@angular/material/button';
+import { MatProgressBar } from '@angular/material/progress-bar';
 
 
 @Component({
-  selector: 'gsa-analysis',
-  templateUrl: './analysis.component.html',
-  styleUrls: ['./analysis.component.scss'],
-  standalone: false
+    selector: 'gsa-analysis',
+    templateUrl: './analysis.component.html',
+    styleUrls: ['./analysis.component.scss'],
+    imports: [LetDirective, FormsModule, ReactiveFormsModule, MatCard, MatCardTitle, NgSwitch, NgSwitchCase, MatProgressSpinner, MatIcon, MatButton, NgIf, MatCardFooter, MatProgressBar, NgFor, AsyncPipe, DecimalPipe]
 })
 export class AnalysisComponent {
   private formBuilder = inject(FormBuilder);

@@ -5,14 +5,15 @@ import {map} from "rxjs";
 import {TourUtilsService} from "../../services/tour-utils.service";
 import {HeightService} from "../../services/height.service";
 import {CdkScrollable} from "@angular/cdk/scrolling";
+import { NgClass, AsyncPipe } from '@angular/common';
 
 @UntilDestroy()
 @Component({
-  selector: 'gsa-scrollable',
-  templateUrl: './scrollable.component.html',
-  styleUrls: ['./scrollable.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: false
+    selector: 'gsa-scrollable',
+    templateUrl: './scrollable.component.html',
+    styleUrls: ['./scrollable.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CdkScrollable, NgClass, AsyncPipe]
 })
 export class ScrollableComponent implements AfterViewInit, OnDestroy {
   private scrollService = inject(ScrollService);

@@ -1,17 +1,26 @@
 import { Component, OnInit, input, inject } from '@angular/core';
-import {FormBuilder} from "@angular/forms";
+import { FormBuilder, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
 import {searchResultFeature} from "../../../../../../state/search-result/search-result.selector";
 import {SearchResult} from "../../../../../../state/search-result/search-result.state";
 import {searchResultActions} from "../../../../../../state/search-result/search-result.action";
 import {datasetActions} from "../../../../../../state/dataset/dataset.actions";
+import { MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field';
+import { MatSelect, MatOption } from '@angular/material/select';
+import { MatInput } from '@angular/material/input';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatDivider } from '@angular/material/list';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'gsa-search',
     templateUrl: './search.component.html',
     styleUrls: ['./search.component.scss'],
-    standalone: false
+    imports: [FormsModule, ReactiveFormsModule, MatFormField, MatLabel, MatSelect, MatOption, MatInput, MatIconButton, MatSuffix, MatIcon, MatTooltip, MatDivider, MatProgressSpinner, AsyncPipe]
 })
 export class SearchComponent implements OnInit {
   private store = inject(Store);

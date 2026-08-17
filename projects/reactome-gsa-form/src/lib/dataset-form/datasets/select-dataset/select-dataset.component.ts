@@ -1,6 +1,6 @@
 import { Component, OnInit, input, effect, ChangeDetectionStrategy, inject } from '@angular/core';
 import {Observable} from "rxjs";
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import {BreakpointObserver} from "@angular/cdk/layout";
 import {SearchLibraryDataset} from "../../../model/dataset-library";
 import {PDatasetSource} from "../../../state/dataset-source/dataset-source.state";
@@ -8,14 +8,27 @@ import {Store} from "@ngrx/store";
 import {datasetSourceActions} from "../../../state/dataset-source/dataset-source.action";
 import {datasetSourceFeature} from "../../../state/dataset-source/dataset-source.selector";
 import {Method} from "../../../state/method/method.state";
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+import { LocalDataComponent } from './dataset-types/local-data/local-data.component';
+import { ExampleDataComponent } from './dataset-types/example-data/example-data.component';
+import { ExternalDataComponent } from './dataset-types/external-data/external-data.component';
+import { AsyncPipe } from '@angular/common';
 
 
 @Component({
-  selector: 'gsa-select-dataset',
-  templateUrl: './select-dataset.component.html',
-  styleUrls: ['./select-dataset.component.scss'],
-  standalone: false,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'gsa-select-dataset',
+    templateUrl: './select-dataset.component.html',
+    styleUrls: ['./select-dataset.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        FormsModule,
+        ReactiveFormsModule,
+        TourAnchorMatMenuDirective,
+        LocalDataComponent,
+        ExampleDataComponent,
+        ExternalDataComponent,
+        AsyncPipe,
+    ],
 })
 export class SelectDatasetComponent implements OnInit {
   private formBuilder = inject(FormBuilder);

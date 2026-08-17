@@ -6,13 +6,20 @@ import {datasetSourceActions} from "../../../../../state/dataset-source/dataset-
 import {datasetSourceFeature} from "../../../../../state/dataset-source/dataset-source.selector";
 import {datasetActions} from "../../../../../state/dataset/dataset.actions";
 import {Parameter} from "../../../../../model/parameter.model";
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+import { NgClass, AsyncPipe } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+import { SearchComponent } from './search/search.component';
+import { FormsModule } from '@angular/forms';
+import { MethodParameterComponent } from '../../../../../utilities/method-parameter/method-parameter.component';
+import { MatButton } from '@angular/material/button';
 
 
 @Component({
     selector: 'gsa-external-data',
     templateUrl: './external-data.component.html',
     styleUrls: ['./external-data.component.scss'],
-    standalone: false
+    imports: [TourAnchorMatMenuDirective, NgClass, MatIcon, SearchComponent, FormsModule, MethodParameterComponent, MatButton, AsyncPipe]
 })
 export class ExternalDataComponent implements OnInit {
   private store = inject(Store);

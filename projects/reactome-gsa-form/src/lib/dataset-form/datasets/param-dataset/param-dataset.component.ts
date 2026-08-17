@@ -4,12 +4,14 @@ import {combineLatestWith, distinctUntilChanged, map, Observable, share} from "r
 import {Parameter} from "../../../model/parameter.model";
 import {datasetFeature, SampleGroups} from "../../../state/dataset/dataset.selector";
 import {datasetActions} from "../../../state/dataset/dataset.actions";
+import { LetDirective } from '@ngrx/component';
+import { MethodParameterComponent } from '../../../utilities/method-parameter/method-parameter.component';
 
 @Component({
-  selector: 'gsa-param-dataset',
-  templateUrl: './param-dataset.component.html',
-  styleUrl: './param-dataset.component.scss',
-  standalone: false,
+    selector: 'gsa-param-dataset',
+    templateUrl: './param-dataset.component.html',
+    styleUrl: './param-dataset.component.scss',
+    imports: [LetDirective, MethodParameterComponent],
 })
 export class ParamDatasetComponent implements OnInit {
   private store = inject(Store);

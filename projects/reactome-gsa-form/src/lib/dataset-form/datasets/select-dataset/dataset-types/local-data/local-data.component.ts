@@ -3,12 +3,16 @@ import {PDatasetSource} from "../../../../../state/dataset-source/dataset-source
 import {datasetSourceActions} from "../../../../../state/dataset-source/dataset-source.action";
 import {Store} from "@ngrx/store";
 import {datasetActions} from "../../../../../state/dataset/dataset.actions";
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { FormsModule } from '@angular/forms';
+import { MatButton } from '@angular/material/button';
 
 @Component({
-  selector: 'gsa-local-data',
-  templateUrl: './local-data.component.html',
-  styleUrls: ['./local-data.component.scss'],
-  standalone: false
+    selector: 'gsa-local-data',
+    templateUrl: './local-data.component.html',
+    styleUrls: ['./local-data.component.scss'],
+    imports: [MatIcon, MatTooltip, FormsModule, MatButton]
 })
 export class LocalDataComponent {
   store = inject(Store);
