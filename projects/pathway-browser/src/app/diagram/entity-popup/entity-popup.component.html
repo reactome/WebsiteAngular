@@ -8,7 +8,16 @@
     [style.top.px]="position().y"
   >
     <header class="entity-popup__header">
-      <span class="entity-popup__title" [title]="entity.label">{{ entity.label }}</span>
+      <!-- Clicking a molecule moves the diagram to it, so the title doubles as
+           the way back to the entity this popup is about. -->
+      <button
+        type="button"
+        class="entity-popup__title"
+        [title]="'Show ' + entity.label + ' again'"
+        (click)="recenter.emit()"
+      >
+        {{ entity.label }}
+      </button>
 
       <button
         type="button"

@@ -110,6 +110,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   /** The entity a right-click landed on, or null when no popup is open. */
   readonly contextTarget = signal<EntityPopupTarget | null>(null);
 
+  /**
+   * The viewport as it was when the popup opened.
+   *
+   * Clicking a molecule flies the diagram to it, so going back has to mean
+   * "the view I was looking at", not "fit to the entity" -- the latter lands
+   * you at a zoom you were never at, which is its own kind of lost.
+   */
+  private contextViewport: { zoom: number; pan: cytoscape.Position } | null = null;
+
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
   readonly controlMaxZoom = signal<number>(100);
@@ -587,6 +596,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // right-clicked, so the popup and the panel agree. Flagged as an
           // in-diagram selection, or the select effect animates a fit to the
           // node and a right-click would yank the whole diagram around.
+          this.contextViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
           this.selecting = true;
           this.state.select.set(stId);
         });
@@ -1500,13 +1510,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   /**
    * A row in the popup was clicked.
    *
-   * A pathway is somewhere to go, so it navigates. A molecule is part of what
-   * you are already looking at, so it is selected where it stands: the details
-   * panel follows it, and the diagram deliberately does not fly to it.
+   * A pathway is somewhere to go, so it navigates. A molecule is selected,
+   * which moves the diagram to it -- as production does. Deliberately NOT
+   * flagged as an in-diagram selection, so the select effect animates the fit.
    *
-   * Moving the diagram is what made a way back to the original entity feel
-   * necessary. Staying put means there is nothing to go back from -- the popup
-   * still names the entity you right-clicked, and it is still on screen.
+   * What production leaves you without is a way back, which is the confusing
+   * part rather than the movement itself; the popup title does that here.
    */
   onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
     if (event.kind === 'pathways') {
@@ -1517,10 +1526,32 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       });
       return;
     }
-    // Flagged as an in-diagram selection, which is what suppresses the fit
-    // animation in the select effect.
-    this.selecting = true;
     this.state.select.set(event.stId);
+  }
+
+  /**
+   * The popup title was clicked: go back to the entity it is about.
+   *
+   * Clicking a molecule flies the diagram off to that component, and with the
+   * popup still titled by the original entity there was no obvious way back.
+   * Selecting it again returns the diagram there.
+   */
+  onPopupRecenter(): void {
+    const target = this.contextTarget();
+    if (!target) return;
+
+    // Re-select without letting the select effect fit, then put the viewport
+    // back exactly where it was.
+    this.selecting = true;
+    this.state.select.set(target.stId);
+
+    const viewport = this.contextViewport;
+    if (viewport) {
+      this.cy.animate(
+        { zoom: viewport.zoom, pan: viewport.pan },
+        { duration: 500, easing: 'ease-in-out' }
+      );
+    }
   }
 
 }

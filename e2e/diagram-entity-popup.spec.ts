@@ -142,6 +142,33 @@ test.describe('Diagram entity popup', () => {
     await expect(rows.first().or(note)).toBeVisible({ timeout: 20_000 });
   });
 
+  test('clicking a molecule moves to it, and the title brings you back',
+    async ({ page }) => {
+      await page.goto(PATHWAY);
+      await openPopupOnAnyEntity(page);
+
+      const selection = () =>
+        page.evaluate(() => new URL(location.href).searchParams.get('select'));
+      const zoom = () => page.locator('mat-slider input').first().inputValue();
+
+      const startSelection = await selection();
+      const startZoom = await zoom();
+
+      // Selecting a molecule sends the diagram to it, as production does --
+      // though only when that molecule is drawn as its own node, so the move
+      // itself is not asserted here, only that the selection followed.
+      await page.locator('.entity-popup__content li button').first().click();
+      await expect.poll(selection, { timeout: 15_000 }).not.toBe(startSelection);
+
+      // The title is the way back. Production has no equivalent, which is what
+      // made its movement disorienting: it returns both the selection and the
+      // exact view, rather than fitting to the entity at some zoom you were
+      // never at.
+      await page.locator('.entity-popup__title').click();
+      await expect.poll(selection, { timeout: 15_000 }).toBe(startSelection);
+      await expect.poll(zoom, { timeout: 15_000 }).toBe(startZoom);
+    });
+
   test('closes on Escape without navigating', async ({ page }) => {
     await page.goto(PATHWAY);
     await openPopupOnAnyEntity(page);

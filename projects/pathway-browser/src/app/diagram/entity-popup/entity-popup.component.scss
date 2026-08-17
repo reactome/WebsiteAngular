@@ -26,6 +26,18 @@
 }
 
 .entity-popup__title {
+  // A button, because clicking a molecule sends the diagram off to it and this
+  // is the way back. Styled as the title it also is.
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+
   flex: 1;
   min-width: 0;
   font-size: 0.85rem;
@@ -33,6 +45,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  &:hover,
+  &:focus-visible {
+    background: rgb(255 255 255 / 22%);
+    text-decoration: underline;
+    outline: none;
+  }
 }
 
 .entity-popup__icon {

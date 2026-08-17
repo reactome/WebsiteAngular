@@ -126,6 +126,8 @@ export class EntityPopupComponent {
 
   /** A row was chosen; the diagram decides whether to select or navigate. */
   readonly navigate = output<{ stId: string; kind: EntityPopupTab }>();
+  /** The title was clicked: return the diagram to the entity this is about. */
+  readonly recenter = output<void>();
   readonly dismissed = output<void>();
 
   readonly tab = signal<EntityPopupTab>('molecules');

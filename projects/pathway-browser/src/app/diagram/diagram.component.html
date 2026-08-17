@@ -14,6 +14,7 @@
   <cr-entity-popup
     [target]="contextTarget()"
     (navigate)="onPopupNavigate($event)"
+    (recenter)="onPopupRecenter()"
     (dismissed)="contextTarget.set(null)"
   />
   <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex': 'none'">
