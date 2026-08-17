@@ -112,7 +112,7 @@ export class SpeciesService {
     const params = {...this.route.snapshot.queryParams};
     for (const [key, value] of Object.entries(params)) {
       let newValue = JSON.stringify(value);
-      for (let [initial, replacement] of map) {
+      for (const [initial, replacement] of map) {
         newValue = newValue.replaceAll(initial, replacement || '');
       }
       newValue = newValue.replaceAll(',""', '').replaceAll('""', '').trim() // Remove trailing commas and quotes from lists

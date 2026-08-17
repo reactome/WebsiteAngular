@@ -166,7 +166,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
       const tableCoords = this.viewport().elementRef.nativeElement.getBoundingClientRect()
       cellRect.x += this.viewport().measureScrollOffset('left') - tableCoords?.x;
       cellRect.y += this.viewport().measureScrollOffset('top') - tableCoords?.y;
-      let style = window.getComputedStyle(cell);
+      const style = window.getComputedStyle(cell);
       cellRect.width -= (parseFloat(style.getPropertyValue('padding-left')) + parseFloat(style.getPropertyValue('padding-right')));
       cellRect.height -= (parseFloat(style.getPropertyValue('padding-top')) + parseFloat(style.getPropertyValue('padding-bottom')));
       return cellRect;
@@ -236,7 +236,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
   mousedown($event: MouseEvent) {
     this.isDraggingMouse = true;
-    let {x, y} = this.getCell($event);
+    const {x, y} = this.getCell($event);
     this.tableStore.write({value: this.value});
     this.selectCell(x, y, $event.shiftKey);
     $event.preventDefault()
@@ -258,7 +258,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
   mousemove($event: MouseEvent) {
     if (this.isDraggingMouse) {
-      let stop = this.getCell($event);
+      const stop = this.getCell($event);
       if (this.previousStop?.x !== stop.x || this.previousStop?.y !== stop.y) this.tableStore.selectRange({stop});
       this.previousStop = stop;
     }
@@ -337,8 +337,8 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
   getCell($event: MouseEvent): Coords {
-    let x = parseInt(($event.target as HTMLTableCellElement).getAttribute("x") as string);
-    let y = parseInt(($event.target as HTMLTableCellElement).getAttribute("y") as string);
+    const x = parseInt(($event.target as HTMLTableCellElement).getAttribute("x") as string);
+    const y = parseInt(($event.target as HTMLTableCellElement).getAttribute("y") as string);
     return {x, y};
   }
 

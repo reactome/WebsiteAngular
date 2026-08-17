@@ -114,14 +114,23 @@ module.exports = tseslint.config(
     },
   },
   {
-    // Specs and tooling scripts: looser, and outside the app's type graph.
+    // Specs and tooling scripts: looser, and not held to the app's rules about
+    // awaiting promises.
     files: ['**/*.spec.ts', 'e2e/**/*.ts', 'scripts/**/*.{js,mjs}', '**/scripts/**/*.ts'],
-    languageOptions: { parserOptions: { project: null } },
-    extends: [eslint.configs.recommended],
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       'no-undef': 'off',
+      // Core no-unused-vars does not understand TypeScript -- it counted type
+      // positions and parameter properties as unused and produced 526 spurious
+      // warnings, a third of the entire baseline. typescript-eslint's version
+      // handles those, and is already on.
+      'no-unused-vars': 'off',
     },
+  },
+  {
+    // Same reason, everywhere: keep only the TypeScript-aware rule.
+    files: ['**/*.ts'],
+    rules: { 'no-unused-vars': 'off' },
   }
 );

@@ -129,7 +129,7 @@ export const datasetFeature = createFeature({
             const group2Values = new Set<string>()
             for (let i = 0; i < analysisColumn.length; i++) {
               const analysedValue = analysisColumn[i];
-              for (let [comparisonGroup, values] of [
+              for (const [comparisonGroup, values] of [
                 [dataset!.statisticalDesign!.comparisonGroup1, group1Values],
                 [dataset!.statisticalDesign!.comparisonGroup2, group2Values]
               ] as [string, Set<string>][]) {

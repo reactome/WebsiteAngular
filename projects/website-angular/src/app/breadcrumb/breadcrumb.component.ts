@@ -1,4 +1,4 @@
-import { Component, inject, effect, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, effect, ChangeDetectorRef, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from "@angular/material/icon";
@@ -21,7 +21,7 @@ interface BreadcrumbEntry extends NavLink {
   templateUrl: './breadcrumb.component.html',
   styleUrl: './breadcrumb.component.scss'
 })
-export class BreadcrumbComponent {
+export class BreadcrumbComponent implements OnInit {
   private route = inject(ActivatedRoute);
   // These components build their state into plain fields from route
   // subscriptions and an effect, so Angular is not told when it changes.
@@ -47,10 +47,10 @@ export class BreadcrumbComponent {
 
     this.route.url.subscribe(segments => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path_segments = segments.map(s => s.path);
+      const path_segments = segments.map(s => s.path);
 
       if (path_segments.length > 0 && path_segments) {
-        let second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 1] : null;
+        const second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 1] : null;
 
         if (second_lastSegment === 'news' || second_lastSegment === 'reactome-research-spotlight') {
           this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -1));
@@ -62,7 +62,7 @@ export class BreadcrumbComponent {
             }, 50);
           }
           
-          let articleSegment = path_segments[path_segments.length -1];
+          const articleSegment = path_segments[path_segments.length -1];
            this.contentService.getArticleIndexItem(
             second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
             articleSegment).subscribe({
@@ -120,8 +120,8 @@ export class BreadcrumbComponent {
           });
         } else if (path_segments.includes('faq') && path_segments.length > 2) { //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)
-          let faqIndex = path_segments.indexOf('faq');
-          let modifiedSegments = [...path_segments];
+          const faqIndex = path_segments.indexOf('faq');
+          const modifiedSegments = [...path_segments];
           modifiedSegments.splice(faqIndex + 1, modifiedSegments.length - faqIndex - 2);
           this.updateBreadcrumbs(modifiedSegments);
         } else {

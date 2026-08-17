@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, Output, effect, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output, effect, ChangeDetectorRef, OnInit } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { NavOptionsService } from '../../services/nav-options.service';
 import {
@@ -18,7 +18,7 @@ import { ArticleIndexItem } from '../../types/article';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   readonly linkPath = linkPath;
   readonly linkQueryParams = linkQueryParams;
 
@@ -75,7 +75,7 @@ export class SidebarComponent {
 
     this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path_segments = segments.map((s) => s.path);
+      const path_segments = segments.map((s) => s.path);
 
       if (path_segments.length > 0 && path_segments) {
         //If 2nd last item is news or reactome-research-spotlight, load articles as items

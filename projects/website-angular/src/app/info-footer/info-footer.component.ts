@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../services/nav-options.service';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { NavOption } from '../../types/link';
   templateUrl: './info-footer.component.html',
   styleUrl: './info-footer.component.scss',
 })
-export class InfoFooterComponent {
+export class InfoFooterComponent implements OnInit {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
 

@@ -412,7 +412,7 @@ export class DiagramService {
 
     idToGraphNodes.forEach((node) => {
       if (node.children?.length > 0) {
-        let leaves = new Set<Graph.Node>();
+        const leaves = new Set<Graph.Node>();
         getLeaves(node, leaves);
         node.leaves = [...leaves];
       }
@@ -451,7 +451,7 @@ export class DiagramService {
           bottom: scale(prop.x + prop.height),
         });
 
-        let innerCR = 10;
+        const innerCR = 10;
         let outerCR;
         if (item.insets) {
           const rects = [propToRects(item.prop), propToRects(item.insets)];
@@ -535,7 +535,7 @@ export class DiagramService {
               )
               ?.id.toString();
         }
-        let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(
+        const subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(
           ([subpathwayId, events]) =>
             events.includes(item.reactomeId) ? [subpathwayId] : []
         );
@@ -615,8 +615,8 @@ export class DiagramService {
           item.connectors.some((connector) => connector.isFadeOut);
         item.isBackground = isBackground;
         let html = undefined;
-        let width = scale(item.prop.width);
-        let height = scale(item.prop.height);
+        const width = scale(item.prop.width);
+        const height = scale(item.prop.height);
         const graphData = idToGraphNodes.get(item.id);
         if (!graphData)
           console.error(
@@ -624,9 +624,9 @@ export class DiagramService {
             item.id,
             '. Potential reason could be a wrong normal pathway for a disease'
           );
-        let preferredId = unitId || graphData?.identifier;
+        const preferredId = unitId || graphData?.identifier;
         //console.log(chebiMapping, graphData?.chebiIdentifier, graphData?.identifier, preferredId)
-        let chebiStructure =
+        const chebiStructure =
           chebiMapping.get(graphData!.chebiIdentifier?.substring(6) || '') ||
           chebiMapping.get(graphData!.identifier!);
         if (classes.some((clazz) => clazz === 'Protein')) {
@@ -742,7 +742,7 @@ export class DiagramService {
         const sourceP = scale(source.position);
         const targetP = scale(target.position);
 
-        let points = connector.segments
+        const points = connector.segments
           .flatMap((segment, i) =>
             i === 0 ? [segment.from, segment.to] : [segment.to]
           )
@@ -776,7 +776,7 @@ export class DiagramService {
         if (eventIdToSubPathwayId.has(reaction.reactomeId))
           classes.push('shadow');
 
-        let subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(
+        const subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(
           ([subpathwayId, events]) =>
             events.includes(reaction.reactomeId) ? [subpathwayId] : []
         );
@@ -864,7 +864,7 @@ export class DiagramService {
         const sourceP = scale(source.position);
         const targetP = scale(target.position);
 
-        let points = link.segments
+        const points = link.segments
           .flatMap((segment, i) =>
             i === 0 ? [segment.from, segment.to] : [segment.to]
           )
@@ -1084,7 +1084,7 @@ export class DiagramService {
       [orthoVector.x, orthoVector.y],
     ]).inv(); // Should always be invertible if the ortho vector is indeed perpendicular
 
-    for (let coord of toConvert) {
+    for (const coord of toConvert) {
       if (!isFinitePoint(coord)) continue;
       const absolute = array([[coord.x - source.x, coord.y - source.y]]);
       const relative = absolute.multiply(transform);

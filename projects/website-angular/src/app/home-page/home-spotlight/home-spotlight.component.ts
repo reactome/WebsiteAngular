@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from "../../reactome-components/button/button.component";
 import { ArticleIndexItem } from '../../../types/article';
@@ -17,7 +17,7 @@ import { NavOption } from '../../../types/link';
   templateUrl: './home-spotlight.component.html',
   styleUrl: './home-spotlight.component.scss'
 })
-export class HomeSpotlightComponent {
+export class HomeSpotlightComponent implements OnInit {
   contentService = inject(ContentService);
 
   loading = true;
@@ -48,7 +48,7 @@ export class HomeSpotlightComponent {
         // Load the full article content using the slug
         this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
           next: async (article) => {
-            let html = await marked(article?.body || '');
+            const html = await marked(article?.body || '');
             this.renderedContent = truncateHtml(stripFirstH(html), 150);
           }
         });

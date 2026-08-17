@@ -69,7 +69,7 @@ export class DetailEntityService implements Partial<EntityService> {
     ];
     const results: { label: string, value: any }[] = [];
     for (const property of properties) {
-      let value = (externalRef as any)[property.key];
+      const value = (externalRef as any)[property.key];
       if (!value) continue;
       results.push({label: property.label || property.key, value});
     }

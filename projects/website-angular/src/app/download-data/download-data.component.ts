@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
@@ -19,7 +19,7 @@ import {
   templateUrl: './download-data.component.html',
   styleUrl: './download-data.component.scss',
 })
-export class DownloadDataComponent implements OnInit {
+export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
 

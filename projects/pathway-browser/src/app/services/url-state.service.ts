@@ -141,7 +141,7 @@ export class UrlStateService implements State {
 
     this.route.fragment.pipe(untilDestroyed(this)).subscribe((fragment) => {
       if (fragment) { // Convert fragments to params
-        let params: Params = {};
+        const params: Params = {};
         let id = undefined; // Default routing
 
         const match = fragment.match(FRAGMENT_PATTERN);
@@ -206,7 +206,7 @@ export class UrlStateService implements State {
     effect(() => {
       const queryParams = {} as any;
       for (const key in this.values) {
-        let param = this.values[key as keyof State];
+        const param = this.values[key as keyof State];
         let paramValue = param();
         if (paramValue === undefined
           || paramValue === null

@@ -469,7 +469,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     nameElement.classList.remove('no-transition');
     // Check if there is space between the left and content span
     if (contentWidth > leftDivWidth) {
-      let distanceToScroll = contentWidth - leftDivWidth;
+      const distanceToScroll = contentWidth - leftDivWidth;
       this.setScrollStyles(nameElement, distanceToScroll);
     }
   }

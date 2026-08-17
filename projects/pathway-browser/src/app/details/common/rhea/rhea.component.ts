@@ -91,7 +91,7 @@ export class RheaComponent {
             // console.log('svg ', height);
 
 
-            let css = `
+            const css = `
              .rhea-reaction-source {
                display: none;
               }

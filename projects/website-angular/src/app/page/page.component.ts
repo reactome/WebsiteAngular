@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute } from '@angular/router';
 import { ContentService } from '../../services/content.service';
@@ -18,7 +18,7 @@ import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPrese
   templateUrl: './page.component.html',
   styleUrl: './page.component.scss'
 })
-export class PageComponent {
+export class PageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);

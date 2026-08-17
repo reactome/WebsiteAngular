@@ -80,7 +80,7 @@ export function isPathway(obj: DatabaseObject): obj is Pathway | TopLevelPathway
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj);
 }
 
-const physicalEntityClasses: Set<String> = new Set([SchemaClasses.PE, SchemaClasses.COMPLEX, SchemaClasses.DRUG, SchemaClasses.CHEMICAL_DRUG, SchemaClasses.PROTEIN_DRUG, SchemaClasses.RNA_DRUG, SchemaClasses.ENTITY_SET, SchemaClasses.DEFINED_SET, SchemaClasses.CANDIDATE_SET, SchemaClasses.GENOME_ENCODED_ENTITY,
+const physicalEntityClasses: Set<string> = new Set([SchemaClasses.PE, SchemaClasses.COMPLEX, SchemaClasses.DRUG, SchemaClasses.CHEMICAL_DRUG, SchemaClasses.PROTEIN_DRUG, SchemaClasses.RNA_DRUG, SchemaClasses.ENTITY_SET, SchemaClasses.DEFINED_SET, SchemaClasses.CANDIDATE_SET, SchemaClasses.GENOME_ENCODED_ENTITY,
   SchemaClasses.EWAS, SchemaClasses.OTHER_ENTITY, SchemaClasses.POLYMER, SchemaClasses.SIMPLE_ENTITY, SchemaClasses.CELL, SchemaClasses.SUMMARY_ENTITY]);
 
 export function isPhysicalEntity(obj: DatabaseObject): obj is PhysicalEntity {

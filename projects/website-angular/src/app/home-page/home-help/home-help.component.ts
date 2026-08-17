@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
@@ -14,7 +14,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
   templateUrl: './home-help.component.html',
   styleUrl: './home-help.component.scss'
 })
-export class HomeHelpComponent {
+export class HomeHelpComponent implements OnInit {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
   externalLinks: Record<string, ExternalLink> = {};

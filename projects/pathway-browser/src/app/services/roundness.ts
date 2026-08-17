@@ -23,7 +23,7 @@ export function addRoundness(source: Position, target: Position, anchors: Positi
   const points = [source, ...anchors, target];
   for (let i = 1; i < points.length - 1; i++) {
     let previousPoint = toVector(points[i - 1]);
-    let currentPoint = toVector(points[i]);
+    const currentPoint = toVector(points[i]);
     let nextPoint = toVector(points[i + 1]);
 
     const previousVector = subtract(previousPoint.copy(), currentPoint);

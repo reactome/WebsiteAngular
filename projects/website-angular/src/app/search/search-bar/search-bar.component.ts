@@ -9,7 +9,7 @@ import {
   OnChanges,
   SimpleChanges,
   HostListener,
-  ViewChild, signal, ChangeDetectorRef } from '@angular/core';
+  ViewChild, signal, ChangeDetectorRef, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
   FacetCount,
@@ -26,7 +26,7 @@ import { DropdownToggleComponent } from '../../reactome-components/dropdown-togg
   templateUrl: './search-bar.component.html',
   styleUrl: './search-bar.component.scss',
 })
-export class SearchBarComponent implements OnChanges, AfterViewInit {
+export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
   private cdr = inject(ChangeDetectorRef);

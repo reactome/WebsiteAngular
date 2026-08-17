@@ -64,8 +64,8 @@ export class SvgExporterService {
     const foamtree = untracked(reacfoam.foamTree)
     const geometry = foamtree.get("geometry", foamtree.get('dataObject'));
 
-    let width = geometry.boxWidth;
-    let height = geometry.boxHeight;
+    const width = geometry.boxWidth;
+    const height = geometry.boxHeight;
 
     const ctx = new Context(width, height);
 
@@ -160,8 +160,8 @@ export class SvgExporterService {
 
     this.ehld.getInlineStyles(initialSvg, this.select());
 
-    let width = initialSvg.getBoundingClientRect().width;
-    let height = initialSvg.getBoundingClientRect().height;
+    const width = initialSvg.getBoundingClientRect().width;
+    const height = initialSvg.getBoundingClientRect().height;
     let svg: SVGSVGElement | undefined;
     let css = ''
     let padding: Padding = {left: 0, right: 0, top: 0, bottom: 0};
@@ -352,7 +352,7 @@ export class SvgExporterService {
   ): string {
     const keyframeName = `kf_${this.sanitizeId(id)}`;
     let keyframes = `@keyframes ${keyframeName} {\n`;
-    let lastValues: Partial<Record<string, string>> = {...diffs[diffs.length - 1].style}; // start with the last value as it loops
+    const lastValues: Partial<Record<string, string>> = {...diffs[diffs.length - 1].style}; // start with the last value as it loops
 
     diffs.forEach((diff, i) => {
       const {start, stop} = this.calcTransitionTime(diff.frame)

@@ -13,7 +13,7 @@ export class SafePipe implements PipeTransform {
 
   transform(value: string | null, type: 'html' | 'style' | 'script' | 'url' | 'resource' = "html", bypass: boolean = false): string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl {
     if (value === null) value = '';
-    let val: string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl = value;
+    const val: string | SafeHtml | SafeUrl | SafeStyle | SafeScript | SafeResourceUrl = value;
     if (bypass) {
       switch (type) {
         case "html":

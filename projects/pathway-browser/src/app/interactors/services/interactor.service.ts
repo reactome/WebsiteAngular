@@ -182,7 +182,7 @@ export class InteractorService {
     const dynamicInteractors = [];
     const existingInteractors = [];
     // get interactors to draw with a provided a number, collect existing interactors for creating edge
-    for (let interactor of interactorsData) {
+    for (const interactor of interactorsData) {
       const diagramNodes = cy?.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
 
       if (!diagramNodes || diagramNodes.length === 0) {
@@ -205,7 +205,7 @@ export class InteractorService {
       const displayName = interactor.alias ? interactor.alias : interactor.acc;
       const defaultType = ['Protein', 'PhysicalEntity'] // Default interactor type for custom resource when there is no type data provided
       const classes = resource === ResourceType.DISGENET ? ['PhysicalEntity', 'Interactor', 'disease'] : [...this.diagramService.nodeTypeMap.get(interactor.type) || defaultType, 'Interactor'];
-      let width = resource === ResourceType.DISGENET ? this.DEFAULT_DISGENET_WIDTH : this.DEFAULT_INTERACTOR_WIDTH;
+      const width = resource === ResourceType.DISGENET ? this.DEFAULT_DISGENET_WIDTH : this.DEFAULT_INTERACTOR_WIDTH;
       let height = this.CHAR_HEIGHT + 2 * this.INTERACTOR_PADDING;
       if (interactor.type === 'Gene') height += this.GENE_DECORATION_HEIGHT;
 
@@ -273,7 +273,7 @@ export class InteractorService {
 
   public displayInteractors(interactorsToDisplay: NodeCollection, cy: cytoscape.Core) {
 
-    let layoutOptions: cytoscape.LayoutOptions = {
+    const layoutOptions: cytoscape.LayoutOptions = {
       name: 'preset',
       fit: false
     }

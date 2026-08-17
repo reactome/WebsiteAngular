@@ -168,7 +168,7 @@ export class DataStateService {
     summariseReferenceEntity: boolean,
     includeDisease: boolean
   }>): Observable<T | undefined> {
-    let url = `${CONTENT_SERVICE}/data/query/enhanced/v2/${id}`;
+    const url = `${CONTENT_SERVICE}/data/query/enhanced/v2/${id}`;
     if (id === null) return of(undefined);
     if (!isReferenceEntityStId(id.toString()) && params) params.includeDisease = true; // Always include disease data for non summary elements
 
@@ -185,7 +185,7 @@ export class DataStateService {
   }
 
   fetchAncestors(stId: string | undefined, path: string[]): Observable<Pathway[]> {
-    let url = `${CONTENT_SERVICE}/data/event/${stId}/ancestors`;
+    const url = `${CONTENT_SERVICE}/data/event/${stId}/ancestors`;
     if (stId === undefined) return of();
     return this.http.get<Pathway[][]>(url, {
       params: {

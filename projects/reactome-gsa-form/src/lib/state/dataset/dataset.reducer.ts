@@ -199,7 +199,7 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
     helper.update(id, state, dataset => ({
       statisticalDesign: {
         ...dataset.statisticalDesign!,
-        covariances: dataset.statisticalDesign!!.covariances.map(cov => cov.name === group ? {...cov, value, locked} : cov)
+        covariances: dataset.statisticalDesign!.covariances.map(cov => cov.name === group ? {...cov, value, locked} : cov)
       }
     }))),
 

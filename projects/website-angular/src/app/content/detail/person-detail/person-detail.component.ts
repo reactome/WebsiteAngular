@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -83,7 +83,7 @@ interface SimpleEvent {
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
 })
-export class PersonDetailComponent {
+export class PersonDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
 

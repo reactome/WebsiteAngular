@@ -24,7 +24,7 @@ export interface PhysicalEntity extends DatabaseObject, InDepth, HasFigure {
   crossReference?: DatabaseIdentifier[];
   inferredTo: PhysicalEntity[];
   inferredFrom: PhysicalEntity[];
-  inDisease?: Boolean;
+  inDisease?: boolean;
   disease?: Disease[];
   markingReferences?: MarkerReference[];
 

@@ -42,7 +42,7 @@ export const cell = (value = '', selected = false, visibility: 'hidden' | 'visib
   visibility
 });
 
-export let EMPTY_CELL: Cell = cell();
+export const EMPTY_CELL: Cell = cell();
 
 function addColumn(state: TableState, columnName?: string) {
   const x = pushAll(state.dataset, cell()) - 1;
@@ -347,7 +347,7 @@ export class TableStore extends ComponentStore<TableState> {
 
       for (let yFrom = 0; yFrom < table.length; yFrom++) {
         let xTo, yTo: number;
-        let rowName = table[yFrom][0];
+        const rowName = table[yFrom][0];
         if (hasRowNames && nameToRowI.has(rowName)) { // Row already present
           yTo = nameToRowI.get(rowName) as number;
         } else if (fullImport || state.settings.addRow) { // New row to add
@@ -372,10 +372,10 @@ export class TableStore extends ComponentStore<TableState> {
     } else { // Simple import without mapping
 
       for (let yFrom = 0; yFrom < table.length; yFrom++) {
-        let yTo = state.settings.renameCols ? yFrom : yFrom + 1;
+        const yTo = state.settings.renameCols ? yFrom : yFrom + 1;
         if (yTo >= state.dataset.length) addRow(state)
         for (let xFrom = 0; xFrom < table[0].length; xFrom++) {
-          let xTo = state.settings.renameRows ? xFrom : xFrom + 1;
+          const xTo = state.settings.renameRows ? xFrom : xFrom + 1;
           if (xTo >= state.dataset[0].length) addColumn(state)
           const value = (table[yFrom][xFrom] || '').trim();
           state.dataset[yTo][xTo].value = value;
@@ -538,7 +538,7 @@ export namespace Ranges {
 namespace Cells {
   export function select(state: TableState): TableState {
     state.selectedCoords.forEach(coords => {
-      let cell = state.dataset[coords.y][coords.x];
+      const cell = state.dataset[coords.y][coords.x];
       if (cell) {
         cell.selected = false;
         cell.visibility = 'visible';
@@ -554,7 +554,7 @@ namespace Cells {
       }
       selectCell({x, y: 0}, state);
     }
-    let selectedCell = state.dataset[state.start.y][state.start.x];
+    const selectedCell = state.dataset[state.start.y][state.start.x];
     if (selectedCell) selectedCell.visibility = 'hidden';
     return state;
   }

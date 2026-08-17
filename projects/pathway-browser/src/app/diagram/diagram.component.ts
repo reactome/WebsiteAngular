@@ -559,7 +559,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
                 leaf.standardIdentifier,
                 this.leafIdToParentIds.get(leaf.stId)!
               );
-            let parents = this.leafIdToParentIds.get(leaf.stId)!;
+            const parents = this.leafIdToParentIds.get(leaf.stId)!;
             parents.push(node.data('graph.stId'));
           });
         });
@@ -799,9 +799,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
           // Consider it as a subpathway when there are no elements found and get all reactions
           if (elements.length === 0) {
-            let allSubpathwaysElements = elements.or('[subpathways]');
+            const allSubpathwaysElements = elements.or('[subpathways]');
             allSubpathwaysElements.forEach((ele) => {
-              let pathwayList = ele.data('subpathways');
+              const pathwayList = ele.data('subpathways');
               if (pathwayList.includes(token)) {
                 elements.merge(ele);
               }
@@ -1124,7 +1124,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
     }).subscribe(({ entities, pathways, result }) => {
       this._loadAnalysisFn = (analysisIndex) => {
-        let analysisEntityMap = new Map<string, number>(
+        const analysisEntityMap = new Map<string, number>(
           entities.entities.flatMap((entity) =>
             entity.mapsTo
               .flatMap((diagramEntity) => diagramEntity.ids)
@@ -1132,7 +1132,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           )
         );
 
-        let analysisPathwayMap = new Map<number, Analysis.Pathway['entities']>(
+        const analysisPathwayMap = new Map<number, Analysis.Pathway['entities']>(
           pathways.map((p) => [p.dbId, p.entities])
         );
         const includeInteractors = result.summary.interactors;
@@ -1298,7 +1298,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     );
 
   private stateToDiagram() {
-    for (let cy of this.cys) {
+    for (const cy of this.cys) {
       this.flag(this.data.flagIdentifiers(), cy);
       this.select(this.state.select()!, cy);
     }
@@ -1385,7 +1385,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // Only get the first matched item in the classes, this help to filter out the polymer when hovering on a molecule
       let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection =
         this.legend.elements(`.${firstClassToMatch}`).filter((ele) => {
-          let classes = ele.classes();
+          const classes = ele.classes();
           return Array.isArray(classes) && classes[0] === firstClassToMatch;
         });
 
@@ -1416,7 +1416,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       delay(5) // allow for unselect to be processed before select when clicking on an already selected element
     )
     .subscribe((e) => {
-      let elements: cytoscape.NodeSingular = e.detail.element;
+      const elements: cytoscape.NodeSingular = e.detail.element;
       const reactomeIds = elements.map((el) => el.data('graph.stId'));
       this.selecting = true;
       this.state.select.set(reactomeIds[0]);
@@ -1449,7 +1449,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .subscribe((e) => {
       const event = e as ReactomeEvent;
       const classes = event.detail.element.classes();
-      for (let cy of [this.cy, this.cyCompare].filter(isDefined)) {
+      for (const cy of [this.cy, this.cyCompare].filter(isDefined)) {
         let matchingElement:
           | cytoscape.NodeCollection
           | cytoscape.EdgeCollection = cy.elements(`.${classes[0]}`);
