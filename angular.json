@@ -88,6 +88,21 @@
                   "with": "projects/pathway-browser/src/environments/variant.curator.ts"
                 }
               ]
+            },
+            "curator-local": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/variant.ts",
+                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                },
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.curator-local.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -106,6 +121,10 @@
             },
             "curator": {
               "buildTarget": "reactome:build:development,curator"
+            },
+            "curator-local": {
+              "buildTarget": "reactome:build:curator-local",
+              "proxyConfig": "proxy.curator-local.conf.json"
             }
           },
           "defaultConfiguration": "development"

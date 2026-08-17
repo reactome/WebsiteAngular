@@ -59,6 +59,18 @@ This app builds as one of two variants, controlled by `projects/pathway-browser/
 
 To build/serve the curator variant locally: `ng build reactome --configuration development,curator` or `ng serve --configuration development,curator`.
 
+#### Curator variant against a local content service
+
+`npm run start:curator-local` serves the curator variant with the graph content API pointed at a content service running on your own machine at `http://localhost:8686` (the `curator-local` build configuration in `angular.json`, which pairs `variant.curator.ts` with `environment.curator-local.ts`). Add `-- --port 4300` if 4200 is taken.
+
+A locally-run content service is a bare Spring Boot app, so its endpoints sit at the root (`/data/query/...`), not under the `/ContentService` or `/GraphContentService` context path the deployed instances are proxied onto — hence the separate `CONTENT_SERVICE` value rather than a different `host`. Everything a local instance can't serve still comes from newcurator, routed through `proxy.curator-local.conf.json` because `newcurator.reactome.org/download` sends no `Access-Control-Allow-Origin`:
+
+- `/download/current/**` (EHLDs, pre-generated diagram JSON) and `/figures/**` → `newcurator.reactome.org`
+- `/ContentService/**` → the local service on `:8686`, with the context path stripped, so the ContentService Swagger page documents your local API
+- the database-version fallback → `https://reactome.org/ContentService/data/database/version`, since a curation graph has no released version and newcurator serves no `/ContentService`
+
+Expect one console error on startup: `data/database/version` 500s on a curation graph. That's the fallback above kicking in, not a misconfiguration.
+
 ## Additional Resources
 
 ## LICENSE

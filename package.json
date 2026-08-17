@@ -13,6 +13,7 @@
     "build:libs": "ng build ngx-reactome-style && ng build reactome-table && ng build reactome-gsa-form",
     "start": "npm run generate:indices && npm run stage:content && npm run build:libs && run-p dev:reactome-cytoscape-style dev:serve",
     "start:simple": "ng serve",
+    "start:curator-local": "npm run generate:indices && npm run stage:content && npm run build:reactome-cytoscape-style && npm run build:libs && ng serve --configuration curator-local",
     "start:website": "cd projects/website-angular && npm run start",
     "start:pathway": "cd projects/pathway-browser && npm run start-with-deps",
     "build": "npm run generate:indices && ng build --configuration production",
