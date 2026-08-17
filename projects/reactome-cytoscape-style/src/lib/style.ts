@@ -98,16 +98,16 @@ export class Style {
           'text-opacity': 1,
           'text-valign': 'bottom',
           'text-halign': 'right',
-          // @ts-ignore
+          // @ts-expect-error
           'text-margin-x': 'data(textX)',
-          // @ts-ignore
+          // @ts-expect-error
           'text-margin-y': 'data(textY)',
         },
       },
       {
         selector: 'node[?radius]',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'corner-radius': 'data(radius)',
         },
       },
@@ -146,28 +146,28 @@ export class Style {
           'text-valign': 'center',
           'text-wrap': 'wrap',
           'text-max-width': (node: cytoscape.NodeSingular) => node.data('width') + 'px',
-          // @ts-ignore
+          // @ts-expect-error
           'background-image-smoothing': 'no no no no no no no no',
 
-          // @ts-ignore
+          // @ts-expect-error
           'background-image': (node) => this.imageBuilder(node)['background-image'],
-          // @ts-ignore
+          // @ts-expect-error
           'background-position-y': (node) => this.imageBuilder(node)['background-position-y'] || [],
-          // @ts-ignore
+          // @ts-expect-error
           'background-position-x': (node) => this.imageBuilder(node)['background-position-x'] || [],
-          // @ts-ignore
+          // @ts-expect-error
           'background-height': (node) => this.imageBuilder(node)['background-height'] || '100%',
-          // @ts-ignore
+          // @ts-expect-error
           'background-width': (node) => this.imageBuilder(node)['background-width'] || '100%',
-          // @ts-ignore
+          // @ts-expect-error
           'background-clip': (node) => this.imageBuilder(node)['background-clip'] || 'node',
-          // @ts-ignore
+          // @ts-expect-error
           'background-image-containment': (node) =>
             this.imageBuilder(node)['background-image-containment'] || 'inside',
-          // @ts-ignore
+          // @ts-expect-error
           'background-image-opacity': (node) =>
             this.imageBuilder(node)['background-image-opacity'] || 1,
-          // @ts-ignore
+          // @ts-expect-error
           'bounds-expansion': (node) => this.imageBuilder(node)['bounds-expansion'][0] || 0,
           color: this.p('global', 'onPrimary'),
         },
@@ -235,7 +235,7 @@ export class Style {
           'border-width': this.p('global', 'thickness'),
           'text-wrap': 'ellipsis',
           'border-color': this.p('interactor', 'fill'),
-          //@ts-ignore
+          //@ts-expect-error
           'border-position': 'inside',
         },
       },
@@ -317,7 +317,7 @@ export class Style {
           'background-color': this.p('molecule', 'fill'),
           'border-color': this.p('molecule', 'stroke'),
           'border-width': this.p('global', 'thickness'),
-          // @ts-ignore
+          // @ts-expect-error
           'corner-radius': (node: cytoscape.NodeSingular) =>
             Math.min(node.data('width'), node.data('height')) / 2,
         },
@@ -368,7 +368,7 @@ export class Style {
           // "background-color": this.p("complex", 'fill'),
           // "width": (node: cytoscape.NodeSingular) => this.pm('global', 'thickness', t => node.data('width') -  2 * t) ,
           // "height": (node: cytoscape.NodeSingular) => this.pm('global', 'thickness', t => node.data('height') -  2 * t) ,
-          // // @ts-ignore
+          // // @ts-expect-error
           // "corner-radius": this.pm('complex', 'cut', c => c),
           // "outline-width":  this.p('global', 'thickness'),
           // "outline-color":  this.p('complex', 'fill'),
@@ -394,7 +394,7 @@ export class Style {
         css: {
           'background-opacity': 0,
           shape: 'round-rectangle',
-          // @ts-ignore
+          // @ts-expect-error
           'corner-radius': 999999,
           'border-width': 0, // Avoid disease border
 
@@ -410,7 +410,7 @@ export class Style {
           'background-color': this.p('pathway', 'fill'),
           'text-margin-x': 18,
           'border-color': this.p('pathway', 'stroke'),
-          // @ts-ignore
+          // @ts-expect-error
           'border-position': 'inside',
           'border-width': this.pm('global', 'thickness', (t) => 3 * t),
         },
@@ -426,7 +426,7 @@ export class Style {
       {
         selector: 'node.SUB.Pathway',
         css: {
-          //@ts-ignore
+          //@ts-expect-error
           'corner-radius': 99999,
           shape: 'round-rectangle',
           'text-max-width': (node: cytoscape.NodeSingular) =>
@@ -489,7 +489,7 @@ export class Style {
       {
         selector: 'node.reaction.flag',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'outline-width': this.pm('global', 'thickness', (t) => t * 1.5),
           'outline-color': this.p('global', 'flag'),
         },
@@ -531,7 +531,7 @@ export class Style {
         selector: 'node.loss-of-function',
         css: {
           'border-style': 'dashed',
-          //@ts-ignore
+          //@ts-expect-error
           'border-dash-pattern': this.pm('global', 'thickness', (t) => [t, t * 2]),
           'border-cap': 'round',
         },
@@ -552,7 +552,7 @@ export class Style {
       //     "background-color": this.p("molecule", 'fill'),
       //     "border-color": this.p("interactor", 'stroke'),
       //     "border-width": this.p("global", 'thickness'),
-      //     // @ts-ignore
+      //     // @ts-expect-error
       //     "corner-radius": (node: cytoscape.NodeSingular) => Math.min(node.data('width'), node.data('height')) / 2,
       //   }
       // },
@@ -572,9 +572,9 @@ export class Style {
           'mid-source-arrow-color': this.p('global', 'onSurface'),
           'mid-target-arrow-color': this.p('global', 'onSurface'),
           'source-arrow-color': this.p('global', 'onSurface'),
-          // @ts-ignore
+          // @ts-expect-error
           'source-arrow-width': '100%',
-          // @ts-ignore
+          // @ts-expect-error
           'target-arrow-width': '100%',
           'font-size': this.p('font', 'size'),
         },
@@ -597,9 +597,9 @@ export class Style {
           'arrow-scale': 1,
           'source-arrow-color': this.p('global', 'hoverEdge'),
           'target-arrow-color': this.p('global', 'hoverEdge'),
-          // @ts-ignore
+          // @ts-expect-error
           'source-arrow-width': '50%',
-          // @ts-ignore
+          // @ts-expect-error
           'target-arrow-width': '50%',
           'z-index': 2,
         },
@@ -612,9 +612,9 @@ export class Style {
           'arrow-scale': 1,
           'source-arrow-color': this.p('global', 'selectEdge'),
           'target-arrow-color': this.p('global', 'selectEdge'),
-          // @ts-ignore
+          // @ts-expect-error
           'source-arrow-width': '50%',
-          // @ts-ignore
+          // @ts-expect-error
           'target-arrow-width': '50%',
           'z-index': 3,
         },
@@ -693,7 +693,7 @@ export class Style {
       {
         selector: 'edge.shadow[?color]',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'underlay-color': 'data(color)',
           'underlay-padding': this.p('shadow', 'padding'),
           'underlay-opacity': this.pm('shadow', 'opacity', (o) => o[0][1] / 100),
@@ -702,7 +702,7 @@ export class Style {
       {
         selector: 'edge.flag',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'underlay-color': this.p('global', 'flag'),
           'underlay-padding': 10,
           'underlay-opacity': 1,
@@ -711,13 +711,13 @@ export class Style {
       {
         selector: 'edge[?weights]',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'curve-style': 'round-segments',
           'segment-distances': 'data(distances)',
           'segment-weights': 'data(weights)',
           'segment-radius': 30,
           'radius-type': 'influence-radius',
-          // @ts-ignore
+          // @ts-expect-error
           'edge-distances': 'endpoints',
         },
       },
@@ -784,7 +784,7 @@ export class Style {
       {
         selector: 'edge[?sourceOffset]',
         css: {
-          // @ts-ignore
+          // @ts-expect-error
           'source-text-offset': 'data(sourceOffset)',
         },
       },

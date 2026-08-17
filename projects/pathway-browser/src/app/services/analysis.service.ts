@@ -66,7 +66,7 @@ export class PaletteSummary {
   }
 
   noData(color: string | chroma.Color) {
-    // @ts-ignore
+    // @ts-expect-error
     this.scale.nodata(color);
     return this;
   }
@@ -396,7 +396,6 @@ export class AnalysisService {
       }
 
       for (const summary of this.paletteOptions.values()) {
-        //@ts-ignore
         summary.domain(
           result.expression.min === undefined ? this.state.significance() : result.expression.min,
           result.expression.max === undefined ? 0 : result.expression.max

@@ -206,7 +206,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe((events) => {
       // Save expanded node stIds before resetting the data source
       const expandedIds = this.collectExpandedIds(this.treeDataSource.data);
-      // @ts-ignore
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue

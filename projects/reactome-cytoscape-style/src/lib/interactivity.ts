@@ -19,7 +19,7 @@ export class Interactivity {
     private properties: Properties
   ) {
     // console.log('is mobile', this.isMobile)
-    // @ts-ignore
+    // @ts-expect-error
     cy.elements().ungrabify().panify();
     this.initHover(cy);
     this.initSelect(cy);
@@ -428,7 +428,7 @@ export class Interactivity {
   private moleculeLayer?: IHTMLLayer;
 
   initStructureMolecule(cy: cytoscape.Core) {
-    // @ts-ignore
+    // @ts-expect-error
     const layers: LayersPlugin = cy.layers();
 
     this.moleculeLayer = layers.append('html');

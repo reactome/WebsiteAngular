@@ -264,7 +264,7 @@ function aggregate<T extends object, K extends keyof T>(
   defaultValue: T
 ): Aggregated<T> {
   const aggregate: Aggregated<T> = {} as Aggregated<T>;
-  //@ts-ignore
+  //@ts-expect-error
   const keys = new Set<K>(Object.keys(defaultValue));
   keys.forEach((key) => (aggregate[key] = toAggregate.map((t) => t[key] ?? defaultValue[key])));
   return aggregate;
