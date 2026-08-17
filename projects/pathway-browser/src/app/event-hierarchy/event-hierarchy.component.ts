@@ -409,8 +409,11 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       // NavigationEnd would leave _ignore stuck at true if no further
       // navigation occurs.
       this._ignore = false;
-    }).catch(err => {
-      throw new Error('Navigation error:', err);
+    }).catch((error: unknown) => {
+      // Throwing in here produced a second unhandled rejection rather than
+      // surfacing anything, and passed the cause as Error's options argument,
+      // so the message read "Navigation error:" with no detail attached.
+      console.error('Navigation error', error);
     });
   }
 

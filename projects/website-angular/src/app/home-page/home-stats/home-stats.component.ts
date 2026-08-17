@@ -65,7 +65,10 @@ export class HomeStatsComponent implements OnInit {
         }
       })
       
-    });
+    })
+      // A failed stats load leaves the homepage counters blank; at least say
+      // why rather than showing nothing.
+      .catch((error) => console.error('Could not load homepage statistics', error));
   }
 
   formatNumber (num: number): string {

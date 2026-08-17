@@ -1519,7 +1519,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
     if (event.kind === 'pathways') {
       this.popupTarget.set(null);
-      this.state.navigateTo(event.stId, {
+      void this.state.navigateTo(event.stId, {
         queryParamsHandling: 'preserve',
         preserveFragment: true,
       });

@@ -199,7 +199,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     // Wait until the captcha container is available in the DOM
     const checkContainer = () => {
       if (this.captchaContainer?.nativeElement) {
-        this.loadHCaptchaScript().then(() => this.renderCaptcha());
+        this.loadHCaptchaScript()
+          .then(() => this.renderCaptcha())
+          // Without the widget the form cannot be submitted at all, so say so
+          // rather than leaving an empty box.
+          .catch((error) => console.error('Could not load hCaptcha', error));
       } else {
         setTimeout(checkContainer, 200);
       }
@@ -606,7 +610,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private updateQueryParams(
     params: Record<string, string | string[] | null>
   ): void {
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       queryParamsHandling: 'merge',

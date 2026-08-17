@@ -22,4 +22,9 @@ createApplication(appConfig).then((appRef) => {
   customElements.define('website-angular', websiteAngularElement);
   customElements.define('app-reactome-header', navigationBarElement);
   customElements.define('app-reactome-footer', copyrightFooterElement);
-});
+})
+  .catch((error) =>
+    // Nothing registers the custom elements if this rejects, so the host
+    // page renders empty tags with no clue why.
+    console.error('Could not bootstrap Reactome custom elements', error)
+  );

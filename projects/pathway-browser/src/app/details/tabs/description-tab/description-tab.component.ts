@@ -819,7 +819,7 @@ export class DescriptionTabComponent implements OnDestroy {
    */
   private consumeFragment(): void {
     if (!this.route.snapshot.fragment) return;
-    this.router.navigate([], {
+    void this.router.navigate([], {
       relativeTo: this.route,
       fragment: undefined,
       queryParamsHandling: 'preserve',

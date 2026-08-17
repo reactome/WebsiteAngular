@@ -133,7 +133,7 @@ export class UrlStateService implements State {
         return;
       }
 
-      this.navigateTo(this.pathwayId() ?? null, {
+      void this.navigateTo(this.pathwayId() ?? null, {
         queryParamsHandling: 'preserve',
         preserveFragment: true
       });
@@ -159,7 +159,7 @@ export class UrlStateService implements State {
           }
         }
 
-        this.navigateTo(id ?? null, {
+        void this.navigateTo(id ?? null, {
           queryParamsHandling: 'merge',
           fragment: fragment.replace(FRAGMENT_PATTERN, ''),
           preserveFragment: false,
@@ -221,22 +221,30 @@ export class UrlStateService implements State {
         // console.log('In content or search route, not navigating on state change');
         return;
       }
-      this.navigateTo(this.pathwayId() ?? null, {queryParams, preserveFragment: true});
+      void this.navigateTo(this.pathwayId() ?? null, {queryParams, preserveFragment: true});
     });
   }
 
   /**
    * Navigate to a pathway within the PathwayBrowser route context.
    * Resolves the correct base path whether running standalone or inside the umbrella app.
+   *
+   * Router.navigate rejects when navigation fails -- a guard throwing, a
+   * resolver erroring -- and almost every caller here ignores the result, so
+   * those failures went nowhere. A rejection handler is attached here so they
+   * are always reported; the promise is still returned for the one caller that
+   * legitimately chains on navigation having finished.
    */
   navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
     let route = this.router.routerState.root;
     while (route.firstChild) route = route.firstChild;
     const segments = pathwayId ? [pathwayId] : [];
-    return this.router.navigate(segments, {
+    const navigation = this.router.navigate(segments, {
       relativeTo: route.parent,
       ...extras
     });
+    navigation.catch((error) => console.error('Navigation failed', segments, error));
+    return navigation;
   }
 
   async ensureStId(id: string | number): Promise<string> {

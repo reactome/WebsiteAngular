@@ -23,8 +23,13 @@ export class NavOptionsService {
   readonly navOptions = this._navOptions.asReadonly();
 
   constructor() {
-    import('../config/nav-options.json').then((data) => {
-      this._navOptions.set(mapNavOptions(data.default));
-    });
+    import('../config/nav-options.json')
+      .then((data) => {
+        this._navOptions.set(mapNavOptions(data.default));
+      })
+      // Without this a failed load leaves every navigation menu empty and says
+      // nothing -- the same silent-stale-view problem the signal was meant to
+      // solve, one layer down.
+      .catch((error) => console.error('Could not load navigation options', error));
   }
 }

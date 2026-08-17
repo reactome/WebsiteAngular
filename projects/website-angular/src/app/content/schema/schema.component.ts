@@ -180,14 +180,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   onTreeNodeClick(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
     this.sidebarOpen = false;
   }
 
   onTreeNodeCountClick(className: string, event: Event) {
     // Stop the parent .node-label button from also firing onTreeNodeClick.
     event.stopPropagation();
-    this.router.navigate(['/dataSchema', className], {
+    void this.router.navigate(['/dataSchema', className], {
       queryParams: { tab: 'entries' },
     });
     this.sidebarOpen = false;
@@ -314,7 +314,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   navigateToClass(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
   }
 
   // --- Entries ---
@@ -391,14 +391,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    this.router.navigate(
+    void this.router.navigate(
       ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );
   }
 
   clearSelectedInstance() {
-    this.router.navigate(['/dataSchema', this.selectedClass], {
+    void this.router.navigate(['/dataSchema', this.selectedClass], {
       queryParams: { tab: 'entries' },
     });
   }
@@ -407,7 +407,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // Followed-from links inside the instance browser may point to objects
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
-    this.router.navigate(
+    void this.router.navigate(
       ['/dataSchema', this.selectedClass, 'instance', dbId],
       { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
     );

@@ -195,7 +195,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
-    this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
     this.iconService.getIcon(icon.stId).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
@@ -215,7 +215,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   backToGrid() {
     this.view = 'grid';
     this.selectedIcon = null;
-    this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
   }
 
   private loadIconById(id: string) {

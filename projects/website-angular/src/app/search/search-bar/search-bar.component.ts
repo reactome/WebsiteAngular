@@ -118,7 +118,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       params[key] = values?.length ? values : null;
     }
 
-    this.router.navigate(['/content/query'], { queryParams: params });
+    void this.router.navigate(['/content/query'], { queryParams: params });
     this.highlightedIndex = -1;
 
     this.queryChange.emit(q);
@@ -162,7 +162,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     this.highlightedIndex = -1;
     this.query = s;
 
-    this.router.navigate(['/content/query'], { queryParams: params });
+    void this.router.navigate(['/content/query'], { queryParams: params });
     this.queryChange.emit(s);
   }
 
