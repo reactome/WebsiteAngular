@@ -87,7 +87,7 @@
     "tinacms": "^3.8.1",
     "tslib": "^2.3.0",
     "vectorious": "^6.1.12",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.16.2"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.3.1",
