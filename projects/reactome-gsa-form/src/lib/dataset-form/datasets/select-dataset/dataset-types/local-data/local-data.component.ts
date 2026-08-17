@@ -120,7 +120,7 @@ export class LocalDataComponent {
     this.onDragLeave(event); // Remove the drag-over style
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      this.uploadRiboFile({target: {files}});
+      void this.uploadRiboFile({target: {files}});
     }
   }
 

@@ -168,40 +168,45 @@ export class UrlStateService implements State {
       }
     })
 
-    this.route.queryParams.pipe(untilDestroyed(this)).subscribe(async (params) => {
-      for (const mainToken in this.values) {
-        const param = this.values[mainToken as keyof State] as UrlParam<any>;
-        const tokens: string[] = [mainToken, ...param.otherTokens || []];
-        const token = tokens.find(token => params[token] !== undefined);
-        if (token) {
-          const initialValue = param.initialValue;
-          let value = params[token];
-          if (value === undefined || value === null) param.set(value);
-          if (param.otherTransform && token !== mainToken) value = param.otherTransform(value);
-          else {
-            if (isArray(initialValue)) {
-              let values: any[] = value.split(';');
-              if (param.type === 'id') {
-                const mixedValues = values.map(v => v.charAt(0).match(/\d/) ? parseInt(v) : v);
-                values = await Promise.all(mixedValues.map(v => this.ensureStId(v)));
+    this.route.queryParams.pipe(untilDestroyed(this)).subscribe((params) => {
+      // Kept synchronous: subscribe ignores what the callback returns, so a
+      // rejection in here would go unreported.
+      void (async () => {
+        for (const mainToken in this.values) {
+          const param = this.values[mainToken as keyof State] as UrlParam<any>;
+          const tokens: string[] = [mainToken, ...param.otherTokens || []];
+          const token = tokens.find(token => params[token] !== undefined);
+          if (token) {
+            const initialValue = param.initialValue;
+            let value = params[token];
+            if (value === undefined || value === null) param.set(value);
+            if (param.otherTransform && token !== mainToken) value = param.otherTransform(value);
+            else {
+              if (isArray(initialValue)) {
+                let values: any[] = value.split(';');
+                if (param.type === 'id') {
+                  const mixedValues = values.map(v => v.charAt(0).match(/\d/) ? parseInt(v) : v);
+                  values = await Promise.all(mixedValues.map(v => this.ensureStId(v)));
+                }
+                if (param.type === 'number') values = values.map(v => +v);
+                if (param.type === 'boolean') values = values.map(v => v === 'true');
+                param.set(values);
+              } else if (param.type === 'boolean') {
+                param.set(value === 'true');
+              } else if (param.type === 'id') {
+                param.set(await this.ensureStId(value));
+              } else if (param.type === 'number') {
+                param.set(parseFloat(value))
+              } else {
+                param.set(value.replaceAll('__', ' '))
               }
-              if (param.type === 'number') values = values.map(v => +v);
-              if (param.type === 'boolean') values = values.map(v => v === 'true');
-              param.set(values);
-            } else if (param.type === 'boolean') {
-              param.set(value === 'true');
-            } else if (param.type === 'id') {
-              param.set(await this.ensureStId(value));
-            } else if (param.type === 'number') {
-              param.set(parseFloat(value))
-            } else {
-              param.set(value.replaceAll('__', ' '))
             }
+          } else {
+            param.set(param.initialValue)
           }
-        } else {
-          param.set(param.initialValue)
         }
-      }
+
+      })().catch((error) => console.error('Could not apply URL parameters', error));
     })
     effect(() => {
       const queryParams = {} as any;

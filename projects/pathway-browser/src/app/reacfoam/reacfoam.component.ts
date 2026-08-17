@@ -202,15 +202,21 @@ export class ReacfoamComponent implements OnDestroy {
       }
     });
     // Select parent pathway of reaction if a reaction is selected
-    effect(async () => {
-      const selectedElement = this.data.selectedElement();
-      if (selectedElement && isRLE(selectedElement)) {
-        const flaggingResult = await firstValueFrom(this.data.getReacfoamFlagging(selectedElement.stId, this.species.currentSpecies().displayName));
-        if (flaggingResult.matches && flaggingResult.matches.length === 1) {
-          //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
-          this.select.set(flaggingResult.matches[0]);
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        const selectedElement = this.data.selectedElement();
+        if (selectedElement && isRLE(selectedElement)) {
+          const flaggingResult = await firstValueFrom(this.data.getReacfoamFlagging(selectedElement.stId, this.species.currentSpecies().displayName));
+          if (flaggingResult.matches && flaggingResult.matches.length === 1) {
+            //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
+            this.select.set(flaggingResult.matches[0]);
+          }
         }
-      }
+
+      })().catch((error) => console.error('Reacfoam update failed', error));
     });
     effect(() => this.container()?.nativeElement && this.sizeObserver.observe(this.container().nativeElement));
     effect(() => { // Update colors upon analysis column switching
@@ -288,24 +294,30 @@ export class ReacfoamComponent implements OnDestroy {
       this.currentSample = this.state.sample() || undefined;
     });
 
-    effect(async () => {
-      const request = this.download.downloadRequest();
-      let options = request?.options || defaultDownloadOptions;
-      options = {...defaultDownloadOptions, ...options};
-      if (!request) return;
-      const loader = this.dialog.open(BlockingLoaderComponent, {disableClose: true, width: '150px', height: '150px'});
-      if (request && this.download.isRasterFormat(request.format)) {
-        const params: FoamTree.ImageFormat = {
-          format: this.download.toFoamtreeType(request.format),
-          ...(request.format === DownloadFormat.JPEG ? {quality: 0.9} : {})
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        const request = this.download.downloadRequest();
+        let options = request?.options || defaultDownloadOptions;
+        options = {...defaultDownloadOptions, ...options};
+        if (!request) return;
+        const loader = this.dialog.open(BlockingLoaderComponent, {disableClose: true, width: '150px', height: '150px'});
+        if (request && this.download.isRasterFormat(request.format)) {
+          const params: FoamTree.ImageFormat = {
+            format: this.download.toFoamtreeType(request.format),
+            ...(request.format === DownloadFormat.JPEG ? {quality: 0.9} : {})
+          }
+          this.exportRaster(request.format, params);
+          this.download.resetDownload();
+        } else if (request?.format === DownloadFormat.SVG) {
+          this.download.export(await this.svgExporter.exportReacfoam(this, options), request.format, 'reacfoam');
+          this.download.resetDownload();
         }
-        this.exportRaster(request.format, params);
-        this.download.resetDownload();
-      } else if (request?.format === DownloadFormat.SVG) {
-        this.download.export(await this.svgExporter.exportReacfoam(this, options), request.format, 'reacfoam');
-        this.download.resetDownload();
-      }
-      loader.close();
+        loader.close();
+
+      })().catch((error) => console.error('Reacfoam update failed', error));
     });
   }
 

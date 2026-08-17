@@ -378,9 +378,11 @@ export class Interactivity {
     );
 
     this.videoLayer?.node.classList.add('video');
+    // Not async: nothing in here awaits, and returning a promise handed every
+    // cytoscape listener built from this factory a value it ignores.
     const handler =
       (action: (video: HTMLVideoElement) => void) =>
-      async (event: cytoscape.EventObject) => {
+      (event: cytoscape.EventObject) => {
         const videoId = event.target.id();
         const videoElement = this.videoLayer?.node.querySelector(
           `#video-${videoId}`
@@ -397,7 +399,11 @@ export class Interactivity {
         .on(
           'select',
           'node.Protein',
-          handler((v) => v.play())
+          handler((v) => {
+            // play() rejects when the browser blocks autoplay, which is normal
+            // and not worth reporting; the icon stays on its first frame.
+            void v.play().catch(() => undefined);
+          })
         )
         .on(
           'unselect',
@@ -409,7 +415,11 @@ export class Interactivity {
       .on(
         'mouseover',
         'node.Protein',
-        handler((v) => v.play())
+        handler((v) => {
+          // play() rejects when the browser blocks autoplay, which is normal
+          // and not worth reporting; the icon stays on its first frame.
+          void v.play().catch(() => undefined);
+        })
       )
       .on(
         'mouseout',

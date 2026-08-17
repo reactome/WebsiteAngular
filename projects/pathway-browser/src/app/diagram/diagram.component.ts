@@ -187,10 +187,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       this.updateStyle();
     });
 
-    effect(async () => {
+    effect(() => {
       const request = this.download.downloadRequest();
       if (request) {
-        this.export(request.format);
+        // Nothing here awaits, so the effect never needed to be async. The
+        // export runs on its own and reports its own failure.
+        void this.export(request.format).catch((error) =>
+          console.error('Diagram export failed', request.format, error)
+        );
         this.download.resetDownload();
       }
     });
@@ -569,12 +573,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         );
 
         this.reactomeStyle.clearCache();
-        this.cy.on('dblclick', '.SUB.Pathway', (e) =>
-          this.state.navigateTo(e.target.data('graph.stId'), {
+        this.cy.on('dblclick', '.SUB.Pathway', (e) => {
+          void this.state.navigateTo(e.target.data('graph.stId'), {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
-          })
-        );
+          });
+        });
 
         // Right-click menu on entities. The old site offered Molecule /
         // Pathways / Interactors here and curators still reach for it; each
@@ -605,13 +609,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (e.target === this.cy) this.popupTarget.set(null);
         });
 
-        this.cy.on('dblclick', '.Interacting.Pathway', (e) =>
-          this.state.navigateTo(e.target.data('graph.stId'), {
+        this.cy.on('dblclick', '.Interacting.Pathway', (e) => {
+          void this.state.navigateTo(e.target.data('graph.stId'), {
             queryParams: { select: this.pathwayId() },
             queryParamsHandling: 'merge',
             preserveFragment: true,
-          })
-        );
+          });
+        });
 
         const shadowNodes = this.cy?.nodes('.Shadow');
         this.event.setSubpathwayColors(

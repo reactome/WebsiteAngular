@@ -26,7 +26,9 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     if (!this.isBrowser) return;
-    this.loadSwaggerUI();
+    void this.loadSwaggerUI().catch((error) =>
+      console.error('Could not load the Swagger UI', error)
+    );
   }
 
   private async loadSwaggerUI() {

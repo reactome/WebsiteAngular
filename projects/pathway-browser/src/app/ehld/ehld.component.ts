@@ -103,15 +103,24 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       this.currentSample = this.state.sample() || undefined;
     });
 
-    effect(async () => {
+    effect(() => {
       const request = this.download.downloadRequest();
       const options = request?.options || defaultDownloadOptions;
+      // Read up front, not after the await below: a signal read after an await
+      // runs outside the effect's tracking, so this one was never a dependency.
+      const pathwayId = this.pathwayId();
+
       if (request && this.download.isRasterFormat(request.format)) {
         this.ehldService.downloadImage(request.format);
         this.download.resetDownload();
       } else if (request?.format === DownloadFormat.SVG) {
-        this.download.export(await this.svgExporter.exportEHLD(this, options), request.format, this.pathwayId());
-        this.download.resetDownload();
+        void this.svgExporter
+          .exportEHLD(this, options)
+          .then((svg) => {
+            this.download.export(svg, request.format, pathwayId);
+            this.download.resetDownload();
+          })
+          .catch((error) => console.error('EHLD SVG export failed', error));
       }
     })
   }

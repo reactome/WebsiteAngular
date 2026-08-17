@@ -47,9 +47,14 @@ export class HomeSpotlightComponent implements OnInit {
         
         // Load the full article content using the slug
         this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
-          next: async (article) => {
-            const html = await marked(article?.body || '');
-            this.renderedContent = truncateHtml(stripFirstH(html), 150);
+          next: (article) => {
+            // Callback kept synchronous: an async one hands a promise to code
+            // that ignores it, so any rejection in here would vanish.
+            void (async () => {
+              const html = await marked(article?.body || '');
+              this.renderedContent = truncateHtml(stripFirstH(html), 150);
+
+            })().catch((error) => console.error('Could not render spotlight', error));
           }
         });
       },

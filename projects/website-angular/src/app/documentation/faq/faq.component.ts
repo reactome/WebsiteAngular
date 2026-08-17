@@ -21,12 +21,17 @@ export class FaqComponent implements OnInit {
 
   ngOnInit() {
     this.contentService.getFaqIndex().subscribe({
-      next: async (result) => {
-        this.faqIndex = result;
-        this.categories = Object.keys(result);
-        Object.keys(result).forEach((category) => {
-          this.toggleCategory(category);
-        });
+      next: (result) => {
+        // Callback kept synchronous: an async one hands a promise to code
+        // that ignores it, so any rejection in here would vanish.
+        void (async () => {
+          this.faqIndex = result;
+          this.categories = Object.keys(result);
+          Object.keys(result).forEach((category) => {
+            this.toggleCategory(category);
+          });
+
+        })().catch((error) => console.error('Could not render FAQ', error));
       },
       error: (err) => {
         console.error('Error fetching FAQ index:', err);

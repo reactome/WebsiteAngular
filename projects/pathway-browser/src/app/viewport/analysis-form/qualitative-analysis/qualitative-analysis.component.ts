@@ -87,33 +87,45 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   constructor(
     
   ) {
-    effect(async () => {
-      if (!this.interactorsIllustrationCanvas() || this.interactorsIllustrationLottie !== undefined) return;
-      this.interactorsIllustrationLottie = await this.lottieService.buildLottie({
-        renderConfig: {
-          autoResize: true,
-          freezeOnOffscreen: true
-        },
-        autoplay: false,
-        loop: true,
-        canvas: this.interactorsIllustrationCanvas()!.nativeElement,
-        src: "assets/animations/light/interactors-animation.json"
-      })
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        if (!this.interactorsIllustrationCanvas() || this.interactorsIllustrationLottie !== undefined) return;
+        this.interactorsIllustrationLottie = await this.lottieService.buildLottie({
+          renderConfig: {
+            autoResize: true,
+            freezeOnOffscreen: true
+          },
+          autoplay: false,
+          loop: true,
+          canvas: this.interactorsIllustrationCanvas()!.nativeElement,
+          src: "assets/animations/light/interactors-animation.json"
+        })
 
+
+      })().catch((error) => console.error('Could not build animation', error));
     });
-    effect(async () => {
-      if (!this.lottieCanvas() || this.lottieEnd !== undefined) return;
-      // console.log('Building lottie')
-      this.lottieEnd = await this.lottieService.buildLottie({
-        renderConfig: {
-          autoResize: true,
-          freezeOnOffscreen: true
-        },
-        autoplay: true,
-        loop: true,
-        canvas: this.lottieCanvas()!.nativeElement,
-        src: `assets/animations/${this.theme()}/loader-animation.json`
-      })
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        if (!this.lottieCanvas() || this.lottieEnd !== undefined) return;
+        // console.log('Building lottie')
+        this.lottieEnd = await this.lottieService.buildLottie({
+          renderConfig: {
+            autoResize: true,
+            freezeOnOffscreen: true
+          },
+          autoplay: true,
+          loop: true,
+          canvas: this.lottieCanvas()!.nativeElement,
+          src: `assets/animations/${this.theme()}/loader-animation.json`
+        })
+
+      })().catch((error) => console.error('Could not build animation', error));
     });
     effect(() => {
       const [theme, analysisLaunched, analysisAvailable] = [this.theme(), this.analysisLaunched(), this.analysisAvailable()];

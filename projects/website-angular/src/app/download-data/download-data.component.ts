@@ -59,7 +59,15 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
 
   private observer?: IntersectionObserver;
 
-  async ngOnInit() {
+  ngOnInit() {
+    // Angular ignores whatever ngOnInit returns, so an async one hides its own
+    // failures; the page would just keep its default version and base URL.
+    void this.load().catch((error) =>
+      console.error('Could not load download metadata', error)
+    );
+  }
+
+  private async load() {
     this.version = await this.stats.getVersion();
     this.baseUrl = await this.stats.getDownloadBaseUrl();
 

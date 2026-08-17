@@ -166,18 +166,24 @@ export class TissueAnalysisComponent {
       }
     });
 
-    effect(async () => {
-      if (!this.lottieCanvas()) return;
-      this.lottie = await this.lottieService.buildLottie({
-        renderConfig: {
-          autoResize: true,
-          freezeOnOffscreen: true
-        },
-        autoplay: true,
-        loop: true,
-        canvas: this.lottieCanvas()!.nativeElement,
-        src: `assets/animations/${this.theme()}/loader-animation.json`
-      })
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        if (!this.lottieCanvas()) return;
+        this.lottie = await this.lottieService.buildLottie({
+          renderConfig: {
+            autoResize: true,
+            freezeOnOffscreen: true
+          },
+          autoplay: true,
+          loop: true,
+          canvas: this.lottieCanvas()!.nativeElement,
+          src: `assets/animations/${this.theme()}/loader-animation.json`
+        })
+
+      })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {

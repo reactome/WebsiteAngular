@@ -60,22 +60,31 @@ export class ArticlePageComponent implements OnInit {
     this.loading = true;
     // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getAllArticles(path).subscribe({
-      next: async (result) => {
-        this.articles = result.map((item: ArticleIndexItem) => ({
-          title: item.title,
-          date: new Date(item.date),
-          author: item.author,
-          tags: item.tags || [],
-          slug: item.slug,
-          excerpt: item.excerpt
-        } ));
+      next: (result) => {
+        // Callback kept synchronous: an async one hands a promise to code
+        // that ignores it, so any rejection in here would vanish.
+        void (async () => {
+          this.articles = result.map((item: ArticleIndexItem) => ({
+            title: item.title,
+            date: new Date(item.date),
+            author: item.author,
+            tags: item.tags || [],
+            slug: item.slug,
+            excerpt: item.excerpt
+          } ));
 
-        this.articles.forEach( async (article) => {
-          const html = await marked(article?.excerpt || '');
-          const renderedContent = stripFirstH(html);
-          article.excerpt = renderedContent;
-        })
-        this.loading = false;
+          // Awaited as a batch: previously these were started and abandoned,
+          // so loading flipped to false while the excerpts were still raw
+          // markdown, and any failure went unreported.
+          await Promise.all(
+            this.articles.map(async (article) => {
+              const html = await marked(article?.excerpt || '');
+              article.excerpt = stripFirstH(html);
+            })
+          );
+          this.loading = false;
+
+        })().catch((error) => console.error('Could not render article list', error));
       },
       error: (err) => {
         console.error('Error loading articles:', err);

@@ -66,12 +66,11 @@ module.exports = tseslint.config(
       // Already clean -- left as errors by the recommended sets.
       'no-empty': ['error', { allowEmptyCatch: true }],
 
-      // Existing violations, ratcheted. The first two are the ones worth
-      // paying down soonest: a promise nobody awaits swallows its own failure,
-      // which is how a broken request renders an empty page with a clean
-      // console.
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-misused-promises': 'warn',
+      // Now clean, so promoted to error: a promise nobody handles swallows its
+      // own failure, which is how a broken request renders an empty page with a
+      // clean console. All 58 were dealt with, so a new one is a regression.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },

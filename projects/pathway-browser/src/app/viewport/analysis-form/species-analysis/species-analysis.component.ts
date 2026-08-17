@@ -57,18 +57,24 @@ export class SpeciesAnalysisComponent {
   ) {
     this.availableSpeciesIcons = new Set(this.iconService.getSpeciesIcons().map(icon => icon.name));
     effect(() => this.speciesControl.setValue(this.selectedSpecies()));
-    effect(async () => {
-      if (!this.lottieCanvas() || this.lottie) return;
-      this.lottie = await this.lottieService.buildLottie({
-        renderConfig: {
-          autoResize: true,
-          freezeOnOffscreen: true
-        },
-        autoplay: true,
-        loop: !this.analysisAvailable(),
-        canvas: this.lottieCanvas()!.nativeElement,
-        src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`
-      })
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        if (!this.lottieCanvas() || this.lottie) return;
+        this.lottie = await this.lottieService.buildLottie({
+          renderConfig: {
+            autoResize: true,
+            freezeOnOffscreen: true
+          },
+          autoplay: true,
+          loop: !this.analysisAvailable(),
+          canvas: this.lottieCanvas()!.nativeElement,
+          src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`
+        })
+
+      })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {

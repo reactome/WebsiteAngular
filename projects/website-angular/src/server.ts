@@ -23,7 +23,8 @@ export function app(): express.Express {
    * ```
    */
   // Proxy Reactome downloads to avoid CORS in SSR deployments
-  server.get('/reactome/*', async (req, res, next) => {
+  server.get('/reactome/*', (req, res, next) => {
+    void (async () => {
     try {
       const rest = req.originalUrl.replace(/^\/reactome/, '');
       const target = `https://download.reactome.org${rest}`;
@@ -40,6 +41,7 @@ export function app(): express.Express {
     } catch (e) {
       next(e);
     }
+    })();
   });
 
   /**
@@ -56,9 +58,9 @@ export function app(): express.Express {
   server.use('*', (req, res, next) => {
     angularApp
       .handle(req)
-      .then((response) => {
+      .then(async (response) => {
         if (response) {
-          writeResponseToNodeResponse(response, res);
+          await writeResponseToNodeResponse(response, res);
         } else {
           res.status(404).send('Not found');
         }

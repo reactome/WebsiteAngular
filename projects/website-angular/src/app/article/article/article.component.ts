@@ -50,25 +50,30 @@ export class ArticleComponent implements OnInit {
     this.loading = true;
 
     this.contentService.getArticle(path, slug).subscribe({
-      next: async (article) => {
-        const html = await marked((article?.body as string) || '');
-        const renderedContent = stripFirstH(
-          addAnchorIds(addJumpCards(wrapCodeBlocks(html)))
-        );
-        this.renderedContent =
-          this.sanitizer.bypassSecurityTrustHtml(renderedContent);
+      next: (article) => {
+        // Callback kept synchronous: an async one hands a promise to code
+        // that ignores it, so any rejection in here would vanish.
+        void (async () => {
+          const html = await marked((article?.body as string) || '');
+          const renderedContent = stripFirstH(
+            addAnchorIds(addJumpCards(wrapCodeBlocks(html)))
+          );
+          this.renderedContent =
+            this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
-        this.article = {
-          title: article?.title || '',
-          author: article?.author || '',
-          date: article?.date || new Date(),
-          body: renderedContent,
-          slug: slug,
-          image: article?.image,
-          tags: article?.tags,
-        };
+          this.article = {
+            title: article?.title || '',
+            author: article?.author || '',
+            date: article?.date || new Date(),
+            body: renderedContent,
+            slug: slug,
+            image: article?.image,
+            tags: article?.tags,
+          };
 
-        this.loading = false;
+          this.loading = false;
+
+        })().catch((error) => console.error('Could not render article', error));
       },
       error: (err) => {
         this.error = 'Error loading article.';
