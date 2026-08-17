@@ -55,7 +55,7 @@ import { Summation } from '../../../model/graph/summation.model';
 import { FigureService } from './figure/figure.service';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
 import { KeyValuePipe, NgClass, NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { IncludeRefPipe } from '../../../pipes/include-ref.pipe';
 import { AuthorshipDateFormatPipe } from '../../../pipes/authorship-date-format.pipe';
@@ -119,6 +119,8 @@ export class DescriptionTabComponent implements OnDestroy {
   public figure: FigureService = inject(FigureService);
   private interactorService: InteractorService = inject(InteractorService);
   public state: UrlStateService = inject(UrlStateService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private species: SpeciesService = inject(SpeciesService);
   icon = rxResource({
     params: () => this.referenceEntity()?.identifier,
@@ -794,11 +796,35 @@ export class DescriptionTabComponent implements OnDestroy {
     const element = document.getElementById(key);
     if (element) {
       this.selectItem(key);
+      this.consumeFragment();
       return;
     }
     if (attemptsLeft > 0) {
       setTimeout(() => this.scrollToSectionWhenRendered(key, attemptsLeft - 1), 100);
+      return;
     }
+    // Give up, but still drop the fragment: a section that never renders for
+    // this entity must not keep being retried for the next one.
+    this.consumeFragment();
+  }
+
+  /**
+   * Drop the fragment once it has been acted on.
+   *
+   * It names a section of one particular entity, so leaving it in the URL means
+   * re-applying it to every entity selected afterwards. A stale
+   * "#locationsInPWB", left over from an earlier version of the diagram context
+   * menu, was dragging the panel off to an unrelated section on every click in
+   * the entity popup.
+   */
+  private consumeFragment(): void {
+    if (!this.route.snapshot.fragment) return;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      fragment: undefined,
+      queryParamsHandling: 'preserve',
+      replaceUrl: true,
+    });
   }
 
   selectItem(key: string): void {
