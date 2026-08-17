@@ -202,3 +202,35 @@ test.describe('Site navigation chrome', () => {
     await expect(page.locator('app-navigation-bar')).toHaveCount(0);
   });
 });
+
+test.describe('Tools page', () => {
+  // The Tools page is authored content, so its links did not get updated when
+  // the Tools *menu* was fixed to use ?analysisTab=. It still pointed at
+  // /gsa/home and /PathwayBrowser/#TOOL=AT, which are old-site URLs this app
+  // never served -- the menu worked and the page it described did not.
+  test('no card points at a URL this app does not serve', async ({ page }) => {
+    await page.goto('/tools');
+    const cards = page.locator('a.module-card');
+    await expect(cards.first()).toBeVisible({ timeout: LOAD });
+
+    for (const href of await cards.evaluateAll((els) =>
+      els.map((e) => e.getAttribute('href') ?? '')
+    )) {
+      expect(href, `legacy tool URL still in the Tools page: ${href}`).not.toMatch(
+        /gsa\/home|#TOOL=/
+      );
+    }
+  });
+
+  test('"Analyse Gene Expression" opens the quantitative analysis', async ({ page }) => {
+    await page.goto('/tools');
+    await page
+      .locator('a.module-card')
+      .filter({ hasText: 'Analyse Gene Expression' })
+      .first()
+      .click();
+
+    await expect(page).toHaveURL(/analysisTab=quantitative/, { timeout: LOAD });
+    await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
+  });
+});
