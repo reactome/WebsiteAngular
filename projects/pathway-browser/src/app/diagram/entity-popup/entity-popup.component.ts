@@ -165,9 +165,16 @@ export class EntityPopupComponent {
             .get<any>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
             .pipe(
               map((result): PopupRow[] =>
+                // Production lists evidence count alongside the score, and
+                // both matter when judging an interaction, so show both.
                 (result?.entities?.[0]?.interactors ?? []).map((i: any) => ({
                   label: i.alias || i.acc,
-                  detail: i.score != null ? `score ${i.score}` : undefined,
+                  detail: [
+                    i.evidences != null ? `${i.evidences} evidence` : null,
+                    i.score != null ? `score ${i.score}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · '),
                   href: i.accURL,
                 }))
               )
