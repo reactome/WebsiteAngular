@@ -8,14 +8,15 @@
         padding: 0;
       }
       .mdc-icon-button {
-
         --size: 24px;
         --icon-ratio: 1;
 
-        @include mat.icon-button-overrides((
-          state-layer-size: var(--size, 40px),
-          icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
-        ));
+        @include mat.icon-button-overrides(
+          (
+            state-layer-size: var(--size, 40px),
+            icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
+          )
+        );
 
         .mat-icon {
           width: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
@@ -57,7 +58,6 @@
   letter-spacing: 0.25px;
 
   --padding: 2px;
-
 }
 
 .controllers {
@@ -83,7 +83,6 @@
   overflow: hidden;
   padding-right: var(--padding);
 }
-
 
 .paginator {
   width: 100%;

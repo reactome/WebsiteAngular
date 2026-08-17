@@ -16,7 +16,7 @@ import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPrese
   selector: 'app-page',
   imports: [PageLayoutComponent],
   templateUrl: './page.component.html',
-  styleUrl: './page.component.scss'
+  styleUrl: './page.component.scss',
 })
 export class PageComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -44,10 +44,13 @@ export class PageComponent implements OnInit {
   }
 
   private rewriteContentUrls(html: string): string {
-    return html.replace(/\b(href|src)=("([^"]*)"|'([^']*)')/g, (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
-      const value = doubleQuoted ?? singleQuoted ?? '';
-      return `${attr}="${this.normalizeContentUrl(value)}"`;
-    });
+    return html.replace(
+      /\b(href|src)=("([^"]*)"|'([^']*)')/g,
+      (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
+        const value = doubleQuoted ?? singleQuoted ?? '';
+        return `${attr}="${this.normalizeContentUrl(value)}"`;
+      }
+    );
   }
 
   private normalizeContentUrl(url: string): string {
@@ -64,7 +67,7 @@ export class PageComponent implements OnInit {
   }
 
   ngOnInit() {
-     this.route.url.subscribe(segments => {
+    this.route.url.subscribe((segments) => {
       if (segments.length === 0) {
         this.error = 'Page not found.';
         this.cdr.markForCheck();
@@ -72,7 +75,7 @@ export class PageComponent implements OnInit {
       }
 
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path = segments.map(s => s.path).join('/');
+      let path = segments.map((s) => s.path).join('/');
       // Strip the '{pageType}/' prefix since content is in content/{pageType}/
       if (path.startsWith(segments[0].path + '/')) {
         path = path.substring(segments[0].path.length + 1);
@@ -80,56 +83,61 @@ export class PageComponent implements OnInit {
         path = 'index';
       }
       if (path) {
-        this.loadPage(segments[0].path, path);
+        // loadPage reports its own failures through the subscribe error handler.
+        void this.loadPage(segments[0].path, path);
       }
     });
   }
 
-  private async loadPage(pageType:string, slug: string) {
+  private async loadPage(pageType: string, slug: string) {
     this.loading = true;
     this.error = null;
 
     this.contentService.getPage(pageType, slug).subscribe({
-      next: async (page) => {
-        if (page) {
-          this.page = page;
-          let html = await marked(page.body);
-          html = this.rewriteContentUrls(html);
-          // Keep this chain intact. Each step was added by a specific fix and
-          // the imports alone do nothing: wrapCodeBlocks collapses long code
-          // blocks (#98), addJumpCards builds the dev-page cards, and
-          // addAnchorIds gives headings the ids that same-page "#" links --
-          // including the table of contents at the top of the long userguide
-          // pages -- need to jump to (#89). Dropping the calls but keeping the
-          // imports is exactly how those regressed once already.
-          this.renderedContent = sanitize(
-            stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
-            this.sanitizer,
-          );
-          this.loading = false;
-          // `await marked(...)` resumes in a microtask, so this assignment is
-          // detached from the subscribe callback as far as Angular is
-          // concerned -- without this the rendered body never appears.
-          this.cdr.markForCheck();
-          // Let Angular flush the bound innerHTML before we look for
-          // third-party embed placeholders inside it, or for the anchor a
-          // deep link asked for.
-          setTimeout(() => {
-            loadHubspotMeetingsIfPresent(this.elementRef.nativeElement);
-            this.scrollToRequestedAnchor();
-          }, 0);
-        } else {
-          this.error = 'Page not found.';
-          this.loading = false;
-          this.cdr.markForCheck();
-        }
-      }
-      , error: (err) => {
+      next: (page) => {
+        // Callback kept synchronous: an async one hands a promise to code
+        // that ignores it, so any rejection in here would vanish.
+        void (async () => {
+          if (page) {
+            this.page = page;
+            let html = await marked(page.body);
+            html = this.rewriteContentUrls(html);
+            // Keep this chain intact. Each step was added by a specific fix and
+            // the imports alone do nothing: wrapCodeBlocks collapses long code
+            // blocks (#98), addJumpCards builds the dev-page cards, and
+            // addAnchorIds gives headings the ids that same-page "#" links --
+            // including the table of contents at the top of the long userguide
+            // pages -- need to jump to (#89). Dropping the calls but keeping the
+            // imports is exactly how those regressed once already.
+            this.renderedContent = sanitize(
+              stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+              this.sanitizer
+            );
+            this.loading = false;
+            // `await marked(...)` resumes in a microtask, so this assignment is
+            // detached from the subscribe callback as far as Angular is
+            // concerned -- without this the rendered body never appears.
+            this.cdr.markForCheck();
+            // Let Angular flush the bound innerHTML before we look for
+            // third-party embed placeholders inside it, or for the anchor a
+            // deep link asked for.
+            setTimeout(() => {
+              loadHubspotMeetingsIfPresent(this.elementRef.nativeElement);
+              this.scrollToRequestedAnchor();
+            }, 0);
+          } else {
+            this.error = 'Page not found.';
+            this.loading = false;
+            this.cdr.markForCheck();
+          }
+        })().catch((error) => console.error('Could not render page content', error));
+      },
+      error: (err) => {
         this.error = 'Error loading page.';
         this.loading = false;
-        console.error("Issue Loading Page: ",err);
+        console.error('Issue Loading Page: ', err);
         this.cdr.markForCheck();
-      }
-    })
+      },
+    });
   }
 }

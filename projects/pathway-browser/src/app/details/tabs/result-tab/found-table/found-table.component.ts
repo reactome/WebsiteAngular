@@ -1,25 +1,34 @@
-import {Component, computed, effect, input, Signal, untracked, viewChild} from '@angular/core';
-import {ExpressionTagComponent} from "../expression-tag/expression-tag.component";
-import {MatTableDataSource, MatTableModule} from "@angular/material/table";
-import {TypeSafeMatCellDef} from "../../../../utils/type-safe-mat-cell-def.directive";
-import {TypeSafeMatRowDef} from "../../../../utils/type-safe-mat-row-def.directive";
-import type {Analysis} from "../../../../model/analysis.model";
-import {AnalysisService} from "../../../../services/analysis.service";
-import {rxResource} from "@angular/core/rxjs-interop";
-import {of} from "rxjs";
-import {UrlStateService} from "../../../../services/url-state.service";
-import {MatSort, MatSortModule} from "@angular/material/sort";
-import {TitleCasePipe} from "@angular/common";
-import {MatIcon} from "@angular/material/icon";
-import {FlagButtonComponent} from "../../../common/flag-button/flag-button.component";
+import {
+  Component,
+  computed,
+  effect,
+  input,
+  Signal,
+  untracked,
+  viewChild,
+  inject,
+} from '@angular/core';
+import { ExpressionTagComponent } from '../expression-tag/expression-tag.component';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { TypeSafeMatCellDef } from '../../../../utils/type-safe-mat-cell-def.directive';
+import { TypeSafeMatRowDef } from '../../../../utils/type-safe-mat-row-def.directive';
+import type { Analysis } from '../../../../model/analysis.model';
+import { AnalysisService } from '../../../../services/analysis.service';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { UrlStateService } from '../../../../services/url-state.service';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { TitleCasePipe } from '@angular/common';
+import { MatIcon } from '@angular/material/icon';
+import { FlagButtonComponent } from '../../../common/flag-button/flag-button.component';
 
 type ResourceMap = { [resource: string]: string[] };
 type FoundIdentifier = {
-  id: string
-  exp: number[]
-  entities: ResourceMap
-  interactors?: string[],
-}
+  id: string;
+  exp: number[];
+  entities: ResourceMap;
+  interactors?: string[];
+};
 
 @Component({
   selector: 'cr-found-table',
@@ -31,42 +40,43 @@ type FoundIdentifier = {
     MatSortModule,
     TitleCasePipe,
     MatIcon,
-    FlagButtonComponent
+    FlagButtonComponent,
   ],
   templateUrl: './found-table.component.html',
-  styleUrl: './found-table.component.scss'
+  styleUrl: './found-table.component.scss',
 })
 export class FoundTableComponent {
+  analysis = inject(AnalysisService);
+  state = inject(UrlStateService);
 
-  pathway = input.required<Analysis.Pathway>()
+  pathway = input.required<Analysis.Pathway>();
 
-  headerRowHeight = input<string>('56px')
-  parentRowHeight = input<string>('56px')
+  headerRowHeight = input<string>('56px');
+  parentRowHeight = input<string>('56px');
 
   dataSource = new MatTableDataSource<FoundIdentifier>([]);
 
-  sort = viewChild.required(MatSort)
+  sort = viewChild.required(MatSort);
 
-  constructor(public analysis: AnalysisService, public state: UrlStateService) {
+  constructor() {
     this.dataSource.sortingDataAccessor = (data, header) => {
       const value = header.split('-').reduce((a: any, b) => a?.[b], data);
       if (value instanceof Array) return arrayToSortableString(value); // Interactors
       if (value) return value; // Expressions + identifier
-    }
+    };
 
-    effect(() => this.dataSource.data = this.foundEntities());
-    effect(() => this.dataSource.sort = this.sort());
+    effect(() => (this.dataSource.data = this.foundEntities()));
+    effect(() => (this.dataSource.sort = this.sort()));
     effect(() => {
-      this.pathwayFoundEntities.value() // When found entity finished loading
+      this.pathwayFoundEntities.value(); // When found entity finished loading
       const stId = untracked(this.pathway).stId;
       setTimeout(() => {
         document.getElementById(`pathway-${stId}-row`)?.scrollIntoView({
           behavior: 'smooth',
           block: 'start',
-          inline: 'start'
-        })
-      })
-
+          inline: 'start',
+        });
+      });
     });
   }
 
@@ -74,44 +84,51 @@ export class FoundTableComponent {
     params: () => ({
       pathway: this.pathway().stId,
       token: this.state.analysis(),
-      resource: this.analysis.resourceFilter()
+      resource: this.analysis.resourceFilter(),
     }),
     // NG0991: a resource stream must emit; of() completes empty.
-    stream: ({params}) => params.pathway && params.token ?
-      this.analysis.foundEntities(params.pathway, params.token, params.resource || undefined) :
-      of(undefined)
-  })
+    stream: ({ params }) =>
+      params.pathway && params.token
+        ? this.analysis.foundEntities(params.pathway, params.token, params.resource || undefined)
+        : of(undefined),
+  });
 
   foundEntities: Signal<FoundIdentifier[]> = computed(() => {
     const found = this.pathwayFoundEntities.value();
-    if (!found) return []
+    if (!found) return [];
     return [
-      ...found.entities.map(entity => ({
+      ...found.entities.map((entity) => ({
         id: entity.id,
         exp: entity.exp,
-        entities: entity.mapsTo.reduce((entities, i) => ({[i.resource]: i.ids, ...entities}), {} as ResourceMap)
+        entities: entity.mapsTo.reduce(
+          (entities, i) => ({ [i.resource]: i.ids, ...entities }),
+          {} as ResourceMap
+        ),
       })),
-      ...found.interactors?.map(interactor => ({
+      ...(found.interactors?.map((interactor) => ({
         id: interactor.id,
         exp: interactor.exp,
-        entities: {[interactor.interactsWith.resource]: interactor.interactsWith.ids},
+        entities: { [interactor.interactsWith.resource]: interactor.interactsWith.ids },
         interactors: interactor.mapsTo,
-      })) || []
+      })) || []),
     ];
-  })
+  });
 
-
-  resources = computed(() => this.pathwayFoundEntities.value()?.resources || [])
-  resourceColumnIds = computed(() => this.resources().map(r => `entities-${r}`))
+  resources = computed(() => this.pathwayFoundEntities.value()?.resources || []);
+  resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
   expressionColumnNames = computed(() => this.analysis.result()?.expression?.columnNames || []);
   expressionColumnIds = computed(() => this.expressionColumnNames().map((_, i) => `exp-${i}`));
 
-  expandedColumns = computed(() => this.pathwayFoundEntities.value() ? [
-    'id',
-    ...(this.analysis.hasInteractors() ? ['interactors'] : []),
-    ...this.resourceColumnIds(),
-    ...this.expressionColumnIds()
-  ] : [])
+  expandedColumns = computed(() =>
+    this.pathwayFoundEntities.value()
+      ? [
+          'id',
+          ...(this.analysis.hasInteractors() ? ['interactors'] : []),
+          ...this.resourceColumnIds(),
+          ...this.expressionColumnIds(),
+        ]
+      : []
+  );
 
   resourceToIdentifiersPrefix = new Map<string, string>([
     ['UNIPROT', 'uniprot'],
@@ -119,9 +136,8 @@ export class FoundTableComponent {
     ['MIRBASE', 'mirbase'],
     ['CHEBI', 'chebi'],
     ['IUPHAR', 'iuphar.ligand'],
-    ['NCBI_NUCLEOTIDE', 'nucleotide']
-  ])
-
+    ['NCBI_NUCLEOTIDE', 'nucleotide'],
+  ]);
 }
 
 function arrayToSortableString(values: string[] | undefined): string {

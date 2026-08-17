@@ -1,5 +1,5 @@
-@use "@angular/material" as mat;
-@use "sass:map";
+@use '@angular/material' as mat;
+@use 'sass:map';
 
 @mixin variables() {
   body {
@@ -35,7 +35,6 @@
     --outline: var(--mat-sys-outline);
     --outline-variant: var(--mat-sys-outline-variant);
 
-
     --surface1: color-mix(in lch, var(--primary) 5%, var(--surface) 95%);
     --surface2: color-mix(in lch, var(--primary) 8%, var(--surface) 92%);
     --surface3: color-mix(in lch, var(--primary) 11%, var(--surface) 89%);
@@ -44,14 +43,7 @@
 
     --card: var(--mat-sys-neutral10);
 
-    --icon-positive: #0C9509;
+    --icon-positive: #0c9509;
     --hover: rgba(0, 0, 0, 0.04);
   }
 }
-
-
-
-
-
-
-

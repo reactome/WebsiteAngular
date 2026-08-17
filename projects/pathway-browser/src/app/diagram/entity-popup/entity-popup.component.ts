@@ -297,9 +297,7 @@ export class EntityPopupComponent {
     }
   });
 
-  readonly groups = computed(() =>
-    (this.active().value() ?? []).filter((g) => g.rows.length > 0)
-  );
+  readonly groups = computed(() => (this.active().value() ?? []).filter((g) => g.rows.length > 0));
   readonly loading = computed(() => this.active().isLoading());
   readonly failed = computed(() => this.active().status() === 'error');
 

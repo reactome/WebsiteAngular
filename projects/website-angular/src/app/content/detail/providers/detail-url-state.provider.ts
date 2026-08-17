@@ -1,7 +1,10 @@
-import {inject, Injectable, signal} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import {toSignal} from '@angular/core/rxjs-interop';
-import {UrlStateService, urlParam} from '../../../../../../pathway-browser/src/app/services/url-state.service';
+import { inject, Injectable, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  UrlStateService,
+  urlParam,
+} from '../../../../../../pathway-browser/src/app/services/url-state.service';
 
 @Injectable()
 export class DetailUrlState implements Partial<UrlStateService> {
@@ -18,7 +21,10 @@ export class DetailUrlState implements Partial<UrlStateService> {
   tab = urlParam<string | null>(null, 'string');
   overlay = urlParam<string | null>(null, 'string');
   analysis = urlParam<string | null>(null, 'string');
-  analysisTab = urlParam<'qualitative' | 'quantitative' | 'species' | 'tissue' | null>(null, 'string');
+  analysisTab = urlParam<'qualitative' | 'quantitative' | 'species' | 'tissue' | null>(
+    null,
+    'string'
+  );
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
   palette = urlParam<any>(null, 'string');

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { IncludeRefPipe } from './include-ref.pipe';
-import type { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer } from '@angular/platform-browser';
+import type { SafeHtml } from '@angular/platform-browser';
 import type { LiteratureReference } from '../model/graph/publication/literature-reference.model';
 
 // This spec previously imported the pipe and asserted nothing -- both lines of
@@ -23,7 +25,16 @@ const reference = (over: Partial<LiteratureReference> = {}) =>
   }) as LiteratureReference;
 
 describe('IncludeRefPipe', () => {
-  const pipe = new IncludeRefPipe(sanitizer);
+  let pipe: IncludeRefPipe;
+
+  beforeEach(() => {
+    // The pipe takes its DomSanitizer through inject(), so it is built inside
+    // an injection context with the stub supplied there.
+    TestBed.configureTestingModule({
+      providers: [{ provide: DomSanitizer, useValue: sanitizer }],
+    });
+    pipe = TestBed.runInInjectionContext(() => new IncludeRefPipe());
+  });
 
   it('links a single-author citation', () => {
     const out = pipe.transform('as shown by Smith A. 2005 in vitro', [reference()]);

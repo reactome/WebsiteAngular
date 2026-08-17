@@ -1,4 +1,12 @@
-import { Component, AfterViewInit, OnDestroy, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
+import {
+  Component,
+  AfterViewInit,
+  OnDestroy,
+  ElementRef,
+  ViewChild,
+  PLATFORM_ID,
+  inject,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { APP_CONFIG } from '../../config/config';
@@ -11,22 +19,25 @@ declare const SwaggerUIBundle: any;
   styleUrl: './swagger-page.component.scss',
 })
 export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
+  private route = inject(ActivatedRoute);
+
   @ViewChild('swaggerContainer', { static: true }) swaggerContainer!: ElementRef<HTMLDivElement>;
 
   private serviceName = '';
   private isBrowser: boolean;
 
-  constructor(
-    private route: ActivatedRoute,
-    @Inject(PLATFORM_ID) platformId: object,
-  ) {
+  constructor() {
+    const platformId = inject(PLATFORM_ID);
+
     this.isBrowser = isPlatformBrowser(platformId);
     this.serviceName = this.route.snapshot.data['serviceName'] || 'ContentService';
   }
 
   ngAfterViewInit() {
     if (!this.isBrowser) return;
-    this.loadSwaggerUI();
+    void this.loadSwaggerUI().catch((error) =>
+      console.error('Could not load the Swagger UI', error)
+    );
   }
 
   private async loadSwaggerUI() {

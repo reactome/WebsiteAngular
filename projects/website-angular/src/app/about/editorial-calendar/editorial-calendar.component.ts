@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { forkJoin } from 'rxjs';
@@ -10,7 +10,8 @@ interface EditorialEntry {
   reviewer: string;
 }
 
-const SPREADSHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTebSE76KQx1_I36_lwNnklYyDniGdWV0WqXOHjGDiJbeqwGv2W5F91EM0APfZjLXr_TVTHaAiLp8dt/pub';
+const SPREADSHEET_BASE =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTebSE76KQx1_I36_lwNnklYyDniGdWV0WqXOHjGDiJbeqwGv2W5F91EM0APfZjLXr_TVTHaAiLp8dt/pub';
 const CURRENT_CSV = `${SPREADSHEET_BASE}?gid=5&single=true&output=csv`;
 const PIPELINE_CSV = `${SPREADSHEET_BASE}?gid=6&single=true&output=csv`;
 
@@ -18,20 +19,20 @@ const PIPELINE_CSV = `${SPREADSHEET_BASE}?gid=6&single=true&output=csv`;
   selector: 'app-editorial-calendar',
   imports: [PageLayoutComponent],
   templateUrl: './editorial-calendar.component.html',
-  styleUrl: './editorial-calendar.component.scss'
+  styleUrl: './editorial-calendar.component.scss',
 })
 export class EditorialCalendarComponent implements OnInit {
+  private http = inject(HttpClient);
+
   currentEntries: EditorialEntry[] = [];
   pipelineEntries: EditorialEntry[] = [];
   loading = true;
   error = false;
 
-  constructor(private http: HttpClient) {}
-
   ngOnInit() {
     forkJoin({
       current: this.http.get(CURRENT_CSV, { responseType: 'text' }),
-      pipeline: this.http.get(PIPELINE_CSV, { responseType: 'text' })
+      pipeline: this.http.get(PIPELINE_CSV, { responseType: 'text' }),
     }).subscribe({
       next: ({ current, pipeline }) => {
         this.currentEntries = this.parseCsv(current);
@@ -41,11 +42,11 @@ export class EditorialCalendarComponent implements OnInit {
       error: () => {
         this.error = true;
         this.loading = false;
-      }
+      },
     });
   }
 
-    //TODO: Centralize this parsing logic with the release calendar component
+  //TODO: Centralize this parsing logic with the release calendar component
   private parseCsv(csv: string): EditorialEntry[] {
     const lines = csv.trim().split('\n');
     const entries: EditorialEntry[] = [];
@@ -61,7 +62,7 @@ export class EditorialCalendarComponent implements OnInit {
         pathway,
         curator: cols[1]?.trim() || '',
         author: cols[2]?.trim() || '',
-        reviewer: cols[3]?.trim() || ''
+        reviewer: cols[3]?.trim() || '',
       });
     }
 

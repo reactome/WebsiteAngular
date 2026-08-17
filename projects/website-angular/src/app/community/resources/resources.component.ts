@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { PageLayoutComponent } from "../../page-layout/page-layout.component";
+import { Component, OnInit, inject } from '@angular/core';
+import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 
 interface ResourceEntry {
   name: string;
@@ -8,20 +8,21 @@ interface ResourceEntry {
   category: string;
 }
 
-const HTML_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbRm3dc7Ms8AmDm4zR67jSWhFSb-Jgkf0vfyBdnMF-wfNC0aZJfK3ltVOe5lVwhHDgdtkYRHbtM4q9/pubhtml?gid=0&&fvid=FILTER_VIEW_ID&single=true&widget=false&headers=false&chrome=false"
+const HTML_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRbRm3dc7Ms8AmDm4zR67jSWhFSb-Jgkf0vfyBdnMF-wfNC0aZJfK3ltVOe5lVwhHDgdtkYRHbtM4q9/pubhtml?gid=0&&fvid=FILTER_VIEW_ID&single=true&widget=false&headers=false&chrome=false';
 
 @Component({
   selector: 'app-resources',
   imports: [PageLayoutComponent],
   templateUrl: './resources.component.html',
-  styleUrl: './resources.component.scss'
+  styleUrl: './resources.component.scss',
 })
 export class ResourcesComponent implements OnInit {
+  private http = inject(HttpClient);
+
   entries: Record<string, ResourceEntry[]> = {};
   loading = true;
   error = false;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(HTML_URL, { responseType: 'text' }).subscribe({
@@ -32,7 +33,7 @@ export class ResourcesComponent implements OnInit {
       error: () => {
         this.error = true;
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -57,7 +58,6 @@ export class ResourcesComponent implements OnInit {
     let rowMatch;
 
     while ((rowMatch = rowRegex.exec(html)) !== null) {
-
       const rowHtml = rowMatch[1];
       const cells: string[] = [];
 
@@ -78,7 +78,7 @@ export class ResourcesComponent implements OnInit {
       entries[category].push({
         name: cells[0],
         description: cells[1],
-        category: category
+        category: category,
       });
     }
 

@@ -1,4 +1,4 @@
-import {Properties} from "./properties";
+import { Properties } from './properties';
 
 export type Provider<T> = () => T;
 
@@ -24,20 +24,26 @@ export function extract<T>(property: Property<T>): T {
 }
 
 export type PropertiesType = {
-  [k: string]: Property<any>
-}
+  [k: string]: Property<any>;
+};
 
 export type Defaultable<T, K extends keyof T = never> = T & {
-  setDefault<KA extends keyof T, VA extends T[KA]>(key: KA, defaultValue: VA): Defaultable<T, K | KA>;
+  setDefault<KA extends keyof T, VA extends T[KA]>(
+    key: KA,
+    defaultValue: VA
+  ): Defaultable<T, K | KA>;
 } & {
   [P in K]-?: T[P];
-}
-
+};
 
 export function defaultable<T>(object: T): Defaultable<T> {
-  const defaultable = (object) as Defaultable<T>;
+  const defaultable = object as Defaultable<T>;
 
-  defaultable.setDefault = function <K extends keyof T, KA extends keyof T, VA extends T[KA]>(this: Defaultable<T, K>, key: KA, defaultValue: VA): Defaultable<T, K | KA> {
+  defaultable.setDefault = function <K extends keyof T, KA extends keyof T, VA extends T[KA]>(
+    this: Defaultable<T, K>,
+    key: KA,
+    defaultValue: VA
+  ): Defaultable<T, K | KA> {
     if (!object[key]) object[key] = defaultValue;
     return defaultable as Defaultable<T, K | KA>;
   };
@@ -45,7 +51,20 @@ export function defaultable<T>(object: T): Defaultable<T> {
   return defaultable;
 }
 
-export const propertyExtractor = (properties: Properties) => <G extends keyof Properties, K extends keyof Properties[G]>(group: G, key: K) => properties[group][key]
-export const propertyMapper = (properties: Properties) => <G extends keyof Properties, K extends keyof Properties[G], T extends Properties[G][K] extends Property<infer X> ? X : never, M extends (t: T) => any>(group: G, key: K, mapper: M) => mapper(extract(properties[group][key]))
-
-
+export const propertyExtractor =
+  (properties: Properties) =>
+  <G extends keyof Properties, K extends keyof Properties[G]>(group: G, key: K) =>
+    properties[group][key];
+export const propertyMapper =
+  (properties: Properties) =>
+  <
+    G extends keyof Properties,
+    K extends keyof Properties[G],
+    T extends (Properties[G][K] extends Property<infer X> ? X : never),
+    M extends (t: T) => any,
+  >(
+    group: G,
+    key: K,
+    mapper: M
+  ) =>
+    mapper(extract(properties[group][key]));

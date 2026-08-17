@@ -1,9 +1,9 @@
 import { Component, inject, effect, ChangeDetectorRef, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon } from '@angular/material/icon';
 import { NavOptionsService } from '../../services/nav-options.service';
-import {NavLink} from '../../types/link';
+import { NavLink } from '../../types/link';
 import { ContentService } from '../../services/content.service';
 import { SearchHistoryService } from '../../services/search-history.service';
 import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
@@ -19,7 +19,7 @@ interface BreadcrumbEntry extends NavLink {
   selector: 'app-breadcrumb',
   imports: [MatIcon, RouterLink],
   templateUrl: './breadcrumb.component.html',
-  styleUrl: './breadcrumb.component.scss'
+  styleUrl: './breadcrumb.component.scss',
 })
 export class BreadcrumbComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -45,41 +45,50 @@ export class BreadcrumbComponent implements OnInit {
   ngOnInit() {
     //Get all nav options
 
-    this.route.url.subscribe(segments => {
+    this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      const path_segments = segments.map(s => s.path);
+      const path_segments = segments.map((s) => s.path);
 
       if (path_segments.length > 0 && path_segments) {
-        const second_lastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 1] : null;
+        const second_lastSegment =
+          path_segments.length >= 2 ? path_segments[path_segments.length - 1] : null;
 
         if (second_lastSegment === 'news' || second_lastSegment === 'reactome-research-spotlight') {
-          this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -1));
-          
+          this.updateBreadcrumbs(path_segments.slice(0, path_segments.length - 1));
+
           //wait for breadcrumbs to update before adding article title
           if (this.breadcrumbs.length === 0) {
             setTimeout(() => {
-              this.updateBreadcrumbs(path_segments.slice(0, path_segments.length -1));
+              this.updateBreadcrumbs(path_segments.slice(0, path_segments.length - 1));
             }, 50);
           }
-          
-          const articleSegment = path_segments[path_segments.length -1];
-           this.contentService.getArticleIndexItem(
-            second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
-            articleSegment).subscribe({
+
+          const articleSegment = path_segments[path_segments.length - 1];
+          this.contentService
+            .getArticleIndexItem(
+              second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
+              articleSegment
+            )
+            .subscribe({
               next: (article) => {
                 if (article) {
                   this.breadcrumbs.push({
                     label: article.title,
-                    link: path_segments.join('/')
+                    link: path_segments.join('/'),
                   });
                 }
               },
               error: (err) => {
-                console.error("Error loading article for breadcrumb:", err);
+                console.error('Error loading article for breadcrumb:', err);
                 this.updateBreadcrumbs(path_segments);
-              }
-            })
-        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments[2] === 'person' && path_segments.length >= 4) {
+              },
+            });
+        } else if (
+          path_segments[0] === 'content' &&
+          path_segments[1] === 'detail' &&
+          path_segments[2] === 'person' &&
+          path_segments.length >= 4
+        ) {
           // Person profile page (/content/detail/person/:id where id is
           // ORCID or numeric dbId). Resolve to displayName via the
           // ContentService person endpoint which accepts both forms.
@@ -87,14 +96,18 @@ export class BreadcrumbComponent implements OnInit {
           const id = path_segments[3];
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http.get<{ displayName?: string }>(
-            `${CONTENT_SERVICE}/data/person/${id}`,
-          ).subscribe({
-            next: (p) => {
-              if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
-            },
-          });
-        } else if (path_segments[0] === 'content' && path_segments[1] === 'detail' && path_segments.length >= 3) {
+          this.http
+            .get<{ displayName?: string }>(`${CONTENT_SERVICE}/data/person/${id}`)
+            .subscribe({
+              next: (p) => {
+                if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+              },
+            });
+        } else if (
+          path_segments[0] === 'content' &&
+          path_segments[1] === 'detail' &&
+          path_segments.length >= 3
+        ) {
           // Entity detail page (/content/detail/:id) -- /content and
           // /content/detail aren't landing pages, so we surface the search
           // page as the canonical parent: "Home > Search > <entity>". The
@@ -102,23 +115,25 @@ export class BreadcrumbComponent implements OnInit {
           // visited (preserving ?q= etc.), so they don't land on an empty
           // search form. The leaf starts as the raw stId and is replaced
           // with the entity displayName once /data/query/{id} responds.
-          const { path: searchPath, queryParams: searchQueryParams } =
-            this.splitUrl(this.searchHistory.lastSearchUrl());
+          const { path: searchPath, queryParams: searchQueryParams } = this.splitUrl(
+            this.searchHistory.lastSearchUrl()
+          );
           this.breadcrumbs = [
             { label: 'Search', link: searchPath, queryParams: searchQueryParams },
           ];
           const id = path_segments[2];
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http.get<{ displayName?: string; name?: string[] }>(
-            `${CONTENT_SERVICE}/data/query/${id}`,
-          ).subscribe({
-            next: (entity) => {
-              const label = entity?.displayName || entity?.name?.[0] || id;
-              this.replaceLeafBreadcrumb(label, fullPath);
-            },
-          });
-        } else if (path_segments.includes('faq') && path_segments.length > 2) { //In in an FAQ page, but not the main FAQ page
+          this.http
+            .get<{ displayName?: string; name?: string[] }>(`${CONTENT_SERVICE}/data/query/${id}`)
+            .subscribe({
+              next: (entity) => {
+                const label = entity?.displayName || entity?.name?.[0] || id;
+                this.replaceLeafBreadcrumb(label, fullPath);
+              },
+            });
+        } else if (path_segments.includes('faq') && path_segments.length > 2) {
+          //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)
           const faqIndex = path_segments.indexOf('faq');
           const modifiedSegments = [...path_segments];
@@ -127,7 +142,6 @@ export class BreadcrumbComponent implements OnInit {
         } else {
           this.updateBreadcrumbs(path_segments);
         }
-        
       }
     });
   }
@@ -147,7 +161,7 @@ export class BreadcrumbComponent implements OnInit {
 
       // First, try to look up the nav link directly by segment key
       let matchedLink = currentNavLevel[segment];
-      
+
       // If not found by key, search through all items at current level to find matching link
       if (!matchedLink) {
         for (const navLink of Object.values(currentNavLevel)) {
@@ -165,7 +179,7 @@ export class BreadcrumbComponent implements OnInit {
         // current route and duplicates segments (e.g. /about/x/about/x).
         this.breadcrumbs.push({
           label: matchedLink.label,
-          link: currentPath
+          link: currentPath,
         });
 
         // Move to the next level of dropdown links if they exist
@@ -174,12 +188,12 @@ export class BreadcrumbComponent implements OnInit {
         // If no match found, create a breadcrumb from the segment name
         this.breadcrumbs.push({
           label: this.formatSegmentLabel(segment),
-          link: currentPath
+          link: currentPath,
         });
         currentNavLevel = {};
       }
     }
-      this.cdr.markForCheck();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -221,7 +235,9 @@ export class BreadcrumbComponent implements OnInit {
     const path = url.substring(0, qIdx);
     const params = new URLSearchParams(url.substring(qIdx + 1));
     const queryParams: Record<string, string> = {};
-    params.forEach((v, k) => { queryParams[k] = v; });
+    params.forEach((v, k) => {
+      queryParams[k] = v;
+    });
     return { path, queryParams };
   }
 
@@ -231,8 +247,7 @@ export class BreadcrumbComponent implements OnInit {
   private formatSegmentLabel(segment: string): string {
     return segment
       .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   }
-
 }

@@ -136,7 +136,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .contributors-table-wrapper {
@@ -277,7 +279,8 @@
     .contributors-table {
       font-size: 0.8rem;
 
-      th, td {
+      th,
+      td {
         padding: 8px 6px;
       }
     }

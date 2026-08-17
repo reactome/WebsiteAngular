@@ -58,15 +58,10 @@
               "cytoscape-fcose",
               "lodash"
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": [],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "node_modules/",
-                "dist/"
-              ]
+              "includePaths": ["node_modules/", "dist/"]
             }
           },
           "configurations": {
@@ -74,8 +69,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "450kB",
+                  "maximumError": "550kB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -145,10 +140,6 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -157,9 +148,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": []
           }
         }
@@ -182,9 +171,6 @@
             "outputPath": "dist/website-angular",
             "index": "projects/website-angular/src/index.html",
             "browser": "projects/website-angular/src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
             "tsConfig": "projects/website-angular/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -208,9 +194,7 @@
                 "output": "/assets"
               }
             ],
-            "styles": [
-              "projects/website-angular/src/styles.scss"
-            ],
+            "styles": ["projects/website-angular/src/styles.scss"],
             "scripts": []
           },
           "configurations": {
@@ -283,10 +267,7 @@
               "lodash/set",
               "lodash/toPath"
             ],
-            "polyfills": [
-              "zone.js",
-              "@angular/localize/init"
-            ],
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "projects/pathway-browser/tsconfig.app.json",
             "assets": [
               "projects/pathway-browser/src/favicon.svg",
@@ -297,15 +278,10 @@
                 "output": "/assets"
               }
             ],
-            "styles": [
-              "projects/pathway-browser/src/styles.scss"
-            ],
+            "styles": ["projects/pathway-browser/src/styles.scss"],
             "scripts": [],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "node_modules/",
-                "dist/"
-              ]
+              "includePaths": ["node_modules/", "dist/"]
             },
             "browser": "projects/pathway-browser/src/main.ts"
           },
@@ -424,25 +400,13 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing",
-              "@angular/localize/init"
-            ],
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "tsconfig.spec.json",
-            "assets": [
-              "src/favicon.svg",
-              "src/assets"
-            ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "assets": ["src/favicon.svg", "src/assets"],
+            "styles": ["src/styles.scss"],
             "scripts": [],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "node_modules/",
-                "dist/"
-              ]
+              "includePaths": ["node_modules/", "dist/"]
             }
           }
         },
@@ -478,11 +442,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "tsConfig": "projects/reactome-cytoscape-style/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
+            "tsConfig": "projects/reactome-cytoscape-style/tsconfig.spec.json"
           }
         }
       }
@@ -535,11 +495,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "tsConfig": "projects/reactome-table/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
+            "tsConfig": "projects/reactome-table/tsconfig.spec.json"
           }
         }
       }
@@ -568,11 +524,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "tsConfig": "projects/reactome-gsa-form/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
+            "tsConfig": "projects/reactome-gsa-form/tsconfig.spec.json"
           }
         }
       }
@@ -590,15 +542,10 @@
               "base": "dist/reactome-table-wc"
             },
             "index": "projects/reactome-table-wc/src/index.html",
-            "polyfills": [
-              "zone.js"
-            ],
             "tsConfig": "projects/reactome-table-wc/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [],
-            "styles": [
-              "projects/reactome-table/src/assets/_index.scss"
-            ],
+            "styles": ["projects/reactome-table/src/assets/_index.scss"],
             "scripts": [],
             "browser": "projects/reactome-table-wc/src/main.ts"
           },
@@ -642,10 +589,6 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
             "tsConfig": "projects/reactome-table-wc/tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "styles": [],

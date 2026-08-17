@@ -25,7 +25,9 @@ test.describe('Pathway Browser', () => {
 
     await expect(page.locator('cr-viewport')).toBeAttached({ timeout: BOOT_TIMEOUT });
     await expect(page.locator('cr-search')).toBeAttached({ timeout: BOOT_TIMEOUT });
-    await expect(page.getByRole('button', { name: /analyze/i })).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.getByRole('button', { name: /analyze/i })).toBeVisible({
+      timeout: BOOT_TIMEOUT,
+    });
   });
 
   test('pathway tree is populated from the backend', async ({ page }) => {
@@ -38,7 +40,9 @@ test.describe('Pathway Browser', () => {
     // renders as an empty shell, so assert on real content rather than the
     // container existing.
     for (const pathway of ['Autophagy', 'Cell Cycle', 'Metabolism', 'Disease']) {
-      await expect(tree.getByText(pathway, { exact: true }).first()).toBeVisible({ timeout: BOOT_TIMEOUT });
+      await expect(tree.getByText(pathway, { exact: true }).first()).toBeVisible({
+        timeout: BOOT_TIMEOUT,
+      });
     }
   });
 

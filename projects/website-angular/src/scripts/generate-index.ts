@@ -78,8 +78,7 @@ function inferCategory(url: string): string {
   const topDir = url.split('/')[1] || '';
   // Special sub-categories
   if (url.startsWith('/about/news/')) return 'News';
-  if (url.startsWith('/content/reactome-research-spotlight/'))
-    return 'Research Spotlight';
+  if (url.startsWith('/content/reactome-research-spotlight/')) return 'Research Spotlight';
   return categoryMap[topDir] || 'Other';
 }
 
@@ -87,12 +86,7 @@ function inferCategory(url: string): string {
  * Generate a consolidated site search index covering all content
  */
 function generateSiteSearchIndex(): void {
-  const contentRoot = path.resolve(
-    process.cwd(),
-    'projects',
-    'website-angular',
-    'content'
-  );
+  const contentRoot = path.resolve(process.cwd(), 'projects', 'website-angular', 'content');
 
   if (!fs.existsSync(contentRoot)) {
     console.warn('Content directory not found:', contentRoot);
@@ -119,12 +113,9 @@ function generateSiteSearchIndex(): void {
         .basename(filePath)
         .replace(/\.(mdx|md)$/, '')
         .replace(/-/g, ' ');
-    const category = (frontmatter['category'] as string)
-      ? inferCategory(url)
-      : inferCategory(url);
+    const category = (frontmatter['category'] as string) ? inferCategory(url) : inferCategory(url);
     const plainBody = stripMarkdown(body);
-    const excerpt =
-      plainBody.slice(0, 200) + (plainBody.length > 200 ? '...' : '');
+    const excerpt = plainBody.slice(0, 200) + (plainBody.length > 200 ? '...' : '');
 
     items.push({
       id: nextId++,
@@ -138,12 +129,7 @@ function generateSiteSearchIndex(): void {
   }
 
   // Write to public assets so it can be fetched at runtime
-  const outputDir = path.resolve(
-    process.cwd(),
-    'projects',
-    'website-angular',
-    'public'
-  );
+  const outputDir = path.resolve(process.cwd(), 'projects', 'website-angular', 'public');
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
@@ -158,9 +144,7 @@ function generateSiteSearchIndex(): void {
 function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
   if (!fs.existsSync(dir)) return [];
 
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
 
   return files
     .map((filename) => {
@@ -178,9 +162,7 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
           typeof frontmatter['tags'] === 'string'
             ? frontmatter['tags']
                 .split(',')
-                .map((t: string) =>
-                  t.trim().replace(/^[["']+|[\]'"]+$/g, '')
-                )
+                .map((t: string) => t.trim().replace(/^[["']+|[\]'"]+$/g, ''))
             : frontmatter['tags'],
       } as ArticleIndexItem;
     })
@@ -235,15 +217,6 @@ function generateIndex(directories: string[], recursive: boolean = true): void {
 
 // Run on module load
 generateIndex(['projects', 'website-angular', 'content', 'about', 'news']);
-generateIndex([
-  'projects',
-  'website-angular',
-  'content',
-  'content',
-  'reactome-research-spotlight',
-]);
-generateIndex(
-  ['projects', 'website-angular', 'content', 'documentation', 'faq'],
-  true
-);
+generateIndex(['projects', 'website-angular', 'content', 'content', 'reactome-research-spotlight']);
+generateIndex(['projects', 'website-angular', 'content', 'documentation', 'faq'], true);
 generateSiteSearchIndex();

@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 #hierarchy-container {
   display: flex;
@@ -21,7 +21,6 @@
   overflow-y: hidden;
   white-space: nowrap;
   --transparent-surface: oklch(from var(--surface) l c h / 0);
-
 
   .breadcrumb {
     display: flex;
@@ -58,7 +57,6 @@
       padding: 2px 0 0;
       text-decoration: none;
 
-
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -69,7 +67,7 @@
       justify-content: center;
     }
 
-    .breadcrumb-item::before{
+    .breadcrumb-item::before {
       content: '>';
       color: var(--primary);
       display: flex;
@@ -78,7 +76,7 @@
       //padding: 2px 0 0;
     }
 
-    .breadcrumb-item:hover > span{
+    .breadcrumb-item:hover > span {
       text-decoration: underline;
       text-decoration-color: var(--primary);
       text-decoration-thickness: 1px;
@@ -99,7 +97,6 @@
     background: linear-gradient(270deg, var(--surface) 0%, var(--transparent-surface) 100%);
     transform: rotate(-180deg);
     z-index: 1;
-
   }
 
   .gradient-holder-right {
@@ -124,7 +121,6 @@
   color: var(--primary);
 }
 
-
 #events-container {
   overflow-y: scroll;
   height: 100%;
@@ -132,14 +128,12 @@
   scrollbar-color: var(--primary) transparent;
 }
 
-
 .mat-tree {
   background: var(--surface);
   --mat-button-text-horizontal-padding: 5px;
   --mat-button-text-with-icon-horizontal-padding: 8px;
   --mat-tree-node-min-height: 20px;
 }
-
 
 .tree-invisible {
   display: none;
@@ -156,7 +150,7 @@
 /*
  * This padding sets alignment of the nested nodes.
  */
-.tree .mat-nested-tree-node div[role=group] {
+.tree .mat-nested-tree-node div[role='group'] {
   padding-left: 6px;
 }
 
@@ -165,10 +159,9 @@
  * Leaf nodes need to have padding so as to align with other non-leaf nodes
  * under the same parent.
  */
-.tree div[role=group] > .tree-node {
+.tree div[role='group'] > .tree-node {
   padding-left: 8px;
 }
-
 
 .tree-node {
   height: 26px;
@@ -219,7 +212,7 @@
 
 .selected {
   background: var(--primary);
-  border-radius: 50px;;
+  border-radius: 50px;
   color: var(--on-primary) !important;
 
   .ehld {
@@ -228,9 +221,11 @@
 }
 
 :host {
-  @include mat.button-overrides((
-    text-label-text-color: var(--on-surface),
-  ));
+  @include mat.button-overrides(
+    (
+      text-label-text-color: var(--on-surface),
+    )
+  );
 }
 
 .custom-icon {
@@ -249,7 +244,6 @@
 .button-size .mat-icon {
   overflow: visible;
 }
-
 
 .font {
   font-family: 'Roboto', sans-serif;
@@ -306,7 +300,6 @@ ul {
   background: var(--surface);
   --transparent-surface: oklch(from var(--surface) l c h / 0);
 
-
   &:before {
     content: '';
     position: absolute;
@@ -339,7 +332,6 @@ ul {
     letter-spacing: 0.5px;
     text-align: center;
     font-size: 11px;
-
 
     .initial {
     }
@@ -379,7 +371,7 @@ ul {
     opacity: 0.4;
   }
 
-  .analysis{
+  .analysis {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
@@ -391,7 +383,7 @@ ul {
     order: 2;
     flex-grow: 0;
 
-    .text{
+    .text {
       font-family: 'Roboto', sans-serif;
       font-style: normal;
       font-weight: 400;
@@ -427,12 +419,12 @@ ul {
   border-radius: 50px;
 }
 
-
 /* Disable the hover for the mat tree expandable icon, the disableRipple doesn't work here */
 .no-hover-effect {
   &.mat-mdc-icon-button {
     ::ng-deep {
-      .mat-mdc-button-persistent-ripple, .mat-mdc-button-ripple {
+      .mat-mdc-button-persistent-ripple,
+      .mat-mdc-button-ripple {
         display: none;
       }
     }
@@ -453,7 +445,6 @@ ul {
   width: 100%;
 }
 
-
 .name.no-transition {
   transition: none !important;
   overflow-x: scroll;
@@ -472,8 +463,8 @@ ul {
 
 ::ng-deep .mat-mdc-button .mdc-button__label.add-overflowX {
   overflow-x: scroll;
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 //.has-sibling {

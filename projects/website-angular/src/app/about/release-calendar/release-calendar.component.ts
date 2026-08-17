@@ -15,19 +15,33 @@ interface YearGroup {
 }
 
 const MONTHS = [
-  '', 'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  '',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQR7_-1pf24gjQh_sR-gvTg_mPXJ_zjHc-N3jUoqb9M7f9i1I5NugQkAd-ve7LYgVYSsgMFMqGRcCCE/pub?gid=0&single=true&output=csv';
+const CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQR7_-1pf24gjQh_sR-gvTg_mPXJ_zjHc-N3jUoqb9M7f9i1I5NugQkAd-ve7LYgVYSsgMFMqGRcCCE/pub?gid=0&single=true&output=csv';
 
 @Component({
   selector: 'app-release-calendar',
   imports: [PageLayoutComponent],
   templateUrl: './release-calendar.component.html',
-  styleUrl: './release-calendar.component.scss'
+  styleUrl: './release-calendar.component.scss',
 })
 export class ReleaseCalendarComponent implements OnInit {
+  private http = inject(HttpClient);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -35,8 +49,6 @@ export class ReleaseCalendarComponent implements OnInit {
   loading = true;
   error = false;
   latestVersion = 0;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(CSV_URL, { responseType: 'text' }).subscribe({
@@ -49,7 +61,7 @@ export class ReleaseCalendarComponent implements OnInit {
         this.error = true;
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
@@ -75,7 +87,7 @@ export class ReleaseCalendarComponent implements OnInit {
         version,
         month,
         year,
-        label: `${MONTHS[month]} ${year}`
+        label: `${MONTHS[month]} ${year}`,
       });
     }
 

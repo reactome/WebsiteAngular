@@ -44,6 +44,13 @@ jobs:
       # once the codebase is clean of it, so an error is always a new violation.
       # Warnings are the ~1600 pre-existing findings, held to a baseline so they
       # can only go down.
+      # Formatting is checked, not applied. The previous workflow ran prettier
+      # on PR branches and pushed a commit back -- it used yarn in an npm repo
+      # and prettier was never a dependency, so it silently formatted nothing
+      # for months, and it could not run at all once work went straight to main.
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Lint
         run: npm run check:lint
 

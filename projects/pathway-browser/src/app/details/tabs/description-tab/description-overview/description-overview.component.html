@@ -17,7 +17,7 @@
             }
             {{ category() | titlecase }} {{ className() }}
             @if (obj().schemaClass === 'Polymerisation' || obj().schemaClass === 'Depolymerisation') {
-              &middot; <span class='italic'>{{ obj().schemaClass }}</span>
+              &middot; <span class="italic">{{ obj().schemaClass }}</span>
             }
           } @else {
             {{ className() === 'TopLevelPathway' ? 'Pathway' : className() }}
@@ -31,7 +31,7 @@
         <div class="row">
           <div class="label">Cell Type</div>
           <div class="value compartment-row">
-            @for (type of cellType(); track type.dbId; let i = $index; ) {
+            @for (type of cellType(); track type.dbId; let i = $index) {
               <cr-ontology-term [term]="type"></cr-ontology-term>
               <!-- Add comma separator except for last item -->
               @if (i < cellType().length - 1) {
@@ -51,8 +51,8 @@
         <div class="row">
           <div class="label">Compartment</div>
           <div class="value compartment-row">
-            @for (has of compartment(); track has?.element?.dbId ?? $index; let i = $index; ) {
-              <cr-ontology-term [term]="has.element"/>
+            @for (has of compartment(); track has?.element?.dbId ?? $index; let i = $index) {
+              <cr-ontology-term [term]="has.element" />
               <!-- Add comma separator except for last item -->
               @if (i < compartment().length - 1) {
                 <span class="comma">,</span>
@@ -65,8 +65,8 @@
         <div class="row">
           <div class="label">Disease</div>
           <div class="value compartment-row">
-            @for (d of disease(); track d.dbId; let i = $index; ) {
-              <cr-ontology-term [term]="d" [titleCase]="true"/>
+            @for (d of disease(); track d.dbId; let i = $index) {
+              <cr-ontology-term [term]="d" [titleCase]="true" />
               <!-- Add comma separator except for last item -->
               @if (i < disease().length - 1) {
                 <span class="comma">,</span>
@@ -85,7 +85,7 @@
         <div class="row">
           <div class="label">Organ</div>
           <div class="value">
-            <cr-ontology-term [term]="organ()"/>
+            <cr-ontology-term [term]="organ()" />
           </div>
         </div>
       }
@@ -93,7 +93,7 @@
         <div class="row">
           <div class="label">Tissue</div>
           <div class="value">
-            <cr-ontology-term [term]="tissue()"/>
+            <cr-ontology-term [term]="tissue()" />
           </div>
         </div>
       }
@@ -101,7 +101,7 @@
         <div class="row">
           <div class="label">Tissue Layer</div>
           <div class="value">
-            <cr-ontology-term [term]="tissueLayer()"/>
+            <cr-ontology-term [term]="tissueLayer()" />
           </div>
         </div>
       }
@@ -111,9 +111,12 @@
       <div class="row">
         <div class="label">Review Status</div>
         <div class="value spinner-container">
-          <mat-progress-spinner color="primary" mode="determinate"
-          [value]="reviewStar[reviewStatus()!.displayName].percentage"></mat-progress-spinner>
-          <div class="score"> {{ reviewStar[reviewStatus()!.displayName].score }}/5</div>
+          <mat-progress-spinner
+            color="primary"
+            mode="determinate"
+            [value]="reviewStar[reviewStatus()!.displayName].percentage"
+          ></mat-progress-spinner>
+          <div class="score">{{ reviewStar[reviewStatus()!.displayName].score }}/5</div>
         </div>
       </div>
     }

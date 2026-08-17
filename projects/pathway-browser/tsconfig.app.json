@@ -4,27 +4,16 @@
   "compilerOptions": {
     "outDir": "./out-tsc/app",
     "paths": {
-      "reactome-cytoscape-style": [
-        "dist/reactome-cytoscape-style"
-      ],
-       "@carrotsearch/foamtree": [
-        "projects/pathway-browser/src/types/@carrotsearch/foamtree"
-      ],
-      "svgcanvas": [
-        "projects/pathway-browser/src/types/svgcanvas"
-      ]
-    },
+      "reactome-cytoscape-style": ["dist/reactome-cytoscape-style"],
+      "@carrotsearch/foamtree": ["projects/pathway-browser/src/types/@carrotsearch/foamtree"],
+      "svgcanvas": ["projects/pathway-browser/src/types/svgcanvas"]
+    }
     // "typeRoots": [
     //   "node_modules/@types",
     //   "node_modules/reactome-cytoscape-style/types",
     //   "src/types"
     // ]
   },
-  "files": [
-    "src/main.ts"
-  ],
-  "include": [
-    "src/**/*.d.ts",
-    "src/types/**/*.d.ts"
-  ]
+  "files": ["src/main.ts"],
+  "include": ["src/**/*.d.ts", "src/types/**/*.d.ts"]
 }

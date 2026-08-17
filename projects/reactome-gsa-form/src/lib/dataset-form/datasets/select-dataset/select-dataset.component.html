@@ -31,9 +31,7 @@
         @for (source of externalSources$ | async; track source.id) {
           <div class="margin-bottom-10">
             @if (source.name !== 'Example datasets') {
-              <gsa-external-data
-                [source]="source"
-                [datasetId]="datasetId()"></gsa-external-data>
+              <gsa-external-data [source]="source" [datasetId]="datasetId()"></gsa-external-data>
             }
           </div>
         }

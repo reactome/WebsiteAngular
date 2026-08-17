@@ -26,12 +26,13 @@
     .selector {
       width: 100%;
 
-      @include mat.select-overrides((
-        trigger-text-size: 14px,
-        trigger-text-weight:400,
-        trigger-text-line-height:30px
-      ))
-
+      @include mat.select-overrides(
+        (
+          trigger-text-size: 14px,
+          trigger-text-weight: 400,
+          trigger-text-line-height: 30px,
+        )
+      );
     }
   }
 
@@ -42,7 +43,7 @@
   }
 }
 
-.chebi-background::ng-deep svg{
+.chebi-background::ng-deep svg {
   width: 10rem; // 160px
   height: 10rem;
 }

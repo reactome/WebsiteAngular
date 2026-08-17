@@ -1,5 +1,3 @@
-import {ReplacedResidue} from "./replaced-residue.model";
+import { ReplacedResidue } from './replaced-residue.model';
 
-export interface NonsenseMutation extends ReplacedResidue {
-
-}
+export interface NonsenseMutation extends ReplacedResidue {}

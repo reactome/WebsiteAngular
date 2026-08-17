@@ -1,13 +1,12 @@
-import {Injectable} from '@angular/core';
-import {DataStateService} from "./data-state.service";
-import {map, Observable} from "rxjs";
-import {ReferenceEntity} from "../model/graph/reference-entity/reference-entity.model";
-import {CONTENT_SERVICE, environment} from "../../environments/environment";
-import {HttpClient} from "@angular/common/http";
-import {PropertyType} from "../details/tabs/molecule-tab/molecule-tab.component";
-import {extractFromSpace} from "./utils";
-import {SchemaClasses} from "../constants/constants";
-
+import { Injectable, inject } from '@angular/core';
+import { DataStateService } from './data-state.service';
+import { map, Observable } from 'rxjs';
+import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
+import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { HttpClient } from '@angular/common/http';
+import { PropertyType } from '../details/tabs/molecule-tab/molecule-tab.component';
+import { extractFromSpace } from './utils';
+import { SchemaClasses } from '../constants/constants';
 
 export interface Molecule {
   dbId: number;
@@ -15,7 +14,7 @@ export interface Molecule {
   schemaClass: string;
   displayName: string;
   icon: string;
-  displayIcon:string;
+  displayIcon: string;
   url: string;
   formattedName: string;
   type: string;
@@ -28,33 +27,29 @@ export interface Participant {
   refEntities: Molecule[];
 }
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ParticipantService {
-
-  constructor(private http: HttpClient, private dataState: DataStateService) {
-
-  }
-
+  private http = inject(HttpClient);
+  private dataState = inject(DataStateService);
 
   getParticipants(stId: string): Observable<Participant[]> {
     const url = `${CONTENT_SERVICE}/data/participants/${stId}`;
     return this.http.get<Participant[]>(url).pipe(
-      map(participants =>
+      map((participants) =>
         participants.map((participant) => ({
           ...participant,
-          refEntities: participant.refEntities.map(molecule => ({
+          refEntities: participant.refEntities.map((molecule) => ({
             ...molecule,
             formattedName: this.getNameAndType(molecule).name, // UniProt:P78396 CCNA1 ➡️ CCNA1
             type: this.getNameAndType(molecule).type,
-            displayIcon: this.getDisplayIcon(molecule),// Correct DNA/RNA icon
-          }))
-        })))
+            displayIcon: this.getDisplayIcon(molecule), // Correct DNA/RNA icon
+          })),
+        }))
+      )
     );
   }
-
 
   getNameAndType(molecule: Molecule): { type: string; name: string } {
     let type = '';
@@ -89,10 +84,9 @@ export class ParticipantService {
       default:
         type = PropertyType.OTHERS;
         name = molecule.displayName;
-
     }
 
-    return {type, name};
+    return { type, name };
   }
 
   getDisplayIcon(molecule: Molecule) {
@@ -103,12 +97,11 @@ export class ParticipantService {
     if (schemaClass === SchemaClasses.REFERENCE_RNA_SEQUENCE) {
       return schemaClass;
     }
-    return molecule.icon
+    return molecule.icon;
   }
 
   getReferenceEntities(stId: string): Observable<ReferenceEntity[]> {
     const url = `${CONTENT_SERVICE}/data/participants/${stId}/referenceEntities`;
     return this.http.get<ReferenceEntity[]>(url);
   }
-
 }

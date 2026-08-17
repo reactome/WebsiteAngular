@@ -4,11 +4,11 @@ export const IS_CURATOR = SITE_VARIANT === 'curator';
 
 export const environment = {
   production: true,
-  host: IS_CURATOR ? "https://newcurator.reactome.org" : "../..", // For go back from /beta/PathwayBrowser
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
-  gtagId: "G-ZCVRDTGMQJ",
-  preferS3: false
+  host: IS_CURATOR ? 'https://newcurator.reactome.org' : '../..', // For go back from /beta/PathwayBrowser
+  s3: 'https://download.reactome.org',
+  gsaServer: 'dev',
+  gtagId: 'G-ZCVRDTGMQJ',
+  preferS3: false,
 };
 
 // Icon image files live on the Reactome backend and aren't proxied on every

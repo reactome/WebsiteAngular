@@ -1,43 +1,37 @@
-import {Component, computed, input, linkedSignal, Signal, signal} from '@angular/core';
-import {DatabaseObject} from "../../../model/graph/database-object.model";
-import {PageEvent} from "@angular/material/paginator";
-import {isArray, max} from "lodash";
-import {InDepth} from "../../../model/graph/in-depth.model";
-import type {Relationship} from "../../../model/graph/relationship.model";
-import {MatPaginator} from "@angular/material/paginator";
-import {ObjectTreeComponent} from "../object-tree/object-tree.component";
-import {MatSlider, MatSliderThumb} from "@angular/material/slider";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatIcon} from "@angular/material/icon";
-import {MatIconButton} from "@angular/material/button";
-
+import { Component, computed, input, linkedSignal, Signal, signal } from '@angular/core';
+import { DatabaseObject } from '../../../model/graph/database-object.model';
+import { PageEvent } from '@angular/material/paginator';
+import { isArray, max } from 'lodash';
+import { InDepth } from '../../../model/graph/in-depth.model';
+import type { Relationship } from '../../../model/graph/relationship.model';
+import { MatPaginator } from '@angular/material/paginator';
+import { ObjectTreeComponent } from '../object-tree/object-tree.component';
+import { MatSlider, MatSliderThumb } from '@angular/material/slider';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { MatIconButton } from '@angular/material/button';
 
 @Component({
   selector: 'cr-controller-tree',
   templateUrl: './controller-tree.component.html',
   styleUrl: './controller-tree.component.scss',
   standalone: true,
-  imports: [
-    ObjectTreeComponent,
-    MatTooltip,
-    MatIcon,
-    MatIconButton,
-    MatPaginator
-  ]
+  imports: [ObjectTreeComponent, MatTooltip, MatIcon, MatIconButton, MatPaginator],
 })
-export class ControllerTreeComponent<E extends DatabaseObject & InDepth, R extends Relationship.Has<E>> {
-
+export class ControllerTreeComponent<
+  E extends DatabaseObject & InDepth,
+  R extends Relationship.Has<E>,
+> {
   readonly type = input.required<string>();
   readonly depthControl = input.required<boolean>();
   readonly data = input.required<R[], (E | R)[] | E | R>({
-    transform: data =>
+    transform: (data) =>
       !isArray(data)
-        ? data.element ? [data as R] : [this.elementToRelationship(data as E)]
-        : data.map((e, i) => e.element
-          ? e as R
-          : this.elementToRelationship(e as E, i)
-        )
-  })
+        ? data.element
+          ? [data as R]
+          : [this.elementToRelationship(data as E)]
+        : data.map((e, i) => (e.element ? (e as R) : this.elementToRelationship(e as E, i))),
+  });
 
   readonly scope = input<'entity' | 'event'>('entity');
   readonly disableNavigation = input<boolean>(false);
@@ -46,18 +40,22 @@ export class ControllerTreeComponent<E extends DatabaseObject & InDepth, R exten
 
   depthIndex = signal(1);
   depthChangeSource = signal<'controller' | 'tree' | undefined>(undefined);
-  maxDepth = computed(() => max(this.data().map(d => d.element.maxDepth))!);
+  maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth))!);
 
   hasPagination = computed(() => this.data().length > this.pageSize());
-  currentPage = linkedSignal<PageEvent>(() => ({pageIndex: 0, pageSize: this.pageSize(), length: 0}));
+  currentPage = linkedSignal<PageEvent>(() => ({
+    pageIndex: 0,
+    pageSize: this.pageSize(),
+    length: 0,
+  }));
   displayedData: Signal<R[]> = computed(() => {
-      return this.hasPagination()
-        ? this.data().slice(
+    return this.hasPagination()
+      ? this.data().slice(
           this.currentPage().pageIndex * this.currentPage().pageSize,
-          (this.currentPage().pageIndex + 1) * this.currentPage().pageSize)
-        : this.data()
-    }
-  )
+          (this.currentPage().pageIndex + 1) * this.currentPage().pageSize
+        )
+      : this.data();
+  });
 
   firstPage() {
     this.depthChangeSource.set('controller');
@@ -75,7 +73,6 @@ export class ControllerTreeComponent<E extends DatabaseObject & InDepth, R exten
     if (this.depthIndex() < this.maxDepth()) {
       this.depthChangeSource.set('controller');
       this.depthIndex.update((d) => d + 1);
-
     }
   }
 
@@ -90,7 +87,7 @@ export class ControllerTreeComponent<E extends DatabaseObject & InDepth, R exten
       stoichiometry: 1,
       order: i,
       element: element,
-      index: i
+      index: i,
     } as R;
   }
 }

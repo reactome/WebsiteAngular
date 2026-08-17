@@ -1,50 +1,55 @@
-import {Component, effect, inject, OnInit, signal, viewChild} from '@angular/core';
-import {DatePipe} from '@angular/common';
-import {ActivatedRoute} from '@angular/router';
-import {DomSanitizer} from '@angular/platform-browser';
-import {MatIconRegistry} from '@angular/material/icon';
-import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {of} from 'rxjs';
+import { Component, effect, inject, OnInit, signal, viewChild } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { DomSanitizer } from '@angular/platform-browser';
+import { MatIconRegistry } from '@angular/material/icon';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { of } from 'rxjs';
 
-import {PageLayoutComponent} from '../../page-layout/page-layout.component';
-import {SidebarComponent} from '../../sidebar/sidebar.component';
-import {
-  DescriptionTabComponent
-} from '../../../../../pathway-browser/src/app/details/tabs/description-tab/description-tab.component';
+import { PageLayoutComponent } from '../../page-layout/page-layout.component';
+import { SidebarComponent } from '../../sidebar/sidebar.component';
+import { DescriptionTabComponent } from '../../../../../pathway-browser/src/app/details/tabs/description-tab/description-tab.component';
 import { DetailDownloadBarComponent } from './detail-download-bar/detail-download-bar.component';
 import { DetailDiagramComponent } from './detail-diagram/detail-diagram.component';
-import {SelectableObject} from '../../../../../pathway-browser/src/app/services/event.service';
-import {UrlStateService} from '../../../../../pathway-browser/src/app/services/url-state.service';
-import {DataStateService} from '../../../../../pathway-browser/src/app/services/data-state.service';
-import {EntityService} from '../../../../../pathway-browser/src/app/services/entity.service';
-import {InteractorService} from '../../../../../pathway-browser/src/app/interactors/services/interactor.service';
-import {FigureService} from '../../../../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
-import {SpeciesService} from '../../../../../pathway-browser/src/app/services/species.service';
-import {DiagramService} from '../../../../../pathway-browser/src/app/services/diagram.service';
-import {ParticipantService} from '../../../../../pathway-browser/src/app/services/participant.service';
-import {IconService} from '../../../../../pathway-browser/src/app/services/icon.service';
+import { SelectableObject } from '../../../../../pathway-browser/src/app/services/event.service';
+import { UrlStateService } from '../../../../../pathway-browser/src/app/services/url-state.service';
+import { DataStateService } from '../../../../../pathway-browser/src/app/services/data-state.service';
+import { EntityService } from '../../../../../pathway-browser/src/app/services/entity.service';
+import { InteractorService } from '../../../../../pathway-browser/src/app/interactors/services/interactor.service';
+import { FigureService } from '../../../../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
+import { SpeciesService } from '../../../../../pathway-browser/src/app/services/species.service';
+import { DiagramService } from '../../../../../pathway-browser/src/app/services/diagram.service';
+import { ParticipantService } from '../../../../../pathway-browser/src/app/services/participant.service';
+import { IconService } from '../../../../../pathway-browser/src/app/services/icon.service';
 
-import {DetailDataService} from '../../../services/detail-data.service';
-import {DetailUrlState} from './providers/detail-url-state.provider';
-import {DetailDataState} from './providers/detail-data-state.provider';
-import {DetailEntityService} from './providers/detail-entity.provider';
-import {DetailInteractorService} from './providers/detail-interactor.provider';
-import {DetailFigureService} from './providers/detail-figure.provider';
-import {DetailSpeciesService} from './providers/detail-species.provider';
+import { DetailDataService } from '../../../services/detail-data.service';
+import { DetailUrlState } from './providers/detail-url-state.provider';
+import { DetailDataState } from './providers/detail-data-state.provider';
+import { DetailEntityService } from './providers/detail-entity.provider';
+import { DetailInteractorService } from './providers/detail-interactor.provider';
+import { DetailFigureService } from './providers/detail-figure.provider';
+import { DetailSpeciesService } from './providers/detail-species.provider';
 
 @Component({
   selector: 'app-detail',
   standalone: true,
-  imports: [PageLayoutComponent, DescriptionTabComponent, DetailDownloadBarComponent, DetailDiagramComponent, MatProgressSpinner, SidebarComponent],
+  imports: [
+    PageLayoutComponent,
+    DescriptionTabComponent,
+    DetailDownloadBarComponent,
+    DetailDiagramComponent,
+    MatProgressSpinner,
+    SidebarComponent,
+  ],
   providers: [
-    {provide: UrlStateService, useClass: DetailUrlState},
-    {provide: DataStateService, useClass: DetailDataState},
-    {provide: EntityService, useClass: DetailEntityService},
-    {provide: InteractorService, useClass: DetailInteractorService},
-    {provide: FigureService, useClass: DetailFigureService},
-    {provide: SpeciesService, useClass: DetailSpeciesService},
+    { provide: UrlStateService, useClass: DetailUrlState },
+    { provide: DataStateService, useClass: DetailDataState },
+    { provide: EntityService, useClass: DetailEntityService },
+    { provide: InteractorService, useClass: DetailInteractorService },
+    { provide: FigureService, useClass: DetailFigureService },
+    { provide: SpeciesService, useClass: DetailSpeciesService },
     DiagramService,
-    {provide: ParticipantService, useValue: {getReferenceEntities: () => of([])}},
+    { provide: ParticipantService, useValue: { getReferenceEntities: () => of([]) } },
     DatePipe,
   ],
   templateUrl: './detail.component.html',
@@ -92,7 +97,7 @@ export class DetailComponent implements OnInit {
         this.tocItems.set(
           tab.elements
             .filter((e) => tab.isTOCIncluded(e.key))
-            .map((e) => ({ key: e.key, label: e.label })),
+            .map((e) => ({ key: e.key, label: e.label }))
         );
         this.selectedTocKey.set(tab.selectedKey());
       } catch {
@@ -109,16 +114,27 @@ export class DetailComponent implements OnInit {
 
     this.matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');
 
-    speciesIcons.forEach(icon => {
-      this.matIconRegistry.addSvgIcon(icon.name, this.domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/species/${icon.route}.svg`));
+    speciesIcons.forEach((icon) => {
+      this.matIconRegistry.addSvgIcon(
+        icon.name,
+        this.domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/species/${icon.route}.svg`)
+      );
     });
 
-    generalIcons.forEach(icon => {
-      this.matIconRegistry.addSvgIcon(icon.name, this.domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/general/${icon.route}.svg`));
+    generalIcons.forEach((icon) => {
+      this.matIconRegistry.addSvgIcon(
+        icon.name,
+        this.domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/general/${icon.route}.svg`)
+      );
     });
 
     Object.values(reactomeSubjectIcons).forEach((icon) => {
-      this.matIconRegistry.addSvgIcon(icon.name, this.domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/reactome-subject/${icon.route}.svg`));
+      this.matIconRegistry.addSvgIcon(
+        icon.name,
+        this.domSanitizer.bypassSecurityTrustResourceUrl(
+          `assets/icons/reactome-subject/${icon.route}.svg`
+        )
+      );
     });
   }
 
@@ -126,7 +142,7 @@ export class DetailComponent implements OnInit {
     // Subscribe (not snapshot) so navigation between entity detail pages
     // -- /content/detail/A -> /content/detail/B reuses the same component
     // and would otherwise never re-fetch.
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (!id) {
         this.loading.set(false);
@@ -149,7 +165,7 @@ export class DetailComponent implements OnInit {
         error: () => {
           this.error.set(true);
           this.loading.set(false);
-        }
+        },
       });
     });
   }

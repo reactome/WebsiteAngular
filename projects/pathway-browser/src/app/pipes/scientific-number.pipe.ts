@@ -1,16 +1,16 @@
-import { Pipe, PipeTransform } from '@angular/core';
-import {DomSanitizer, SafeHtml} from "@angular/platform-browser";
+import { Pipe, PipeTransform, inject } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Pipe({
-  name: 'scientificNumber'
+  name: 'scientificNumber',
 })
 export class ScientificNumberPipe implements PipeTransform {
+  private sanitizer = inject(DomSanitizer);
 
-  constructor(private sanitizer: DomSanitizer) {}
-
-  transform(value?: number ): SafeHtml {
-    if (!value) return "";
-    return this.sanitizer.bypassSecurityTrustHtml(value.toExponential(2).replace(/e\+?/, "x10<sup>") + '</sup>');
+  transform(value?: number): SafeHtml {
+    if (!value) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(
+      value.toExponential(2).replace(/e\+?/, 'x10<sup>') + '</sup>'
+    );
   }
-
 }

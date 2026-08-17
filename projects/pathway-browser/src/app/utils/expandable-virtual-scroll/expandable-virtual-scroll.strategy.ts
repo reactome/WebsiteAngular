@@ -1,5 +1,5 @@
-import {CdkVirtualScrollViewport, FixedSizeVirtualScrollStrategy} from '@angular/cdk/scrolling';
-import {BehaviorSubject} from 'rxjs';
+import { CdkVirtualScrollViewport, FixedSizeVirtualScrollStrategy } from '@angular/cdk/scrolling';
+import { BehaviorSubject } from 'rxjs';
 
 export class ExpandableVirtualScrollStrategy extends FixedSizeVirtualScrollStrategy {
   private _indexToHeight = new Map<number, number>();
@@ -46,7 +46,7 @@ export class ExpandableVirtualScrollStrategy extends FixedSizeVirtualScrollStrat
     while (
       start < dataLength &&
       offset + this._getItemHeight(start) < scrollOffset - this.minBufferPx
-      ) {
+    ) {
       offset += this._getItemHeight(start);
       start++;
     }
@@ -54,10 +54,7 @@ export class ExpandableVirtualScrollStrategy extends FixedSizeVirtualScrollStrat
     // === Step 2: Determine end index ===
     let end = start;
     let visibleHeight = 0;
-    while (
-      end < dataLength &&
-      visibleHeight < viewportSize + this.maxBufferPx
-      ) {
+    while (end < dataLength && visibleHeight < viewportSize + this.maxBufferPx) {
       visibleHeight += this._getItemHeight(end);
       end++;
     }

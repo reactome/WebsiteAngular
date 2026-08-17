@@ -1,13 +1,11 @@
 <div class="facet-section">
   <button class="facet-title" (click)="toggle()">
     <span>{{ name }}</span>
-    <span class="facet-toggle">{{
-      open ? "-" : "+"
-    }}</span>
+    <span class="facet-toggle">{{ open ? '-' : '+' }}</span>
   </button>
   @if (open) {
-  <div class="facet-options">
-    <ng-content></ng-content>
-  </div>
+    <div class="facet-options">
+      <ng-content></ng-content>
+    </div>
   }
 </div>

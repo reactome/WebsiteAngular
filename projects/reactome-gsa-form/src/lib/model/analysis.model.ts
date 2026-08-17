@@ -27,9 +27,7 @@ export namespace Request {
   }
 
   export interface Parameter {
-    name: string
-    value: any
+    name: string;
+    value: any;
   }
-
 }
-

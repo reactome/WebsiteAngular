@@ -1,8 +1,7 @@
-import {Injectable} from '@angular/core';
-import {HttpClient} from "@angular/common/http";
-import {map} from "rxjs";
-import {DatabaseIdentifier} from "../model/graph/database-identifier.model";
-
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs';
+import { DatabaseIdentifier } from '../model/graph/database-identifier.model';
 
 export interface Rhea {
   equation: string;
@@ -22,39 +21,37 @@ export interface Participant {
   reactivePart: Participant[];
 }
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RheaService {
-
-
-  constructor(private http: HttpClient) {
-  }
+  private http = inject(HttpClient);
 
   getRheaJson(xRef: DatabaseIdentifier) {
-
-    const identifier = xRef.identifier
+    const identifier = xRef.identifier;
 
     const url = `https://www.rhea-db.org/rhea/${identifier}/json`;
     return this.http.get<Rhea>(url).pipe(
-      map(response => ({
-        equation: response.equation,
-        id: identifier,
-        url: xRef.url,
-        participants: [
-          ...response.left.map(entry => ({
-            ...entry,
-            uniqueId: entry.id + '_left_' + entry.position,
-            position: 'left'
-          })),
-          ...response.right.map(entry => ({
-            ...entry,
-            uniqueId: entry.id + '_right_' + entry.position,
-            position: 'right'
-          }))
-        ]
-      } as unknown as Rhea))
-    )
+      map(
+        (response) =>
+          ({
+            equation: response.equation,
+            id: identifier,
+            url: xRef.url,
+            participants: [
+              ...response.left.map((entry) => ({
+                ...entry,
+                uniqueId: entry.id + '_left_' + entry.position,
+                position: 'left',
+              })),
+              ...response.right.map((entry) => ({
+                ...entry,
+                uniqueId: entry.id + '_right_' + entry.position,
+                position: 'right',
+              })),
+            ],
+          }) as unknown as Rhea
+      )
+    );
   }
 }

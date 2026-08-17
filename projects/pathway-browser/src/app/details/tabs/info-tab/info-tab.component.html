@@ -1,11 +1,12 @@
 @if (state.pathwayId()) {
   @if (ehld.hasEHLD()) {
     <h3>🖼️ EHLD: The Big Picture of Biology</h3>
-    Explore pathways through beautifully illustrated, textbook-style overviews — designed to show how major biological mechanisms fit together.
+    Explore pathways through beautifully illustrated, textbook-style overviews — designed to show how major biological
+    mechanisms fit together.
     <ul>
       <li><b>Drag</b> to navigate across the biological landscape.</li>
       <li><b>Zoom in</b> to focus on specific mechanisms or sub-pathways.</li>
-      <li><b>Hover and click</b> a section to understand its role </li>
+      <li><b>Hover and click</b> a section to understand its role</li>
       <li><b>Double-click</b> on a section to dive deeper into the relevant detailed diagram.</li>
       <li><b>Use the toolbar</b> to search, and overlay experimental data.</li>
     </ul>
@@ -16,19 +17,18 @@
     <ul>
       <li><b>Drag</b> to move around the pathway map.</li>
       <li><b>Zoom</b> in to reveal more detail — down to the molecular structure.</li>
-      <li><b>Hover</b> over molecules and reactions to highlight them — get close enough, and you’ll see structures come
-      to life.
-    </li>
-    <li><b>Click</b> for in-depth info on participants and processes.</li>
-    @if (interactor.currentResource().name !== null) {
-      <li><b>Click on the bubbles</b> to display related molecules
-      and concepts within context
-    </li>
+      <li>
+        <b>Hover</b> over molecules and reactions to highlight them — get close enough, and you’ll see structures come
+        to life.
+      </li>
+      <li><b>Click</b> for in-depth info on participants and processes.</li>
+      @if (interactor.currentResource().name !== null) {
+        <li><b>Click on the bubbles</b> to display related molecules and concepts within context</li>
+      }
+      <li><b>Use the toolbar</b> to search, compare to variation of the pathway, and overlay experimental data.</li>
+    </ul>
+    Explore biology in motion — from pathways to molecules.
   }
-  <li><b>Use the toolbar</b> to search, compare to variation of the pathway, and overlay experimental data.</li>
-</ul>
-Explore biology in motion — from pathways to molecules.
-}
 } @else {
   <h3>🔍 Explore Reactome Pathways</h3>
   Discover all pathways in a dynamic Voronoi map — each cell scaled by its molecular content.

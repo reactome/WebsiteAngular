@@ -1,9 +1,9 @@
-import {Component, computed, effect, inject, input, signal} from '@angular/core';
-import {NgTemplateOutlet} from '@angular/common';
-import {HttpClient} from '@angular/common/http';
-import {MatIcon} from '@angular/material/icon';
-import {CONTENT_SERVICE} from '../../../../../../pathway-browser/src/environments/environment';
-import {IconService} from '../../../../../../pathway-browser/src/app/services/icon.service';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { MatIcon } from '@angular/material/icon';
+import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
+import { IconService } from '../../../../../../pathway-browser/src/app/services/icon.service';
 
 export interface PathwayBrowserNode {
   stId: string;
@@ -45,7 +45,7 @@ export class LocationsTreeComponent {
     const selected = this.selectedSpecies();
     const all = this.trees();
     if (!selected || this.availableSpecies().length <= 1) return all;
-    return all.filter(t => t.species === selected);
+    return all.filter((t) => t.species === selected);
   });
 
   constructor() {

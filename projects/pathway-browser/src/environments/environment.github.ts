@@ -4,10 +4,10 @@ export const IS_CURATOR = SITE_VARIANT === 'curator';
 
 export const environment = {
   production: false,
-  host: IS_CURATOR ? "https://newcurator.reactome.org" : "https://dev.reactome.org",
-  s3: "https://download.reactome.org",
-  gsaServer: "dev",
-  gtagId: "G-96F1EYHQR3",
+  host: IS_CURATOR ? 'https://newcurator.reactome.org' : 'https://dev.reactome.org',
+  s3: 'https://download.reactome.org',
+  gsaServer: 'dev',
+  gtagId: 'G-96F1EYHQR3',
   preferS3: !IS_CURATOR,
 };
 

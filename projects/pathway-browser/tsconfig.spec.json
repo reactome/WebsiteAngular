@@ -3,17 +3,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
-    "types": [
-      "jasmine"
-    ],
-    "typeRoots": [
-      "../../node_modules/@types",
-      "./src/types"
-    ]
+    "types": ["jasmine"],
+    "typeRoots": ["../../node_modules/@types", "./src/types"]
   },
-  "include": [
-    "src/**/*.spec.ts",
-    "src/**/*.d.ts",
-    "src/types/**/*.d.ts"
-  ]
+  "include": ["src/**/*.spec.ts", "src/**/*.d.ts", "src/types/**/*.d.ts"]
 }

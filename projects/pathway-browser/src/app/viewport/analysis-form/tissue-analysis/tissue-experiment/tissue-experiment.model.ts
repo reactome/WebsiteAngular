@@ -1,5 +1,4 @@
 export namespace TissueExperiment {
-
   export interface Summaries {
     summaries: Summary[];
   }
@@ -17,7 +16,6 @@ export namespace TissueExperiment {
 
   export interface SampleParams extends Record<string, any> {
     omitNulls?: boolean;
-    included: number[]
+    included: number[];
   }
 }
-

@@ -172,7 +172,7 @@ $border-radius: 8px;
     }
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     flex-shrink: 0;
     accent-color: var(--primary);
   }
@@ -272,7 +272,7 @@ $border-radius: 8px;
 
 /** START - Sprite base configuration **/
 .sprite {
-  background: url("/assets/spritesheet.png") no-repeat;
+  background: url('/assets/spritesheet.png') no-repeat;
   display: inline-block;
 }
 
@@ -763,7 +763,7 @@ $border-radius: 8px;
   }
 
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     bottom: -2px;
     left: 0;
@@ -843,7 +843,7 @@ $border-radius: 8px;
   padding: 12px 16px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: $border-radius;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--on-surface);
@@ -1151,7 +1151,9 @@ $border-radius: 8px;
     font-family: inherit;
     color: var(--on-surface);
     background: white;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
 
     :host-context(.dark) & {
       background: var(--surface);
@@ -1200,7 +1202,7 @@ $border-radius: 8px;
   textarea.favth-form-control {
     resize: vertical;
     min-height: 150px;
-    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   }
 
   .checkbox {
@@ -1215,7 +1217,7 @@ $border-radius: 8px;
       font-weight: normal;
       color: var(--on-surface);
 
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         cursor: pointer;
         accent-color: var(--primary);
 
@@ -1404,9 +1406,13 @@ $border-radius: 8px;
   font-size: 0.9rem;
   cursor: pointer;
 
-  .material-symbols-rounded { font-size: 18px; }
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
 
-  &:hover { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+  &:hover {
+    background: color-mix(in srgb, var(--primary) 18%, transparent);
+  }
 
   .filters-toggle-count {
     background: var(--primary);
@@ -1439,10 +1445,14 @@ $border-radius: 8px;
     overflow-y: auto;
     z-index: 20;
 
-    &.collapsed { display: none; }
+    &.collapsed {
+      display: none;
+    }
   }
 
-  .filters-toggle-btn { display: inline-flex; }
+  .filters-toggle-btn {
+    display: inline-flex;
+  }
 
   .advanced-facet-grid {
     grid-template-columns: repeat(2, 1fr);

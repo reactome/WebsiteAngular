@@ -11,8 +11,8 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     ports:
-      - "4200:4200"
-      - "4001:4001"
+      - '4200:4200'
+      - '4001:4001'
     volumes:
       - .:/app
       - /app/node_modules
@@ -23,7 +23,7 @@ services:
     # through the docker bridge gateway. proxy.conf.js reads this and otherwise
     # defaults to localhost:8080, which is correct when running on the host.
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     environment:
       - NG_CLI_ANALYTICS=false
       - NODE_ENV=development

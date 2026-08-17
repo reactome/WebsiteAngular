@@ -44,10 +44,8 @@ svg.background {
         height: calc(100cqh - 100px);
       }
     }
-
   }
 }
-
 
 @container quantitative-analysis (height < 600px || width < 600px) {
   .header {
@@ -71,5 +69,4 @@ svg.background {
     color: var(--on-surface);
     font: var(--mat-sys-body-medium);
   }
-
 }

@@ -1,4 +1,3 @@
-
 mat-expansion-panel-header {
   min-height: 48px !important;
   height: 100% !important;
@@ -9,8 +8,7 @@ mat-expansion-panel {
   border-radius: 5px;
   box-shadow: var(--mat-sys-level2);
 
-
-  &:has(> mat-expansion-panel-header:hover):not(.chosen)  {
+  &:has(> mat-expansion-panel-header:hover):not(.chosen) {
     cursor: pointer;
     border: 5px solid var(--hover);
   }
@@ -32,4 +30,3 @@ mat-expansion-panel {
 .margin-top-20 {
   margin-top: 20px;
 }
-

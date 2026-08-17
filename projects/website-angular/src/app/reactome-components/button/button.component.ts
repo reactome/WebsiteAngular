@@ -5,7 +5,7 @@ import { Component, Input } from '@angular/core';
   selector: 'app-button',
   imports: [],
   templateUrl: './button.component.html',
-  styleUrl: './button.component.scss'
+  styleUrl: './button.component.scss',
 })
 export class ButtonComponent {
   @Input() variant: 'dark' | 'light' = 'light';
@@ -29,7 +29,10 @@ export class ButtonComponent {
   }
 
   get buttonSize(): string {
-    return this.size === 'small' ? 'small-button' :
-           this.size === 'large' ? 'large-button' : 'medium-button';
+    return this.size === 'small'
+      ? 'small-button'
+      : this.size === 'large'
+        ? 'large-button'
+        : 'medium-button';
   }
 }

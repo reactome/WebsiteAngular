@@ -13,10 +13,22 @@ const BOOT = 45_000;
 
 // "Verify that only these 16 species are shown in species dropdown list"
 const SPECIES = [
-  'Rattus norvegicus', 'Gallus gallus', 'Drosophila melanogaster', 'Caenorhabditis elegans',
-  'Bos taurus', 'Saccharomyces cerevisiae', 'Schizosaccharomyces pombe', 'Dictyostelium discoideum',
-  'Plasmodium falciparum', 'Sus scrofa', 'Mycobacterium tuberculosis', 'Canis familiaris',
-  'Xenopus tropicalis', 'Danio rerio', 'Mus musculus', 'Homo sapiens',
+  'Rattus norvegicus',
+  'Gallus gallus',
+  'Drosophila melanogaster',
+  'Caenorhabditis elegans',
+  'Bos taurus',
+  'Saccharomyces cerevisiae',
+  'Schizosaccharomyces pombe',
+  'Dictyostelium discoideum',
+  'Plasmodium falciparum',
+  'Sus scrofa',
+  'Mycobacterium tuberculosis',
+  'Canis familiaris',
+  'Xenopus tropicalis',
+  'Danio rerio',
+  'Mus musculus',
+  'Homo sapiens',
 ];
 
 // "Scroll over these items in the Navigation Bar ... They should all have a drop-down menu"
@@ -44,7 +56,9 @@ test.describe('Release checklist: front page', () => {
   test.fixme('navigation bar exposes every documented drop-down', async ({ page }) => {
     await page.goto('/');
     for (const menu of NAV_MENUS) {
-      await expect(page.getByRole('button', { name: menu, exact: true })).toBeVisible({ timeout: BOOT });
+      await expect(page.getByRole('button', { name: menu, exact: true })).toBeVisible({
+        timeout: BOOT,
+      });
     }
   });
 });
@@ -54,13 +68,19 @@ test.describe('Release checklist: Pathway Browser', () => {
     await page.goto('/PathwayBrowser?tab=info');
     await expect(page.locator('mat-tree')).toBeVisible({ timeout: BOOT });
 
-    await page.locator('cr-species, .species').first().click({ timeout: BOOT }).catch(() => {});
+    await page
+      .locator('cr-species, .species')
+      .first()
+      .click({ timeout: BOOT })
+      .catch(() => {});
     await page.waitForTimeout(1500);
 
     const body = await page.locator('body').innerText();
     const missing = SPECIES.filter((s) => !body.includes(s));
-    console.log(`  [checklist] species present ${SPECIES.length - missing.length}/${SPECIES.length}` +
-      (missing.length ? `, missing: ${missing.join(', ')}` : ''));
+    console.log(
+      `  [checklist] species present ${SPECIES.length - missing.length}/${SPECIES.length}` +
+        (missing.length ? `, missing: ${missing.join(', ')}` : '')
+    );
     expect(missing).toEqual([]);
   });
 

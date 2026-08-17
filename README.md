@@ -3,6 +3,7 @@
 REACTOME is an open-source, open access, manually curated and peer-reviewed pathway database.
 
 ## Local Development Server
+
 To setup a local environment
 
 ```bash
@@ -36,18 +37,19 @@ docker compose build && docker compose up -d
 keeps whatever ownership it was first created with.
 
 ## Usage
-Reactome has a wide range of features, to explore more of Reactome or get more information visit [the documentation page](https://reactome.org/documentation) or see the ````/documentation```` folder in the root directory.
+
+Reactome has a wide range of features, to explore more of Reactome or get more information visit [the documentation page](https://reactome.org/documentation) or see the `/documentation` folder in the root directory.
 
 ## Workspace libraries
 
 Four libraries live in this repo under `projects/` and build to `dist/`. The apps consume them from there (via the `dist/` entry in each project's `stylePreprocessorOptions.includePaths`, and the `paths` mappings in `tsconfig.json`), **not** from `node_modules` — so they must be built before the app will compile:
 
-| project | contents |
-| --- | --- |
-| `reactome-cytoscape-style` | diagram rendering styles + drawing helpers |
-| `ngx-reactome-style` | shared Angular Material theme (Sass only, no TypeScript) |
-| `reactome-table` | the editable data grid |
-| `reactome-gsa-form` | the ReactomeGSA analysis wizard (NgRx-backed) |
+| project                    | contents                                                 |
+| -------------------------- | -------------------------------------------------------- |
+| `reactome-cytoscape-style` | diagram rendering styles + drawing helpers               |
+| `ngx-reactome-style`       | shared Angular Material theme (Sass only, no TypeScript) |
+| `reactome-table`           | the editable data grid                                   |
+| `reactome-gsa-form`        | the ReactomeGSA analysis wizard (NgRx-backed)            |
 
 `npm start` builds them for you. To build them by hand:
 
@@ -99,4 +101,5 @@ Expect one console error on startup: `data/database/version` 500s on a curation 
 ## Additional Resources
 
 ## LICENSE
+
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)

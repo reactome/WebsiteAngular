@@ -1,6 +1,5 @@
-import {createEntityAdapter, EntityState} from "@ngrx/entity";
-import {Parameter} from "../../model/parameter.model";
-
+import { createEntityAdapter, EntityState } from '@ngrx/entity';
+import { Parameter } from '../../model/parameter.model';
 
 export interface Method {
   name: string;
@@ -11,11 +10,14 @@ export interface Method {
 
 export interface MethodState extends EntityState<Method> {
   selectedMethodName: string | null;
-  commonParameters: Parameter[]
+  commonParameters: Parameter[];
 }
 
 export const methodAdapter = createEntityAdapter<Method>({
-  selectId: model => model.name
-})
+  selectId: (model) => model.name,
+});
 
-export const initialState: MethodState = methodAdapter.getInitialState({selectedMethodName: null, commonParameters: []})
+export const initialState: MethodState = methodAdapter.getInitialState({
+  selectedMethodName: null,
+  commonParameters: [],
+});

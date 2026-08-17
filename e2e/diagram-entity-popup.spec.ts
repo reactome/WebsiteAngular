@@ -30,10 +30,10 @@ async function openPopupOnAnyEntity(page: Page): Promise<string> {
   await expect
     .poll(
       async () =>
-        container.locator('canvas').evaluateAll((els) =>
-          els.filter((el) => el.getBoundingClientRect().width > 400).length,
-        ),
-      { timeout: BOOT },
+        container
+          .locator('canvas')
+          .evaluateAll((els) => els.filter((el) => el.getBoundingClientRect().width > 400).length),
+      { timeout: BOOT }
     )
     .toBeGreaterThan(1);
 
@@ -77,7 +77,7 @@ test.describe('Diagram entity popup', () => {
     }
   });
 
-  test('shows the entity\'s molecules without leaving the diagram', async ({ page }) => {
+  test("shows the entity's molecules without leaving the diagram", async ({ page }) => {
     await page.goto(PATHWAY);
     await openPopupOnAnyEntity(page);
     const before = page.url();
@@ -91,32 +91,33 @@ test.describe('Diagram entity popup', () => {
     expect(page.url()).toBe(before);
   });
 
-  test('groups molecules by type, using the reference entity not the schema class',
-    async ({ page }) => {
-      await page.goto(PATHWAY);
-      await openPopupOnAnyEntity(page);
+  test('groups molecules by type, using the reference entity not the schema class', async ({
+    page,
+  }) => {
+    await page.goto(PATHWAY);
+    await openPopupOnAnyEntity(page);
 
-      const rows = page.locator('.entity-popup__content li');
-      await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+    const rows = page.locator('.entity-popup__content li');
+    await expect(rows.first()).toBeVisible({ timeout: 20_000 });
 
-      // Every heading must come from the vocabulary the Molecule tab uses.
-      // Deriving the type from schemaClass alone once put "BBC3 gene" under
-      // Proteins, because EntityWithAccessionedSequence covers proteins, DNA
-      // and RNA alike -- so the type comes from the reference entity instead.
-      // Read the label element rather than the heading, which also carries the
-      // count.
-      const headings = await page.locator('.entity-popup__group .label').allInnerTexts();
-      for (const heading of headings) {
-        expect(['Proteins', 'DNA/RNA', 'Chemical Compounds', 'Drugs', 'Others']).toContain(
-          heading.trim(),
-        );
-      }
+    // Every heading must come from the vocabulary the Molecule tab uses.
+    // Deriving the type from schemaClass alone once put "BBC3 gene" under
+    // Proteins, because EntityWithAccessionedSequence covers proteins, DNA
+    // and RNA alike -- so the type comes from the reference entity instead.
+    // Read the label element rather than the heading, which also carries the
+    // count.
+    const headings = await page.locator('.entity-popup__group .label').allInnerTexts();
+    for (const heading of headings) {
+      expect(['Proteins', 'DNA/RNA', 'Chemical Compounds', 'Drugs', 'Others']).toContain(
+        heading.trim()
+      );
+    }
 
-      // Each count must match the rows actually rendered beneath it.
-      const counts = await page.locator('.entity-popup__group .count').allInnerTexts();
-      const total = counts.reduce((sum, c) => sum + Number(c.trim()), 0);
-      expect(total).toBe(await page.locator('.entity-popup__content li').count());
-    });
+    // Each count must match the rows actually rendered beneath it.
+    const counts = await page.locator('.entity-popup__group .count').allInnerTexts();
+    const total = counts.reduce((sum, c) => sum + Number(c.trim()), 0);
+    expect(total).toBe(await page.locator('.entity-popup__content li').count());
+  });
 
   test('lists the pathways containing the entity', async ({ page }) => {
     await page.goto(PATHWAY);
@@ -142,32 +143,30 @@ test.describe('Diagram entity popup', () => {
     await expect(rows.first().or(note)).toBeVisible({ timeout: 20_000 });
   });
 
-  test('clicking a molecule moves to it, and the title brings you back',
-    async ({ page }) => {
-      await page.goto(PATHWAY);
-      await openPopupOnAnyEntity(page);
+  test('clicking a molecule moves to it, and the title brings you back', async ({ page }) => {
+    await page.goto(PATHWAY);
+    await openPopupOnAnyEntity(page);
 
-      const selection = () =>
-        page.evaluate(() => new URL(location.href).searchParams.get('select'));
-      const zoom = () => page.locator('mat-slider input').first().inputValue();
+    const selection = () => page.evaluate(() => new URL(location.href).searchParams.get('select'));
+    const zoom = () => page.locator('mat-slider input').first().inputValue();
 
-      const startSelection = await selection();
-      const startZoom = await zoom();
+    const startSelection = await selection();
+    const startZoom = await zoom();
 
-      // Selecting a molecule sends the diagram to it, as production does --
-      // though only when that molecule is drawn as its own node, so the move
-      // itself is not asserted here, only that the selection followed.
-      await page.locator('.entity-popup__content li button').first().click();
-      await expect.poll(selection, { timeout: 15_000 }).not.toBe(startSelection);
+    // Selecting a molecule sends the diagram to it, as production does --
+    // though only when that molecule is drawn as its own node, so the move
+    // itself is not asserted here, only that the selection followed.
+    await page.locator('.entity-popup__content li button').first().click();
+    await expect.poll(selection, { timeout: 15_000 }).not.toBe(startSelection);
 
-      // The title is the way back. Production has no equivalent, which is what
-      // made its movement disorienting: it returns both the selection and the
-      // exact view, rather than fitting to the entity at some zoom you were
-      // never at.
-      await page.locator('.entity-popup__title').click();
-      await expect.poll(selection, { timeout: 15_000 }).toBe(startSelection);
-      await expect.poll(zoom, { timeout: 15_000 }).toBe(startZoom);
-    });
+    // The title is the way back. Production has no equivalent, which is what
+    // made its movement disorienting: it returns both the selection and the
+    // exact view, rather than fitting to the entity at some zoom you were
+    // never at.
+    await page.locator('.entity-popup__title').click();
+    await expect.poll(selection, { timeout: 15_000 }).toBe(startSelection);
+    await expect.poll(zoom, { timeout: 15_000 }).toBe(startZoom);
+  });
 
   test('closes on Escape without navigating', async ({ page }) => {
     await page.goto(PATHWAY);
@@ -185,7 +184,10 @@ test.describe('Diagram entity popup', () => {
     await openPopupOnAnyEntity(page);
 
     await page.getByRole('button', { name: 'Keep this open' }).click();
-    await page.locator('#cytoscape').first().click({ position: { x: 5, y: 5 } });
+    await page
+      .locator('#cytoscape')
+      .first()
+      .click({ position: { x: 5, y: 5 } });
 
     await expect(page.locator('.entity-popup')).toHaveCount(1);
   });

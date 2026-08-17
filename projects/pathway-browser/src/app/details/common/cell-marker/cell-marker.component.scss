@@ -2,13 +2,11 @@
   width: 100%;
 }
 
-
 #markers {
   gap: 5px;
   display: flex;
   flex-direction: column;
 }
-
 
 .marker-container {
   display: flex;
@@ -30,7 +28,6 @@
   width: 100%;
 }
 
-
 .composition-container {
   display: flex;
   flex-direction: row;
@@ -40,7 +37,6 @@
   border-left: 2px solid var(--outline-variant);
   flex: 1;
   gap: 5px;
-
 }
 
 .ref-padding {

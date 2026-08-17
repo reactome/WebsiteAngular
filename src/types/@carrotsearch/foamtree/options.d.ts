@@ -1,31 +1,29 @@
 /// <reference path="./core.d.ts" />
 /// <reference path="./events.d.ts" />
 
-declare module "@carrotsearch/foamtree" {
+declare module '@carrotsearch/foamtree' {
   namespace FoamTree {
-
-    export type Options<D extends DataObject = DataObject> =
-      CoreOptions<D>
-      & RelaxationOptions
-      & GroupBorderOptions
-      & GroupFillOptions
-      & GroupStrokeOptions
-      & GroupSelectionOptions
-      & GroupHoverOptions
-      & GroupLabelOptions<D>
-      & GroupExposureOptions
-      & GroupOpeningClosingOptions
-      & GroupHierarchyOptions
-      & GroupColorsOptions<D>
-      & RolloutOptions
-      & PullbackOptions
-      & FadingOptions
-      & ZoomOptions
-      & TitleBarOptions<D>
-      & AttributionOptions
-      & RenderingOptions<D>
-      & InteractionStandardOptions
-      & DebuggingOptions;
+    export type Options<D extends DataObject = DataObject> = CoreOptions<D> &
+      RelaxationOptions &
+      GroupBorderOptions &
+      GroupFillOptions &
+      GroupStrokeOptions &
+      GroupSelectionOptions &
+      GroupHoverOptions &
+      GroupLabelOptions<D> &
+      GroupExposureOptions &
+      GroupOpeningClosingOptions &
+      GroupHierarchyOptions &
+      GroupColorsOptions<D> &
+      RolloutOptions &
+      PullbackOptions &
+      FadingOptions &
+      ZoomOptions &
+      TitleBarOptions<D> &
+      AttributionOptions &
+      RenderingOptions<D> &
+      InteractionStandardOptions &
+      DebuggingOptions;
     export type Option<D extends DataObject = DataObject> = keyof Options<D>;
     export type OptionValue<O extends Option<D>, D extends DataObject = DataObject> = Options<D>[O];
 
@@ -37,7 +35,7 @@ declare module "@carrotsearch/foamtree" {
        * proportionally when the element's size changes.
        * The visualization must be resized manually (see resize method) to update to new element's dimensions.
        */
-      id: string
+      id: string;
     }
 
     interface ElementEmbedding {
@@ -45,21 +43,20 @@ declare module "@carrotsearch/foamtree" {
        * The DOM element into which the visualization is to be embedded. Please see the id option for additional considerations.
        * @see IdEmbedding.id
        */
-      element: HTMLElement
+      element: HTMLElement;
     }
 
     type Embeddings = IdEmbedding | ElementEmbedding;
-    type RequiredOptionsT = Embeddings & RequiredOptions
-    export type InitialOptions<D extends DataObject> =
-      RequiredOptionsT
-      & Partial<Options<D>>
-      & Partial<EventOptions<D>>;
+    type RequiredOptionsT = Embeddings & RequiredOptions;
+    export type InitialOptions<D extends DataObject> = RequiredOptionsT &
+      Partial<Options<D>> &
+      Partial<EventOptions<D>>;
 
     export interface CoreOptions<D extends DataObject> {
       /**
        * Root of hierarchy to visualize
        */
-      dataObject: { groups: D[] }
+      dataObject: { groups: D[] };
       /**
        * Determines the general type of layout to generate. Depending on this option, FoamTree will produce polygon-based organic-looking visualization or the traditional rectangular tree map.
        *
@@ -89,7 +86,7 @@ declare module "@carrotsearch/foamtree" {
        * </ul>
        * @defaultValue 'relaxed'
        */
-      layout: 'relaxed' | 'ordered' | 'squarified'
+      layout: 'relaxed' | 'ordered' | 'squarified';
 
       /**
        * When true, FoamTree will lay out the groups in the order of decreasing weight. When false, FoamTree will lay out the groups in the order they were provided in the dataObject.
@@ -97,7 +94,7 @@ declare module "@carrotsearch/foamtree" {
        * Please see the layout option for information about how the order of groups can translate into their position in the visualization.
        * @defaultValue true
        */
-      layoutByWeightOrder: boolean
+      layoutByWeightOrder: boolean;
 
       /**
        * Determines how FoamTree will display nested groups. The following values are supported:
@@ -124,7 +121,7 @@ declare module "@carrotsearch/foamtree" {
        * You may also consider using the deferred layout technique to mitigate the delay related to eager computation
        * of the layout for the whole deeply-nested hierarchy.
        */
-      stacking: 'hierarchical' | 'flattened'
+      stacking: 'hierarchical' | 'flattened';
 
       /**
        * Determines when to draw an extra group label area.
@@ -141,7 +138,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'auto'
        * @see descriptionGroupType
        */
-      descriptionGroup: 'auto' | 'always'
+      descriptionGroup: 'auto' | 'always';
 
       /**
        * Determines how FoamTree will assign space for the group label area in flattened stacking mode or when extra
@@ -159,7 +156,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'stab'
        * @see groupLabelLayoutDecorator
        */
-      descriptionGroupType: 'floating' | 'stab'
+      descriptionGroupType: 'floating' | 'stab';
 
       /**
        * The desired area of the description group, relative to the area of the parent polygon. The value of 1.0 means FoamTree will try to allocate the description group to be half of the area of the polygon.
@@ -168,7 +165,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0.125
        * @remarks applicable only when stacking is set to flattened.
        */
-      descriptionGroupSize: number
+      descriptionGroupSize: number;
 
       /**
        * Minimum height of the description group's bounding box, in pixels. Use this option to ensure some minimum height of the description group, so that there's reasonable space to fit the label.
@@ -177,7 +174,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 35
        * @remarks applicable only when stacking is set to flattened and descriptionGroupType is stab
        */
-      descriptionGroupMinHeight: number
+      descriptionGroupMinHeight: number;
 
       /**
        * Maximum height of the description group's bounding box, relative to the height of the paren group's bounding box. Use this option to ensure that the description area does not take up too much of the parent polygon's area.
@@ -186,7 +183,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0.5
        * @remarks applicable only when stacking is set to flattened and descriptionGroupType is stab.
        */
-      descriptionGroupMaxHeight: number
+      descriptionGroupMaxHeight: number;
 
       /**
        * Determines the position of the description group inside the parent polygon. The allowed values for this option depend on the current descriptionGroupType:
@@ -204,7 +201,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 225
        * @remarks applicable only when stacking is set to flattened.
        */
-      descriptionGroupPosition: Direction
+      descriptionGroupPosition: Direction;
 
       /**
        * Determines the distance of the description group from the center of the parent polygon. Please see attributionDistanceFromCenter for a description of the allowed values.
@@ -213,14 +210,14 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 1
        * @remarks applicable only when stacking is set to flattened and descriptionGroupType is floating.
        */
-      descriptionGroupDistanceFromCenter: number
+      descriptionGroupDistanceFromCenter: number;
 
       /**
        * If true, groups whose weight is zero will be visible, with their weight slightly smaller than the smallest non-zero weight of the sibling groups.
        *
        * @defaultValue true
        */
-      showZeroWeightGroups: boolean
+      showZeroWeightGroups: boolean;
 
       /**
        * Minimum estimated diameter child groups must have in order to be drawn. To avoid illegible small labels and to speed up the rendering, FoamTree can be set to skip drawing child groups if their estimated diameter is smaller than groupMinDiameter. Setting the minimum group diameter to 0 will cause FoamTree to draw as many groups as possible groups given the maxGroups limit and the available floating point precision.
@@ -239,7 +236,7 @@ declare module "@carrotsearch/foamtree" {
        *   });
        * }, 2000);
        */
-      groupMinDiameter: number
+      groupMinDiameter: number;
 
       /**
        * The hard limit on the number of groups FoamTree will attempt to include in a single visualization.
@@ -250,7 +247,7 @@ declare module "@carrotsearch/foamtree" {
        * Value in [0, infinity]
        * @defaultValue 50000
        */
-      maxGroups: number
+      maxGroups: number;
 
       /**
        * Determines the desired aspect ratio of rectangles produced in the ordered and squarified layouts.
@@ -270,7 +267,7 @@ declare module "@carrotsearch/foamtree" {
        *
        * @remarks applicable only when layout is set to ordered or squarified.
        */
-      rectangleAspectRatioPreference: number
+      rectangleAspectRatioPreference: number;
     }
 
     /**
@@ -290,7 +287,8 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'fisheye'
        * @remarks applicable only when layout is set to relaxed.
        */
-      relaxationInitializer: 'fisheye' | 'squarified' | 'blackhole' | 'ordered' | 'random' | 'order' | 'treemap'
+      relaxationInitializer:
+        'fisheye' | 'squarified' | 'blackhole' | 'ordered' | 'random' | 'order' | 'treemap';
 
       /**
        * When set to true, FoamTree will show the intermediate steps of layout relaxation.
@@ -321,7 +319,7 @@ declare module "@carrotsearch/foamtree" {
        * @remarks applicable only when layout is set to relaxed.
        * @remarks When relaxation is visible, you can report the progress of the process to the user using the relaxation progress utility.
        */
-      relaxationVisible: boolean
+      relaxationVisible: boolean;
 
       /**
        * Determines the maximum duration of relaxation, in milliseconds.
@@ -333,7 +331,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 3000
        * @remarks applicable only when layout is set to relaxed.
        */
-      relaxationMaxDuration: number
+      relaxationMaxDuration: number;
 
       /**
        * The desired layout quality to achieve during relaxation.
@@ -370,7 +368,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 1
        * @remarks applicable only when layout is set to relaxed.
        */
-      relaxationQualityThreshold: number
+      relaxationQualityThreshold: number;
 
       /**
        * The transform to apply to polygon centers when resizing the visualization container.
@@ -382,7 +380,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.5.3
        * @defaultValue "morph"
        */
-      resizeTransform: 'morph' | 'initialize'
+      resizeTransform: 'morph' | 'initialize';
 
       /**
        * The duration of the animation that grows the group to its final weight, in milliseconds. Applicable only when relaxationVisible is true.
@@ -398,7 +396,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0
        * @remarks applicable only when layout is set to relaxed.
        */
-      groupGrowingDuration: number
+      groupGrowingDuration: number;
 
       /**
        * The easing function to use to grow group's weights. Meaningful only when groupGrowingDuration is larger than 0.
@@ -406,7 +404,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'bounce'
        * @remarks applicable only when layout is set to relaxed.
        */
-      groupGrowingEasing: Easing
+      groupGrowingEasing: Easing;
 
       /**
        * The amount of delay to apply when growing subsequent groups on the same level of hierarchy.
@@ -426,7 +424,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0
        * @remarks applicable only when layout is set to relaxed.
        */
-      groupGrowingDrag: number
+      groupGrowingDrag: number;
 
       /**
        * Determines how many times FoamTree should attempt to set the desired size for the groups polygon. Depending on the characteristics of the input data, FoamTree may not be able to set the desired sizes of the polygons right away. Depending on the groupResizingBudget value, FoamTree will make several attempts to set the desired size during the course of relaxation.
@@ -437,7 +435,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 2
        * @remarks applicable only when layout is set to relaxed.
        */
-      groupResizingBudget: number
+      groupResizingBudget: number;
     }
 
     /**
@@ -449,33 +447,32 @@ declare module "@carrotsearch/foamtree" {
        * Value in [0,1]
        * @defaultValue 0.15
        */
-      groupBorderRadius: number
+      groupBorderRadius: number;
       /**
        * Determines the width of the empty space between the sibling group polygons, in pixels.
        * value is a number in range [0,infinity)
        * @defaultValue 4
        * @remarks Setting groupBorderWidth to a value smaller than groupStrokeWidth / 2 + 0.5 will prevent FoamTree from using incremental drawing routines and therefore slow down visualization updates during hover, opening and selection changes.
        */
-      groupBorderWidth: number
+      groupBorderWidth: number;
       /**
        * The scaling factor to apply when drawing borders of child groups. Border with of a child group will be groupBorderWidthScaling smaller than the border width of the immediate parent group. Setting groupBorderWidthScaling to 1.0 will draw borders of equal widths on all levels of the group hierarchy.
        * @defaultValue 0.6
        * @remarks
        */
-      groupBorderWidthScaling: number
+      groupBorderWidthScaling: number;
       /**
        * Determines the width of the empty space between the parent group's edge and its child groups' edges, in pixels.
        * value is a number in range [0,infinity)
        * @defaultValue 6
        */
-      groupInsetWidth: number
+      groupInsetWidth: number;
       /**
        * The correction factor that ensures that the rounded parent group polygon covers all child group's polygons. For large groupBorderRadius values, it may sometimes happen that certain child polygons "stick out" of their parent group. In such cases, you can increase the groupBorderRadiusCorrection value to ensure proper rendering.
        * value is a number in range [0,infinity)
        * @defaultValue 1
        */
-      groupBorderRadiusCorrection: number
-
+      groupBorderRadiusCorrection: number;
     }
 
     /**
@@ -492,52 +489,51 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'gradient'
        * @remarks On slower devices and/or larger data sets, FoamTree may automatically disable rendering of gradients to improve the rendering performance. To force the rendering of gradients in such cases, increase wireframeDrawMaxDuration, finalCompleteDrawMaxDuration and finalIncrementalDrawMaxDuration.
        */
-      groupFillType: 'none' | 'plain' | 'gradient'
+      groupFillType: 'none' | 'plain' | 'gradient';
       /**
        * Determines the radius of the group-filling gradient.
        * value is a number in range [0,infinity)
        * @defaultValue 1
        */
-      groupFillGradientRadius: number
+      groupFillGradientRadius: number;
 
       /**
        * The amount of hue to add or subtract from the base group color hue to create the polygon-center end of the fill gradient.
        * value is a number in range [-180,180]
        * @defaultValue 0
        */
-      groupFillGradientCenterHueShift: number
+      groupFillGradientCenterHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base group color saturation to create the polygon-center end of the fill gradient.
        * value is a number in range [-100,100]
        * @defaultValue 0
        */
-      groupFillGradientCenterSaturationShift: number
+      groupFillGradientCenterSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base group color lightness to create the polygon-center end of the fill gradient.
        * value is a number in range [-100,100]
        * @defaultValue 20
        */
-      groupFillGradientCenterLightnessShift: number
+      groupFillGradientCenterLightnessShift: number;
 
       /**
        * The amount of hue to add or subtract from the base group color hue to create the polygon-edge end of the fill gradient.
        * value is a number in range [-180,180]
        * @defaultValue 0
        */
-      groupFillGradientRimHueShift: number
+      groupFillGradientRimHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base group color saturation to create the polygon-edge end of the fill gradient.
        * value is a number in range [-100,100]
        * @defaultValue 0
        */
-      groupFillGradientRimSaturationShift: number
+      groupFillGradientRimSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base group color lightness to create the polygon-edge end of the fill gradient.
        * value is a number in range [-100,100]
        * @defaultValue 20
        */
-      groupFillGradientRimLightnessShift: number
-
+      groupFillGradientRimLightnessShift: number;
     }
 
     /**
@@ -554,84 +550,84 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 'plain'
        * @remarks On slower devices and/or larger data sets, FoamTree may automatically disable rendering of edges to improve the rendering performance. To force the rendering of gradients in such cases, increase wireframeDrawMaxDuration, finalCompleteDrawMaxDuration and finalIncrementalDrawMaxDuration.
        */
-      groupStrokeType: 'none' | 'plain' | 'gradient'
+      groupStrokeType: 'none' | 'plain' | 'gradient';
       /**
        * Determines the width of the group's edge, in pixels.
        * value is a number in range [0,infinity)
        * @defaultValue 1.5
        * @remarks Setting groupStrokeWidth to a value larger than (groupBorderWidth - 0.5) * 2 will prevent FoamTree from using incremental drawing routines and therefore slow down visualization updates during hover, opening and selection changes.
        */
-      groupStrokeWidth: number
+      groupStrokeWidth: number;
 
       /**
        * The amount of hue to add or subtract from the base group color hue to create the color used for drawing the plain group's edge.
        * value is a number in range [-180,180]
        * @defaultValue 0
        */
-      groupStrokePlainHueShift: number
+      groupStrokePlainHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base group color hue to create the color used for drawing the plain group's edge.
        * value is a number in range [-100,100]
        * @defaultValue 0
        */
-      groupStrokePlainSaturationShift: number
+      groupStrokePlainSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base group color hue to create the color used for drawing the plain group's edge.
        * value is a number in range [-100,100]
        * @defaultValue -10
        */
-      groupStrokePlainLightnessShift: number
+      groupStrokePlainLightnessShift: number;
 
       /**
        * The size of the linear gradient used to draw the polygon's edges, in relation to the polygon's size.
        * value is a number in range [0,infinity)
        * @defaultValue 1
        */
-      groupStrokeGradientRadius: number
+      groupStrokeGradientRadius: number;
       /**
        * The angle of the linear gradient used to draw the polygon's edges.
        * value is a number in range [0,180]
        * @defaultValue 45
        */
-      groupStrokeGradientAngle: number
+      groupStrokeGradientAngle: number;
 
       /**
        * The amount of hue to add or subtract from the base group color hue to create the upper-end color of the polygon edge's gradient.
        * value is a number in range [-180,180]
        * @defaultValue 0
        */
-      groupStrokeGradientUpperHueShift: number
+      groupStrokeGradientUpperHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base group color hue to create the upper-end color of the polygon edge's gradient.
        * value is a number in range [-100,100]
        * @defaultValue 0
        */
-      groupStrokeGradientUpperSaturationShift: number
+      groupStrokeGradientUpperSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base group color hue to create the upper-end color of the polygon edge's gradient.
        * value is a number in range [-100,100]
        * @defaultValue 20
        */
-      groupStrokeGradientUpperLightnessShift: number
+      groupStrokeGradientUpperLightnessShift: number;
 
       /**
        * The amount of hue to add or subtract from the base group color hue to create the lower-end color of the polygon edge's gradient.
        * value is a number in range [-180,180]
        * @defaultValue 0
        */
-      groupStrokeGradientLowerHueShift: number
+      groupStrokeGradientLowerHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base group color hue to create the lower-end color of the polygon edge's gradient.
        * value is a number in range [-100,100]
        * @defaultValue 0
        */
-      groupStrokeGradientLowerSaturationShift: number
+      groupStrokeGradientLowerSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base group color hue to create the lower-end color of the polygon edge's gradient.
        * value is a number in range [-100,100]
        * @defaultValue -20
        */
-      groupStrokeGradientLowerLightnessShift: number
+      groupStrokeGradientLowerLightnessShift: number;
     }
 
     /**
@@ -643,7 +639,7 @@ declare module "@carrotsearch/foamtree" {
        * value is a CSS color
        * @defaultValue '#222'
        */
-      groupSelectionOutlineColor: string
+      groupSelectionOutlineColor: string;
       /**
        * Width of the selection outline to draw around selected groups.
        * value is a number in range [0,infinity)
@@ -654,7 +650,7 @@ declare module "@carrotsearch/foamtree" {
        *
        * will prevent FoamTree from using incremental drawing routines and therefore slow down visualization updates during hover, opening and selection changes when one ore more groups are selected.
        */
-      groupSelectionOutlineWidth: number
+      groupSelectionOutlineWidth: number;
       /**
        * The size of the drop shadow to apply to the selection outline.
        * value is a number in range [0,infinity)
@@ -665,14 +661,14 @@ declare module "@carrotsearch/foamtree" {
        *
        * will prevent FoamTree from using incremental drawing routines and therefore slow down visualization updates during hover, opening and selection changes when one ore more groups are selected.
        */
-      groupSelectionOutlineShadowSize: number
+      groupSelectionOutlineShadowSize: number;
       /**
        * The color of the selection outline shadow
        * @assert (value is not empty) and (value is a CSS color)
        * @since 3.0.0
        * @defaultValue "#fff"
        */
-      groupSelectionOutlineShadowColor: string
+      groupSelectionOutlineShadowColor: string;
 
       /**
        * The amount of hue to add or subtract from the base fill color hue when the group is selected.
@@ -680,21 +676,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupSelectionFillHueShift: number
+      groupSelectionFillHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base fill color saturation when the group is selected.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupSelectionFillSaturationShift: number
+      groupSelectionFillSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base fill color lightness when the group is selected.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupSelectionFillLightnessShift: number
+      groupSelectionFillLightnessShift: number;
 
       /**
        * The amount of hue to add or subtract from the base stroke color hue when the group is selected.
@@ -702,21 +698,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupSelectionStrokeHueShift: number
+      groupSelectionStrokeHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base stroke color saturation when the group is selected.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupSelectionStrokeSaturationShift: number
+      groupSelectionStrokeSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base stroke color lightness when the group is selected.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue -10
        */
-      groupSelectionStrokeLightnessShift: number
+      groupSelectionStrokeLightnessShift: number;
     }
 
     /**
@@ -729,21 +725,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupHoverFillHueShift: number
+      groupHoverFillHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base fill color saturation when the group is hovered on.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupHoverFillSaturationShift: number
+      groupHoverFillSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base fill color lightness when the group is hovered on.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 20
        */
-      groupHoverFillLightnessShift: number
+      groupHoverFillLightnessShift: number;
 
       /**
        * The amount of hue to add or subtract from the base stroke color hue when the group is hovered on.
@@ -751,21 +747,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupHoverStrokeHueShift: number
+      groupHoverStrokeHueShift: number;
       /**
        * The amount of saturation to add or subtract from the base stroke color saturation when the group is hovered on.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupHoverStrokeSaturationShift: number
+      groupHoverStrokeSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from the base stroke color lightness when the group is hovered on.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue -10
        */
-      groupHoverStrokeLightnessShift: number
+      groupHoverStrokeLightnessShift: number;
     }
 
     /**
@@ -778,28 +774,28 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "sans-serif"
        */
-      groupLabelFontFamily: string | null | undefined
+      groupLabelFontFamily: string | null | undefined;
       /**
        * Font style to use for drawing group labels. All CSS-compliant font styles are allowed, such as italic.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      groupLabelFontStyle: string | null | undefined
+      groupLabelFontStyle: string | null | undefined;
       /**
        * Font weight to use for drawing group labels. All CSS-compliant font weights are allowed, such as bold.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      groupLabelFontWeight: string | null | undefined
+      groupLabelFontWeight: string | null | undefined;
       /**
        * Font variant to use for drawing group labels. All CSS-compliant font variants are allowed, such as small-caps.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      groupLabelFontVariant: string | null | undefined
+      groupLabelFontVariant: string | null | undefined;
       /**
        * Minimum font size used for drawing group labels, in pixels.
        *
@@ -816,7 +812,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 6
        * @remarks To force FoamTree to draw labels for all groups, set groupLabelMinFontSize to 0. This setting, however, may significantly slow down visualization rendering.
        */
-      groupLabelMinFontSize: number
+      groupLabelMinFontSize: number;
       /**
        * Maximum font size used for drawing group labels. See the groupLabelMinFontSize attribute for details.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
@@ -824,7 +820,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 160
        * @see groupLabelMinFontSize
        */
-      groupLabelMaxFontSize: number
+      groupLabelMaxFontSize: number;
 
       /**
        * Allows to customize or completely replace the default text of group labels. When labels are drawn, FoamTree will call the provided function once for each group (parent groups will be processed before children groups). The task of the function is to modify or completely replace the default label text. The custom label text will most likely be based on custom properties passed along with the data model.
@@ -842,16 +838,20 @@ declare module "@carrotsearch/foamtree" {
        *   }
        * });
        */
-      groupLabelDecorator: (options: Options, properties: InternalProperties<D>, variables: {
-        labelText: string
-      }) => any
+      groupLabelDecorator: (
+        options: Options,
+        properties: InternalProperties<D>,
+        variables: {
+          labelText: string;
+        }
+      ) => any;
       /**
        * The line height to use when rendering labels in multiple lines.
        * @assert (value is not empty) and (value is a number in range [1,infinity))
        * @since 3.0.0
        * @defaultValue 1.05
        */
-      groupLabelLineHeight: number
+      groupLabelLineHeight: number;
 
       /**
        * The padding to add on the left and right of the label, in current font size unit.
@@ -859,21 +859,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 1
        */
-      groupLabelHorizontalPadding: number
+      groupLabelHorizontalPadding: number;
       /**
        * The padding to add on the top and bottom of the label, in current font size unit.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 1
        */
-      groupLabelVerticalPadding: number
+      groupLabelVerticalPadding: number;
       /**
        * The maximum total height of the label in relation to the height of the group's polygon.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.9
        */
-      groupLabelMaxTotalHeight: number
+      groupLabelMaxTotalHeight: number;
       /**
        * Every time the geometry of the group's polygon changes, FoamTree needs to decide whether to re-layout the label text. The groupLabelUpdateThreshold determines how much must the area of the polygon change for FoamTree to re-layout the label. For example, if the value of the threshold is 0.05, FoamTree will re-layout the label when the area of the polygon is larger or smaller by 5% or more.
        *
@@ -882,7 +882,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.05
        */
-      groupLabelUpdateThreshold: number
+      groupLabelUpdateThreshold: number;
       /**
        * Picks the label color automatically depending on the group's color brightness. If the brightness is below this threshold groupLabelLightColor is used, otherwise groupLabelDarkColor is used. Setting the threshold to either 0 or 1 will pick dark or light labels, correspondingly.
        *
@@ -891,7 +891,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.35
        */
-      groupLabelColorThreshold: number
+      groupLabelColorThreshold: number;
       /**
        * The label color to use on bright groups.
        * @assert (value is not empty) and (value is a CSS color)
@@ -899,7 +899,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue "#000"
        * @see groupLabelColorThreshold
        */
-      groupLabelDarkColor: string
+      groupLabelDarkColor: string;
       /**
        * The label color to use on dark groups
        * @assert (value is not empty) and (value is a CSS color)
@@ -907,7 +907,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue "#fff"
        * @see groupLabelColorThreshold
        */
-      groupLabelLightColor: string
+      groupLabelLightColor: string;
     }
 
     /**
@@ -920,29 +920,28 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 1.15
        */
-      groupExposureScale: number
+      groupExposureScale: number;
       /**
        * The color of drop shadow to apply to exposed groups.
        * @assert (value is not empty) and (value is a CSS color)
        * @since 3.0.0
        * @defaultValue "rgba(0, 0, 0, 0.5)"
        */
-      groupExposureShadowColor: string
+      groupExposureShadowColor: string;
       /**
        * The size of drop shadow to apply to exposed groups, in pixels.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 50
        */
-      groupExposureShadowSize: string
+      groupExposureShadowSize: string;
       /**
        * The margin size to apply when zooming to the exposed group, relative to the group polygon's bounding box dimensions. If groupExposureZoomMargin is 0, the exposed group will occupy the full height / width of the view port. For larger values, a zoom margin will be added around the exposed group. The larger the value, the larger margin will be applied.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      groupExposureZoomMargin: number
-
+      groupExposureZoomMargin: number;
 
       /**
        * The amount of saturation to add or subtract from groups base color's saturation when the group is unexposed.
@@ -950,28 +949,28 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      groupUnexposureSaturationShift: number
+      groupUnexposureSaturationShift: number;
       /**
        * The amount of lightness to add or subtract from groups base color's lightness when the group is unexposed.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue -10
        */
-      groupUnexposureLightnessShift: number
+      groupUnexposureLightnessShift: number;
       /**
        * The labelColorThreshold value to use for unexposed groups. When the colors of unexposed groups are significantly modified using the groupUnexposureLightnessShift and groupUnexposureSaturationShift options, you may want to modify this threshold to, for example, always draw the labels of unexposed groups in the dark color.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.35
        */
-      groupUnexposureLabelColorThreshold: number
+      groupUnexposureLabelColorThreshold: number;
       /**
        * The duration of the group exposure and unexposure animation.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 700
        */
-      exposeDuration: number
+      exposeDuration: number;
       /**
        * The easing function to use during group exposure and unexposure animations. Meaningful only when exposeDuration is larger than 0.
        *
@@ -979,7 +978,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "squareInOut"
        */
-      exposeEasing: Easing
+      exposeEasing: Easing;
     }
 
     export interface GroupOpeningClosingOptions {
@@ -989,7 +988,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 500
        */
-      openCloseDuration: number
+      openCloseDuration: number;
     }
 
     /**
@@ -1002,21 +1001,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.7
        */
-      parentFillOpacity: number
+      parentFillOpacity: number;
       /**
        * The opacity to use when drawing strokes of groups that have child groups.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 1
        */
-      parentStrokeOpacity: number
+      parentStrokeOpacity: number;
       /**
        * The opacity to use when drawing labels of groups that have child groups.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 1
        */
-      parentLabelOpacity: number
+      parentLabelOpacity: number;
       /**
        * When set to true, FoamTree will try to equalize the opacity of groups' polygons, so that the aggregated opacity of, for example, a group with 3 levels of child groups and a group without child groups will be roughly the same. Opacity equalization will usually lead to a more uniform look of the whole visualization area.
        *
@@ -1025,7 +1024,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue true
        */
-      parentOpacityBalancing: boolean
+      parentOpacityBalancing: boolean;
     }
 
     /**
@@ -1040,14 +1039,14 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "hsla(0, 100%, 55%, 1)"
        */
-      rainbowStartColor: string
+      rainbowStartColor: string;
       /**
        * End color to use if rainbow color model is used for coloring groups. See rainbowStartColor for a description of how the rainbow color model works.
        * @assert (value is not empty) and (value is a CSS color)
        * @since 3.0.0
        * @defaultValue "hsla(359, 100%, 55%, 1)"
        */
-      rainbowEndColor: string
+      rainbowEndColor: string;
       /**
        * Determines how the rainbow colors will be distributed. You can use one of the following values:
        * <ul>
@@ -1059,7 +1058,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "radial"
        */
-      rainbowColorDistribution: 'linear' | 'radial'
+      rainbowColorDistribution: 'linear' | 'radial';
       /**
        * When rainbowColorDistribution is radial, determines the angle at which the rainbow color will start. Change the the values of this option, to rotate the rainbow around the central point of the visualization area.
        *
@@ -1068,14 +1067,14 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue -45
        */
-      rainbowColorDistributionAngle: number
+      rainbowColorDistributionAngle: number;
       /**
        * Determines the angle of the linear gradient formed by the color lightness variations created for lower-level groups.
        * @assert (value is not empty) and (value is a number in range [-180,180])
        * @since 3.0.0
        * @defaultValue 45
        */
-      rainbowLightnessDistributionAngle: number
+      rainbowLightnessDistributionAngle: number;
       /**
        * When rainbowColorDistribution is radial, FoamTree can desaturate colors of the polygons lying close to the center of the visualization area to make the color transitions smoother.
        *
@@ -1084,7 +1083,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      rainbowSaturationCorrection: number
+      rainbowSaturationCorrection: number;
       /**
        * When rainbowColorDistribution is radial, FoamTree can adjust the lightness of colors of the polygons lying close to the center of the visualization area to make the color transitions smoother.
        *
@@ -1093,21 +1092,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.4
        */
-      rainbowLightnessCorrection: number
+      rainbowLightnessCorrection: number;
       /**
        * Determines the strength of the color lightness variations applied to lower-level groups.
        * @assert (value is not empty) and (value is a number in range [-100,100])
        * @since 3.0.0
        * @defaultValue 30
        */
-      rainbowLightnessShift: number
+      rainbowLightnessShift: number;
       /**
        * Determines the central lightness value around which the lightness variations will be applied for the lower-level groups.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.4
        */
-      rainbowLightnessShiftCenter: number
+      rainbowLightnessShiftCenter: number;
       /**
        * A callback function you can use to customize or completely replace the default rainbow color model for groups. During each redraw, the visualization code will call the provided function once for each group. The task of the function is to modify or completely replace the default color of the group and its label. New colors can be derived from various properties of the group, such as its nesting level, number of siblings, or custom properties passed along with the data model.
        * @param options all current visualization options (keys and values).
@@ -1181,20 +1180,23 @@ declare module "@carrotsearch/foamtree" {
        *   setTimeout(redraw, 16); // next frame
        * }, 16);
        */
-      groupColorDecorator: (options: Options, properties: InternalProperties<D>, variables: {
-        /**
-         * the group color computed by the default rainbow color model
-         */
-        groupColor: string | ColorObject,
-        /**
-         * the label color computed by the default rainbow color model
-         *
-         * can be set to a string value of auto which will recompute the label color again depending on the updated groupColor and visualization options controlling dark/ light label colors: labelColorThreshold, labelLightColor and labelDarkColor.
-         * @defaultValue "auto"
-         */
-        labelColor: 'auto' | string | ColorObject
-      }) => any
-
+      groupColorDecorator: (
+        options: Options,
+        properties: InternalProperties<D>,
+        variables: {
+          /**
+           * the group color computed by the default rainbow color model
+           */
+          groupColor: string | ColorObject;
+          /**
+           * the label color computed by the default rainbow color model
+           *
+           * can be set to a string value of auto which will recompute the label color again depending on the updated groupColor and visualization options controlling dark/ light label colors: labelColorThreshold, labelLightColor and labelDarkColor.
+           * @defaultValue "auto"
+           */
+          labelColor: 'auto' | string | ColorObject;
+        }
+      ) => any;
     }
 
     /**
@@ -1213,7 +1215,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "center"
        */
-      rolloutStartPoint: 'center' | 'topleft' | 'bottomright' | 'random'
+      rolloutStartPoint: 'center' | 'topleft' | 'bottomright' | 'random';
       /**
        * FoamTree will start the rollout animation from the group determined using the rolloutStartPoint option. Then, further polygons will be included in the animation, depending on the value of this option:
        * <ul>
@@ -1252,21 +1254,21 @@ declare module "@carrotsearch/foamtree" {
        *   rolloutPolygonDrag: 0.015
        * });
        */
-      rolloutMethod: 'groups' | 'individual'
+      rolloutMethod: 'groups' | 'individual';
       /**
        * The duration of the rollout animation at one level of the hierarchy, in milliseconds. The duration of the complete animation is variable and depends on the number of hierarchy levels and the rolloutChildGroupsDrag and rolloutChildGroupsDelay options.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 2000
        */
-      rolloutDuration: number
+      rolloutDuration: number;
       /**
        * The animation easing function to use during rollout animation.
        * @assert (value is not empty) and (value one of [linear, bounce, squareIn, squareOut, squareInOut, cubicIn, cubicOut, cubicInOut, quadIn, quadOut, quadInOut])
        * @since 3.0.0
        * @defaultValue "squareOut"
        */
-      rolloutEasing: Easing
+      rolloutEasing: Easing;
       /**
        * Determines the initial scale to set for each polygon at the start of the rollout. During the rollout animation the initial scale will be transitioned to the neutral value.
        *
@@ -1283,28 +1285,28 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue -0.7
        * @remarks When visualizing hierarchical models, setting a positive rolloutScalingStrength may create unpleasant effects because child groups will be drawn on top of their parents during the animation as shown in the following example. For this reason, you may want to use negative scaling strengths for hierarchical data.
        */
-      rolloutScalingStrength: number
+      rolloutScalingStrength: number;
       /**
        * Determines the initial horizontal translation to apply to each polygon at the start of the rollout. The rollout animation will transition the initial translation to the neutral value. The unit of the translation is the width of the parent polygon's bounding box. Fox example, the value of -0.5 means the translation to the left by half of the width of the parent box.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue 0
        */
-      rolloutTranslationXStrength: number
+      rolloutTranslationXStrength: number;
       /**
        * Determines the initial vertical translation to apply to each polygon at the start of the rollout. The rollout animation will transition the initial translation to the neutral value. The unit of the translation is the height of the parent polygon's bounding box. Fox example, the value of 0.5 means the translation to the bottom by half of the height of the parent box.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue 0
        */
-      rolloutTranslationYStrength: number
+      rolloutTranslationYStrength: number;
       /**
        * Determines the initial rotation to apply to each polygon at the start of the rollout. The rollout animation will transition the initial rotation to the neutral value. Rotation of 1.0 means 180 degrees clockwise.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue -0.7
        */
-      rolloutRotationStrength: number
+      rolloutRotationStrength: number;
       /**
        * Determines the point relative to which the rollout transformations will be taken.
        *
@@ -1318,21 +1320,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.7
        */
-      rolloutTransformationCenter: number
+      rolloutTransformationCenter: number;
       /**
        * The amount of delay to apply before starting the rollout of subsequent groups on the same level of hierarchy. The delay will be computed by multiplying rolloutDuration by the value of this option.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      rolloutPolygonDrag: number
+      rolloutPolygonDrag: number;
       /**
        * Determines the duration of the polygon rollout animation, as a fraction of rolloutDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.5
        */
-      rolloutPolygonDuration: number
+      rolloutPolygonDuration: number;
       /**
        * Determines the delay to apply before showing the group's label during rollout, as a fraction of rolloutDuration.
        *
@@ -1341,28 +1343,28 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.8
        */
-      rolloutLabelDelay: number
+      rolloutLabelDelay: number;
       /**
        * The amount of delay to apply before revealing the labels of subsequent groups on the same level of hierarchy. The delay will be computed by multiplying rolloutDuration by the value of this option.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      rolloutLabelDrag: number
+      rolloutLabelDrag: number;
       /**
        * Determines the duration of the label fading-in animation, as a fraction of rolloutDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.5
        */
-      rolloutLabelDuration: number
+      rolloutLabelDuration: number;
       /**
        * The amount of delay to apply before starting the rollout of child groups of a parent group, as a fraction of rolloutDuration. If you set rolloutChildGroupsDelay to 0, groups at all levels will start their rollout animations at the same time.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.2
        */
-      rolloutChildGroupsDelay: number
+      rolloutChildGroupsDelay: number;
       /**
        * The amount of delay to apply before starting the rollout of child groups of subsequent parent groups groups on the same level of hierarchy. The delay will be computed by multiplying rolloutDuration by the value of this option.
        *
@@ -1370,7 +1372,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      rolloutChildGroupsDrag: number
+      rolloutChildGroupsDrag: number;
     }
 
     /**
@@ -1391,7 +1393,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "center"
        */
-      pullbackStartPoint: 'center' | 'topleft' | 'bottomright' | 'random'
+      pullbackStartPoint: 'center' | 'topleft' | 'bottomright' | 'random';
       /**
        * FoamTree will start the pullback animation from the group determined using the pullbackStartPoint option. Then, further polygons will be included in the animation, depending on the value of this option:
        * <ul>
@@ -1430,21 +1432,21 @@ declare module "@carrotsearch/foamtree" {
        *   pullbackPolygonDrag: 0.015
        * });
        */
-      pullbackMethod: 'groups' | 'individual'
+      pullbackMethod: 'groups' | 'individual';
       /**
        * The duration of the pullback animation at one level of the hierarchy, in milliseconds. The duration of the complete animation is variable and depends on the number of hierarchy levels and the pullbackChildGroupsDrag and pullbackChildGroupsDelay options.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 2000
        */
-      pullbackDuration: number
+      pullbackDuration: number;
       /**
        * The animation easing function to use during pullback animation.
        * @assert (value is not empty) and (value one of [linear, bounce, squareIn, squareOut, squareInOut, cubicIn, cubicOut, cubicInOut, quadIn, quadOut, quadInOut])
        * @since 3.0.0
        * @defaultValue "squareOut"
        */
-      pullbackEasing: Easing
+      pullbackEasing: Easing;
       /**
        * Determines the target scale to set for each polygon at the end of the pullback.
        *
@@ -1463,28 +1465,28 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue -0.7
        * @remarks When visualizing hierarchical models, setting a positive pullbackScalingStrength may create unpleasant effects because child groups will be drawn on top of their parents during the animation as shown in the following example. For this reason, you may want to use negative scaling strengths for hierarchical data.
        */
-      pullbackScalingStrength: number
+      pullbackScalingStrength: number;
       /**
        * Determines the initial horizontal translation to apply to each polygon at the start of the pullback. The pullback animation will transition the initial translation to the neutral value. The unit of the translation is the width of the parent polygon's bounding box. Fox example, the value of -0.5 means the translation to the left by half of the width of the parent box.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue 0
        */
-      pullbackTranslationXStrength: number
+      pullbackTranslationXStrength: number;
       /**
        * Determines the initial vertical translation to apply to each polygon at the start of the pullback. The pullback animation will transition the initial translation to the neutral value. The unit of the translation is the height of the parent polygon's bounding box. Fox example, the value of 0.5 means the translation to the bottom by half of the height of the parent box.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue 0
        */
-      pullbackTranslationYStrength: number
+      pullbackTranslationYStrength: number;
       /**
        * Determines the initial rotation to apply to each polygon at the start of the pullback. The pullback animation will transition the initial rotation to the neutral value. Rotation of 1.0 means 180 degrees clockwise.
        * @assert (value is not empty) and (value is a number in range (-infinity,infinity))
        * @since 3.0.0
        * @defaultValue -0.7
        */
-      pullbackRotationStrength: number
+      pullbackRotationStrength: number;
       /**
        * Determines the point relative to which the pullback transformations will be taken.
        *
@@ -1498,28 +1500,28 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.7
        */
-      pullbackTransformationCenter: number
+      pullbackTransformationCenter: number;
       /**
        * The pullback animation will first start hiding groups labels and after a delay the hiding of the polygons will start. This option determines the delay to apply before hiding of the polygons starts. The delay is specified as a fraction of pullbackDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.3
        */
-      pullbackPolygonDelay: number
+      pullbackPolygonDelay: number;
       /**
        * The amount of delay to apply before starting the pullback of subsequent groups on the same level of hierarchy. The delay will be computed by multiplying pullbackDuration by the value of this option.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      pullbackPolygonDrag: number
+      pullbackPolygonDrag: number;
       /**
        * Determines the duration of the polygon pullback animation, as a fraction of pullbackDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.8
        */
-      pullbackPolygonDuration: number
+      pullbackPolygonDuration: number;
       /**
        * Determines the delay to apply before showing the group's label during pullback, as a fraction of pullbackDuration.
        *
@@ -1528,35 +1530,35 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0
        */
-      pullbackLabelDelay: number
+      pullbackLabelDelay: number;
       /**
        * The amount of delay to apply before revealing the labels of subsequent groups on the same level of hierarchy. The delay will be computed by multiplying pullbackDuration by the value of this option.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      pullbackLabelDrag: number
+      pullbackLabelDrag: number;
       /**
        * Determines the duration of the label fading-in animation, as a fraction of pullbackDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.3
        */
-      pullbackLabelDuration: number
+      pullbackLabelDuration: number;
       /**
        * Determines the duration of the sub-group fading-out animation, as a fraction of pullbackDuration.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.3
        */
-      pullbackChildGroupsDuration: number
+      pullbackChildGroupsDuration: number;
       /**
        * The amount of delay to apply before starting the pullback of child groups of a parent group, as a fraction of pullbackDuration. If you set pullbackChildGroupsDelay to 0, groups at all levels will start their pullback animations at the same time.
        * @assert (value is not empty) and (value is a number in range [0,1])
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      pullbackChildGroupsDelay: number
+      pullbackChildGroupsDelay: number;
       /**
        * The amount of delay to apply before starting the pullback of child groups of subsequent parent groups groups on the same level of hierarchy. The delay will be computed by multiplying pullbackDuration by the value of this option.
        *
@@ -1564,7 +1566,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 0.1
        */
-      pullbackChildGroupsDrag: number
+      pullbackChildGroupsDrag: number;
     }
 
     /**
@@ -1578,14 +1580,14 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 700
        */
-      fadeDuration: number
+      fadeDuration: number;
       /**
        * The easing function to use when performing the fading animation.
        * @assert (value is not empty) and (value one of [linear, bounce, squareIn, squareOut, squareInOut, cubicIn, cubicOut, cubicInOut, quadIn, quadOut, quadInOut])
        * @since 3.0.0
        * @defaultValue "cubicInOut"
        */
-      fadeEasing: Easing
+      fadeEasing: Easing;
     }
 
     /**
@@ -1598,21 +1600,21 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 1.5
        */
-      zoomMouseWheelFactor: number
+      zoomMouseWheelFactor: number;
       /**
        * The duration of the zoom-in/out animation, in milliseconds.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 500
        */
-      zoomMouseWheelDuration: number
+      zoomMouseWheelDuration: number;
       /**
        * The easing function to apply to the zoom animation.
        * @assert (value is not empty) and (value one of [linear, bounce, squareIn, squareOut, squareInOut, cubicIn, cubicOut, cubicInOut, quadIn, quadOut, quadInOut])
        * @since 3.0.0
        * @defaultValue "squareOut"
        */
-      zoomMouseWheelEasing: Easing
+      zoomMouseWheelEasing: Easing;
     }
 
     export interface TitleBarOptions<D extends DataObject> {
@@ -1631,28 +1633,28 @@ declare module "@carrotsearch/foamtree" {
        *   groupLabelFontFamily: "Arial, sans-serif"
        * });
        */
-      titleBarFontFamily: string | null | undefined
+      titleBarFontFamily: string | null | undefined;
       /**
        * Font style for the title bar, if shown. CSS-compliant font style specifications are supported, such as italic. If not specified, groupLabelFontStyle will be used.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      titleBarFontStyle: string | null | undefined
+      titleBarFontStyle: string | null | undefined;
       /**
        * Font weight for the title bar, if shown. CSS-compliant font weight specifications are supported, such as bold. If not specified, groupLabelFontWeight will be used.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      titleBarFontWeight: string | null | undefined
+      titleBarFontWeight: string | null | undefined;
       /**
        * Font variant for the title bar, if shown. CSS-compliant font variant specifications are supported, such as small-caps. If not specified, groupLabelFontVariant will be used.
        * @assert (value is a string) or (value is null) or (value is undefined)
        * @since 3.2.2
        * @defaultValue "normal"
        */
-      titleBarFontVariant: string | null | undefined
+      titleBarFontVariant: string | null | undefined;
       /**
        * Minimum font size to use when drawing the title bar's label, in pixels.
        *
@@ -1661,42 +1663,42 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 10
        */
-      titleBarMinFontSize: number
+      titleBarMinFontSize: number;
       /**
        * Maximum font size to draw the title bar's label, in pixels.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 40
        */
-      titleBarMaxFontSize: number
+      titleBarMaxFontSize: number;
       /**
        * The background color of the title bar area.
        * @assert (value is not empty) and (value is a CSS color)
        * @since 3.0.0
        * @defaultValue "rgba(0, 0, 0, 0.5)"
        */
-      titleBarBackgroundColor: string
+      titleBarBackgroundColor: string;
       /**
        * The text color for drawing labels in the title bar area.
        * @assert (value is not empty) and (value is a CSS color)
        * @since 3.0.0
        * @defaultValue "rgba(255, 255, 255, 1)"
        */
-      titleBarTextColor: string
+      titleBarTextColor: string;
       /**
        * Left and right (horizontal) padding to leave inside the title bar's area.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 20
        */
-      titleBarTextPaddingLeftRight: number
+      titleBarTextPaddingLeftRight: number;
       /**
        * Top and bottom (vertical) padding to leave inside the title bar's area.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 15
        */
-      titleBarTextPaddingTopBottom: number
+      titleBarTextPaddingTopBottom: number;
       /**
        * Allows to customize or completely replace the text displayed in the title bar. By default, FoamTree will display the group's label, but you can use this option to display a different text, e.g. some more details related to the group.
        *
@@ -1711,37 +1713,41 @@ declare module "@carrotsearch/foamtree" {
        * </ul>
        * @param variables object with title-bar-related variables this function can change.
        */
-      titleBarDecorator: (options: Options, properties: InternalProperties<D> & {
-        /**
-         * the width of the title bar area, in pixels
-         */
-        titleBarWidth: number,
-        /**
-         * the height of the title bar area, in pixels
-         */
-        titleBarHeight: number,
-        /**
-         * the font size used to draw the actual group label or 0 if the label is not drawn
-         */
-        labelFontSize: number,
-        /**
-         * Since 3.1.0 the current viewport scale. Values larger than 1 mean the viewport is zoomed-in, values smaller than 1 mean the viewport is zoomed-out, a value of 1 means the viewport is at its neutral zoom level.
-         */
-        viewportScale: number
-      }, variables: {
-        /**
-         * the default text for the title bar, equal to the label of the group. If changed to null or undefined, the title bar will not be shown.
-         */
-        titleBarText: string | number | undefined
-        /**
-         * true if the group's label is small enough for the title bar to show, false otherwise. You can change the value of this variable to force showing or hiding of the title bar.
-         */
-        titleBarShown: boolean
-        /**
-         * the maximum font size to be used for drawing text in the title bar, by default equal to the titleBarMaxFontSize option. Change this variable to override the the max font size for the currently rendered title bar.
-         */
-        titleBarMaxFontSize: number
-      }) => any
+      titleBarDecorator: (
+        options: Options,
+        properties: InternalProperties<D> & {
+          /**
+           * the width of the title bar area, in pixels
+           */
+          titleBarWidth: number;
+          /**
+           * the height of the title bar area, in pixels
+           */
+          titleBarHeight: number;
+          /**
+           * the font size used to draw the actual group label or 0 if the label is not drawn
+           */
+          labelFontSize: number;
+          /**
+           * Since 3.1.0 the current viewport scale. Values larger than 1 mean the viewport is zoomed-in, values smaller than 1 mean the viewport is zoomed-out, a value of 1 means the viewport is at its neutral zoom level.
+           */
+          viewportScale: number;
+        },
+        variables: {
+          /**
+           * the default text for the title bar, equal to the label of the group. If changed to null or undefined, the title bar will not be shown.
+           */
+          titleBarText: string | number | undefined;
+          /**
+           * true if the group's label is small enough for the title bar to show, false otherwise. You can change the value of this variable to force showing or hiding of the title bar.
+           */
+          titleBarShown: boolean;
+          /**
+           * the maximum font size to be used for drawing text in the title bar, by default equal to the titleBarMaxFontSize option. Change this variable to override the the max font size for the currently rendered title bar.
+           */
+          titleBarMaxFontSize: number;
+        }
+      ) => any;
       /**
        * Maximum group label size in pixels whose label to show in the title bar. Small size of a group may cause its label to be drawn in a small font and thus appear illegible. For this reason, when the user hovers the mouse pointer over a group with a small label, the label can be shown in a dedicated title bar.
        *
@@ -1750,7 +1756,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue 8
        */
-      maxLabelSizeForTitleBar: number
+      maxLabelSizeForTitleBar: number;
     }
 
     /**
@@ -1763,7 +1769,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @remarks Requires licensed version
        */
-      attributionText: string | null | undefined
+      attributionText: string | null | undefined;
       /**
        * The image to display in the attribution group. The image can be specified as a relative or absolute HTTP URL or a data URI. When using HTTP URLs, the image should to be preloaded before visualization is embedded, otherwise it may not be immediately visible. For this reason, the data URIs are recommended. You can use services like dataurl.net to convert your images to data URIs.
        *
@@ -1772,7 +1778,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @remarks Requires licensed version
        */
-      attributionLogo: string | HTMLImageElement | null | undefined
+      attributionLogo: string | HTMLImageElement | null | undefined;
       /**
        * Determines the scale at which FoamTree should draw the attribution logo. The scale is relative to the bounding box of the group's polygon. A scale of 1.0 means the logo will take the whole available width or height.
        * @assert (value is not empty) and (value is a number in range [0,1])
@@ -1780,7 +1786,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0.5
        * @remarks Requires licensed version
        */
-      attributionLogoScale: number
+      attributionLogoScale: number;
       /**
        * The URL to open when the user clicks the attribution group, can be undefined.
        * @assert (value is a string) or (value is null) or (value is undefined)
@@ -1788,7 +1794,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue "http://carrotsearch.com/foamtree"
        * @remarks Requires licensed version
        */
-      attributionUrl: string | null | undefined
+      attributionUrl: string | null | undefined;
       /**
        * Sets the weight of the attribution group in relation to the total weight of the root-level groups. You can use this option to influence the size of the attribution group.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
@@ -1796,7 +1802,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 0.025
        * @remarks The limited demo version of FoamTree does not allow to set the attribution weight to a value smaller than 0.0025. Please contact Carrot Search for licensing of a fully customizable distribution.
        */
-      attributionWeight: number
+      attributionWeight: number;
       /**
        * Determines the position of the attribution group relative to the visualization container.
        * If number, the angle (in degrees) that determines position on the perimeter of the visualization container, clockwise, starting at the right hand side of the container. For example: 0 is the right-hand side of the container, 45 is the bottom-right corner, 90 is the bottom side of the container etc.
@@ -1806,7 +1812,7 @@ declare module "@carrotsearch/foamtree" {
        * foamtree.set("attributionPosition", 360 - 45);
        * foamtree.set("dataObject", { groups: randomGroups(25, 1) } );
        */
-      attributionPosition: Direction
+      attributionPosition: Direction;
       /**
        * Determines the distance of the attribution group from the center of the visualization area. The distance of 0 puts the attribution group in the center of the visualization, the distance of 1 puts the attribution group near the perimeter of the visualization area.
        *
@@ -1821,14 +1827,14 @@ declare module "@carrotsearch/foamtree" {
        * foamtree.set("attributionDistanceFromCenter", 0);
        * foamtree.set("dataObject", { groups: randomGroups(25, 1) } );
        */
-      attributionDistanceFromCenter: number
+      attributionDistanceFromCenter: number;
       /**
        * Determines the color of the attribution group. Currently, two values are supported:
        * @assert (value is not empty) and (value one of [light, dark])
        * @since 3.4.0
        * @defaultValue "light"
        */
-      attributionTheme: 'light' | 'dark'
+      attributionTheme: 'light' | 'dark';
     }
 
     export interface RenderingOptions<D extends DataObject> {
@@ -1846,7 +1852,7 @@ declare module "@carrotsearch/foamtree" {
        * @remarks To boost the performance on iPads with Retina display set pixelRatio to 2 and the width of the HTML container element to be at least one pixel less than the total screen width. Yes, we know it's weird but it speeds up rendering a lot.
        * @remarks setting pixelRatio to a value larger than 1 on mobile devices, make sure to correctly set the size of the page's viewport. The default viewport may be very large, leading to a very large canvas. Refer to the mobile demo's source code for examples.
        */
-      pixelRatio: number
+      pixelRatio: number;
       /**
        * The pixel ratio to use when drawing animations, such as rollout, pullback, expose or zooming. You can change the default to a higher value (e.g. 2 on Retina displays) to have the animation drawn in more detail, but noticeably slower. You can also set this option to a lower value, e.g. 0.5 to have the animation drawn faster, but with less detail. Please see the pixelRatio option for detailed considerations on how the pixel ratio value affects the sizes of the canvases allocated by FoamTree.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
@@ -1854,7 +1860,7 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue 1
        * @see RenderingOptions.pixelRatio
        */
-      wireframePixelRatio: number
+      wireframePixelRatio: number;
       /**
        * A callback function you can use to customize or completely replace the way group polygons' content is drawn. The task of the function is to render the contents by invoking the appropriate drawing methods on the provided drawing context that behaves like the standard CanvasRenderingContext2D.
        * @param options all current visualization options (keys and values).
@@ -1929,53 +1935,55 @@ declare module "@carrotsearch/foamtree" {
        */
       groupContentDecorator: (
         options: Options,
-        properties: InternalProperties<D> & GeometryUtils & {
-          /**
-           * a drawing context that behaves like the standard CanvasRenderingContext2D. The decorator should call the appropriate drawing methods on this object to render the contents of the polygon.
-           *
-           * The provided object is not an actual canvas drawing context, but a buffer that records all the invocations so that FoamTree can replay them when needed without invoking the decorator, for example during zooming or panning. The groupContentDecoratorTriggering option determines when this decorator will be triggered and when the last buffered content will be "replayed" without invoking the decorator.
-           *
-           * The drawing context buffer offers a number of additional methods not available in a standard drawing context, such as drawing rounded rectangles or filling a polygon with text.
-           */
-          context: DrawingContext,
-          /**
-           * indicates whether the geometry of the group's polygon has changed since the last invocation of the decorator. If the custom layout is expensive to compute, you may want to cache it and recompute the layout only when the shapeDirty property is true.
-           *
-           * This property is meaningful only when groupContentDecoratorTriggering is onSurfaceDirty. If the triggering is done onShapeDirty, the shapeDirty property will true on all invocations of the decorator.
-           */
-          shapeDirty: boolean,
-          /**
-           * the current viewport scale. Values larger than 1 mean the viewport is zoomed-in, values smaller than 1 mean the viewport is zoomed-out, a value of 1 means the viewport is at its neutral zoom level.
-           *
-           * Using this property makes sense only when groupContentDecoratorTriggering is onSurfaceDirty, in which case you may want to vary the amount of detail drawn depending on the zoom level.
-           */
-          viewportScale: number,
-          /**
-           * Since 3.4.0 a read-only context buffer containing the drawing commands that set the path corresponding to the group's polygon. You can replay() this buffer to the drawing context, so that later you can fill(), stroke() or clip() the polygon's shape. In most cases you'll set the groupPolygonDrawn variable to false to prevent FoamTree from drawing the default polygon.
-           *
-           * Use cases of this buffer range from drawing custom fill or stroke around the group polygon to filling the polygon with a pattern or an image. In tandem with the labelContext property, you can use it to alter the default order of drawing group elements. See the Photo explorer or the SCADA dashboard demos for real-world applications.
-           */
-          polygonContext: DrawingContext,
-          /**
-           * Since 3.4.0 a read-only context buffer containing the commands that draw the default group label. You can replay() this buffer to the drawing context to actually draw the label.
-           *
-           * Use cases of this buffer range from drawing the label with custom fill or transformation to altering the default order of drawing group elements.
-           *
-           * The following example uses the labelContext property to draw slightly rotated default labels. Please note that label fitting is still performed in the non-rotated setting, so the rotation may cause some labels to stick outside of their polygons.
-           */
-          labelContext: DrawingContext,
-        },
+        properties: InternalProperties<D> &
+          GeometryUtils & {
+            /**
+             * a drawing context that behaves like the standard CanvasRenderingContext2D. The decorator should call the appropriate drawing methods on this object to render the contents of the polygon.
+             *
+             * The provided object is not an actual canvas drawing context, but a buffer that records all the invocations so that FoamTree can replay them when needed without invoking the decorator, for example during zooming or panning. The groupContentDecoratorTriggering option determines when this decorator will be triggered and when the last buffered content will be "replayed" without invoking the decorator.
+             *
+             * The drawing context buffer offers a number of additional methods not available in a standard drawing context, such as drawing rounded rectangles or filling a polygon with text.
+             */
+            context: DrawingContext;
+            /**
+             * indicates whether the geometry of the group's polygon has changed since the last invocation of the decorator. If the custom layout is expensive to compute, you may want to cache it and recompute the layout only when the shapeDirty property is true.
+             *
+             * This property is meaningful only when groupContentDecoratorTriggering is onSurfaceDirty. If the triggering is done onShapeDirty, the shapeDirty property will true on all invocations of the decorator.
+             */
+            shapeDirty: boolean;
+            /**
+             * the current viewport scale. Values larger than 1 mean the viewport is zoomed-in, values smaller than 1 mean the viewport is zoomed-out, a value of 1 means the viewport is at its neutral zoom level.
+             *
+             * Using this property makes sense only when groupContentDecoratorTriggering is onSurfaceDirty, in which case you may want to vary the amount of detail drawn depending on the zoom level.
+             */
+            viewportScale: number;
+            /**
+             * Since 3.4.0 a read-only context buffer containing the drawing commands that set the path corresponding to the group's polygon. You can replay() this buffer to the drawing context, so that later you can fill(), stroke() or clip() the polygon's shape. In most cases you'll set the groupPolygonDrawn variable to false to prevent FoamTree from drawing the default polygon.
+             *
+             * Use cases of this buffer range from drawing custom fill or stroke around the group polygon to filling the polygon with a pattern or an image. In tandem with the labelContext property, you can use it to alter the default order of drawing group elements. See the Photo explorer or the SCADA dashboard demos for real-world applications.
+             */
+            polygonContext: DrawingContext;
+            /**
+             * Since 3.4.0 a read-only context buffer containing the commands that draw the default group label. You can replay() this buffer to the drawing context to actually draw the label.
+             *
+             * Use cases of this buffer range from drawing the label with custom fill or transformation to altering the default order of drawing group elements.
+             *
+             * The following example uses the labelContext property to draw slightly rotated default labels. Please note that label fitting is still performed in the non-rotated setting, so the rotation may cause some labels to stick outside of their polygons.
+             */
+            labelContext: DrawingContext;
+          },
         variables: {
           /**
            * set to false to skip rendering of the default group's label; true by default
            */
-          groupLabelDrawn: boolean
+          groupLabelDrawn: boolean;
           /**
            * set to false to skip rendering of the polygon corresponding to the group; true by default.
            * @defaultValue true
            */
-          groupPolygonDrawn: boolean
-        }) => any
+          groupPolygonDrawn: boolean;
+        }
+      ) => any;
 
       /**
        * Determines when the groupContentDecorator will be triggered:
@@ -1993,7 +2001,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.1.0
        * @defaultValue "onLayoutDirty"
        */
-      groupContentDecoratorTriggering: 'onShapeDirty' | 'onSurfaceDirty'
+      groupContentDecoratorTriggering: 'onShapeDirty' | 'onSurfaceDirty';
       /**
        * Determines whether FoamTree should draw group labels during animation.
        *
@@ -2007,7 +2015,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "auto"
        */
-      wireframeLabelDrawing: 'always' | 'never' | 'auto'
+      wireframeLabelDrawing: 'always' | 'never' | 'auto';
       /**
        * Determines whether FoamTree should draw the group content decorations produced by the groupContentDecorator during animation.
        *
@@ -2024,51 +2032,55 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.1.0
        * @defaultValue "auto"
        */
-      wireframeContentDecorationDrawing: 'always' | 'never' | 'auto'
+      wireframeContentDecorationDrawing: 'always' | 'never' | 'auto';
       /**
        * A callback function you can use to customize how the label of a specific group is laid out, including the font, size and paddings.
        * @param options all current visualization options (keys and values).
        * @param properties an object with properties describing the group being rendered. The object will be a union of objects retrieved from the hierarchy, state and geometry options.
        * @param variables object with a number of variables this decorator can change.
        */
-      groupLabelLayoutDecorator: (options: Options, properties: InternalProperties<D>, variables: {
-        /**
-         * the font family to assume when filling the polygon with text, sans-serif by default.
-         */
-        fontFamily: string | null | undefined
-        /**
-         * Since 3.2.2 the font style (e.g. italic) to assume when filling the polygon with text, normal by default.
-         */
-        fontStyle: string | null | undefined
-        /**
-         * Since 3.2.2 the font variant (e.g. small-caps) to assume when filling the polygon with text, normal by default.
-         */
-        fontVariant: string | null | undefined
-        /**
-         * Since 3.2.2 the font weight (e.g. bold) to assume when filling the polygon with text, normal by default.
-         */
-        fontWeight: number,
-        /**
-         * the line height to assume when splitting the text into mulitple lines, 1.05 by default. Line heights smaller than 1.0 are currently not supported.
-         */
-        lineHeight: number,
-        /**
-         * the horizontal padding to apply to each line of text. The unit of this option is the font size used to render the text. Default value: 1.0.
-         */
-        horizontalPadding: number,
-        /**
-         * the vertical padding to apply to the whole block of text. The unit of this option is the font size used to render the text. Default value: 0.5
-         */
-        verticalPadding: number,
-        /**
-         * The maximum total height of the text block as a fraction of the polygon's bounding box height, 0.95 by default.
-         */
-        maxTotalTextHeight: number
-        /**
-         * the maximum font size in pixels to use for filling the text, 72 by default.
-         */
-        maxFontSize: number
-      }) => any
+      groupLabelLayoutDecorator: (
+        options: Options,
+        properties: InternalProperties<D>,
+        variables: {
+          /**
+           * the font family to assume when filling the polygon with text, sans-serif by default.
+           */
+          fontFamily: string | null | undefined;
+          /**
+           * Since 3.2.2 the font style (e.g. italic) to assume when filling the polygon with text, normal by default.
+           */
+          fontStyle: string | null | undefined;
+          /**
+           * Since 3.2.2 the font variant (e.g. small-caps) to assume when filling the polygon with text, normal by default.
+           */
+          fontVariant: string | null | undefined;
+          /**
+           * Since 3.2.2 the font weight (e.g. bold) to assume when filling the polygon with text, normal by default.
+           */
+          fontWeight: number;
+          /**
+           * the line height to assume when splitting the text into mulitple lines, 1.05 by default. Line heights smaller than 1.0 are currently not supported.
+           */
+          lineHeight: number;
+          /**
+           * the horizontal padding to apply to each line of text. The unit of this option is the font size used to render the text. Default value: 1.0.
+           */
+          horizontalPadding: number;
+          /**
+           * the vertical padding to apply to the whole block of text. The unit of this option is the font size used to render the text. Default value: 0.5
+           */
+          verticalPadding: number;
+          /**
+           * The maximum total height of the text block as a fraction of the polygon's bounding box height, 0.95 by default.
+           */
+          maxTotalTextHeight: number;
+          /**
+           * the maximum font size in pixels to use for filling the text, 72 by default.
+           */
+          maxFontSize: number;
+        }
+      ) => any;
 
       /**
        * When true, the polygon corresponding to the description group will be drawn. By default, the polygon is not drawn to make an impression that the description group is linked to the parent polygon.
@@ -2077,21 +2089,21 @@ declare module "@carrotsearch/foamtree" {
        * @defaultValue false
        * @remarks applicable only when stacking is set to flattened.
        */
-      descriptionGroupPolygonDrawn: boolean
+      descriptionGroupPolygonDrawn: boolean;
       /**
        * The maximum number of levels of closed groups FoamTree will draw. For hierarchies with more than maxGroupLevelsDrawn levels, the lower-level groups will not be drawn until the appropriate number of their parent groups get open. If your data set contains many levels of groups with many children on each level, you may want to lower the value of this option to speed up layout computation and rendering at the cost of lower amount of visible detail.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.2.0
        * @defaultValue 4
        */
-      maxGroupLevelsDrawn: number
+      maxGroupLevelsDrawn: number;
       /**
        * The maximum number of levels of group labels FoamTree will draw. For hierarchies with more than maxGroupLabelLevelsDrawn levels, only the top specified number of open groups will have their labels drawn. You can lower the default value of this option for faster rendering of the visualization at the cost of lower amount of visible detail.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.2.0
        * @defaultValue 3
        */
-      maxGroupLabelLevelsDrawn: number
+      maxGroupLabelLevelsDrawn: number;
       /**
        * The maximum number of group levels for which to compute layout when new dataObject is set. Combined with the attach method, this option can be used to improve the responsiveness of FoamTree when visualizing deeply-nested hierarchies with large numbers of groups on the top level.
        *
@@ -2100,7 +2112,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.4.5
        * @defaultValue 4
        */
-      maxGroupLevelsAttached: number
+      maxGroupLevelsAttached: number;
       /**
        * Determines how FoamTree decides whether to apply incremental visualization redraws.
        *
@@ -2119,55 +2131,55 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.4.0
        * @defaultValue "fast"
        */
-      incrementalDraw: 'fast' | 'accurate' | 'none'
+      incrementalDraw: 'fast' | 'accurate' | 'none';
       /**
        * Once animation of the visualization completes, FoamTree will redraw the final image using more detail. This option determines the amount of time that should pass after the last animation frame before the high-quality image is shown.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 300
        */
-      wireframeToFinalFadeDelay: number
+      wireframeToFinalFadeDelay: number;
       /**
        * The duration of the fading animation used to switch between the wireframe and the high-quality visualization image.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 500
        */
-      wireframeToFinalFadeDuration: number
+      wireframeToFinalFadeDuration: number;
       /**
        * The duration of the fading animation used to switch between the high-quality and the wireframe visualization image.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 200
        */
-      finalToWireframeFadeDuration: number
+      finalToWireframeFadeDuration: number;
       /**
        * The desired maximum duration of drawing one frame of animation. Decreasing the value, possibly to 0, will make the animation more smooth at the cost of lower number of details. Increasing the value will increase the number of details, but may slow down the animation.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 15
        */
-      wireframeDrawMaxDuration: number
+      wireframeDrawMaxDuration: number;
       /**
        * The desired maximum duration of a complete high-quality redraw of the visualization. Please see the Visualization rendering performance section for a detailed discussion.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 80
        */
-      finalCompleteDrawMaxDuration: number
+      finalCompleteDrawMaxDuration: number;
       /**
        * The desired maximum duration of an incremental high-quality redraw of the visualization. Please see the Visualization rendering performance section for a detailed discussion.
        * @assert (value is not empty) and (value is a number in range [0,infinity))
        * @since 3.0.0
        * @defaultValue 100
        */
-      finalIncrementalDrawMaxDuration: number
+      finalIncrementalDrawMaxDuration: number;
       /**
        * There is a bug in Android stock browsers, that affects the incremental updates of the visualization as well as cross-fading between the wireframe and final visualization images. Setting this option to true will enable a workaround for the bug. As a side effect, cross fading between the wireframe and final images will be disabled, regardless of the wireframeToFinalFadeDuration amd finalToWireframeFadeDuration options.
        *
        * The default value of this option is true on all Android browsers and false on all other browsers.
        */
-      androidStockBrowserWorkaround: boolean
+      androidStockBrowserWorkaround: boolean;
     }
 
     export interface InteractionStandardOptions {
@@ -2184,7 +2196,7 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue "builtin"
        */
-      interactionHandler: 'hammerjs' | 'builtin' | 'external'
+      interactionHandler: 'hammerjs' | 'builtin' | 'external';
     }
 
     export interface DebuggingOptions {
@@ -2194,16 +2206,16 @@ declare module "@carrotsearch/foamtree" {
        * @since 3.0.0
        * @defaultValue false
        */
-      logging: boolean
+      logging: boolean;
     }
 
-    export interface RequiredOptions {
+    export interface RequiredOptions {}
 
-    }
+    // ------ Read-only options objects ------
 
-// ------ Read-only options objects ------
-
-    export type InternalProperties<D extends DataObject> = HierarchyObject<D> & GeometryObject<D> & StateObject;
+    export type InternalProperties<D extends DataObject> = HierarchyObject<D> &
+      GeometryObject<D> &
+      StateObject;
 
     /**
      * Returns hierarchy-related information about a group. The returned object contains the following properties:
@@ -2212,46 +2224,46 @@ declare module "@carrotsearch/foamtree" {
       /**
        * a reference to the data object representing the related group
        */
-      group: D
+      group: D;
       /**
        * a reference to the data object representing the immediate parent of the group or null
        */
-      parent: D | null
+      parent: D | null;
       /**
        * the nesting level of the group. Level numbers start at 0.
        */
-      level: number
+      level: number;
       /**
        * the position of the group relative to its siblings in the input data object. Position indices start at 0.
        */
-      index: number
+      index: number;
       /**
        * the number of immediate siblings of the group
        */
-      siblingCount: number
+      siblingCount: number;
       /**
        * true if the group has any child groups
        */
-      hasChildren: boolean
+      hasChildren: boolean;
       /**
        * the weight of the group normalized to the 0..1 range in relation the group's siblings. The raw weight of the group can be retrieved from the original data model if it was present there.
        */
-      weightNormalized: number
+      weightNormalized: number;
       /**
        * @since 3.0.2
        * the position of the group relative to its siblings in the decreasing weight order, 0 index corresponds to the highest-weight group.
        */
-      indexByWeight: number
+      indexByWeight: number;
       /**
        * @since 3.4.0
        * true if the group represents the extra polygon holding group label in flattened stacking mode.
        */
-      description: boolean
+      description: boolean;
       /**
        * @since 3.3.1
        * true if the group is the attribution group.
        */
-      attribution: boolean
+      attribution: boolean;
     }
 
     /**
@@ -2261,60 +2273,60 @@ declare module "@carrotsearch/foamtree" {
       /**
        * the X coordinate of the group's polygon. The coordinate is absolute, it does not take into account the transformations resulting from zooming, panning and exposure.
        */
-      polygonCenterX: number
+      polygonCenterX: number;
       /**
        * the Y coordinate of the group's polygon, absolute
        */
-      polygonCenterY: number
+      polygonCenterY: number;
       /**
        * the area of the group's polygon, absolute
        */
-      polygonArea: number
+      polygonArea: number;
 
       /**
        * the X coordinate of the top-left corner of the group polygon's bounding box, absolute
        */
-      boxLeft: number
+      boxLeft: number;
       /**
        * the Y coordinate of the top-left corner of the group polygon's bounding box, absolute
        */
-      boxTop: number
+      boxTop: number;
       /**
        * width of the group polygon's bounding box, absolute
        */
-      boxWidth: number
+      boxWidth: number;
       /**
        * height of the group polygon's bounding box, absolute
        */
-      boxHeight: number
+      boxHeight: number;
 
       /**
        * size of the font used to draw the group's label
        */
-      labelFontSize: number
+      labelFontSize: number;
       /**
        * the X coordinate of the top-left corner of the group label's bounding box, absolute
        */
-      labelBoxLeft: number
+      labelBoxLeft: number;
       /**
        * the Y coordinate of the top-left corner of the group label's bounding box, absolute
        */
-      labelBoxTop: number
+      labelBoxTop: number;
       /**
        * width of the group label's bounding box, absolute
        */
-      labelBoxWidth: number
+      labelBoxWidth: number;
       /**
        * height of the group label's bounding box, absolute
        */
-      labelBoxHeight: number
+      labelBoxHeight: number;
 
       /**
        * an array of objects containing the X and Y coordinates of the groups polygon, in the clockwise order.
        * All polygons produced by FoamTree are convex.
        * @remarks The array is only returned if true is passed as the third parameter of the `get` method.
        */
-      polygon: Coordinate[]
+      polygon: Coordinate[];
 
       /**
        * @since 3.4.0
@@ -2328,7 +2340,7 @@ declare module "@carrotsearch/foamtree" {
        * @remarks The neighbors array is available only when the layout option is set to relaxed.
        * The array is only returned if true is passed as the third parameter of the get method.
        */
-      neighbors: (D | null)[]
+      neighbors: (D | null)[];
     }
 
     /**
@@ -2338,35 +2350,35 @@ declare module "@carrotsearch/foamtree" {
       /**
        * true if the group is currently selected
        */
-      selected: boolean
+      selected: boolean;
       /**
        * true if the group is currently hovered over
        */
-      hovered: boolean
+      hovered: boolean;
       /**
        * true if the group is currently open
        */
-      open: boolean
+      open: boolean;
       /**
        * the progress of the opening/closing animation on the 0..1 scale
        */
-      openness: number
+      openness: number;
       /**
        * true if the group is currently exposed
        */
-      exposed: boolean
+      exposed: boolean;
       /**
        * the progress of the expose animation on the 0..1 scale
        */
-      exposure: number
+      exposure: number;
       /**
        * the progress of the rollout/pullback animation on the 0..1 scale
        */
-      transitionProgress: number
+      transitionProgress: number;
       /**
        * true if the group is being drawn on the screen, also when the group is currently invisible due to zooming/panning; false when the group is not being drawn on the screen, due to, for example, too small size or because the relaxation process has not yet revealed it.
        */
-      revealed: boolean
+      revealed: boolean;
       /**
        * Since 3.2.0 This property can assume three states:
        * <ul>
@@ -2378,49 +2390,48 @@ declare module "@carrotsearch/foamtree" {
        *   <li>undefined - FoamTree has not yet attempted to compute the layout for the direct children of this group. FoamTree will attempt to compute the layout when at most maxGroupLevelsDrawn above this groups are open.</li>
        * </ul>
        */
-      browseable: boolean | undefined
+      browseable: boolean | undefined;
       /**
        * true if the group is visible in the current viewport
        */
-      visible: boolean
+      visible: boolean;
       /**
        * true if the group's label is being drawn; false if the label is not being drawn due to, for example, to small area of the polygon.
        */
-      labelDrawn: boolean
+      labelDrawn: boolean;
     }
 
     export interface ImageFormat {
-      format: 'image/png' | 'image/jpeg'
+      format: 'image/png' | 'image/jpeg';
       /**
        * if format is image/jpeg, specifies the desired quality of JPEG compression in the 0..1 range, where 1 means the highest quality and largest image data. Note that JPEG images are always opaque, even if the background color is specified as transparent. Use PNG images to handle background transparency.
        */
-      quality?: number
+      quality?: number;
       /**
        * the pixel ratio to use when producing the export image. Use a value larger than 1, such as 2 to create a higher-resolution image.
        */
-      pixelRatio?: number
+      pixelRatio?: number;
       /**
        * if specified, the background of the exported image will be filled in with the provided color. This option is especially useful when exporting images in the JPEG format.
        */
-      backgroundColor?: string
+      backgroundColor?: string;
     }
-
 
     export interface ReadOnlyOptions<D extends DataObject> {
       /**
        * Returns hierarchy-related information about a group. The returned object contains the following properties:
        */
-      hierarchy: ParametrizedOption<[IndividualGroupSelector], HierarchyObject<D>>
+      hierarchy: ParametrizedOption<[IndividualGroupSelector], HierarchyObject<D>>;
 
       /**
        * To retrieve the full geometry information, including coordinates of the polygon's vertices, pass true as the third parameter of the get method:
        */
-      geometry: ParametrizedOption<[GroupSelector, boolean], GeometryObject<D>>
+      geometry: ParametrizedOption<[GroupSelector, boolean], GeometryObject<D>>;
 
       /**
        * Returns information about the state of the group. The returned object contains the following properties:
        */
-      state: ParametrizedOption<[IndividualGroupSelector], StateObject>
+      state: ParametrizedOption<[IndividualGroupSelector], StateObject>;
 
       /**
        * Converts the the provided visualization-area-relative point coordinates to the coordinates relative to the
@@ -2447,37 +2458,42 @@ declare module "@carrotsearch/foamtree" {
        * console.log(foamtree.get("containerCoordinates", "1",
        *   { x: geometry.polygonCenterX, y: geometry.polygonCenterY }));
        */
-      containerCoordinates: ParametrizedOption<[IndividualGroupSelector, Coordinate], Coordinate>
+      containerCoordinates: ParametrizedOption<[IndividualGroupSelector, Coordinate], Coordinate>;
       /**
        * Returns the current state of the visualization as an image in the data URL format.
        */
-      imageData: ParametrizedOption<[ImageFormat], string>
-      viewport: ParametrizedOption<[], {
-        /**
-         * The horizontal offset of the viewport.
-         */
-        x: number,
-        /**
-         * The vertical offset of the viewport.
-         */
-        y: number,
-        /**
-         * The scale of the viewport. Values larger than 1.0 mean the viewport is magnified. A value of 1.0 means the viewport is in its neutral state. Values lower than 1.0 mean the viewport is demagnified, which may happen when some groups are exposed.
-         */
-        scale: number
-      }>
+      imageData: ParametrizedOption<[ImageFormat], string>;
+      viewport: ParametrizedOption<
+        [],
+        {
+          /**
+           * The horizontal offset of the viewport.
+           */
+          x: number;
+          /**
+           * The vertical offset of the viewport.
+           */
+          y: number;
+          /**
+           * The scale of the viewport. Values larger than 1.0 mean the viewport is magnified. A value of 1.0 means the viewport is in its neutral state. Values lower than 1.0 mean the viewport is demagnified, which may happen when some groups are exposed.
+           */
+          scale: number;
+        }
+      >;
       /**
        * Execution times and statistics. The details of the returned object are not guaranteed to work between versions but it may turn useful for debugging performance problems.
        */
-      times: ParametrizedOption<[], {
-        fps?: number,
-        frames?: number
-        lastFrameTime?: number
-        lastInterFrameTime?: number
-        totalTime?: number
-      }>
+      times: ParametrizedOption<
+        [],
+        {
+          fps?: number;
+          frames?: number;
+          lastFrameTime?: number;
+          lastInterFrameTime?: number;
+          totalTime?: number;
+        }
+      >;
     }
-
 
     /**
      * Used to specify the ...args and the return values of readOnlyOptions
@@ -2488,45 +2504,56 @@ declare module "@carrotsearch/foamtree" {
      * }
      */
     type ParametrizedOption<Parameters extends any[], Return> = {
-      parameters: Parameters
-      return: Return
-    }
+      parameters: Parameters;
+      return: Return;
+    };
     type Prefixes<T extends any[]> = T extends [...infer Rest, infer Last] ? Prefixes<Rest> | T : T;
 
     export type ReadOnlyOption = keyof ReadOnlyOptions<DataObject>;
-    export type ReadOnlyOptionValue<O extends ReadOnlyOption, D extends DataObject> = ReadOnlyOptions<D>[O]['return'];
-    export type ReadOnlyOptionParameters<O extends ReadOnlyOption, D extends DataObject> = Prefixes<ReadOnlyOptions<D>[O]['parameters']>;
+    export type ReadOnlyOptionValue<
+      O extends ReadOnlyOption,
+      D extends DataObject,
+    > = ReadOnlyOptions<D>[O]['return'];
+    export type ReadOnlyOptionParameters<O extends ReadOnlyOption, D extends DataObject> = Prefixes<
+      ReadOnlyOptions<D>[O]['parameters']
+    >;
 
     export interface InteractionOptions<D extends DataObject> {
       /**
        * You can use this option to obtain or alter the current selection.
        */
-      selection: ReadWriteOption<GroupSelector, { groups: D[] }>
+      selection: ReadWriteOption<GroupSelector, { groups: D[] }>;
       /**
        * You can use this option to obtain or alter the set of open groups.
        */
-      open: ReadWriteOption<GroupSelector, { groups: D[] }>
+      open: ReadWriteOption<GroupSelector, { groups: D[] }>;
       /**
        * You can use this option to obtain or alter the set of exposed groups.
        */
-      exposure: ReadWriteOption<GroupSelector, { groups: D[] }>
+      exposure: ReadWriteOption<GroupSelector, { groups: D[] }>;
     }
 
     type ReadWriteOption<Input, Output> = {
-      input: Input
-      output: Output
-    }
+      input: Input;
+      output: Output;
+    };
 
     export type InteractionOption = keyof InteractionOptions<DataObject>;
-    export type InteractionOptionSetterValue<O extends InteractionOption, D extends DataObject> = InteractionOptions<D>[O]['input'];
-    export type InteractionOptionGetterValue<O extends InteractionOption, D extends DataObject> = InteractionOptions<D>[O]['output'];
+    export type InteractionOptionSetterValue<
+      O extends InteractionOption,
+      D extends DataObject,
+    > = InteractionOptions<D>[O]['input'];
+    export type InteractionOptionGetterValue<
+      O extends InteractionOption,
+      D extends DataObject,
+    > = InteractionOptions<D>[O]['output'];
 
     export type InteractionGetterOptions<D extends DataObject> = {
-      [O in keyof InteractionOptions<D>]: InteractionOptions<D>[O]['output']
-    }
+      [O in keyof InteractionOptions<D>]: InteractionOptions<D>[O]['output'];
+    };
 
     export type InteractionSetterOptions<D extends DataObject> = {
-      [O in keyof InteractionOptions<D>]: InteractionOptions<D>[O]['input']
-    }
+      [O in keyof InteractionOptions<D>]: InteractionOptions<D>[O]['input'];
+    };
   }
 }

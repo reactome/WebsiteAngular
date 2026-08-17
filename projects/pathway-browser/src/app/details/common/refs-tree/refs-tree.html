@@ -2,17 +2,17 @@
   <!-- This is the tree node template for leaf nodes -->
   <mat-nested-tree-node *matTreeNodeDef="let node">
     <div class="custom-margin">
-      <cr-publication [publication]=node [showYear]="true"></cr-publication>
+      <cr-publication [publication]="node" [showYear]="true"></cr-publication>
     </div>
   </mat-nested-tree-node>
 
   <!-- This is the tree node template for expandable nodes -->
-  <mat-nested-tree-node *matTreeNodeDef="let node;when: hasChild" [cdkTreeNodeTypeaheadLabel]="node.name">
+  <mat-nested-tree-node *matTreeNodeDef="let node; when: hasChild" [cdkTreeNodeTypeaheadLabel]="node.name">
     <div class="mat-tree-node">
       <button mat-button matTreeNodeToggle class="button" [attr.aria-label]="'Toggle ' + node.name">
-       <span class="title">
-        <mat-icon class="ref-icon" [svgIcon]="tree.isExpanded(node) ? 'collapse' : 'expand'"></mat-icon>
-         {{ title() }}
+        <span class="title">
+          <mat-icon class="ref-icon" [svgIcon]="tree.isExpanded(node) ? 'collapse' : 'expand'"></mat-icon>
+          {{ title() }}
         </span>
       </button>
     </div>
@@ -21,7 +21,5 @@
     <div [class.refs-tree-invisible]="!tree.isExpanded(node)" role="group" class="tree-group">
       <ng-container matTreeNodeOutlet></ng-container>
     </div>
-
   </mat-nested-tree-node>
 </mat-tree>
-

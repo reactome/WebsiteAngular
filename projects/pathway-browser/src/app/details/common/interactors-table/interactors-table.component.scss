@@ -5,11 +5,12 @@
 }
 
 .table-container {
-  @include mat.button-overrides((
-    text-label-text-color: var(--on-tertiary),
-  ));
+  @include mat.button-overrides(
+    (
+      text-label-text-color: var(--on-tertiary),
+    )
+  );
 }
-
 
 .header-row {
   margin-bottom: 8px;
@@ -18,12 +19,12 @@
   top: 0;
 }
 
-.element-row, .header-row {
+.element-row,
+.header-row {
   min-height: 24px !important;
   gap: var(--gap);
   align-content: center;
 }
-
 
 // Font weight for gene name
 .element-row .mat-column-geneName {
@@ -57,7 +58,7 @@
 
   // Divider
   &::after {
-    content: "";
+    content: '';
     position: absolute;
     right: -11px;
     top: 0;
@@ -66,7 +67,6 @@
     background-color: var(--outline-variant);
   }
 }
-
 
 .mat-column-speciesName,
 .mat-column-score,
@@ -81,7 +81,6 @@
   max-width: var(--column-width);
   flex: 0 0 calc(var(--column-width));
   padding: 0 0 !important;
-
 }
 
 .mat-column-evidenceCount,
@@ -93,9 +92,8 @@
 }
 
 .mat-row {
-  gap: var(--gap)
+  gap: var(--gap);
 }
-
 
 // Score ellipse
 .score {
@@ -121,7 +119,6 @@
   }
 }
 
-
 // Buttons
 a.disabled {
   pointer-events: none;
@@ -139,7 +136,6 @@ a {
   height: 20px;
 }
 
-
 .entity-button:hover {
   background: var(--primary);
 
@@ -147,7 +143,6 @@ a {
   .search-icon {
     color: var(--primary);
   }
-
 }
 
 .evidence-button:hover {

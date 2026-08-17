@@ -1,7 +1,10 @@
 <div (click)="select()">
   @if (source().id === 'search') {
-    <div tourAnchor="search" class="dataset-card-content no-hover contrast"
-      [ngClass]="{'hover-opponent': (isSelected$ | async)}">
+    <div
+      tourAnchor="search"
+      class="dataset-card-content no-hover contrast"
+      [ngClass]="{ 'hover-opponent': (isSelected$ | async) }"
+    >
       <p class="bold no-wrap">
         @if (source().id === 'search') {
           <mat-icon style="vertical-align: middle">search</mat-icon>
@@ -12,7 +15,7 @@
       <gsa-search [datasetId]="datasetId()"></gsa-search>
     </div>
   } @else {
-    <div class="dataset-card-content" [ngClass]="{'hover-opponent': (isSelected$ | async)}">
+    <div class="dataset-card-content" [ngClass]="{ 'hover-opponent': (isSelected$ | async) }">
       <p class="bold no-wrap">
         {{ source().name }}
         @if (source().url) {
@@ -22,16 +25,23 @@
         }
       </p>
       <p>{{ source().description }}</p>
-      <div [ngClass]="{'visible': isSelected$ | async}" class="invisible">
+      <div [ngClass]="{ visible: isSelected$ | async }" class="invisible">
         <form>
           <div class="flex-container vertical gap-one align-center">
             @for (param of source().parameters; track param.name) {
-              <gsa-method-parameter class="width-hundred"
-                [parameter]="param" [infoTooltip]="false"
-                (parameterChange)="updateParam($event)"/>
+              <gsa-method-parameter
+                class="width-hundred"
+                [parameter]="param"
+                [infoTooltip]="false"
+                (parameterChange)="updateParam($event)"
+              />
             }
-            <button (mouseup)="loadData(source().parameters || [])"
-              class="primary-border primary-color" mat-stroked-button type="submit">
+            <button
+              (mouseup)="loadData(source().parameters || [])"
+              class="primary-border primary-color"
+              mat-stroked-button
+              type="submit"
+            >
               Import
             </button>
           </div>
@@ -39,8 +49,4 @@
       </div>
     </div>
   }
-
 </div>
-
-
-

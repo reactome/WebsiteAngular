@@ -1,6 +1,6 @@
-
-.container, .mat-mdc-progress-bar {
-  --mat-progress-bar-track-height: 10px ;
+.container,
+.mat-mdc-progress-bar {
+  --mat-progress-bar-track-height: 10px;
   --mat-progress-bar-active-indicator-height: var(--mat-progress-bar-track-height);
 }
 
@@ -8,10 +8,10 @@
   height: 100%;
 }
 
-.card-body, .mat-mdc-card-title {
-  padding: 0 8px
+.card-body,
+.mat-mdc-card-title {
+  padding: 0 8px;
 }
-
 
 .progress-bar {
   border-bottom-right-radius: 4px;
@@ -19,7 +19,7 @@
 }
 
 h2 {
-  margin: 10px
+  margin: 10px;
 }
 
 .big-text {
@@ -62,7 +62,6 @@ h2 {
 .flex-twelve {
   flex: 12;
 }
-
 
 .justify-end {
   justify-content: end;

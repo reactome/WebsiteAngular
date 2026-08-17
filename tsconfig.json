@@ -28,11 +28,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "typeRoots": [
-      "node_modules/@types",
-      "node_modules/reactome-cytoscape-style/types",
-      "src/types"
-    ]
+    "typeRoots": ["node_modules/@types", "node_modules/reactome-cytoscape-style/types", "src/types"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

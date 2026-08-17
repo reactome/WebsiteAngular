@@ -5,21 +5,53 @@
 // and are served at /assets/icons/reactome-subject/<route>.svg via angular.json.
 
 export interface SubjectIcon {
-  name: string;    // svgIcon name used in <mat-icon [svgIcon]="...">
+  name: string; // svgIcon name used in <mat-icon [svgIcon]="...">
   tooltip: string; // human-readable label
-  route: string;   // filename under /assets/icons/reactome-subject/<route>.svg
+  route: string; // filename under /assets/icons/reactome-subject/<route>.svg
 }
 
 const protein: SubjectIcon = { name: 'protein', tooltip: 'Protein', route: 'protein' };
-const negativeRegulation: SubjectIcon = { name: 'negative-regulation', tooltip: 'Negatively regulates Reaction', route: 'negative-regulation' };
-const positiveRegulation: SubjectIcon = { name: 'positive-regulation', tooltip: 'Positively regulates Reaction', route: 'positive-regulation' };
-const referenceGroup: SubjectIcon = { name: 'reference-group', tooltip: 'Reference group', route: 'reference-group' };
-const geneticallyModifiedResidue: SubjectIcon = { name: 'genetically-modified-residue', tooltip: 'Genetically Modified Residue', route: 'genetically-modified-residue' };
-const binding: SubjectIcon = { name: 'binding', tooltip: 'Association/Binding reaction', route: 'binding' };
-const dissociation: SubjectIcon = { name: 'dissociation', tooltip: 'Dissociation reaction', route: 'dissociation' };
+const negativeRegulation: SubjectIcon = {
+  name: 'negative-regulation',
+  tooltip: 'Negatively regulates Reaction',
+  route: 'negative-regulation',
+};
+const positiveRegulation: SubjectIcon = {
+  name: 'positive-regulation',
+  tooltip: 'Positively regulates Reaction',
+  route: 'positive-regulation',
+};
+const referenceGroup: SubjectIcon = {
+  name: 'reference-group',
+  tooltip: 'Reference group',
+  route: 'reference-group',
+};
+const geneticallyModifiedResidue: SubjectIcon = {
+  name: 'genetically-modified-residue',
+  tooltip: 'Genetically Modified Residue',
+  route: 'genetically-modified-residue',
+};
+const binding: SubjectIcon = {
+  name: 'binding',
+  tooltip: 'Association/Binding reaction',
+  route: 'binding',
+};
+const dissociation: SubjectIcon = {
+  name: 'dissociation',
+  tooltip: 'Dissociation reaction',
+  route: 'dissociation',
+};
 const omitted: SubjectIcon = { name: 'omitted', tooltip: 'Omitted reaction', route: 'omitted' };
-const transition: SubjectIcon = { name: 'transition', tooltip: 'Transition reaction', route: 'transition' };
-const uncertain: SubjectIcon = { name: 'uncertain', tooltip: 'Uncertain reaction', route: 'uncertain' };
+const transition: SubjectIcon = {
+  name: 'transition',
+  tooltip: 'Transition reaction',
+  route: 'transition',
+};
+const uncertain: SubjectIcon = {
+  name: 'uncertain',
+  tooltip: 'Uncertain reaction',
+  route: 'uncertain',
+};
 const pathway: SubjectIcon = { name: 'pathway', tooltip: 'Pathway', route: 'pathway' };
 
 export const SUBJECT_ICONS: Record<string, SubjectIcon> = {
@@ -43,14 +75,22 @@ export const SUBJECT_ICONS: Record<string, SubjectIcon> = {
   ReferenceTherapeutic: { name: 'chemical-drug', tooltip: 'Drug', route: 'chemical-drug' },
   ReferenceIsoform: protein,
   Interactor: { name: 'interactor', tooltip: 'Interactor', route: 'interactor' },
-  GenomeEncodedEntity: { name: 'genome-encoded-entity', tooltip: 'Genome Encoded Entity', route: 'genome-encoded-entity' },
+  GenomeEncodedEntity: {
+    name: 'genome-encoded-entity',
+    tooltip: 'Genome Encoded Entity',
+    route: 'genome-encoded-entity',
+  },
   ProteinDrug: { name: 'protein-drug', tooltip: 'Protein Drug', route: 'protein-drug' },
   ChemicalDrug: { name: 'chemical-drug', tooltip: 'Chemical Drug', route: 'chemical-drug' },
   Polymerisation: { name: 'binding', tooltip: 'Polymerisation', route: 'binding' },
   Depolymerisation: { name: 'dissociation', tooltip: 'Depolymerisation', route: 'dissociation' },
   FailedReaction: { name: 'failed-reaction', tooltip: 'Failed Reaction', route: 'failed-reaction' },
   CellLineagePath: pathway,
-  CatalystActivity: { name: 'catalyst-activity', tooltip: 'Catalyst Activity', route: 'catalyst-activity' },
+  CatalystActivity: {
+    name: 'catalyst-activity',
+    tooltip: 'Catalyst Activity',
+    route: 'catalyst-activity',
+  },
   NegativeRegulation: negativeRegulation,
   NegativeGeneExpressionRegulation: negativeRegulation,
   PositiveRegulation: positiveRegulation,

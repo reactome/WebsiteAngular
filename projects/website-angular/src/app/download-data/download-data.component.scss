@@ -199,7 +199,9 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
   text-decoration: none;
   color: var(--primary);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 
   :host-context(.dark) & {
     border-color: rgba(255, 255, 255, 0.1);
@@ -329,7 +331,9 @@
   color: var(--primary);
   opacity: 0.5;
   font-size: 13px;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
 
   .material-symbols-rounded {
     font-size: 18px;

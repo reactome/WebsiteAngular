@@ -74,14 +74,11 @@
       }
     }
 
-
     .icon.ehld {
       color: var(--on-primary);
     }
   }
-
 }
-
 
 .selected-expression {
   text-decoration: underline;
@@ -121,9 +118,7 @@
   @container bottom-panel (height < 200px) {
     // When the bottom panel is too small, remove sticky
     position: relative !important;
-
   }
-
 
   *:first-child {
     margin-left: 5px;
@@ -133,18 +128,21 @@
     background: transparent;
   }
 
-  @include mat.paginator-overrides((
-    form-field-container-height: 20px,
-    form-field-container-vertical-padding: 2px,
-    container-size: 32px,
-  ));
+  @include mat.paginator-overrides(
+    (
+      form-field-container-height: 20px,
+      form-field-container-vertical-padding: 2px,
+      container-size: 32px,
+    )
+  );
 
-  @include mat.slide-toggle-overrides((
-    label-text-font: var(--mat-sys-body-small-font),
-    label-text-size: var(--mat-sys-body-small-size)
-  ));
+  @include mat.slide-toggle-overrides(
+    (
+      label-text-font: var(--mat-sys-body-small-font),
+      label-text-size: var(--mat-sys-body-small-size),
+    )
+  );
 }
-
 
 mat-expansion-panel {
   overflow: clip !important; // Avoid sticky not working inside
@@ -157,7 +155,6 @@ mat-expansion-panel {
     transform: rotate(180deg);
   }
 }
-
 
 .curated {
   font-weight: bold;
@@ -190,7 +187,6 @@ mat-expansion-panel {
   }
 
   &.expression {
-
     ::ng-deep {
       .mdc-slider__track--inactive {
         background: var(--gradient);
@@ -216,41 +212,43 @@ mat-expansion-panel {
       mat-slider-visual-thumb:first-of-type {
         --expression-color: var(--expression-color-start);
         --faded-color: color-mix(in srgb, var(--expression-color) 80%, transparent);
-        @include mat.slider-overrides((
-          handle-color: var(--expression-color),
-          label-container-color: var(--expression-color),
-          focus-handle-color: var(--faded-color),
-          hover-handle-color: var(--faded-color),
-        ));
-
+        @include mat.slider-overrides(
+          (
+            handle-color: var(--expression-color),
+            label-container-color: var(--expression-color),
+            focus-handle-color: var(--faded-color),
+            hover-handle-color: var(--faded-color),
+          )
+        );
       }
 
       mat-slider-visual-thumb:last-of-type {
         --expression-color: var(--expression-color-stop);
         --faded-color: color-mix(in srgb, var(--expression-color) 80%, transparent);
-        @include mat.slider-overrides((
-          handle-color: var(--expression-color),
-          label-container-color: var(--expression-color),
-          focus-handle-color: var(--faded-color),
-          hover-handle-color: var(--faded-color),
-        ));
+        @include mat.slider-overrides(
+          (
+            handle-color: var(--expression-color),
+            label-container-color: var(--expression-color),
+            focus-handle-color: var(--faded-color),
+            hover-handle-color: var(--faded-color),
+          )
+        );
       }
     }
   }
 
-  @include mat.slider-overrides((
-    value-indicator-width: 35px,
-    value-indicator-height: 35px,
-  ));
-
-
+  @include mat.slider-overrides(
+    (
+      value-indicator-width: 35px,
+      value-indicator-height: 35px,
+    )
+  );
 }
 
 .no-wrap {
   text-wrap: nowrap;
   flex-wrap: nowrap;
 }
-
 
 .mat-mdc-menu-item .mat-icon {
   vertical-align: middle;
@@ -295,14 +293,16 @@ mat-expansion-panel {
   position: relative;
   z-index: 101;
 
+  @include mat.form-field-overrides(
+    (
+      container-height: 20px,
+      container-vertical-padding: 5px,
+    )
+  );
 
-  @include mat.form-field-overrides((
-    container-height: 20px,
-    container-vertical-padding: 5px,
-  ));
-
-  @include mat.select-overrides((
-    trigger-text-size: var(--mat-sys-body-medium-size)
-  ));
+  @include mat.select-overrides(
+    (
+      trigger-text-size: var(--mat-sys-body-medium-size),
+    )
+  );
 }
-

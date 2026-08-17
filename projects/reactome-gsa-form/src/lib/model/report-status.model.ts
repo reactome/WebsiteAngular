@@ -3,4 +3,3 @@ export interface Report {
   url: string;
   mimetype: string;
 }
-

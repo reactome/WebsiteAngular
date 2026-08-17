@@ -8,6 +8,7 @@ import {
   linkedSignal,
   signal,
   viewChild,
+  inject,
 } from '@angular/core';
 import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.model';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -111,6 +112,10 @@ declare const PDBeMolstarPlugin: any;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StructureViewerComponent {
+  private dark = inject(DarkService);
+  private http = inject(HttpClient);
+  private structure = inject(StructureService);
+
   readonly obj = input.required<ReferenceEntity | SelectableObject>();
   readonly xRefs = input.required<DatabaseIdentifier[]>();
   readonly moleculeType = input.required<string | null>();
@@ -152,22 +157,20 @@ export class StructureViewerComponent {
     if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
 
     const pdbIdentifiers = this.pdbIdentifiers();
-    if (pdbIdentifiers.length > 0)
-      result.push({ source: Source.PDB, identifiers: pdbIdentifiers });
+    if (pdbIdentifiers.length > 0) result.push({ source: Source.PDB, identifiers: pdbIdentifiers });
 
     return result;
   });
 
   chebiStructureSVGData = rxResource({
     params: this.chebiIdentifier,
-    stream: ({params}) => {
+    stream: ({ params }) => {
       const id = params;
       if (!id) return of(undefined); // NG0991: must emit
       return this.http
-        .get(
-          `https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`,
-          { responseType: 'text' }
-        )
+        .get(`https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`, {
+          responseType: 'text',
+        })
         .pipe(catchError(() => of(undefined)));
     },
   });
@@ -178,13 +181,11 @@ export class StructureViewerComponent {
 
   bestPdbStructure = rxResource({
     params: () => this.obj().identifier,
-    stream: ({params}) => {
+    stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
       return this.http
-        .get<BestStructure>(
-          `https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${id}/`
-        )
+        .get<BestStructure>(`https://www.ebi.ac.uk/pdbe/api/mappings/best_structures/${id}/`)
         .pipe(
           map((response) => {
             const value = response[id];
@@ -198,7 +199,7 @@ export class StructureViewerComponent {
 
   alphafoldSummary = rxResource({
     params: () => this.obj().identifier,
-    stream: ({params}) => {
+    stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
       return this.http.get<AlphaFoldSummary>(
@@ -214,9 +215,7 @@ export class StructureViewerComponent {
   );
 
   hasAnyStructure = computed(
-    () =>
-      this.chebiStructureSVGData.hasValue() ||
-      !!this.proteinStructureData()?.length
+    () => this.chebiStructureSVGData.hasValue() || !!this.proteinStructureData()?.length
   );
 
   bgColor = computed(() => {
@@ -224,11 +223,7 @@ export class StructureViewerComponent {
     return extract(this.reactomeStyle.properties.global.surface);
   });
 
-  constructor(
-    private dark: DarkService,
-    private http: HttpClient,
-    private structure: StructureService
-  ) {
+  constructor() {
     effect(() => {
       const [isProtein, isChemical] = [this.isProtein(), this.isChemical()];
 
@@ -308,28 +303,20 @@ export class StructureViewerComponent {
         .catch(() => this.alphaFoldEntryId.set(null));
     }
 
-    const finalOptions = selected.startsWith('AF-')
-      ? alphaFoldOptions
-      : pdbOptions;
+    const finalOptions = selected.startsWith('AF-') ? alphaFoldOptions : pdbOptions;
     viewerInstance.render(viewerRef.nativeElement, finalOptions);
   }
 
   getPDBIdentifiers(xRefs: DatabaseIdentifier[]) {
-    const bestStructure = new Map(
-      this.bestPdbStructure.value()?.map((id, index) => [id, index])
-    );
+    const bestStructure = new Map(this.bestPdbStructure.value()?.map((id, index) => [id, index]));
 
     return xRefs
       .filter((ref: DatabaseIdentifier) => ref.databaseName === Source.PDB)
       .map((ref) => ref.identifier)
       .sort((a, b) => {
         if (bestStructure) {
-          const aIndex = bestStructure.has(a)
-            ? bestStructure.get(a)!
-            : Number.MAX_SAFE_INTEGER;
-          const bIndex = bestStructure.has(b)
-            ? bestStructure.get(b)!
-            : Number.MAX_SAFE_INTEGER;
+          const aIndex = bestStructure.has(a) ? bestStructure.get(a)! : Number.MAX_SAFE_INTEGER;
+          const bIndex = bestStructure.has(b) ? bestStructure.get(b)! : Number.MAX_SAFE_INTEGER;
 
           if (aIndex !== bIndex) {
             return aIndex - bIndex;

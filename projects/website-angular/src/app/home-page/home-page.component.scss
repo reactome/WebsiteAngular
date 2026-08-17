@@ -8,7 +8,7 @@ $transition: all 0.3s ease;
 // Main container
 :host {
   display: block;
-  background-image: url("../../assets/reactome/bg-fireworks-colour.svg");
+  background-image: url('../../assets/reactome/bg-fireworks-colour.svg');
   background-size: cover;
   background-position: center;
   background-repeat: repeat-y;
@@ -28,7 +28,7 @@ $transition: all 0.3s ease;
 }
 
 :host-context(.dark) {
-  background-image: url("../../assets/reactome/bg-fireworks-mono.svg");
+  background-image: url('../../assets/reactome/bg-fireworks-mono.svg');
 }
 
 @media (max-width: 768px) {

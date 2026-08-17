@@ -65,7 +65,9 @@ test.describe('Content pages render backend data', () => {
   test('table of contents lists pathways', async ({ page }) => {
     test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/content/toc');
-    await expect(page.getByText(/Metabolism|Signal Transduction|Immune System/).first()).toBeVisible({
+    await expect(
+      page.getByText(/Metabolism|Signal Transduction|Immune System/).first()
+    ).toBeVisible({
       timeout: LOAD,
     });
   });
@@ -142,12 +144,10 @@ test.describe('In-page table of contents', () => {
         () =>
           page.evaluate(() =>
             Math.abs(
-              document
-                .getElementById('Gene_Set.2FMutation_Analysis')!
-                .getBoundingClientRect().top,
-            ),
+              document.getElementById('Gene_Set.2FMutation_Analysis')!.getBoundingClientRect().top
+            )
           ),
-        { timeout: 15_000 },
+        { timeout: 15_000 }
       )
       .toBeLessThan(150);
   });
@@ -158,5 +158,79 @@ test.describe('In-page table of contents', () => {
     await expect
       .poll(() => page.evaluate(() => window.scrollY), { timeout: 10_000 })
       .toBeGreaterThan(200);
+  });
+});
+
+test.describe('Site navigation chrome', () => {
+  // The header and the footer's links were commented out of AppComponent in May
+  // "updates to home page design/layout" -- to hide them on the curator build,
+  // which removed them from the public site too. Nothing failed, because
+  // nothing asserted they were there.
+  test('every page outside the pathway browser has the header and footer', async ({ page }) => {
+    for (const url of ['/', '/content/toc', '/documentation/userguide']) {
+      await page.goto(url);
+      await expect(page.locator('app-navigation-bar')).toHaveCount(1, { timeout: LOAD });
+
+      // Assert the menus, not just the bar: a render error in the template once
+      // left the bar present and completely empty.
+      const menus = page.locator('app-navigation-bar .nav-link');
+      await expect(menus.first()).toBeVisible({ timeout: LOAD });
+      expect(await menus.count()).toBeGreaterThanOrEqual(5);
+
+      // The footer carries the site's link directory, not just social icons.
+      expect(await page.locator('app-info-footer a').count()).toBeGreaterThan(20);
+    }
+  });
+
+  test('Data Schema sits under the Content menu', async ({ page }) => {
+    await page.goto('/');
+    const content = page
+      .locator('app-navigation-bar li.nav-item')
+      .filter({ hasText: 'Content' })
+      .first();
+    await expect(content).toBeVisible({ timeout: LOAD });
+    await content.hover();
+
+    const items = content.locator('.dropdown-link');
+    await expect(items.filter({ hasText: 'Data Schema' })).toHaveCount(1, { timeout: 10_000 });
+    await expect(items.filter({ hasText: 'Table of Contents' })).toHaveCount(1);
+  });
+
+  test('the pathway browser has no site header', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
+    await expect(page.locator('app-navigation-bar')).toHaveCount(0);
+  });
+});
+
+test.describe('Tools page', () => {
+  // The Tools page is authored content, so its links did not get updated when
+  // the Tools *menu* was fixed to use ?analysisTab=. It still pointed at
+  // /gsa/home and /PathwayBrowser/#TOOL=AT, which are old-site URLs this app
+  // never served -- the menu worked and the page it described did not.
+  test('no card points at a URL this app does not serve', async ({ page }) => {
+    await page.goto('/tools');
+    const cards = page.locator('a.module-card');
+    await expect(cards.first()).toBeVisible({ timeout: LOAD });
+
+    for (const href of await cards.evaluateAll((els) =>
+      els.map((e) => e.getAttribute('href') ?? '')
+    )) {
+      expect(href, `legacy tool URL still in the Tools page: ${href}`).not.toMatch(
+        /gsa\/home|#TOOL=/
+      );
+    }
+  });
+
+  test('"Analyse Gene Expression" opens the quantitative analysis', async ({ page }) => {
+    await page.goto('/tools');
+    await page
+      .locator('a.module-card')
+      .filter({ hasText: 'Analyse Gene Expression' })
+      .first()
+      .click();
+
+    await expect(page).toHaveURL(/analysisTab=quantitative/, { timeout: LOAD });
+    await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
   });
 });

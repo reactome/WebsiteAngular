@@ -1,12 +1,12 @@
-import {Component, computed, effect, input} from '@angular/core';
-import {MatTooltip} from "@angular/material/tooltip";
-import {TitleCasePipe} from "@angular/common";
-import {DatabaseObject} from "../../../model/graph/database-object.model";
+import { Component, computed, effect, input } from '@angular/core';
+import { MatTooltip } from '@angular/material/tooltip';
+import { TitleCasePipe } from '@angular/common';
+import { DatabaseObject } from '../../../model/graph/database-object.model';
 
 export type OntologyTerm = DatabaseObject & {
   name?: string[] | string;
-  url: string,
-  databaseName: string,
+  url: string;
+  databaseName: string;
   definition?: string;
   identifier?: string;
   accession?: string;
@@ -14,10 +14,7 @@ export type OntologyTerm = DatabaseObject & {
 
 @Component({
   selector: 'cr-ontology-term',
-  imports: [
-    MatTooltip,
-    TitleCasePipe
-  ],
+  imports: [MatTooltip, TitleCasePipe],
   templateUrl: './ontology-term.component.html',
   styleUrl: './ontology-term.component.scss',
 })
@@ -26,9 +23,12 @@ export class OntologyTermComponent {
   titleCase = input<boolean>(false);
   displayId = input<boolean>(true);
 
-  name = computed(() => (this.term().name instanceof Array ? this.term().name![0] : this.term().name as string) || this.term().displayName );
+  name = computed(
+    () =>
+      (this.term().name instanceof Array ? this.term().name![0] : (this.term().name as string)) ||
+      this.term().displayName
+  );
   id = computed(() => this.term().identifier! || this.term().accession!);
 
-  constructor() {
-  }
+  constructor() {}
 }

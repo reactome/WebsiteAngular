@@ -1,5 +1,3 @@
-import {DatabaseObject} from "../database-object.model";
+import { DatabaseObject } from '../database-object.model';
 
-export interface MetaDatabaseObject extends DatabaseObject {
-
-}
+export interface MetaDatabaseObject extends DatabaseObject {}

@@ -4,11 +4,7 @@
     @if (availableSpecies().length > 1) {
       <div class="species-filter">
         <span class="species-label">Species:</span>
-        <select
-          class="species-select"
-          [value]="selectedSpecies()"
-          (change)="onSpeciesChange($event)"
-        >
+        <select class="species-select" [value]="selectedSpecies()" (change)="onSpeciesChange($event)">
           @for (species of availableSpecies(); track species) {
             <option [value]="species">{{ species }}</option>
           }
@@ -40,7 +36,10 @@
               <ul class="tree">
                 @for (child of root.children; track child.url || child.stId; let last = $last) {
                   <ng-container
-                    *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, siblings: root.children!, isLast: last }"
+                    *ngTemplateOutlet="
+                      nodeTemplate;
+                      context: { $implicit: child, siblings: root.children!, isLast: last }
+                    "
                   />
                 }
               </ul>

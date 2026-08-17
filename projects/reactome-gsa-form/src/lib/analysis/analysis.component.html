@@ -1,11 +1,18 @@
-<div [formGroup]="analysisStep" class="container"
-     *ngrxLet="{analysisLoadingStatus: analysisLoadingStatus$, reportLoadingStatus: reportLoadingStatus$, reportsRequired: reportsRequired$, result: result$} as vm">
+<div
+  [formGroup]="analysisStep"
+  class="container"
+  *ngrxLet="{
+    analysisLoadingStatus: analysisLoadingStatus$,
+    reportLoadingStatus: reportLoadingStatus$,
+    reportsRequired: reportsRequired$,
+    result: result$,
+  } as vm"
+>
   <div class="flex-container horizontal gap-one height-hundred">
     <mat-card class="flex-one height-hundred justify-between">
       <mat-card-title>Analysis</mat-card-title>
 
       <div [ngSwitch]="vm.analysisLoadingStatus?.status" class="card-body">
-
         <div *ngSwitchCase="'pending'">
           <div class="flex-container vertical justify-center align-center gap-three">
             <div class="spinner-box">
@@ -23,7 +30,8 @@
             <div class="spinner-box">
               <mat-spinner class="padding-right-ten" diameter="100"></mat-spinner>
             </div>
-            <div class="big-text">Analysis loading: {{ vm.analysisLoadingStatus?.completed! * 100 | number: '1.0-0' }}%
+            <div class="big-text">
+              Analysis loading: {{ vm.analysisLoadingStatus?.completed! * 100 | number: '1.0-0' }}%
             </div>
             <div class="outline-color description">
               <span>{{ vm.analysisLoadingStatus?.description }}</span>
@@ -34,7 +42,8 @@
         <div *ngSwitchCase="'failed'" class="flex-container vertical align-center gap-one justify-center">
           <mat-icon fontSet="gsa" class="big-error">error</mat-icon>
           <span class="big-text failed">Oops! An error has occurred</span>
-          <span class="text failed">Analysis failed, please contact
+          <span class="text failed"
+            >Analysis failed, please contact
             <a [href]="mail(statusString$ | async)">help&#64;reactome.org</a>
             if the problem persist
           </span>
@@ -70,14 +79,15 @@
                 Start a new analysis
               </button>
             </div>
-            <br>
-            <div *ngIf="vm.reportsRequired && vm.reportLoadingStatus?.status !== 'complete'"
-                 class="outline-color description">
+            <br />
+            <div
+              *ngIf="vm.reportsRequired && vm.reportLoadingStatus?.status !== 'complete'"
+              class="outline-color description"
+            >
               Don't hesitate! You can already analyse while the reports are loading.
             </div>
           </div>
         </div>
-
       </div>
       <!--      </div>-->
       <mat-card-footer>
@@ -89,10 +99,7 @@
     <mat-card *ngIf="vm.reportsRequired" class="flex-one height-hundred justify-between">
       <mat-card-title>Report</mat-card-title>
       <div [ngSwitch]="vm.reportLoadingStatus?.status" class="card-body">
-
-        <div *ngSwitchCase=undefined class="big-text text-align">
-          Waiting for analysis results...
-        </div>
+        <div *ngSwitchCase="undefined" class="big-text text-align">Waiting for analysis results...</div>
 
         <div *ngSwitchCase="'running'">
           <div class="flex-container vertical justify-center align-center gap-three">
@@ -100,8 +107,10 @@
               <mat-spinner class="padding-right-ten" diameter="100"></mat-spinner>
             </div>
             <div class="big-text">Report loading: {{ vm.reportLoadingStatus?.completed! * 100 }}%</div>
-            <div class="outline-color description"><span
-              *ngIf="vm.reportLoadingStatus?.status === 'running'">{{ vm.reportLoadingStatus?.description }}</span>
+            <div class="outline-color description">
+              <span *ngIf="vm.reportLoadingStatus?.status === 'running'">{{
+                vm.reportLoadingStatus?.description
+              }}</span>
             </div>
           </div>
         </div>
@@ -117,39 +126,38 @@
             <div class="big-text text-align">Here are some nice reports</div>
             <div class="flex-container horizontal gap-one justify-center">
               <div *ngFor="let report of vm.reportLoadingStatus?.reports">
-                <a class="primary-color" [href]=report.url mat-stroked-button target="_blank">
+                <a class="primary-color" [href]="report.url" mat-stroked-button target="_blank">
                   <span [ngSwitch]="report.name" class="float-right">
                     <ng-template [ngSwitchCase]="'MS Excel Report (xlsx)'">
                       <div class="flex-container horizontal align-center">
                         <mat-icon class="padding-right-ten">table_view</mat-icon>
                         <span>Excel Report</span>
-                        </div>
+                      </div>
                     </ng-template>
 
                     <ng-template [ngSwitchCase]="'PDF Report'">
-                        <div class="flex-container horizontal align-center">
-                      <mat-icon class="padding-right-ten">picture_as_pdf</mat-icon>
-                       <span>{{ report.name }}</span>
-                       </div>
+                      <div class="flex-container horizontal align-center">
+                        <mat-icon class="padding-right-ten">picture_as_pdf</mat-icon>
+                        <span>{{ report.name }}</span>
+                      </div>
                     </ng-template>
                     <ng-template [ngSwitchCase]="'R Script'">
-                         <div class="flex-container horizontal align-center">
-                      <mat-icon class="padding-right-ten">code_blocks</mat-icon>
-                       <span>{{ report.name }}</span>
-                          </div>
+                      <div class="flex-container horizontal align-center">
+                        <mat-icon class="padding-right-ten">code_blocks</mat-icon>
+                        <span>{{ report.name }}</span>
+                      </div>
                     </ng-template>
                   </span>
                 </a>
               </div>
             </div>
-            <br>
+            <br />
           </div>
         </div>
-
       </div>
 
       <mat-card-footer>
-        <mat-progress-bar class="progress-bar" mode="determinate" [value]=vm.reportLoadingStatus?.completed! * 100>
+        <mat-progress-bar class="progress-bar" mode="determinate" [value]="vm.reportLoadingStatus?.completed!" * 100>
         </mat-progress-bar>
       </mat-card-footer>
     </mat-card>

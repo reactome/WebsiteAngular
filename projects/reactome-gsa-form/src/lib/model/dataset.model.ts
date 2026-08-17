@@ -1,14 +1,12 @@
-import {DataSummary} from "./load-dataset.model";
-import {CellInfo} from "reactome-table";
-
+import { DataSummary } from './load-dataset.model';
+import { CellInfo } from 'reactome-table';
 
 export class DatasetTable {
   constructor(
     public columns: string[],
-    public rows: string [],
+    public rows: string[],
     public dataset: CellInfo[][]
-  ) {
-  }
+  ) {}
 }
 
 export interface StatisticalDesign {

@@ -1,22 +1,18 @@
-import {Component, computed, input} from '@angular/core';
-import {LiteratureReference} from "../../../model/graph/publication/literature-reference.model";
-import {Publication} from "../../../model/graph/publication/publication.model";
+import { Component, computed, input } from '@angular/core';
+import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
+import { Publication } from '../../../model/graph/publication/publication.model';
 import {Person} from "../../../model/graph/person.model";
-import {SafePipe} from "../../../pipes/safe.pipe";
-import {MatIcon} from "@angular/material/icon";
-
+import { SafePipe } from '../../../pipes/safe.pipe';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'cr-publication',
   templateUrl: './publication.component.html',
-  imports: [
-    SafePipe,
-    MatIcon
-],
-  styleUrl: './publication.component.scss'
+  imports: [SafePipe, MatIcon],
+  styleUrl: './publication.component.scss',
 })
-export class PublicationComponent{
-  readonly ref = input.required<LiteratureReference | Publication>({ alias: "publication" });
+export class PublicationComponent {
+  readonly ref = input.required<LiteratureReference | Publication>({ alias: 'publication' });
   readonly showYear = input<boolean>(false);
   isExpanded = false;
 

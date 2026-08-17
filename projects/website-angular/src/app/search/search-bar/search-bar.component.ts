@@ -9,7 +9,11 @@ import {
   OnChanges,
   SimpleChanges,
   HostListener,
-  ViewChild, signal, ChangeDetectorRef, OnInit } from '@angular/core';
+  ViewChild,
+  signal,
+  ChangeDetectorRef,
+  OnInit,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
   FacetCount,
@@ -108,12 +112,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of [
-      'species',
-      'types',
-      'compartments',
-      'keywords',
-    ] as const) {
+    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
@@ -149,12 +148,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of [
-      'species',
-      'types',
-      'compartments',
-      'keywords',
-    ] as const) {
+    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
@@ -204,9 +198,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   }
 
   isAdvancedFacetSelected(category: string, value: string): boolean {
-    return (
-      this.advancedFilters[category as keyof SearchFilters] || []
-    ).includes(value);
+    return (this.advancedFilters[category as keyof SearchFilters] || []).includes(value);
   }
 
   toggleAdvancedFacet(category: string, value: string): void {
@@ -225,8 +217,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   onKeyDownArrowDown(event: KeyboardEvent): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
-      this.highlightedIndex =
-        (this.highlightedIndex + 1) % this.suggestions.length;
+      this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
       this.query = this.suggestions[this.highlightedIndex];
     }
   }
@@ -236,8 +227,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
-        (this.highlightedIndex - 1 + this.suggestions.length) %
-        this.suggestions.length;
+        (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
       this.query = this.suggestions[this.highlightedIndex];
     }
   }

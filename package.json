@@ -31,7 +31,10 @@
     "lint:fix": "eslint . --fix",
     "check:lint": "node scripts/check-lint.mjs",
     "check:dead": "node scripts/check-dead-code.mjs",
-    "dead": "knip"
+    "dead": "knip",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "private": true,
   "dependencies": {
@@ -84,8 +87,7 @@
     "swagger-ui-dist": "^5.32.0",
     "tinacms": "^3.8.1",
     "tslib": "^2.3.0",
-    "vectorious": "^6.1.12",
-    "zone.js": "~0.15.0"
+    "vectorious": "^6.1.12"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.3.1",
@@ -99,18 +101,32 @@
     "@types/cytoscape-fcose": "^2.2.4",
     "@types/lodash": "^4.14.202",
     "angular-cli-ghpages": "^2.0.1",
-    "angular-eslint": "^22.1.0",
+    "angular-eslint": "^21.4.0",
     "concat": "^1.0.3",
     "eslint": "^10.8.1",
     "fs-extra": "^11.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.0",
     "knip": "^6.32.2",
+    "lint-staged": "^17.3.0",
     "ng-packagr": "^21.2.7",
     "npm-run-all": "^4.1.1",
+    "prettier": "^3.9.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.67.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.4",
     "wait-on": "^8.0.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,html,scss,css,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,html}": [
+      "eslint --no-warn-ignored"
+    ]
   }
 }

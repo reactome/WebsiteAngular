@@ -1,4 +1,4 @@
-import { Component, inject, computed, OnInit } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { SearchBarComponent } from '../search/search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
 import { HomeWhyReactomeComponent } from './home-why-reactome/home-why-reactome.component';
@@ -8,7 +8,7 @@ import { HomeHelpComponent } from './home-help/home-help.component';
 import { HomeApiDataComponent } from './home-api-data/home-api-data.component';
 import { HomeRelatedComponent } from './home-related/home-related.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
-import { NavOption} from '../../types/link';
+import { NavOption } from '../../types/link';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { CuratorHomeShortcutsComponent } from './curator-home-shortcuts/curator-home-shortcuts.component';
 import { NavOptionsService } from '../../services/nav-options.service';
@@ -36,15 +36,11 @@ import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environ
     '[class.curator]': 'isCurator',
   },
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent {
   readonly isCurator = IS_CURATOR;
   readonly navOptions = inject(NavOptionsService).navOptions;
   /** Derived from navOptions; recomputes when the JSON resolves. */
-  readonly pathwayBrowserLink = computed(() =>
-    this.navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser');
-
-  ngOnInit() {
-    // this.loadLatestNews();
-  }
-
+  readonly pathwayBrowserLink = computed(
+    () => this.navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'
+  );
 }

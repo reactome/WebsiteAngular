@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {ExternalLink} from '../../../types/link';
+import { ExternalLink } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({
@@ -7,7 +7,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
   standalone: true,
   imports: [],
   templateUrl: './home-related.component.html',
-  styleUrl: './home-related.component.scss'
+  styleUrl: './home-related.component.scss',
 })
 export class HomeRelatedComponent implements OnInit {
   externalLinks: Record<string, ExternalLink> = {};

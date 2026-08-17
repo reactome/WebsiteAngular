@@ -1,23 +1,40 @@
-import {Component, computed, effect, ElementRef, input, linkedSignal, output, signal, viewChild} from '@angular/core';
-import {MatFormField, MatLabel, MatOption, MatSelect} from "@angular/material/select";
-import {TissueExperimentService} from "./tissue-experiment/tissue-experiment.service";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {MatTooltip} from "@angular/material/tooltip";
-import type {TissueExperiment} from "./tissue-experiment/tissue-experiment.model";
-import {AnalysisService} from "../../../services/analysis.service";
-import type {DotLottie} from "@lottiefiles/dotlottie-web";
-import {LottieService} from "../../../services/lottie.service";
-import {CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray, transferArrayItem} from "@angular/cdk/drag-drop";
-import {MatButton, MatIconButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {add} from "vectorious";
-import {animate, group, sequence, style, transition, trigger} from "@angular/animations";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+  inject,
+} from '@angular/core';
+import { MatFormField, MatLabel, MatOption, MatSelect } from '@angular/material/select';
+import { TissueExperimentService } from './tissue-experiment/tissue-experiment.service';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatTooltip } from '@angular/material/tooltip';
+import type { TissueExperiment } from './tissue-experiment/tissue-experiment.model';
+import { AnalysisService } from '../../../services/analysis.service';
+import type { DotLottie } from '@lottiefiles/dotlottie-web';
+import { LottieService } from '../../../services/lottie.service';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDropList,
+  moveItemInArray,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { add } from 'vectorious';
+import { animate, group, sequence, style, transition, trigger } from '@angular/animations';
 type Summary = TissueExperiment.Summary;
-import {MatStep, MatStepper, MatStepperNext, MatStepperPrevious} from "@angular/material/stepper";
-import {FormBuilder, FormControl} from "@angular/forms";
-import {AsyncPipe} from "@angular/common";
-import {UrlStateService} from "../../../services/url-state.service";
-import {DarkService} from "../../../services/dark.service";
+import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
+import { FormBuilder, FormControl } from '@angular/forms';
+import { AsyncPipe } from '@angular/common';
+import { UrlStateService } from '../../../services/url-state.service';
+import { DarkService } from '../../../services/dark.service';
 
 @Component({
   selector: 'cr-tissue-analysis',
@@ -36,7 +53,7 @@ import {DarkService} from "../../../services/dark.service";
     MatStep,
     MatButton,
     MatStepperNext,
-    MatStepperPrevious
+    MatStepperPrevious,
   ],
   templateUrl: './tissue-analysis.component.html',
   styleUrl: './tissue-analysis.component.scss',
@@ -49,15 +66,21 @@ import {DarkService} from "../../../services/dark.service";
           borderTop: '0',
           borderRadius: '4px',
           backgroundColor: 'var(--surface)',
-          color: 'var(--on-surface)'
+          color: 'var(--on-surface)',
         }),
         group([
-          animate('500ms linear', style({transform: 'translateX(0%)'})),
+          animate('500ms linear', style({ transform: 'translateX(0%)' })),
           sequence([
-            animate('250ms linear', style({backgroundColor: 'var(--primary)', color: 'var(--on-primary)'})),
-            animate('250ms linear', style({backgroundColor: 'var(--surface)', color: 'var(--on-surface)'}))
-          ])
-        ])
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
+            ),
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
+            ),
+          ]),
+        ]),
       ]),
       transition(':leave', [
         style({
@@ -66,21 +89,30 @@ import {DarkService} from "../../../services/dark.service";
           borderRadius: '4px',
         }),
         group([
-          animate('500ms linear', style({transform: 'translateX(100%)'})),
+          animate('500ms linear', style({ transform: 'translateX(100%)' })),
           sequence([
-            animate('250ms linear', style({backgroundColor: 'var(--primary)', color: 'var(--on-primary)'})),
-            animate('250ms linear', style({backgroundColor: 'var(--surface)', color: 'var(--on-surface)'}))
-          ])
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
+            ),
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
+            ),
+          ]),
         ]),
-        animate('1ms linear', style({
-          transform: '',
-          borderRadius: '',
-          border: '',
-          borderBottom: '',
-          backgroundColor: '',
-          color: '',
-        })),
-      ])
+        animate(
+          '1ms linear',
+          style({
+            transform: '',
+            borderRadius: '',
+            border: '',
+            borderBottom: '',
+            backgroundColor: '',
+            color: '',
+          })
+        ),
+      ]),
     ]),
     trigger('right-column', [
       transition(':enter', [
@@ -90,94 +122,117 @@ import {DarkService} from "../../../services/dark.service";
           borderTop: '0',
           borderRadius: '4px',
           backgroundColor: 'var(--surface)',
-          color: 'var(--on-surface)'
+          color: 'var(--on-surface)',
         }),
         group([
-          animate('500ms linear', style({transform: 'translateX(0%)'})),
+          animate('500ms linear', style({ transform: 'translateX(0%)' })),
           sequence([
-            animate('250ms linear', style({backgroundColor: 'var(--primary)', color: 'var(--on-primary)'})),
-            animate('250ms linear', style({backgroundColor: 'var(--surface)', color: 'var(--on-surface)'}))
-          ])
-        ])
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
+            ),
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
+            ),
+          ]),
+        ]),
       ]),
       transition(':leave', [
         style({
           transform: 'translateX(0%)',
           border: '1px solid var(--outline)',
-          borderRadius: '4px'
+          borderRadius: '4px',
         }),
         group([
-          animate('500ms linear', style({transform: 'translateX(-100%)'})),
+          animate('500ms linear', style({ transform: 'translateX(-100%)' })),
           sequence([
-            animate('250ms linear', style({backgroundColor: 'var(--primary)', color: 'var(--on-primary)'})),
-            animate('250ms linear', style({backgroundColor: 'var(--surface)', color: 'var(--on-surface)'}))
-          ])
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
+            ),
+            animate(
+              '250ms linear',
+              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
+            ),
+          ]),
         ]),
-        animate('1ms linear', style({
-          transform: '',
-          borderRadius: '',
-          border: '',
-          borderBottom: '',
-          backgroundColor: '',
-          color: '',
-        })),
-      ])
+        animate(
+          '1ms linear',
+          style({
+            transform: '',
+            borderRadius: '',
+            border: '',
+            borderBottom: '',
+            backgroundColor: '',
+            color: '',
+          })
+        ),
+      ]),
     ]),
-  ]
+  ],
 })
 export class TissueAnalysisComponent {
-  close = output<{ status: 'finished' | 'premature' }>()
-  status = input.required<'open'| 'closed'>()
+  tissue = inject(TissueExperimentService);
+  private analysis = inject(AnalysisService);
+  private state = inject(UrlStateService);
+  private lottieService = inject(LottieService);
+  private fb = inject(FormBuilder);
+  private darkService = inject(DarkService);
 
+  close = output<{ status: 'finished' | 'premature' }>();
+  status = input.required<'open' | 'closed'>();
 
-  summaries = computed(() => this.tissue.summaries.value()?.summaries || [])
-  experiment = linkedSignal(() => this.summaries().at(0))
+  summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
+  experiment = linkedSignal(() => this.summaries().at(0));
 
-  tissuesMap = computed(() => this.experiment()?.tissuesMap || {})
-  availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort())
-  selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && [])
+  tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
+  availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
+  selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
 
+  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie')
-  theme = computed(() => this.darkService.isDark() ? 'dark' : 'light')
+  selectTissuesControl: FormControl;
 
-
-  selectTissuesControl: FormControl
-
-  constructor(
-    public tissue: TissueExperimentService,
-    private analysis: AnalysisService,
-    private state: UrlStateService,
-    private lottieService: LottieService,
-    private fb: FormBuilder,
-    private darkService: DarkService,
-  ) {
-    this.selectTissuesControl = this.fb.nonNullable.control([] as string[], selected => selected.getRawValue().length === 0 ? {invalid: true} : null)
+  constructor() {
+    this.selectTissuesControl = this.fb.nonNullable.control([] as string[], (selected) =>
+      selected.getRawValue().length === 0 ? { invalid: true } : null
+    );
     effect(() => this.selectTissuesControl.setValue(this.selectedTissues()));
 
     effect(() => {
-      const [theme, analysisLaunched, analysisAvailable] = [this.theme(), this.analysisLaunched(), this.analysisAvailable()];
+      const [theme, analysisLaunched, analysisAvailable] = [
+        this.theme(),
+        this.analysisLaunched(),
+        this.analysisAvailable(),
+      ];
       if (analysisLaunched && this.lottie) {
         this.lottie.load({
           src: `assets/animations/${theme}/${analysisAvailable ? 'success' : 'loader'}-animation.json`,
           loop: !analysisAvailable,
-          autoplay: true
-        })
+          autoplay: true,
+        });
       }
     });
 
-    effect(async () => {
-      if (!this.lottieCanvas()) return;
-      this.lottie = await this.lottieService.buildLottie({
-        renderConfig: {
-          autoResize: true,
-          freezeOnOffscreen: true
-        },
-        autoplay: true,
-        loop: true,
-        canvas: this.lottieCanvas()!.nativeElement,
-        src: `assets/animations/${this.theme()}/loader-animation.json`
-      })
+    effect(() => {
+      // Kept synchronous so a rejection cannot vanish. Signals read before
+      // the first await are still tracked, because an async function runs
+      // synchronously up to that point.
+      void (async () => {
+        if (!this.lottieCanvas()) return;
+        this.lottie = await this.lottieService.buildLottie({
+          renderConfig: {
+            autoResize: true,
+            freezeOnOffscreen: true,
+          },
+          autoplay: true,
+          loop: true,
+          canvas: this.lottieCanvas()!.nativeElement,
+          src: `assets/animations/${this.theme()}/loader-animation.json`,
+        });
+      })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {
@@ -186,7 +241,7 @@ export class TissueAnalysisComponent {
   }
 
   interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
-  animate = signal(true)
+  animate = signal(true);
 
   addOne() {
     const availableTissues = this.availableTissues();
@@ -213,11 +268,11 @@ export class TissueAnalysisComponent {
   }
 
   addAll() {
-    this.interval.set(setInterval(() => this.addOne(), 20)) // stagger
+    this.interval.set(setInterval(() => this.addOne(), 20)); // stagger
   }
 
   removeAll() {
-    this.interval.set(setInterval(() => this.removeOne(), 20)) // stagger
+    this.interval.set(setInterval(() => this.removeOne(), 20)); // stagger
   }
 
   moveRight(tissue: string) {
@@ -243,11 +298,11 @@ export class TissueAnalysisComponent {
   }
 
   tooltip(summary: Summary) {
-    return `${summary.description} - ${summary.numberOfGenes} Genes - ${summary.timestamp} `
+    return `${summary.description} - ${summary.numberOfGenes} Genes - ${summary.timestamp} `;
   }
 
   drop(event: CdkDragDrop<string[]>) {
-    this.animate.set(false)
+    this.animate.set(false);
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
@@ -255,38 +310,39 @@ export class TissueAnalysisComponent {
         event.previousContainer.data,
         event.container.data,
         event.previousIndex,
-        event.currentIndex,
+        event.currentIndex
       );
     }
-    setTimeout(() => this.animate.set(true))
+    setTimeout(() => this.animate.set(true));
   }
 
   lottie?: DotLottie;
   token: string | null = null;
 
-  analysisLaunched = signal(false)
-  analysisAvailable = signal(false)
+  analysisLaunched = signal(false);
+  analysisAvailable = signal(false);
 
   analyse() {
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
-    this.analysis.analyseFromUrl(this.tissue.getSampleURL(this.experiment()!.id, {
-      omitNulls: true,
-      columns: this.selectedTissues().map(tissue => this.tissuesMap()[tissue])
-    })).subscribe((result) => {
-      this.analysisAvailable.set(true);
-      this.token = result.summary.token;
-      this.close.emit({status: 'finished'})
-    })
+    this.analysis
+      .analyseFromUrl(
+        this.tissue.getSampleURL(this.experiment()!.id, {
+          omitNulls: true,
+          columns: this.selectedTissues().map((tissue) => this.tissuesMap()[tissue]),
+        })
+      )
+      .subscribe((result) => {
+        this.analysisAvailable.set(true);
+        this.token = result.summary.token;
+        this.close.emit({ status: 'finished' });
+      });
   }
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({status: 'finished'});
+    this.close.emit({ status: 'finished' });
   }
 
-
   protected readonly Math = Math;
-
-
 }

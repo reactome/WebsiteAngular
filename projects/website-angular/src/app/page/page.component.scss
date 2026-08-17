@@ -11,7 +11,7 @@
   // on that filename hint so other link-wrapped content images (the
   // wide Benefits / Responsibilities / collaborate banners on
   // /community, etc.) keep their natural sizing.
-  ::ng-deep img[src*="_110x110"] {
+  ::ng-deep img[src*='_110x110'] {
     display: block;
     max-width: 110px;
     max-height: 110px;
@@ -21,9 +21,9 @@
   // Embedded YouTube / Vimeo / similar iframes default to ~300x150
   // because the source HTML doesn't set width/height. Make them fill
   // the content column with a 16:9 aspect ratio.
-  ::ng-deep iframe[src*="youtube.com"],
-  ::ng-deep iframe[src*="youtu.be"],
-  ::ng-deep iframe[src*="vimeo.com"] {
+  ::ng-deep iframe[src*='youtube.com'],
+  ::ng-deep iframe[src*='youtu.be'],
+  ::ng-deep iframe[src*='vimeo.com'] {
     display: block;
     width: 100%;
     aspect-ratio: 16 / 9;

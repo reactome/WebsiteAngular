@@ -4,7 +4,12 @@ import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentDataService, Contributor } from '../../../services/content-data.service';
 
-type SortKey = 'displayName' | 'authoredPathways' | 'reviewedPathways' | 'authoredReactions' | 'reviewedReactions';
+type SortKey =
+  | 'displayName'
+  | 'authoredPathways'
+  | 'reviewedPathways'
+  | 'authoredReactions'
+  | 'reviewedReactions';
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 50;
@@ -14,9 +19,11 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   selector: 'app-contributors',
   imports: [PageLayoutComponent],
   templateUrl: './contributors.component.html',
-  styleUrl: './contributors.component.scss'
+  styleUrl: './contributors.component.scss',
 })
 export class ContributorsComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
@@ -38,17 +45,13 @@ export class ContributorsComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  constructor(private contentDataService: ContentDataService) {}
-
   ngOnInit() {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.activeLetter = '';
-      this.applyFilter();
-    });
+    this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.activeLetter = '';
+        this.applyFilter();
+      });
 
     this.loadData();
   }
@@ -72,7 +75,7 @@ export class ContributorsComponent implements OnInit, OnDestroy {
         this.error = true;
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
@@ -105,14 +108,15 @@ export class ContributorsComponent implements OnInit, OnDestroy {
 
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
-      results = results.filter(c =>
-        c.person.displayName?.toLowerCase().includes(q) ||
-        c.person.surname?.toLowerCase().includes(q) ||
-        c.person.firstname?.toLowerCase().includes(q) ||
-        c.person.orcidId?.toLowerCase().includes(q)
+      results = results.filter(
+        (c) =>
+          c.person.displayName?.toLowerCase().includes(q) ||
+          c.person.surname?.toLowerCase().includes(q) ||
+          c.person.firstname?.toLowerCase().includes(q) ||
+          c.person.orcidId?.toLowerCase().includes(q)
       );
     } else if (this.activeLetter) {
-      results = results.filter(c => {
+      results = results.filter((c) => {
         const surname = c.person.surname || c.person.displayName || '';
         return surname.toUpperCase().startsWith(this.activeLetter);
       });

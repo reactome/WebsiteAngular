@@ -1,5 +1,3 @@
-import {PositiveRegulation} from "./positive-regulation.model";
+import { PositiveRegulation } from './positive-regulation.model';
 
-export interface PositiveGeneExpressionRegulation extends PositiveRegulation {
-
-}
+export interface PositiveGeneExpressionRegulation extends PositiveRegulation {}

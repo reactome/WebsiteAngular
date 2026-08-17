@@ -1,16 +1,16 @@
-import {PhysicalEntity} from "./physical-entity.model";
-import {ReferenceEntity} from "../reference-entity/reference-entity.model";
-import {Taxon} from "../taxon.model";
-import type {Relationship} from "../relationship.model";
+import { PhysicalEntity } from './physical-entity.model';
+import { ReferenceEntity } from '../reference-entity/reference-entity.model';
+import { Taxon } from '../taxon.model';
+import type { Relationship } from '../relationship.model';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
-import {ReferenceDatabase} from "../reference-database.model";
-import {DatabaseIdentifier} from "../database-identifier.model";
-import {ReferenceGeneProduct} from "../reference-entity/reference-gene-product.model";
-import {ReferenceRNASequence} from "../reference-entity/reference-rna-sequence.model";
-import {ReferenceDNASequence} from "../reference-entity/reference-dna-sequence.model";
+import { ReferenceDatabase } from '../reference-database.model';
+import { DatabaseIdentifier } from '../database-identifier.model';
+import { ReferenceGeneProduct } from '../reference-entity/reference-gene-product.model';
+import { ReferenceRNASequence } from '../reference-entity/reference-rna-sequence.model';
+import { ReferenceDNASequence } from '../reference-entity/reference-dna-sequence.model';
 
 export interface SummaryEntity extends PhysicalEntity {
-  summarisedEntities: PhysicalEntity[]
+  summarisedEntities: PhysicalEntity[];
 
   moleculeType: string;
   databaseName: string;
@@ -42,13 +42,13 @@ export interface SummaryEntity extends PhysicalEntity {
   isoformParent?: ReferenceGeneProduct[];
 
   // Summarised properties
-  referenceType: string
-  referenceEntity: ReferenceEntity
+  referenceType: string;
+  referenceEntity: ReferenceEntity;
 
   // EWAS specific
   endCoordinate?: number;
   startCoordinate?: number;
   hasModifiedResidue?: HasModifiedResidue[];
 
-  schemaClass: "SummaryEntity"
+  schemaClass: 'SummaryEntity';
 }

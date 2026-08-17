@@ -99,10 +99,9 @@ export class ContentDataService {
   // which is worse than failing to load. So bound the request and retry once,
   // but never fall back to another host.
   private fetchModel<T>(path: string): Observable<T> {
-    return this.http.get<T>(`${this.schemaUrl}/${path}`).pipe(
-      timeout(8000),
-      retry({ count: 1, delay: () => timer(500) })
-    );
+    return this.http
+      .get<T>(`${this.schemaUrl}/${path}`)
+      .pipe(timeout(8000), retry({ count: 1, delay: () => timer(500) }));
   }
 
   // ContentPageController is mapped at /data with paths /content/toc,
@@ -126,15 +125,11 @@ export class ContentDataService {
   }
 
   getSchemaAttributes(className: string): Observable<SchemaAttribute[]> {
-    return this.http.get<SchemaAttribute[]>(
-      `${this.schemaUrl}/${className}/attributes`
-    );
+    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/attributes`);
   }
 
   getSchemaReferrals(className: string): Observable<SchemaAttribute[]> {
-    return this.http.get<SchemaAttribute[]>(
-      `${this.schemaUrl}/${className}/referrals`
-    );
+    return this.http.get<SchemaAttribute[]>(`${this.schemaUrl}/${className}/referrals`);
   }
 
   getSchemaEntries(
@@ -155,13 +150,10 @@ export class ContentDataService {
   }
 
   getInstance(id: string | number): Observable<any> {
-    return this.http.get<any>(
-      `${this.baseUrl}/query/enhanced/${id}`);
+    return this.http.get<any>(`${this.baseUrl}/query/enhanced/${id}`);
   }
 
   getInstanceReferrers(id: string | number): Observable<InstanceReferrals[]> {
-    return this.http.get<InstanceReferrals[]>(
-      `${this.baseUrl}/instance/${id}/referrers`
-    );
+    return this.http.get<InstanceReferrals[]>(`${this.baseUrl}/instance/${id}/referrers`);
   }
 }

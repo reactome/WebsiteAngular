@@ -93,7 +93,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .topic-section {
@@ -305,7 +307,9 @@ td.doc-links {
   border-radius: 6px;
   color: var(--primary);
   opacity: 0.5;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
   text-decoration: none;
 
   .material-symbols-rounded {

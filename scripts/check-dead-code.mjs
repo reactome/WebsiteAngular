@@ -75,7 +75,9 @@ try {
 
 if (total > baseline) {
   console.error(`Unreachable code went up: ${total}, baseline is ${baseline}.\n${summary}\n`);
-  console.error('Run `npx knip` for the list. Most likely you added a file or export nothing uses.');
+  console.error(
+    'Run `npx knip` for the list. Most likely you added a file or export nothing uses.'
+  );
   process.exit(1);
 }
 

@@ -66,12 +66,11 @@ module.exports = tseslint.config(
       // Already clean -- left as errors by the recommended sets.
       'no-empty': ['error', { allowEmptyCatch: true }],
 
-      // Existing violations, ratcheted. The first two are the ones worth
-      // paying down soonest: a promise nobody awaits swallows its own failure,
-      // which is how a broken request renders an empty page with a clean
-      // console.
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-misused-promises': 'warn',
+      // Now clean, so promoted to error: a promise nobody handles swallows its
+      // own failure, which is how a broken request renders an empty page with a
+      // clean console. All 58 were dealt with, so a new one is a regression.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
@@ -84,12 +83,14 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-require-imports': 'warn',
       'prefer-const': 'warn',
       'no-useless-escape': 'warn',
-      // Modernisation, not defects: constructor injection still works.
-      '@angular-eslint/prefer-inject': 'warn',
+      // Migrated in full with ng generate @angular/core:inject-migration, so
+      // any new constructor injection is a step backwards.
+      '@angular-eslint/prefer-inject': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
-      '@angular-eslint/no-empty-lifecycle-method': 'warn',
+      // All twelve removed, so a new empty hook is a new mistake.
+      '@angular-eslint/no-empty-lifecycle-method': 'error',
       '@angular-eslint/use-lifecycle-interface': 'warn',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-wrapper-object-types': 'warn',

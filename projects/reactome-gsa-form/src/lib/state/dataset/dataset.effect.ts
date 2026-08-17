@@ -1,5 +1,5 @@
-import {Injectable} from "@angular/core";
-import {Actions, createEffect, ofType} from "@ngrx/effects";
+import { Injectable, inject } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
   catchError,
   combineLatestWith,
@@ -12,34 +12,37 @@ import {
   of,
   switchMap,
   tap,
-  timer, withLatestFrom
-} from "rxjs";
-import {datasetActions} from "./dataset.actions";
-import {LoadDatasetService} from "../../services/load-dataset.service";
-import {MatDialog, MatDialogRef} from "@angular/material/dialog";
-import {Store, Action} from '@ngrx/store';
-import {methodFeature} from "../method/method.selector";
-import {
-  LoadingProgressComponent
-} from "../../dataset-form/datasets/select-dataset/loading-progress/loading-progress.component";
-import {TourUtilsService} from "../../services/tour-utils.service";
-
+  timer,
+  withLatestFrom,
+} from 'rxjs';
+import { datasetActions } from './dataset.actions';
+import { LoadDatasetService } from '../../services/load-dataset.service';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Store, Action } from '@ngrx/store';
+import { methodFeature } from '../method/method.selector';
+import { LoadingProgressComponent } from '../../dataset-form/datasets/select-dataset/loading-progress/loading-progress.component';
+import { TourUtilsService } from '../../services/tour-utils.service';
 
 @Injectable()
 export class DatasetEffects {
+  private actions$ = inject(Actions);
+  private dialog = inject(MatDialog);
+  private loadDatasetService = inject(LoadDatasetService);
+  private store = inject(Store);
+  private tour = inject(TourUtilsService);
 
   upload = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.upload),
-      tap(({id}) => {
+      tap(({ id }) => {
         this.dialogRef = this.dialog.open(LoadingProgressComponent, {
           width: '50%',
           height: '50%',
           disableClose: true,
-          data: {datasetId: id},
+          data: { datasetId: id },
         });
       }),
-      exhaustMap(({file, typeId, id}) =>
+      exhaustMap(({ file, typeId, id }) =>
         this.loadDatasetService.uploadFile(file).pipe(
           map((uploadData) =>
             datasetActions.uploadComplete({
@@ -47,26 +50,26 @@ export class DatasetEffects {
               uploadData,
               typeId,
               name: file.name.substring(0, file.name.lastIndexOf('.')),
-            }),
+            })
           ),
-          catchError((error) => of(datasetActions.uploadError({error, id}))),
-        ),
-      ),
-    ),
+          catchError((error) => of(datasetActions.uploadError({ error, id })))
+        )
+      )
+    )
   );
 
   uploadRibo = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.uploadRibo),
-      tap(({id}) => {
+      tap(({ id }) => {
         this.dialogRef = this.dialog.open(LoadingProgressComponent, {
           width: '50%',
           height: '50%',
           disableClose: true,
-          data: {datasetId: id},
+          data: { datasetId: id },
         });
       }),
-      exhaustMap(({fileRibo, fileRNA, typeId, id}) =>
+      exhaustMap(({ fileRibo, fileRNA, typeId, id }) =>
         this.loadDatasetService.uploadRiboFiles(fileRNA, fileRibo).pipe(
           map((uploadData) =>
             datasetActions.uploadComplete({
@@ -76,17 +79,16 @@ export class DatasetEffects {
               name: fileRNA.name.substring(0, fileRNA.name.lastIndexOf('.')),
             })
           ),
-          catchError((error) => of(datasetActions.uploadError({error, id})))
-        ),
-      ),
-    ),
+          catchError((error) => of(datasetActions.uploadError({ error, id })))
+        )
+      )
+    )
   );
-
 
   uploadCompleteToSummary = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.uploadComplete),
-      map(({uploadData, name, typeId, id}) =>
+      map(({ uploadData, name, typeId, id }) =>
         datasetActions.setSummary({
           id,
           summary: {
@@ -95,140 +97,136 @@ export class DatasetEffects {
             type: typeId,
             sample_ids: uploadData.sample_names,
           },
-        }),
-      ),
-    ),
+        })
+      )
+    )
   );
 
   load = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.load),
-      tap(({id}) => {
+      tap(({ id }) => {
         this.dialogRef = this.dialog.open(LoadingProgressComponent, {
           width: '50%',
           height: '50%',
           disableClose: true,
-          data: {datasetId: id},
+          data: { datasetId: id },
         });
       }),
-      exhaustMap(({resourceId, parameters, id}) =>
+      exhaustMap(({ resourceId, parameters, id }) =>
         this.loadDatasetService.submitLoadDataset(resourceId, parameters).pipe(
-          map((loadingId) => datasetActions.loadSubmitted({loadingId, id})),
-          catchError((error) =>
-            of(datasetActions.loadSubmittedError({error, id})),
-          ),
-        ),
-      ),
-    ),
+          map((loadingId) => datasetActions.loadSubmitted({ loadingId, id })),
+          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+        )
+      )
+    )
   );
 
   loadSubmitted = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.loadSubmitted),
       delay(500),
-      map(({loadingId, id}) => datasetActions.getLoadStatus({loadingId, id}),
-      ),
-    ),
+      map(({ loadingId, id }) => datasetActions.getLoadStatus({ loadingId, id }))
+    )
   );
 
   loadStatus = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.getLoadStatus),
-      switchMap(({loadingId, id}) =>
+      switchMap(({ loadingId, id }) =>
         this.loadDatasetService.getLoadingStatus(loadingId).pipe(
           mergeMap((loadingStatus) => {
-            const actions: Action<any>[] = [datasetActions.setLoadStatus({loadingStatus, id})];
+            const actions: Action<any>[] = [datasetActions.setLoadStatus({ loadingStatus, id })];
             if (loadingStatus.status === 'running')
-              actions.push(datasetActions.getLoadStatus({loadingId, id}));
+              actions.push(datasetActions.getLoadStatus({ loadingId, id }));
             else if (loadingStatus.status === 'failed') {
-              actions.push(datasetActions.getLoadStatusError({error: loadingStatus.reports, id}));
+              actions.push(datasetActions.getLoadStatusError({ error: loadingStatus.reports, id }));
             }
             return actions;
           }),
           delayWhen((action) =>
-            action.type === '[GSA Dataset] get load status'
-              ? timer(500)
-              : timer(0),
+            action.type === '[GSA Dataset] get load status' ? timer(500) : timer(0)
           ),
-          catchError((error) => of(datasetActions.getLoadStatusError({error, id})),
-          ),
-        ),
-      ),
-    ),
+          catchError((error) => of(datasetActions.getLoadStatusError({ error, id })))
+        )
+      )
+    )
   );
 
-  loadError = createEffect(() =>
-    this.actions$.pipe(
-      ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
-      delay(2000),
-      tap(() => this.dialogRef?.close())
-    ), {dispatch: false}
+  loadError = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
+        delay(2000),
+        tap(() => this.dialogRef?.close())
+      ),
+    { dispatch: false }
   );
 
   loadingToSummary = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setLoadStatus),
-      filter(({loadingStatus}) => loadingStatus.status === 'complete'),
-      map(({loadingStatus, id}) =>
+      filter(({ loadingStatus }) => loadingStatus.status === 'complete'),
+      map(({ loadingStatus, id }) =>
         datasetActions.getSummary({
           datasetId: loadingStatus.dataset_id!,
           id,
-        }),
-      ),
-    ),
+        })
+      )
+    )
   );
 
   getSummary = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.getSummary),
-      exhaustMap(({datasetId, id}) =>
+      exhaustMap(({ datasetId, id }) =>
         this.loadDatasetService.getSummary(datasetId).pipe(
-          map((summary) => datasetActions.setSummary({summary, id})),
-          catchError((error) => of(datasetActions.loadSubmittedError({error, id}))),
-        ),
-      ),
-    ),
+          map((summary) => datasetActions.setSummary({ summary, id })),
+          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+        )
+      )
+    )
   );
 
   summaryToAnnotate = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setSummary),
       tap(() => setTimeout(() => this.dialogRef?.close(), 500)),
-      map(({summary, id}) => {
-        setTimeout(() => this.tour.paused ? this.tour.resume() : null, 1000);
+      map(({ summary, id }) => {
+        setTimeout(() => (this.tour.paused ? this.tour.resume() : null), 1000);
         const table: string[][] = !summary.sample_metadata
           ? [[''], ...summary.sample_ids.map((sampleId) => [sampleId])]
           : [
-            ['', ...summary.sample_metadata.map((col) => col.name)],
-            ...summary.sample_ids.map((sampleId, i) => [
-              sampleId,
-              ...summary.sample_metadata!.map((column) => column.values[i]),
-            ]),
-          ];
-        return datasetActions.setAnnotations({annotations: table, id});
-      }),
-    ),
+              ['', ...summary.sample_metadata.map((col) => col.name)],
+              ...summary.sample_ids.map((sampleId, i) => [
+                sampleId,
+                ...summary.sample_metadata!.map((column) => column.values[i]),
+              ]),
+            ];
+        return datasetActions.setAnnotations({ annotations: table, id });
+      })
+    )
   );
 
   initStatisticalDesign = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setAnnotations),
-      map(({id}) => datasetActions.initStatisticalDesign({id})),
-    ),
+      map(({ id }) => datasetActions.initStatisticalDesign({ id }))
+    )
   );
 
   initStatsToInitCovs = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.initStatisticalDesign),
-      map(({id}) => datasetActions.initCovariances({id})),
-    ),
+      map(({ id }) => datasetActions.initCovariances({ id }))
+    )
   );
 
   setAnalysisGroupToInitCovs = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setAnalysisGroup),
-      map(({id}) => datasetActions.initCovariances({id})),
-    ),
+      map(({ id }) => datasetActions.initCovariances({ id }))
+    )
   );
 
   initTerapadogCovariates = createEffect(() =>
@@ -236,8 +234,8 @@ export class DatasetEffects {
       ofType(datasetActions.initCovariances),
       withLatestFrom(this.store.select(methodFeature.selectSelectedMethod)),
       filter(([_, method]) => method?.name.toLowerCase() === 'terapadog'),
-      map(([{id}, _]) =>
-        datasetActions.lockCovariateValue({group: 'SeqType', value: true, locked: true, id})
+      map(([{ id }, _]) =>
+        datasetActions.lockCovariateValue({ group: 'SeqType', value: true, locked: true, id })
       )
     )
   );
@@ -246,27 +244,20 @@ export class DatasetEffects {
     this.actions$.pipe(
       ofType(datasetActions.setSummary),
       combineLatestWith(this.store.select(methodFeature.selectSelectedMethod)),
-      map(([summary, method]) => datasetActions.setSummaryParameters({
-        id: summary.id,
-        parameters: (method?.parameters
-          .filter((param) => param.scope === 'dataset')
-          .map(param => ({
-            ...param,
-            default: param.value // Method param is the default value for the dataset param
-          })) || [])
-      })),
+      map(([summary, method]) =>
+        datasetActions.setSummaryParameters({
+          id: summary.id,
+          parameters:
+            method?.parameters
+              .filter((param) => param.scope === 'dataset')
+              .map((param) => ({
+                ...param,
+                default: param.value, // Method param is the default value for the dataset param
+              })) || [],
+        })
+      )
     )
   );
 
-
   dialogRef?: MatDialogRef<LoadingProgressComponent>;
-
-  constructor(
-    private actions$: Actions,
-    private dialog: MatDialog,
-    private loadDatasetService: LoadDatasetService,
-    private store: Store,
-    private tour: TourUtilsService
-  ) {
-  }
 }

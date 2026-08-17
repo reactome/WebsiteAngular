@@ -4,8 +4,6 @@ import { Component } from '@angular/core';
   selector: 'cr-vertical-tab',
   imports: [],
   templateUrl: './vertical-tab.component.html',
-  styleUrl: './vertical-tab.component.scss'
+  styleUrl: './vertical-tab.component.scss',
 })
-export class VerticalTabComponent {
-
-}
+export class VerticalTabComponent {}

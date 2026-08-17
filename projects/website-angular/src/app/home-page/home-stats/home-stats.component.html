@@ -1,35 +1,36 @@
 <h1 class="stat-header">
-    Version {{ version }} Released on {{ releaseDate.toLocaleDateString('en-us', {weekday: undefined, year: 'numeric', month: 'long', day: 'numeric'}) }}
+  Version {{ version }} Released on
+  {{ releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' }) }}
 </h1>
 <app-carousel class="stats-container">
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">accessibility</mat-icon>
-        <span>{{ formatNumber(stats.human_pathways) }}</span>
-        <span>Human Pathways</span>
-    </div>
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">science</mat-icon>
-        <span>{{ formatNumber(stats.reactions) }}</span>
-        <span>Reactions</span>
-    </div>
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">share</mat-icon>
-        <span>{{ formatNumber(stats.proteins) }}</span>
-        <span>Proteins</span>
-    </div>
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">snowing</mat-icon>
-        <span>{{ formatNumber(stats.small_molecules) }}</span>
-        <span>Small Molecules</span>
-    </div>
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">local_hospital</mat-icon>
-        <span>{{ formatNumber(stats.drugs) }}</span>
-        <span>Drugs</span>
-    </div>
-    <div class="stat-item">
-        <mat-icon class="stat-item-icon">book</mat-icon>
-        <span>{{ formatNumber(stats.references) }}</span>
-        <span>Literature References</span>
-    </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">accessibility</mat-icon>
+    <span>{{ formatNumber(stats.human_pathways) }}</span>
+    <span>Human Pathways</span>
+  </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">science</mat-icon>
+    <span>{{ formatNumber(stats.reactions) }}</span>
+    <span>Reactions</span>
+  </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">share</mat-icon>
+    <span>{{ formatNumber(stats.proteins) }}</span>
+    <span>Proteins</span>
+  </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">snowing</mat-icon>
+    <span>{{ formatNumber(stats.small_molecules) }}</span>
+    <span>Small Molecules</span>
+  </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">local_hospital</mat-icon>
+    <span>{{ formatNumber(stats.drugs) }}</span>
+    <span>Drugs</span>
+  </div>
+  <div class="stat-item">
+    <mat-icon class="stat-item-icon">book</mat-icon>
+    <span>{{ formatNumber(stats.references) }}</span>
+    <span>Literature References</span>
+  </div>
 </app-carousel>

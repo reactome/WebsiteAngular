@@ -424,8 +424,7 @@ export const INFO_PANELS: Record<string, string> = {
     'Mapping of BioModels database entries to Reactome pathways. Each line contains a BioModels ID and the corresponding Reactome pathway stable identifier.',
   reactionPmids:
     'Lists all Reactome reactions along with associated PubMed identifiers (PMIDs) that serve as evidence references for each reaction.',
-  omim:
-    'Mapping of Reactome pathways and reactions to OMIM (Online Mendelian Inheritance in Man) disease identifiers.',
+  omim: 'Mapping of Reactome pathways and reactions to OMIM (Online Mendelian Inheritance in Man) disease identifiers.',
   proteinRole:
     'Details the role (input, output, catalyst, regulator) of each protein in Reactome reactions, useful for network analysis.',
   diseaseVariant:

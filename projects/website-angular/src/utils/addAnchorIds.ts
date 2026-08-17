@@ -26,7 +26,7 @@ function mediaWikiAnchor(text: string): string {
     .replace(/[^A-Za-z0-9_\-.:]/g, (ch) =>
       Array.from(new TextEncoder().encode(ch))
         .map((b) => '.' + b.toString(16).toUpperCase().padStart(2, '0'))
-        .join(''),
+        .join('')
     );
 }
 
@@ -64,26 +64,23 @@ export default function addAnchorIds(html: string): string {
   for (const m of out.matchAll(/href="#([^"]+)"/g)) fragments.add(m[1]);
   if (fragments.size === 0) return out;
 
-  out = out.replace(
-    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
-    (full, tag, attrs, inner) => {
-      // Skip headings that already have an id (pass 1 added one).
-      if (attrs && /\bid=/.test(attrs)) return full;
-      // Skip headings whose content is itself a link (pass 1 would have
-      // handled them if the link target matched).
-      // Use the heading's plain text to compute the slug.
-      const text = inner.replace(/<[^>]+>/g, '').trim();
-      if (!text) return full;
-      // Try the plain slug first, then the MediaWiki encoding, so a page can
-      // mix both conventions.
-      const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
-        (s) => fragments.has(s) && !assigned.has(s),
-      );
-      if (!slug) return full;
-      assigned.add(slug);
-      return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
-    },
-  );
+  out = out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
+    // Skip headings that already have an id (pass 1 added one).
+    if (attrs && /\bid=/.test(attrs)) return full;
+    // Skip headings whose content is itself a link (pass 1 would have
+    // handled them if the link target matched).
+    // Use the heading's plain text to compute the slug.
+    const text = inner.replace(/<[^>]+>/g, '').trim();
+    if (!text) return full;
+    // Try the plain slug first, then the MediaWiki encoding, so a page can
+    // mix both conventions.
+    const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
+      (s) => fragments.has(s) && !assigned.has(s)
+    );
+    if (!slug) return full;
+    assigned.add(slug);
+    return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
+  });
 
   // Pass 3: fragments that still resolve to nothing.
   //
@@ -104,7 +101,10 @@ export default function addAnchorIds(html: string): string {
   const loose = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
   const linkText = new Map<string, string>();
   for (const m of out.matchAll(/<a\s[^>]*href="#([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)) {
-    const text = m[2].replace(/<[^>]+>/g, '').replace(/^[\d.\s]+/, '').trim();
+    const text = m[2]
+      .replace(/<[^>]+>/g, '')
+      .replace(/^[\d.\s]+/, '')
+      .trim();
     if (text && !linkText.has(m[1])) linkText.set(m[1], text);
   }
 
@@ -117,15 +117,12 @@ export default function addAnchorIds(html: string): string {
     }
   }
 
-  return out.replace(
-    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
-    (full, tag, attrs, inner) => {
-      if (attrs && /\bid=/.test(attrs)) return full;
-      const text = inner.replace(/<[^>]+>/g, '').trim();
-      const frag = text && wanted.get(loose(text));
-      if (!frag || assigned.has(frag)) return full;
-      assigned.add(frag);
-      return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
-    },
-  );
+  return out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
+    if (attrs && /\bid=/.test(attrs)) return full;
+    const text = inner.replace(/<[^>]+>/g, '').trim();
+    const frag = text && wanted.get(loose(text));
+    if (!frag || assigned.has(frag)) return full;
+    assigned.add(frag);
+    return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
+  });
 }

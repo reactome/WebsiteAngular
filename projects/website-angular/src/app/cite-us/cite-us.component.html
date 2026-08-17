@@ -1,12 +1,8 @@
-<div
-  class="cite-button"
-  (click)="openCitationDialog()"
-  (mouseenter)="showText = true"
-  (mouseleave)="showText = false"
->
+<div class="cite-button" (click)="openCitationDialog()" (mouseenter)="showText = true" (mouseleave)="showText = false">
   @if (showText === false) {
-  <mat-icon class="cite-icon">format_quote</mat-icon>
-  } @if (showText === true) {
-  <span class="cite-text"> Cite Us!</span>
+    <mat-icon class="cite-icon">format_quote</mat-icon>
+  }
+  @if (showText === true) {
+    <span class="cite-text"> Cite Us!</span>
   }
 </div>
