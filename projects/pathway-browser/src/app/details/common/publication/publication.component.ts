@@ -4,6 +4,7 @@ import { Publication } from '../../../model/graph/publication/publication.model'
 import { Person } from '../../../model/graph/person.model';
 import { SafePipe } from '../../../pipes/safe.pipe';
 import { MatIcon } from '@angular/material/icon';
+import { CONTENT_DETAIL } from '../../../../environments/environment';
 
 @Component({
   selector: 'cr-publication',
@@ -12,6 +13,11 @@ import { MatIcon } from '@angular/material/icon';
   styleUrl: './publication.component.scss',
 })
 export class PublicationComponent {
+  // Absolute, host-aware detail URL, the same constant object-tree uses.
+  // The old commented-out markup referenced a bare `environment`, which this
+  // component never had -- the hrefs came out as "undefined/content/detail/...".
+  readonly contentDetail = CONTENT_DETAIL;
+
   readonly ref = input.required<LiteratureReference | Publication>({ alias: 'publication' });
   readonly showYear = input<boolean>(false);
   isExpanded = false;

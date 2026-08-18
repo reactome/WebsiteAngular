@@ -99,3 +99,29 @@ test.describe('Diagram search', () => {
     await expect(results).toContainText(/All pathways/i);
   });
 });
+
+test('publication authors link to their person pages', async ({ page }) => {
+  // These links were commented out, and for a reason: the markup referenced a
+  // bare `environment` the component never had, so the hrefs came out as
+  // "undefined/content/detail/person/...". They use the CONTENT_DETAIL constant
+  // now, the same one object-tree uses for entity links.
+  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+
+  // Attached, not visible: publications sit in the References section further
+  // down the panel, so the links are in the DOM without being on screen. What
+  // matters is that they exist and point somewhere real.
+  const authorLink = page.locator('cr-publication a[href*="/person/"]').first();
+  await expect(authorLink).toBeAttached({ timeout: 25_000 });
+
+  const href = await authorLink.getAttribute('href');
+  expect(href, 'href must be absolute and host-aware, not "undefined/..."').toMatch(
+    /^https?:\/\/[^/]+\/content\/detail\/person\/\d+$/
+  );
+  if (!href) throw new Error('no href to follow');
+
+  // and it has to actually land on a person
+  await page.goto(href);
+  await expect(page.locator('app-person-detail')).toContainText(/Publications|Authored/, {
+    timeout: 25_000,
+  });
+});
