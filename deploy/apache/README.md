@@ -4,15 +4,27 @@
 
 ## Installing it
 
+Use the script; it does the copy, wires the `Include` into both beta vhosts,
+tests the config, reloads, and then checks that a bot is refused and a browser
+is not:
+
+```bash
+sudo ~/install-beta-bot-blocks.sh            # install
+sudo ~/install-beta-bot-blocks.sh --check    # verify, change nothing
+sudo ~/install-beta-bot-blocks.sh --undo     # remove again
+```
+
+It is safe to run twice, backs up every file it edits, and if `apache2ctl
+configtest` fails it restores the backups and reloads nothing -- so a bad rule
+cannot take the vhost down. That last part is why the manual route below is not
+the recommended one:
+
 ```bash
 sudo cp deploy/apache/beta-bot-blocks.conf /etc/apache2/sites-common/
-# then, inside the beta vhost:
+# then, inside each beta vhost, before </VirtualHost>:
 #   Include /etc/apache2/sites-common/beta-bot-blocks.conf
 sudo apache2ctl configtest && sudo systemctl reload apache2
 ```
-
-`configtest` before `reload` matters: a bad rewrite rule takes the vhost down,
-and this host fronts the only deployment anyone is testing against.
 
 ## Checking it works
 
