@@ -233,7 +233,19 @@
 
 .row-expression {
   margin-left: auto;
+  display: inline-flex;
+  gap: 0.35rem;
   font-family: 'Roboto Mono', ui-monospace, monospace;
   font-size: 0.72rem;
-  opacity: 0.85;
+}
+
+.row-expression__value {
+  opacity: 0.5;
+}
+
+// The sample the diagram is currently coloured by, so the number you are
+// looking at on the canvas is the one that stands out here.
+.row-expression__value--current {
+  opacity: 1;
+  font-weight: 600;
 }

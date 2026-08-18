@@ -82,9 +82,19 @@
                     }
                     <span class="row-label" [class.row-label--missed]="row.found === false">{{ row.label }}</span>
                     @if (row.expression?.length) {
-                      <span class="row-expression" matTooltip="Expression value">{{
-                        row.expression![0] | number: '1.0-2'
-                      }}</span>
+                      <span class="row-expression">
+                        @for (value of row.expression; track $index) {
+                          <!-- One value per sample, as the GWT panel shows one
+                                 column per sample. The one the rest of the
+                                 browser is displaying is the emphasised one. -->
+                          <span
+                            class="row-expression__value"
+                            [class.row-expression__value--current]="$index === selectedSample()"
+                            [matTooltip]="sampleNames()[$index] ?? 'Sample ' + ($index + 1)"
+                            >{{ value | number: '1.0-2' }}</span
+                          >
+                        }
+                      </span>
                     }
                     @if (row.detail) {
                       <span class="row-detail">{{ row.detail }}</span>
