@@ -242,3 +242,24 @@ test.describe('Tools page', () => {
     await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
   });
 });
+
+test.describe('Entity detail: pathway locations', () => {
+  // Not every entry is in a diagram. R-RNO-164160's only reaction belongs to no
+  // pathway, so /locationsInPWB answers 404 -- on production too. The page used
+  // to render "Locations" as a bare heading with nothing under it, which reads
+  // as a page that failed rather than an entry with nothing to show.
+  test('says so when an entry appears in no pathway', async ({ page }) => {
+    await page.goto('/content/detail/R-RNO-164160');
+    await expect(page.getByText('Lkb-1(Stk11)').first()).toBeVisible({ timeout: LOAD });
+    await expect(page.locator('.no-locations')).toBeVisible({ timeout: LOAD });
+    // and the reaction it catalyses is still reachable
+    const goTo = page.locator('.goTo-container a').first();
+    await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
+  });
+
+  test('still renders the tree when locations do exist', async ({ page }) => {
+    await page.goto('/content/detail/R-HSA-114269');
+    await expect(page.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
+    await expect(page.locator('.no-locations')).toHaveCount(0);
+  });
+});

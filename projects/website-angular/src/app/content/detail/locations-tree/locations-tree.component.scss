@@ -212,3 +212,9 @@ ul.tree li {
   white-space: nowrap;
   margin-left: 2px;
 }
+
+.no-locations {
+  margin: 0;
+  color: color-mix(in srgb, currentcolor 65%, transparent);
+  font-size: 0.9rem;
+}
