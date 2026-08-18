@@ -58,6 +58,7 @@ import {
   EntityPopupTab,
   EntityPopupTarget,
 } from './entity-popup/entity-popup.component';
+import { IS_CURATOR } from '../../environments/environment';
 
 const INIT_RX = 2;
 
@@ -82,6 +83,11 @@ const FIT_PADDING = 100;
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
+  // The curator build is a tool, not the public site: several panels are
+  // hidden there. Gated rather than commented out, which is how they went
+  // missing from the public site in the first place.
+  readonly isCurator = IS_CURATOR;
+
   private diagram = inject(DiagramService);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);

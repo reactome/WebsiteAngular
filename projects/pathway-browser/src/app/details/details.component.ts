@@ -12,6 +12,7 @@ import { ResultTabComponent } from './tabs/result-tab/result-tab.component';
 import { ExpressionTabComponent } from './tabs/expression-tab/expression-tab.component';
 import { InfoTabComponent } from './tabs/info-tab/info-tab.component';
 import { DownloadTabComponent } from './tabs/download-tab/download-tab.component';
+import { IS_CURATOR } from '../../environments/environment';
 
 @Component({
   selector: 'cr-details-panel',
@@ -35,6 +36,11 @@ import { DownloadTabComponent } from './tabs/download-tab/download-tab.component
 })
 @UntilDestroy()
 export class DetailsComponent {
+  // The curator build is a tool, not the public site: several panels are
+  // hidden there. Gated rather than commented out, which is how they went
+  // missing from the public site in the first place.
+  readonly isCurator = IS_CURATOR;
+
   protected analysis: AnalysisService = inject(AnalysisService);
   public dataState: DataStateService = inject(DataStateService);
   public state: UrlStateService = inject(UrlStateService);
