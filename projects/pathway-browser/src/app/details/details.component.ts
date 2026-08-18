@@ -49,12 +49,29 @@ export class DetailsComponent {
   hasResult = computed(() => !!this.analysis.result());
   hasDetail = computed(() => this.dataState.hasDetail());
 
-  tabs: string[] = ['details', 'molecule', 'expression', 'info', 'download'];
+  /**
+   * The tab names, in the order the template renders them.
+   *
+   * This has to be derived rather than a fixed list: Results and Download are
+   * only rendered outside the curator build, so a static array puts the wrong
+   * name against an index as soon as one is absent. It was already wrong --
+   * still listing 'expression', whose tab is not rendered, against the position
+   * Results now occupies, so selecting Results wrote ?tab=expression.
+   */
+  readonly tabs = computed<string[]>(() => [
+    'details',
+    'molecule',
+    ...(this.isCurator ? [] : ['results']),
+    'info',
+    ...(this.isCurator ? [] : ['download']),
+  ]);
 
-  selectedTabIndex = linkedSignal<number>(() => this.tabs.indexOf(this.state.tab() || 'info'));
+  selectedTabIndex = linkedSignal<number>(() =>
+    Math.max(0, this.tabs().indexOf(this.state.tab() || 'info'))
+  );
 
   constructor() {
-    effect(() => this.state.tab.set(this.tabs[this.selectedTabIndex()!]));
+    effect(() => this.state.tab.set(this.tabs()[this.selectedTabIndex()!]));
     effect(() => {
       if (!untracked(this.state.tab) && this.state.section())
         this.state.tab.set('details'); // Make publication link still work as they didn't include the tab, but sections

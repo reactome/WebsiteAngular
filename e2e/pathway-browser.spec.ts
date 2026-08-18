@@ -125,3 +125,20 @@ test('publication authors link to their person pages', async ({ page }) => {
     timeout: 25_000,
   });
 });
+
+test('clicking a details tab writes the matching tab to the URL', async ({ page }) => {
+  // The tab names were a fixed array that no longer matched what the template
+  // renders: it still listed 'expression', whose tab is not rendered, in the
+  // position Results now occupies, so clicking Results wrote ?tab=expression.
+  // The list is derived from the variant now, since Results and Download are
+  // absent from the curator build and a static array shifts as soon as one is.
+  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+  await expect(page.locator('cr-details-panel')).toBeAttached({ timeout: BOOT_TIMEOUT });
+
+  for (const name of ['Info', 'Download', 'Details']) {
+    const tab = page.locator('.label-text', { hasText: new RegExp(`^${name}$`) }).first();
+    await expect(tab).toBeVisible({ timeout: 25_000 });
+    await tab.click();
+    await expect(page).toHaveURL(new RegExp(`tab=${name.toLowerCase()}`), { timeout: 15_000 });
+  }
+});
