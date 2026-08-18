@@ -8,7 +8,6 @@ export const routes: Routes = [
   },
   {
     path: 'PathwayBrowser',
-    // provideAnimations() is already registered once for the whole app in
     // src/app/app.config.ts. Registering it again here created a second,
     // independent animation engine that queued animations on this route's
     // elements but never flushed them (stuck "ng-animate-queued" forever) —

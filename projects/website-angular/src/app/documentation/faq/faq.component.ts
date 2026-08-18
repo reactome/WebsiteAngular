@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
@@ -13,6 +13,9 @@ import { ArticleIndexItem } from 'projects/website-angular/src/types/article';
 })
 export class FaqComponent implements OnInit {
   contentService = inject(ContentService);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   categories: string[] = [];
   expandedCategories: Set<string> = new Set();
@@ -31,6 +34,7 @@ export class FaqComponent implements OnInit {
             this.toggleCategory(category);
           });
         })().catch((error) => console.error('Could not render FAQ', error));
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching FAQ index:', err);

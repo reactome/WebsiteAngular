@@ -40,7 +40,7 @@ $transition: all 0.3s ease;
 }
 
 .pathway-link {
-  color: var(--on-primary) !important;
+  color: var(--panel-link, currentcolor) !important;
   text-decoration: underline !important;
 }
 
@@ -131,8 +131,27 @@ $transition: all 0.3s ease;
   display: flex;
   flex-direction: row;
   justify-content: unset;
-  align-items: flex-start;
+  // stretch, not flex-start: the two panels hold different amounts of content,
+  // and letting the shorter one end early left a slab of empty page beside it
+  // once the tiles had a visible background.
+  align-items: stretch;
   gap: 16px;
+  // The tiles' own bottom margin is zeroed below so the two panels can stretch
+  // to the same height; put that spacing back on the wrapper, or this band butts
+  // straight into the section under it.
+  margin-bottom: 16px;
+
+  app-tile:nth-child(1),
+  app-tile:nth-child(2) {
+    display: flex;
+
+    // The tile's own inner div is what carries the background, so it has to
+    // stretch too, not just the host element.
+    ::ng-deep .tile {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  }
 
   app-tile:nth-child(1) {
     flex: 0 0 40%;

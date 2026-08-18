@@ -82,3 +82,11 @@
     }
   </li>
 </ng-template>
+
+@if (!trees().length && !loading()) {
+  <!-- Not every entity appears in a diagram: an entity whose only reaction
+       belongs to no pathway has nothing to show here, and the endpoint answers
+       404. Saying so beats rendering an empty section, which reads as a page
+       that failed to load. -->
+  <p class="no-locations">This entry does not appear in any pathway diagram, so there is no location to show.</p>
+}

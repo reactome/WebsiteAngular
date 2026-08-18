@@ -226,6 +226,11 @@ test.describe('Tools page', () => {
   });
 
   test('"Analyse Gene Expression" opens the quantitative analysis', async ({ page }) => {
+    // This test cares where the link goes, not whether GSAServer answers, so it
+    // does not call that shared service -- analysis.spec.ts covers it for real.
+    await page.route('**/GSAServer/**/methods', (route) =>
+      route.fulfill({ contentType: 'application/json', body: '[]' })
+    );
     await page.goto('/tools');
     await page
       .locator('a.module-card')
@@ -235,5 +240,44 @@ test.describe('Tools page', () => {
 
     await expect(page).toHaveURL(/analysisTab=quantitative/, { timeout: LOAD });
     await expect(page.locator('cr-viewport')).toBeAttached({ timeout: LOAD });
+  });
+});
+
+test.describe('Entity detail: pathway locations', () => {
+  // locationsInPWB exists on the dev content service but not on production's,
+  // which answers 404 for every id -- so a CI run pointed at reactome.org has no
+  // locations to render for anything. Probe once and skip rather than fail on a
+  // backend that does not implement the endpoint.
+  let locationsEndpoint: boolean | undefined;
+  test.beforeAll(async ({ request, baseURL }) => {
+    try {
+      const res = await request.get(
+        `${baseURL}/ContentService/data/detail/R-HSA-114269/locationsInPWB`,
+        { timeout: 30_000 }
+      );
+      locationsEndpoint = res.ok();
+    } catch {
+      locationsEndpoint = false;
+    }
+  });
+  // Not every entry is in a diagram. R-RNO-164160's only reaction belongs to no
+  // pathway, so /locationsInPWB answers 404 -- on production too. The page used
+  // to render "Locations" as a bare heading with nothing under it, which reads
+  // as a page that failed rather than an entry with nothing to show.
+  test('says so when an entry appears in no pathway', async ({ page }) => {
+    // Holds on either backend: no endpoint and no data both end up here.
+    await page.goto('/content/detail/R-RNO-164160');
+    await expect(page.getByText('Lkb-1(Stk11)').first()).toBeVisible({ timeout: LOAD });
+    await expect(page.locator('.no-locations')).toBeVisible({ timeout: LOAD });
+    // and the reaction it catalyses is still reachable
+    const goTo = page.locator('.goTo-container a').first();
+    await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
+  });
+
+  test('still renders the tree when locations do exist', async ({ page }) => {
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-114269');
+    await expect(page.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
+    await expect(page.locator('.no-locations')).toHaveCount(0);
   });
 });

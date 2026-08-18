@@ -2,7 +2,6 @@ import { Component, computed, input, inject } from '@angular/core';
 import { AnalysisService, PaletteName } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
-import { animate, style, transition, trigger } from '@angular/animations';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { getArrayStats } from '../../services/utils';
@@ -12,15 +11,6 @@ import { getArrayStats } from '../../services/utils';
   imports: [NgTemplateOutlet, MatTooltip, MatIcon, DecimalPipe],
   templateUrl: './analysis-legend.component.html',
   styleUrl: './analysis-legend.component.scss',
-  animations: [
-    trigger('selectAnim', [
-      transition(':enter', [
-        style({ width: '0' }),
-        animate('500ms ease-in-out', style({ width: '*' })),
-      ]),
-      transition(':leave', [animate('500ms ease-in-out', style({ width: '0' }))]),
-    ]),
-  ],
 })
 export class AnalysisLegendComponent {
   analysis = inject(AnalysisService);

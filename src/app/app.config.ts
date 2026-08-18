@@ -5,7 +5,6 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { StoreModule } from '@ngrx/store';
 import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
 import { EffectsModule } from '@ngrx/effects';
@@ -23,7 +22,6 @@ export const appConfig: ApplicationConfig = {
     // Loaded on demand rather than eagerly: the only animations in the app
     // are in the lazily routed pathway browser, so the animations engine has
     // no business sitting in the initial bundle.
-    provideAnimationsAsync(),
     importProvidersFrom(
       StoreModule.forRoot({ router: routerReducer }),
       StoreRouterConnectingModule.forRoot(),

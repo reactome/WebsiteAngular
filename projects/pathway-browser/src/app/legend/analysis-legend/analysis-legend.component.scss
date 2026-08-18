@@ -259,3 +259,25 @@
     border-top: 0;
   }
 }
+
+// Replaces the Angular `selectAnim` trigger, which animated width from 0 to '*'.
+// CSS cannot interpolate to auto, but this element already clips its overflow,
+// so growing a max-width past its real width reads the same. The palette is a
+// row of a few swatches, far narrower than the cap.
+@keyframes palette-reveal {
+  from {
+    max-width: 0;
+  }
+
+  to {
+    max-width: 400px;
+  }
+}
+
+.palette-selector {
+  animation: palette-reveal 500ms ease-in-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

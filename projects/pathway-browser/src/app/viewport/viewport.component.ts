@@ -26,7 +26,6 @@ import { GeneralService } from '../services/general.service';
 import { DataStateService } from '../services/data-state.service';
 import { isPathway } from '../services/utils';
 import { Pathway } from '../model/graph/event/pathway.model';
-import { animate, style, transition, trigger } from '@angular/animations';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -91,23 +90,6 @@ const DROPDOWN_DURATION = 500;
     DetailsComponent,
     AnalysisFormComponent,
     CompareFormComponent,
-  ],
-  animations: [
-    trigger('appear', [
-      transition(':enter', [
-        style({ width: '0', padding: '0' }),
-        animate('1000ms ease-in-out', style({ width: '*', padding: '*' })),
-      ]),
-      transition(':leave', [
-        animate(
-          '1000ms ease-in-out',
-          style({
-            width: '0',
-            padding: '0',
-          })
-        ),
-      ]),
-    ]),
   ],
 })
 @UntilDestroy()

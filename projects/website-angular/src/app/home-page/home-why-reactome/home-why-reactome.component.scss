@@ -13,7 +13,10 @@
   justify-content: space-around;
   align-items: center;
   gap: 16px;
-  background-color: rgba(255, 255, 255, 0.406);
+  // Near-white, not 40% white: these are dark logos on transparent
+  // backgrounds, so anything that lets the teal through muddies them.
+  background-color: rgb(255 255 255 / 92%);
+  border-radius: 6px;
   padding: 16px;
 
   &:hover {
@@ -27,6 +30,6 @@
 }
 
 .grant-link {
-  color: var(--on-primary);
+  color: var(--panel-link, currentcolor);
   text-decoration: underline;
 }

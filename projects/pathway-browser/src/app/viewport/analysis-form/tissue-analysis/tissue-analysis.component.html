@@ -54,7 +54,7 @@
                 (cdkDropListDropped)="drop($event)"
               >
                 @for (tissue of available; track tissue) {
-                  <div class="tissue-box" cdkDrag @left-column (click)="moveRight(tissue)">{{ tissue }}</div>
+                  <div class="tissue-box" cdkDrag (click)="moveRight(tissue)">{{ tissue }}</div>
                 }
               </div>
 

@@ -1,4 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { test, expect, type Page } from '@playwright/test';
+
+// GSAServer is a shared production service, and this suite runs often. Exactly
+// one test below calls it for real -- that is the integration check worth
+// having, since an empty methods list makes the wizard a dead end. Every other
+// test that merely needs the wizard on screen replays a captured response, so a
+// full run costs one request rather than three.
+const gsaMethods = JSON.parse(
+  // __dirname, not import.meta.url: this package is CommonJS, and import.meta
+  // makes Playwright's loader treat the spec as ESM and fail to load it at all.
+  readFileSync(join(__dirname, 'fixtures', 'gsa-methods.json'), 'utf8')
+);
+
+async function stubGsaMethods(page: Page) {
+  await page.route('**/GSAServer/**/methods', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify(gsaMethods) })
+  );
+}
 
 // Smoke coverage for the two analysis entry points, which are the public face of
 // the two libraries absorbed from reactome/gsa-frontend into projects/:
@@ -77,6 +96,8 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
   });
 
   test('selecting a method advances to dataset selection', async ({ page }) => {
+    // Replayed, not live: the test above already proves the real call works.
+    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
     const methods = page.locator('gsa-method');

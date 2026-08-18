@@ -12,12 +12,16 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { DecimalPipe } from '@angular/common';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { CONTENT_SERVICE } from '../../../environments/environment';
 import { SchemaClasses } from '../../constants/constants';
 import { PropertyType } from '../../details/tabs/molecule-tab/molecule-tab.component';
+import { AnalysisService } from '../../services/analysis.service';
+import { UrlStateService } from '../../services/url-state.service';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
 
@@ -35,8 +39,26 @@ export interface EntityPopupTarget {
 }
 
 /** One row of any of the three lists, normalised so the template stays simple. */
+/** The parts of a reference entity this popup reads: what an analysis could
+ *  have matched it by. */
+interface ReferenceEntityIds {
+  identifier?: string;
+  geneName?: string[];
+}
+
+/** What the second lookup tells us about a component: its reference class, and
+ *  the identifiers an analysis might have matched it by. */
+interface ComponentRef {
+  schemaClass?: string;
+  ids?: string[];
+}
+
 interface PopupRow {
   label: string;
+  /** Whether this molecule was in the submitted analysis, when one is running. */
+  found?: boolean;
+  /** Expression values, when the analysis carries them. */
+  expression?: number[];
   /** Secondary text: a species, or an interaction's evidence count and score. */
   detail?: string;
   /** Diagram entity or pathway to go to when clicked. */
@@ -114,12 +136,14 @@ const TYPE_ORDER: string[] = [
 @Component({
   selector: 'cr-entity-popup',
   standalone: true,
-  imports: [MatIcon],
+  imports: [MatIcon, MatTooltip, DecimalPipe],
   templateUrl: './entity-popup.component.html',
   styleUrl: './entity-popup.component.scss',
 })
 export class EntityPopupComponent {
   private readonly http = inject(HttpClient);
+  private readonly analysis = inject(AnalysisService);
+  private readonly state = inject(UrlStateService);
   private readonly host = inject(ElementRef<HTMLElement>);
 
   readonly target = input<EntityPopupTarget | null>(null);
@@ -194,18 +218,29 @@ export class EntityPopupComponent {
               const ambiguous = source.filter(
                 (c: any) => c.schemaClass === SchemaClasses.EWAS && c.stId
               );
-              if (ambiguous.length === 0) return of(this.group(source, new Map()));
+              if (ambiguous.length === 0)
+                return of(this.group(source, new Map<string, ComponentRef>()));
 
               return forkJoin(
                 ambiguous.map((c: any) =>
                   this.http.get<any>(`${CONTENT_SERVICE}/data/query/${c.stId}`).pipe(
-                    map(
-                      (full) =>
-                        [c.stId, full?.referenceEntity?.schemaClass] as [string, string | undefined]
-                    ),
+                    map((full) => {
+                      const ref = full?.referenceEntity;
+                      // The identifiers come from this lookup too: components
+                      // arrive from the enhanced query with no referenceEntity,
+                      // so there is nothing to match an analysis against until
+                      // this second request is made.
+                      return [
+                        c.stId,
+                        {
+                          schemaClass: ref?.schemaClass,
+                          ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(Boolean),
+                        },
+                      ] as [string, ComponentRef];
+                    }),
                     // One failed lookup should not empty the whole tab; that
                     // row just falls back to Others.
-                    catchError(() => of([c.stId, undefined] as [string, string | undefined]))
+                    catchError(() => of([c.stId, {}] as [string, ComponentRef]))
                   )
                 )
               ).pipe(map((pairs) => this.group(source, new Map(pairs))));
@@ -214,11 +249,105 @@ export class EntityPopupComponent {
         : of<PopupGroup[] | undefined>(undefined),
   });
 
-  /** Group components by molecule type, in a stable order, as production does. */
-  private group(
-    components: any[],
-    referenceClasses: Map<string, string | undefined>
+  /**
+   * Which molecules the running analysis found, keyed by every identifier they
+   * are known by, with their expression values where the analysis carries them.
+   *
+   * undefined when no analysis is running, which is what tells the rows apart
+   * from "analysis ran and this one was not in it".
+   *
+   * The user guide describes this: "Molecules show the participating molecules,
+   * and if an expression analysis has been performed, their expression values."
+   */
+  private readonly found = rxResource({
+    params: () => {
+      const token = this.state.analysis();
+      const pathway = this.state.pathwayId();
+      return token && pathway && this.tab() === 'molecules' ? { token, pathway } : undefined;
+    },
+    stream: ({ params }) => this.analysis.foundEntities(params.pathway, params.token),
+  });
+
+  private readonly analysisHits = computed<Map<string, number[]> | undefined>(() => {
+    if (!this.state.analysis()) return undefined;
+    const entities = this.found.value()?.entities;
+    if (!entities) return undefined;
+    const map = new Map<string, number[]>();
+    for (const entity of entities) {
+      const exp = entity.exp ?? [];
+      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      for (const id of [entity.id, ...mapped]) {
+        if (id) map.set(String(id).toUpperCase(), exp);
+      }
+    }
+    return map;
+  });
+
+  /**
+   * The molecule rows, annotated with what the running analysis found.
+   *
+   * A row's identifiers cannot come from the row itself: a component may be a
+   * complex or a set, whose own identifier means nothing to an analysis keyed by
+   * proteins. /participants/<id>/referenceEntities answers that for any of them
+   * in one request -- so a complex counts as found when anything inside it was.
+   *
+   * This runs after the rows are on screen rather than before, so opening the
+   * tab never waits on the analysis; the markers appear a moment later.
+   */
+  readonly annotated = rxResource({
+    params: () => {
+      const groups = this.molecules.value();
+      const hits = this.analysisHits();
+      return groups && hits ? { groups, hits } : undefined;
+    },
+    stream: ({ params }) => {
+      const stIds = [
+        ...new Set(params.groups.flatMap((g) => g.rows.map((r) => r.stId)).filter(Boolean)),
+      ] as string[];
+      if (!stIds.length) return of(params.groups);
+
+      return forkJoin(
+        stIds.map((stId) =>
+          this.http
+            .get<ReferenceEntityIds[]>(
+              `${CONTENT_SERVICE}/data/participants/${stId}/referenceEntities`
+            )
+            .pipe(
+              map((refs) => [stId, refs ?? []] as [string, ReferenceEntityIds[]]),
+              // A row we cannot resolve stays unmarked rather than being called
+              // absent, which would be a claim we cannot make.
+              catchError(() => of([stId, []] as [string, ReferenceEntityIds[]]))
+            )
+        )
+      ).pipe(map((pairs) => this.annotate(params.groups, new Map(pairs), params.hits)));
+    },
+  });
+
+  /** Attach found/expression to each row from its participating identifiers. */
+  private annotate(
+    groups: PopupGroup[],
+    participants: Map<string, ReferenceEntityIds[]>,
+    hits: Map<string, number[]>
   ): PopupGroup[] {
+    return groups.map((group) => ({
+      ...group,
+      rows: group.rows.map((row) => {
+        const refs = row.stId ? (participants.get(row.stId) ?? []) : [];
+        if (!refs.length) return row;
+
+        const ids = refs.flatMap((r) => [r?.identifier, ...(r?.geneName ?? [])].filter(Boolean));
+        const hit = ids.map((id) => hits.get(String(id).toUpperCase())).find(Boolean);
+        return {
+          ...row,
+          found: !!hit,
+          ...(hit?.length ? { expression: hit } : {}),
+        };
+      }),
+    }));
+  }
+
+  /** Group components by molecule type, in a stable order, as production does. */
+  private group(components: any[], refs: Map<string, ComponentRef>): PopupGroup[] {
     const byType = new Map<string, PopupRow[]>();
 
     for (const component of components) {
@@ -227,9 +356,9 @@ export class EntityPopupComponent {
       // than no row.
       if (!label) continue;
 
+      const ref = refs.get(component.stId);
       const type =
-        typeFromSchemaClass(component.schemaClass) ??
-        typeFromReferenceClass(referenceClasses.get(component.stId));
+        typeFromSchemaClass(component.schemaClass) ?? typeFromReferenceClass(ref?.schemaClass);
 
       const rows = byType.get(type) ?? [];
       rows.push({ label, stId: component.stId });
@@ -297,7 +426,15 @@ export class EntityPopupComponent {
     }
   });
 
-  readonly groups = computed(() => (this.active().value() ?? []).filter((g) => g.rows.length > 0));
+  readonly groups = computed(() => {
+    // Prefer the annotated rows once the analysis lookup has landed, so the
+    // markers appear without the tab having waited for them.
+    const base =
+      this.tab() === 'molecules'
+        ? (this.annotated.value() ?? this.molecules.value())
+        : this.active().value();
+    return (base ?? []).filter((g) => g.rows.length > 0);
+  });
   readonly loading = computed(() => this.active().isLoading());
   readonly failed = computed(() => this.active().status() === 'error');
 

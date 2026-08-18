@@ -466,3 +466,30 @@
   padding: 0 5px 0 4px;
   font-style: italic;
 }
+
+// Replaces the Angular `appear` trigger, which grew width and padding from 0 to
+// '*' over a second. CSS cannot interpolate to auto, so this grows a max-width
+// past the real width and clips while it does -- the same reveal, without
+// needing to know the final size. Both users of the old trigger are narrow: the
+// analysis controls are a fixed 155px and the clear button is smaller again.
+@keyframes controls-reveal {
+  from {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  to {
+    max-width: 220px;
+    opacity: 1;
+  }
+}
+
+.profile-controls,
+button.error {
+  overflow: hidden;
+  animation: controls-reveal 1s ease-in-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

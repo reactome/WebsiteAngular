@@ -361,3 +361,82 @@
   align-items: center;
   justify-content: center;
 }
+
+// Replaces the Angular `result-pathways` trigger. The pathways column opens to
+// half the results panel; its final width is declared above, so this only
+// describes the way in.
+//
+// The old :leave animated min-width back to 0. That half is gone: Angular
+// removes the column the moment it is no longer needed, and CSS cannot hold a
+// node in the DOM to animate it out.
+@keyframes result-pathways-open {
+  from {
+    width: 0;
+    min-width: 0;
+  }
+
+  to {
+    width: 50%;
+    min-width: 50%;
+  }
+}
+
+.result-pathways {
+  animation: result-pathways-open 500ms linear;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// Replaces the Angular `suggest`, `results` and `collapsable` triggers.
+//
+// Those animated height from 0 to '*', which CSS cannot interpolate -- there is
+// no animating to auto. Two of these already clip their overflow, so a
+// max-height reveal reads the same as the original: the content appears to grow
+// into place. The cap only has to exceed the real height; the panels are a
+// dropdown and a facet list, nowhere near 60vh.
+@keyframes panel-grow {
+  from {
+    max-height: 0;
+  }
+
+  to {
+    max-height: 60vh;
+  }
+}
+
+// .results does not clip, so growing its height would spill content rather than
+// reveal it. A panel arriving reads just as well as a fade and a short rise,
+// and it costs no layout.
+@keyframes panel-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.suggestions {
+  animation: panel-grow 500ms ease-in-out;
+}
+
+.results {
+  animation: panel-arrive 300ms ease-out;
+
+  .collapsable {
+    animation: panel-grow 500ms ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestions,
+  .results,
+  .results .collapsable {
+    animation: none;
+  }
+}

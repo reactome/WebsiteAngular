@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { ContentService } from '../../../services/content.service';
@@ -27,6 +27,12 @@ export class ArticleComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
+  // The app is zoneless and these are plain fields, not signals, so nothing
+  // notices them changing inside an HTTP callback -- and `await marked(...)`
+  // resumes in a microtask, further detached from anything Angular watches.
+  // Without this the page stays on "Loading article..." with the data already
+  // in hand.
+  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug');
@@ -69,12 +75,19 @@ export class ArticleComponent implements OnInit {
           };
 
           this.loading = false;
-        })().catch((error) => console.error('Could not render article', error));
+          this.cdr.markForCheck();
+        })().catch((error) => {
+          console.error('Could not render article', error);
+          this.error = 'Error loading article.';
+          this.loading = false;
+          this.cdr.markForCheck();
+        });
       },
       error: (err) => {
         this.error = 'Error loading article.';
         this.loading = false;
         console.error('Error loading article:', err);
+        this.cdr.markForCheck();
       },
     });
   }

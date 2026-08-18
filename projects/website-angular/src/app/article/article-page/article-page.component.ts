@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { TileComponent } from '../../reactome-components/tile/tile.component';
 import { ContentService } from '../../../services/content.service';
@@ -18,6 +18,9 @@ import { marked } from 'marked';
 export class ArticlePageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   pageTile: string = 'News & Updates';
   pageDescription: string =
@@ -54,6 +57,7 @@ export class ArticlePageComponent implements OnInit {
           this.articlePath = 'content/reactome-research-spotlight';
         }
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -85,11 +89,13 @@ export class ArticlePageComponent implements OnInit {
           );
           this.loading = false;
         })().catch((error) => console.error('Could not render article list', error));
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error loading articles:', err);
         this.articles = [];
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

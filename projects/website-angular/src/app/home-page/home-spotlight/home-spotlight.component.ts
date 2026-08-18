@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, inject, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, Input, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
@@ -19,6 +19,9 @@ import { NavOption } from '../../../types/link';
 })
 export class HomeSpotlightComponent implements OnInit {
   contentService = inject(ContentService);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   loading = true;
   spotLightArticle: ArticleIndexItem = {
@@ -62,13 +65,16 @@ export class HomeSpotlightComponent implements OnInit {
                 const html = await marked(article?.body || '');
                 this.renderedContent = truncateHtml(stripFirstH(html), 150);
               })().catch((error) => console.error('Could not render spotlight', error));
+              this.cdr.markForCheck();
             },
           });
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error loading articles:', err);
         this.spotLightArticle = { title: '', date: new Date(), author: '', slug: '', excerpt: '' };
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

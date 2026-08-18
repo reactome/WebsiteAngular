@@ -26,10 +26,16 @@ module.exports = {
   ...Object.fromEntries(
     ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
   ),
-  // GSAServer is not part of the local Tomcat deployment, so it always goes out.
+  // GSAServer is not part of the local Tomcat deployment, so it always goes out
+  // -- but to the GSA service itself, not via dev.reactome.org. That host
+  // resolves back through this machine's Apache, which is the same hairpin that
+  // took the origin down once before; with the box under load it simply stopped
+  // answering, and every quantitative-analysis test failed with an empty
+  // methods list. gsa.reactome.org answers the same request in ~0.2s.
   '/GSAServer': {
-    target: 'https://dev.reactome.org',
+    target: 'https://gsa.reactome.org',
     secure: true,
     changeOrigin: true,
+    pathRewrite: { '^/GSAServer': '' },
   },
 };

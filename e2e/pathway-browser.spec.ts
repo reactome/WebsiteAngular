@@ -74,3 +74,96 @@ test.describe('Pathway Browser', () => {
     expect(pageErrors).toEqual([]);
   });
 });
+
+test.describe('Diagram search', () => {
+  // Commented out wholesale in "Remove Overlay feature, feedback, and revert to
+  // old site" (c4aca4d, May), which hid it from the public site as well as the
+  // curator build it was aimed at. The component was never broken -- only its
+  // markup was commented -- so this asserts the parts that would tell us if it
+  // regressed again: suggestions, scopes and results.
+  test('suggests terms and returns scoped results', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    const input = page.locator('cr-search input').first();
+    await expect(input).toBeVisible({ timeout: BOOT_TIMEOUT });
+
+    await input.click();
+    await input.fill('pten');
+    await expect(page.locator('.suggest-line').first()).toBeVisible({ timeout: 20_000 });
+
+    await input.press('Enter');
+    const results = page.locator('cr-search .results');
+    await expect(results).toBeVisible({ timeout: BOOT_TIMEOUT });
+
+    // Both scopes report counts: searching only the open diagram, and everything.
+    await expect(results).toContainText(/Current pathway/i);
+    await expect(results).toContainText(/All pathways/i);
+  });
+});
+
+test('publication authors link to their person pages', async ({ page }) => {
+  // These links were commented out, and for a reason: the markup referenced a
+  // bare `environment` the component never had, so the hrefs came out as
+  // "undefined/content/detail/person/...". They use the CONTENT_DETAIL constant
+  // now, the same one object-tree uses for entity links.
+  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+
+  // Attached, not visible: publications sit in the References section further
+  // down the panel, so the links are in the DOM without being on screen. What
+  // matters is that they exist and point somewhere real.
+  const authorLink = page.locator('cr-publication a[href*="/person/"]').first();
+  await expect(authorLink).toBeAttached({ timeout: 25_000 });
+
+  const href = await authorLink.getAttribute('href');
+  expect(href, 'href must be absolute and host-aware, not "undefined/..."').toMatch(
+    /^https?:\/\/[^/]+\/content\/detail\/person\/\d+$/
+  );
+  if (!href) throw new Error('no href to follow');
+
+  // and it has to actually land on a person
+  await page.goto(href);
+  await expect(page.locator('app-person-detail')).toContainText(/Publications|Authored/, {
+    timeout: 25_000,
+  });
+});
+
+test('clicking a details tab writes the matching tab to the URL', async ({ page }) => {
+  // The tab names were a fixed array that no longer matched what the template
+  // renders: it still listed 'expression', whose tab is not rendered, in the
+  // position Results now occupies, so clicking Results wrote ?tab=expression.
+  // The list is derived from the variant now, since Results and Download are
+  // absent from the curator build and a static array shifts as soon as one is.
+  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+  await expect(page.locator('cr-details-panel')).toBeAttached({ timeout: BOOT_TIMEOUT });
+
+  for (const name of ['Info', 'Download', 'Details']) {
+    const tab = page.locator('.label-text', { hasText: new RegExp(`^${name}$`) }).first();
+    await expect(tab).toBeVisible({ timeout: 25_000 });
+    await tab.click();
+    await expect(page).toHaveURL(new RegExp(`tab=${name.toLowerCase()}`), { timeout: 15_000 });
+  }
+});
+
+test.describe('Details panel deep links', () => {
+  // A shared link naming a tab used to be discarded on arrival: the defaulting
+  // effect set the tab from hasResult()/hasDetail() without checking whether the
+  // URL already named one, so ?tab=download became ?tab=details.
+  for (const [tab, content] of [
+    ['download', 'cr-download-tab'],
+    ['info', 'cr-info-tab'],
+    ['molecule', 'cr-molecule-tab'],
+  ] as const) {
+    test(`?tab=${tab} opens that tab`, async ({ page }) => {
+      await page.goto(`/PathwayBrowser/R-HSA-109606?tab=${tab}`);
+      await expect(page.locator(content)).toBeAttached({ timeout: BOOT_TIMEOUT });
+      // and the parameter survives, rather than being rewritten under the user
+      await expect(page).toHaveURL(new RegExp(`tab=${tab}`));
+    });
+  }
+
+  test('a link with no tab still defaults sensibly', async ({ page }) => {
+    // The defaults are what make an analysis open on its results, so they have
+    // to keep working for links that name nothing.
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    await expect(page).toHaveURL(/tab=(details|info|results)/, { timeout: BOOT_TIMEOUT });
+  });
+});

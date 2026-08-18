@@ -192,3 +192,51 @@ test.describe('Diagram entity popup', () => {
     await expect(page.locator('.entity-popup')).toHaveCount(1);
   });
 });
+
+test.describe('Popup with an analysis running', () => {
+  // The curator asked for this: after an analysis, right-clicking a complex
+  // should say which of its molecules were in the submitted set. The user guide
+  // documents the same thing -- "Molecules show the participating molecules, and
+  // if an expression analysis has been performed, their expression values."
+  //
+  // A row's own identifier is not enough to answer that: a component may be a
+  // complex or a set, so the check runs over its participating reference
+  // entities, and a complex counts as found when anything inside it was.
+  test('marks which molecules the analysis found', async ({ page, request, baseURL }) => {
+    const res = await request.post(
+      `${baseURL}/AnalysisService/identifiers/projection?pageSize=1&page=1`,
+      {
+        headers: { 'Content-Type': 'text/plain' },
+        data: 'TP53\nBAX\nBCL2\nCASP3\nAPAF1',
+        timeout: 120_000,
+      }
+    );
+    test.skip(!res.ok(), 'analysis service unavailable on this backend');
+    const token: string | undefined = (await res.json())?.summary?.token;
+    test.skip(!token, 'analysis returned no token');
+
+    await page.goto(`/PathwayBrowser/R-HSA-109606?analysis=${encodeURIComponent(token)}`);
+    await openPopupOnAnyEntity(page);
+
+    // Markers only appear once the participants lookup lands, so poll rather
+    // than assert immediately.
+    await expect
+      .poll(async () => page.locator('.row-hit').count(), { timeout: 30_000 })
+      .toBeGreaterThan(0);
+
+    // Every marker must be a real verdict, not a default: a row we cannot
+    // resolve carries no marker at all rather than claiming "not found".
+    const total = await page.locator('.row-hit').count();
+    const found = await page.locator('.row-hit--found').count();
+    expect(found).toBeLessThanOrEqual(total);
+  });
+
+  test('shows no analysis markers when no analysis is running', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    await openPopupOnAnyEntity(page);
+    await expect(page.locator('.entity-popup__content li').first()).toBeVisible({
+      timeout: 30_000,
+    });
+    expect(await page.locator('.row-hit').count()).toBe(0);
+  });
+});

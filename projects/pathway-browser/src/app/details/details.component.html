@@ -63,27 +63,35 @@
         }
       </ng-template>
     </mat-tab>
-    <!-- <mat-tab #resultsTab>
-      <ng-template mat-tab-label>
-        <div class="label-content">
-          <mat-icon class="tab-icon" svgIcon="results-tab"></mat-icon>
-          <span class="label-text">Results</span>
-        </div>
-      </ng-template>
-      <ng-template matTabContent>
-        @if (!hasResult()) {
-          <div class="tab-description-container">
-            <h3>📈 Analysis Results</h3>
-            <p>To start an analysis, click the <b>"Analyse"</b> button in the top bar.</p>
-            <p>Once the analysis is complete, a <b>results table</b> will be displayed.
-              You can sort the data by different fields and filter the results to explore specific outcomes</p>
+    @if (!isCurator) {
+      <mat-tab #resultsTab>
+        <ng-template mat-tab-label>
+          <div class="label-content">
+            <mat-icon class="tab-icon" svgIcon="results-tab"></mat-icon>
+            <span class="label-text">Results</span>
           </div>
-        } @else {
-          <cr-result-tab></cr-result-tab>
-        }
-      </ng-template>
-    </mat-tab> -->
-    <!-- <mat-tab #expressionTab>
+        </ng-template>
+        <ng-template matTabContent>
+          @if (!hasResult()) {
+            <div class="tab-description-container">
+              <h3>📈 Analysis Results</h3>
+              <p>To start an analysis, click the <b>"Analyse"</b> button in the top bar.</p>
+              <p>
+                Once the analysis is complete, a <b>results table</b> will be displayed. You can sort the data by
+                different fields and filter the results to explore specific outcomes
+              </p>
+            </div>
+          } @else {
+            <cr-result-tab></cr-result-tab>
+          }
+        </ng-template>
+      </mat-tab>
+    }
+    <!-- Expression renders empty even against a quantitative analysis that
+         carries expression values, so it is unfinished rather than merely
+         hidden. Left out until it shows something. -->
+    <!--
+    <mat-tab #expressionTab>
       <ng-template mat-tab-label>
         <div class="label-content">
           <mat-icon class="tab-icon" svgIcon="expression-tab"></mat-icon>
@@ -95,17 +103,18 @@
           <div class="tab-description-container">
             <h3>📍 Gene Expression Map</h3>
             <p>Details are shown when an item is selected in the pathway diagram above.</p>
-            <p>This panel displays <b>gene expression</b> information for genes associated with the selected item across
-              a
-              standard set of tissues and organs.
-              Expression data is sourced from the Gene Expression Atlas.</p>
+            <p>
+              This panel displays <b>gene expression</b> information for genes associated with the selected item across
+              a standard set of tissues and organs. Expression data is sourced from the Gene Expression Atlas.
+            </p>
           </div>
         }
         @if (obj()) {
           <cr-expression-tab [obj]="obj()!"></cr-expression-tab>
         }
       </ng-template>
-    </mat-tab> -->
+    </mat-tab>
+    -->
     <mat-tab #infoTab>
       <ng-template mat-tab-label>
         <div class="label-content">
@@ -117,16 +126,18 @@
         <cr-info-tab></cr-info-tab>
       </ng-template>
     </mat-tab>
-    <!-- <mat-tab #downloadTab>
-      <ng-template mat-tab-label>
-        <div class="label-content">
-          <mat-icon class="tab-icon" svgIcon="download-tab"></mat-icon>
-          <span class="label-text">Download</span>
-        </div>
-      </ng-template>
-      <ng-template matTabContent>
-        <cr-download-tab></cr-download-tab>
-      </ng-template>
-    </mat-tab> -->
+    @if (!isCurator) {
+      <mat-tab #downloadTab>
+        <ng-template mat-tab-label>
+          <div class="label-content">
+            <mat-icon class="tab-icon" svgIcon="download-tab"></mat-icon>
+            <span class="label-text">Download</span>
+          </div>
+        </ng-template>
+        <ng-template matTabContent>
+          <cr-download-tab></cr-download-tab>
+        </ng-template>
+      </mat-tab>
+    }
   </mat-tab-group>
 </div>

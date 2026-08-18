@@ -1,0 +1,340 @@
+[
+  {
+    "name": "PADOG",
+    "data_types": [
+      "rnaseq_counts",
+      "rnaseq_norm",
+      "proteomics_int",
+      "proteomics_sc",
+      "microarray_norm"
+    ],
+    "description": "Weighted gene set analysis method that down-weighs genes that are present in many pathways. Supports multiple Omics data sources including Ribo-Seq data",
+    "parameters": [
+      {
+        "name": "use_interactors",
+        "display_name": "Use interactors",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "False",
+        "description": "Indicates whether interactors from IntAct should be used to extent REACTOME's pathways in the analysis."
+      },
+      {
+        "name": "include_disease_pathways",
+        "display_name": "Include disease pathways",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "True",
+        "description": "Disease pathways in Reactome may lead to a skewed analysis result. Note: Excluding disease pathways currently prevents the visualization of results in the Reactome pathway browser."
+      },
+      {
+        "name": "max_missing_values",
+        "display_name": "Max. missing values",
+        "type": "float",
+        "scope": "dataset",
+        "default": "0.5",
+        "description": "The maximum (relative) number of missing values within one comparison group before a gene / protein is removed from analysis. If no comparison groups are defined (for example for 'ssGSEA', the number of missing values accross all samples is used. Must be between 0-1."
+      },
+      {
+        "name": "create_reactome_visualization",
+        "display_name": "Create REACTOME visualizations",
+        "type": "bool",
+        "scope": "common",
+        "default": "True",
+        "description": "If set to 'False', no REACTOME visualization is created for the performed analysis."
+      },
+      {
+        "name": "create_reports",
+        "display_name": "Create reports",
+        "type": "bool",
+        "scope": "common",
+        "default": "False",
+        "description": "If set to 'True', additional Microsoft Excel and PDF-based reports of the analysis result will be created."
+      },
+      {
+        "name": "email",
+        "display_name": "E-Mail",
+        "type": "string",
+        "scope": "common",
+        "default": "",
+        "description": "If set to a valid e-mail address, links to the analysis result (and report) will be sent once the analysis is complete."
+      },
+      {
+        "name": "reactome_server",
+        "display_name": "Reactome server",
+        "type": "string",
+        "scope": "common",
+        "default": "production",
+        "description": "This parameter allows the usage of other reactome servers. Available options are 'production', 'dev', 'release'"
+      },
+      {
+        "name": "sample_groups",
+        "display_name": "Sample Groups",
+        "type": "string",
+        "scope": "dataset",
+        "default": "",
+        "description": "Specifies the sample property name that holds the sample group information. This parameter should be used for matched-pair analyses (f.e., the same patients before and after therapy). If used, every sample must occur exactly twice, once in each of the analysis groups."
+      },
+      {
+        "name": "discrete_norm_function",
+        "display_name": "Discrete normalisation function",
+        "type": "string",
+        "scope": "dataset",
+        "default": "TMM",
+        "values": ["TMM", "RLE", "upperquartile", "none"],
+        "description": "The normalisation function to use for raw RNA-seq read counts and raw Proteomics spectral counts. By default, the TMM normalisation is used."
+      },
+      {
+        "name": "continuous_norm_function",
+        "display_name": "Continuous normalisation function",
+        "type": "string",
+        "scope": "dataset",
+        "default": "none",
+        "values": ["none", "scale", "quantile", "cyclicloess"],
+        "description": "The normalisation function to use for proteomics intensity data. Note that it is generally advised that normalisation is performed on the PSM or peptide level and not on the protein level."
+      }
+    ]
+  },
+  {
+    "name": "Camera",
+    "data_types": [
+      "rnaseq_counts",
+      "rnaseq_norm",
+      "proteomics_int",
+      "proteomics_sc",
+      "microarray_norm"
+    ],
+    "description": "A gene set analysis algorithm similar to the classical GSEA algorithm as implemented in the limma package.",
+    "parameters": [
+      {
+        "name": "use_interactors",
+        "display_name": "Use interactors",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "False",
+        "description": "Indicates whether interactors from IntAct should be used to extent REACTOME's pathways in the analysis."
+      },
+      {
+        "name": "include_disease_pathways",
+        "display_name": "Include disease pathways",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "True",
+        "description": "Disease pathways in Reactome may lead to a skewed analysis result. Note: Excluding disease pathways currently prevents the visualization of results in the Reactome pathway browser."
+      },
+      {
+        "name": "max_missing_values",
+        "display_name": "Max. missing values",
+        "type": "float",
+        "scope": "dataset",
+        "default": "0.5",
+        "description": "The maximum (relative) number of missing values within one comparison group before a gene / protein is removed from analysis. If no comparison groups are defined (for example for 'ssGSEA', the number of missing values accross all samples is used. Must be between 0-1."
+      },
+      {
+        "name": "create_reactome_visualization",
+        "display_name": "Create REACTOME visualizations",
+        "type": "bool",
+        "scope": "common",
+        "default": "True",
+        "description": "If set to 'False', no REACTOME visualization is created for the performed analysis."
+      },
+      {
+        "name": "create_reports",
+        "display_name": "Create reports",
+        "type": "bool",
+        "scope": "common",
+        "default": "False",
+        "description": "If set to 'True', additional Microsoft Excel and PDF-based reports of the analysis result will be created."
+      },
+      {
+        "name": "email",
+        "display_name": "E-Mail",
+        "type": "string",
+        "scope": "common",
+        "default": "",
+        "description": "If set to a valid e-mail address, links to the analysis result (and report) will be sent once the analysis is complete."
+      },
+      {
+        "name": "reactome_server",
+        "display_name": "Reactome server",
+        "type": "string",
+        "scope": "common",
+        "default": "production",
+        "description": "This parameter allows the usage of other reactome servers. Available options are 'production', 'dev', 'release'"
+      },
+      {
+        "name": "discrete_norm_function",
+        "display_name": "Discrete normalisation function",
+        "type": "string",
+        "scope": "dataset",
+        "default": "TMM",
+        "values": ["TMM", "RLE", "upperquartile", "none"],
+        "description": "The normalisation function to use for raw RNA-seq read counts and raw Proteomics spectral counts. By default, the TMM normalisation is used."
+      },
+      {
+        "name": "continuous_norm_function",
+        "display_name": "Continuous normalisation function",
+        "type": "string",
+        "scope": "dataset",
+        "default": "none",
+        "values": ["none", "scale", "quantile", "cyclicloess"],
+        "description": "The normalisation function to use for proteomics intensity data. Note that it is generally advised that normalisation is performed on the PSM or peptide level and not on the protein level."
+      }
+    ]
+  },
+  {
+    "name": "ssGSEA",
+    "data_types": [
+      "rnaseq_counts",
+      "rnaseq_norm",
+      "proteomics_int",
+      "proteomics_sc",
+      "microarray_norm"
+    ],
+    "description": "The ssGSEA approach to derive pathway expression values for every sample. Note: The Reactome visualization is only available for up to 15 samples.",
+    "parameters": [
+      {
+        "name": "use_interactors",
+        "display_name": "Use interactors",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "False",
+        "description": "Indicates whether interactors from IntAct should be used to extent REACTOME's pathways in the analysis."
+      },
+      {
+        "name": "include_disease_pathways",
+        "display_name": "Include disease pathways",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "True",
+        "description": "Disease pathways in Reactome may lead to a skewed analysis result. Note: Excluding disease pathways currently prevents the visualization of results in the Reactome pathway browser."
+      },
+      {
+        "name": "max_missing_values",
+        "display_name": "Max. missing values",
+        "type": "float",
+        "scope": "dataset",
+        "default": "0.5",
+        "description": "The maximum (relative) number of missing values within one comparison group before a gene / protein is removed from analysis. If no comparison groups are defined (for example for 'ssGSEA', the number of missing values accross all samples is used. Must be between 0-1."
+      },
+      {
+        "name": "create_reactome_visualization",
+        "display_name": "Create REACTOME visualizations",
+        "type": "bool",
+        "scope": "common",
+        "default": "True",
+        "description": "If set to 'False', no REACTOME visualization is created for the performed analysis."
+      },
+      {
+        "name": "create_reports",
+        "display_name": "Create reports",
+        "type": "bool",
+        "scope": "common",
+        "default": "False",
+        "description": "If set to 'True', additional Microsoft Excel and PDF-based reports of the analysis result will be created."
+      },
+      {
+        "name": "email",
+        "display_name": "E-Mail",
+        "type": "string",
+        "scope": "common",
+        "default": "",
+        "description": "If set to a valid e-mail address, links to the analysis result (and report) will be sent once the analysis is complete."
+      },
+      {
+        "name": "reactome_server",
+        "display_name": "Reactome server",
+        "type": "string",
+        "scope": "common",
+        "default": "production",
+        "description": "This parameter allows the usage of other reactome servers. Available options are 'production', 'dev', 'release'"
+      },
+      {
+        "name": "pathways",
+        "display_name": "Pathways",
+        "type": "string",
+        "scope": "analysis",
+        "default": "",
+        "description": "A comma delimited list of pathways to include in the analysis. All other pathways will be ignored."
+      },
+      {
+        "name": "min_size",
+        "display_name": "Minimum pathway size",
+        "type": "int",
+        "scope": "analysis",
+        "default": "1",
+        "description": "The minimum pathway size (determined as the number of submitted genes mapped to that pathway) to include a pathway in the analysis."
+      },
+      {
+        "name": "max_size",
+        "display_name": "Maximum pathway size",
+        "type": "int",
+        "scope": "analysis",
+        "default": "1000",
+        "description": "The maximum pathway size (determined as the number of submitted genes mapped to that pathway) to include a pathway in the analysis."
+      }
+    ]
+  },
+  {
+    "name": "terapadog",
+    "data_types": ["ribo_rna_seq"],
+    "description": "Terapadog is an adaption of the PADOG algorithm to perform a simultaneous analysis of RNA-seq and Ribo-seq data. Thereby, both the transcriptional and the translational level can be captured simultaneously.",
+    "parameters": [
+      {
+        "name": "use_interactors",
+        "display_name": "Use interactors",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "False",
+        "description": "Indicates whether interactors from IntAct should be used to extent REACTOME's pathways in the analysis."
+      },
+      {
+        "name": "include_disease_pathways",
+        "display_name": "Include disease pathways",
+        "type": "bool",
+        "scope": "analysis",
+        "default": "True",
+        "description": "Disease pathways in Reactome may lead to a skewed analysis result. Note: Excluding disease pathways currently prevents the visualization of results in the Reactome pathway browser."
+      },
+      {
+        "name": "max_missing_values",
+        "display_name": "Max. missing values",
+        "type": "float",
+        "scope": "dataset",
+        "default": "0.5",
+        "description": "The maximum (relative) number of missing values within one comparison group before a gene / protein is removed from analysis. If no comparison groups are defined (for example for 'ssGSEA', the number of missing values accross all samples is used. Must be between 0-1."
+      },
+      {
+        "name": "create_reactome_visualization",
+        "display_name": "Create REACTOME visualizations",
+        "type": "bool",
+        "scope": "common",
+        "default": "True",
+        "description": "If set to 'False', no REACTOME visualization is created for the performed analysis."
+      },
+      {
+        "name": "create_reports",
+        "display_name": "Create reports",
+        "type": "bool",
+        "scope": "common",
+        "default": "False",
+        "description": "If set to 'True', additional Microsoft Excel and PDF-based reports of the analysis result will be created."
+      },
+      {
+        "name": "email",
+        "display_name": "E-Mail",
+        "type": "string",
+        "scope": "common",
+        "default": "",
+        "description": "If set to a valid e-mail address, links to the analysis result (and report) will be sent once the analysis is complete."
+      },
+      {
+        "name": "reactome_server",
+        "display_name": "Reactome server",
+        "type": "string",
+        "scope": "common",
+        "default": "production",
+        "description": "This parameter allows the usage of other reactome servers. Available options are 'production', 'dev', 'release'"
+      }
+    ]
+  }
+]
