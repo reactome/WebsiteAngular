@@ -231,3 +231,33 @@
     margin-right: 10%;
   }
 }
+
+// Replaces the Angular `left-column` trigger. A tissue moving between the two
+// columns slides in from the side and flashes the primary colour on the way,
+// so the eye can follow which one moved.
+//
+// The departure half of the old animation is gone: Angular removed the element
+// from the source column immediately, and CSS cannot hold a node in the DOM to
+// animate it out. The arrival is the half that carries the information.
+@keyframes tissue-arrive {
+  from {
+    transform: translateX(100%);
+  }
+
+  50% {
+    background-color: var(--primary);
+    color: var(--on-primary);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.tissue-box {
+  animation: tissue-arrive 500ms linear;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

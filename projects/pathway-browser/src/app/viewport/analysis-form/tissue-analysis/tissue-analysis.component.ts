@@ -28,7 +28,6 @@ import {
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { add } from 'vectorious';
-import { animate, group, sequence, style, transition, trigger } from '@angular/animations';
 type Summary = TissueExperiment.Summary;
 import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
 import { FormBuilder, FormControl } from '@angular/forms';
@@ -57,120 +56,6 @@ import { DarkService } from '../../../services/dark.service';
   ],
   templateUrl: './tissue-analysis.component.html',
   styleUrl: './tissue-analysis.component.scss',
-  animations: [
-    trigger('left-column', [
-      transition(':enter', [
-        style({
-          transform: 'translateX(100%)',
-          border: '1px solid var(--outline)',
-          borderTop: '0',
-          borderRadius: '4px',
-          backgroundColor: 'var(--surface)',
-          color: 'var(--on-surface)',
-        }),
-        group([
-          animate('500ms linear', style({ transform: 'translateX(0%)' })),
-          sequence([
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
-            ),
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
-            ),
-          ]),
-        ]),
-      ]),
-      transition(':leave', [
-        style({
-          transform: 'translateX(0%)',
-          border: '1px solid var(--outline)',
-          borderRadius: '4px',
-        }),
-        group([
-          animate('500ms linear', style({ transform: 'translateX(100%)' })),
-          sequence([
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
-            ),
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
-            ),
-          ]),
-        ]),
-        animate(
-          '1ms linear',
-          style({
-            transform: '',
-            borderRadius: '',
-            border: '',
-            borderBottom: '',
-            backgroundColor: '',
-            color: '',
-          })
-        ),
-      ]),
-    ]),
-    trigger('right-column', [
-      transition(':enter', [
-        style({
-          transform: 'translateX(-100%)',
-          border: '1px solid var(--outline)',
-          borderTop: '0',
-          borderRadius: '4px',
-          backgroundColor: 'var(--surface)',
-          color: 'var(--on-surface)',
-        }),
-        group([
-          animate('500ms linear', style({ transform: 'translateX(0%)' })),
-          sequence([
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
-            ),
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
-            ),
-          ]),
-        ]),
-      ]),
-      transition(':leave', [
-        style({
-          transform: 'translateX(0%)',
-          border: '1px solid var(--outline)',
-          borderRadius: '4px',
-        }),
-        group([
-          animate('500ms linear', style({ transform: 'translateX(-100%)' })),
-          sequence([
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--primary)', color: 'var(--on-primary)' })
-            ),
-            animate(
-              '250ms linear',
-              style({ backgroundColor: 'var(--surface)', color: 'var(--on-surface)' })
-            ),
-          ]),
-        ]),
-        animate(
-          '1ms linear',
-          style({
-            transform: '',
-            borderRadius: '',
-            border: '',
-            borderBottom: '',
-            backgroundColor: '',
-            color: '',
-          })
-        ),
-      ]),
-    ]),
-  ],
 })
 export class TissueAnalysisComponent {
   tissue = inject(TissueExperimentService);
