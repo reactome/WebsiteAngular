@@ -1,4 +1,8 @@
 .cite-button {
+  // Undo the UA button styling; the rules below do the visual work.
+  font: inherit;
+  appearance: none;
+
   border: 2px solid var(--primary);
   border-left: none;
   background-color: var(--on-primary);

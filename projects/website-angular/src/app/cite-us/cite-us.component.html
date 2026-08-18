@@ -1,8 +1,20 @@
-<div class="cite-button" (click)="openCitationDialog()" (mouseenter)="showText = true" (mouseleave)="showText = false">
-  @if (showText === false) {
+<!-- A button rather than a div: this is the only way to reach the citation
+     dialog from the main site, so it has to be focusable and operable from the
+     keyboard. The label is revealed on focus as well as hover for the same
+     reason. -->
+<button
+  type="button"
+  class="cite-button"
+  aria-label="Cite Us"
+  (click)="openCitationDialog()"
+  (mouseenter)="showText = true"
+  (mouseleave)="showText = false"
+  (focus)="showText = true"
+  (blur)="showText = false"
+>
+  @if (showText) {
+    <span class="cite-text">Cite Us!</span>
+  } @else {
     <mat-icon class="cite-icon">format_quote</mat-icon>
   }
-  @if (showText === true) {
-    <span class="cite-text"> Cite Us!</span>
-  }
-</div>
+</button>
