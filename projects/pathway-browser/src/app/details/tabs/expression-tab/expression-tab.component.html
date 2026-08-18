@@ -1,1 +1,6 @@
+@if (failed()) {
+  <p class="padding">The Expression Atlas widget could not be loaded, so there is no heatmap to show.</p>
+} @else if (empty()) {
+  <p class="padding">This entry has no genes with expression data.</p>
+}
 <div id="expressionContainer" class="padding"></div>

@@ -52,16 +52,17 @@ export class DetailsComponent {
   /**
    * The tab names, in the order the template renders them.
    *
-   * This has to be derived rather than a fixed list: Results and Download are
-   * only rendered outside the curator build, so a static array puts the wrong
-   * name against an index as soon as one is absent. It was already wrong --
-   * still listing 'expression', whose tab is not rendered, against the position
-   * Results now occupies, so selecting Results wrote ?tab=expression.
+   * This has to be derived rather than a fixed list: Results, Expression and
+   * Download are only rendered outside the curator build, so a static array puts
+   * the wrong name against an index as soon as one is absent. It was already
+   * wrong that way once -- clicking Results wrote ?tab=expression -- and adding
+   * the Expression tab back broke it again, so the ordering here has to mirror
+   * the template exactly.
    */
   readonly tabs = computed<string[]>(() => [
     'details',
     'molecule',
-    ...(this.isCurator ? [] : ['results']),
+    ...(this.isCurator ? [] : ['results', 'expression']),
     'info',
     ...(this.isCurator ? [] : ['download']),
   ]);

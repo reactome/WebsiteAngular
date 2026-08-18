@@ -87,34 +87,31 @@
         </ng-template>
       </mat-tab>
     }
-    <!-- Expression renders empty even against a quantitative analysis that
-         carries expression values, so it is unfinished rather than merely
-         hidden. Left out until it shows something. -->
-    <!--
-    <mat-tab #expressionTab>
-      <ng-template mat-tab-label>
-        <div class="label-content">
-          <mat-icon class="tab-icon" svgIcon="expression-tab"></mat-icon>
-          <span class="label-text">Expression</span>
-        </div>
-      </ng-template>
-      <ng-template matTabContent>
-        @if (!hasDetail()) {
-          <div class="tab-description-container">
-            <h3>📍 Gene Expression Map</h3>
-            <p>Details are shown when an item is selected in the pathway diagram above.</p>
-            <p>
-              This panel displays <b>gene expression</b> information for genes associated with the selected item across
-              a standard set of tissues and organs. Expression data is sourced from the Gene Expression Atlas.
-            </p>
+    @if (!isCurator) {
+      <mat-tab #expressionTab>
+        <ng-template mat-tab-label>
+          <div class="label-content">
+            <mat-icon class="tab-icon" svgIcon="expression-tab"></mat-icon>
+            <span class="label-text">Expression</span>
           </div>
-        }
-        @if (obj()) {
-          <cr-expression-tab [obj]="obj()!"></cr-expression-tab>
-        }
-      </ng-template>
-    </mat-tab>
-    -->
+        </ng-template>
+        <ng-template matTabContent>
+          @if (!hasDetail()) {
+            <div class="tab-description-container">
+              <h3>📍 Gene Expression Map</h3>
+              <p>Details are shown when an item is selected in the pathway diagram above.</p>
+              <p>
+                This panel displays <b>gene expression</b> information for genes associated with the selected item
+                across a standard set of tissues and organs. Expression data is sourced from the Gene Expression Atlas.
+              </p>
+            </div>
+          }
+          @if (obj()) {
+            <cr-expression-tab [obj]="obj()!"></cr-expression-tab>
+          }
+        </ng-template>
+      </mat-tab>
+    }
     <mat-tab #infoTab>
       <ng-template mat-tab-label>
         <div class="label-content">
