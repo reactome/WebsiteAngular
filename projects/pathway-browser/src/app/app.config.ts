@@ -1,7 +1,6 @@
 import { ApplicationConfig, LOCALE_ID, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app-routing.module';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideUiTour } from 'ngx-ui-tour-md-menu';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideStore } from '@ngrx/store';
@@ -21,7 +20,6 @@ export const appConfig: ApplicationConfig = {
     provideUiTour(),
     provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
-    provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
     provideStore({
       router: routerReducer,

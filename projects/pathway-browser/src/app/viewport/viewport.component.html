@@ -79,7 +79,7 @@
               }
 
               @if (hasMultipleProfile()) {
-                <div class="profile-controls" [@appear]>
+                <div class="profile-controls">
                   <!-- TODO find a CSS based way to link the label width to buttons -->
                   <div class="label">
                     {{ analysis.sampleIndex() + 1 }}/{{ analysis.samples().length }} : {{ state.sample() }}
@@ -124,7 +124,7 @@
               }
 
               @if (analysis.result()) {
-                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis" [@appear]>
+                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
                   <mat-icon>close</mat-icon>
                 </button>
               }

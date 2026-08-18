@@ -27,7 +27,6 @@ import {
   take,
   tap,
 } from 'rxjs';
-import { animate, sequence, style, transition, trigger } from '@angular/animations';
 import { SpeciesService } from '../../services/species.service';
 import { UrlStateService } from '../../services/url-state.service';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
@@ -66,42 +65,6 @@ type Scope = 'local' | 'global';
   ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
-  animations: [
-    trigger('suggest', [
-      transition(':enter', [
-        style({ height: '0' }),
-        animate('500ms ease-in-out', style({ height: '*' })),
-      ]),
-      transition(':leave', [animate('500ms ease-in-out', style({ height: '0' }))]),
-    ]),
-    trigger('results', [
-      transition(':enter', [
-        style({ height: '0' }),
-        animate('500ms ease-in-out', style({ height: '*' })),
-      ]),
-      transition(':leave', [animate('500ms ease-in-out', style({ height: '0' }))]),
-    ]),
-    trigger('result-pathways', [
-      transition(':enter', [
-        style({ width: 0, minWidth: '0%' }),
-        animate('500ms linear', style({ width: '50%', minWidth: '50%' })),
-      ]),
-      transition(':leave', [animate('500ms linear', style({ minWidth: '0%' }))]),
-    ]),
-    trigger('collapsable', [
-      transition(':enter', [
-        style({ height: '0' }),
-        animate('500ms ease-in-out', style({ height: '*' })),
-      ]),
-      transition(':leave', [
-        style({ height: '*' }),
-        sequence([
-          animate('500ms ease-in', style({ height: '0' })),
-          animate('10ms linear', style({ padding: '0 0', marginTop: '-4px' })),
-        ]),
-      ]),
-    ]),
-  ],
 })
 export class SearchComponent {
   private http: HttpClient = inject(HttpClient);

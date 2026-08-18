@@ -27,7 +27,7 @@
       <ng-container *ngTemplateOutlet="display; context: { $implicit: analysis.palette(), displayLabels: true }" />
     </div>
     @if (selectingPalette) {
-      <div class="palette-selector" [@selectAnim]>
+      <div class="palette-selector">
         @for (group of analysis.paletteGroups; track group.name) {
           @if (group.valid) {
             @for (pName of group.palettes; track pName) {
