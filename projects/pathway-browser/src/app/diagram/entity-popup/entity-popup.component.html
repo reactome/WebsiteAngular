@@ -70,7 +70,22 @@
               @for (row of group.rows; track $index) {
                 <li>
                   <button type="button" (click)="open(row)">
-                    <span class="row-label">{{ row.label }}</span>
+                    <!-- With an analysis running, every molecule says whether it
+                           was in it: otherwise a complex whose components are
+                           half hit looks the same as one nothing touched. -->
+                    @if (row.found !== undefined) {
+                      <span
+                        class="row-hit"
+                        [class.row-hit--found]="row.found"
+                        [matTooltip]="row.found ? 'In your analysis' : 'Not in your analysis'"
+                      ></span>
+                    }
+                    <span class="row-label" [class.row-label--missed]="row.found === false">{{ row.label }}</span>
+                    @if (row.expression?.length) {
+                      <span class="row-expression" matTooltip="Expression value">{{
+                        row.expression![0] | number: '1.0-2'
+                      }}</span>
+                    }
                     @if (row.detail) {
                       <span class="row-detail">{{ row.detail }}</span>
                     }

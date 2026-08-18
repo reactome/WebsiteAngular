@@ -208,3 +208,32 @@
   font-size: 0.78rem;
   opacity: 0.7;
 }
+
+// Analysis markers. A dot rather than a colour on the label: the rows already
+// carry type icons and colour, and this has to read at a glance next to them.
+.row-hit {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--outline, rgb(0 0 0 / 35%));
+  background: transparent;
+}
+
+.row-hit--found {
+  // The same green the diagram uses for a hit, so the popup and the diagram
+  // agree about what "found" looks like.
+  background: var(--analysis-hit, #2e7d32);
+  border-color: var(--analysis-hit, #2e7d32);
+}
+
+.row-label--missed {
+  opacity: 0.55;
+}
+
+.row-expression {
+  margin-left: auto;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
