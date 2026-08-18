@@ -7,17 +7,11 @@
     "declarationMap": true,
     "inlineSources": true,
     "types": [],
-    "typeRoots": [
-      "./node_modules/@types",
-      "./types",
-    ],
+    "typeRoots": ["./node_modules/@types", "./types"],
     "module": "ES2022",
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"]
+    "target": "ES2022"
   },
-  "exclude": [
-    "**/*.spec.ts"
-  ],
+  "exclude": ["**/*.spec.ts"],
   "angularCompilerOptions": {
     "compilationMode": "partial",
     "enableI18nLegacyMessageIdFormat": false,

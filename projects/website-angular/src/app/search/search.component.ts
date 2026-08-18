@@ -6,7 +6,7 @@ import {
   AfterViewInit,
   ViewChild,
   ElementRef,
-  NgZone,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -31,7 +31,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
 import {
-  environment,
+  ICON_HOST,
   CONTENT_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
 
@@ -57,7 +57,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private searchService = inject(SearchService);
   private siteSearch = inject(SiteSearchService);
   private http = inject(HttpClient);
-  private ngZone = inject(NgZone);
+  // This component keeps its state in plain fields (Records and Maps mutated
+  // in place), not signals, so nothing tells Angular when an async callback
+  // changes it. Under zones that worked by accident -- zone.js re-checked the
+  // whole tree after every completed XHR. Zoneless needs the notification to be
+  // explicit, hence markForCheck() at each async boundary below. Converting all
+  // ~20 fields to signals would be the idiomatic fix, but that is a rewrite of
+  // this component rather than a refactor.
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('captchaContainer') captchaContainer!: ElementRef<HTMLDivElement>;
 
@@ -129,13 +136,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       let q = params['q'] || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
-        if (
-          pathSegments.length === 2 &&
-          pathSegments[1].path.startsWith('query=')
-        ) {
-          q = decodeURIComponent(
-            pathSegments[1].path.substring('query='.length)
-          );
+        if (pathSegments.length === 2 && pathSegments[1].path.startsWith('query=')) {
+          q = decodeURIComponent(pathSegments[1].path.substring('query='.length));
         }
       }
 
@@ -159,6 +161,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.doSearch();
         this.getSuggestions(this.query);
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -178,9 +181,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.searchService.getSpellCheckTerms(query).subscribe({
       next: (terms) => {
         this.suggestedTerms = terms || [];
+        this.cdr.markForCheck();
       },
       error: () => {
         this.suggestedTerms = [];
+        this.cdr.markForCheck();
       },
     });
   }
@@ -189,7 +194,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     // Wait until the captcha container is available in the DOM
     const checkContainer = () => {
       if (this.captchaContainer?.nativeElement) {
-        this.loadHCaptchaScript().then(() => this.renderCaptcha());
+        this.loadHCaptchaScript()
+          .then(() => this.renderCaptcha())
+          // Without the widget the form cannot be submitted at all, so say so
+          // rather than leaving an empty box.
+          .catch((error) => console.error('Could not load hCaptcha', error));
       } else {
         setTimeout(checkContainer, 200);
       }
@@ -216,28 +225,22 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const hcaptcha = (window as any).hcaptcha;
     if (!hcaptcha || !this.captchaContainer?.nativeElement) return;
 
-    this.captchaWidgetId = hcaptcha.render(
-      this.captchaContainer.nativeElement,
-      {
-        sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-        theme: 'light',
-        callback: (token: string) => {
-          this.ngZone.run(() => {
-            this.captchaToken = token;
-          });
-        },
-        'expired-callback': () => {
-          this.ngZone.run(() => {
-            this.captchaToken = null;
-          });
-        },
-        'error-callback': () => {
-          this.ngZone.run(() => {
-            this.captchaToken = null;
-          });
-        },
-      }
-    );
+    this.captchaWidgetId = hcaptcha.render(this.captchaContainer.nativeElement, {
+      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
+      theme: 'light',
+      callback: (token: string) => {
+        this.captchaToken = token;
+        this.cdr.markForCheck();
+      },
+      'expired-callback': () => {
+        this.captchaToken = null;
+        this.cdr.markForCheck();
+      },
+      'error-callback': () => {
+        this.captchaToken = null;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private resetCaptcha(): void {
@@ -246,6 +249,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       hcaptcha.reset(this.captchaWidgetId);
     }
     this.captchaToken = null;
+    this.cdr.markForCheck();
   }
 
   private doSearch(): void {
@@ -260,9 +264,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
-      pages: this.siteSearch
-        .search(this.query)
-        .pipe(catchError(() => of([] as SitePageHit[]))),
+      pages: this.siteSearch.search(this.query).pipe(catchError(() => of([] as SitePageHit[]))),
     }).subscribe({
       next: ({ results, facets, pages }) => {
         // If either API call failed, show error
@@ -278,9 +280,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           // pagination chops each `group.entries` down to ~30, so we
           // must NOT recompute this from entries.length later.
           const biologyTotal = res.numberOfMatches ?? 0;
-          const hasNonDeleted = res.results?.some((group) =>
-            group.entries.some((e) => !e.deleted)
-          );
+          const hasNonDeleted = res.results?.some((group) => group.entries.some((e) => !e.deleted));
           res.results =
             res.results
               ?.map((group) => {
@@ -333,21 +333,24 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           // Append site-search hits as a "Pages" group at the bottom so
           // documentation/news/blog hits show up alongside biology entities.
           if (visiblePages.length) {
-            const pageEntries = visiblePages.map((p) => ({
-              dbId: -p.id,
-              id: p.url,
-              stId: p.url,
-              name: p.title,
-              referenceName: p.title,
-              exactType: 'Pages',
-              type: 'Pages',
-              species: [],
-              compartmentNames: [],
-              summation: p.excerpt,
-              pageCategory: p.category,
-              pageUrl: p.url,
-              pageExcerpt: p.excerpt,
-            } as unknown as SearchEntry));
+            const pageEntries = visiblePages.map(
+              (p) =>
+                ({
+                  dbId: -p.id,
+                  id: p.url,
+                  stId: p.url,
+                  name: p.title,
+                  referenceName: p.title,
+                  exactType: 'Pages',
+                  type: 'Pages',
+                  species: [],
+                  compartmentNames: [],
+                  summation: p.excerpt,
+                  pageCategory: p.category,
+                  pageUrl: p.url,
+                  pageExcerpt: p.excerpt,
+                }) as unknown as SearchEntry
+            );
             res.results = [
               ...res.results,
               {
@@ -359,8 +362,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           }
           // Keep Solr's biology total; add Pages count (when shown); zero
           // out biology when the user selected a Pages-only filter.
-          res.numberOfMatches =
-            (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
+          res.numberOfMatches = (selectedCats.length ? 0 : biologyTotal) + visiblePages.length;
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
@@ -369,8 +371,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
             ),
             0
           );
-          this.hasNoResults =
-            ((results as SearchResult).numberOfMatches || 0) === 0;
+          this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
           this.error = '';
 
           // Reset per-group pagination state
@@ -380,9 +381,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.expandedForms = {};
 
           // If there's a Protein group, fetch ALL protein entries for deduplication
-          const proteinGroup = this.results.results.find(
-            (g) => g.typeName === 'Protein'
-          );
+          const proteinGroup = this.results.results.find((g) => g.typeName === 'Protein');
           if (proteinGroup && proteinGroup.entriesCount > 0) {
             this.fetchAllProteins(proteinGroup.entriesCount);
           } else {
@@ -392,6 +391,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           }
         }
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Search error:', err);
@@ -400,16 +400,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
         this.results = null;
         this.facets = null;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   private handleSearchError(err: any): Observable<SearchResult | null> {
     // Check if this is a 404 with "No entries found" message
-    if (
-      err.status === 404 &&
-      err.error?.messages?.[0]?.includes('No entries found')
-    ) {
+    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
       // Return empty results instead of throwing error
       return of({
         results: [],
@@ -465,6 +463,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       this.uniqueProteins = [...representativeMap.values()];
       this.proteinTotalForms = allProteins.length;
       this.proteinLoading = false;
+      this.cdr.markForCheck();
     });
   }
 
@@ -514,14 +513,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return `${environment.host}/icon/${entry.stId}.svg`;
+    return `${ICON_HOST}/icon/${entry.stId}.svg`;
   }
 
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
-    return this.results.results.flatMap((g) =>
-      this.filterDeletedEntries(g.entries)
-    );
+    return this.results.results.flatMap((g) => this.filterDeletedEntries(g.entries));
   }
 
   toggleFacet(category: string, value: string): void {
@@ -592,10 +589,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return entries;
   }
 
-  private updateQueryParams(
-    params: Record<string, string | string[] | null>
-  ): void {
-    this.router.navigate([], {
+  private updateQueryParams(params: Record<string, string | string[] | null>): void {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       queryParamsHandling: 'merge',
@@ -635,16 +630,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     if (this.currentMode === 'reference') {
       const id = entry.id || entry.stId;
-      if (entry.exactType === 'Interactor')
-        return '/content/detail/interactor/' + id;
+      if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
       if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
       return '/content/detail/' + id;
     }
     //Remove HTML tags from entry.stId if present
     entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
 
-    if (entry.exactType === 'Interactor')
-      return '/content/detail/interactor/' + entry.stId;
+    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
     if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
     return '/content/detail/' + entry.stId;
   }
@@ -653,7 +646,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const pages: number[] = [];
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(this.totalPages, start + maxVisible);
+    const end = Math.min(this.totalPages, start + maxVisible);
 
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);
@@ -714,10 +707,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       const start = page * this.groupPageSize;
       return this.uniqueProteins.slice(start, start + this.groupPageSize);
     }
-    return (
-      this.groupPageEntries[group.typeName] ||
-      group.entries.slice(0, this.groupPageSize)
-    );
+    return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
   goToGroupPage(group: ResultGroup, page: number): void {
@@ -730,25 +720,21 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.groupLoading[group.typeName] = true;
     this.searchService
-      .search(
-        this.query,
-        { ...this.filters, types: [group.typeName] },
-        page,
-        this.groupPageSize
-      )
+      .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
       .pipe(catchError(() => of(null)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        if (!result?.results?.length) return;
+        if (!result?.results?.length) {
+          this.cdr.markForCheck();
+          return;
+        }
         this.groupPageEntries[group.typeName] = result.results[0].entries;
+        this.cdr.markForCheck();
       });
   }
 
   getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
-    return this.buildPageNumbers(
-      this.getGroupPage(group),
-      this.getGroupTotalPages(group)
-    );
+    return this.buildPageNumbers(this.getGroupPage(group), this.getGroupTotalPages(group));
   }
 
   submitContactForm(event: Event): void {
@@ -767,11 +753,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       next: () => {
         this.formSubmitted = true;
         this.resetCaptcha();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error submitting contact form:', err);
         this.formSubmitted = true; // Still show thank you message even if there's an error
         this.resetCaptcha();
+        this.cdr.markForCheck();
       },
     });
   }

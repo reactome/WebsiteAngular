@@ -1,5 +1,4 @@
-import {Go_Term} from "./go-term.model";
-
+import { Go_Term } from './go-term.model';
 
 export interface GO_CellularComponent extends Go_Term {
   componentOf: GO_CellularComponent[];

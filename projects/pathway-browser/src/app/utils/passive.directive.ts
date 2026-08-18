@@ -1,43 +1,50 @@
-import {computed, Directive, effect, ElementRef, input, OnDestroy, OnInit, Renderer2} from '@angular/core';
+import {
+  computed,
+  Directive,
+  effect,
+  ElementRef,
+  input,
+  OnDestroy,
+  Renderer2,
+  inject,
+} from '@angular/core';
 
 type EventType = keyof HTMLElementEventMap;
 
 @Directive({
-  selector: '[passive]'
+  selector: '[passive]',
 })
-export class PassiveDirective implements OnInit, OnDestroy {
+export class PassiveDirective implements OnDestroy {
+  private element = inject(ElementRef);
+  private renderer = inject(Renderer2);
+
   listeners = input.required<{
-    [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void
-  }>({alias: 'passive'})
-  once = input(false)
-  capture = input(false)
+    [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void;
+  }>({ alias: 'passive' });
+  once = input(false);
+  capture = input(false);
 
-  options = computed(() => ({passive: true, once: this.once(), capture: this.capture()}))
+  options = computed(() => ({ passive: true, once: this.once(), capture: this.capture() }));
 
-  private removers: (() => void)[] = []
+  private removers: (() => void)[] = [];
 
-  constructor(private element: ElementRef, private renderer: Renderer2) {
+  constructor() {
     effect(() => {
       this.clear();
       const [listeners, options] = [this.listeners(), this.options()];
       if (!listeners) return console.warn('No listeners provided');
-      this.removers = Object.entries(listeners)
-        .map(([type, listener]) =>
-          this.renderer.listen(this.element.nativeElement, type, listener, options)
-        );
+      this.removers = Object.entries(listeners).map(([type, listener]) =>
+        this.renderer.listen(this.element.nativeElement, type, listener, options)
+      );
     });
   }
 
-  ngOnInit(): void {
-  }
-
   ngOnDestroy(): void {
-    this.clear()
+    this.clear();
   }
 
   clear() {
-    this.removers.forEach(remove => remove());
+    this.removers.forEach((remove) => remove());
     this.removers = [];
   }
-
 }

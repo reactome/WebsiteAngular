@@ -13,10 +13,12 @@
 
   padding: var(--padding);
 
-  @include mat.tree-overrides((
-    node-text-weight: 400,
-    node-text-size:14px
-  ));
+  @include mat.tree-overrides(
+    (
+      node-text-weight: 400,
+      node-text-size: 14px,
+    )
+  );
 }
 
 .component-tree-invisible {
@@ -26,10 +28,9 @@
 /*
  * This padding sets alignment of the nested nodes.
  */
-.component-tree .mat-nested-tree-node div[role=group] {
+.component-tree .mat-nested-tree-node div[role='group'] {
   padding-left: 28px;
 }
-
 
 .mat-tree-node {
   display: flex;
@@ -58,9 +59,7 @@
   align-items: center;
   gap: 5px;
   min-width: 200px;
-
 }
-
 
 .name {
   white-space: nowrap;
@@ -77,7 +76,6 @@
   line-height: 12px;
   letter-spacing: 0.4px;
 }
-
 
 .mat-tree {
   --mat-tree-node-min-height: 20px;
@@ -99,7 +97,6 @@
   max-width: var(--max-width);
 }
 
-
 .shared-style {
   padding: 0 8px;
   background: var(--tertiary-container);
@@ -117,8 +114,7 @@
   @extend .shared-style;
 }
 
-.goTo-container
-{
+.goTo-container {
   padding: 0;
   gap: 5px;
   width: 20px;
@@ -144,24 +140,24 @@
   --touch-size: 20px;
   --icon-ratio: 0.8;
 
-  @include mat.icon-button-overrides((
-    state-layer-size: var(--size, 40px),
-    icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
-  ));
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: var(--size, 40px),
+      icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
+    )
+  );
 
   .mat-icon {
     width: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
     height: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
     font-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
   }
-
 }
 
-:host ::ng-deep .select.button .mat-mdc-button-touch-target{
+:host ::ng-deep .select.button .mat-mdc-button-touch-target {
   width: var(--touch-size, 48px);
   height: var(--touch-size, 48px);
 }
-
 
 .symbol-icon {
   display: flex;
@@ -169,7 +165,6 @@
   height: var(--connector-height);
   flex-shrink: 0;
 }
-
 
 /* Connector styles*/
 .mat-nested-tree-node {
@@ -184,7 +179,6 @@
 
   left: calc(-1 * (var(--connector-width) + var(--gap)) * var(--level, 1));
   gap: var(--gap);
-
 }
 
 .connector {
@@ -203,9 +197,8 @@
 
   .connector:not(:last-child) {
     width: var(--connector-width);
-    height: 100%
+    height: 100%;
   }
-
 }
 
 .connector[data-shape] {
@@ -271,7 +264,7 @@
   mask: url('../../../../assets/connector/dashed-L.svg');
 }
 
-.solidIConnector, {
+.solidIConnector {
   background-color: var(--on-surface);
   mask: url('../../../../assets/connector/solid-I.svg');
 }
@@ -279,7 +272,6 @@
 .solidTConnector {
   background-color: var(--on-surface);
   mask: url('../../../../assets/connector/solid-T.svg');
-
 }
 
 .solidLConnector {
@@ -287,16 +279,14 @@
   mask: url('../../../../assets/connector/solid-L.svg');
 }
 
-.miniDashedIConnector, {
+.miniDashedIConnector {
   background-color: var(--on-surface);
   mask: url('../../../../assets/connector/mini-dashed-I.svg');
-
 }
 
 .miniDashedTConnector {
   background-color: var(--on-surface);
   mask: url('../../../../assets/connector/mini-dashed-T.svg');
-
 }
 
 .miniDashedLConnector {
@@ -309,7 +299,6 @@
   mask: url('../../../../assets/connector/solid-L.svg');
 }
 
-
 /* Divider styles */
 //.composition-container {
 //  @include mat.divider-overrides((
@@ -317,10 +306,6 @@
 //    width: 2px
 //  ));
 //}
-
-
-
-
 
 /* Take full height of the parent to ensure branch line(connector) is working in Firefox and Safari*/
 .details-tree {
@@ -332,11 +317,13 @@
 }
 
 .button {
-  @include mat.icon-button-overrides((
-    state-layer-size: 20px
-  ))
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 20px,
+    )
+  );
 }
 
 .highlight-tag {
-  padding: 4px 4px
+  padding: 4px 4px;
 }

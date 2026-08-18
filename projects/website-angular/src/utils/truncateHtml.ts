@@ -15,7 +15,22 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
   let currentTag = '';
 
   // Self-closing tags that don't need to be tracked
-  const selfClosingTags = new Set(['img', 'br', 'hr', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'param', 'source', 'track', 'wbr']);
+  const selfClosingTags = new Set([
+    'img',
+    'br',
+    'hr',
+    'input',
+    'meta',
+    'link',
+    'area',
+    'base',
+    'col',
+    'embed',
+    'param',
+    'source',
+    'track',
+    'wbr',
+  ]);
 
   for (let i = 0; i < html.length; i++) {
     const char = html[i];
@@ -40,7 +55,7 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
       const tagMatch = currentTag.match(/^\/?\s*(\w+)/);
       if (tagMatch) {
         const tagName = tagMatch[1].toLowerCase();
-        
+
         // Check if it's a closing tag
         if (currentTag.startsWith('/')) {
           // Pop from stack if it matches

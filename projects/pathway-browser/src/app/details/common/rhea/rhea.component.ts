@@ -1,22 +1,31 @@
-import {Component, computed, CUSTOM_ELEMENTS_SCHEMA, effect, ElementRef, input, viewChildren} from '@angular/core';
-import {DatabaseIdentifier} from "../../../model/graph/database-identifier.model";
-import {rxResource} from "@angular/core/rxjs-interop";
-import {RheaService} from "../../../services/rhea.service";
-import {forkJoin} from "rxjs";
-import {HttpClient} from "@angular/common/http";
-import {template} from "lodash";
-import {layers} from "cytoscape-layers";
+import {
+  Component,
+  computed,
+  CUSTOM_ELEMENTS_SCHEMA,
+  effect,
+  ElementRef,
+  input,
+  viewChildren,
+  inject,
+} from '@angular/core';
+import { DatabaseIdentifier } from '../../../model/graph/database-identifier.model';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { RheaService } from '../../../services/rhea.service';
+import { forkJoin } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { template } from 'lodash';
+import { layers } from 'cytoscape-layers';
 import '@swissprot/rhea-reaction-viz-test';
-import {DarkService} from "../../../services/dark.service";
+import { DarkService } from '../../../services/dark.service';
 
 export type Layout = {
   columns: string;
   areas: string;
-}
+};
 
 interface LabelLayout {
-  left: number;   // horizontal center position
-  width: number;  // width of the g element scaled
+  left: number; // horizontal center position
+  width: number; // width of the g element scaled
 }
 
 interface SvgLayout {
@@ -28,24 +37,21 @@ interface SvgLayout {
   imports: [],
   templateUrl: './rhea.component.html',
   styleUrl: './rhea.component.scss',
-  schemas: [
-    CUSTOM_ELEMENTS_SCHEMA
-  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class RheaComponent {
+  private rheaService = inject(RheaService);
+  private http = inject(HttpClient);
+  private dark = inject(DarkService);
 
-  readonly _xRefs = input.required<DatabaseIdentifier[]>({alias: 'crossRefs'});
+  readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
 
   //todo: custom layout, remove it when dropping this layout
   reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
 
   //layouts = signal<Layout[]>([{columns: '', areas: ''}]);
 
-
-  constructor(private rheaService: RheaService,
-              private http: HttpClient,
-              private dark: DarkService) {
-
+  constructor() {
     //todo: custom layout, remove it when dropping this layout
 
     // effect(() => {
@@ -67,15 +73,16 @@ export class RheaComponent {
     // });
 
     effect(() => {
-      const bgColor = this.dark.isDark() ? '{filter:hue-rotate(180deg) invert(1)}' : '{fill:transparent !important}';
+      const bgColor = this.dark.isDark()
+        ? '{filter:hue-rotate(180deg) invert(1)}'
+        : '{fill:transparent !important}';
       if (this.rheaResources()) {
-        console.log("run...")
+        console.log('run...');
         setTimeout(() => {
           const elements = document.querySelectorAll('rhea-visualizer') as NodeListOf<HTMLElement>;
           if (!elements) return;
 
-          elements.forEach(element => {
-
+          elements.forEach((element) => {
             if (!element.shadowRoot) return;
             //
             // const atommap = element.shadowRoot.querySelector('.rhea-reaction-visualizer .atommap  rhea-atommap') as HTMLElement;
@@ -90,8 +97,7 @@ export class RheaComponent {
             // console.log('svg ', svg)
             // console.log('svg ', height);
 
-
-            let css = `
+            const css = `
              .rhea-reaction-source {
                display: none;
               }
@@ -123,7 +129,7 @@ export class RheaComponent {
              }
              input[type="checkbox"] {
                accent-color: var(--primary);}
-           `
+           `;
             // if (svgBBoxHeight > 200) {
             //   css += `
             //       .rhea-mapping-container2 {
@@ -131,49 +137,42 @@ export class RheaComponent {
             //       }
             //   `
             // }
-            const sheet = new CSSStyleSheet;
+            const sheet = new CSSStyleSheet();
             sheet.replaceSync(css);
             element.shadowRoot.adoptedStyleSheets = [sheet];
-
-          })
-        }, 0)
-
+          });
+        }, 0);
       }
     });
   }
 
-
   _rheaResources = rxResource({
-    request: () => this._xRefs(),
-    loader: (params) => {
-
-      const identifiers = params.request;
+    params: () => this._xRefs(),
+    stream: (params) => {
+      const identifiers = params.params;
 
       /*
        Remove duplicated object in the list when they have same identifier
        */
       const unique = new Set<string>();
-      const xRefs = identifiers.filter(i => {
+      const xRefs = identifiers.filter((i) => {
         if (unique.has(i.identifier)) return false;
         unique.add(i.identifier);
         return true;
-      })
+      });
 
-      return forkJoin((
-        xRefs.map(xRef => this.rheaService.getRheaJson(xRef))
-      ))
-    }
-  })
+      return forkJoin(xRefs.map((xRef) => this.rheaService.getRheaJson(xRef)));
+    },
+  });
 
   rheaResources = computed(() => this._rheaResources.value());
-
 
   //todo: custom layout, remove it when dropping this layout
 
   // _structureSVGs = rxResource({
-  //   request: () => this.rheaResources() || [],
-  //   loader: (params) => {
-  //     const rheas = params.request;
+  //   params: () => this.rheaResources() || [],
+  //   stream: (params) => {
+  //     const rheas = params.params;
   //
   //     return forkJoin((
   //       rheas.map(rhea => {
@@ -194,11 +193,9 @@ export class RheaComponent {
   //   }
   // })
 
-
   allParticipantStructures = computed(() => {
-    return this.rheaResources()?.flatMap(rheaJson => rheaJson.participants);
-  })
-
+    return this.rheaResources()?.flatMap((rheaJson) => rheaJson.participants);
+  });
 
   //todo: custom layout, remove it when dropping this layout
 

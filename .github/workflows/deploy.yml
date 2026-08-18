@@ -1,10 +1,20 @@
 name: Deploy to S3
 
+# Runs only after Tests has passed for the same commit.
+#
+# This used to trigger on push, in parallel with Tests, so a commit deployed
+# whether or not its tests passed -- and did, the day the e2e job was timing out
+# for half an hour at a time. workflow_run makes the deploy a consequence of a
+# green build rather than a race against it.
 on:
-  push:
+  workflow_run:
+    workflows: ['Tests']
+    types: [completed]
     branches:
       - main
       - prod
+  # Escape hatch for redeploying without a new commit.
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -13,19 +23,27 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # A failed or cancelled test run must not deploy. workflow_dispatch has no
+    # workflow_run payload, so allow that through explicitly.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Deploy the commit that was tested, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Determine version
         id: version
         run: |
-          PROD_VERSION=$(curl -sf https://newcurator.reactome.org/ContentService/data/database/version)
+          PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
           echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"
 
           if [ "${{ github.ref_name }}" = "prod" ]; then
@@ -39,9 +57,20 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      # site-search-index.json and the compiled content JSON are both generated
+      # and gitignored. Without these the deployed bundle has no site-page
+      # search index (search silently returns no Pages) and no CMS content.
+      - name: Generate content indices and compile content
+        run: |
+          npm run generate:indices
+          npm run stage:content
+
       - name: Build
         run: |
           npx ng build reactome-cytoscape-style
+          npx ng build ngx-reactome-style
+          npx ng build reactome-table
+          npx ng build reactome-gsa-form
           npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/
 
       - name: Configure AWS credentials

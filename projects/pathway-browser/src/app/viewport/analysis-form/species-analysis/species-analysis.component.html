@@ -38,13 +38,15 @@
             }
           </div>
           <span class="title"> </span>
-
-
         </div>
         @for (species of comparableSpecies(); track species.dbId) {
-          <div class="species-button" matRipple (click)="toggle(species)"
-               [matTooltip]="species.displayName"
-               [class.selected]="selectedSpecies() === species">
+          <div
+            class="species-button"
+            matRipple
+            (click)="toggle(species)"
+            [matTooltip]="species.displayName"
+            [class.selected]="selectedSpecies() === species"
+          >
             <mat-icon class="custom-icon" [svgIcon]="getSpeciesIconName(species)"></mat-icon>
             <span class="species-name">{{ species.shortName }}</span>
           </div>
@@ -52,17 +54,14 @@
       </div>
     </div>
 
-
     <div class="stepper-controls">
       <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button mat-stroked-button (click)="close.emit({status: 'premature'})">
+      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">Next
-      </button>
+      <button mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">Next</button>
     </div>
-
   </mat-step>
   <mat-step label="Analysis">
     <div class="loader-container">
@@ -72,7 +71,7 @@
     </div>
     <div class="stepper-controls">
       <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-stroked-button (click)="close.emit({status: 'premature'})">
+      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>

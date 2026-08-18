@@ -1,10 +1,10 @@
 <div class="container">
   @for (row of rheaResources(); let i = $index; track row.id) {
-
     <div class="row">
-      <div class="label-container"><a [href]="row.url" target="_blank"> RHEA {{ row.id }}</a></div>
+      <div class="label-container">
+        <a [href]="row.url" target="_blank"> RHEA {{ row.id }}</a>
+      </div>
       <div class="composition-container">
-
         <div class="rhea-widget">
           <rhea-visualizer [attr.rheaid]="row.id"></rhea-visualizer>
         </div>
@@ -56,8 +56,6 @@
         <!--          }-->
         <!--        </div>-->
         <!--******-->
-
-
       </div>
     </div>
   }

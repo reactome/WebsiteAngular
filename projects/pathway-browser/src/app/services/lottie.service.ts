@@ -1,12 +1,21 @@
-import {Injectable} from '@angular/core';
-import {Data, DotLottie, DotLottieWorker, EventManager, Layout, Mode, RenderConfig} from "@lottiefiles/dotlottie-web";
+import { Injectable } from '@angular/core';
+import {
+  Data,
+  DotLottie,
+  DotLottieWorker,
+  EventManager,
+  Layout,
+  Mode,
+  RenderConfig,
+} from '@lottiefiles/dotlottie-web';
 
-let module: {
-  DotLottie: typeof DotLottie;
-  DotLottieWorker?: typeof DotLottieWorker;
-  EventManager?: typeof EventManager;
-} | undefined = undefined
-
+let module:
+  | {
+      DotLottie: typeof DotLottie;
+      DotLottieWorker?: typeof DotLottieWorker;
+      EventManager?: typeof EventManager;
+    }
+  | undefined = undefined;
 
 interface Config {
   animationId?: string;
@@ -27,14 +36,11 @@ interface Config {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LottieService {
-
   async buildLottie(params: Config) {
-    if (module === undefined) module = await import('@lottiefiles/dotlottie-web')
-    return new module.DotLottie(params)
+    if (module === undefined) module = await import('@lottiefiles/dotlottie-web');
+    return new module.DotLottie(params);
   }
-
-
 }

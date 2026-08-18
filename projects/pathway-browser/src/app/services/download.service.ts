@@ -1,10 +1,8 @@
-import {Injectable, signal} from '@angular/core';
-
-
+import { Injectable, signal } from '@angular/core';
 
 export enum DownloadTarget {
   REACFOAM = 'reacfoam',
-  DIAGRAM = 'diagram'
+  DIAGRAM = 'diagram',
 }
 
 export enum DownloadFormat {
@@ -17,50 +15,48 @@ export enum DownloadFormat {
 
 export const IMAGES_FORMAT = {
   PNG: DownloadFormat.PNG,
-  JPEG: DownloadFormat.JPEG
+  JPEG: DownloadFormat.JPEG,
 } as const;
 
 export interface DownloadOptions {
-  animate: boolean,
-  includeLegend: boolean,
-  includeTimeline: boolean,
-  timePerFrame: number,
-  transitionTime: number,
+  animate: boolean;
+  includeLegend: boolean;
+  includeTimeline: boolean;
+  timePerFrame: number;
+  transitionTime: number;
 }
 
-export const defaultDownloadOptions : DownloadOptions= {
+export const defaultDownloadOptions: DownloadOptions = {
   animate: false,
   includeLegend: true,
   includeTimeline: true,
   timePerFrame: 2,
   transitionTime: 0.1,
-}
+};
 
-export type ImageType = typeof IMAGES_FORMAT[keyof typeof IMAGES_FORMAT];
+export type ImageType = (typeof IMAGES_FORMAT)[keyof typeof IMAGES_FORMAT];
 
 export type DownloadRequest = {
   target: DownloadTarget.DIAGRAM | DownloadTarget.REACFOAM;
   format: DownloadFormat;
   options?: DownloadOptions;
-} | null
+} | null;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DownloadService {
-
-  readonly downloadRequest = signal<DownloadRequest>(null)
+  readonly downloadRequest = signal<DownloadRequest>(null);
 
   requestDownload(target: DownloadTarget, format: DownloadFormat, options?: DownloadOptions) {
-    this.downloadRequest.set({target, format, options: options || defaultDownloadOptions})
+    this.downloadRequest.set({ target, format, options: options || defaultDownloadOptions });
   }
 
   resetDownload() {
     this.downloadRequest.set(null);
   }
 
-  constructor() {
-  }
+  constructor() {}
 
   isRasterFormat(format: DownloadFormat): format is ImageType {
     return format === DownloadFormat.PNG || format === DownloadFormat.JPEG;
@@ -72,10 +68,9 @@ export class DownloadService {
 
   export(data: string, format: DownloadFormat, name = 'reacfoam') {
     const a = document.createElement('a');
-    a.href = data
+    a.href = data;
     a.download = `${name}.${format}`;
     a.click();
     a.remove();
   }
-
 }

@@ -1,7 +1,7 @@
-import { Component, inject, Input } from '@angular/core';
+import { NavOptionsService } from '../../../services/nav-options.service';
+import { ChangeDetectorRef, Component, inject, Input, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ButtonComponent } from "../../reactome-components/button/button.component";
-import { mapNavOptions } from '../../../utils/nav-options-mapper';
+import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
@@ -15,18 +15,27 @@ import { NavOption } from '../../../types/link';
   standalone: true,
   imports: [RouterModule, ButtonComponent],
   templateUrl: './home-spotlight.component.html',
-  styleUrl: './home-spotlight.component.scss'
+  styleUrl: './home-spotlight.component.scss',
 })
-export class HomeSpotlightComponent {
+export class HomeSpotlightComponent implements OnInit {
   contentService = inject(ContentService);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   loading = true;
-  spotLightArticle: ArticleIndexItem = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
+  spotLightArticle: ArticleIndexItem = {
+    title: '',
+    date: new Date(),
+    author: '',
+    slug: '',
+    excerpt: '',
+  };
   renderedContent: string = '';
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
 
   ngOnInit() {
-    this.loadNavOptions();
     this.loadSpotLightArticle();
   }
 
@@ -41,33 +50,34 @@ export class HomeSpotlightComponent {
           author: item.author,
           tags: item.tags || [],
           slug: item.slug,
-          excerpt: item.excerpt
-        } ))[0];
+          excerpt: item.excerpt,
+        }))[0];
         this.loading = false;
-        
+
         // Load the full article content using the slug
-        this.contentService.getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug).subscribe({
-          next: async (article) => {
-            let html = await marked(article?.body || '');
-            this.renderedContent = truncateHtml(stripFirstH(html), 150);
-          }
-        });
+        this.contentService
+          .getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug)
+          .subscribe({
+            next: (article) => {
+              // Callback kept synchronous: an async one hands a promise to code
+              // that ignores it, so any rejection in here would vanish.
+              void (async () => {
+                const html = await marked(article?.body || '');
+                this.renderedContent = truncateHtml(stripFirstH(html), 150);
+              })().catch((error) => console.error('Could not render spotlight', error));
+              this.cdr.markForCheck();
+            },
+          });
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error loading articles:', err);
-        this.spotLightArticle = {title: '', date: new Date(), author: '', slug: '', excerpt: ''};
+        this.spotLightArticle = { title: '', date: new Date(), author: '', slug: '', excerpt: '' };
         this.loading = false;
-      }
+        this.cdr.markForCheck();
+      },
     });
   }
-
-  loadNavOptions() {
-    import('../../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
-  }
-
-  
 
   formatD(date: Date): string {
     return formatDate(date);

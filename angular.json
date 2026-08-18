@@ -20,7 +20,6 @@
             "outputPath": "dist/reactome",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -48,11 +47,17 @@
               },
               {
                 "glob": "**/*",
-                "input": "projects/website-angular/content",
+                "input": "projects/website-angular/content-dist",
                 "output": "/content"
               }
             ],
-            "allowedCommonJsDependencies": ["svgcanvas", "svg-pan-zoom", "@swissprot/rhea-reaction-viz-test", "cytoscape-fcose", "lodash"],
+            "allowedCommonJsDependencies": [
+              "svgcanvas",
+              "svg-pan-zoom",
+              "@swissprot/rhea-reaction-viz-test",
+              "cytoscape-fcose",
+              "lodash"
+            ],
             "styles": ["src/styles.scss"],
             "scripts": [],
             "stylePreprocessorOptions": {
@@ -61,12 +66,11 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/curatorgraph/",
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "450kB",
+                  "maximumError": "550kB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -80,6 +84,30 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "curator": {
+              "baseHref": "/curatorgraph/",
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/variant.ts",
+                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                }
+              ]
+            },
+            "curator-local": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/pathway-browser/src/environments/variant.ts",
+                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                },
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.curator-local.ts"
+                }
+              ]
             },
             "local": {
               "optimization": false,
@@ -95,7 +123,7 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.js"
           },
           "configurations": {
             "production": {
@@ -103,6 +131,13 @@
             },
             "development": {
               "buildTarget": "reactome:build:development"
+            },
+            "curator": {
+              "buildTarget": "reactome:build:development,curator"
+            },
+            "curator-local": {
+              "buildTarget": "reactome:build:curator-local",
+              "proxyConfig": "proxy.curator-local.conf.json"
             },
             "local": {
               "buildTarget": "reactome:build:local"
@@ -116,7 +151,6 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -148,7 +182,6 @@
             "outputPath": "dist/website-angular",
             "index": "projects/website-angular/src/index.html",
             "browser": "projects/website-angular/src/main.ts",
-            "polyfills": ["zone.js"],
             "tsConfig": "projects/website-angular/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -202,7 +235,7 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.js"
           },
           "configurations": {
             "production": {
@@ -245,7 +278,7 @@
               "lodash/set",
               "lodash/toPath"
             ],
-            "polyfills": ["zone.js", "@angular/localize/init"],
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "projects/pathway-browser/tsconfig.app.json",
             "assets": [
               "projects/pathway-browser/src/favicon.svg",
@@ -378,11 +411,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing",
-              "@angular/localize/init"
-            ],
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "tsconfig.spec.json",
             "assets": ["src/favicon.svg", "src/assets"],
             "styles": ["src/styles.scss"],
@@ -424,11 +453,157 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "tsConfig": "projects/reactome-cytoscape-style/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ]
+            "tsConfig": "projects/reactome-cytoscape-style/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "ngx-reactome-style": {
+      "projectType": "library",
+      "root": "projects/ngx-reactome-style",
+      "sourceRoot": "projects/ngx-reactome-style/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/ngx-reactome-style/ng-package.json",
+            "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    },
+    "reactome-table": {
+      "projectType": "library",
+      "root": "projects/reactome-table",
+      "sourceRoot": "projects/reactome-table/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/reactome-table/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/reactome-table/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/reactome-table/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/reactome-table/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "reactome-gsa-form": {
+      "projectType": "library",
+      "root": "projects/reactome-gsa-form",
+      "sourceRoot": "projects/reactome-gsa-form/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/reactome-gsa-form/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/reactome-gsa-form/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/reactome-gsa-form/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/reactome-gsa-form/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "reactome-table-wc": {
+      "projectType": "application",
+      "root": "projects/reactome-table-wc",
+      "sourceRoot": "projects/reactome-table-wc/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": {
+              "base": "dist/reactome-table-wc"
+            },
+            "index": "projects/reactome-table-wc/src/index.html",
+            "tsConfig": "projects/reactome-table-wc/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [],
+            "styles": ["projects/reactome-table/src/assets/_index.scss"],
+            "scripts": [],
+            "browser": "projects/reactome-table-wc/src/main.ts"
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "5kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "reactome-table-wc:build:production"
+            },
+            "development": {
+              "buildTarget": "reactome-table-wc:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/reactome-table-wc/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "styles": [],
+            "scripts": []
           }
         }
       }
@@ -436,5 +611,31 @@
   },
   "cli": {
     "analytics": "50c0c135-7597-4d12-af2a-c2f05c84c5b1"
+  },
+  "schematics": {
+    "@schematics/angular:component": {
+      "type": "component"
+    },
+    "@schematics/angular:directive": {
+      "type": "directive"
+    },
+    "@schematics/angular:service": {
+      "type": "service"
+    },
+    "@schematics/angular:guard": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:interceptor": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:module": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:pipe": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:resolver": {
+      "typeSeparator": "."
+    }
   }
 }

@@ -38,7 +38,6 @@
     color: var(--on-surface);
     font: var(--mat-sys-body-medium);
   }
-
 }
 
 .stepper {
@@ -56,7 +55,6 @@
       display: flex;
       flex-direction: column;
     }
-
   }
 }
 
@@ -79,9 +77,11 @@
   }
 
   .experiment-selector-wrapper {
-    @include mat.form-field-overrides((
-      filled-container-shape: var(--corner-radius),
-    ));
+    @include mat.form-field-overrides(
+      (
+        filled-container-shape: var(--corner-radius),
+      )
+    );
 
     .experiment-selector {
       width: calc(100% - 2px);
@@ -98,7 +98,7 @@
     grid-template-columns: 1fr 0.1fr 1fr;
     background: var(--primary-container);
 
-    border-bottom: 0!important;
+    border-bottom: 0 !important;
     overflow: clip;
 
     .header {
@@ -164,9 +164,7 @@
           }
         }
       }
-
     }
-
   }
 }
 
@@ -191,7 +189,6 @@
   box-shadow: var(--mat-sys-level2);
 }
 
-
 .cdk-drag-placeholder {
   opacity: 0;
 }
@@ -199,7 +196,6 @@
 .cdk-drag-animating {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
-
 
 .tissue-list.cdk-drop-list-dragging .tissue-box:not(.cdk-drag-placeholder) {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
@@ -228,11 +224,40 @@
   container: lottie / size;
   width: 100%;
 
-
   .loader {
     --size: min(100cqh, 100cqw);
     width: var(--size);
     height: var(--size);
     margin-right: 10%;
+  }
+}
+
+// Replaces the Angular `left-column` trigger. A tissue moving between the two
+// columns slides in from the side and flashes the primary colour on the way,
+// so the eye can follow which one moved.
+//
+// The departure half of the old animation is gone: Angular removed the element
+// from the source column immediately, and CSS cannot hold a node in the DOM to
+// animate it out. The arrival is the half that carries the information.
+@keyframes tissue-arrive {
+  from {
+    transform: translateX(100%);
+  }
+
+  50% {
+    background-color: var(--primary);
+    color: var(--on-primary);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.tissue-box {
+  animation: tissue-arrive 500ms linear;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }

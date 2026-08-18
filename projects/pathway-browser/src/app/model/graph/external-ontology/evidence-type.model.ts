@@ -1,4 +1,3 @@
-import {ExternalOntology} from "./external-ontology.model";
+import { ExternalOntology } from './external-ontology.model';
 
-export interface EvidenceType extends ExternalOntology {
-}
+export interface EvidenceType extends ExternalOntology {}

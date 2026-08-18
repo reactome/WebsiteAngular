@@ -1,6 +1,6 @@
 @if (crossReferences() && crossReferences().size > 0) {
   <div class="element-container">
-    @for (ref of crossReferences() | keyvalue | sortByText :'key'; track ref) {
+    @for (ref of crossReferences() | keyvalue | sortByText: 'key'; track ref) {
       <div class="row">
         <div class="label-container">{{ ref.key }}</div>
         <div class="composition-container">
@@ -15,5 +15,3 @@
     }
   </div>
 }
-
-

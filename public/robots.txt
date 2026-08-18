@@ -1,0 +1,12 @@
+# beta.reactome.org is a development deployment on a single shared box that also
+# runs Neo4j, Solr and Tomcat. Crawling it walks every pathway URL, and each of
+# those is a graph query -- enough to exhaust the backend's heap and take the
+# host down with it, which is exactly what happened.
+#
+# The production site at https://reactome.org is the one to index.
+User-agent: *
+Disallow: /
+
+# Crawl-delay is ignored by Google but respected by Bing, Yandex and several
+# smaller crawlers, so it is worth stating for anything that ignores the above.
+Crawl-delay: 30

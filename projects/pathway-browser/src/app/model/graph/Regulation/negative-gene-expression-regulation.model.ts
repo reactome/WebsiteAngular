@@ -1,5 +1,3 @@
-import {NegativeRegulation} from "./negative-regulation.model";
+import { NegativeRegulation } from './negative-regulation.model';
 
-export interface NegativeGeneExpressionRegulation extends NegativeRegulation {
-
-}
+export interface NegativeGeneExpressionRegulation extends NegativeRegulation {}

@@ -1,23 +1,17 @@
-import {Component, input, output} from '@angular/core';
-import {MatAnchor} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
-import {MatTooltip} from "@angular/material/tooltip";
+import { Component, input, output } from '@angular/core';
+import { MatAnchor } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 
-export type Icon = { id: string, svg?: boolean };
+export type Icon = { id: string; svg?: boolean };
 
 @Component({
   selector: 'cr-download-button',
-  imports: [
-    MatAnchor,
-    MatTooltip,
-    MatIcon,
-
-  ],
+  imports: [MatAnchor, MatTooltip, MatIcon],
   templateUrl: './download-button.component.html',
-  styleUrl: './download-button.component.scss'
+  styleUrl: './download-button.component.scss',
 })
 export class DownloadButtonComponent {
-
   url = input<string>();
   download = input<string | boolean>();
   icon = input<Icon>();

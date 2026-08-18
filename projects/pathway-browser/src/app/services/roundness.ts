@@ -1,5 +1,5 @@
-import {Position} from "cytoscape";
-import {add, array, NDArray, subtract} from "vectorious";
+import { Position } from 'cytoscape';
+import { add, array, NDArray, subtract } from 'vectorious';
 
 /**
  * Add roundness to a segment edge by adding for each anchor position an additional point just before and just after
@@ -16,14 +16,19 @@ import {add, array, NDArray, subtract} from "vectorious";
  * but it shouldn't be bigger than the segment
  * @private
  */
-export function addRoundness(source: Position, target: Position, anchors: Position[], radius = 60): Position[] {
-  const output: NDArray[] = []
+export function addRoundness(
+  source: Position,
+  target: Position,
+  anchors: Position[],
+  radius = 60
+): Position[] {
+  const output: NDArray[] = [];
   if (anchors.length === 0) return output;
 
   const points = [source, ...anchors, target];
   for (let i = 1; i < points.length - 1; i++) {
     let previousPoint = toVector(points[i - 1]);
-    let currentPoint = toVector(points[i]);
+    const currentPoint = toVector(points[i]);
     let nextPoint = toVector(points[i + 1]);
 
     const previousVector = subtract(previousPoint.copy(), currentPoint);
@@ -50,7 +55,7 @@ export function addRoundness(source: Position, target: Position, anchors: Positi
  * @private
  */
 function scaleTo(vectors: NDArray[], length: number, limit = true): NDArray[] {
-  const norms = vectors.map(vector => vector.norm());
+  const norms = vectors.map((vector) => vector.norm());
   if (limit) {
     const minNorm = Math.min(...norms);
     if (length >= minNorm) length = minNorm / 2.1;
@@ -58,12 +63,10 @@ function scaleTo(vectors: NDArray[], length: number, limit = true): NDArray[] {
   return vectors.map((vector, i) => vector.scale(length / norms[i]));
 }
 
-
 function toVector(position: Position): NDArray {
   return array([position.x, position.y]);
 }
 
 function toPosition(vector: NDArray): Position {
-  return {x: vector.x, y: vector.y}
+  return { x: vector.x, y: vector.y };
 }
-

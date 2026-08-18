@@ -11,7 +11,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # IMPORTANT for diff to work properly
+          fetch-depth: 0 # IMPORTANT for diff to work properly
 
       - name: Validate CMS branch changes
         run: |

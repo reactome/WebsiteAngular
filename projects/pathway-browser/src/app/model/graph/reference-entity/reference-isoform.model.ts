@@ -1,4 +1,4 @@
-import {ReferenceGeneProduct} from "./reference-gene-product.model";
+import { ReferenceGeneProduct } from './reference-gene-product.model';
 
 export interface ReferenceIsoform extends ReferenceGeneProduct {
   isoformParent: ReferenceGeneProduct;

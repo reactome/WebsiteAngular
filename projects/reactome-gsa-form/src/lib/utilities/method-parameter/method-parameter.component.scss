@@ -1,0 +1,27 @@
+.grid-container {
+  //border-top: 1px solid lightgray;
+  display: grid;
+  justify-content: space-between;
+  align-items: center;
+  //grid-template-rows: 45px;
+  gap: 1em;
+  grid-template-columns: 24px 1fr auto;
+}
+
+.no-information {
+  grid-template-columns: 1fr auto;
+}
+
+.justify-end {
+  justify-self: end;
+}
+
+::ng-deep .mat-form-field-wrapper {
+  padding: 0px;
+  margin: 0px !important;
+}
+
+mat-form-field {
+  flex: 2;
+  min-width: 100%;
+}

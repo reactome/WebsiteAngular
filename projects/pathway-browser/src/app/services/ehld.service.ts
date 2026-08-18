@@ -1,13 +1,13 @@
-import {computed, ElementRef, Injectable} from '@angular/core';
-import {Observable, switchMap} from "rxjs";
-import {HttpClient} from "@angular/common/http";
-import type {Analysis} from "../model/analysis.model";
-import {isArray} from "lodash";
-import {AnalysisService} from "./analysis.service";
-import {DataStateService} from "./data-state.service";
-import {UrlStateService} from "./url-state.service";
-import {GeneralService} from "./general.service";
-import {DownloadFormat, DownloadService} from "./download.service";
+import { computed, ElementRef, Injectable, inject } from '@angular/core';
+import { Observable, switchMap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import type { Analysis } from '../model/analysis.model';
+import { isArray } from 'lodash';
+import { AnalysisService } from './analysis.service';
+import { DataStateService } from './data-state.service';
+import { UrlStateService } from './url-state.service';
+import { GeneralService } from './general.service';
+import { DownloadFormat, DownloadService } from './download.service';
 
 export interface LegendItem {
   name: string;
@@ -20,54 +20,63 @@ export interface LegendGroup {
   items: LegendItem[];
 }
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EhldService {
+  private http = inject(HttpClient);
+  private analysis = inject(AnalysisService);
+  private data = inject(DataStateService);
+  private state = inject(UrlStateService);
+  private general = inject(GeneralService);
+  private download = inject(DownloadService);
 
   hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
   select = computed(() => this.state.select());
 
-  overlay = "OVERLAY-";
-  analysisInfoId = "ANALINFO";
-  analysisInfoContainer = "analysis-info-container";
-  pattern = "pattern-";
+  overlay = 'OVERLAY-';
+  analysisInfoId = 'ANALINFO';
+  analysisInfoContainer = 'analysis-info-container';
+  pattern = 'pattern-';
 
   legendItems: LegendGroup[] = [
     {
-      type: "Arrow Type",
+      type: 'Arrow Type',
       items: [
-        {name: "Indication", src: "assets/EHLD-legend/R-ICO-012345.svg", alt: "indication arrow"},
-        {name: "Motion", src: "assets/EHLD-legend/R-ICO-012347.svg", alt: "motion arrow"},
-        {name: "Process", src: "assets/EHLD-legend/R-ICO-012348.svg", alt: "process arrow"},
-        {name: "Inhibition", src: "assets/EHLD-legend/R-ICO-012346.svg", alt: "inhibition arrow"},
-        {name: "Transformation", src: "assets/EHLD-legend/R-ICO-012349.svg", alt: "transformation arrow"}
-      ]
+        { name: 'Indication', src: 'assets/EHLD-legend/R-ICO-012345.svg', alt: 'indication arrow' },
+        { name: 'Motion', src: 'assets/EHLD-legend/R-ICO-012347.svg', alt: 'motion arrow' },
+        { name: 'Process', src: 'assets/EHLD-legend/R-ICO-012348.svg', alt: 'process arrow' },
+        { name: 'Inhibition', src: 'assets/EHLD-legend/R-ICO-012346.svg', alt: 'inhibition arrow' },
+        {
+          name: 'Transformation',
+          src: 'assets/EHLD-legend/R-ICO-012349.svg',
+          alt: 'transformation arrow',
+        },
+      ],
     },
     {
-      type: "Disease Modifiers",
+      type: 'Disease Modifiers',
       items: [
-        {name: "Not happening", src: "assets/EHLD-legend/R-ICO-012339.svg", alt: "not happening arrow"},
-        {name: "Disease related", src: "assets/EHLD-legend/R-ICO-012342.svg", alt: "disease-related arrow"}
-      ]
-    }
+        {
+          name: 'Not happening',
+          src: 'assets/EHLD-legend/R-ICO-012339.svg',
+          alt: 'not happening arrow',
+        },
+        {
+          name: 'Disease related',
+          src: 'assets/EHLD-legend/R-ICO-012342.svg',
+          alt: 'disease-related arrow',
+        },
+      ],
+    },
   ];
-
-  constructor(private http: HttpClient,
-              private analysis: AnalysisService,
-              private data: DataStateService,
-              private state: UrlStateService,
-              private general: GeneralService,
-              private download: DownloadService) {
-  }
 
   getSVGData(id: string): Observable<string> {
     return this.general.download$.pipe(
       switchMap((downloadBase) =>
-        this.http.get(`${downloadBase}/ehld/${id}.svg`, {responseType: 'text'})
+        this.http.get(`${downloadBase}/ehld/${id}.svg`, { responseType: 'text' })
       )
-    )
+    );
   }
 
   // Hover an element
@@ -80,7 +89,6 @@ export class EhldService {
     } else {
       svgElement.style.filter = hoveringShadow;
     }
-
   }
 
   removeShadow(svgElement: SVGGElement, flaggedElement: (SVGGElement | undefined)[]): void {
@@ -93,7 +101,6 @@ export class EhldService {
 
   // Select an element
   applyOutline(svgElement: SVGGElement, flaggedElement: (SVGGElement | undefined)[]) {
-
     const selectionOutline = `drop-shadow(0 0 4px var(--select-edge)) drop-shadow(0 0 4px var(--select-edge)) drop-shadow(0 0 4px var(--select-edge))  drop-shadow(0 0 4px var(--select-edge))`;
 
     if (this.isFlagged(svgElement, flaggedElement)) {
@@ -112,20 +119,17 @@ export class EhldService {
     }
   }
 
-
   applyFlagOutline(svgElement: SVGGElement) {
     svgElement.style.filter = `drop-shadow(0 0 4px var(--flag)) drop-shadow(0 0 4px var(--flag)) drop-shadow(0 0 4px var(--flag))  drop-shadow(0 0 4px var(--flag))`;
   }
 
   removeFlagOutline(svgElement: SVGGElement) {
-    svgElement.style.filter = 'none'
+    svgElement.style.filter = 'none';
   }
-
 
   isFlagged(element: SVGGElement, flaggedElement: (SVGGElement | undefined)[]): boolean {
     return flaggedElement?.includes(element) ?? false;
   }
-
 
   /***
    * Takes as input a string like "OVERVIEW-R-SSS-NNNNNNN"
@@ -148,11 +152,12 @@ export class EhldService {
     return null;
   }
 
-
   setStIdToSVGGElementMap(container: ElementRef<HTMLDivElement>) {
     const map = new Map<string, SVGGElement>();
-    const svgElement = container.nativeElement.querySelectorAll('g[id^="REGION"]') as NodeListOf<SVGGElement>;
-    svgElement.forEach(svgElement => {
+    const svgElement = container.nativeElement.querySelectorAll(
+      'g[id^="REGION"]'
+    ) as NodeListOf<SVGGElement>;
+    svgElement.forEach((svgElement) => {
       const idAttr = svgElement.getAttribute('id');
       if (idAttr) {
         const stId = this.getStableId(idAttr);
@@ -160,15 +165,16 @@ export class EhldService {
           map.set(stId, svgElement);
         }
       }
-    })
-    return map
+    });
+    return map;
   }
-
 
   setDbIdToSVGGElementMap(container: ElementRef<HTMLDivElement> | undefined) {
     const map = new Map<number, SVGGElement>();
-    const svgElement = container!.nativeElement.querySelectorAll('g[id^="REGION"]') as NodeListOf<SVGGElement>;
-    svgElement.forEach(svgElement => {
+    const svgElement = container!.nativeElement.querySelectorAll(
+      'g[id^="REGION"]'
+    ) as NodeListOf<SVGGElement>;
+    svgElement.forEach((svgElement) => {
       const idAttr = svgElement.getAttribute('id');
       if (idAttr) {
         const dbId = this.getDbId(idAttr);
@@ -176,8 +182,8 @@ export class EhldService {
           map.set(Number(dbId), svgElement);
         }
       }
-    })
-    return map
+    });
+    return map;
   }
 
   getDbId(identifier: string) {
@@ -192,14 +198,22 @@ export class EhldService {
     return null;
   }
 
-  saturateRegion(regionElement: SVGGElement, setSaturation: boolean, pathway?: Analysis.Pathway | undefined,) {
-    const filter = setSaturation ? `saturate(${(pathway?.entities.fdr || 1) <= this.state.significance() ? 1 : 0})` : '';
+  saturateRegion(
+    regionElement: SVGGElement,
+    setSaturation: boolean,
+    pathway?: Analysis.Pathway | undefined
+  ) {
+    const filter = setSaturation
+      ? `saturate(${(pathway?.entities.fdr || 1) <= this.state.significance() ? 1 : 0})`
+      : '';
     for (let i = 0; i < regionElement.childElementCount; i++) {
       const child = regionElement.children.item(i) as SVGElement | null;
-      if (child &&
+      if (
+        child &&
         !child.id.startsWith(this.overlay) &&
         !child.classList.contains(this.analysisInfoId)
-      ) child.style.filter = filter;
+      )
+        child.style.filter = filter;
     }
   }
 
@@ -210,19 +224,19 @@ export class EhldService {
     this.saturateRegion(regionElement, true, pathway);
 
     if (overlayElement) {
-      let container: SVGRectElement | SVGPathElement | null = overlayElement.querySelector('rect') || overlayElement.querySelector('path');
+      const container: SVGRectElement | SVGPathElement | null =
+        overlayElement.querySelector('rect') || overlayElement.querySelector('path');
       if (!container) return;
 
-      const entities = pathway?.entities || {fdr: 1, found: 0, total: 1, exp: undefined};
+      const entities = pathway?.entities || { fdr: 1, found: 0, total: 1, exp: undefined };
       const currentExp = entities.exp?.[this.analysis.sampleIndex()];
       const exp = currentExp || entities.fdr;
 
       const exps: [number | undefined, number][] = [
         [exp, entities.found],
         [undefined, entities.total - entities.found],
-      ]
+      ];
       this.createPattern(stId, exps, regionElement, 'exp');
-
 
       this.addInnerStroke(container, this.analysis.palette().scale(exp).hex(), 2);
 
@@ -235,14 +249,17 @@ export class EhldService {
     }
   }
 
-
-  private addInnerStroke(element: SVGRectElement | SVGPathElement | null, color: string, strokeWidth = 2) {
+  private addInnerStroke(
+    element: SVGRectElement | SVGPathElement | null,
+    color: string,
+    strokeWidth = 2
+  ) {
     if (!element) return;
     if (element.tagName === 'rect') {
       const original = element as SVGRectElement;
       const hs = strokeWidth / 2;
       const strokeRect = element.cloneNode() as SVGRectElement;
-      strokeRect.classList.add('inner-stroke')
+      strokeRect.classList.add('inner-stroke');
       strokeRect.style.fill = 'none';
       strokeRect.style.filter = 'none';
       strokeRect.style.stroke = color;
@@ -252,7 +269,7 @@ export class EhldService {
       strokeRect.style.width = original.width.baseVal.value - strokeWidth + '';
       strokeRect.style.height = original.height.baseVal.value - strokeWidth + '';
       strokeRect.style.rx = original.rx.baseVal.value - hs + '';
-      element.after(strokeRect)
+      element.after(strokeRect);
     } else if (element.tagName === 'path') {
       const path = element as SVGPathElement;
 
@@ -262,12 +279,12 @@ export class EhldService {
       const maskId = `mask-${Math.random().toString(36).slice(2, 11)}`;
 
       // Create mask *inline* (not in <defs>)
-      const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
-      mask.setAttribute("id", maskId);
+      const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+      mask.setAttribute('id', maskId);
 
-      const useEl = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      useEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", `#${path.id}`);
-      useEl.setAttribute("fill", "white");
+      const useEl = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      useEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#${path.id}`);
+      useEl.setAttribute('fill', 'white');
 
       mask.appendChild(useEl);
 
@@ -276,22 +293,37 @@ export class EhldService {
 
       // Create stroke path
       const strokePath = path.cloneNode(true) as SVGPathElement;
-      strokePath.setAttribute("fill", "none");
-      strokePath.setAttribute("stroke", color);
-      strokePath.setAttribute("stroke-width", (strokeWidth * 2).toString());
-      strokePath.setAttribute("mask", `url(#${maskId})`);
+      strokePath.setAttribute('fill', 'none');
+      strokePath.setAttribute('stroke', color);
+      strokePath.setAttribute('stroke-width', (strokeWidth * 2).toString());
+      strokePath.setAttribute('mask', `url(#${maskId})`);
 
       mask.after(strokePath);
     }
-
   }
 
-  createPattern(stId: string, values: [number | undefined, number] [], regionElement: SVGGElement, type: 'fdr' | 'exp') {
+  createPattern(
+    stId: string,
+    values: [number | undefined, number][],
+    regionElement: SVGGElement,
+    type: 'fdr' | 'exp'
+  ) {
     const svg = regionElement.closest('svg');
-    const defs = svg!.querySelector('defs') || svg!.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
+    const defs =
+      svg!.querySelector('defs') ||
+      svg!.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
 
-    const stops: { start: number, stop: number, color: string, exp: number | undefined, width: number }[] = [];
-    const size = values.reduce((l: number, e) => e !== undefined && isArray(e) ? l + e[1] : l + 1, 0);
+    const stops: {
+      start: number;
+      stop: number;
+      color: string;
+      exp: number | undefined;
+      width: number;
+    }[] = [];
+    const size = values.reduce(
+      (l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1),
+      0
+    );
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
     values.forEach((exp, i) => {
@@ -306,14 +338,18 @@ export class EhldService {
           stop: (stops[p]?.stop || 0) + delta * exp[1],
           width: delta * exp[1],
           color: palette.scale(realExp).hex(),
-          exp: realExp
-        })
+          exp: realExp,
+        });
       }
-    })
+    });
 
-    const p = `<pattern id="${this.pattern}${stId}-${type}" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 1 1" preserveAspectRatio="none">` +
+    const p =
+      `<pattern id="${this.pattern}${stId}-${type}" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 1 1" preserveAspectRatio="none">` +
       stops
-        .map((stop, i) => `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`)
+        .map(
+          (stop, i) =>
+            `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`
+        )
         .join('') +
       '</pattern>';
 
@@ -322,23 +358,31 @@ export class EhldService {
 
   showAnalysisInfo(regionElement: SVGGElement, analysisPathway: Analysis.Pathway | undefined) {
     if (!analysisPathway) return;
-    const analysisInfoElement = regionElement.querySelector(`g[id^="${this.analysisInfoId}"]`) as SVGGElement;
+    const analysisInfoElement = regionElement.querySelector(
+      `g[id^="${this.analysisInfoId}"]`
+    ) as SVGGElement;
 
     if (analysisInfoElement) {
       // Make it visible
       analysisInfoElement.classList.add(`${this.analysisInfoContainer}`);
 
       const entities = analysisPathway.entities;
-      this.createPattern(analysisPathway.stId, [
-        [entities.fdr, entities.found],
-        [undefined, entities.total - entities.found]
-      ], regionElement, "fdr")
+      this.createPattern(
+        analysisPathway.stId,
+        [
+          [entities.fdr, entities.found],
+          [undefined, entities.total - entities.found],
+        ],
+        regionElement,
+        'fdr'
+      );
 
-      let container: SVGRectElement | SVGPathElement | null = analysisInfoElement.querySelector('rect');
+      let container: SVGRectElement | SVGPathElement | null =
+        analysisInfoElement.querySelector('rect');
       if (!container) container = analysisInfoElement.querySelector('path');
       if (!container) return;
 
-      container.classList.forEach(token => container.classList.remove(token));
+      container.classList.forEach((token) => container.classList.remove(token));
 
       this.addInnerStroke(container, this.analysis.fdrPalette().scale(entities.fdr).hex(), 2);
 
@@ -348,45 +392,49 @@ export class EhldService {
       const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
       textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
-      if (this.analysis.hasPValues()) textInfoElement.innerHTML += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
-      textInfoElement.removeAttribute("transform");
+      if (this.analysis.hasPValues())
+        textInfoElement.innerHTML += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
+      textInfoElement.removeAttribute('transform');
       textInfoElement.classList.add('analysis-text');
 
-      const rectBox = (analysisInfoElement.querySelector('rect, path')! as SVGGraphicsElement).getBBox();
+      const rectBox = (
+        analysisInfoElement.querySelector('rect, path')! as SVGGraphicsElement
+      ).getBBox();
       const centerX = rectBox.x + rectBox.width / 2;
       const centerY = rectBox.y + rectBox.height / 2;
 
-      textInfoElement.setAttribute("x", String(centerX));
-      textInfoElement.setAttribute("y", String(centerY));
+      textInfoElement.setAttribute('x', String(centerX));
+      textInfoElement.setAttribute('y', String(centerY));
     }
-
   }
 
   clearAllOverlay(regionElementsMap: Map<string, SVGGElement>) {
     regionElementsMap.forEach((element: SVGGElement, stId: string) => {
-      element.querySelectorAll('rect.inner-stroke').forEach(stroke => stroke.remove())
+      element.querySelectorAll('rect.inner-stroke').forEach((stroke) => stroke.remove());
       const targetId = `${this.overlay}${stId}`;
       const overlayElement = element.querySelector(`#${targetId}`);
       const regionElement = regionElementsMap.get(stId);
       // Clear overlay element
       if (overlayElement) {
         const rect = overlayElement.getElementsByTagName('rect')[0];
-        if (rect) rect.removeAttribute("style")
+        if (rect) rect.removeAttribute('style');
       }
       // Clear region element
       if (regionElement) {
         this.saturateRegion(regionElement, false);
       }
-    })
+    });
   }
 
   clearExistingPatterns(svg: SVGElement | null) {
     if (!svg) return;
-    const defs = svg.querySelector('defs') || svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
+    const defs =
+      svg.querySelector('defs') ||
+      svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
 
     Array.from(defs.children)
-      .filter(child => child.id.startsWith(this.pattern))
-      .forEach(child => defs.removeChild(child));
+      .filter((child) => child.id.startsWith(this.pattern))
+      .forEach((child) => defs.removeChild(child));
   }
 
   clearAnalysisInfo(elementsMap: Map<string, SVGGElement>) {
@@ -395,29 +443,28 @@ export class EhldService {
       if (analysisInfoElement) {
         analysisInfoElement.classList.remove(`${this.analysisInfoContainer}`);
       }
-    })
+    });
   }
-
 
   downloadImage(format: DownloadFormat) {
     const container = document.getElementById('ehld');
     if (!container) return;
     const svg = container.querySelector('svg') as SVGSVGElement;
-    this.getInlineStyles(svg,this.select());
+    this.getInlineStyles(svg, this.select());
     // serialize the SVG
     const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     const viewBoxWidth = svg.getBoundingClientRect().width;
     const viewBoxHeight = svg.getBoundingClientRect().height;
     // change to desired output size
-    const scale = 3
+    const scale = 3;
     const width = viewBoxWidth * scale;
     const height = viewBoxHeight * scale;
     const canvas = document.createElement('canvas');
-    canvas.width = width
-    canvas.height = height
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d')!;
     ctx.scale(scale, scale);
@@ -434,7 +481,7 @@ export class EhldService {
       const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
       const dataURL = canvas.toDataURL(mimeType, 1.0);
       const currentEHLD = this.data.currentPathway()?.stId;
-      this.download.export(dataURL, format,`${currentEHLD}`);
+      this.download.export(dataURL, format, `${currentEHLD}`);
     };
 
     img.src = url;
@@ -454,15 +501,17 @@ export class EhldService {
     const selectedElement = svg.querySelector(`#${id}`) as HTMLElement;
 
     const computedStyle = getComputedStyle(selectedElement);
-    const filter  = computedStyle.filter || computedStyle.getPropertyValue('filter');
+    const filter = computedStyle.filter || computedStyle.getPropertyValue('filter');
 
     const existingStyle = selectedElement.getAttribute('style') || '';
-    const finalStyle = existingStyle.includes('filter') ? existingStyle.replace(/filter:[^;]+;/, `filter:${filter}`):`${existingStyle};filter:${filter};`;
+    const finalStyle = existingStyle.includes('filter')
+      ? existingStyle.replace(/filter:[^;]+;/, `filter:${filter}`)
+      : `${existingStyle};filter:${filter};`;
     selectedElement.setAttribute('style', `${finalStyle}`);
   }
 
- // collect computed style for analysis-info
-  getAnalysisInfoStyle(svg: SVGSVGElement){
+  // collect computed style for analysis-info
+  getAnalysisInfoStyle(svg: SVGSVGElement) {
     const analysisContainerClass = '.analysis-info-container';
     const analysisTextClass = '.analysis-text';
     // Get one representative element for each class
@@ -473,16 +522,20 @@ export class EhldService {
     const containerStyle = getComputedStyle(container);
     const textStyle = getComputedStyle(text);
 
-    const containerStyleString = Array.from(containerStyle).map(
-      key => `${key}:${containerStyle.getPropertyValue(key)};`
-    ).join('');
+    const containerStyleString = Array.from(containerStyle)
+      .map((key) => `${key}:${containerStyle.getPropertyValue(key)};`)
+      .join('');
 
-    const textStyleString = Array.from(textStyle).map(
-      key => `${key}:${textStyle.getPropertyValue(key)};`
-    ).join('');
+    const textStyleString = Array.from(textStyle)
+      .map((key) => `${key}:${textStyle.getPropertyValue(key)};`)
+      .join('');
     // apply to all elements of that class
-    svg.querySelectorAll(`${analysisContainerClass}`).forEach(el => el.setAttribute('style', containerStyleString));
-    svg.querySelectorAll(`${analysisTextClass}`).forEach(el => el.setAttribute('style', textStyleString));
+    svg
+      .querySelectorAll(`${analysisContainerClass}`)
+      .forEach((el) => el.setAttribute('style', containerStyleString));
+    svg
+      .querySelectorAll(`${analysisTextClass}`)
+      .forEach((el) => el.setAttribute('style', textStyleString));
 
     return svg;
   }

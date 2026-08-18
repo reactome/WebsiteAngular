@@ -1,15 +1,14 @@
-import {DatabaseObject} from "../database-object.model";
-import {Summation} from "../summation.model";
-import {ReviewStatus} from "../review-status.model";
-import {LiteratureReference} from "../publication/literature-reference.model";
-import {InstanceEdit} from "../instance-edit.model";
-import type {Relationship} from "../relationship.model";
+import { DatabaseObject } from '../database-object.model';
+import { Summation } from '../summation.model';
+import { ReviewStatus } from '../review-status.model';
+import { LiteratureReference } from '../publication/literature-reference.model';
+import { InstanceEdit } from '../instance-edit.model';
+import type { Relationship } from '../relationship.model';
 type HasCompartment = Relationship.HasCompartment;
-import {Species} from "../species.model";
-import {Disease} from "../external-ontology/disease.model";
-import {InDepth} from "../in-depth.model";
-import {HasFigure} from "../figure.model";
-
+import { Species } from '../species.model';
+import { Disease } from '../external-ontology/disease.model';
+import { InDepth } from '../in-depth.model';
+import { HasFigure } from '../figure.model';
 
 export interface Event extends DatabaseObject, InDepth, HasFigure {
   stId: string;
@@ -26,12 +25,10 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   species: Species[];
   disease?: Disease[];
 
-
   // not from API endpoint but are needed in the tree view
   isSelected?: boolean;
   isHovered?: boolean;
   ancestors: Event[];
   parent: Event;
   hit?: boolean;
-
 }

@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 #container {
   position: absolute;
@@ -17,7 +17,6 @@
 .search {
   flex: 0 0 auto;
 }
-
 
 //.sidebar {
 //  height: 90%;
@@ -51,7 +50,8 @@
   justify-content: space-between;
   padding: 0 8px 0 20px;
 
-  button,.mat-mdc-outlined-button {
+  button,
+  .mat-mdc-outlined-button {
     background: var(--surface);
   }
 
@@ -101,11 +101,12 @@
 
     .quote {
       background: var(--surface);
-      @include mat.icon-button-overrides((
-        icon-color: var(--primary),
-        state-layer-size: 36px,
-      ));
-
+      @include mat.icon-button-overrides(
+        (
+          icon-color: var(--primary),
+          state-layer-size: 36px,
+        )
+      );
     }
 
     #dark-toggle {
@@ -118,36 +119,37 @@
         transform: rotate(-90deg);
       }
 
-      @include mat.slide-toggle-overrides((
-        track-width: 38px,
-        track-height: 26px,
-        with-icon-handle-size: 18px,
-        pressed-handle-size: 18px,
-        selected-with-icon-handle-horizontal-margin: 0 16px,
-        selected-pressed-handle-horizontal-margin: 0 16px,
-        track-outline-color: var(--primary),
-        selected-track-outline-color: var(--primary-container),
-        selected-track-color: var(--surface),
-        selected-focus-track-color: var(--surface),
-        selected-hover-track-color: var(--surface),
-        selected-pressed-track-color: var(--surface),
-        unselected-track-color: var(--surface),
-        unselected-focus-track-color: var(--surface),
-        unselected-hover-track-color: var(--surface),
-        unselected-pressed-track-color: var(--surface),
-        selected-handle-color: var(--primary),
-        selected-focus-handle-color: var(--primary),
-        selected-hover-handle-color: var(--primary),
-        selected-pressed-handle-color: var(--primary),
-        unselected-handle-color: var(--primary),
-        unselected-focus-handle-color: var(--primary),
-        unselected-hover-handle-color: var(--primary),
-        unselected-pressed-handle-color: var(--primary),
-        selected-icon-color: var(--surface),
-        unselected-icon-color: var(--surface),
-      ));
+      @include mat.slide-toggle-overrides(
+        (
+          track-width: 38px,
+          track-height: 26px,
+          with-icon-handle-size: 18px,
+          pressed-handle-size: 18px,
+          selected-with-icon-handle-horizontal-margin: 0 16px,
+          selected-pressed-handle-horizontal-margin: 0 16px,
+          track-outline-color: var(--primary),
+          selected-track-outline-color: var(--primary-container),
+          selected-track-color: var(--surface),
+          selected-focus-track-color: var(--surface),
+          selected-hover-track-color: var(--surface),
+          selected-pressed-track-color: var(--surface),
+          unselected-track-color: var(--surface),
+          unselected-focus-track-color: var(--surface),
+          unselected-hover-track-color: var(--surface),
+          unselected-pressed-track-color: var(--surface),
+          selected-handle-color: var(--primary),
+          selected-focus-handle-color: var(--primary),
+          selected-hover-handle-color: var(--primary),
+          selected-pressed-handle-color: var(--primary),
+          unselected-handle-color: var(--primary),
+          unselected-focus-handle-color: var(--primary),
+          unselected-hover-handle-color: var(--primary),
+          unselected-pressed-handle-color: var(--primary),
+          selected-icon-color: var(--surface),
+          unselected-icon-color: var(--surface),
+        )
+      );
     }
-
   }
 }
 
@@ -186,7 +188,11 @@
 
 .custom-left-gutter {
   //This creates a linear gradient that transitions from --on-primary to the --primary color at the 60px mark from top to bottom.
-  background: linear-gradient(to bottom, var(--on-primary) var(--top-bar-height), var(--primary) var(--top-bar-height));
+  background: linear-gradient(
+    to bottom,
+    var(--on-primary) var(--top-bar-height),
+    var(--primary) var(--top-bar-height)
+  );
   width: 100%;
   height: 100%;
 }
@@ -254,7 +260,7 @@
 
   span:first-child {
     font-size: 10px;
-    height: 16px
+    height: 16px;
   }
 
   span:last-child {
@@ -276,7 +282,6 @@
   position: relative;
 }
 
-
 .analysis-button-group {
   --outline-width: 1px;
   background: var(--outline);
@@ -297,7 +302,6 @@
     height: 100%;
     align-items: flex-start;
     width: 155px;
-
 
     .label {
       align-self: stretch;
@@ -381,11 +385,12 @@
 }
 
 :host {
-  @include mat.slider-overrides((
-    value-indicator-height: 8px,
-  ));
+  @include mat.slider-overrides(
+    (
+      value-indicator-height: 8px,
+    )
+  );
 }
-
 
 .hide-overflow {
   overflow: hidden !important;
@@ -397,10 +402,21 @@
 
 .dropdown {
   position: absolute;
-  inset: 0 0 0 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 100%;
   background: var(--surface);
   z-index: 999;
   overflow: hidden;
+  // 500ms must match DROPDOWN_DURATION in viewport.component.ts, which times the
+  // detail-panel resize to this same slide.
+  transition: bottom 500ms ease-in;
+
+  &.open {
+    bottom: 0%;
+    transition: bottom 500ms ease-out;
+  }
 }
 
 .history {
@@ -424,10 +440,12 @@
   font-variation-settings: 'FILL' 1;
   margin-left: -12px;
 
-  @include mat.button-overrides((
-    outlined-label-text-color: var(--warn),
-    outlined-outline-width: 0
-  ));
+  @include mat.button-overrides(
+    (
+      outlined-label-text-color: var(--warn),
+      outlined-outline-width: 0,
+    )
+  );
 }
 
 .warn {
@@ -449,4 +467,29 @@
   font-style: italic;
 }
 
+// Replaces the Angular `appear` trigger, which grew width and padding from 0 to
+// '*' over a second. CSS cannot interpolate to auto, so this grows a max-width
+// past the real width and clips while it does -- the same reveal, without
+// needing to know the final size. Both users of the old trigger are narrow: the
+// analysis controls are a fixed 155px and the clear button is smaller again.
+@keyframes controls-reveal {
+  from {
+    max-width: 0;
+    opacity: 0;
+  }
 
+  to {
+    max-width: 220px;
+    opacity: 1;
+  }
+}
+
+.profile-controls,
+button.error {
+  overflow: hidden;
+  animation: controls-reveal 1s ease-in-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

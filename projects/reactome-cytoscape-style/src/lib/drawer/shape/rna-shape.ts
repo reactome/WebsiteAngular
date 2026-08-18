@@ -1,8 +1,7 @@
-import {extract} from "../../properties-utils";
-import {DrawerProvider} from "../types";
+import { extract } from '../../properties-utils';
+import { DrawerProvider } from '../types';
 
-
-export const rna: DrawerProvider = (properties, {width, height}) => {
+export const rna: DrawerProvider = (properties, { width, height }) => {
   const thick = extract(properties.global.thickness);
   const select = extract(properties.global.selectNode);
   const hover = extract(properties.global.hoverNode);
@@ -14,27 +13,27 @@ export const rna: DrawerProvider = (properties, {width, height}) => {
   const iR = r - thick;
   return {
     background: {
-      "background-image": `
+      'background-image': `
        <path fill="${fill}" d="
        M 0 0
        H ${width}
-       V ${height - r }
+       V ${height - r}
        a ${r} ${r} 0 0 1 -${r} ${r}
        H ${r}
        a ${r} ${r} 0 0 1 -${r} -${r}
        Z"/>`,
-      optional: true
+      optional: true,
     },
     hover: {
-      "background-image": `<rect x="0" y="0" width="${width}" height="${2 * thick}" fill="${hover}"/>`,
-      "background-position-y": -thick,
-      "bounds-expansion": thick,
-      "background-clip": "none",
-      "background-image-containment": "over",
-      "background-height": 2 * thick,
+      'background-image': `<rect x="0" y="0" width="${width}" height="${2 * thick}" fill="${hover}"/>`,
+      'background-position-y': -thick,
+      'bounds-expansion': thick,
+      'background-clip': 'none',
+      'background-image-containment': 'over',
+      'background-height': 2 * thick,
     },
     select: {
-      "background-image": `
+      'background-image': `
           <path fill="${select}" stroke-linejoin="round" stroke-linecap="round"  d="
             M 0 0
             a ${oR} ${oR} 0 0 0 ${oR} ${oR}
@@ -45,14 +44,14 @@ export const rna: DrawerProvider = (properties, {width, height}) => {
             a ${oR} ${iR} 0 0 1 -${oR} -${iR}
             Z"/>
 `,
-      "background-position-y": height - r,
-      "bounds-expansion": thick,
-      "background-clip": "none",
-      "background-image-containment": "over",
-      "background-height": oR,
+      'background-position-y': height - r,
+      'bounds-expansion': thick,
+      'background-clip': 'none',
+      'background-image-containment': 'over',
+      'background-height': oR,
     },
     flag: {
-      "background-image": `
+      'background-image': `
        <path fill="${flag}" d="
        M 0 0
        H ${width + 4 * thick}
@@ -71,27 +70,25 @@ export const rna: DrawerProvider = (properties, {width, height}) => {
        a ${r} ${r} 0 0 1 -${r} -${r}
        Z"/>
 `,
-      "background-position-x": -2 * thick,
-      "background-position-y": -thick,
-      "bounds-expansion": 2 * thick,
-      "background-clip": "none",
-      "background-image-containment": "over",
-      "background-width": width + 4 * thick,
-      "background-height": height + 2 * thick,
+      'background-position-x': -2 * thick,
+      'background-position-y': -thick,
+      'bounds-expansion': 2 * thick,
+      'background-clip': 'none',
+      'background-image-containment': 'over',
+      'background-width': width + 4 * thick,
+      'background-height': height + 2 * thick,
     },
     analysis: {
-      "background-image": `
+      'background-image': `
        <path class="gradient" d="
        M 0 0
        H ${width}
-       V ${height - r }
+       V ${height - r}
        a ${r} ${r} 0 0 1 -${r} ${r}
        H ${r}
        a ${r} ${r} 0 0 1 -${r} -${r}
        Z"/>`,
-      requireGradient: true
-    }
-  }
-}
-
-
+      requireGradient: true,
+    },
+  };
+};

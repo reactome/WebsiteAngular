@@ -1,30 +1,21 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NavOptionsService } from '../../services/nav-options.service';
+import { Component, inject } from '@angular/core';
+
+import { KeyValuePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatIcon } from "@angular/material/icon";
-import { mapNavOptions } from '../../utils/nav-options-mapper';
+import { MatIcon } from '@angular/material/icon';
 import { NavOption } from '../../types/link';
 
 @Component({
   selector: 'app-info-footer',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIcon],
+  imports: [RouterModule, MatIcon, KeyValuePipe],
   templateUrl: './info-footer.component.html',
-  styleUrl: './info-footer.component.scss'
+  styleUrl: './info-footer.component.scss',
 })
 export class InfoFooterComponent {
-  navOptions: Record<string, NavOption> = {};
-
-  ngOnInit() {
-    this.loadNavOptions();
-  }
-
-  loadNavOptions() {
-    // Load nav options from the JSON file
-    import('../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
-  }
+  /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
+  readonly navOptions = inject(NavOptionsService).navOptions;
 
   // Preserve original insertion order for keyvalue pipe
   preserveOrder = () => 0;

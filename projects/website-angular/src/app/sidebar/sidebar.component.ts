@@ -1,19 +1,31 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
-import { KeyValuePipe, NgForOf } from '@angular/common';
-import { mapNavOptions } from '../../utils/nav-options-mapper';
-import {NavLink, NavOption} from '../../types/link';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  Output,
+  effect,
+  ChangeDetectorRef,
+  OnInit,
+} from '@angular/core';
+import { KeyValuePipe } from '@angular/common';
+import { NavOptionsService } from '../../services/nav-options.service';
+import { NavLink, NavOption, linkPath, linkQueryParams } from '../../types/link';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon } from '@angular/material/icon';
 import { ContentService } from '../../services/content.service';
 import { ArticleIndexItem } from '../../types/article';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [NgForOf, KeyValuePipe, MatIcon, RouterLink, RouterLinkActive],
+  imports: [KeyValuePipe, MatIcon, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  styleUrl: './sidebar.component.scss',
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
+  readonly linkPath = linkPath;
+  readonly linkQueryParams = linkQueryParams;
+
   // "sections" mode: instead of route-driven peer navigation links, the
   // sidebar renders a caller-supplied list of in-page section anchors and
   // emits a click event for each. Used by entity detail pages to surface
@@ -25,8 +37,25 @@ export class SidebarComponent {
   @Input() activeSectionKey = '';
   @Output() sectionSelected = new EventEmitter<string>();
   private route = inject(ActivatedRoute);
+  // These components build their state into plain fields from route
+  // subscriptions and an effect, so Angular is not told when it changes.
+  private cdr = inject(ChangeDetectorRef);
   private contentService = inject(ContentService);
-  navOptions: Record<string, NavOption> = {};
+  /** Shared, loaded once by NavOptionsService. */
+  readonly navOptions = inject(NavOptionsService).navOptions;
+
+  /** Last route segments seen, so the effect below can rebuild the items once
+   *  navOptions resolves (the route may emit before the JSON has loaded). */
+  private lastSegments: string[] | null = null;
+
+  constructor() {
+    // navOptions starts empty and fills in asynchronously. Rather than polling
+    // for it, rebuild the item list when it arrives.
+    effect(() => {
+      if (Object.keys(this.navOptions()).length === 0) return;
+      if (this.lastSegments) this.updateItems(this.lastSegments);
+    });
+  }
 
   sectionTitle = '';
   sectionIcon = '';
@@ -38,65 +67,62 @@ export class SidebarComponent {
   // content as a slide-in drawer and starts collapsed so it doesn't bury
   // the page. Kept in sync with the @media query in sidebar.component.scss.
   private static readonly NARROW_BREAKPOINT_PX = 1024;
-  sidebarVisible: boolean = typeof window !== 'undefined'
-    ? window.innerWidth > SidebarComponent.NARROW_BREAKPOINT_PX
-    : true;
+  sidebarVisible: boolean =
+    typeof window !== 'undefined'
+      ? window.innerWidth > SidebarComponent.NARROW_BREAKPOINT_PX
+      : true;
 
   ngOnInit() {
     // Sections mode is fully controlled by inputs; no route-based loading.
     if (this.sectionsMode) return;
     //Get all nav options
-    this.loadOptions();
 
-    this.route.url.subscribe(segments => {
+    this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
-      let path_segments = segments.map(s => s.path);
+      const path_segments = segments.map((s) => s.path);
 
       if (path_segments.length > 0 && path_segments) {
         //If 2nd last item is news or reactome-research-spotlight, load articles as items
-        const secondLastSegment = path_segments.length >=2 ? path_segments[path_segments.length - 2] : null;
+        const secondLastSegment =
+          path_segments.length >= 2 ? path_segments[path_segments.length - 2] : null;
         if (secondLastSegment === 'news') {
-          this.updateItemsArticles('about/news', path_segments[path_segments.length -1]);
+          this.updateItemsArticles('about/news', path_segments[path_segments.length - 1]);
         } else if (secondLastSegment === 'reactome-research-spotlight') {
-          this.updateItemsArticles('content/reactome-research-spotlight', path_segments[path_segments.length -1]);
+          this.updateItemsArticles(
+            'content/reactome-research-spotlight',
+            path_segments[path_segments.length - 1]
+          );
         } else {
+          this.lastSegments = path_segments;
           this.updateItems(path_segments);
         }
       }
     });
   }
 
-  loadOptions() {
-    // Load nav options from the JSON file
-    import('../../config/nav-options.json').then((data) => {
-      this.navOptions = mapNavOptions(data.default);
-    });
-  }
-
   updateItems(segments: string[]) {
-    // Wait for navOptions to be loaded
-    if (Object.keys(this.navOptions).length === 0) {
-      // Retry after navOptions are loaded
-      setTimeout(() => this.updateItems(segments), 50);
-      return;
-    }
+    // navOptions is a signal fed by NavOptionsService; it starts empty and
+    // fills in when the JSON resolves. This used to poll itself every 50ms
+    // waiting for that. Re-running via the effect in the constructor instead
+    // means no polling and no dependence on zone.js noticing the timer.
+    if (Object.keys(this.navOptions()).length === 0) return;
 
     // First segment is the main section (about, documentation, content, etc.)
     const mainSection = segments[0];
 
-    if (!this.navOptions[mainSection]) {
+    if (!this.navOptions()[mainSection]) {
       this.items = {};
       return;
     }
 
-    const section = this.navOptions[mainSection];
+    const section = this.navOptions()[mainSection];
 
     // If only one segment (e.g., /about), show the section's dropdown links
     if (segments.length === 1) {
       this.sectionTitle = section.label;
       this.sectionIcon = section.icon || '';
       this.sectionLink = section.link;
-      
+
       this.items = section.dropdownLinks || {};
       this.activeItem = null;
       return;
@@ -113,7 +139,7 @@ export class SidebarComponent {
 
     for (const [key, navLink] of Object.entries(sectionDropdownLinks)) {
       // Check if the link ends with the segment or if the key matches
-      const linkSegments = navLink.link.split('/').filter(s => s);
+      const linkSegments = navLink.link.split('/').filter((s) => s);
       if (linkSegments[linkSegments.length - 1] === secondSegment || key === secondSegment) {
         matchedSubSection = navLink;
         matchedSubSectionKey = key;
@@ -122,14 +148,21 @@ export class SidebarComponent {
     }
 
     // If the matched subsection has its own dropdown links, show those
-    if (matchedSubSection?.dropdownLinks && Object.keys(matchedSubSection.dropdownLinks).length > 0) {
+    if (
+      matchedSubSection?.dropdownLinks &&
+      Object.keys(matchedSubSection.dropdownLinks).length > 0
+    ) {
       this.items = matchedSubSection.dropdownLinks;
-      
+
       // Find active item within the nested dropdown links
       // For deeply nested routes, we need to find the item that matches any of the remaining segments
       const lastSegment = segments[segments.length - 1];
-      this.activeItem = this.findActiveItemKey(matchedSubSection.dropdownLinks, lastSegment, segments);
-      
+      this.activeItem = this.findActiveItemKey(
+        matchedSubSection.dropdownLinks,
+        lastSegment,
+        segments
+      );
+
       // If we didn't find an active item and there are 3+ segments,
       // check if any of the matched subsection's items are parents of the current route
       if (!this.activeItem && segments.length > 2) {
@@ -151,59 +184,67 @@ export class SidebarComponent {
       this.items = sectionDropdownLinks;
       this.activeItem = matchedSubSectionKey || null;
     }
+    this.cdr.markForCheck();
   }
 
   updateItemsArticles(path: string, currentSlug: string) {
     if (path.includes('news')) {
-      this.sectionTitle = "News & Updates";
-      this.sectionLink = this.navOptions['about']?.dropdownLinks?.['news']?.link || '';
+      this.sectionTitle = 'News & Updates';
+      this.sectionLink = this.navOptions()['about']?.dropdownLinks?.['news']?.link || '';
     } else {
-      this.sectionTitle = "Reactome Research Spotlights";
-      this.sectionLink = this.navOptions['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '';
+      this.sectionTitle = 'Reactome Research Spotlights';
+      this.sectionLink =
+        this.navOptions()['content']?.dropdownLinks?.['reactome-research-spotlight']?.link || '';
     }
 
     this.contentService.getAllArticles(path).subscribe({
       next: (result) => {
-        this.items = Object.fromEntries(result.map((item: ArticleIndexItem) => {
-          if (item.slug == currentSlug) {
-            this.activeItem = item.slug;
-          }
+        this.items = Object.fromEntries(
+          result.map((item: ArticleIndexItem) => {
+            if (item.slug == currentSlug) {
+              this.activeItem = item.slug;
+            }
 
-          const key = item.slug;
-          const navLink: NavLink = {
-            link: `/${path}/${item.slug}`,
-            label: item.title
-          };
-          return [key, navLink];
-        }));
-
+            const key = item.slug;
+            const navLink: NavLink = {
+              link: `/${path}/${item.slug}`,
+              label: item.title,
+            };
+            return [key, navLink];
+          })
+        );
       },
       error: (err) => {
         console.error('Error loading articles:', err);
         this.items = {};
-      }
+      },
     });
+    this.cdr.markForCheck();
   }
 
   /**
    * Find the key of the active item based on the current route segments
    */
-  private findActiveItemKey(items: Record<string, NavLink>, lastSegment: string, segments: string[]): string | null {
+  private findActiveItemKey(
+    items: Record<string, NavLink>,
+    lastSegment: string,
+    segments: string[]
+  ): string | null {
     const currentPath = '/' + segments.join('/');
-    
+
     for (const [key, navLink] of Object.entries(items)) {
       // Check if the link matches the current path
       if (navLink.link === currentPath) {
         return key;
       }
-      
+
       // Check if the link ends with the last segment
-      const linkSegments = navLink.link.split('/').filter(s => s);
+      const linkSegments = navLink.link.split('/').filter((s) => s);
       if (linkSegments[linkSegments.length - 1] === lastSegment) {
         return key;
       }
     }
-    
+
     return null;
   }
 
@@ -211,15 +252,5 @@ export class SidebarComponent {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
-  // Normalize a nav link to an absolute path. Some nav-options.json entries
-  // (notably the about/* items) are stored as relative paths (no leading
-  // slash). A relative routerLink resolves against the current route and
-  // accumulates segments (e.g. on /about/team it becomes
-  // /about/team/about/news), so force a leading slash here.
-  toAbsoluteLink(link: string | undefined | null): string {
-    if (!link) return '/';
-    return link.startsWith('/') ? link : '/' + link;
-  }
-
-   preserveOrder = () => 0;
+  preserveOrder = () => 0;
 }

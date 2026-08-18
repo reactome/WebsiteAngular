@@ -8,9 +8,9 @@ export interface Prop extends Position {
   height: number;
 }
 
-export type Rectangle = { left: number, right: number, top: number, bottom: number }
+export type Rectangle = { left: number; right: number; top: number; bottom: number };
 
-export type Segment = { from: Position, to: Position };
+export type Segment = { from: Position; to: Position };
 
 export interface Diagram {
   displayName: string;
@@ -27,7 +27,6 @@ export interface Diagram {
   stableId: string;
 }
 
-
 export interface ReactionShape {
   a: Position;
   b: Position;
@@ -36,7 +35,7 @@ export interface ReactionShape {
 }
 
 export interface ConnectorHolder {
-  [k: string]: EdgeConnector[]
+  [k: string]: EdgeConnector[];
 
   catalysts: EdgeConnector[];
   inputs: EdgeConnector[];
@@ -58,36 +57,36 @@ export type Entity = {
   // Added by service
   rect?: Rectangle;
   isBackground?: boolean;
-}
+};
 
 // reactions
 export type Edge = {
   reactionShape: ReactionShape;
   reactionType: string;
   segments: Segment[];
-} & ConnectorHolder & Entity;
-
+} & ConnectorHolder &
+  Entity;
 
 export interface EdgeConnector {
-  id: number,
-  points?: Position[],
-  stoichiometry?: number
-  isFadeOut?: boolean
+  id: number;
+  points?: Position[];
+  stoichiometry?: number;
+  isFadeOut?: boolean;
 }
 
 export interface NodeConnector {
   edgeId: number;
   type: 'INPUT' | 'OUTPUT' | 'CATALYST' | 'ACTIVATOR' | 'INHIBITOR';
-  segments: Segment[]
-  stoichiometry: { value: number }
-  endShape: { centre: Position, c?: Position }
-  isFadeOut?: boolean
+  segments: Segment[];
+  stoichiometry: { value: number };
+  endShape: { centre: Position; c?: Position };
+  isFadeOut?: boolean;
 }
 
 // entities
 export interface Node extends Entity {
-  prop: Prop,
-  connectors: NodeConnector[]
+  prop: Prop;
+  connectors: NodeConnector[];
   interactorsSummary: InteractorsSummary;
   nodeAttachments?: Attachment[];
   needDashedBorder?: boolean;
@@ -96,7 +95,7 @@ export interface Node extends Entity {
 
 export interface Compartment extends Entity {
   componentIds: number[];
-  prop: Prop,
+  prop: Prop;
   insets: Prop;
   textPosition: Position;
 }
@@ -121,7 +120,6 @@ interface SubPathway extends Entity {
   isFadeOut?: boolean;
 }
 
-
 interface InteractorsSummary {
   shape: Shape;
   type: string;
@@ -140,5 +138,5 @@ interface Attachment {
   description: string;
   label: string;
   reactomeId: number;
-  shape: Shape
+  shape: Shape;
 }

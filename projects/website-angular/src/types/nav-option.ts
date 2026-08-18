@@ -1,2 +1,1 @@
-import {NavLink} from "./link";
-
+import { NavLink } from './link';

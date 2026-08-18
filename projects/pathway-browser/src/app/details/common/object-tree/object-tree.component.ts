@@ -7,7 +7,8 @@ import {
   model,
   signal,
   TrackByFunction,
-  ViewChild
+  ViewChild,
+  inject,
 } from '@angular/core';
 import {
   isChemical,
@@ -18,36 +19,36 @@ import {
   isRefEntity,
   isReferenceSummary,
   isRLE,
-  isSelectableObject
-} from "../../../services/utils";
+  isSelectableObject,
+} from '../../../services/utils';
 import {
   MatNestedTreeNode,
   MatTree,
   MatTreeNestedDataSource,
   MatTreeNodeDef,
-  MatTreeNodeOutlet
-} from "@angular/material/tree";
-import {rxResource} from "@angular/core/rxjs-interop";
-import {forkJoin, map, Observable, of} from "rxjs";
-import {SelectableObject} from "../../../services/event.service";
-import {DatabaseObject} from "../../../model/graph/database-object.model";
-import {SchemaClasses} from "../../../constants/constants";
-import {IconService} from "../../../services/icon.service";
-import {EntityService} from "../../../services/entity.service";
-import {DataStateService} from "../../../services/data-state.service";
-import type {Relationship} from "../../../model/graph/relationship.model";
-import {cloneDeep, isArray} from "lodash";
-import {UrlStateService} from "../../../services/url-state.service";
-import {NgClass} from "@angular/common";
-import {MatTooltip} from "@angular/material/tooltip";
-import {MatIcon} from "@angular/material/icon";
-import {ExtractCompartmentPipe} from "../../../pipes/extract-compartment.pipe";
-import {MatIconButton} from "@angular/material/button";
-import {Species} from "../../../model/graph/species.model";
-import {ObjectTreeDetailsComponent} from "./object-details/object-tree-details.component";
-import {CONTENT_DETAIL} from "../../../../environments/environment";
+  MatTreeNodeOutlet,
+} from '@angular/material/tree';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { forkJoin, map, Observable, of } from 'rxjs';
+import { SelectableObject } from '../../../services/event.service';
+import { DatabaseObject } from '../../../model/graph/database-object.model';
+import { SchemaClasses } from '../../../constants/constants';
+import { IconService } from '../../../services/icon.service';
+import { EntityService } from '../../../services/entity.service';
+import { DataStateService } from '../../../services/data-state.service';
+import type { Relationship } from '../../../model/graph/relationship.model';
+import { cloneDeep, isArray } from 'lodash';
+import { UrlStateService } from '../../../services/url-state.service';
+import { NgClass } from '@angular/common';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { ExtractCompartmentPipe } from '../../../pipes/extract-compartment.pipe';
+import { MatIconButton } from '@angular/material/button';
+import { Species } from '../../../model/graph/species.model';
+import { ObjectTreeDetailsComponent } from './object-details/object-tree-details.component';
+import { CONTENT_DETAIL } from '../../../../environments/environment';
 
-type Connector = { type: string, shape: 'L' | 'I' | 'T' } | null;
+type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
 
 @Component({
   selector: 'cr-object-tree',
@@ -64,10 +65,14 @@ type Connector = { type: string, shape: 'L' | 'I' | 'T' } | null;
     ObjectTreeDetailsComponent,
   ],
   styleUrl: './object-tree.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
-
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationship.Has<E>> {
+  private iconService = inject(IconService);
+  private entity = inject(EntityService);
+  private dataStateService = inject(DataStateService);
+  private state = inject(UrlStateService);
+  private extractCompartmentPipe = inject(ExtractCompartmentPipe);
 
   hasDepthControl = input<boolean>(false);
   depthIndex = model<number | undefined>();
@@ -93,34 +98,31 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const moleculeStoichiometry = this.stoichiometry();
     const moleculeView = this.moleculeView();
     const highlight = this.highlight();
-    if (!data || isArray(data) && data.length === 0) return [];
-    if (!isArray(data)) data = [data]
-    if (data[0].stoichiometry) return data.map((r, index) => ({
-      ...r,
-      element: {...r.element, composedOf: r.element.composedOf || []},
-      index: index,
-    })) as R[];
-    return (data as E[]).map(e => ({
-      element: {...e, composedOf: e.composedOf || []},
-      order: 0,
-      stoichiometry: moleculeStoichiometry ?? 1,
-      type: this.type(),
-      index: 0,
-      highlight: highlight,
-      moleculeView: moleculeView,
-    }) as R); // Wrap in fake relationship to keep stoichiometry and global structure
+    if (!data || (isArray(data) && data.length === 0)) return [];
+    if (!isArray(data)) data = [data];
+    if (data[0].stoichiometry)
+      return data.map((r, index) => ({
+        ...r,
+        element: { ...r.element, composedOf: r.element.composedOf || [] },
+        index: index,
+      })) as R[];
+    return (data as E[]).map(
+      (e) =>
+        ({
+          element: { ...e, composedOf: e.composedOf || [] },
+          order: 0,
+          stoichiometry: moleculeStoichiometry ?? 1,
+          type: this.type(),
+          index: 0,
+          highlight: highlight,
+          moleculeView: moleculeView,
+        }) as R
+    ); // Wrap in fake relationship to keep stoichiometry and global structure
   });
 
   dataSource = new MatTreeNestedDataSource<R>();
 
-
-  constructor(private iconService: IconService,
-              private entity: EntityService,
-              private dataStateService: DataStateService,
-              private state: UrlStateService,
-              private extractCompartmentPipe: ExtractCompartmentPipe,
-  ) {
-
+  constructor() {
     // Initial tree data
     effect(() => {
       if (this.treeData().length > 0) {
@@ -156,51 +158,55 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
         }
       }
     });
-
   }
 
   _treeSource = rxResource({
-    request: () => ({depth: this.depthIndex()}),
-    loader: ({request}) => {
+    params: () => ({ depth: this.depthIndex() }),
+    stream: ({ params }) => {
       // Skip updating the tree when index changes is from the tree
       if (this.depthChangeSource() === 'tree') return of(this.dataSource.data);
 
-      const depth = request.depth;
+      const depth = params.depth;
 
       if (!depth) return of(this.dataSource.data);
 
       const depthInQuery = depth - 1; // Ignore the default depth 1
-      const results = [...this.treeData()].map((node) => this.fetchTreeAtDepth(node, depthInQuery).pipe(
-        map(result => this.updateTree(this.dataSource.data, result.element)!)
-      ));
+      const results = [...this.treeData()].map((node) =>
+        this.fetchTreeAtDepth(node, depthInQuery).pipe(
+          map((result) => this.updateTree(this.dataSource.data, result.element)!)
+        )
+      );
 
-      return forkJoin(results)
-    }
+      return forkJoin(results);
+    },
   });
 
-
   inDepth(id: string | number, depth: number): Observable<E> {
-    return this.scope() === 'entity' ? this.entity.getEntityInDepth(id, depth) : this.entity.getEventInDepth(id, depth);
+    return this.scope() === 'entity'
+      ? this.entity.getEntityInDepth(id, depth)
+      : this.entity.getEventInDepth(id, depth);
   }
 
   // TODO only query for the required data, no need to know where the molecule is acting in this view
   _selectedTreeNodeData = rxResource({
-    request: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
-    loader: (param) => {
+    params: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
+    stream: (param) => {
       const selectedNode = this.selectedTreeNode();
       // Check the condition to determine which method to call
       // Protein
       if (!this.isNestedView(selectedNode)) {
-        return this.dataStateService.fetchEnhancedData<SelectableObject>(param.request, {
-          fetchIncomingRelationships: false,
-          summariseReferenceEntity: false,
-          includeDisease: true
-        }).pipe(map(result => result as unknown as E));
+        return this.dataStateService
+          .fetchEnhancedData<SelectableObject>(param.params, {
+            fetchIncomingRelationships: false,
+            summariseReferenceEntity: false,
+            includeDisease: true,
+          })
+          .pipe(map((result) => result as unknown as E));
       } else {
         // PE -> Complex and Set
-        return this.inDepth(param.request, 1) // This is from user interaction on the tree itself, so the depth is always 1
+        return this.inDepth(param.params, 1) // This is from user interaction on the tree itself, so the depth is always 1
           .pipe(
-            map(entityResult => {
+            map((entityResult) => {
               if (entityResult && entityResult.composedOf) {
                 entityResult.composedOf = entityResult.composedOf.map((composed, index, array) => ({
                   ...composed,
@@ -218,7 +224,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
             })
           );
       }
-    }
+    },
   });
 
   childrenAccessor = (node: R): R[] => {
@@ -228,11 +234,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return node.element.composedOf as R[];
   };
 
-
   hasChild = (_: number, node: R) => {
     return node.element.composedOf !== undefined;
-  }
-
+  };
 
   // Fetch children data when user click to expand, no need to send API call when tree node already exists
   loadChildren(node: R) {
@@ -245,7 +249,6 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       // No children data — sending API call to fetch children data
       this._selectedTreeNode.set(node.element);
     }
-
 
     if (this.hasDepthControl()) {
       // Handle both expand and collapse with one timeout to get depthIndex
@@ -270,7 +273,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
         ...element,
         composedOf: element.composedOf ?? [],
       };
-      return of({...node, element: normalElement});
+      return of({ ...node, element: normalElement });
     }
 
     return this.inDepth(id, depth).pipe(
@@ -284,7 +287,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
         };
         return {
           ...node,
-          element: nestedElement
+          element: nestedElement,
         };
       })
     );
@@ -295,7 +298,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     if (!nodes || nodes.length === 0) return level;
 
     return Math.max(
-      ...nodes.map(node => {
+      ...nodes.map((node) => {
         const children = node.element?.composedOf || [];
 
         const isExpanded = this.tree?.isExpanded(node);
@@ -311,7 +314,6 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     );
   }
 
-
   expandNestedTreeNodes(nodes: R[]) {
     for (const node of nodes) {
       if (!node.element.composedOf) return;
@@ -322,19 +324,22 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     }
   }
 
-
-  getComposedOfRecursively(composedArray: Relationship.Has<DatabaseObject>[]): Relationship.Has<DatabaseObject>[] {
+  getComposedOfRecursively(
+    composedArray: Relationship.Has<DatabaseObject>[]
+  ): Relationship.Has<DatabaseObject>[] {
     if (!Array.isArray(composedArray)) return [];
 
     return composedArray.map((composed, index) => {
       const element = composed?.element ?? [];
-      const nestedComposedOf = Array.isArray(element.composedOf) ? this.getComposedOfRecursively(element.composedOf) : [];
+      const nestedComposedOf = Array.isArray(element.composedOf)
+        ? this.getComposedOfRecursively(element.composedOf)
+        : [];
       return {
         ...composed,
         element: {
           ...element,
           composedOf: nestedComposedOf,
-          isLoaded: true
+          isLoaded: true,
         },
         index,
       };
@@ -346,8 +351,8 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     SchemaClasses.SIMPLE_ENTITY,
     SchemaClasses.CHEMICAL_DRUG,
     SchemaClasses.OTHER_ENTITY,
-    SchemaClasses.GENOME_ENCODED_ENTITY
-  ])
+    SchemaClasses.GENOME_ENCODED_ENTITY,
+  ]);
 
   isNestedView(selectedNode: E | undefined): boolean {
     if (!selectedNode) return true;
@@ -355,19 +360,21 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     // participants for molecule tab
     // If the node has an icon, treat it as non-nested
     const isStructure = this.moleculeView();
-    if (isStructure) return false
+    if (isStructure) return false;
 
-    const notNested = ObjectTreeComponent.nonNestedClasses.has(selectedNode.schemaClass) || isRLE(selectedNode);
+    const notNested =
+      ObjectTreeComponent.nonNestedClasses.has(selectedNode.schemaClass) || isRLE(selectedNode);
 
     return !notNested;
   }
 
   isEllipsisActive(e: HTMLElement): boolean {
-    return e ? (e.offsetWidth < e.scrollWidth) : false;
+    return e ? e.offsetWidth < e.scrollWidth : false;
   }
 
   // Important to use the updateCounter to trigger the update on the parent node when the child node is updated
-  trackBy: TrackByFunction<R> = (index, node) => node.element.dbId + '-' + node.element._updateCounter
+  trackBy: TrackByFunction<R> = (index, node) =>
+    node.element.dbId + '-' + node.element._updateCounter;
 
   updateMatTreeDataSource(node: E) {
     const tree = this.dataSource.data;
@@ -383,7 +390,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       if (node.element.dbId === result.dbId) {
         Object.assign(node.element, result); // MUTATES ORIGINAL ELEMENT
         node.element._updateCounter = (node.element._updateCounter || 0) + 1;
-        result.composedOf = result.composedOf || []
+        result.composedOf = result.composedOf || [];
         return node;
       } else {
         const r = this.updateTree((node.element.composedOf || []) as R[], result);
@@ -396,11 +403,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   flattenTree(nodes: R[]): R[] {
-    return nodes.flatMap(node => [
+    return nodes.flatMap((node) => [
       node,
-      ...(node.element.composedOf ?
-        this.flattenTree((node.element.composedOf as R[])) :
-        [])
+      ...(node.element.composedOf ? this.flattenTree(node.element.composedOf as R[]) : []),
     ]);
   }
 
@@ -418,17 +423,20 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getCurrentNodeConnector(size: number, node: R): Connector {
-
     if (!size || !node) return null;
     const index = node.index;
 
     return {
       type: node.type,
-      shape: index === 0 && size == 1 ? 'L' : // Single child → Last item
-        index === 0 ? 'T' : // First item
-          index === size - 1 ? 'L' : // Last item
-            'T', // middle items
-    }
+      shape:
+        index === 0 && size == 1
+          ? 'L' // Single child → Last item
+          : index === 0
+            ? 'T' // First item
+            : index === size - 1
+              ? 'L' // Last item
+              : 'T', // middle items
+    };
   }
 
   // To create an array of a specific level for indexing connector class
@@ -437,8 +445,8 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     if (level == null) return [];
     const updatedLevel = level + 1;
     // Exclude root for normal tree node and include it when tree node is a protein content node
-    let size = !isDetailContent ? updatedLevel - 1 : updatedLevel;
-    let result = [];
+    const size = !isDetailContent ? updatedLevel - 1 : updatedLevel;
+    const result = [];
     for (let i = 0; i < size; i++) {
       result.push(i);
     }
@@ -455,10 +463,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    * return a list of connector classes
    */
   getAllConnectors(element: number, node: R, index: number, _level: number | null): Connector[] {
-
     if (!_level) return [];
-    const connectors = []
-    const level = _level + 1;// sync with the depth control number starts from 1
+    const connectors = [];
+    const level = _level + 1; // sync with the depth control number starts from 1
     // Only get all parents connectors, given false value here to indicate that the current node is not protein content node
     const parentConnectors = this.getParentsConnector(node, false);
     connectors.push(...parentConnectors);
@@ -468,11 +475,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const lastConnector = this.getCurrentNodeConnector(element, node);
       connectors.push(lastConnector);
     }
-    return connectors
+    return connectors;
   }
 
   getParentsConnector(node: R, isDetailContent: boolean): Connector[] {
-
     const ancestors = this.findAncestors(node, this.dataSource.data);
     // Get all parents excepted the last one, ancestors include the node itself, the last one is processing with getCurrentNodeConnector(node)
     // if the parent is the protein, then include it in the list as the parent and kid(protein content node) is the same node
@@ -485,7 +491,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const parent = parents[i];
       const grandParent = i > 0 ? parents[i - 1] : null;
 
-      const grandParentChildCount = grandParent?.element.composedOf && grandParent.element.composedOf.length ? grandParent.element.composedOf.length : null;
+      const grandParentChildCount =
+        grandParent?.element.composedOf && grandParent.element.composedOf.length
+          ? grandParent.element.composedOf.length
+          : null;
       // Compare the order of current parent with the size of previous parent composedOf to determine if the parent is the last kid, adding empty string as connector
       if (grandParentChildCount && parent.index === grandParentChildCount - 1) {
         connectorClasses.push(null);
@@ -498,17 +507,16 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getParentConnector(parentNode: R, node: R): Connector {
-
     if (!parentNode.element.composedOf || parentNode.element.composedOf.length === 0) return null;
 
     // Find a child with the same type as the clicked node
-    const matchedChild = parentNode.element.composedOf.find(child => child.type === node.type);
+    const matchedChild = parentNode.element.composedOf.find((child) => child.type === node.type);
     // Fallback to the first child if no match is found and use the first child to know the connector type, because the parent could be input or output type
     // Cannot use the composedOf[0] directly is because the elements in composedOf could have different types, for instance, member and candidate, composedOf[0] will always
     // return member type not candidate
     const typeReference = matchedChild || parentNode.element.composedOf[0];
 
-    return {shape: "I", type: typeReference.type};
+    return { shape: 'I', type: typeReference.type };
   }
 
   findAncestors(node: R, treeData: R[]): R[] {
@@ -521,16 +529,19 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     for (const node of currentNode) {
       // If the target node is found, return an array with this node
       if (node === targetNode) {
-        return [node];  // This node itself is the ancestor
+        return [node]; // This node itself is the ancestor
       }
       // Check if the node has children
       if (node.element.composedOf && node.element.composedOf.length > 0) {
         // Recursively find ancestors in the children and merge results
-        const ancestors = this.traverseAndCollectAncestors(node.element.composedOf as R[], targetNode);
+        const ancestors = this.traverseAndCollectAncestors(
+          node.element.composedOf as R[],
+          targetNode
+        );
 
         if (ancestors.length > 0) {
           // If ancestors were found, prepend the current node to the result list
-          return [node, ...ancestors];  // Add current node as part of ancestors list
+          return [node, ...ancestors]; // Add current node as part of ancestors list
         }
       }
     }
@@ -540,7 +551,6 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   getShortest(arr: string[]) {
     return arr.reduce((a, b) => (a.length <= b.length ? a : b));
   }
-
 
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
@@ -560,7 +570,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   private requireNavigate(node: E) {
-    return isPathway(node) && (node.hasDiagram || !this.state.pathwayId()?.includes(node.species?.[0]?.abbreviation));
+    return (
+      isPathway(node) &&
+      (node.hasDiagram || !this.state.pathwayId()?.includes(node.species?.[0]?.abbreviation))
+    );
   }
 
   getUrl(element: E): string {
@@ -569,7 +582,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       return element.referenceEntity.url;
     }
     if (this.moleculeView() && isMolecule(element)) {
-      return element.url
+      return element.url;
     }
     // Not proteins/chemical or molecule, linking to details page
     return `${CONTENT_DETAIL}/${element.stId}`;
@@ -589,16 +602,14 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getCompartments(element: E): string[] {
-
     if (this.moleculeView()) return [];
     if (!isEvent(element)) {
       const comp = this.extractCompartmentPipe.transform(element.displayName);
       return comp ? [comp] : [];
     } else {
-      return element.hasCompartment?.map(h => h.element.displayName) || [];
+      return element.hasCompartment?.map((h) => h.element.displayName) || [];
     }
   }
-
 
   /**?
    *
@@ -614,13 +625,12 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    */
 
   getSpeciesName(element: E): string | null {
-
     const speciesName: string = isSelectableObject(element) ? element.speciesName : null;
     const species: Species = isSelectableObject(element) ? element.species : null;
 
     if (!speciesName) return null;
 
-    const maxStringLength = 30;  // Use Molluscum contagiosum virus's length
+    const maxStringLength = 30; // Use Molluscum contagiosum virus's length
     const speciesArr = Array.isArray(species) ? species : [species];
     const firstSpeciesName = speciesArr?.[0]?.name;
     const shouldShorten = speciesName.length >= maxStringLength && firstSpeciesName.length > 1;

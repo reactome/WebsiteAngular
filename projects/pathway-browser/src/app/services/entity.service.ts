@@ -1,18 +1,18 @@
-import {computed, inject, Injectable, signal} from '@angular/core';
-import {HttpClient} from "@angular/common/http";
-import {CONTENT_SERVICE} from "../../environments/environment";
-import {PhysicalEntity} from "../model/graph/physical-entity/physical-entity.model";
-import {filter, map, Observable, of, take} from "rxjs";
-import {DataStateService} from "./data-state.service";
-import {ReferenceEntity} from "../model/graph/reference-entity/reference-entity.model";
-import {DatabaseObject} from "../model/graph/database-object.model";
-import {rxResource, toObservable} from "@angular/core/rxjs-interop";
-import {ParticipantService} from "./participant.service";
-import {DataKeys, Labels} from "../constants/constants";
-import {isDefined, isRefEntity, isReferenceEntityStId, isReferenceSummary} from "./utils";
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { CONTENT_SERVICE } from '../../environments/environment';
+import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
+import { filter, map, Observable, of, take } from 'rxjs';
+import { DataStateService } from './data-state.service';
+import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
+import { DatabaseObject } from '../model/graph/database-object.model';
+import { rxResource, toObservable } from '@angular/core/rxjs-interop';
+import { ParticipantService } from './participant.service';
+import { DataKeys, Labels } from '../constants/constants';
+import { isDefined, isRefEntity, isReferenceEntityStId, isReferenceSummary } from './utils';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EntityService {
   private http: HttpClient = inject(HttpClient);
@@ -24,14 +24,19 @@ export class EntityService {
   selectedElement$ = toObservable(this.dataStateService.selectedElement);
 
   _refEntities = rxResource({
-    request: this.eventId,
-    loader: ({request}) => {
-      return request
-        ? isReferenceEntityStId(request)
-          ? this.selectedElement$.pipe(filter(isDefined), filter(isRefEntity), map(ref => [ref]), take(1))
-          : this.participant.getReferenceEntities(request)
+    params: this.eventId,
+    stream: ({ params }) => {
+      return params
+        ? isReferenceEntityStId(params)
+          ? this.selectedElement$.pipe(
+              filter(isDefined),
+              filter(isRefEntity),
+              map((ref) => [ref]),
+              take(1)
+            )
+          : this.participant.getReferenceEntities(params)
         : of(null);
-    }
+    },
   });
 
   refEntities = computed(() => this._refEntities.value());
@@ -43,45 +48,49 @@ export class EntityService {
 
   getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
-    return this.http.get<E>(url, {
-      params: {
-        includeRef: true,
-        view: 'nested-aggregated',
-        attributes: 'species,compartment,referenceEntity',
-        maxDepth: depth,
-      }
-    }).pipe(map(this.dataStateService.flattenReferences))
+    return this.http
+      .get<E>(url, {
+        params: {
+          includeRef: true,
+          view: 'nested-aggregated',
+          attributes: 'species,compartment,referenceEntity',
+          maxDepth: depth,
+        },
+      })
+      .pipe(map(this.dataStateService.flattenReferences));
   }
 
   getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
-    return this.http.get<E>(url, {
-      params: {
-        includeRef: true,
-        view: 'nested-aggregated',
-        attributes: 'species,compartment',
-        maxDepth: depth,
-      }
-    }).pipe(map(this.dataStateService.flattenReferences))
+    return this.http
+      .get<E>(url, {
+        params: {
+          includeRef: true,
+          view: 'nested-aggregated',
+          attributes: 'species,compartment',
+          maxDepth: depth,
+        },
+      })
+      .pipe(map(this.dataStateService.flattenReferences));
   }
 
   getTransformedExternalRef(refEntity: ReferenceEntity | undefined) {
     if (!refEntity) return [];
-    const externalRef = {...refEntity};
+    const externalRef = { ...refEntity };
     const properties = [
-      {key: DataKeys.DISPLAY_NAME, label: Labels.EXTERNAL_REFERENCE},
-      {key: 'geneName', label: 'Gene Names'},
-      {key: 'chain', label: 'Chain'},
-      {key: 'referenceGene', label: 'Reference Genes'},
-      {key: 'referenceTranscript', label: 'Reference Transcript'}
+      { key: DataKeys.DISPLAY_NAME, label: Labels.EXTERNAL_REFERENCE },
+      { key: 'geneName', label: 'Gene Names' },
+      { key: 'chain', label: 'Chain' },
+      { key: 'referenceGene', label: 'Reference Genes' },
+      { key: 'referenceTranscript', label: 'Reference Transcript' },
     ];
-    const results: { label: string, value: any }[] = [];
+    const results: { label: string; value: any }[] = [];
     for (const property of properties) {
-      let value = externalRef[property.key];
+      const value = externalRef[property.key];
       if (!value) continue;
       results.push({
         label: property.label || property.key,
-        value: value
+        value: value,
       });
     }
     return results;
@@ -92,10 +101,13 @@ export class EntityService {
     const grouped = new Map<string, T[]>();
 
     // Loop over unique keys and group data by the key
-    const uniqueKeys = [...new Set(data.map(item => getKey(item)))];
+    const uniqueKeys = [...new Set(data.map((item) => getKey(item)))];
 
-    uniqueKeys.forEach(key => {
-      grouped.set(key, data.filter(item => getKey(item) === key));
+    uniqueKeys.forEach((key) => {
+      grouped.set(
+        key,
+        data.filter((item) => getKey(item) === key)
+      );
     });
 
     return grouped;
@@ -104,5 +116,4 @@ export class EntityService {
   loadRefEntities(id: string) {
     this.eventId.set(id);
   }
-
 }

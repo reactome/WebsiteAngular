@@ -4,18 +4,21 @@
       <span class="category-badge">Community</span>
       <h1>Contribute Pathway Knowledge</h1>
       <p class="description">
-        Become a Reactome contributor! You will be credited with authorship or reviewership for all of your contributions.
-        Each pathway is associated with a DOI and can be cited as a publication. You can quickly and easily claim your
-        Reactome contributions in ORCID using our <a routerLink="/documentation/userguide/claim-your-work">ORCID claiming feature</a>.
+        Become a Reactome contributor! You will be credited with authorship or reviewership for all of your
+        contributions. Each pathway is associated with a DOI and can be cited as a publication. You can quickly and
+        easily claim your Reactome contributions in ORCID using our
+        <a routerLink="/documentation/userguide/claim-your-work">ORCID claiming feature</a>.
       </p>
     </header>
 
     <div class="intro-text">
       <p>
-        We are currently seeking reviewers for the pathways listed below.
-        If you'd like to contribute a pathway that is not on this list, please <a href="mailto:help@reactome.org">contact us</a>.
-        We would be happy to work with you! For more information, see this
-        <a routerLink="/community/collaboration/faq-for-prospective-reviewers-and-authors">FAQ for prospective reviewers and authors</a>.
+        We are currently seeking reviewers for the pathways listed below. If you'd like to contribute a pathway that is
+        not on this list, please <a href="mailto:help@reactome.org">contact us</a>. We would be happy to work with you!
+        For more information, see this
+        <a routerLink="/community/collaboration/faq-for-prospective-reviewers-and-authors"
+          >FAQ for prospective reviewers and authors</a
+        >.
       </p>
     </div>
 
@@ -60,7 +63,12 @@
                   <tr>
                     <td class="pathway-name">
                       @if (entry.pathwayUrl) {
-                        <a [href]="entry.pathwayUrl" target="_blank" rel="noopener" title="View in Reactome Curator Pathway Browser">
+                        <a
+                          [href]="entry.pathwayUrl"
+                          target="_blank"
+                          rel="noopener"
+                          title="View in Reactome Curator Pathway Browser"
+                        >
                           {{ entry.pathway }}
                           <span class="material-symbols-rounded external-icon">open_in_new</span>
                         </a>
@@ -74,7 +82,13 @@
                     <td>{{ entry.curator }}</td>
                     <td class="doc-links">
                       @if (entry.docUrl) {
-                        <a class="doc-badge" [href]="entry.docUrl" target="_blank" rel="noopener" title="View Word document">
+                        <a
+                          class="doc-badge"
+                          [href]="entry.docUrl"
+                          target="_blank"
+                          rel="noopener"
+                          title="View Word document"
+                        >
                           <span class="material-symbols-rounded">description</span>
                           DOC
                         </a>

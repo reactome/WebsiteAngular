@@ -1,8 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import { ContentDataService, TocPathway, SimplePerson } from '../../../services/content-data.service';
+import {
+  ContentDataService,
+  TocPathway,
+  SimplePerson,
+} from '../../../services/content-data.service';
 
 type SortKey = 'displayName' | 'releaseDate';
 type SortDir = 'asc' | 'desc';
@@ -11,9 +15,14 @@ type SortDir = 'asc' | 'desc';
   selector: 'app-toc',
   imports: [PageLayoutComponent],
   templateUrl: './toc.component.html',
-  styleUrl: './toc.component.scss'
+  styleUrl: './toc.component.scss',
 })
 export class TocComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   loading = true;
   error = false;
 
@@ -28,16 +37,12 @@ export class TocComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  constructor(private contentDataService: ContentDataService) {}
-
   ngOnInit() {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.applyFilter();
-    });
+    this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.applyFilter();
+      });
 
     this.loadData();
   }
@@ -55,11 +60,13 @@ export class TocComponent implements OnInit, OnDestroy {
         this.allPathways = data;
         this.filteredPathways = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
-      }
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -84,18 +91,19 @@ export class TocComponent implements OnInit, OnDestroy {
     let results = this.allPathways;
 
     if (this.statusFilter) {
-      results = results.filter(p => p.releaseStatus === this.statusFilter);
+      results = results.filter((p) => p.releaseStatus === this.statusFilter);
     }
 
     if (q) {
-      results = results.filter(p =>
-        p.displayName.toLowerCase().includes(q) ||
-        p.species?.toLowerCase().includes(q) ||
-        p.doi?.toLowerCase().includes(q) ||
-        this.personsMatch(p.authors, q) ||
-        this.personsMatch(p.reviewers, q) ||
-        this.personsMatch(p.editors, q) ||
-        p.subpathways?.some(s => s.displayName.toLowerCase().includes(q))
+      results = results.filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(q) ||
+          p.species?.toLowerCase().includes(q) ||
+          p.doi?.toLowerCase().includes(q) ||
+          this.personsMatch(p.authors, q) ||
+          this.personsMatch(p.reviewers, q) ||
+          this.personsMatch(p.editors, q) ||
+          p.subpathways?.some((s) => s.displayName.toLowerCase().includes(q))
       );
     }
 
@@ -127,10 +135,11 @@ export class TocComponent implements OnInit, OnDestroy {
   }
 
   private personsMatch(persons: SimplePerson[], q: string): boolean {
-    return persons?.some(p =>
-      p.displayName?.toLowerCase().includes(q) ||
-      p.surname?.toLowerCase().includes(q) ||
-      p.firstname?.toLowerCase().includes(q)
+    return persons?.some(
+      (p) =>
+        p.displayName?.toLowerCase().includes(q) ||
+        p.surname?.toLowerCase().includes(q) ||
+        p.firstname?.toLowerCase().includes(q)
     );
   }
 
@@ -148,7 +157,7 @@ export class TocComponent implements OnInit, OnDestroy {
 
   personNames(persons: SimplePerson[]): string {
     if (!persons?.length) return '';
-    return persons.map(p => p.displayName).join(', ');
+    return persons.map((p) => p.displayName).join(', ');
   }
 
   personUrl(person: SimplePerson): string {
@@ -164,10 +173,10 @@ export class TocComponent implements OnInit, OnDestroy {
   }
 
   get newCount(): number {
-    return this.allPathways.filter(p => p.releaseStatus === 'NEW').length;
+    return this.allPathways.filter((p) => p.releaseStatus === 'NEW').length;
   }
 
   get updatedCount(): number {
-    return this.allPathways.filter(p => p.releaseStatus === 'UPDATED').length;
+    return this.allPathways.filter((p) => p.releaseStatus === 'UPDATED').length;
   }
 }

@@ -1,10 +1,9 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 .variables {
   position: relative;
   height: 100%;
 }
-
 
 #cytoscape {
   position: absolute;
@@ -42,7 +41,6 @@
     width: calc(100% - 2 * 5px);
   }
 }
-
 
 #legend-boundary {
   --legend-width: 400px;
@@ -113,7 +111,6 @@
     }
   }
 
-
   #legend {
     width: var(--legend-width);
     height: 100%;
@@ -123,7 +120,7 @@
     z-index: 2;
 
     &:before {
-      content: "";
+      content: '';
       height: 100%;
       width: 2px;
       background-color: var(--primary);
@@ -179,11 +176,10 @@
   cursor: ew-resize;
   color: var(--on-surface);
   pointer-events: all;
-  filter: drop-shadow(-2px 0px 0px var(--primary-container)) drop-shadow(2px 0px 0px var(--error-container));
+  filter: drop-shadow(-2px 0px 0px var(--primary-container))
+    drop-shadow(2px 0px 0px var(--error-container));
   background: var(--surface);
-
 }
-
 
 #cytoscape-compare {
   box-sizing: border-box;
@@ -192,14 +188,19 @@
   height: 100%;
   width: 100%;
   inset: 0 0 0 0;
-  background-color: color-mix(in srgb, var(--error) 5%, color-mix(in srgb, var(--surface) 50%, transparent));
+  background-color: color-mix(
+    in srgb,
+    var(--error) 5%,
+    color-mix(in srgb, var(--surface) 50%, transparent)
+  );
 
   &:before {
-    content: "";
+    content: '';
     height: 100%;
     width: 4px;
     background-color: var(--primary);
-    filter: drop-shadow(-2px 0px 0px var(--primary-container)) drop-shadow(2px 0px 0px var(--error-container));
+    filter: drop-shadow(-2px 0px 0px var(--primary-container))
+      drop-shadow(2px 0px 0px var(--error-container));
     position: absolute;
     left: -2px;
     z-index: 4;

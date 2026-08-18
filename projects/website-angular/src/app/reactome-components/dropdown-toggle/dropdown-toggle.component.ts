@@ -4,7 +4,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   selector: 'app-dropdown-toggle',
   imports: [],
   templateUrl: './dropdown-toggle.component.html',
-  styleUrl: './dropdown-toggle.component.scss'
+  styleUrl: './dropdown-toggle.component.scss',
 })
 export class DropdownToggleComponent {
   @Input() name: string = '';

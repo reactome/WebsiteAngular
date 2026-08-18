@@ -1,9 +1,9 @@
-import {DatabaseObject} from "./database-object.model";
+import { DatabaseObject } from './database-object.model';
 
 export interface Person extends DatabaseObject {
   orcidId: string;
   dbId: number;
-  initial: string
+  initial: string;
   firstname: string;
   surname: string;
 }

@@ -58,7 +58,9 @@ export class IconService {
     return this.http.get<IconFacetResponse>(`${this.baseUrl}/icon/facet`);
   }
 
-  queryIcons(options: { query?: string; category?: string; page?: number; pageSize?: number } = {}): Observable<IconResult> {
+  queryIcons(
+    options: { query?: string; category?: string; page?: number; pageSize?: number } = {}
+  ): Observable<IconResult> {
     let params = new HttpParams();
     if (options.query) params = params.set('query', options.query);
     if (options.category) params = params.set('category', options.category);

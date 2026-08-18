@@ -1,33 +1,35 @@
 .why-wrapper {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 
-    h2 {
-        margin: 0 0 6px;
-    }
+  h2 {
+    margin: 0 0 6px;
+  }
 }
 
 .sponsor-logos {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    gap: 16px;
-    background-color: rgba(255, 255, 255, 0.406);
-    padding: 16px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  gap: 16px;
+  // Near-white, not 40% white: these are dark logos on transparent
+  // backgrounds, so anything that lets the teal through muddies them.
+  background-color: rgb(255 255 255 / 92%);
+  border-radius: 6px;
+  padding: 16px;
 
-     &:hover {
-        border: 2px solid var(--primary);
-     }
+  &:hover {
+    border: 2px solid var(--primary);
+  }
 }
 
 .sponsor-logo {
-    max-width: 80px;
-    max-height: 50px;
+  max-width: 80px;
+  max-height: 50px;
 }
 
-
 .grant-link {
-    color: var(--on-primary);
-    text-decoration: underline;
+  color: var(--panel-link, currentcolor);
+  text-decoration: underline;
 }

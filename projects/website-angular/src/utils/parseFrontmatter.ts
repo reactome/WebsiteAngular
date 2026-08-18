@@ -27,7 +27,7 @@ export default function parseFrontmatter(content: string): {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+
     // Check if we're in a multiline value
     if (isMultilineValue && currentKey) {
       // Empty line or line with content
@@ -35,24 +35,26 @@ export default function parseFrontmatter(content: string): {
         multilineValue.push('');
       } else {
         const indent = line.length - line.trimStart().length;
-        
+
         // If indentation is less than or equal to base indent, multiline value has ended
         if (indent <= baseIndent && line.trim().match(/^[a-zA-Z_-]+:/)) {
           // Finish the multiline value
           if (multilineType === 'folded') {
             // Folded style (>) - join lines with spaces, preserve paragraph breaks
             const paragraphs = multilineValue.join('\n').split('\n\n');
-            frontmatter[currentKey] = paragraphs.map(p => p.replace(/\n/g, ' ').trim()).join('\n\n');
+            frontmatter[currentKey] = paragraphs
+              .map((p) => p.replace(/\n/g, ' ').trim())
+              .join('\n\n');
           } else {
             // Literal style (|) - preserve line breaks
             frontmatter[currentKey] = multilineValue.join('\n');
           }
-          
+
           isMultilineValue = false;
           multilineType = null;
           multilineValue = [];
           currentKey = null;
-          
+
           // Process this line as a new key
           i--;
           continue;
@@ -108,10 +110,11 @@ export default function parseFrontmatter(content: string): {
         }
         const itemValue = line.trim().substring(2).trim();
         // Remove quotes if present
-        const cleanValue = (itemValue.startsWith("'") && itemValue.endsWith("'")) ||
-                          (itemValue.startsWith('"') && itemValue.endsWith('"'))
-          ? itemValue.slice(1, -1)
-          : itemValue;
+        const cleanValue =
+          (itemValue.startsWith("'") && itemValue.endsWith("'")) ||
+          (itemValue.startsWith('"') && itemValue.endsWith('"'))
+            ? itemValue.slice(1, -1)
+            : itemValue;
         (frontmatter[currentKey] as string[]).push(cleanValue);
       }
     }
@@ -121,7 +124,7 @@ export default function parseFrontmatter(content: string): {
   if (isMultilineValue && currentKey) {
     if (multilineType === 'folded') {
       const paragraphs = multilineValue.join('\n').split('\n\n');
-      frontmatter[currentKey] = paragraphs.map(p => p.replace(/\n/g, ' ').trim()).join('\n\n');
+      frontmatter[currentKey] = paragraphs.map((p) => p.replace(/\n/g, ' ').trim()).join('\n\n');
     } else {
       frontmatter[currentKey] = multilineValue.join('\n');
     }

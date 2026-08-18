@@ -1,9 +1,9 @@
-import {ReferenceSequence} from "./reference-sequence.model";
-import {ReferenceDNASequence} from "./reference-dna-sequence.model";
-import {ReferenceRNASequence} from "./reference-rna-sequence.model";
+import { ReferenceSequence } from './reference-sequence.model';
+import { ReferenceDNASequence } from './reference-dna-sequence.model';
+import { ReferenceRNASequence } from './reference-rna-sequence.model';
 
 export interface ReferenceGeneProduct extends ReferenceSequence {
-  chain?: string[]
+  chain?: string[];
   referenceGene?: ReferenceDNASequence[];
   referenceTranscript?: ReferenceRNASequence[];
 }

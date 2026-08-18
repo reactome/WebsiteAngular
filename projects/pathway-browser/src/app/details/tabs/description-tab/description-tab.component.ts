@@ -55,7 +55,7 @@ import { Summation } from '../../../model/graph/summation.model';
 import { FigureService } from './figure/figure.service';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
 import { KeyValuePipe, NgClass, NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { IncludeRefPipe } from '../../../pipes/include-ref.pipe';
 import { AuthorshipDateFormatPipe } from '../../../pipes/authorship-date-format.pipe';
@@ -119,38 +119,33 @@ export class DescriptionTabComponent implements OnDestroy {
   public figure: FigureService = inject(FigureService);
   private interactorService: InteractorService = inject(InteractorService);
   public state: UrlStateService = inject(UrlStateService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private species: SpeciesService = inject(SpeciesService);
   icon = rxResource({
-    request: () => this.referenceEntity()?.identifier,
-    loader: (param) =>
-      param.request ? this.iconService.fetchIcon(param.request) : of(null),
+    params: () => this.referenceEntity()?.identifier,
+    stream: (param) => (param.params ? this.iconService.fetchIcon(param.params) : of(null)),
   });
 
   readonly figures = computed(() =>
     (this.obj().figure || []).filter((f) => !f.url.includes('ehld'))
   );
-  readonly hasIllustration = computed(
-    () => this.figures().length > 0 || this.icon.hasValue()
-  );
+  readonly hasIllustration = computed(() => this.figures().length > 0 || this.icon.hasValue());
   currentIcon = this.iconService.currentIcon;
 
   _otherForms = rxResource({
-    request: () =>
+    params: () =>
       isPhysicalEntity(this.obj()) &&
       !isReferenceSummary(this.obj()) &&
       this.referenceEntity() &&
       this.obj().stId,
-    loader: (param) =>
-      param.request ? this.entity.getOtherForms(param.request) : of(null),
+    stream: (param) => (param.params ? this.entity.getOtherForms(param.params) : of(null)),
   });
 
   _interactors = rxResource({
-    request: () =>
-      isPhysicalEntity(this.obj()) && this.referenceEntity()?.identifier,
-    loader: (param) =>
-      param.request
-        ? this.interactorService.getCustomInteractorsByAcc(param.request)
-        : of(null),
+    params: () => isPhysicalEntity(this.obj()) && this.referenceEntity()?.identifier,
+    stream: (param) =>
+      param.params ? this.interactorService.getCustomInteractorsByAcc(param.params) : of(null),
   });
 
   readonly obj = input.required<SelectableObject>();
@@ -171,11 +166,7 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly name = computed(() => {
     const obj = this.obj();
 
-    let name = obj.name
-      ? isArray(obj.name)
-        ? obj.name[0]
-        : obj.name
-      : obj.displayName;
+    let name = obj.name ? (isArray(obj.name) ? obj.name[0] : obj.name) : obj.displayName;
 
     if (isReferenceSummary(obj)) {
       const suffix = DescriptionTabComponent.referenceTypeToNameSuffix.get(
@@ -211,10 +202,7 @@ export class DescriptionTabComponent implements OnDestroy {
   );
   readonly allRefs = computed(() => {
     const literatureRefs = this.literatureRefs();
-    const summation = getProperty(
-      this.obj(),
-      DataKeys.SUMMATION
-    ) as Summation[];
+    const summation = getProperty(this.obj(), DataKeys.SUMMATION) as Summation[];
     return [
       ...(literatureRefs || []),
       ...(summation
@@ -227,38 +215,28 @@ export class DescriptionTabComponent implements OnDestroy {
     getProperty(this.obj(), DataKeys.REFERENCE_ENTITY)
   );
 
-  readonly authorship: Signal<{ label: string; data: InstanceEdit[] }[]> =
-    computed(() => {
-      const arrayWrap = <E>(a: E[] | E) => (Array.isArray(a) ? a : [a]);
+  readonly authorship: Signal<{ label: string; data: InstanceEdit[] }[]> = computed(() => {
+    const arrayWrap = <E>(a: E[] | E) => (Array.isArray(a) ? a : [a]);
 
-      const obj = this.obj();
-      // Ensure it's an array, either returning the existing array or wrapping it in one, it complains without this line.
-      const authored = arrayWrap(getProperty(obj, DataKeys.AUTHORED) || []);
-      const reviewed = getProperty(obj, DataKeys.REVIEWED) || [];
-      const edited = getProperty(obj, DataKeys.EDITED) || [];
-      const revised = getProperty(obj, DataKeys.REVISED) || [];
-      const created = arrayWrap(getProperty(obj, DataKeys.CREATED) || []);
+    const obj = this.obj();
+    // Ensure it's an array, either returning the existing array or wrapping it in one, it complains without this line.
+    const authored = arrayWrap(getProperty(obj, DataKeys.AUTHORED) || []);
+    const reviewed = getProperty(obj, DataKeys.REVIEWED) || [];
+    const edited = getProperty(obj, DataKeys.EDITED) || [];
+    const revised = getProperty(obj, DataKeys.REVISED) || [];
+    const created = arrayWrap(getProperty(obj, DataKeys.CREATED) || []);
 
-      return [
-        ...(authored.length > 0
-          ? [{ label: Labels.AUTHOR, data: authored }]
-          : []),
-        ...(reviewed.length > 0
-          ? [{ label: Labels.REVIEWER, data: reviewed }]
-          : []),
-        ...(edited.length > 0 ? [{ label: Labels.EDITOR, data: edited }] : []),
-        ...(revised.length > 0
-          ? [{ label: Labels.REVISER, data: revised }]
-          : []),
-        ...(created.length > 0 ? [{ label: 'Created', data: created }] : []),
-      ];
-    });
+    return [
+      ...(authored.length > 0 ? [{ label: Labels.AUTHOR, data: authored }] : []),
+      ...(reviewed.length > 0 ? [{ label: Labels.REVIEWER, data: reviewed }] : []),
+      ...(edited.length > 0 ? [{ label: Labels.EDITOR, data: edited }] : []),
+      ...(revised.length > 0 ? [{ label: Labels.REVISER, data: revised }] : []),
+      ...(created.length > 0 ? [{ label: 'Created', data: created }] : []),
+    ];
+  });
 
   inferences = computed(() => {
-    const inferences: PhysicalEntity[] = getProperty(
-      this.obj(),
-      DataKeys.INFERRED_TO
-    );
+    const inferences: PhysicalEntity[] = getProperty(this.obj(), DataKeys.INFERRED_TO);
     if (!inferences) return new Map<string, PhysicalEntity[]>();
     return this.getGroupedInferences(inferences);
   });
@@ -313,7 +291,8 @@ export class DescriptionTabComponent implements OnDestroy {
   otherFormsCompartmentFacets = computed<OtherFormsFacet<string>[]>(() => {
     const crossRows = this.rowsFiltered({ excludeCompartment: true });
     const crossCounts = new Map<string, number>();
-    for (const r of crossRows) crossCounts.set(r.compartment, (crossCounts.get(r.compartment) || 0) + 1);
+    for (const r of crossRows)
+      crossCounts.set(r.compartment, (crossCounts.get(r.compartment) || 0) + 1);
     // Preserve every compartment present in the full dataset, sorted by its
     // unfiltered size (so the row order stays stable across selections).
     const stableOrder = new Map<string, number>();
@@ -344,9 +323,11 @@ export class DescriptionTabComponent implements OnDestroy {
   // off the unfiltered rows so the facet doesn't blink off when a single
   // selection (e.g. cytosol) happens to contain only one kind.
   hasMixedDiseaseStatus = computed(() => {
-    let hasD = false, hasR = false;
+    let hasD = false,
+      hasR = false;
     for (const r of this.otherFormsRows()) {
-      if (r.entity.inDisease) hasD = true; else hasR = true;
+      if (r.entity.inDisease) hasD = true;
+      else hasR = true;
       if (hasD && hasR) return true;
     }
     return false;
@@ -363,7 +344,8 @@ export class DescriptionTabComponent implements OnDestroy {
     const comp = this.selectedOtherFormsCompartment();
     const disease = this.selectedOtherFormsDisease();
     return this.otherFormsRows().filter((r) => {
-      if (!opts.excludeCategory && cat !== 'all' && categorizeOtherForm(r.entity) !== cat) return false;
+      if (!opts.excludeCategory && cat !== 'all' && categorizeOtherForm(r.entity) !== cat)
+        return false;
       if (!opts.excludeCompartment && comp !== 'all' && r.compartment !== comp) return false;
       if (!opts.excludeDisease && disease !== 'all') {
         if (disease === 'disease' && !r.entity.inDisease) return false;
@@ -407,10 +389,7 @@ export class DescriptionTabComponent implements OnDestroy {
       return this.referenceEntity().crossReference;
     }
 
-    const crossReference: DatabaseIdentifier[] = getProperty(
-      this.obj(),
-      DataKeys.CROSS_REFERENCE
-    );
+    const crossReference: DatabaseIdentifier[] = getProperty(this.obj(), DataKeys.CROSS_REFERENCE);
     return crossReference ? [...crossReference] : [];
   });
 
@@ -428,56 +407,34 @@ export class DescriptionTabComponent implements OnDestroy {
     getProperty(this.obj(), DataKeys.REPEATED_UNIT)
   );
 
-  hasRhea = computed(() =>
-    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName)
-  );
+  hasRhea = computed(() => ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName));
 
   // Disable the navigation control for inferred event when there is no associated pathway
   // https://reactome.org/beta/PathwayBrowser/R-HSA-9931510?select=R-HSA-9909400&path=R-HSA-9909396#inferredFrom
   inferenceNavigationVisibility = computed(() => {
-    const isHuman =
-      this.species.currentSpecies().taxId === this.species.defaultSpecies.taxId;
+    const isHuman = this.species.currentSpecies().taxId === this.species.defaultSpecies.taxId;
     const isInferred = this.obj().isInferred;
     return isHuman && isRLE(this.obj()) && isInferred;
   });
 
   overview$ = viewChild<HTMLDivElement>('overview');
   overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
-  referenceTemplate$ =
-    viewChild.required<TemplateRef<any>>('referenceTemplate');
-  modificationsTemplate$ = viewChild.required<TemplateRef<any>>(
-    'modificationsTemplate'
-  );
-  crossReferencesTemplate$ = viewChild.required<TemplateRef<any>>(
-    'crossReferencesTemplate'
-  );
+  referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
+  modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
+  crossReferencesTemplate$ = viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
   markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
-  regulationTemplate$ =
-    viewChild.required<TemplateRef<any>>('regulationTemplate');
-  regulatesTemplate$ =
-    viewChild.required<TemplateRef<any>>('regulatesTemplate');
-  catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>(
-    'catalystActivityTemplate'
-  );
-  catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>(
-    'catalystActivitiesTemplate'
-  );
-  inferencesTemplate$ =
-    viewChild.required<TemplateRef<any>>('inferencesTemplate');
-  otherFormsTemplate$ =
-    viewChild.required<TemplateRef<any>>('otherFormsTemplate');
-  literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>(
-    'literatureRefsTemplate'
-  );
+  regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
+  regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
+  catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivityTemplate');
+  catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivitiesTemplate');
+  inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
+  otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
+  literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
   authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
-  interactorsTemplate$ = viewChild.required<TemplateRef<any>>(
-    'interactorsTemplate'
-  );
+  interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
   rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
   locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
-  reactionDiagramTemplate$ = viewChild<TemplateRef<any>>(
-    'reactionDiagramTemplate'
-  );
+  reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
 
   readonly isReaction = computed(() => isRLE(this.obj()));
 
@@ -518,9 +475,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: 'Reaction Diagram',
       manual: true,
       template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
-      isPresent: computed(
-        () => this.isReaction() && this.showReactionDiagram()
-      ),
+      isPresent: computed(() => this.isReaction() && this.showReactionDiagram()),
     },
     {
       key: DataKeys.REFERENCE_ENTITY,
@@ -557,9 +512,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.MARKERS,
       manual: true,
       template: this.markerTemplate$,
-      isPresent: computed(
-        () => this.proteinMarkers().length + this.rnaMarkers().length > 0
-      ),
+      isPresent: computed(() => this.proteinMarkers().length + this.rnaMarkers().length > 0),
     },
 
     {
@@ -597,9 +550,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CROSS_REFERENCES,
       manual: true,
       template: this.crossReferencesTemplate$,
-      isPresent: computed(
-        () => this.crossReference()?.length > 0 && !this.hasRhea()
-      ),
+      isPresent: computed(() => this.crossReference()?.length > 0 && !this.hasRhea()),
     },
     // Rhea structure
     {
@@ -717,17 +668,13 @@ export class DescriptionTabComponent implements OnDestroy {
       const section = this.state.section();
       if (section) {
         this.selectedKey.set(section);
+        this.scrollToSectionWhenRendered(section);
       }
     });
 
     effect(() => {
       const ids = this.elements.map((e) => e.key);
-      this.observer = observeSections(
-        ids,
-        this.selectedKey,
-        this.manualSelection,
-        false
-      );
+      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, false);
     });
   }
 
@@ -778,6 +725,50 @@ export class DescriptionTabComponent implements OnDestroy {
       default:
         return obj[key] !== undefined && obj[key];
     }
+  }
+
+  /**
+   * Scroll to a section named by the URL fragment.
+   *
+   * Selecting it in the side nav was never enough on its own: arriving with
+   * "#interactors" highlighted the entry but left the panel at the top, on
+   * Overview. Unlike a nav click, the element usually does not exist yet --
+   * sections render as their data arrives, and several are hidden entirely
+   * until then -- so poll briefly rather than assume it is already there.
+   */
+  private scrollToSectionWhenRendered(key: string, attemptsLeft = 30): void {
+    const element = document.getElementById(key);
+    if (element) {
+      this.selectItem(key);
+      this.consumeFragment();
+      return;
+    }
+    if (attemptsLeft > 0) {
+      setTimeout(() => this.scrollToSectionWhenRendered(key, attemptsLeft - 1), 100);
+      return;
+    }
+    // Give up, but still drop the fragment: a section that never renders for
+    // this entity must not keep being retried for the next one.
+    this.consumeFragment();
+  }
+
+  /**
+   * Drop the fragment once it has been acted on.
+   *
+   * It names a section of one particular entity, so leaving it in the URL means
+   * re-applying it to every entity selected afterwards. A stale
+   * "#locationsInPWB", left over from an earlier version of the diagram context
+   * menu, was dragging the panel off to an unrelated section on every click in
+   * the entity popup.
+   */
+  private consumeFragment(): void {
+    if (!this.route.snapshot.fragment) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      fragment: undefined,
+      queryParamsHandling: 'preserve',
+      replaceUrl: true,
+    });
   }
 
   selectItem(key: string): void {

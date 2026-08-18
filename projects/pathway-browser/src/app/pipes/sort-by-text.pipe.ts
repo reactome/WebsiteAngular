@@ -1,8 +1,8 @@
-import {Pipe, PipeTransform} from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'sortByText',
-  standalone: true
+  standalone: true,
 })
 export class SortByTextPipe implements PipeTransform {
   // alphabetical sorting by default, sortByText :'databaseName':'desc'
@@ -12,8 +12,7 @@ export class SortByTextPipe implements PipeTransform {
     return [...array].sort((a, b) => {
       const valueA = String(a[key]);
       const valueB = String(b[key]);
-      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA)
-    })
+      return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+    });
   }
-
 }

@@ -6,6 +6,8 @@ import {
   OnChanges,
   SimpleChanges,
   OnDestroy,
+  ChangeDetectorRef,
+  inject,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -35,6 +37,11 @@ interface AttributeValue {
   styleUrl: './instance-browser.component.scss',
 })
 export class InstanceBrowserComponent implements OnChanges, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   @Input() instanceId!: number | string;
@@ -47,8 +54,6 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   referrals: InstanceReferrals[] = [];
   loading = true;
   error = false;
-
-  constructor(private contentDataService: ContentDataService) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['instanceId'] && this.instanceId != null) {
@@ -77,10 +82,12 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
           this.dbId = instance.dbId;
           this.loadAttributes();
           this.loadReferrals();
+          this.cdr.markForCheck();
         },
         error: () => {
           this.error = true;
           this.loading = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -92,11 +99,13 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       .subscribe({
         next: (groups) => {
           this.referrals = groups || [];
+          this.cdr.markForCheck();
         },
         error: () => {
           // Endpoint absent or 500 -- silently degrade; the page is still
           // useful without the referrals list.
           this.referrals = [];
+          this.cdr.markForCheck();
         },
       });
   }
@@ -106,11 +115,13 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       next: (attrs) => {
         this.rows = this.buildRows(attrs);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         // Fall back to rendering instance keys directly
         this.rows = this.buildRowsFromInstance();
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -121,9 +132,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       const raw = this.instance[attr.name];
       if (raw === undefined || raw === null) continue;
 
-      const hasDatabaseObjectType = attr.valueTypes.some(
-        (vt) => vt.databaseObject
-      );
+      const hasDatabaseObjectType = attr.valueTypes.some((vt) => vt.databaseObject);
       const values = this.resolveValues(raw, hasDatabaseObjectType);
       if (values.length > 0) {
         rows.push({ name: attr.name, values });
@@ -145,10 +154,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     return rows;
   }
 
-  private resolveValues(
-    raw: any,
-    hasDatabaseObjectType: boolean
-  ): AttributeValue[] {
+  private resolveValues(raw: any, hasDatabaseObjectType: boolean): AttributeValue[] {
     if (Array.isArray(raw)) {
       const result: AttributeValue[] = [];
       for (const item of raw) {
@@ -159,10 +165,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     return this.resolveSingleValue(raw, hasDatabaseObjectType);
   }
 
-  private resolveSingleValue(
-    val: any,
-    hasDatabaseObjectType: boolean
-  ): AttributeValue[] {
+  private resolveSingleValue(val: any, hasDatabaseObjectType: boolean): AttributeValue[] {
     // Database object with dbId
     if (val !== null && typeof val === 'object' && val.dbId) {
       return [

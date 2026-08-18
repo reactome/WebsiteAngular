@@ -1,11 +1,10 @@
-import {Pipe, PipeTransform} from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'sortByDate',
-  standalone: true
+  standalone: true,
 })
 export class SortByDatePipe implements PipeTransform {
-
   transform<T>(value: T[], property: keyof T, descending: boolean = true) {
     if (!value || !property) return;
 
@@ -19,8 +18,6 @@ export class SortByDatePipe implements PipeTransform {
 
       const comparison = propA > propB ? 1 : propA < propB ? -1 : 0;
       return descending ? -comparison : comparison;
-    })
-
+    });
   }
-
 }

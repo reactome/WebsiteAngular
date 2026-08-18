@@ -15,8 +15,12 @@ test.describe('Search flow', () => {
 
   test('search nonexistent term, verify no-results section', async ({ page }) => {
     await page.goto('/content/query?q=xyzzy_no_match_99999');
-    await expect(page.locator('.no-results')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.no-results h2')).toContainText('No results found');
+    // `.no-results` alone is ambiguous -- the facet sidebar also takes it as a
+    // modifier class (aside.facet-sidebar.no-results). Target the message.
+    const message = page.locator('div.no-results');
+    await expect(message).toBeVisible({ timeout: 15000 });
+    // The block holds two headings (the message and a "report to us" prompt).
+    await expect(message.getByRole('heading', { name: /No results found/ })).toBeVisible();
   });
 
   test('search apoptosis, click a facet, verify filter chip appears', async ({ page }) => {

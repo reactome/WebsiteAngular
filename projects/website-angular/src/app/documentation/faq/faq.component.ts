@@ -1,18 +1,21 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
-import { NgFor } from '@angular/common';
+
 import { ArticleIndexItem } from 'projects/website-angular/src/types/article';
 
 @Component({
   selector: 'app-faq',
-  imports: [PageLayoutComponent, NgFor, RouterLink],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })
-export class FaqComponent {
+export class FaqComponent implements OnInit {
   contentService = inject(ContentService);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   categories: string[] = [];
   expandedCategories: Set<string> = new Set();
@@ -21,12 +24,17 @@ export class FaqComponent {
 
   ngOnInit() {
     this.contentService.getFaqIndex().subscribe({
-      next: async (result) => {
-        this.faqIndex = result;
-        this.categories = Object.keys(result);
-        Object.keys(result).forEach((category) => {
-          this.toggleCategory(category);
-        });
+      next: (result) => {
+        // Callback kept synchronous: an async one hands a promise to code
+        // that ignores it, so any rejection in here would vanish.
+        void (async () => {
+          this.faqIndex = result;
+          this.categories = Object.keys(result);
+          Object.keys(result).forEach((category) => {
+            this.toggleCategory(category);
+          });
+        })().catch((error) => console.error('Could not render FAQ', error));
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching FAQ index:', err);
@@ -65,19 +73,12 @@ export class FaqComponent {
 
   getArticles(category: string, subcategory?: string): ArticleIndexItem[] {
     //Articles array is stored in record["articles"]
-    const record = subcategory
-      ? this.faqIndex[category][subcategory]
-      : this.faqIndex[category];
-    console.log(
-      `Getting articles for category: ${category}, subcategory: ${subcategory}`,
-      record
-    );
+    const record = subcategory ? this.faqIndex[category][subcategory] : this.faqIndex[category];
+    console.log(`Getting articles for category: ${category}, subcategory: ${subcategory}`, record);
     return record['articles'] || [];
   }
 
   formatName(name: string): string {
-    return name
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return name.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   }
 }

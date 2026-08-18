@@ -21,16 +21,21 @@
     <div class="data-input">
       <div class="data-table-column">
         <div class="space-filler">
-          <reactome-table #table [numberOfRows]="1000" [numberOfColumns]="27"
-                          [userSettings]="settings" [minColWidth]="100"
-                          [name]="'reactome-analysis-data'"></reactome-table>
+          <reactome-table
+            #table
+            [numberOfRows]="1000"
+            [numberOfColumns]="27"
+            [userSettings]="settings"
+            [minColWidth]="100"
+            [name]="'reactome-analysis-data'"
+          ></reactome-table>
         </div>
 
         <div class="table-controls">
           <button mat-button (click)="fileUpload.click()">
             <mat-icon>cloud_upload</mat-icon>
             Import table
-            <input #fileUpload (change)="uploadFile(fileUpload)" class="file-input" type="file">
+            <input #fileUpload (change)="uploadFile(fileUpload)" class="file-input" type="file" />
           </button>
 
           <button mat-button (click)="table.clear()">
@@ -46,33 +51,15 @@
       <div class="data-example-column">
         <span class="title">Examples</span>
         <div class="example-buttons">
-          <button mat-raised-button (click)="loadExample('uniprot')">
-            UniProt IDs
-          </button>
-          <button mat-raised-button (click)="loadExample('gene-name')">
-            Gene Name
-          </button>
-          <button mat-raised-button (click)="loadExample('gene-ncbi')">
-            Gene NCBI/Entrez
-          </button>
-          <button mat-raised-button (click)="loadExample('chebi')">
-            ChEBI IDs
-          </button>
-          <button mat-raised-button (click)="loadExample('kegg')">
-            KEGG IDs
-          </button>
-          <button mat-raised-button (click)="loadExample('microarray')">
-            Microarray
-          </button>
-          <button mat-raised-button (click)="loadExample('metabolomics')">
-            Metabolomics
-          </button>
-          <button mat-raised-button (click)="loadExample('cancer-gene-census')">
-            Cancer Gene Census
-          </button>
-          <button mat-raised-button (click)="loadExample('tissue')">
-            Tissue Expression
-          </button>
+          <button mat-raised-button (click)="loadExample('uniprot')">UniProt IDs</button>
+          <button mat-raised-button (click)="loadExample('gene-name')">Gene Name</button>
+          <button mat-raised-button (click)="loadExample('gene-ncbi')">Gene NCBI/Entrez</button>
+          <button mat-raised-button (click)="loadExample('chebi')">ChEBI IDs</button>
+          <button mat-raised-button (click)="loadExample('kegg')">KEGG IDs</button>
+          <button mat-raised-button (click)="loadExample('microarray')">Microarray</button>
+          <button mat-raised-button (click)="loadExample('metabolomics')">Metabolomics</button>
+          <button mat-raised-button (click)="loadExample('cancer-gene-census')">Cancer Gene Census</button>
+          <button mat-raised-button (click)="loadExample('tissue')">Tissue Expression</button>
         </div>
         <span class="space-holder"></span>
       </div>
@@ -80,7 +67,7 @@
 
     <div class="stepper-controls">
       <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button mat-stroked-button (click)="close.emit({status: 'premature'})">
+      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
@@ -101,9 +88,7 @@
             <div class="illustration" [innerHTML]="projectToHumanIllustration | async | safe: 'html' : true"></div>
             <div class="explanations">
               <p class="title">Explanations</p>
-              <p>
-                Every species has its own set of identifiers (genes, proteins, chemicals, mRNA, etc...).
-              </p>
+              <p>Every species has its own set of identifiers (genes, proteins, chemicals, mRNA, etc...).</p>
               <p>
                 Reactome curates human pathways and <u>infers</u> their existence in other species using orthology
                 information from the <u>PANTHER knowledge base</u>.
@@ -120,9 +105,15 @@
             }
           </div>
         </div>
-        <div class="card-checkbox flex-one" [class.checked]="includeInteractors()" (click)="toggle(includeInteractors)"
-             (mouseenter)="interactorsIllustrationLottie?.play()" (focusin)="interactorsIllustrationLottie?.play()"
-             (mouseleave)="interactorsIllustrationLottie?.pause()" (focusout)="interactorsIllustrationLottie?.pause()">
+        <div
+          class="card-checkbox flex-one"
+          [class.checked]="includeInteractors()"
+          (click)="toggle(includeInteractors)"
+          (mouseenter)="interactorsIllustrationLottie?.play()"
+          (focusin)="interactorsIllustrationLottie?.play()"
+          (mouseleave)="interactorsIllustrationLottie?.pause()"
+          (focusout)="interactorsIllustrationLottie?.pause()"
+        >
           <div class="card-content">
             <div class="header">
               <p class="title">Include Interactors</p>
@@ -134,21 +125,17 @@
             </div>
             <div class="explanations">
               <p class="title">Explanations</p>
-              <p>
-                Selecting this option will take interactors into account when performing the analysis.
-              </p>
+              <p>Selecting this option will take interactors into account when performing the analysis.</p>
               <p>
                 Only gene symbols, chemical names and Uniprot or ChEBI identifiers can be used to identify interactors.
               </p>
               <p>
                 Curated entities and interactors backgrounds may overlap (e.g. entities can interact with themselves
-                (dimers)
-                or with other entities in the diagram).
+                (dimers) or with other entities in the diagram).
               </p>
               <p>
                 The analysis result uses the union of both backgrounds. Entities in the overlapping area are only
-                counted
-                once.
+                counted once.
               </p>
             </div>
           </div>
@@ -163,7 +150,7 @@
 
     <div class="stepper-controls">
       <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-stroked-button (click)="close.emit({status: 'premature'})">
+      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
@@ -177,15 +164,20 @@
     <div class="loader-container">
       @if (analysisLaunched()) {
         <canvas #lottie class="loader"></canvas>
+      } @else if (analysisError(); as message) {
+        <div class="analysis-error" role="alert">
+          <mat-icon class="red">error_outline</mat-icon>
+          <p>{{ message }}</p>
+          <button mat-stroked-button (click)="launchAnalysis()">Try again</button>
+        </div>
       }
     </div>
 
-
     <div class="stepper-controls">
       <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-flat-button matStepperNext [disabled]="!analysisAvailable()" (click)="displayAnalysis()">See results
+      <button mat-flat-button matStepperNext [disabled]="!analysisAvailable()" (click)="displayAnalysis()">
+        See results
       </button>
     </div>
-
   </mat-step>
 </mat-stepper>

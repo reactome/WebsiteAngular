@@ -11,7 +11,7 @@
   background: var(--surface-variant);
 }
 
-.main-resource{
+.main-resource {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -49,7 +49,6 @@
   align-items: center;
 }
 
-
 /** Divider */
 .divider-container {
   width: 100%;
@@ -86,17 +85,17 @@
  */
 .active-button {
   background: var(--primary) !important;
-  color: var(--on-primary) !important
+  color: var(--on-primary) !important;
 }
 
-.active-button[aria-selected="true"] {
+.active-button[aria-selected='true'] {
   background: var(--primary) !important;
   color: var(--on-primary) !important;
 }
 
 /* Change background color for mat list option by using attribute aria-selected for custom interactor resource*/
-.active-button[aria-selected="true"] .resource-name,
-.active-button[aria-selected="true"] .resource-name div {
+.active-button[aria-selected='true'] .resource-name,
+.active-button[aria-selected='true'] .resource-name div {
   color: var(--on-primary) !important;
 }
 
@@ -107,7 +106,7 @@
 //}
 
 .active-icon {
-  color: var(--on-primary)
+  color: var(--on-primary);
 }
 
 .surface-variant,

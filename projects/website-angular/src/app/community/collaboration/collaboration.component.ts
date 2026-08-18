@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -16,41 +16,47 @@ interface PathwayEntry {
 }
 
 //TODO: should go in a config file
-const HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRorn50RGvdhBflvIAMwr7zgsj3GQrsgBBOuzM6MaKN5ntPcTYRQiCNk5OcYt0aumeLjcUTbhDb_omc/pubhtml/sheet?headers=false&gid=1133159892';
+const HTML_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRorn50RGvdhBflvIAMwr7zgsj3GQrsgBBOuzM6MaKN5ntPcTYRQiCNk5OcYt0aumeLjcUTbhDb_omc/pubhtml/sheet?headers=false&gid=1133159892';
 
 @Component({
   selector: 'app-collaboration',
   imports: [PageLayoutComponent, RouterLink],
   templateUrl: './collaboration.component.html',
-  styleUrl: './collaboration.component.scss'
+  styleUrl: './collaboration.component.scss',
 })
 export class CollaborationComponent implements OnInit {
+  private http = inject(HttpClient);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
+
   entries: PathwayEntry[] = [];
   loading = true;
   error = false;
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get(HTML_URL, { responseType: 'text' }).subscribe({
       next: (html) => {
         this.entries = this.parseHtml(html);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
-      }
+        this.cdr.markForCheck();
+      },
     });
   }
 
   get topics(): string[] {
-    const set = new Set(this.entries.map(e => e.topic));
+    const set = new Set(this.entries.map((e) => e.topic));
     return Array.from(set).sort();
   }
 
   entriesForTopic(topic: string): PathwayEntry[] {
-    return this.entries.filter(e => e.topic === topic);
+    return this.entries.filter((e) => e.topic === topic);
   }
 
   //TODO: export to util
@@ -70,7 +76,14 @@ export class CollaborationComponent implements OnInit {
       const cellRe = new RegExp(cellRegex.source, 'g');
       while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
         const cellHtml = cellMatch[1];
-        const text = cellHtml.replace(tagRegex, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+        const text = cellHtml
+          .replace(tagRegex, '')
+          .replace(/&amp;/g, '&')
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .trim();
         const links: string[] = [];
         let linkMatch;
         const linkRe = new RegExp(linkRegex.source, 'g');
@@ -107,7 +120,7 @@ export class CollaborationComponent implements OnInit {
         docUrl,
         pdfUrl,
         pathwayUrl,
-        docName
+        docName,
       });
     }
 
@@ -116,10 +129,10 @@ export class CollaborationComponent implements OnInit {
 
   private cleanFilename(raw: string): string {
     return raw
-      .replace(/\.(docx?|pdf|xlsx?)$/i, '')   // remove extension
-      .replace(/^Reactome_/i, '')              // remove Reactome prefix
-      .replace(/_/g, ' ')                      // underscores to spaces
-      .replace(/([a-z])([A-Z])/g, '$1 $2')    // split CamelCase
+      .replace(/\.(docx?|pdf|xlsx?)$/i, '') // remove extension
+      .replace(/^Reactome_/i, '') // remove Reactome prefix
+      .replace(/_/g, ' ') // underscores to spaces
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // split CamelCase
       .trim();
   }
 }

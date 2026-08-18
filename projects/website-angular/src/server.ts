@@ -1,5 +1,10 @@
 import { APP_BASE_HREF } from '@angular/common';
-import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node';
+import {
+  AngularNodeAppEngine,
+  createNodeRequestHandler,
+  isMainModule,
+  writeResponseToNodeResponse,
+} from '@angular/ssr/node';
 import express from 'express';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,32 +28,36 @@ export function app(): express.Express {
    * ```
    */
   // Proxy Reactome downloads to avoid CORS in SSR deployments
-  server.get('/reactome/*', async (req, res, next) => {
-    try {
-      const rest = req.originalUrl.replace(/^\/reactome/, '');
-      const target = `https://download.reactome.org${rest}`;
-      const upstream = await fetch(target);
-      const buf = Buffer.from(await upstream.arrayBuffer());
-      res.status(upstream.status);
-      upstream.headers.forEach((v, k) => {
-        if (k.toLowerCase() !== 'content-encoding') {
-          res.setHeader(k, v);
-        }
-      });
-      res.setHeader('access-control-allow-origin', '*');
-      res.send(buf);
-    } catch (e) {
-      next(e);
-    }
+  server.get('/reactome/*', (req, res, next) => {
+    void (async () => {
+      try {
+        const rest = req.originalUrl.replace(/^\/reactome/, '');
+        const target = `https://download.reactome.org${rest}`;
+        const upstream = await fetch(target);
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        res.status(upstream.status);
+        upstream.headers.forEach((v, k) => {
+          if (k.toLowerCase() !== 'content-encoding') {
+            res.setHeader(k, v);
+          }
+        });
+        res.setHeader('access-control-allow-origin', '*');
+        res.send(buf);
+      } catch (e) {
+        next(e);
+      }
+    })();
   });
 
   /**
    * Serve static files from /browser
    */
-  server.use(express.static(browserDistFolder, {
-    maxAge: '1y',
-    index: false,
-  }));
+  server.use(
+    express.static(browserDistFolder, {
+      maxAge: '1y',
+      index: false,
+    })
+  );
 
   /**
    * Handle all other requests by rendering the Angular application.
@@ -56,9 +65,9 @@ export function app(): express.Express {
   server.use('*', (req, res, next) => {
     angularApp
       .handle(req)
-      .then((response) => {
+      .then(async (response) => {
         if (response) {
-          writeResponseToNodeResponse(response, res);
+          await writeResponseToNodeResponse(response, res);
         } else {
           res.status(404).send('Not found');
         }

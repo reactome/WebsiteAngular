@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 .controls {
   display: flex;
   justify-content: space-around;
@@ -12,13 +12,15 @@
   flex-direction: row;
   align-items: center;
   gap: 5px;
-  padding:0 5px;
+  padding: 0 5px;
 }
 
 mat-checkbox {
-  @include mat.checkbox-overrides((
-    state-layer-size: 18px
-  ));
+  @include mat.checkbox-overrides(
+    (
+      state-layer-size: 18px,
+    )
+  );
 }
 
 .button {
@@ -56,4 +58,15 @@ td {
 .max-width {
   height: 0;
   line-height: 0;
+}
+
+// This is a virtual scroller, so its height decides how many rows exist in the
+// DOM at all -- not just how many are on screen. The height used to come from
+// the bottom panel (calc(100cqh - 170px)), which is only tall enough when the
+// user has dragged that panel up; at the panel's default height it resolved to
+// about 17px and rendered three rows, which is what "the download table is
+// empty" was. The floor keeps the table usable at any panel height, and the tab
+// scrolls to reach it.
+cdk-virtual-scroll-viewport {
+  height: clamp(15rem, calc(100cqh - 170px), 30rem);
 }

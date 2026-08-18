@@ -20,7 +20,7 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     gtagId: 'G-96F1EYHQR3',
-    preferS3: false
+    preferS3: false,
   },
   production: {
     host: 'https://newcurator.reactome.org',
@@ -28,7 +28,7 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
-    preferS3: false
+    preferS3: true,
   },
   local: {
     // Only the content service moves to the locally run curator-service; the
@@ -38,22 +38,22 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     contentService: 'http://localhost:8686',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
-    preferS3: false
+    preferS3: false,
   },
   github: {
     host: 'https://newcurator.reactome.org',
     contentService: 'https://newcurator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
-    preferS3: false
+    preferS3: true,
   },
   remote: {
     host: 'https://newcurator.reactome.org',
     contentService: 'https://newcurator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
-    preferS3: false
-  }
+    preferS3: false,
+  },
 } as const;
 
 // Build-time environment selector. The `define` option in angular.json replaces

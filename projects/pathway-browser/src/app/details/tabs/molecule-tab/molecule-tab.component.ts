@@ -1,17 +1,29 @@
-import {Component, computed, effect, inject, input, OnDestroy, signal, WritableSignal} from '@angular/core';
-import {Molecule, Participant, ParticipantService} from "../../../services/participant.service";
-import {EntityService} from "../../../services/entity.service";
-import {SelectableObject} from "../../../services/event.service";
-import {rxResource} from "@angular/core/rxjs-interop";
-import {ReferenceEntity} from "../../../model/graph/reference-entity/reference-entity.model";
-import {SortByTextPipe} from "../../../pipes/sort-by-text.pipe";
-import {MatProgressSpinner} from "@angular/material/progress-spinner";
-import {MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle} from "@angular/material/expansion";
-import {MoleculeDownloadTableComponent} from "./molecule-download-table/molecule-download-table.component";
-import {UrlStateService} from "../../../services/url-state.service";
-import {isPathway, observeSections} from "../../../services/utils";
-import {MoleculeGroupComponent} from "./molecule-group/molecule-group.component";
-
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  OnDestroy,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { Molecule, Participant, ParticipantService } from '../../../services/participant.service';
+import { EntityService } from '../../../services/entity.service';
+import { SelectableObject } from '../../../services/event.service';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
+import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import {
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle,
+} from '@angular/material/expansion';
+import { MoleculeDownloadTableComponent } from './molecule-download-table/molecule-download-table.component';
+import { UrlStateService } from '../../../services/url-state.service';
+import { isPathway, observeSections } from '../../../services/utils';
+import { MoleculeGroupComponent } from './molecule-group/molecule-group.component';
 
 // TODO: Find a way to not crash when too many data, e.g. selecting a top level pathway. (using virtual scrolls probably, but wit a way to expand rows)
 
@@ -19,27 +31,27 @@ export type MoleculeGroup = {
   category: string;
   data: MoleculeData[];
   found?: number;
-}
+};
 
 export type MoleculeData = {
   entity: Molecule;
   stoichiometry: number;
   highlight: boolean;
-}
+};
 
 export enum PropertyType {
-  PROTEINS = "Proteins",
-  CHEMICAL_COMPOUNDS = "Chemical Compounds",
-  SEQUENCES = "DNA/RNA",
-  DRUG = "Drugs",
-  OTHERS = "Others"
+  PROTEINS = 'Proteins',
+  CHEMICAL_COMPOUNDS = 'Chemical Compounds',
+  SEQUENCES = 'DNA/RNA',
+  DRUG = 'Drugs',
+  OTHERS = 'Others',
 }
 // molecule type from backend when sending enhanced query
 export enum MoleculeType {
-  PROTEIN = "Protein", //Protein
-  CHEMICAL_DRUG = "ChemicalDrug", // Drugs
-  ENTITY = "Entity", // DRA/RNA
-  CHEMICAL = "Chemical" //Chemical
+  PROTEIN = 'Protein', //Protein
+  CHEMICAL_DRUG = 'ChemicalDrug', // Drugs
+  ENTITY = 'Entity', // DRA/RNA
+  CHEMICAL = 'Chemical', //Chemical
 }
 
 @Component({
@@ -64,13 +76,12 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly selectableObject = input.required<SelectableObject>();
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   // Get selected pathway id on Reacfoam view
-  objStId = computed(() => this.pathwayId() ? this.pathwayId() : this.selectableObject()?.stId);
+  objStId = computed(() => (this.pathwayId() ? this.pathwayId() : this.selectableObject()?.stId));
   hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
 
   selectedKey = signal<string>('');
   private manualSelection = false;
   private observer?: () => void;
-
 
   constructor() {
     effect(() => {
@@ -84,14 +95,14 @@ export class MoleculeTabComponent implements OnDestroy {
     effect(() => {
       if (this.moleculeData().length > 0) {
         const id = this.sanitizeId(this.moleculeData()[0].category);
-        this.selectedKey.set(id)
+        this.selectedKey.set(id);
       }
     });
 
     effect(() => {
-      const ids = this.moleculeData().map(e => this.sanitizeId(e.category));
-      this.observer = observeSections(ids, this.selectedKey,this.manualSelection, true)
-    })
+      const ids = this.moleculeData().map((e) => this.sanitizeId(e.category));
+      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, true);
+    });
   }
 
   ngOnDestroy(): void {
@@ -99,11 +110,11 @@ export class MoleculeTabComponent implements OnDestroy {
   }
 
   _pathwayParticipants = rxResource({
-    request: () => this.objStId(),
-    loader: () => this.participant.getParticipants(this.objStId())
+    params: () => this.objStId(),
+    stream: () => this.participant.getParticipants(this.objStId()),
   });
 
-  pathwayParticipants = this._pathwayParticipants.value
+  pathwayParticipants = this._pathwayParticipants.value;
 
   moleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
@@ -127,13 +138,13 @@ export class MoleculeTabComponent implements OnDestroy {
     }
 
     moleculeData.sort((a, b) => a.category.localeCompare(b.category));
-    return moleculeData
-  })
+    return moleculeData;
+  });
 
   getPathwayParticipants(pathwayParticipants: Participant[]) {
-
     const groupedMap = new Map<string, Map<number, MoleculeData>>();
-    const allRefEntities = pathwayParticipants?.flatMap(participant => participant.refEntities) || [];
+    const allRefEntities =
+      pathwayParticipants?.flatMap((participant) => participant.refEntities) || [];
 
     for (const entity of allRefEntities) {
       const type = entity.type;
@@ -149,22 +160,22 @@ export class MoleculeTabComponent implements OnDestroy {
         existingEntity.stoichiometry++;
         // existingEntity.stoichiometry = (existingEntity.stoichiometry ?? 0) + 1;
       } else {
-        dataMap.set(entity.dbId, {entity, stoichiometry: 1, highlight: false})
+        dataMap.set(entity.dbId, { entity, stoichiometry: 1, highlight: false });
       }
     }
 
     const finalResults: MoleculeGroup[] = Array.from(groupedMap, ([category, dataMap]) => ({
       category,
-      data: Array.from(dataMap.values())
+      data: Array.from(dataMap.values()),
     }));
     return finalResults;
   }
 
   getReactionParticipants(pathwayResults: MoleculeGroup[], refEntities: ReferenceEntity[]) {
-    const dbIds = new Set(refEntities?.map(e => e.dbId));
-    return pathwayResults.map(group => {
+    const dbIds = new Set(refEntities?.map((e) => e.dbId));
+    return pathwayResults.map((group) => {
       let found = 0;
-      const updatedData = group.data.map(molecule => {
+      const updatedData = group.data.map((molecule) => {
         const isFound = dbIds.has(molecule.entity.dbId);
         if (isFound) found++;
         return {
@@ -177,8 +188,8 @@ export class MoleculeTabComponent implements OnDestroy {
         ...group,
         data: updatedData,
         found,
-      }
-    })
+      };
+    });
   }
 
   scrollTo(type: string) {
@@ -191,8 +202,8 @@ export class MoleculeTabComponent implements OnDestroy {
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
-        inline: 'start'
-      })
+        inline: 'start',
+      });
       // allow observer updates again after scroll completes
       setTimeout(() => {
         this.manualSelection = false;
@@ -203,8 +214,7 @@ export class MoleculeTabComponent implements OnDestroy {
   sanitizeId(label: string): string {
     return label
       .toLowerCase()
-      .replace(/\s+/g, '-')           // Replace spaces with dashes
-      .replace(/[^a-z0-9-_]/g, '');   // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .replace(/[^a-z0-9-_]/g, ''); // Remove special characters
   }
-
 }

@@ -1,11 +1,10 @@
-import {effect, Injectable, signal} from '@angular/core';
-import {BehaviorSubject} from "rxjs";
+import { effect, Injectable, signal } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DarkService {
-
   private _body: HTMLBodyElement | null;
 
   public readonly isDark = signal(false);
@@ -14,7 +13,7 @@ export class DarkService {
     this._body = document.querySelector('body');
 
     effect(() => {
-      const value = this.isDark()
+      const value = this.isDark();
       localStorage.setItem('is-dark', JSON.stringify(value));
       if (value) this._body?.classList.add('dark');
       else this._body?.classList.remove('dark');

@@ -1,5 +1,5 @@
-import {DatabaseObject} from "../database-object.model";
-import {ReferenceDatabase} from "../reference-database.model";
+import { DatabaseObject } from '../database-object.model';
+import { ReferenceDatabase } from '../reference-database.model';
 
 export interface ExternalOntology extends DatabaseObject {
   databaseName: string;

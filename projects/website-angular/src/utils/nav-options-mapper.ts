@@ -1,5 +1,5 @@
-import {NavLink, NavOption} from "../types/link";
-import { environment } from "../../../pathway-browser/src/environments/environment";
+import { NavLink, NavOption } from '../types/link';
+import { environment } from '../../../pathway-browser/src/environments/environment';
 
 // Links marked external: true in nav-options.json point at WAR endpoints
 // (/AnalysisService, /ContentService, ...) and need the active host
@@ -23,7 +23,7 @@ function mapDropdownLinks(raw: any): Record<string, NavLink> | undefined {
         label: value.label || '',
         link: resolveLink(value.link || '', external),
         external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links'])
+        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
       };
     }
   });
@@ -42,7 +42,7 @@ export function mapNavOptions(raw: Record<string, any>): Record<string, NavOptio
         link: resolveLink(value.link || '', external),
         icon: value.icon,
         external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links'])
+        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
       };
     }
   });

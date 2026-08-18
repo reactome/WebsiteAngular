@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -26,6 +26,13 @@ interface FlatTreeNode {
   styleUrl: './schema.component.scss',
 })
 export class SchemaComponent implements OnInit, OnDestroy {
+  private contentDataService = inject(ContentDataService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   // Tree state
@@ -63,56 +70,52 @@ export class SchemaComponent implements OnInit, OnDestroy {
   error = false;
   sidebarOpen = false;
 
-  constructor(
-    private contentDataService: ContentDataService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
   ngOnInit() {
     this.contentDataService
       .getSchemaModel()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-      next: (root) => {
-        this.treeRoot = root;
-        // Expand first two levels by default
-        this.expandedNodes.add(root.className);
-        if (root.children) {
-          for (const child of root.children) {
-            this.expandedNodes.add(child.className);
+        next: (root) => {
+          this.treeRoot = root;
+          // Expand first two levels by default
+          this.expandedNodes.add(root.className);
+          if (root.children) {
+            for (const child of root.children) {
+              this.expandedNodes.add(child.className);
+            }
           }
-        }
-        this.buildClassIndex(root);
-        this.rebuildFlatTree();
-        this.loading = false;
+          this.buildClassIndex(root);
+          this.rebuildFlatTree();
+          this.loading = false;
 
-        // Listen for route changes. The path can be either
-        //   /dataSchema/:className
-        // or
-        //   /dataSchema/:className/:dbId
-        // so a single subscription has to keep both selectedClass and
-        // selectedInstanceId in sync with the URL.
-        this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-          const className = params['className'] || 'DatabaseObject';
-          if (className !== this.selectedClass) {
-            this.selectClass(className);
-          }
-          const dbIdParam = params['dbId'];
-          const dbId = dbIdParam != null ? Number(dbIdParam) : null;
-          if (dbId !== this.selectedInstanceId) {
-            this.selectedInstanceId = dbId;
-            // If we deep-linked into an instance, make sure we're on the
-            // Entries tab so the <app-instance-browser> renders.
-            if (dbId != null) this.activeTab = 'entries';
-          }
-        });
-      },
-      error: () => {
-        this.error = true;
-        this.loading = false;
-      },
-    });
+          // Listen for route changes. The path can be either
+          //   /dataSchema/:className
+          // or
+          //   /dataSchema/:className/:dbId
+          // so a single subscription has to keep both selectedClass and
+          // selectedInstanceId in sync with the URL.
+          this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+            const className = params['className'] || 'DatabaseObject';
+            if (className !== this.selectedClass) {
+              this.selectClass(className);
+            }
+            const dbIdParam = params['dbId'];
+            const dbId = dbIdParam != null ? Number(dbIdParam) : null;
+            if (dbId !== this.selectedInstanceId) {
+              this.selectedInstanceId = dbId;
+              // If we deep-linked into an instance, make sure we're on the
+              // Entries tab so the <app-instance-browser> renders.
+              if (dbId != null) this.activeTab = 'entries';
+            }
+          });
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = true;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   ngOnDestroy() {
@@ -156,9 +159,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     });
 
     if (hasChildren && expanded) {
-      const sorted = [...node.children].sort((a, b) =>
-        a.className.localeCompare(b.className)
-      );
+      const sorted = [...node.children].sort((a, b) => a.className.localeCompare(b.className));
       for (const child of sorted) {
         this.buildFlatTreeRecursive(child, depth + 1);
       }
@@ -175,14 +176,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   onTreeNodeClick(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
     this.sidebarOpen = false;
   }
 
   onTreeNodeCountClick(className: string, event: Event) {
     // Stop the parent .node-label button from also firing onTreeNodeClick.
     event.stopPropagation();
-    this.router.navigate(['/dataSchema', className], {
+    void this.router.navigate(['/dataSchema', className], {
       queryParams: { tab: 'entries' },
     });
     this.sidebarOpen = false;
@@ -276,16 +277,19 @@ export class SchemaComponent implements OnInit, OnDestroy {
       next: (attrs) => {
         this.attributes = attrs;
         this.loadingAttributes = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.attributesError = true;
         this.loadingAttributes = false;
+        this.cdr.markForCheck();
       },
     });
 
     this.contentDataService.getSchemaReferrals(className).subscribe({
       next: (refs) => {
         this.referrals = refs;
+        this.cdr.markForCheck();
       },
       error: () => {
         // Referrals may be empty, that's fine
@@ -306,7 +310,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   navigateToClass(className: string) {
-    this.router.navigate(['/dataSchema', className]);
+    void this.router.navigate(['/dataSchema', className]);
   }
 
   // --- Entries ---
@@ -323,6 +327,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.contentDataService.getSchemaCount(this.selectedClass).subscribe({
       next: (count) => {
         this.entryCount = count;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -330,19 +335,17 @@ export class SchemaComponent implements OnInit, OnDestroy {
   loadEntries() {
     this.loadingEntries = true;
     this.contentDataService
-      .getSchemaEntries(
-        this.selectedClass,
-        this.entriesPage,
-        this.entriesPageSize
-      )
+      .getSchemaEntries(this.selectedClass, this.entriesPage, this.entriesPageSize)
       .subscribe({
         next: (entries) => {
           this.entries = entries;
           this.loadingEntries = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.entries = [];
           this.loadingEntries = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -380,14 +383,14 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    this.router.navigate(
-      ['/dataSchema', this.selectedClass, dbId],
-      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
-    );
+    void this.router.navigate(['/dataSchema', this.selectedClass, dbId], {
+      queryParams: { tab: 'entries' },
+      queryParamsHandling: 'merge',
+    });
   }
 
   clearSelectedInstance() {
-    this.router.navigate(['/dataSchema', this.selectedClass], {
+    void this.router.navigate(['/dataSchema', this.selectedClass], {
       queryParams: { tab: 'entries' },
     });
   }
@@ -396,9 +399,9 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // Followed-from links inside the instance browser may point to objects
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
-    this.router.navigate(
-      ['/dataSchema', this.selectedClass, dbId],
-      { queryParams: { tab: 'entries' }, queryParamsHandling: 'merge' },
-    );
+    void this.router.navigate(['/dataSchema', this.selectedClass, dbId], {
+      queryParams: { tab: 'entries' },
+      queryParamsHandling: 'merge',
+    });
   }
 }

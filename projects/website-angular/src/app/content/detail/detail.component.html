@@ -1,12 +1,14 @@
 <app-page-layout [showSidebar]="!!obj()" [showBreadcrumb]="true" [customSidebar]="true">
   @if (obj()) {
-    <app-sidebar class="page-sidebar-slot"
-                 [sectionsMode]="true"
-                 sectionsTitle="On this page"
-                 sectionsIcon="list"
-                 [sections]="tocItems()"
-                 [activeSectionKey]="selectedTocKey()"
-                 (sectionSelected)="selectTocItem($event)" />
+    <app-sidebar
+      class="page-sidebar-slot"
+      [sectionsMode]="true"
+      sectionsTitle="On this page"
+      sectionsIcon="list"
+      [sections]="tocItems()"
+      [activeSectionKey]="selectedTocKey()"
+      (sectionSelected)="selectTocItem($event)"
+    />
   }
 
   @if (loading()) {

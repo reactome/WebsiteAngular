@@ -60,7 +60,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .release-grid {
@@ -111,7 +113,9 @@
   padding: 10px 16px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.03);
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
   min-width: 120px;
 
   :host-context(.dark) & {
@@ -131,7 +135,8 @@
     background: var(--primary);
     color: var(--on-primary);
 
-    .version, .date {
+    .version,
+    .date {
       color: var(--on-primary);
     }
 

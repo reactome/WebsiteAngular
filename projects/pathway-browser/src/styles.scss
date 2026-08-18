@@ -1,27 +1,27 @@
-@use "@angular/material" as mat;
-@use "reactome-cytoscape-style/assets" as reactome-cytoscape-style;
-@use "ngx-reactome-style";
-@use "reactome-table";
-@use "reactome-gsa-form";
+@use '@angular/material' as mat;
+@use 'reactome-cytoscape-style/assets' as reactome-cytoscape-style;
+@use 'ngx-reactome-style';
+@use 'reactome-table';
+@use 'reactome-gsa-form';
 
 @include reactome-cytoscape-style.configure-diagrams();
 @include ngx-reactome-style.theme();
 @include reactome-table.configure-table-globals();
 @include reactome-gsa-form.configure-gsa-form();
 
-
 cr-quantitative-analysis {
-
 }
 
 // Custom TABS
 .custom-tab-group {
-  @include mat.tabs-overrides((
-    container-height: 30px,
-    active-label-text-color: var(--primary),
-    active-focus-label-text-color: var(--primary),
-    active-hover-label-text-color: var(--primary),
-  ));
+  @include mat.tabs-overrides(
+    (
+      container-height: 30px,
+      active-label-text-color: var(--primary),
+      active-focus-label-text-color: var(--primary),
+      active-hover-label-text-color: var(--primary),
+    )
+  );
 
   .mat-mdc-tab {
     flex: 1 1 0; // equal width column
@@ -88,7 +88,6 @@ a {
   text-align: right;
   letter-spacing: 0.5px;
   color: var(--on-surface);
-
 }
 
 // Shared with tree detail components, molecule tree and entity tree
@@ -120,14 +119,14 @@ p:first-child {
 /**
  * Exception for sets as they are going out of their bounding box
  */
-.mat-icon[data-mat-icon-name*=set] {
+.mat-icon[data-mat-icon-name*='set'] {
   width: 28px !important;
   margin-left: -2px;
   margin-right: -2px;
 }
 
 .chebi-background rect {
-  fill: transparent !important
+  fill: transparent !important;
 }
 
 .dark .chebi-background {
@@ -177,9 +176,11 @@ p:first-child {
         width: var(--slider-height);
         min-width: var(--slider-height);
 
-        @include mat.slider-overrides((
-          inactive-track-color: var(--on-surface)
-        ));
+        @include mat.slider-overrides(
+          (
+            inactive-track-color: var(--on-surface),
+          )
+        );
       }
     }
   }
@@ -200,47 +201,42 @@ p:first-child {
   }
 }
 
-
 body {
   --opacity: 0.08;
-  --structure-opacity: [[130,0], [150,100]];
+  --structure-opacity: [[130, 0], [150, 100]];
   --shadow-padding: 20;
 
   --shadow-luminosity: 40;
 
-  --positive: #0C9509;
-  --negative: #BA1A1A;
+  --positive: #0c9509;
+  --negative: #ba1a1a;
   --negative-contrast: #ea7d7d;
-  --select-node: #6EB3E4;
-  --select-edge: #0561A6;
-  --hover-node: #78E076;
-  --hover-edge: #04B601;
-  --interactor-fill: #68297C;
+  --select-node: #6eb3e4;
+  --select-edge: #0561a6;
+  --hover-node: #78e076;
+  --hover-edge: #04b601;
+  --interactor-fill: #68297c;
   --interactor-stroke: #9f5cb5;
   --flag: #ff009a;
 
-
-  --compartment: #E5834A;
+  --compartment: #e5834a;
   --compartment-opacity: 0.06;
 
-  --primary-contrast-1: #001F29;
+  --primary-contrast-1: #001f29;
   --primary-contrast-2: #003545;
-  --primary-contrast-3: #004D62;
+  --primary-contrast-3: #004d62;
   --primary-contrast-4: #006782;
 
-  --tertiary-contrast-1: #00315C;
+  --tertiary-contrast-1: #00315c;
   --tertiary-contrast-2: #004882;
-  --tertiary-contrast-3: #1660A5;
+  --tertiary-contrast-3: #1660a5;
 
-  --drug-contrast-1: #3E001D;
-  --drug-contrast-2: #610B33;
-  --drug-contrast-3: #7E2549;
-  --drug-contrast-4: #BB557A;
+  --drug-contrast-1: #3e001d;
+  --drug-contrast-2: #610b33;
+  --drug-contrast-3: #7e2549;
+  --drug-contrast-4: #bb557a;
 
-  --analysis-uni-palette: [
-    [0, '#FFFFE0'],
-    [1, '#00429D']
-  ];
+  --analysis-uni-palette: [ [0, '#FFFFE0'], [1, '#00429D']];
 
   //--analysis-bi-palette: [
   //  [0.0, '#93003A'],
@@ -250,7 +246,6 @@ body {
 
   --analysis-bi-palette: 'viridis';
   --analysis-not-found: #d6d6d6;
-
 
   &.dark {
     --opacity: 0.08;
@@ -271,23 +266,23 @@ body {
     --hover-edge: #ffff00;
     //--interactor-stroke: #68297C;
     //--interactor-fill: #9f5cb5;
-    --flag: #DA429E;
+    --flag: #da429e;
 
     --compartment: #5e232d;
-    --compartment-opacity: 0.10;
+    --compartment-opacity: 0.1;
 
-    --primary-contrast-1: #5CD4FF;
-    --primary-contrast-2: #20B9E5;
-    --primary-contrast-3: #009DC4;
-    --primary-contrast-4: #0081A2;
+    --primary-contrast-1: #5cd4ff;
+    --primary-contrast-2: #20b9e5;
+    --primary-contrast-3: #009dc4;
+    --primary-contrast-4: #0081a2;
 
     --tertiary-contrast-1: #a48ee0;
     --tertiary-contrast-2: #9b73d3;
     --tertiary-contrast-3: #8c63c5;
 
-    --drug-contrast-1: #FFB1C8;
-    --drug-contrast-2: #F988AE;
-    --drug-contrast-3: #DA6E94;
+    --drug-contrast-1: #ffb1c8;
+    --drug-contrast-2: #f988ae;
+    --drug-contrast-3: #da6e94;
     --drug-contrast-4: #c4527b;
   }
 }

@@ -1,13 +1,10 @@
 <div class="dialog-container">
   <div class="header">
-    <h2 mat-dialog-title>
-      Cite Us!
-    </h2>
+    <h2 mat-dialog-title>Cite Us!</h2>
 
     <button class="close-button" mat-dialog-close mat-icon-button>
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
-
   </div>
 
   <div class="save">
@@ -35,14 +32,15 @@
     }
   </mat-dialog-content>
 
-
   <mat-dialog-actions align="center">
     @for (downloadItem of downloadItems(); track downloadItem) {
-      <cr-download-button [url]="downloadItem.url"
-                          [download]="true"
-                          [label]="(downloadItem.format).toUpperCase()"
-                          [openInNewTab]="'_self'"
-                          [icon]="{id:'file_download'}">
+      <cr-download-button
+        [url]="downloadItem.url"
+        [download]="true"
+        [label]="downloadItem.format.toUpperCase()"
+        [openInNewTab]="'_self'"
+        [icon]="{ id: 'file_download' }"
+      >
       </cr-download-button>
     }
   </mat-dialog-actions>

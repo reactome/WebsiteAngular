@@ -1,5 +1,3 @@
-import {CrosslinkedResidue} from "./crosslinked-residue.model";
+import { CrosslinkedResidue } from './crosslinked-residue.model';
 
-export interface IntraChainCrosslinkedResidue extends CrosslinkedResidue {
-
-}
+export interface IntraChainCrosslinkedResidue extends CrosslinkedResidue {}

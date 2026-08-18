@@ -1,16 +1,31 @@
-import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
 import {
-  TOC_ITEMS, SERVICE_CARDS, GRAPH_DB_DOWNLOADS, MYSQL_DOWNLOADS,
-  MAPPING_DATABASES, MAPPING_CATEGORIES, PE_MAPPING_CATEGORIES,
-  OTHER_MAPPINGS, PATHWAY_DOWNLOADS, DIAGRAM_DOWNLOADS,
-  GENE_ONTOLOGY_DOWNLOADS, SYSTEMS_BIOLOGY_DOWNLOADS,
-  GENE_SET_DOWNLOADS, ONTOLOGY_DOWNLOADS,
-  PPI_MITAB_DOWNLOADS, PPI_TAB_DOWNLOADS,
-  FUNCTIONAL_INTERACTIONS, CURATOR_TOOL, TEXTBOOK, INFO_PANELS,
-  buildUrl, buildMappingUrl, buildCurrentUrl,
+  TOC_ITEMS,
+  SERVICE_CARDS,
+  GRAPH_DB_DOWNLOADS,
+  MYSQL_DOWNLOADS,
+  MAPPING_DATABASES,
+  MAPPING_CATEGORIES,
+  PE_MAPPING_CATEGORIES,
+  OTHER_MAPPINGS,
+  PATHWAY_DOWNLOADS,
+  DIAGRAM_DOWNLOADS,
+  GENE_ONTOLOGY_DOWNLOADS,
+  SYSTEMS_BIOLOGY_DOWNLOADS,
+  GENE_SET_DOWNLOADS,
+  ONTOLOGY_DOWNLOADS,
+  PPI_MITAB_DOWNLOADS,
+  PPI_TAB_DOWNLOADS,
+  FUNCTIONAL_INTERACTIONS,
+  CURATOR_TOOL,
+  TEXTBOOK,
+  INFO_PANELS,
+  buildUrl,
+  buildMappingUrl,
+  buildCurrentUrl,
 } from './download-data.data';
 
 @Component({
@@ -19,7 +34,7 @@ import {
   templateUrl: './download-data.component.html',
   styleUrl: './download-data.component.scss',
 })
-export class DownloadDataComponent implements OnInit {
+export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
 
@@ -52,11 +67,20 @@ export class DownloadDataComponent implements OnInit {
   expandedPanels: Record<string, boolean> = {};
 
   // Active TOC section
-  activeTocId = '';
+  // A signal because it is set from an IntersectionObserver, which Angular
+  // cannot observe -- with zones off, a plain field would leave the table of
+  // contents never highlighting the section being read.
+  readonly activeTocId = signal('');
 
   private observer?: IntersectionObserver;
 
-  async ngOnInit() {
+  ngOnInit() {
+    // Angular ignores whatever ngOnInit returns, so an async one hides its own
+    // failures; the page would just keep its default version and base URL.
+    void this.load().catch((error) => console.error('Could not load download metadata', error));
+  }
+
+  private async load() {
     this.version = await this.stats.getVersion();
     this.baseUrl = await this.stats.getDownloadBaseUrl();
 
@@ -100,7 +124,7 @@ export class DownloadDataComponent implements OnInit {
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            this.activeTocId = entry.target.id;
+            this.activeTocId.set(entry.target.id);
           }
         }
       },

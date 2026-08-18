@@ -1,29 +1,36 @@
 <app-page-layout>
-  <div class="article-container" *ngIf="!loading">
-  <div *ngIf="error" class="error-message">
-    <h1>{{ error }}</h1>
-  </div>
-  
-  <article *ngIf="article" class="article">
-    <header class="article-header">
-      <h1 class="article-title">{{ article.title }}</h1>
-      <div class="article-meta">
-        <time class="article-date">{{ formatD(article.date) }}</time>
-        <span *ngIf="article.author" class="article-author">by {{ article.author }}</span>
-      </div>
-      <!-- <div *ngIf="article.tags" [class]="'article-tags' + (article.tags.length > 0 ? ' has-tags' : '')">
-        <span *ngFor="let tag of article.tags" class="tag">{{ tag }}</span>
-      </div> -->
-    </header>
-    <div class="article-body">
-      <img class="article-image" *ngIf="article.image" [src]="article.image" alt="Article Image" class="article-image"/>
-      <div class="article-text" [innerHTML]="renderedContent"></div>
+  @if (!loading) {
+    <div class="article-container">
+      @if (error) {
+        <div class="error-message">
+          <h1>{{ error }}</h1>
+        </div>
+      }
+      @if (article) {
+        <article class="article">
+          <header class="article-header">
+            <h1 class="article-title">{{ article.title }}</h1>
+            <div class="article-meta">
+              <time class="article-date">{{ formatD(article.date) }}</time>
+              @if (article.author) {
+                <span class="article-author">by {{ article.author }}</span>
+              }
+            </div>
+            <!-- <div *ngIf="article.tags" [class]="'article-tags' + (article.tags.length > 0 ? ' has-tags' : '')">
+            <span *ngFor="let tag of article.tags" class="tag">{{ tag }}</span>
+          </div> -->
+          </header>
+          <div class="article-body">
+            @if (article.image) {
+              <img class="article-image" [src]="article.image" alt="Article Image" class="article-image" />
+            }
+            <div class="article-text" [innerHTML]="renderedContent"></div>
+          </div>
+        </article>
+      }
     </div>
-    
-  </article>
-</div>
-
-<div *ngIf="loading" class="loading-message">
-  Loading article...
-</div>
+  }
+  @if (loading) {
+    <div class="loading-message">Loading article...</div>
+  }
 </app-page-layout>

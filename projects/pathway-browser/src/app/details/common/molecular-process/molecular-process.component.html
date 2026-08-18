@@ -1,25 +1,23 @@
 <!--Sort by position if data is Modified Residue-->
-@let processedData = data()[0].isModification ? (data() | sortByDate: 'coordinate': false) : data();
+@let processedData = data()[0].isModification ? (data() | sortByDate: 'coordinate' : false) : data();
 @for (item of processedData; track item) {
   <div class="container">
     @if (item.type) {
       <div class="row">
         <div class="label-container">Type</div>
         <div class="composition-container">
-          <mat-icon class='custom-icon' [svgIcon]="getSymbol(item).name"></mat-icon>
+          <mat-icon class="custom-icon" [svgIcon]="getSymbol(item).name"></mat-icon>
           <span>{{ item.type }}</span>
         </div>
       </div>
     }
 
-
     <!--ReplacedResidue / FragmentModification-->
     @if (isReplacedResidue(item) || isFragmentModification(item)) {
-
       <div class="row">
         <div class="label-container">Type</div>
         <div class="composition-container">
-          <mat-icon class='custom-icon' [svgIcon]="getSymbol(item).name"></mat-icon>
+          <mat-icon class="custom-icon" [svgIcon]="getSymbol(item).name"></mat-icon>
           <span>{{ item.schemaClass | formatClassName }}</span>
         </div>
       </div>
@@ -53,7 +51,7 @@
           <div class="composition-container multiple">
             @for (psiMod of item.psiMod; track psiMod.dbId) {
               <div class="psiMod-container">
-                <mat-icon class='custom-icon' [svgIcon]="getSymbol(item).name"></mat-icon>
+                <mat-icon class="custom-icon" [svgIcon]="getSymbol(item).name"></mat-icon>
                 <cr-ontology-term [term]="psiMod"></cr-ontology-term>
               </div>
             }
@@ -64,13 +62,12 @@
         <div class="row">
           <div class="label-container">Type</div>
           <div class="composition-container">
-            <mat-icon class='custom-icon' [svgIcon]="getSymbol(item).name"></mat-icon>
+            <mat-icon class="custom-icon" [svgIcon]="getSymbol(item).name"></mat-icon>
             <span>{{ item.schemaClass | formatClassName }}</span>
           </div>
         </div>
       }
     }
-
 
     @if (item.coordinate) {
       <div class="row">
@@ -107,8 +104,11 @@
       <div class="row">
         <div class="label-container">EC Number</div>
         <div class="composition-container">
-          <span><a
-            [href]=" 'https://www.enzyme-database.org/query.php?ec=' + item.activity.ecNumber">{{ item.activity.ecNumber }}</a></span>
+          <span
+            ><a [href]="'https://www.enzyme-database.org/query.php?ec=' + item.activity.ecNumber">{{
+              item.activity.ecNumber
+            }}</a></span
+          >
         </div>
       </div>
     }
@@ -117,7 +117,7 @@
       <div class="row">
         <div class="label-container">Biological Process</div>
         <div class="composition-container">
-          <cr-ontology-term [term]="item.go_BiologicalProcess"/>
+          <cr-ontology-term [term]="item.go_BiologicalProcess" />
         </div>
       </div>
     }
@@ -131,7 +131,6 @@
               @for (unit of item.activeUnit; track unit.dbId) {
                 <cr-object-tree [type]="'activeUnit'" [data]="[unit]"></cr-object-tree>
               }
-
             </div>
           </div>
         }
@@ -144,7 +143,6 @@
             </div>
           </div>
         }
-
 
         @if (item.catalyst) {
           <div class="row">
@@ -171,14 +169,15 @@
       <div class="row">
         <div class="label-container">Reference</div>
         <div class="composition-container ref-padding">
-
-          @for (ref of item.catalystActivityReference.literatureReference | sortByDate:'year'; track ref?.dbId ?? $index) {
-            <cr-publication [publication]=ref [showYear]="true"></cr-publication>
+          @for (
+            ref of item.catalystActivityReference.literatureReference | sortByDate: 'year';
+            track ref?.dbId ?? $index
+          ) {
+            <cr-publication [publication]="ref" [showYear]="true"></cr-publication>
           }
         </div>
       </div>
     }
-
 
     @if (item.regulationReference) {
       @for (ref of item.regulationReference; track ref?.dbId ?? $index) {
@@ -186,16 +185,13 @@
           <div class="row">
             <div class="label-container">Reference</div>
             <div class="composition-container ref-padding">
-              @for (ref of ref.literatureReference | sortByDate:'year'; track ref?.dbId ?? $index) {
-                <cr-publication [publication]=ref [showYear]="true"></cr-publication>
+              @for (ref of ref.literatureReference | sortByDate: 'year'; track ref?.dbId ?? $index) {
+                <cr-publication [publication]="ref" [showYear]="true"></cr-publication>
               }
             </div>
           </div>
         }
       }
     }
-
   </div>
 }
-
-

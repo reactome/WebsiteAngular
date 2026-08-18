@@ -4,10 +4,7 @@ export const routes: Routes = [
   //Home Page
   {
     path: '',
-    loadComponent: () =>
-      import('./home-page/home-page.component').then(
-        (m) => m.HomePageComponent
-      ),
+    loadComponent: () => import('./home-page/home-page.component').then((m) => m.HomePageComponent),
     pathMatch: 'full',
   },
 
@@ -16,25 +13,19 @@ export const routes: Routes = [
   {
     path: 'about/news',
     loadComponent: () =>
-      import('./article/article-page/article-page.component').then(
-        (m) => m.ArticlePageComponent
-      ),
+      import('./article/article-page/article-page.component').then((m) => m.ArticlePageComponent),
     pathMatch: 'full',
   },
   {
     path: 'about/news/:slug',
     loadComponent: () =>
-      import('./article/article/article.component').then(
-        (m) => m.ArticleComponent
-      ),
+      import('./article/article/article.component').then((m) => m.ArticleComponent),
     pathMatch: 'full',
   },
   {
     path: 'about/logo',
     loadComponent: () =>
-      import('./about/logo-page/logo-page.component').then(
-        (m) => m.LogoPageComponent
-      ),
+      import('./about/logo-page/logo-page.component').then((m) => m.LogoPageComponent),
     pathMatch: 'full',
   },
   {
@@ -58,17 +49,13 @@ export const routes: Routes = [
   {
     path: 'community/partners',
     loadComponent: () =>
-      import('./community/partners/partners.component').then(
-        (m) => m.PartnersComponent
-      ),
+      import('./community/partners/partners.component').then((m) => m.PartnersComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/resources',
     loadComponent: () =>
-      import('./community/resources/resources.component').then(
-        (m) => m.ResourcesComponent
-      ),
+      import('./community/resources/resources.component').then((m) => m.ResourcesComponent),
     pathMatch: 'full',
   },
   {
@@ -82,33 +69,26 @@ export const routes: Routes = [
   {
     path: 'community/icon-lib',
     loadComponent: () =>
-      import('./community/icon-lib/icon-lib.component').then(
-        (m) => m.IconLibComponent
-      ),
+      import('./community/icon-lib/icon-lib.component').then((m) => m.IconLibComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/icon-lib/:id',
     loadComponent: () =>
-      import('./community/icon-lib/icon-lib.component').then(
-        (m) => m.IconLibComponent
-      ),
+      import('./community/icon-lib/icon-lib.component').then((m) => m.IconLibComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/contributors',
     loadComponent: () =>
-      import('./content/contributors/contributors.component').then(
-        (m) => m.ContributorsComponent
-      ),
+      import('./content/contributors/contributors.component').then((m) => m.ContributorsComponent),
     pathMatch: 'full',
   },
 
   //Documentation Pages
   {
     path: 'documentation/faq',
-    loadComponent: () =>
-      import('./documentation/faq/faq.component').then((m) => m.FaqComponent),
+    loadComponent: () => import('./documentation/faq/faq.component').then((m) => m.FaqComponent),
     pathMatch: 'full',
   },
 
@@ -116,9 +96,7 @@ export const routes: Routes = [
   {
     path: 'download-data',
     loadComponent: () =>
-      import('./download-data/download-data.component').then(
-        (m) => m.DownloadDataComponent
-      ),
+      import('./download-data/download-data.component').then((m) => m.DownloadDataComponent),
     pathMatch: 'full',
   },
 
@@ -126,49 +104,37 @@ export const routes: Routes = [
   {
     path: 'content/reactome-research-spotlight',
     loadComponent: () =>
-      import('./article/article-page/article-page.component').then(
-        (m) => m.ArticlePageComponent
-      ),
+      import('./article/article-page/article-page.component').then((m) => m.ArticlePageComponent),
     pathMatch: 'full',
   },
   {
     path: 'content/reactome-research-spotlight/:slug',
     loadComponent: () =>
-      import('./article/article/article.component').then(
-        (m) => m.ArticleComponent
-      ),
+      import('./article/article/article.component').then((m) => m.ArticleComponent),
     pathMatch: 'full',
   },
 
   //Content Pages (TOC, DOI, Schema)
   {
     path: 'content/toc',
-    loadComponent: () =>
-      import('./content/toc/toc.component').then((m) => m.TocComponent),
+    loadComponent: () => import('./content/toc/toc.component').then((m) => m.TocComponent),
     pathMatch: 'full',
   },
   {
     path: 'content/doi',
-    loadComponent: () =>
-      import('./content/doi/doi.component').then((m) => m.DoiComponent),
+    loadComponent: () => import('./content/doi/doi.component').then((m) => m.DoiComponent),
     pathMatch: 'full',
   },
   // Keep legacy /content/schema routes working by loading the same
   // SchemaComponent so parameter resolution works identically.
   {
     path: 'content/schema',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
   {
     path: 'content/schema/:className',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
   // The legacy schema browser addressed instances as
@@ -189,18 +155,12 @@ export const routes: Routes = [
   // New routes for dataSchema (replaces the previous content/schema)
   {
     path: 'dataSchema',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
   {
     path: 'dataSchema/:className',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
   // The old form carried a literal "instance" segment that wasn't routable on
@@ -230,9 +190,9 @@ export const routes: Routes = [
   {
     path: 'content/detail/interactor/:acc',
     loadComponent: () =>
-      import(
-        './content/detail/interactor-detail/interactor-detail.component'
-      ).then((m) => m.InteractorDetailComponent),
+      import('./content/detail/interactor-detail/interactor-detail.component').then(
+        (m) => m.InteractorDetailComponent
+      ),
   },
   {
     path: 'content/detail/icon/:id',
@@ -250,34 +210,26 @@ export const routes: Routes = [
   },
   {
     path: 'content/detail/:id',
-    loadComponent: () =>
-      import('./content/detail/detail.component').then(
-        (m) => m.DetailComponent
-      ),
+    loadComponent: () => import('./content/detail/detail.component').then((m) => m.DetailComponent),
   },
 
   //Search Pages
   {
     path: 'content/query',
-    loadComponent: () =>
-      import('./search/search.component').then((m) => m.SearchComponent),
+    loadComponent: () => import('./search/search.component').then((m) => m.SearchComponent),
   },
 
   //API Documentation (Swagger UI)
   {
     path: 'ContentService',
     loadComponent: () =>
-      import('./swagger-page/swagger-page.component').then(
-        (m) => m.SwaggerPageComponent
-      ),
+      import('./swagger-page/swagger-page.component').then((m) => m.SwaggerPageComponent),
     data: { serviceName: 'ContentService' },
   },
   {
     path: 'AnalysisService',
     loadComponent: () =>
-      import('./swagger-page/swagger-page.component').then(
-        (m) => m.SwaggerPageComponent
-      ),
+      import('./swagger-page/swagger-page.component').then((m) => m.SwaggerPageComponent),
     data: { serviceName: 'AnalysisService' },
   },
 
@@ -285,16 +237,13 @@ export const routes: Routes = [
   {
     path: '404',
     loadComponent: () =>
-      import('./page-not-found/page-not-found.component').then(
-        (m) => m.PageNotFoundComponent
-      ),
+      import('./page-not-found/page-not-found.component').then((m) => m.PageNotFoundComponent),
   }, //TODO: Remove?
   /* Non - CMS Pages Above this Line */
 
   //CMS Pages
   {
     path: '**',
-    loadComponent: () =>
-      import('./page/page.component').then((m) => m.PageComponent),
+    loadComponent: () => import('./page/page.component').then((m) => m.PageComponent),
   },
 ];

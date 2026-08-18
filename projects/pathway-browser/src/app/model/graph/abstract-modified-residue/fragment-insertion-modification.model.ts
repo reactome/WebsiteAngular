@@ -1,5 +1,5 @@
-import {FragmentModification} from "./fragment-modification.model";
+import { FragmentModification } from './fragment-modification.model';
 
-export interface FragmentInsertionModification extends FragmentModification{
+export interface FragmentInsertionModification extends FragmentModification {
   coordinate: number;
 }

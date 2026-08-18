@@ -1,28 +1,66 @@
-import {AfterViewInit, Component, effect, ElementRef, inject, input, model, OnDestroy, ViewChild} from '@angular/core';
-import {Event} from "../model/graph/event/event.model";
-import {EventService, SelectableObject} from "../services/event.service";
-import {SpeciesService} from "../services/species.service";
-import {combineLatest, combineLatestWith, filter, fromEvent, map, Observable, of, switchMap, take, tap} from "rxjs";
-import {MatTree, MatTreeNestedDataSource, MatTreeNodeDef, MatTreeNodeOutlet, MatTreeNodeToggle} from "@angular/material/tree";
-import {UrlStateService} from "../services/url-state.service";
-import {SplitComponent} from "angular-split";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {NavigationEnd, Router} from "@angular/router";
-import {EhldService} from "../services/ehld.service";
-import {AnalysisService} from "../services/analysis.service";
-import {IconService} from "../services/icon.service";
-import {DatabaseObject} from "../model/graph/database-object.model";
-import {isPathway} from "../services/utils";
-import {DatabaseObjectService} from "../services/database-object.service";
-import {toObservable} from "@angular/core/rxjs-interop";
-import {RouterLink} from "@angular/router";
-import {MatIcon} from "@angular/material/icon";
-import { MatTreeNode, MatNestedTreeNode} from "@angular/material/tree";
-import {MatButton, MatIconButton} from "@angular/material/button";
-import {NgClass} from "@angular/common";
-import {MatTooltip} from "@angular/material/tooltip";
-import {PassiveDirective} from "../utils/passive.directive";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  model,
+  OnDestroy,
+  ViewChild,
+} from '@angular/core';
+import { Event } from '../model/graph/event/event.model';
+import { EventService, SelectableObject } from '../services/event.service';
+import { SpeciesService } from '../services/species.service';
+import {
+  combineLatest,
+  combineLatestWith,
+  filter,
+  fromEvent,
+  map,
+  Observable,
+  of,
+  switchMap,
+  take,
+  tap,
+} from 'rxjs';
+import {
+  MatTree,
+  MatTreeNestedDataSource,
+  MatTreeNodeDef,
+  MatTreeNodeOutlet,
+  MatTreeNodeToggle,
+} from '@angular/material/tree';
+import { UrlStateService } from '../services/url-state.service';
+import { SplitComponent } from 'angular-split';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { NavigationEnd, Router } from '@angular/router';
+import { EhldService } from '../services/ehld.service';
+import { AnalysisService } from '../services/analysis.service';
+import { IconService } from '../services/icon.service';
+import { DatabaseObject } from '../model/graph/database-object.model';
+import { isPathway } from '../services/utils';
+import { DatabaseObjectService } from '../services/database-object.service';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
+import { MatTreeNode, MatNestedTreeNode } from '@angular/material/tree';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { NgClass } from '@angular/common';
+import { MatTooltip } from '@angular/material/tooltip';
+import { PassiveDirective } from '../utils/passive.directive';
 
+// Revealing the selected event must not move the tree when that event is already
+// on screen. The default block:'start' scrolls the node to the top of the
+// container every time -- which is what "the hierarchy jumps to the top" is --
+// and, because scrollIntoView walks every scrollable ancestor, it drags the page
+// with it. 'nearest' scrolls the minimum needed, and nothing at all when the node
+// is already visible.
+const REVEAL_SELECTED: ScrollIntoViewOptions = {
+  behavior: 'smooth',
+  block: 'nearest',
+  inline: 'nearest',
+};
 
 @Component({
   selector: 'cr-event-hierarchy',
@@ -41,8 +79,8 @@ import {PassiveDirective} from "../utils/passive.directive";
     MatIconButton,
     NgClass,
     MatTooltip,
-    PassiveDirective
-  ]
+    PassiveDirective,
+  ],
 })
 @UntilDestroy()
 export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
@@ -57,11 +95,10 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   private dboService: DatabaseObjectService = inject(DatabaseObjectService);
 
   readonly pathwayId = model<string>();
-  readonly split = input.required<SplitComponent>({alias: "eventSplit"});
-  @ViewChild('treeControlButton', {read: ElementRef}) treeControlButton?: ElementRef;
-  @ViewChild('eventIcon', {read: ElementRef}) eventIcon?: ElementRef<HTMLElement>;
+  readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
+  @ViewChild('treeControlButton', { read: ElementRef }) treeControlButton?: ElementRef;
+  @ViewChild('eventIcon', { read: ElementRef }) eventIcon?: ElementRef<HTMLElement>;
   @ViewChild(MatTree) tree!: MatTree<Event, string>;
-
 
   private _SCROLL_SPEED = 50; // pixels per second
   private _ICON_PADDING = 16;
@@ -71,16 +108,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   private _NAME_TAG_PADDING = 8;
   private _ignore = false; // ignore the changes from the tree
   private _isInitialLoad = true; // skip the first load
-  private _TOP = 'TopLevelPathway'
-
+  private _TOP = 'TopLevelPathway';
 
   childrenAccessor = (node: Event): Event[] => {
     if (isPathway(node) && Array.isArray(node.events)) {
-      return node.events.map(e => e.element);
+      return node.events.map((e) => e.element);
     }
     return [];
   };
-
 
   treeDataSource = new MatTreeNestedDataSource<Event>();
 
@@ -91,10 +126,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   selectedObj?: DatabaseObject;
   lastSpecieId?: string;
 
-
   constructor() {
     effect(() => {
-
       const currentSpecieId = this.speciesService.currentSpecies().taxId;
 
       if (currentSpecieId === this.lastSpecieId) return;
@@ -109,70 +142,82 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   selecting = combineLatest({
     select: toObservable(this.state.select),
     pathwayId: toObservable(this.pathwayId),
-  }).pipe(
-    tap(({select, pathwayId}) => this.selectedIdFromUrl = select!),
-    //todo: revisit here to check the logic
-    filter(() => !this._ignore
-        && !this._isInitialLoad
-      // && !this.speciesService.getIgnore()
-    ),// Ignore the changes from Tree itself , first load and species changes
-    // debounceTime(200), // todo: needs improvement to avoid use debounceTime; Wait the new diagramId to arrive when double click pathway on EHLD.
-    switchMap(({select, pathwayId}) => {
-      const idToUse = select ? select : pathwayId;
-      return idToUse
-        ? this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(map(enhancedEvent => ({
-          idToUse,
-          enhancedEvent
-        })))
-        : of({idToUse, enhancedEvent: undefined});
-    }),
-    switchMap(({idToUse, enhancedEvent}) => {
-      const token = this.analysis.result()?.summary.token;
-      if (!token) {
-        return of({idToUse, enhancedEvent, hitReactions: []}); // Return empty hitReactions if there is no token
+  })
+    .pipe(
+      tap(({ select, pathwayId }) => (this.selectedIdFromUrl = select!)),
+      //todo: revisit here to check the logic
+      filter(
+        () => !this._ignore && !this._isInitialLoad
+        // && !this.speciesService.getIgnore()
+      ), // Ignore the changes from Tree itself , first load and species changes
+      // debounceTime(200), // todo: needs improvement to avoid use debounceTime; Wait the new diagramId to arrive when double click pathway on EHLD.
+      switchMap(({ select, pathwayId }) => {
+        const idToUse = select ? select : pathwayId;
+        return idToUse
+          ? this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
+              map((enhancedEvent) => ({
+                idToUse,
+                enhancedEvent,
+              }))
+            )
+          : of({ idToUse, enhancedEvent: undefined });
+      }),
+      switchMap(({ idToUse, enhancedEvent }) => {
+        const token = this.analysis.result()?.summary.token;
+        if (!token) {
+          return of({ idToUse, enhancedEvent, hitReactions: [] }); // Return empty hitReactions if there is no token
+        }
+        // Fetch hit reactions using token and pathway ID
+        return this.analysis
+          .getHitReactions(this.pathwayId()!, token)
+          .pipe(map((hitReactions) => ({ idToUse, enhancedEvent, hitReactions })));
+      }),
+      switchMap(({ idToUse, enhancedEvent, hitReactions }) => {
+        return this.eventService.adjustTreeFromUrlSelectUpdate(
+          enhancedEvent,
+          this.pathwayId(),
+          this.tree,
+          hitReactions
+        );
+      }),
+      untilDestroyed(this)
+    )
+    .subscribe(() => {
+      document
+        .querySelector(`[st-id='${this.selectedIdFromUrl}']`)
+        ?.scrollIntoView(REVEAL_SELECTED);
+    });
+
+  analysing = toObservable(this.state.analysis)
+    .pipe(
+      combineLatestWith(toObservable(this.pathwayId)),
+      switchMap(([token, pathwayId]) => {
+        if (!pathwayId || !token) return of({ hitReactions: [] });
+        return this.analysis
+          .getHitReactions(pathwayId, token)
+          .pipe(map((hitReactions) => ({ hitReactions })));
+      })
+    )
+    .subscribe(({ hitReactions }) => {
+      this.eventService.addAnalysisTag(this.treeDataSource.data, this.analysis.result());
+
+      // TODO add hit reactions on all opened pathways, not just current one + Make sure it gets updated upon selection / opening of a new pathway
+      if (this.selectedTreeEvent && isPathway(this.selectedTreeEvent)) {
+        this.eventService.addHitReactions(
+          this.selectedTreeEvent.events?.map((e) => e.element),
+          hitReactions
+        );
       }
-      // Fetch hit reactions using token and pathway ID
-      return this.analysis.getHitReactions(this.pathwayId()!, token).pipe(
-        map(hitReactions => ({idToUse, enhancedEvent, hitReactions}))
-      );
-    }),
-    switchMap(({idToUse, enhancedEvent, hitReactions}) => {
-      return this.eventService.adjustTreeFromUrlSelectUpdate(enhancedEvent, this.pathwayId(), this.tree, hitReactions);
-    }),
-    untilDestroyed(this),
-  ).subscribe(() => {
-    document.querySelector(`[st-id='${this.selectedIdFromUrl}']`)?.scrollIntoView({behavior: 'smooth'});
-  });
-
-
-  analysing = toObservable(this.state.analysis).pipe(
-    combineLatestWith(toObservable(this.pathwayId)),
-    switchMap(([token, pathwayId]) => {
-      if (!pathwayId || !token) return of({hitReactions: []});
-      return this.analysis.getHitReactions(pathwayId, token).pipe(
-        map(hitReactions => ({hitReactions}))
-      );
-    })
-  ).subscribe(({hitReactions}) => {
-    this.eventService.addAnalysisTag(this.treeDataSource.data, this.analysis.result());
-
-    // TODO add hit reactions on all opened pathways, not just current one + Make sure it gets updated upon selection / opening of a new pathway
-    if (this.selectedTreeEvent && isPathway(this.selectedTreeEvent)) {
-      this.eventService.addHitReactions(this.selectedTreeEvent.events?.map(e => e.element), hitReactions);
-    }
-
-  });
+    });
 
   ngAfterViewInit(): void {
-
     setTimeout(() => {
       this._isInitialLoad = false; // Allow future changes to be processed after first load
     }, 100);
 
-    this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe(events => {
+    this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe((events) => {
       // Save expanded node stIds before resetting the data source
       const expandedIds = this.collectExpandedIds(this.treeDataSource.data);
-      // @ts-ignore
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue
@@ -182,108 +227,110 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.adjustWidths();
     });
 
-    this.eventService.selectedTreeEvent$.pipe(untilDestroyed(this)).subscribe(event => {
+    this.eventService.selectedTreeEvent$.pipe(untilDestroyed(this)).subscribe((event) => {
       this.selectedTreeEvent = event as Event;
     });
 
-    this.dboService.selectedObj$.pipe(untilDestroyed(this)).subscribe(event => {
+    this.dboService.selectedObj$.pipe(untilDestroyed(this)).subscribe((event) => {
       this.selectedObj = event as Event;
     });
 
-    this.eventService.breadcrumbs$.pipe(untilDestroyed(this)).subscribe(events => {
+    this.eventService.breadcrumbs$.pipe(untilDestroyed(this)).subscribe((events) => {
       this.breadcrumbs = events as Event[];
     });
 
-    this.split().dragProgress$.pipe(untilDestroyed(this)).subscribe(data => {
-      this.adjustWidths();
-    });
+    this.split()
+      .dragProgress$.pipe(untilDestroyed(this))
+      .subscribe((data) => {
+        this.adjustWidths();
+      });
 
-    fromEvent(window, 'resize').pipe(untilDestroyed(this)).subscribe(() => {
-      this.adjustWidths();
-    });
-
+    fromEvent(window, 'resize')
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.adjustWidths();
+      });
   }
 
   buildInitialTreeWithTlps(taxId: string): void {
     const idToUse = this.selectedIdFromUrl ? this.selectedIdFromUrl : this.pathwayId();
     // Fetch and prepare initial data
     const initialData$ = this.eventService.fetchTlpsBySpecies(taxId).pipe(
-      tap(allTLPs => this.eventService.setTreeData(allTLPs)), // Set initial tree data
-      map(initialTreeData => ({initialTreeData})) // Wrap in an object for accumulation
+      tap((allTLPs) => this.eventService.setTreeData(allTLPs)), // Set initial tree data
+      map((initialTreeData) => ({ initialTreeData })) // Wrap in an object for accumulation
     );
 
     // Conditionally fetch or reuse enhanced event data
     const enhancedEventData$: Observable<{
-      enhancedEvent: SelectableObject | undefined
+      enhancedEvent: SelectableObject | undefined;
     }> = this.eventService.diagramPathway$.pipe(
       take(1),
-      switchMap(diagramPathway => {
-        if (!idToUse) return of({enhancedEvent: undefined});
+      switchMap((diagramPathway) => {
+        if (!idToUse) return of({ enhancedEvent: undefined });
         if (diagramPathway && diagramPathway.stId === idToUse) {
-          return of({enhancedEvent: diagramPathway});
+          return of({ enhancedEvent: diagramPathway });
         } else {
-          return this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
-            map(enhancedEvent => ({enhancedEvent}))
-          )
+          return this.dboService
+            .fetchEnhancedEntry<SelectableObject>(idToUse)
+            .pipe(map((enhancedEvent) => ({ enhancedEvent })));
         }
       })
-    )
+    );
 
     // Fetch EHLD and color data
-    const ehldAndSubpathwayColors$ =
-      this.ehldService.hasEHLD()
-        ? of({hasEHLD: true, colors: undefined}) // If EHLD exists, no colors needed
-        : this.eventService.subpathwayColors$.pipe(
+    const ehldAndSubpathwayColors$ = this.ehldService.hasEHLD()
+      ? of({ hasEHLD: true, colors: undefined }) // If EHLD exists, no colors needed
+      : this.eventService.subpathwayColors$.pipe(
           take(1),
-          map(colors => ({hasEHLD: false, colors}))
+          map((colors) => ({ hasEHLD: false, colors }))
         );
 
     // Fetch analysis result
 
     // Fetch reactions based on token and pathway ID
     const hitReactions$ =
-      !this.state.analysis() || !this.pathwayId() ?
-        of({hitReactions: []}) : // Return empty if no token
-        this.analysis.getHitReactions(this.pathwayId()!, this.state.analysis()!).pipe(
-          map(hitReactions => ({hitReactions}))
-        );
+      !this.state.analysis() || !this.pathwayId()
+        ? of({ hitReactions: [] }) // Return empty if no token
+        : this.analysis
+            .getHitReactions(this.pathwayId()!, this.state.analysis()!)
+            .pipe(map((hitReactions) => ({ hitReactions })));
 
     // Combine all data and merged into one object
-    initialData$.pipe(
-      //tap(d => console.log('Initial data', d)),
-      switchMap(initialData =>
-        enhancedEventData$.pipe(
-          combineLatestWith(
-            ehldAndSubpathwayColors$,
-            hitReactions$
-          ),
-          map(([enhancedEvent, ehldAndColors, hitReactions]) => ({
-            ...initialData,
-            ...enhancedEvent,
-            ...ehldAndColors,
-            ...hitReactions
-          }))
-        )
-      ),
-      //tap(d => console.log('Combined data', d)),
+    initialData$
+      .pipe(
+        //tap(d => console.log('Initial data', d)),
+        switchMap((initialData) =>
+          enhancedEventData$.pipe(
+            combineLatestWith(ehldAndSubpathwayColors$, hitReactions$),
+            map(([enhancedEvent, ehldAndColors, hitReactions]) => ({
+              ...initialData,
+              ...enhancedEvent,
+              ...ehldAndColors,
+              ...hitReactions,
+            }))
+          )
+        ),
+        //tap(d => console.log('Combined data', d)),
 
-      // Build the tree with all data
-      switchMap(({
-                   enhancedEvent,
-                   hitReactions
-                 }) => this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree, hitReactions)),
-      //tap(d => console.log('Final data', d)),
-    ).subscribe({
-      next: () => {
-        // Give pathway id when idToUse is PEs
-        const element = document.querySelector(`[st-id='${idToUse}']`) || document.querySelector(`[st-id='${this.pathwayId}']`);
-        element?.scrollIntoView({behavior: 'smooth'});
-      },
-      error: (err: Error) => {
-        console.error(err, err.stack)
-        throw err;
-      }
-    });
+        // Build the tree with all data
+        switchMap(({ enhancedEvent, hitReactions }) =>
+          this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree, hitReactions)
+        )
+        //tap(d => console.log('Final data', d)),
+      )
+      .subscribe({
+        next: () => {
+          // Give pathway id when idToUse is PEs
+          const element =
+            document.querySelector(`[st-id='${idToUse}']`) ||
+            document.querySelector(`[st-id='${this.pathwayId()}']`);
+          element?.scrollIntoView(REVEAL_SELECTED);
+        },
+        error: (err: Error) => {
+          console.error(err, err.stack);
+          throw err;
+        },
+      });
   }
 
   // if a leaf node has sibling which is a root node
@@ -293,26 +340,24 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     }
     const parent = event.parent;
     if (isPathway(parent) && parent.events) {
-      return parent.events.some(sibling => sibling.element !== event && this.eventService.eventHasChild(sibling.element));
+      return parent.events.some(
+        (sibling) => sibling.element !== event && this.eventService.eventHasChild(sibling.element)
+      );
     }
     return false;
   }
-
 
   ngOnDestroy(): void {
     clearTimeout(this.scrollTimeout);
   }
 
-
   onTreeEventSelect(treeEvent: Event) {
     this.handleSelectionFromTree(treeEvent);
   }
 
-
   onBreadcrumbSelect(navEvent: Event) {
     this.handleSelectionFromTree(navEvent);
   }
-
 
   private handleSelectionFromTree(event: Event) {
     this.clearAllSelectedEvents(this.treeDataSource.data);
@@ -322,7 +367,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     this.setDiagramId(event);
     this.navigateToPathway(event);
   }
-
 
   private loadEvents(treeEvent: Event) {
     // Collapse all events when selecting any tlps
@@ -335,28 +379,34 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     if (isPathway(treeEvent)) {
       this.eventService.loadEventData(treeEvent);
     } else {
-      this.dboService.fetchEnhancedEntry<Event>(treeEvent.parent.stId).pipe(untilDestroyed(this)).subscribe(result => {
-        this.dboService.setCurrentObj(result as DatabaseObject);
-      })
+      this.dboService
+        .fetchEnhancedEntry<Event>(treeEvent.parent.stId)
+        .pipe(untilDestroyed(this))
+        .subscribe((result) => {
+          this.dboService.setCurrentObj(result as DatabaseObject);
+        });
     }
   }
 
-
   private selectAllParents(selectedEvent: Event, events: Event[]) {
-    events.forEach(event => {
-      event.isSelected = selectedEvent.ancestors?.some((parent: Event) => parent.stId === event.stId) || false;
+    events.forEach((event) => {
+      event.isSelected =
+        selectedEvent.ancestors?.some((parent: Event) => parent.stId === event.stId) || false;
       if (isPathway(event) && event.events) {
-        this.selectAllParents(selectedEvent, event.events?.map(e => e.element));
+        this.selectAllParents(
+          selectedEvent,
+          event.events?.map((e) => e.element)
+        );
       }
     });
   }
 
   // todo: only clear selected tree event for better performance
   private clearAllSelectedEvents(events: Event[]) {
-    events.forEach(event => {
+    events.forEach((event) => {
       event.isSelected = false;
       if (isPathway(event) && event.events) {
-        this.clearAllSelectedEvents(event.events?.map(e => e.element));
+        this.clearAllSelectedEvents(event.events?.map((e) => e.element));
       }
     });
   }
@@ -370,13 +420,11 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     //todo: temporary fix for getting correct ancestors,
     // the ideal way to get ancestors is by assigning the ancestors to the object
 
-    const ancestors = this.eventService.getAncestors(this.treeDataSource.data, event.stId)
+    const ancestors = this.eventService.getAncestors(this.treeDataSource.data, event.stId);
     if (ancestors) {
       return this.eventService.setBreadcrumbs(ancestors);
     }
-
   }
-
 
   private setDiagramId(event: Event): void {
     // Pathway
@@ -389,9 +437,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-
   private navigateToPathway(treeEvent: Event): void {
-
     const ancestors = treeEvent.ancestors ? treeEvent.ancestors : [];
     const diagramId = this.pathwayId();
     this.eventService.setPath(diagramId, ancestors);
@@ -399,19 +445,25 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const selectedEventId = isPathway(treeEvent) && treeEvent.hasDiagram ? null : treeEvent.stId;
     this._ignore = true;
     // this.speciesService.setIgnore(true);
-    this.state.navigateTo(diagramId ?? null, {
-      queryParamsHandling: "preserve" // Keep existing query params
-    }).then(() => {
-      this.state.select.set(selectedEventId);
-      this.eventService.setCurrentTreeEvent(treeEvent);
-      // Reset _ignore after setting state. The .then() callback fires after
-      // NavigationEnd has already been emitted, so waiting for a future
-      // NavigationEnd would leave _ignore stuck at true if no further
-      // navigation occurs.
-      this._ignore = false;
-    }).catch(err => {
-      throw new Error('Navigation error:', err);
-    });
+    this.state
+      .navigateTo(diagramId ?? null, {
+        queryParamsHandling: 'preserve', // Keep existing query params
+      })
+      .then(() => {
+        this.state.select.set(selectedEventId);
+        this.eventService.setCurrentTreeEvent(treeEvent);
+        // Reset _ignore after setting state. The .then() callback fires after
+        // NavigationEnd has already been emitted, so waiting for a future
+        // NavigationEnd would leave _ignore stuck at true if no further
+        // navigation occurs.
+        this._ignore = false;
+      })
+      .catch((error: unknown) => {
+        // Throwing in here produced a second unhandled rejection rather than
+        // surfacing anything, and passed the cause as Error's options argument,
+        // so the message read "Navigation error:" with no detail attached.
+        console.error('Navigation error', error);
+      });
   }
 
   trackById(index: number, event: Event): string {
@@ -433,13 +485,12 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   }
 
   adjustWidth(node: HTMLElement) {
-    this.calculateAndSetWidth(node)
+    this.calculateAndSetWidth(node);
   }
 
   getLeftDivElWidth(node: HTMLElement) {
     return this.calculateAndSetWidth(node);
   }
-
 
   private calculateAndSetWidth(node: HTMLElement): number {
     const right = node.querySelector('.right') as HTMLElement;
@@ -449,16 +500,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     // return 0;
   }
 
-
   onTagHover(event: Event) {
     if (event.isSelected || (this.tree.isExpanded(event) && isPathway(event))) return;
-    event.isHovered = true
+    event.isHovered = true;
   }
 
   onTagHoverLeave(event: Event) {
     event.isHovered = false;
   }
-
 
   onNameHover($event: MouseEvent, event: Event) {
     const targetParentNode = ($event.target as HTMLElement).closest('.tree-node') as HTMLElement;
@@ -469,16 +518,20 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     nameElement.classList.remove('no-transition');
     // Check if there is space between the left and content span
     if (contentWidth > leftDivWidth) {
-      let distanceToScroll = contentWidth - leftDivWidth;
+      const distanceToScroll = contentWidth - leftDivWidth;
       this.setScrollStyles(nameElement, distanceToScroll);
     }
   }
 
-
   private calculateContentWidth(targetElement: HTMLElement, event: Event): number {
-    const iconWidth = this.eventIcon?.nativeElement.getBoundingClientRect().width || 18 + this._ICON_PADDING + this._ICON_MARGIN; // width and padding
-    const treeControlButtonWidth = this.treeControlButton?.nativeElement.getBoundingClientRect().width || 20 + this._EXPAND_ICON_MARGIN;
-    const baseWidth = targetElement.offsetWidth + iconWidth + this._GRADIENT_WIDTH + 2 * this._NAME_TAG_PADDING;
+    const iconWidth =
+      this.eventIcon?.nativeElement.getBoundingClientRect().width ||
+      18 + this._ICON_PADDING + this._ICON_MARGIN; // width and padding
+    const treeControlButtonWidth =
+      this.treeControlButton?.nativeElement.getBoundingClientRect().width ||
+      20 + this._EXPAND_ICON_MARGIN;
+    const baseWidth =
+      targetElement.offsetWidth + iconWidth + this._GRADIENT_WIDTH + 2 * this._NAME_TAG_PADDING;
     return this.eventService.eventHasChild(event) ? baseWidth + treeControlButtonWidth : baseWidth;
   }
 
@@ -495,7 +548,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     nameElement.style.left = '0'; // Reset position
   }
 
-
   onScroll($event: WheelEvent) {
     const nameElement = $event.target as HTMLElement;
     this.onScrollStart(nameElement);
@@ -506,7 +558,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.onScrollStop(nameElement);
     }, 500); // Debounce time
   }
-
 
   /**
    * Not working with mat tree node
@@ -541,7 +592,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           expanded.add(node.stId);
         }
         if (isPathway(node) && node.events) {
-          traverse(node.events.map(e => e.element));
+          traverse(node.events.map((e) => e.element));
         }
       }
     };
@@ -557,7 +608,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           this.tree?.expand(node);
         }
         if (isPathway(node) && node.events) {
-          traverse(node.events.map(e => e.element));
+          traverse(node.events.map((e) => e.element));
         }
       }
     };

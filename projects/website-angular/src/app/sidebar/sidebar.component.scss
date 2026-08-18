@@ -12,7 +12,9 @@ $transition-speed: 0.25s;
   background: var(--on-primary);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: width $transition-speed ease, min-width $transition-speed ease;
+  transition:
+    width $transition-speed ease,
+    min-width $transition-speed ease;
 
   :host-context(.dark) & {
     box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08);

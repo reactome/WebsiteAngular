@@ -1,5 +1,3 @@
-import {Pathway} from "./pathway.model";
+import { Pathway } from './pathway.model';
 
-export interface TopLevelPathway extends Pathway {
-
-}
+export interface TopLevelPathway extends Pathway {}

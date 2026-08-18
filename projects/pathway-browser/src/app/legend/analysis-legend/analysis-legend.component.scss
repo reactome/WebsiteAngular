@@ -35,7 +35,6 @@
     border-radius: 0;
   }
 
-
   .top {
     display: flex;
     align-items: center;
@@ -71,7 +70,6 @@
       cursor: pointer;
       box-shadow: var(--mat-sys-level1);
     }
-
   }
 }
 
@@ -81,7 +79,6 @@
   height: 100%;
   justify-content: space-between;
 }
-
 
 .even {
   flex: 1; /* Distributes each item evenly */
@@ -98,12 +95,13 @@
 
   mat-icon[data-icon] {
     --outline-width: 1px;
-    font-variation-settings: 'wght' 400, 'opsz' 10;
+    font-variation-settings:
+      'wght' 400,
+      'opsz' 10;
     width: calc(var(--icon-size) - 2 * var(--icon-crop));
     height: calc(var(--icon-size) - 2 * var(--icon-crop));
     font-size: var(--icon-size);
     position: relative;
-
 
     &::before,
     &::after {
@@ -111,7 +109,6 @@
       position: absolute;
       left: calc(-1 * var(--icon-crop));
       top: calc(-1 * var(--icon-crop));
-
     }
 
     &::before {
@@ -135,7 +132,6 @@
     stroke: var(--primary);
     backdrop-filter: blur(5px);
   }
-
 }
 
 .name {
@@ -154,7 +150,6 @@
       left: 0;
       top: 0;
       opacity: 1;
-
     }
 
     &::before {
@@ -176,7 +171,6 @@
   border: var(--border) solid var(--primary);
 }
 
-
 .point-wrapper:not(.vertical) {
   position: relative;
   --border-pos: 100% - var(--palette-width) - var(--border) / 2;
@@ -186,7 +180,6 @@
     padding: 0 3px;
     color: var(--on-surface);
 
-
     border-right: 0;
     text-align: right;
     border-radius: var(--border-radius) 0 0 var(--border-radius);
@@ -195,20 +188,20 @@
     justify-content: center;
   }
 
-
   &.top {
     margin-bottom: calc(-1 * var(--border));
 
-    .point { // Removes the border where the .pointy svg is overlaying
+    .point {
+      // Removes the border where the .pointy svg is overlaying
       clip-path: polygon(
-          0 0,
-          100% 0,
-          100% 100%,
-          calc(var(--border-pos) + var(--border-radius)) 100%,
-          calc(var(--border-pos) + var(--border-radius)) calc(100% - var(--border)),
-          calc(var(--border-pos) - var(--border-radius)) calc(100% - var(--border)),
-          calc(var(--border-pos) - var(--border-radius)) 100%,
-          0 100%
+        0 0,
+        100% 0,
+        100% 100%,
+        calc(var(--border-pos) + var(--border-radius)) 100%,
+        calc(var(--border-pos) + var(--border-radius)) calc(100% - var(--border)),
+        calc(var(--border-pos) - var(--border-radius)) calc(100% - var(--border)),
+        calc(var(--border-pos) - var(--border-radius)) 100%,
+        0 100%
       );
     }
 
@@ -220,16 +213,17 @@
   &.bottom {
     margin-top: calc(-1 * var(--border));
 
-    .point { // Removes the border where the .pointy svg is overlaying
+    .point {
+      // Removes the border where the .pointy svg is overlaying
       clip-path: polygon(
-          0 0,
-          calc(var(--border-pos) - var(--border-radius)) 0,
-          calc(var(--border-pos) - var(--border-radius)) var(--border),
-          calc(var(--border-pos) + var(--border-radius)) var(--border),
-          calc(var(--border-pos) + var(--border-radius)) 0,
-          100% 0,
-          100% 100%,
-          0 100%
+        0 0,
+        calc(var(--border-pos) - var(--border-radius)) 0,
+        calc(var(--border-pos) - var(--border-radius)) var(--border),
+        calc(var(--border-pos) + var(--border-radius)) var(--border),
+        calc(var(--border-pos) + var(--border-radius)) 0,
+        100% 0,
+        100% 100%,
+        0 100%
       );
     }
 
@@ -263,5 +257,27 @@
     margin-bottom: calc(-1 * var(--border-radius) - var(--border));
     //border-radius:  0 var(--border-radius) 0 0;
     border-top: 0;
+  }
+}
+
+// Replaces the Angular `selectAnim` trigger, which animated width from 0 to '*'.
+// CSS cannot interpolate to auto, but this element already clips its overflow,
+// so growing a max-width past its real width reads the same. The palette is a
+// row of a few swatches, far narrower than the cap.
+@keyframes palette-reveal {
+  from {
+    max-width: 0;
+  }
+
+  to {
+    max-width: 400px;
+  }
+}
+
+.palette-selector {
+  animation: palette-reveal 500ms ease-in-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }

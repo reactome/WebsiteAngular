@@ -1,0 +1,43 @@
+{
+  "/reactome": {
+    "target": "https://download.reactome.org",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/reactome": ""
+    }
+  },
+  "/ContentService": {
+    "target": "http://localhost:8686",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/ContentService": ""
+    }
+  },
+  "/download": {
+    "target": "https://newcurator.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/figures": {
+    "target": "https://newcurator.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/AnalysisService": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/GSAServer": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  },
+  "/ExperimentDigester": {
+    "target": "https://dev.reactome.org",
+    "secure": true,
+    "changeOrigin": true
+  }
+}

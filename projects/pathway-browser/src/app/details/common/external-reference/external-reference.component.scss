@@ -1,4 +1,4 @@
-@use "@angular/material" as mat;
+@use '@angular/material' as mat;
 
 :host {
   width: 100%;
@@ -21,7 +21,6 @@
   width: 100%;
 }
 
-
 .composition-container {
   column-gap: 20px;
   display: grid;
@@ -42,7 +41,6 @@
   line-height: 20px;
   letter-spacing: 0.25px;
 }
-
 
 .column-item {
   white-space: nowrap;
@@ -66,20 +64,21 @@
   --touch-size: 20px;
   --icon-ratio: 0.8;
 
-  @include mat.icon-button-overrides((
-    state-layer-size: var(--size, 40px),
-    icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
-  ));
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: var(--size, 40px),
+      icon-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6)),
+    )
+  );
 
   .mat-icon {
     width: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
     height: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
     font-size: calc(var(--size, 40px) * var(--icon-ratio, 0.6));
   }
-
 }
 
-:host ::ng-deep .select.button .mat-mdc-button-touch-target{
+:host ::ng-deep .select.button .mat-mdc-button-touch-target {
   width: var(--touch-size, 48px);
   height: var(--touch-size, 48px);
 }

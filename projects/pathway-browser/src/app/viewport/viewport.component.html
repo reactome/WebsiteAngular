@@ -4,13 +4,18 @@
     <div *asSplitGutter="let isDragged = isDragged" class="custom-left-gutter" [class.dragged]="isDragged"></div>
     <as-split-area [size]="20">
       <div class="left-panel">
-        <div class="search">
-          <cr-search/>
-        </div>
+        <!-- Hidden from the curator build rather than from everyone: it was
+             commented out wholesale in "Remove Overlay feature, feedback, and
+             revert to old site", which took it off the public site too. -->
+        @if (!isCurator) {
+          <div class="search">
+            <cr-search />
+          </div>
+        }
         <!--        <div class="sidebar">-->
 
         <div class="species-interactor-container">
-          <div class="species" (click)="toggleVisibility('species')" [ngClass]="{'selected': visibility.species}">
+          <div class="species" (click)="toggleVisibility('species')" [ngClass]="{ selected: visibility.species }">
             <mat-icon class="custom-icon" svgIcon="species"></mat-icon>
             <div class="species-content">
               <span>Species</span>
@@ -18,27 +23,37 @@
             </div>
             <mat-icon class="custom-icon">arrow_drop_down</mat-icon>
           </div>
-          <!-- <div class="interactor" (click)="toggleVisibility('interactor')"
-               [ngClass]="{'selected': visibility.interactor}">
-            <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
-            <div class="overlay-content">
-              <span>Overlay</span>
-              todo: fix the space for long name-->
-              <!-- @if (currentInteractorResource().name) {
-                <span>{{ currentInteractorResource().name }}</span>
-              } -->
-            <!-- </div>
-            <mat-icon class="custom-icon">arrow_drop_down</mat-icon>
-          </div> -->
+          @if (!isCurator) {
+            <div
+              class="interactor"
+              (click)="toggleVisibility('interactor')"
+              [ngClass]="{ selected: visibility.interactor }"
+            >
+              <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
+              <div class="overlay-content">
+                <span>Overlay</span>
+                <!--todo: fix the space for long name-->
+                @if (currentInteractorResource().name) {
+                  <span>{{ currentInteractorResource().name }}</span>
+                }
+              </div>
+              <mat-icon class="custom-icon">arrow_drop_down</mat-icon>
+            </div>
+          }
         </div>
 
-        <div [style.display]="visibility.species ? 'block':'none'">
+        <div [style.display]="visibility.species ? 'block' : 'none'">
           <cr-species [(pathwayId)]="pathwayId" [visibility]="visibility"></cr-species>
         </div>
 
-        <div [style.display]="visibility.interactor ? 'block':'none'">
-          <cr-interactors #interactors [cy]="diagram()?.cy" [cys]="diagram()?.cys" [hasEHLD]="hasEHLD()"
-                          (initialiseReplaceElements)="diagram()?.initialiseReplaceElements()"></cr-interactors>
+        <div [style.display]="visibility.interactor ? 'block' : 'none'">
+          <cr-interactors
+            #interactors
+            [cy]="diagram()?.cy"
+            [cys]="diagram()?.cys"
+            [hasEHLD]="hasEHLD()"
+            (initialiseReplaceElements)="diagram()?.initialiseReplaceElements()"
+          ></cr-interactors>
         </div>
 
         <div class="event-hierarchy">
@@ -52,45 +67,56 @@
       <div class="right-panel">
         <div class="top">
           <div class="top-left">
-
             <div class="analysis-button-group">
-              <!-- <button (click)="dropdown.set(dropdown() ? null : 'analysis')" mat-ripple class="primary" [class.loading]="analysisLoading()"> -->
-                <!-- <mat-icon>query_stats</mat-icon>
-                Analyze
-                @if (analysisLoading()) {
-                  <mat-spinner [diameter]="18"></mat-spinner>
-                }
-              </button> -->
+              @if (!isCurator) {
+                <button (click)="toggleAnalysis()" mat-ripple class="primary" [class.loading]="analysisLoading()">
+                  <mat-icon>query_stats</mat-icon>
+                  Analyze
+                  @if (analysisLoading()) {
+                    <mat-spinner [diameter]="18"></mat-spinner>
+                  }
+                </button>
+              }
 
               @if (hasMultipleProfile()) {
-                <div class="profile-controls" [@appear]>
-
+                <div class="profile-controls">
                   <!-- TODO find a CSS based way to link the label width to buttons -->
                   <div class="label">
                     {{ analysis.sampleIndex() + 1 }}/{{ analysis.samples().length }} : {{ state.sample() }}
                   </div>
                   <div class="buttons">
-                    <button mat-ripple class="primary"
-                            matTooltip="Previous sample"
-                            (click)="previousProfile()"
-                            [disabled]="isFirstProfile()">
+                    <button
+                      mat-ripple
+                      class="primary"
+                      matTooltip="Previous sample"
+                      (click)="previousProfile()"
+                      [disabled]="isFirstProfile()"
+                    >
                       <mat-icon>skip_previous</mat-icon>
                     </button>
-                    <button mat-ripple class="primary"
-                            (click)="toggleIterate()"
-                            [matTooltip]=" interval ? 'Pause samples' : 'Play samples'"
+                    <button
+                      mat-ripple
+                      class="primary"
+                      (click)="toggleIterate()"
+                      [matTooltip]="interval ? 'Pause samples' : 'Play samples'"
                     >
                       <mat-icon [fontIcon]="interval ? 'pause' : 'play_arrow'"></mat-icon>
                     </button>
-                    <button mat-ripple class="primary"
-                            matTooltip="Next sample"
-                            (click)="nextProfile()"
-                            [disabled]="isLastProfile()">
+                    <button
+                      mat-ripple
+                      class="primary"
+                      matTooltip="Next sample"
+                      (click)="nextProfile()"
+                      [disabled]="isLastProfile()"
+                    >
                       <mat-icon>skip_next</mat-icon>
                     </button>
-                    <button mat-ripple class="primary"
-                            matTooltip="Set sample display duration"
-                            [matMenuTriggerFor]="speed">
+                    <button
+                      mat-ripple
+                      class="primary"
+                      matTooltip="Set sample display duration"
+                      [matMenuTriggerFor]="speed"
+                    >
                       <mat-icon>speed</mat-icon>
                     </button>
                   </div>
@@ -98,7 +124,7 @@
               }
 
               @if (analysis.result()) {
-                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis" [@appear]>
+                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
                   <mat-icon>close</mat-icon>
                 </button>
               }
@@ -117,26 +143,36 @@
               <button mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
             </mat-menu>
 
-            <!-- @if (normalPathway()) {
-              <button mat-stroked-button [routerLink]="['/', normalPathway()?.stId]" [queryParams]="{select: null}"
-                      queryParamsHandling="merge">
-                <mat-icon>compare</mat-icon>
-                <span>Compare</span>
-                <mat-icon iconPositionEnd>check</mat-icon>
-              </button>
-            } @else {
-              <button mat-stroked-button [disabled]="diseasePathways().length === 0" [matMenuTriggerFor]="compare">
-                <mat-icon>compare</mat-icon>
-                Compare
-              </button>
-              <mat-menu #compare="matMenu">
-                @for (comparablePathway of diseasePathways(); track comparablePathway.stId) {
-                  <a mat-menu-item [routerLink]="['/', comparablePathway.stId]" [queryParams]="{select: null}"
-                     queryParamsHandling="merge">{{ comparablePathway.displayName }}</a>
-                }
-              </mat-menu>
-            } -->
-
+            @if (!isCurator) {
+              @if (normalPathway()) {
+                <button
+                  mat-stroked-button
+                  [routerLink]="['/', normalPathway()?.stId]"
+                  [queryParams]="{ select: null }"
+                  queryParamsHandling="merge"
+                >
+                  <mat-icon>compare</mat-icon>
+                  <span>Compare</span>
+                  <mat-icon iconPositionEnd>check</mat-icon>
+                </button>
+              } @else {
+                <button mat-stroked-button [disabled]="diseasePathways().length === 0" [matMenuTriggerFor]="compare">
+                  <mat-icon>compare</mat-icon>
+                  Compare
+                </button>
+                <mat-menu #compare="matMenu">
+                  @for (comparablePathway of diseasePathways(); track comparablePathway.stId) {
+                    <a
+                      mat-menu-item
+                      [routerLink]="['/', comparablePathway.stId]"
+                      [queryParams]="{ select: null }"
+                      queryParamsHandling="merge"
+                      >{{ comparablePathway.displayName }}</a
+                    >
+                  }
+                </mat-menu>
+              }
+            }
           </div>
 
           <div class="title">
@@ -144,27 +180,48 @@
           </div>
 
           <div class="top-right">
-            <!-- <a [href]="formerPathwayBrowserURL()" mat-icon-button class="quote warn history" matTooltip="Open former Pathway Browser">
-              <mat-icon fontSet="symbols">history</mat-icon>
-            </a>
-            <a href="https://forms.gle/3238xqbShhF8t9BQA" target="_blank" mat-stroked-button class="feedback warn" matTooltip="Send feedback for the beta version">
-              <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
-              Feedback
-            </a> -->
-            <mat-slide-toggle color="primary" [(ngModel)]="dark.isDark" #darkToggle [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-                              id="dark-toggle"></mat-slide-toggle>
+            @if (!isCurator) {
+              <a
+                [href]="formerPathwayBrowserURL()"
+                mat-icon-button
+                class="quote warn history"
+                matTooltip="Open former Pathway Browser"
+              >
+                <mat-icon fontSet="symbols">history</mat-icon>
+              </a>
+              <a
+                href="https://forms.gle/3238xqbShhF8t9BQA"
+                target="_blank"
+                mat-stroked-button
+                class="feedback warn"
+                matTooltip="Send feedback for the beta version"
+              >
+                <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
+                Feedback
+              </a>
+            }
+            <mat-slide-toggle
+              color="primary"
+              [(ngModel)]="dark.isDark"
+              #darkToggle
+              [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+              id="dark-toggle"
+            ></mat-slide-toggle>
             <button mat-icon-button class="quote" (click)="openCitationDialog()" matTooltip="Cite us">
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
             <div class="logo" matTooltip="Go to the main page">
-              <a href="" id="main">
+              <a [href]="isCurator ? '' : '/'" id="main">
                 <mat-icon [svgIcon]="'logo'"></mat-icon>
               </a>
               <div class="version-container">
-                <span class="version">v{{ general.version.value() }}</span>
-                <span class="beta">beta</span>
+                @if (isCurator) {
+                  <span class="beta">curation</span>
+                } @else {
+                  <span class="version">v{{ general.version.value() }}</span>
+                  <span class="beta">beta</span>
+                }
               </div>
-
             </div>
           </div>
         </div>
@@ -174,35 +231,44 @@
               @if (pathwayId()) {
                 @if (loadingPathwayData()) {
                   <div class="spinner-container">
-                    <mat-progress-spinner mode="indeterminate"/>
+                    <mat-progress-spinner mode="indeterminate" />
                   </div>
                 } @else {
                   @if (hasEHLD()) {
-                    <cr-ehld [(pathwayId)]="pathwayId"/>
+                    <cr-ehld [(pathwayId)]="pathwayId" />
                   } @else {
-                    <cr-diagram [(pathwayId)]="pathwayId" #diagram [interactor]="interactors"/>
+                    <cr-diagram [(pathwayId)]="pathwayId" #diagram [interactor]="interactors" />
                   }
                 }
               } @else {
-                <cr-reacfoam/>
+                <cr-reacfoam />
               }
               @let analysisStatus = dropdown() === 'analysis' ? 'open' : 'closed';
-              <div class="dropdown" [@dropdown]="analysisStatus">
-                <cr-analysis-form (close)="dropdown.set(null)" [status]="analysisStatus"/>
+              <div class="dropdown" [class.open]="dropdown() === 'analysis'">
+                <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
               </div>
-              <div class="dropdown" [@dropdown]="dropdown()  === 'compare' ? 'open' : 'closed'">
-                <cr-compare-form (close)="dropdown.set(null)"/>
+              <div class="dropdown" [class.open]="dropdown() === 'compare'">
+                <cr-compare-form (close)="dropdown.set(null)" />
               </div>
-
             </as-split-area>
 
-            <div *asSplitGutter="let isDragged = isDragged" class="custom-gutter" [class.dragged]="isDragged"
-                 [class.hidden]="detailShare() === 0"></div>
+            <div
+              *asSplitGutter="let isDragged = isDragged"
+              class="custom-gutter"
+              [class.dragged]="isDragged"
+              [class.hidden]="detailShare() === 0"
+            ></div>
 
-            <as-split-area [size]="detailShare()" [minSize]="detailMinSize()" [visible]="detailVisible()"
-                           id="bottom-panel">
-              <cr-details-panel></cr-details-panel>
-            </as-split-area>
+            <!-- angular-split 20 lays areas out with CSS grid but still allocates a
+                 grid row for areas hidden via [visible]=false (the collapsing rule
+                 behind .as-hidden was written for its old flexbox layout), leaving
+                 ~130px reserved. Removing the area from the DOM collapses it
+                 reliably and does not depend on the library's hidden handling. -->
+            @if (detailVisible()) {
+              <as-split-area [size]="detailShare()" [minSize]="detailMinSize()" id="bottom-panel">
+                <cr-details-panel></cr-details-panel>
+              </as-split-area>
+            }
           </as-split>
         </div>
       </div>

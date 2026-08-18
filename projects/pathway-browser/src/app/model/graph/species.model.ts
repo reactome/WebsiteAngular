@@ -1,4 +1,4 @@
-import {Taxon} from "./taxon.model";
+import { Taxon } from './taxon.model';
 
 export interface Species extends Taxon {
   shortName: string;

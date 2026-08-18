@@ -1,5 +1,3 @@
-import {ReferenceSequence} from "./reference-sequence.model";
+import { ReferenceSequence } from './reference-sequence.model';
 
-export interface ReferenceDNASequence extends ReferenceSequence{
-
-}
+export interface ReferenceDNASequence extends ReferenceSequence {}

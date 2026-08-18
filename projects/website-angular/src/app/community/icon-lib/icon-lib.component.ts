@@ -1,43 +1,43 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
-import { environment } from '../../../../../pathway-browser/src/environments/environment';
+import { ICON_BASE } from '../../../../../pathway-browser/src/environments/environment';
 
 const ICONS_PER_PAGE = 28;
 
 //TODO: this is in url remove and replace with config or fetch
 const URL_MAPPING: Record<string, string> = {
-  'UNIPROT':           'https://www.uniprot.org/entry/###ID###',
-  'UNIPROT-T':         'https://www.uniprot.org/taxonomy/###ID###',
-  'UNIPROTKB':         'https://www.uniprot.org/entry/###ID###',
-  'CHEBI':             'https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:###ID###',
-  'ENSEMBL':           'https://www.ensembl.org/Homo_sapiens/geneview?gene=###ID###',
-  'GO':                'https://www.ebi.ac.uk/QuickGO/term/GO:###ID###',
-  'ECO':               'https://www.ebi.ac.uk/QuickGO/term/ECO:###ID###',
-  'RFAM':              'http://rfam.org/family/###ID###',
-  'PFAM':              'http://pfam.xfam.org/family/###ID###',
-  'MESH':              'https://www.ncbi.nlm.nih.gov/mesh/###ID###',
-  'PUBCHEM':           'https://pubchem.ncbi.nlm.nih.gov/compound/###ID###',
+  UNIPROT: 'https://www.uniprot.org/entry/###ID###',
+  'UNIPROT-T': 'https://www.uniprot.org/taxonomy/###ID###',
+  UNIPROTKB: 'https://www.uniprot.org/entry/###ID###',
+  CHEBI: 'https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:###ID###',
+  ENSEMBL: 'https://www.ensembl.org/Homo_sapiens/geneview?gene=###ID###',
+  GO: 'https://www.ebi.ac.uk/QuickGO/term/GO:###ID###',
+  ECO: 'https://www.ebi.ac.uk/QuickGO/term/ECO:###ID###',
+  RFAM: 'http://rfam.org/family/###ID###',
+  PFAM: 'http://pfam.xfam.org/family/###ID###',
+  MESH: 'https://www.ncbi.nlm.nih.gov/mesh/###ID###',
+  PUBCHEM: 'https://pubchem.ncbi.nlm.nih.gov/compound/###ID###',
   'PUBCHEM-SUBSTANCE': 'https://pubchem.ncbi.nlm.nih.gov/substance/###ID###',
-  'INTERPRO':          'https://www.ebi.ac.uk/interpro/entry/###ID###',
-  'KEGG':              'https://www.kegg.jp/entry/###ID###',
-  'ENA':               'https://www.ebi.ac.uk/ena/data/view/###ID###',
-  'COMPLEXPORTAL':     'https://www.ebi.ac.uk/complexportal/complex/###ID###',
-  'EFO':               'https://www.ebi.ac.uk/ols/ontologies/efo/terms?obo_id=EFO:###ID###',
-  'SO':                'https://www.ebi.ac.uk/ols/ontologies/so/terms?obo_id=SO:###ID###',
-  'BTO':               'https://www.ebi.ac.uk/ols/ontologies/bto/terms?obo_id=BTO:###ID###',
-  'CL':                'https://www.ebi.ac.uk/ols/ontologies/cl/terms?obo_id=CL:###ID###',
-  'DOID':              'https://www.ebi.ac.uk/ols/ontologies/doid/terms?obo_id=DOID:###ID###',
-  'NCIT':              'https://www.ebi.ac.uk/ols/ontologies/ncit/terms?obo_id=NCIT:###ID###',
-  'OMIT':              'https://www.ebi.ac.uk/ols/ontologies/omit/terms?obo_id=OMIT:###ID###',
-  'OPL':               'https://www.ebi.ac.uk/ols/ontologies/opl/terms?obo_id=OPL:###ID###',
-  'UBERON':            'https://www.ebi.ac.uk/ols/ontologies/uberon/terms?obo_id=UBERON:###ID###',
-  'FMA':               'https://www.ebi.ac.uk/ols/ontologies/fma/terms?obo_id=FMA:###ID###',
-  'NCBI':              'https://www.ncbi.nlm.nih.gov/protein/###ID###',
-  'IUPHAR':            'https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?ligandId=###ID###',
+  INTERPRO: 'https://www.ebi.ac.uk/interpro/entry/###ID###',
+  KEGG: 'https://www.kegg.jp/entry/###ID###',
+  ENA: 'https://www.ebi.ac.uk/ena/data/view/###ID###',
+  COMPLEXPORTAL: 'https://www.ebi.ac.uk/complexportal/complex/###ID###',
+  EFO: 'https://www.ebi.ac.uk/ols/ontologies/efo/terms?obo_id=EFO:###ID###',
+  SO: 'https://www.ebi.ac.uk/ols/ontologies/so/terms?obo_id=SO:###ID###',
+  BTO: 'https://www.ebi.ac.uk/ols/ontologies/bto/terms?obo_id=BTO:###ID###',
+  CL: 'https://www.ebi.ac.uk/ols/ontologies/cl/terms?obo_id=CL:###ID###',
+  DOID: 'https://www.ebi.ac.uk/ols/ontologies/doid/terms?obo_id=DOID:###ID###',
+  NCIT: 'https://www.ebi.ac.uk/ols/ontologies/ncit/terms?obo_id=NCIT:###ID###',
+  OMIT: 'https://www.ebi.ac.uk/ols/ontologies/omit/terms?obo_id=OMIT:###ID###',
+  OPL: 'https://www.ebi.ac.uk/ols/ontologies/opl/terms?obo_id=OPL:###ID###',
+  UBERON: 'https://www.ebi.ac.uk/ols/ontologies/uberon/terms?obo_id=UBERON:###ID###',
+  FMA: 'https://www.ebi.ac.uk/ols/ontologies/fma/terms?obo_id=FMA:###ID###',
+  NCBI: 'https://www.ncbi.nlm.nih.gov/protein/###ID###',
+  IUPHAR: 'https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?ligandId=###ID###',
 };
 
 type View = 'grid' | 'detail';
@@ -52,9 +52,16 @@ interface ParsedReference {
   selector: 'app-icon-lib',
   imports: [PageLayoutComponent],
   templateUrl: './icon-lib.component.html',
-  styleUrl: './icon-lib.component.scss'
+  styleUrl: './icon-lib.component.scss',
 })
 export class IconLibComponent implements OnInit, OnDestroy {
+  private iconService = inject(IconService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  // Async callbacks assign to plain fields, so Angular has to be told
+  // explicitly that the view needs re-rendering.
+  private cdr = inject(ChangeDetectorRef);
   view: View = 'grid';
   loading = true;
   error = false;
@@ -79,20 +86,12 @@ export class IconLibComponent implements OnInit, OnDestroy {
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private iconService: IconService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
   ngOnInit() {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.searchIcons();
-    });
+    this.searchSubject
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.searchIcons();
+      });
 
     this.loadCategories();
     const iconId = this.route.snapshot.paramMap.get('id');
@@ -124,11 +123,13 @@ export class IconLibComponent implements OnInit, OnDestroy {
           const name = this.formatCategoryName(c.name);
           merged.set(name, (merged.get(name) || 0) + c.count);
         }
-        this.categories = Array.from(merged, ([name, count]) => ({ name, count }))
-          .sort((a, b) => a.name.localeCompare(b.name));
+        this.categories = Array.from(merged, ([name, count]) => ({ name, count })).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
         this.totalIcons = data.totalNumFount;
+        this.cdr.markForCheck();
       },
-      error: () => {}
+      error: () => {},
     });
   }
 
@@ -143,27 +144,33 @@ export class IconLibComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = false;
     this.view = 'grid';
-    const rawCategory = this.selectedCategory ? this.selectedCategory.toLowerCase().replace(/\s+/g, '_') : undefined;
-    this.iconService.queryIcons({
-      category: rawCategory,
-      query: this.searchQuery || undefined,
-      page: this.currentPage,
-      pageSize: ICONS_PER_PAGE
-    }).subscribe({
-      next: (data) => {
-        this.icons = (data.entries || []).sort((a, b) =>
-          (a.iconName || a.name || '').localeCompare(b.iconName || b.name || '')
-        );
-        this.totalEntries = data.entriesCount;
-        this.loading = false;
-      },
-      error: () => {
-        this.icons = [];
-        this.totalEntries = 0;
-        this.error = true;
-        this.loading = false;
-      }
-    });
+    const rawCategory = this.selectedCategory
+      ? this.selectedCategory.toLowerCase().replace(/\s+/g, '_')
+      : undefined;
+    this.iconService
+      .queryIcons({
+        category: rawCategory,
+        query: this.searchQuery || undefined,
+        page: this.currentPage,
+        pageSize: ICONS_PER_PAGE,
+      })
+      .subscribe({
+        next: (data) => {
+          this.icons = (data.entries || []).sort((a, b) =>
+            (a.iconName || a.name || '').localeCompare(b.iconName || b.name || '')
+          );
+          this.totalEntries = data.entriesCount;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.icons = [];
+          this.totalEntries = 0;
+          this.error = true;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   searchIcons() {
@@ -189,25 +196,27 @@ export class IconLibComponent implements OnInit, OnDestroy {
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
-    this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
     this.iconService.getIcon(icon.stId).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
         this.detailLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.selectedIcon = icon;
         this.parsedReferences = this.prepareReferences(icon);
         this.detailLoading = false;
-      }
+        this.cdr.markForCheck();
+      },
     });
   }
 
   backToGrid() {
     this.view = 'grid';
     this.selectedIcon = null;
-    this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
+    void this.router.navigate(['/community/icon-lib'], { replaceUrl: false });
   }
 
   private loadIconById(id: string) {
@@ -219,12 +228,14 @@ export class IconLibComponent implements OnInit, OnDestroy {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
         this.detailLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.view = 'grid';
         this.detailLoading = false;
         this.loadIcons();
-      }
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -236,7 +247,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   }
 
   iconSvgUrl(icon: IconEntry): string {
-    return `${environment.host}/icon/${icon.stId}.svg`;
+    return `${ICON_BASE}/icon/${icon.stId}.svg`;
   }
 
   formatCategoryName(name: string): string {
@@ -260,7 +271,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   }
 
   formatIconCategories(icon: IconEntry): string[] {
-    return (icon.iconCategories || []).map(c => this.formatCategoryName(c));
+    return (icon.iconCategories || []).map((c) => this.formatCategoryName(c));
   }
 
   onImgError(event: Event) {

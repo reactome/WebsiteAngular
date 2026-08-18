@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ChangeDetectorRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -35,6 +36,14 @@ describe('SearchComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        // The component is constructed directly (not via createComponent), so
+        // there is no host view and ChangeDetectorRef -- a node-level provider
+        // -- is not available. These tests exercise pure logic, so a no-op
+        // stub is sufficient and keeps them independent of change detection.
+        {
+          provide: ChangeDetectorRef,
+          useValue: { markForCheck: () => {}, detectChanges: () => {} },
+        },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -51,14 +60,24 @@ describe('SearchComponent', () => {
     it('should flatten groups into a single array', () => {
       component.results = {
         results: [
-          { typeName: 'Pathway', entries: [makeEntry({ stId: 'R-1' }), makeEntry({ stId: 'R-2' })], entriesCount: 2, rowCount: 2 },
-          { typeName: 'Reaction', entries: [makeEntry({ stId: 'R-3' })], entriesCount: 1, rowCount: 1 },
+          {
+            typeName: 'Pathway',
+            entries: [makeEntry({ stId: 'R-1' }), makeEntry({ stId: 'R-2' })],
+            entriesCount: 2,
+            rowCount: 2,
+          },
+          {
+            typeName: 'Reaction',
+            entries: [makeEntry({ stId: 'R-3' })],
+            entriesCount: 1,
+            rowCount: 1,
+          },
         ],
         rowCount: 3,
         numberOfMatches: 3,
       };
       expect(component.allEntries.length).toBe(3);
-      expect(component.allEntries.map(e => e.stId)).toEqual(['R-1', 'R-2', 'R-3']);
+      expect(component.allEntries.map((e) => e.stId)).toEqual(['R-1', 'R-2', 'R-3']);
     });
 
     it('should return [] when results is null', () => {

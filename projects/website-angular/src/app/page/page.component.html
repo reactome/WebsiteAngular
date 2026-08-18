@@ -1,26 +1,48 @@
 <app-page-layout>
   <div class="page">
     @if (loading) {
-        <div class="loading">Loading...</div>
+      <div class="loading">Loading...</div>
+    } @else if (notFound) {
+      <div class="not-found">
+        <h1>We can't find that page</h1>
+        <p>
+          There's nothing at <code>/{{ requestedPath }}</code> on this site.
+        </p>
+        <p>
+          Some pages have not moved across from the previous site yet. If you followed a link or a bookmark, it may
+          still be there:
+        </p>
+        <p>
+          <a class="legacy-link" href="https://reactome.org/{{ requestedPath }}" rel="noopener">
+            Open /{{ requestedPath }} on reactome.org
+          </a>
+        </p>
+        <p class="not-found-links">
+          <a routerLink="/">Home</a>
+          <a routerLink="/content/toc">Table of contents</a>
+          <a routerLink="/PathwayBrowser">Pathway Browser</a>
+        </p>
+      </div>
     } @else if (error) {
-        <div class="error">
-        <h1>Page Not Found</h1>
+      <div class="error">
+        <h1>Something went wrong</h1>
         <p>{{ error }}</p>
-        </div>
+        <p class="not-found-links"><a routerLink="/">Home</a></p>
+      </div>
     } @else if (page) {
-        <article class="page-content">
+      <article class="page-content">
         <header class="page-header">
-            @if (page.category) {
+          @if (page.category) {
             <span class="category-badge">{{ page.category }}</span>
-            }
-            <h1>{{ page.title }}</h1>
-            @if (page.description) {
+          }
+          <h1>{{ page.title }}</h1>
+          @if (page.description) {
             <p class="description">{{ page.description }}</p>
-            }
+          }
         </header>
 
         <div class="page-body" [innerHTML]="renderedContent"></div>
-        </article>
+      </article>
     }
   </div>
 </app-page-layout>

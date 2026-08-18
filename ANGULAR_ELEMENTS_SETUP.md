@@ -32,7 +32,7 @@ import { appConfig } from './app/app.config';
 
 createApplication(appConfig).then((appRef) => {
   const pathwayBrowserElement = createCustomElement(AppComponent, {
-    injector: appRef.injector
+    injector: appRef.injector,
   });
   customElements.define('pathway-browser', pathwayBrowserElement);
 });
@@ -84,14 +84,14 @@ Once built, you can use the pathway-browser as a custom element in any HTML:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- Include the built scripts -->
-  <script src="dist/reactome/main.js"></script>
-</head>
-<body>
-  <!-- Use the custom element -->
-  <pathway-browser></pathway-browser>
-</body>
+  <head>
+    <!-- Include the built scripts -->
+    <script src="dist/reactome/main.js"></script>
+  </head>
+  <body>
+    <!-- Use the custom element -->
+    <pathway-browser></pathway-browser>
+  </body>
 </html>
 ```
 
@@ -100,10 +100,7 @@ Once built, you can use the pathway-browser as a custom element in any HTML:
 You can pass data through attributes or properties:
 
 ```html
-<pathway-browser 
-  pathway-id="R-HSA-123456"
-  dark-mode="true">
-</pathway-browser>
+<pathway-browser pathway-id="R-HSA-123456" dark-mode="true"> </pathway-browser>
 ```
 
 Or via JavaScript:

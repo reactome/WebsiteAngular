@@ -44,7 +44,7 @@ export class SiteSearchService {
           score: r.score,
         }));
         return of(hits);
-      }),
+      })
     );
   }
 
@@ -58,6 +58,16 @@ export class SiteSearchService {
             boost: { title: 3 },
             fuzzy: 0.2,
             prefix: true,
+            // Require every term to match. MiniSearch defaults to OR, which
+            // made any multi-word query return everything containing its most
+            // common word -- "xyzzy_no_match_99999" tokenises to
+            // xyzzy/no/match/99999 and matched 162 pages on "no" and "match"
+            // alone, so the "No results found" state was unreachable. The
+            // production site reports no results for that query, and AND both
+            // restores that and sharply improves relevance for real queries
+            // (e.g. "contact us" and "data model" now rank their own pages
+            // first). Single-term queries are unaffected.
+            combineWith: 'AND',
           },
         });
         mini.addAll(items);
@@ -65,9 +75,7 @@ export class SiteSearchService {
       },
       error: () => {
         // Resolve with an empty index so subscribers don't hang on failure.
-        this.index$.next(
-          new MiniSearch<SiteSearchIndexItem>({ fields: ['title', 'body'] }),
-        );
+        this.index$.next(new MiniSearch<SiteSearchIndexItem>({ fields: ['title', 'body'] }));
       },
     });
   }
