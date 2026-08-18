@@ -5,6 +5,7 @@ import { Person } from '../../../model/graph/person.model';
 import { SafePipe } from '../../../pipes/safe.pipe';
 import { MatIcon } from '@angular/material/icon';
 import { CONTENT_DETAIL } from '../../../../environments/environment';
+import { authorNameEntries, composeAuthorByline } from './publication-byline';
 
 /** One rendered author: the pre-composed label plus what the template needs to link it. */
 export interface AuthorView {
@@ -43,8 +44,15 @@ export class PublicationComponent {
    * Newer instances populate authorName and carry the citation text in `title`; older ones
    * only have the pre-composed `displayName`. Read the raw attribute rather than authorName()
    * below, which is blanked out when structured authors take precedence for the byline.
+   *
+   * Goes through authorNameEntries because the attribute is a list on the curation graph and
+   * a string on the public content service -- calling `.trim()` straight on it threw a
+   * TypeError that blanked out every reference in the details panel against the curator
+   * backend.
    */
-  private readonly isNewerInstance = computed<boolean>(() => !!this.ref().authorName?.trim());
+  private readonly isNewerInstance = computed<boolean>(
+    () => authorNameEntries(this.ref().authorName).length > 0
+  );
 
   /** Heading text: `title` for newer instances, `displayName` for older ones. */
   readonly heading = computed<string>(() => {
@@ -52,9 +60,9 @@ export class PublicationComponent {
     return (this.isNewerInstance() ? ref.title?.trim() : '') || ref.displayName;
   });
 
-  /** Free-text author string, only used when no structured authors exist. */
+  /** Free-text author byline, only used when no structured authors exist. */
   readonly authorName = computed<string>(() =>
-    this.authors().length ? '' : (this.ref().authorName ?? '')
+    this.authors().length ? '' : composeAuthorByline(this.ref().authorName)
   );
 
   /** Whether there is any byline to show at all, from either source. */
