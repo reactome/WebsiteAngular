@@ -68,12 +68,14 @@ test.describe('Release checklist: Pathway Browser', () => {
     await page.goto('/PathwayBrowser?tab=info');
     await expect(page.locator('mat-tree')).toBeVisible({ timeout: BOOT });
 
-    await page
-      .locator('cr-species, .species')
-      .first()
-      .click({ timeout: BOOT })
-      .catch(() => {});
-    await page.waitForTimeout(1500);
+    // Click the toggle, then wait for the list itself rather than for a fixed
+    // interval: the selector matches the toggle plus one div per species, so on
+    // a slower runner the old 1.5s sleep returned before the dropdown opened and
+    // every species read as missing. That is what failed in CI while passing
+    // locally.
+    await page.locator('.species').first().click({ timeout: BOOT });
+    await expect(page.locator('cr-species')).toBeVisible({ timeout: BOOT });
+    await expect(page.locator('cr-species .species').first()).toBeVisible({ timeout: BOOT });
 
     const body = await page.locator('body').innerText();
     const missing = SPECIES.filter((s) => !body.includes(s));
