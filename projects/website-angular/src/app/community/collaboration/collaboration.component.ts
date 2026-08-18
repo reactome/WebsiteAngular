@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -27,6 +27,9 @@ const HTML_URL =
 })
 export class CollaborationComponent implements OnInit {
   private http = inject(HttpClient);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   entries: PathwayEntry[] = [];
   loading = true;
@@ -37,10 +40,12 @@ export class CollaborationComponent implements OnInit {
       next: (html) => {
         this.entries = this.parseHtml(html);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

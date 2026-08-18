@@ -27,6 +27,6 @@
 }
 
 .grant-link {
-  color: var(--on-primary);
+  color: var(--panel-link, currentcolor);
   text-decoration: underline;
 }

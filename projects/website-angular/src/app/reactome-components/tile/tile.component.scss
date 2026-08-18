@@ -35,6 +35,13 @@ $transition: all 0.3s ease;
   // fine while the background flipped with it, but this panel is now a fixed
   // dark teal in both themes. Following the token put black text on it.
   color: #fff;
+
+  // Links on this panel need the same treatment, and there are several of them
+  // in different components, so the panel publishes the colour rather than each
+  // one guessing. Mint reads as interactive against the teal and matches the
+  // release markers in the news list.
+  --panel-ink: #fff;
+  --panel-link: #7fe3c4;
 }
 
 .light-transparent-tile {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { forkJoin } from 'rxjs';
@@ -23,6 +23,9 @@ const PIPELINE_CSV = `${SPREADSHEET_BASE}?gid=6&single=true&output=csv`;
 })
 export class EditorialCalendarComponent implements OnInit {
   private http = inject(HttpClient);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   currentEntries: EditorialEntry[] = [];
   pipelineEntries: EditorialEntry[] = [];
@@ -38,10 +41,12 @@ export class EditorialCalendarComponent implements OnInit {
         this.currentEntries = this.parseCsv(current);
         this.pipelineEntries = this.parseCsv(pipeline);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

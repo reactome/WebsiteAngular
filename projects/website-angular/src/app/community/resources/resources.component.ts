@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 
 interface ResourceEntry {
@@ -19,6 +19,9 @@ const HTML_URL =
 })
 export class ResourcesComponent implements OnInit {
   private http = inject(HttpClient);
+  // Plain fields assigned from an async callback: the app is zoneless, so
+  // nothing notices them changing without being told.
+  private cdr = inject(ChangeDetectorRef);
 
   entries: Record<string, ResourceEntry[]> = {};
   loading = true;
@@ -29,10 +32,12 @@ export class ResourcesComponent implements OnInit {
       next: (html) => {
         this.entries = this.parseHtml(html);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = true;
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

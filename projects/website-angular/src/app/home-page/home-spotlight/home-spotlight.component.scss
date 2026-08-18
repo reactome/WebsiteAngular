@@ -7,7 +7,11 @@
 
 .home-spotlight-text {
   ::ng-deep a {
-    color: var(--on-primary);
+    // --panel-link, not --on-primary: the latter inverts to near-black in the
+    // dark theme while this panel stays dark, which hid the linked title.
+    color: var(--panel-link, currentcolor);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   ::ng-deep img {

@@ -40,7 +40,7 @@ $transition: all 0.3s ease;
 }
 
 .pathway-link {
-  color: var(--on-primary) !important;
+  color: var(--panel-link, currentcolor) !important;
   text-decoration: underline !important;
 }
 
