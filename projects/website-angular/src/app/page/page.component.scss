@@ -46,3 +46,26 @@
   font-size: 0.85rem;
   cursor: default;
 }
+
+// The site's catch-all route lands here, so this is what every mistyped or
+// not-yet-migrated URL shows. It should give the reader somewhere to go.
+.not-found {
+  max-width: 60ch;
+
+  code {
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    background: var(--surface-container, rgb(0 0 0 / 6%));
+  }
+
+  .legacy-link {
+    font-weight: 600;
+  }
+}
+
+.not-found-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}

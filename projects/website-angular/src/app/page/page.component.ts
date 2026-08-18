@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
 import stripFirstH from '../../utils/stripFirstH';
@@ -14,7 +15,7 @@ import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPrese
 
 @Component({
   selector: 'app-page',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './page.component.html',
   styleUrl: './page.component.scss',
 })
@@ -32,6 +33,11 @@ export class PageComponent implements OnInit {
   renderedContent: SafeHtml = '';
   loading = false;
   error: string | null = null;
+  // A page that was never migrated is not the same as a page that failed to
+  // load, and saying "Error loading page" for both reads as a server fault for
+  // what is simply a URL we do not have.
+  notFound = false;
+  requestedPath = '';
 
   // Landing directly on e.g. /documentation/userguide/reactome-fiviz#Overview
   // can't be left to the router: the body arrives from an HTTP request well
@@ -69,13 +75,14 @@ export class PageComponent implements OnInit {
   ngOnInit() {
     this.route.url.subscribe((segments) => {
       if (segments.length === 0) {
-        this.error = 'Page not found.';
+        this.notFound = true;
         this.cdr.markForCheck();
         return;
       }
 
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
       let path = segments.map((s) => s.path).join('/');
+      this.requestedPath = path;
       // Strip the '{pageType}/' prefix since content is in content/{pageType}/
       if (path.startsWith(segments[0].path + '/')) {
         path = path.substring(segments[0].path.length + 1);
@@ -126,16 +133,23 @@ export class PageComponent implements OnInit {
               this.scrollToRequestedAnchor();
             }, 0);
           } else {
-            this.error = 'Page not found.';
+            this.notFound = true;
             this.loading = false;
             this.cdr.markForCheck();
           }
         })().catch((error) => console.error('Could not render page content', error));
       },
-      error: (err) => {
-        this.error = 'Error loading page.';
+      error: (err: unknown) => {
+        // Content is compiled to one JSON file per page, so "this page does not
+        // exist" arrives as a 404 on that file rather than as a null body --
+        // which is why the null branch above never fires for a missing page.
+        if (err instanceof HttpErrorResponse && err.status === 404) {
+          this.notFound = true;
+        } else {
+          this.error = 'Error loading page.';
+          console.error('Issue Loading Page: ', err);
+        }
         this.loading = false;
-        console.error('Issue Loading Page: ', err);
         this.cdr.markForCheck();
       },
     });
