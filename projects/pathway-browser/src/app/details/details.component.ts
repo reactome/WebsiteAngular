@@ -71,10 +71,25 @@ export class DetailsComponent {
   );
 
   constructor() {
+    // Did the link that opened this panel name a tab? Captured once, before any
+    // effect runs, because the effect below writes the tab into the URL as soon
+    // as one is selected -- so reading it later cannot tell an explicit choice
+    // from something we just set ourselves.
+    const tabCameFromUrl = !!untracked(this.state.tab);
+
     effect(() => this.state.tab.set(this.tabs()[this.selectedTabIndex()!]));
+
     effect(() => {
-      if (!untracked(this.state.tab) && this.state.section())
-        this.state.tab.set('details'); // Make publication link still work as they didn't include the tab, but sections
+      // A shared link that says ?tab=download has to land on Download. These
+      // branches are defaults for links that name no tab, and they used to run
+      // unconditionally -- only the first checked -- so every deep link was
+      // rewritten to details or results on arrival.
+      //
+      // Links without a tab keep the old behaviour, including moving to Results
+      // when an analysis finishes, which is the point of running one.
+      if (tabCameFromUrl) return;
+
+      if (this.state.section()) this.state.tab.set('details');
       else if (this.hasResult()) this.state.tab.set('results');
       else if (this.hasDetail()) this.state.tab.set('details');
       else this.state.tab.set('info');

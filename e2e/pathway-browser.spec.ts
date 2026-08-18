@@ -142,3 +142,28 @@ test('clicking a details tab writes the matching tab to the URL', async ({ page 
     await expect(page).toHaveURL(new RegExp(`tab=${name.toLowerCase()}`), { timeout: 15_000 });
   }
 });
+
+test.describe('Details panel deep links', () => {
+  // A shared link naming a tab used to be discarded on arrival: the defaulting
+  // effect set the tab from hasResult()/hasDetail() without checking whether the
+  // URL already named one, so ?tab=download became ?tab=details.
+  for (const [tab, content] of [
+    ['download', 'cr-download-tab'],
+    ['info', 'cr-info-tab'],
+    ['molecule', 'cr-molecule-tab'],
+  ] as const) {
+    test(`?tab=${tab} opens that tab`, async ({ page }) => {
+      await page.goto(`/PathwayBrowser/R-HSA-109606?tab=${tab}`);
+      await expect(page.locator(content)).toBeAttached({ timeout: BOOT_TIMEOUT });
+      // and the parameter survives, rather than being rewritten under the user
+      await expect(page).toHaveURL(new RegExp(`tab=${tab}`));
+    });
+  }
+
+  test('a link with no tab still defaults sensibly', async ({ page }) => {
+    // The defaults are what make an analysis open on its results, so they have
+    // to keep working for links that name nothing.
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    await expect(page).toHaveURL(/tab=(details|info|results)/, { timeout: BOOT_TIMEOUT });
+  });
+});
