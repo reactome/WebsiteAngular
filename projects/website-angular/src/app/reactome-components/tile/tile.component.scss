@@ -25,9 +25,16 @@ $transition: all 0.3s ease;
 }
 
 .dark-transparent-tile {
-  background: color-mix(in srgb, var(--primary) 25%, transparent);
+  // This was 25% of primary over the homepage artwork -- glass over a photo.
+  // With the artwork gone it read as the page itself, so consecutive sections
+  // ran together. A defined panel tone and a hairline edge separate them again.
+  background: color-mix(in srgb, #00303e 55%, transparent);
+  border-block: 1px solid rgb(255 255 255 / 12%);
   backdrop-filter: blur(4px);
-  color: var(--on-primary);
+  // Not --on-primary: that flips to near-black in the dark theme, which was
+  // fine while the background flipped with it, but this panel is now a fixed
+  // dark teal in both themes. Following the token put black text on it.
+  color: #fff;
 }
 
 .light-transparent-tile {
