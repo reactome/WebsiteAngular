@@ -33,14 +33,14 @@ die()  { printf '  \033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 verify() {
   say "Checking behaviour (through Apache directly, so this works even if Cloudflare is unhappy)"
   local browser bot
+  # https, not http: port 80 answers 301 before the rewrite rules run, so an
+  # http check reports 301 for bots and browsers alike and proves nothing.
   browser=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-    -H 'Host: beta.reactome.org' \
     -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' \
-    http://localhost/ || echo 000)
+    https://beta.reactome.org/ || echo 000)
   bot=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-    -H 'Host: beta.reactome.org' \
     -A 'Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)' \
-    http://localhost/ || echo 000)
+    https://beta.reactome.org/ || echo 000)
 
   printf '  browser user agent -> %s\n' "$browser"
   printf '  GPTBot user agent  -> %s\n' "$bot"

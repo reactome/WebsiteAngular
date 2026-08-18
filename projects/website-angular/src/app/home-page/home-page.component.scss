@@ -136,6 +136,10 @@ $transition: all 0.3s ease;
   // once the tiles had a visible background.
   align-items: stretch;
   gap: 16px;
+  // The tiles' own bottom margin is zeroed below so the two panels can stretch
+  // to the same height; put that spacing back on the wrapper, or this band butts
+  // straight into the section under it.
+  margin-bottom: 16px;
 
   app-tile:nth-child(1),
   app-tile:nth-child(2) {
