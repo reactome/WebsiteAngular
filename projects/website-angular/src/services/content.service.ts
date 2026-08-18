@@ -1,8 +1,22 @@
 import { Injectable, DOCUMENT, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
 import { Article, ArticleIndexItem } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
+
+/**
+ * Whether a failed content request means "there is no such page".
+ *
+ * The site is served with an SPA fallback, so a request for a content file that
+ * does not exist does not 404 -- it returns index.html with status 200, and
+ * HttpClient then fails parsing that HTML as JSON. A server without the
+ * fallback answers 404. Both mean the same thing, and neither is worth showing
+ * the reader an error about.
+ */
+function isMissingContent(error: unknown): boolean {
+  if (!(error instanceof HttpErrorResponse)) return false;
+  return error.status === 404 || error.status === 200;
+}
 
 export interface PageContent {
   title: string;
@@ -42,6 +56,13 @@ export class ContentService {
       .get<Record<string, unknown>>(`${this.contentBasePath}/${pageType}/${slug}.json`)
       .pipe(
         map((frontmatter) => {
+          // Not every 200 carries a content file: the SPA fallback answers an
+          // unknown path with index.html, which can reach here as a string
+          // rather than as a parse failure. Anything that is not a frontmatter
+          // object means there is no such page.
+          if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
+            return null;
+          }
           return {
             title: (frontmatter['title'] as string) || '',
             description: frontmatter['description'] as string,
@@ -49,6 +70,10 @@ export class ContentService {
             image: frontmatter['image'] as string,
             body: (frontmatter['body'] as string) || '',
           };
+        }),
+        catchError((error: unknown) => {
+          if (isMissingContent(error)) return of(null);
+          throw error;
         })
       );
   }

@@ -50,6 +50,18 @@ import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
 
+// Revealing the selected event must not move the tree when that event is already
+// on screen. The default block:'start' scrolls the node to the top of the
+// container every time -- which is what "the hierarchy jumps to the top" is --
+// and, because scrollIntoView walks every scrollable ancestor, it drags the page
+// with it. 'nearest' scrolls the minimum needed, and nothing at all when the node
+// is already visible.
+const REVEAL_SELECTED: ScrollIntoViewOptions = {
+  behavior: 'smooth',
+  block: 'nearest',
+  inline: 'nearest',
+};
+
 @Component({
   selector: 'cr-event-hierarchy',
   templateUrl: './event-hierarchy.component.html',
@@ -173,7 +185,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     .subscribe(() => {
       document
         .querySelector(`[st-id='${this.selectedIdFromUrl}']`)
-        ?.scrollIntoView({ behavior: 'smooth' });
+        ?.scrollIntoView(REVEAL_SELECTED);
     });
 
   analysing = toObservable(this.state.analysis)
@@ -311,8 +323,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           // Give pathway id when idToUse is PEs
           const element =
             document.querySelector(`[st-id='${idToUse}']`) ||
-            document.querySelector(`[st-id='${this.pathwayId}']`);
-          element?.scrollIntoView({ behavior: 'smooth' });
+            document.querySelector(`[st-id='${this.pathwayId()}']`);
+          element?.scrollIntoView(REVEAL_SELECTED);
         },
         error: (err: Error) => {
           console.error(err, err.stack);

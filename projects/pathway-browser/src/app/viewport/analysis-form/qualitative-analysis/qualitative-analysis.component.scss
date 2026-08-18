@@ -330,3 +330,26 @@
     margin-right: 10%;
   }
 }
+
+// Shown in place of the loader when the submission fails, so the step resolves
+// to something the user can read and act on rather than animating forever.
+.analysis-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 42ch;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-medium);
+    color: var(--on-surface);
+  }
+
+  mat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
+  }
+}

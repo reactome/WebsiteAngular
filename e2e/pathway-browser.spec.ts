@@ -167,3 +167,27 @@ test.describe('Details panel deep links', () => {
     await expect(page).toHaveURL(/tab=(details|info|results)/, { timeout: BOOT_TIMEOUT });
   });
 });
+
+test('the Expression tab renders the Expression Atlas heatmap', async ({ page }) => {
+  // It rendered an empty box because the EBI widget's bundles live in the
+  // standalone pathway-browser index.html, and the deployed app has its own,
+  // which never loaded them. They are fetched when the tab opens now, so the
+  // rest of the site does not pay for two external bundles it never uses.
+  const gxa: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('ebi.ac.uk/gxa')) gxa.push(r.url());
+  });
+
+  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+  const tab = page.locator('.label-text', { hasText: /^Expression$/ }).first();
+  await expect(tab).toBeVisible({ timeout: BOOT_TIMEOUT });
+
+  // nothing external until it is asked for
+  expect(gxa, 'the widget must not load until the tab is opened').toHaveLength(0);
+
+  await tab.click();
+  await expect(page.locator('#expressionContainer *').first()).toBeAttached({ timeout: 45_000 });
+  await expect(page.locator('cr-expression-tab')).toContainText(/genes found|RNA-seq|expression/i, {
+    timeout: 45_000,
+  });
+});

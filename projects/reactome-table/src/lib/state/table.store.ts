@@ -111,7 +111,14 @@ export class TableStore extends ComponentStore<TableState> {
     if (state.numberOfColumns && state.numberOfRows) {
       const origin = Ranges.origin(state);
 
-      const firstEmptyRowIndex = table.findIndex((row) => row.at(1)?.value.length === 0);
+      // Row 0 holds the column names when renameCols is on, and a table is
+      // perfectly submittable with those left blank. Scanning it as though it
+      // were data meant an unnamed first column matched at index 0 and sliced
+      // the whole table away, so the caller sent an empty dataset.
+      const firstDataRow = state.settings.renameCols ? 1 : origin.y;
+      const firstEmptyRowIndex = table.findIndex(
+        (row, index) => index >= firstDataRow && row.at(1)?.value.length === 0
+      );
       const firstEmptyColIndex = table.at(1)?.findIndex((cell) => cell.value.length === 0) || -1;
       table = table
         .slice(origin.y, firstEmptyRowIndex)

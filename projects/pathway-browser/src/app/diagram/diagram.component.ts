@@ -14,7 +14,13 @@ import {
   inject,
 } from '@angular/core';
 import { DiagramService } from '../services/diagram.service';
-import { extract, ReactomeEvent, ReactomeEventTypes, Style } from 'reactome-cytoscape-style';
+import {
+  extract,
+  interactivityOf,
+  ReactomeEvent,
+  ReactomeEventTypes,
+  Style,
+} from 'reactome-cytoscape-style';
 import cytoscape, { BoundingBox12, BoundingBoxWH, ElementsDefinition } from 'cytoscape';
 import { InteractorService } from '../interactors/services/interactor.service';
 import {
@@ -889,21 +895,34 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const shadowNodes = cy.nodes('.Shadow');
     const shadowEdges = cy.edges('[?color]');
     const trivials = cy.elements('.trivial');
+    // Must be this graph's own handler. cy.off() matches on function identity,
+    // and the shared Style hands back whichever graph was bound last -- often
+    // the legend, whose handler was never registered here, so the diagram's own
+    // handler survived and kept re-applying zoom-based opacity to the trivial
+    // molecules that flagging had just made visible.
+    const onZoomShadow = interactivityOf(cy)?.onZoom.shadow;
 
     if (visible) {
       shadowNodes.style({ opacity: 1 });
-      trivials.style({ opacity: 1 });
+      // Hand the trivial molecules back to the zoom handler, which owns their
+      // opacity again from here.
+      trivials.removeClass('always-visible');
       shadowEdges.addClass('shadow');
-      cy.on('zoom', cy.data('reactome').interactivity.onZoom.shadow);
-      cy.data('reactome').interactivity.onZoom.shadow();
+      if (onZoomShadow) {
+        cy.on('zoom', onZoomShadow);
+        onZoomShadow();
+      }
     } else {
       shadowNodes.style({ opacity: 0 });
       shadowEdges.removeClass('shadow');
-      //todo: This zoom handler is still being triggered and it adds a black underlay color to the edges.
-      // this cy.off() method needs the exact same function references that's used in cy.on()?
-      // Give opacity 0 for temporary fix in zoom handler
-      cy.off('zoom', cy.data('reactome').interactivity.onZoom.shadow);
-      trivials.style({ opacity: 1 });
+      if (onZoomShadow) cy.off('zoom', onZoomShadow);
+      // A class, not an inline style: with the handler detached nothing would
+      // put the opacity back if it were lost, and the base .trivial rule is 0.
+      // The inline value the zoom handler last wrote has to go first, because
+      // in cytoscape an inline style beats any stylesheet rule -- leaving it in
+      // place is what pins the molecules at whatever opacity the zoom level
+      // happened to have when flagging started.
+      trivials.removeStyle('opacity').addClass('always-visible');
       cy.edges().style({ 'underlay-opacity': 0 });
     }
   }

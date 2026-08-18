@@ -323,15 +323,26 @@ export class EntityPopupComponent {
     },
   });
 
-  /** Attach found/expression to each row from its participating identifiers. */
+  /**
+   * Attach found/expression to each row from its participating identifiers, then
+   * order them the way the GWT diagram does.
+   *
+   * pwp-diagram's MoleculesTable.sortMolecules sorts by name and then moves the
+   * uninteresting rows to the end: for an overrepresentation or species
+   * comparison that means everything not hit, and for an expression analysis
+   * everything without a value. That ordering is how the old panel conveys
+   * "some of these were in your set and some were not", so it is worth matching
+   * rather than inventing.
+   */
   private annotate(
     groups: PopupGroup[],
     participants: Map<string, ReferenceEntityIds[]>,
     hits: Map<string, number[]>
   ): PopupGroup[] {
-    return groups.map((group) => ({
-      ...group,
-      rows: group.rows.map((row) => {
+    const byExpression = this.hasExpressionValues();
+
+    return groups.map((group) => {
+      const rows = group.rows.map((row) => {
         const refs = row.stId ? (participants.get(row.stId) ?? []) : [];
         if (!refs.length) return row;
 
@@ -342,9 +353,29 @@ export class EntityPopupComponent {
           found: !!hit,
           ...(hit?.length ? { expression: hit } : {}),
         };
-      }),
-    }));
+      });
+
+      const interesting = (row: PopupRow) =>
+        byExpression ? !!row.expression?.length : row.found === true;
+
+      rows.sort((a, b) => a.label.localeCompare(b.label));
+      return {
+        ...group,
+        rows: [...rows.filter(interesting), ...rows.filter((r) => !interesting(r))],
+      };
+    });
   }
+
+  /** Whether the running analysis carries per-sample values to show. */
+  private readonly hasExpressionValues = computed(
+    () => (this.analysis.result()?.expression?.columnNames?.length ?? 0) > 0
+  );
+
+  /** Sample names, for labelling the values a row carries. */
+  readonly sampleNames = computed(() => this.analysis.samples());
+
+  /** The sample the rest of the browser is currently showing. */
+  readonly selectedSample = computed(() => Number(this.state.sample() ?? 0));
 
   /** Group components by molecule type, in a stable order, as production does. */
   private group(components: any[], refs: Map<string, ComponentRef>): PopupGroup[] {
