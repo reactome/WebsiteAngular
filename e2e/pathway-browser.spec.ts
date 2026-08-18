@@ -74,3 +74,28 @@ test.describe('Pathway Browser', () => {
     expect(pageErrors).toEqual([]);
   });
 });
+
+test.describe('Diagram search', () => {
+  // Commented out wholesale in "Remove Overlay feature, feedback, and revert to
+  // old site" (c4aca4d, May), which hid it from the public site as well as the
+  // curator build it was aimed at. The component was never broken -- only its
+  // markup was commented -- so this asserts the parts that would tell us if it
+  // regressed again: suggestions, scopes and results.
+  test('suggests terms and returns scoped results', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606');
+    const input = page.locator('cr-search input').first();
+    await expect(input).toBeVisible({ timeout: BOOT_TIMEOUT });
+
+    await input.click();
+    await input.fill('pten');
+    await expect(page.locator('.suggest-line').first()).toBeVisible({ timeout: 20_000 });
+
+    await input.press('Enter');
+    const results = page.locator('cr-search .results');
+    await expect(results).toBeVisible({ timeout: BOOT_TIMEOUT });
+
+    // Both scopes report counts: searching only the open diagram, and everything.
+    await expect(results).toContainText(/Current pathway/i);
+    await expect(results).toContainText(/All pathways/i);
+  });
+});

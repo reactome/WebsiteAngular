@@ -1,9 +1,13 @@
-<!-- <div class="input" [class.collapsed]=""
-     (focusin)="focusIn($event, query)"
-     (focusout)="focusOut($event)"
-     (keydown.arrowDown)="nextSuggest($event)"
-     (keydown.arrowUp)="previousSuggest($event)"
-     (keydown.enter)="search(currentSuggest())" #inputBox>
+<div
+  class="input"
+  [class.collapsed]=""
+  (focusin)="focusIn($event, query)"
+  (focusout)="focusOut($event)"
+  (keydown.arrowDown)="nextSuggest($event)"
+  (keydown.arrowUp)="previousSuggest($event)"
+  (keydown.enter)="search(currentSuggest())"
+  #inputBox
+>
   <button mat-icon-button class="search-icon" (click)="search()">
     <mat-icon fontSet="symbols">search</mat-icon>
   </button>
@@ -11,27 +15,35 @@
     @if (currentSuggest() && hasFocus()) {
       <div class="suggest-preview">{{ currentSuggest() }}</div>
     }
-    <input type="text" placeholder="Search protein, gene, pathway, reaction" [(ngModel)]="searchText" #query
-           (keydown)="hasFocus.set(true)">
-  </div> -->
-<!-- @if (scopes[currentScopeName()].found() || searchedNoResult()) {
+    <input
+      type="text"
+      placeholder="Search protein, gene, pathway, reaction"
+      [(ngModel)]="searchText"
+      #query
+      (keydown)="hasFocus.set(true)"
+    />
+  </div>
+  @if (scopes[currentScopeName()].found() || searchedNoResult()) {
     <button mat-icon-button (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
-  } -->
-<!-- 
+  }
   @if (hasFocus() && suggestionResults().length >= 1) {
     <div class="suggestions" @suggest>
       @for (suggest of suggestionResults(); track suggest; let i = $index) {
-        <div class="suggest-line" tabindex="0" [class.focused]="i === suggestionIndex()"
-             (mousedown)="$event.preventDefault()"
-             (click)="search(suggest, $event)">
+        <div
+          class="suggest-line"
+          tabindex="0"
+          [class.focused]="i === suggestionIndex()"
+          (mousedown)="$event.preventDefault()"
+          (click)="search(suggest, $event)"
+        >
           {{ suggest }}
         </div>
       }
     </div>
   }
-</div> -->
+</div>
 
 @if (scopes.global.found() || searchedNoResult()) {
   <div class="results" @results>
