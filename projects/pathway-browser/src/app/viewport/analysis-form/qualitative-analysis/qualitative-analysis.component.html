@@ -164,6 +164,12 @@
     <div class="loader-container">
       @if (analysisLaunched()) {
         <canvas #lottie class="loader"></canvas>
+      } @else if (analysisError(); as message) {
+        <div class="analysis-error" role="alert">
+          <mat-icon class="red">error_outline</mat-icon>
+          <p>{{ message }}</p>
+          <button mat-stroked-button (click)="launchAnalysis()">Try again</button>
+        </div>
       }
     </div>
 
