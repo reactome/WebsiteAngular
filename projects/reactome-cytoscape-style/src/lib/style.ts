@@ -11,6 +11,17 @@ import { Properties, setDefaults, UserProperties } from './properties';
 import { Interactivity } from './interactivity';
 import chroma, { Scale } from 'chroma-js';
 
+const INTERACTIVITY_KEY = '_reactomeInteractivity';
+
+/**
+ * The Interactivity bound to this specific graph. Prefer this over
+ * `cy.data('reactome').interactivity`, which returns whichever graph was bound
+ * most recently and so may belong to an entirely different cytoscape instance.
+ */
+export function interactivityOf(cy: cytoscape.Core): Interactivity | undefined {
+  return cy.scratch(INTERACTIVITY_KEY);
+}
+
 export class Style {
   public css: CSSStyleDeclaration;
   public properties: Properties;
@@ -33,6 +44,11 @@ export class Style {
     this.cy = cy;
     cy.data('reactome', this);
     this.interactivity = new Interactivity(cy, this.properties);
+    // One Style is bound to several graphs -- the diagram, the legend, the
+    // comparison view -- and this.interactivity only ever holds the most recent
+    // one. Anything that has to reach the handlers registered on a *particular*
+    // graph must look them up on that graph, so keep a per-instance reference.
+    cy.scratch(INTERACTIVITY_KEY, this.interactivity);
     this.initSubPathwayColors();
   }
 
@@ -842,6 +858,19 @@ export class Style {
         selector: '.trivial',
         css: {
           opacity: 0,
+        },
+      },
+      // Flagging switches trivial molecules from "fade in as you zoom" to
+      // "always visible", and it does that by detaching the zoom handler. That
+      // leaves nothing to recompute their opacity, so their visibility cannot
+      // rest on an inline style -- anything that drops it strands them at the
+      // rule above, invisible however far the user zooms in, while their
+      // chemical structures carry on being drawn by a different handler. A
+      // class survives restyling, and this rule follows .trivial so it wins.
+      {
+        selector: '.trivial.always-visible',
+        css: {
+          opacity: 1,
         },
       },
     ];
