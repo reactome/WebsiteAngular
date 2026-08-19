@@ -28,6 +28,7 @@ import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { MatDivider } from '@angular/material/divider';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatSelectionList, MatListOption } from '@angular/material/list';
 
 @Component({
   selector: 'cr-interactors',
@@ -46,6 +47,8 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
     MatGridList,
     MatGridTile,
     MatProgressSpinner,
+    MatSelectionList,
+    MatListOption,
   ],
 })
 export class InteractorsComponent implements AfterViewInit {

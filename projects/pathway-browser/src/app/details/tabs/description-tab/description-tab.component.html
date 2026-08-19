@@ -242,9 +242,11 @@
           </a>
           <div class="other-forms-meta">
             <span class="other-forms-compartment">{{ row.compartment }}</span>
-            @if (row.entity.startCoordinate || row.entity.endCoordinate) {
+            <!-- Coordinates are EWAS-specific, so they reach the base
+                 PhysicalEntity type through its index signature. -->
+            @if (row.entity['startCoordinate'] || row.entity['endCoordinate']) {
               <span class="other-forms-coords">
-                {{ row.entity.startCoordinate }}&ndash;{{ row.entity.endCoordinate }}
+                {{ row.entity['startCoordinate'] }}&ndash;{{ row.entity['endCoordinate'] }}
               </span>
             }
             @if (row.entity.inDisease) {

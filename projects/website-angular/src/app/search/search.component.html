@@ -406,13 +406,10 @@ NOTE: This is an automatically generated message.
                                   @if (entry.deleted) {
                                     <mat-icon class="deleted-icon">delete</mat-icon>
                                     <span class="deleted" [innerHTML]="entry.stId"></span>
-                                    @if (entry.replacementStIds?.length) {
+                                    @if (entry.replacementStIds?.[0]; as replacement) {
                                       ⇒
-                                      <a
-                                        [routerLink]="['/content/detail', entry.replacementStIds[0]]"
-                                        title="Go to replacement"
-                                      >
-                                        {{ entry.replacementStIds[0] }}
+                                      <a [routerLink]="['/content/detail', replacement]" title="Go to replacement">
+                                        {{ replacement }}
                                       </a>
                                     }
                                   } @else {
@@ -591,13 +588,10 @@ NOTE: This is an automatically generated message.
                                   @if (entry.deleted) {
                                     <mat-icon class="deleted-icon">delete</mat-icon>
                                     <span class="deleted" [innerHTML]="entry.stId"></span>
-                                    @if (entry.replacementStIds?.length) {
+                                    @if (entry.replacementStIds?.[0]; as replacement) {
                                       ⇒
-                                      <a
-                                        [routerLink]="['/content/detail', entry.replacementStIds[0]]"
-                                        title="Go to replacement"
-                                      >
-                                        {{ entry.replacementStIds[0] }}
+                                      <a [routerLink]="['/content/detail', replacement]" title="Go to replacement">
+                                        {{ replacement }}
                                       </a>
                                     }
                                   } @else {
@@ -757,7 +751,7 @@ NOTE: This is an automatically generated message.
                   Prev
                 </button>
 
-                @for (p of getPageNumbers(); track $index) {
+                @for (p of getReferencePageNumbers(); track $index) {
                   @if (p === '...') {
                     <span class="page-ellipsis">...</span>
                   } @else {

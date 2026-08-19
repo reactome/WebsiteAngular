@@ -214,7 +214,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   }
 
   @HostListener('window:keydown.arrowdown', ['$event'])
-  onKeyDownArrowDown(event: KeyboardEvent): void {
+  onKeyDownArrowDown(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
@@ -223,7 +223,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   }
 
   @HostListener('window:keydown.arrowup', ['$event'])
-  onKeyDownArrowUp(event: KeyboardEvent): void {
+  onKeyDownArrowUp(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =

@@ -68,16 +68,17 @@ export class PublicationComponent {
   /** Whether there is any byline to show at all, from either source. */
   readonly hasByline = computed<boolean>(() => this.authors().length > 0 || !!this.authorName());
 
-  readonly firstAuthor = computed<AuthorView | undefined>(() =>
-    this.toAuthorView(this.authors()[0])
-  );
+  readonly firstAuthor = computed<AuthorView | undefined>(() => {
+    const first = this.authors().at(0);
+    return first && this.toAuthorView(first);
+  });
 
   /** The authors after the first, empty while collapsed. */
   readonly additionalAuthors = computed<AuthorView[]>(() =>
     this.expanded()
       ? this.authors()
           .slice(1)
-          .map((author) => this.toAuthorView(author)!)
+          .map((author) => this.toAuthorView(author))
       : []
   );
 
@@ -107,8 +108,7 @@ export class PublicationComponent {
     this.expanded.update((expanded) => !expanded);
   }
 
-  private toAuthorView(author: Person | undefined): AuthorView | undefined {
-    if (!author) return undefined;
+  private toAuthorView(author: Person): AuthorView {
     return {
       name: [author.surname, author.initial].filter(Boolean).join(' '),
       dbId: author.dbId,

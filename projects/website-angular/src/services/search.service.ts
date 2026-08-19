@@ -20,6 +20,19 @@ export interface SearchEntry {
   referenceURL: string;
   deleted: boolean;
   date: number;
+
+  // Present only on deleted entries: where the object went, so the result can
+  // link on to its replacement.
+  replacementStIds?: string[];
+
+  // Icon results carry their own attribution block. The search service only
+  // sends these for type Icon, hence optional.
+  icon?: string;
+  iconName?: string;
+  iconCuratorName?: string;
+  iconCuratorOrcidId?: string;
+  iconDesignerName?: string;
+  iconDesignerUrl?: string;
 }
 
 export interface ResultGroup {

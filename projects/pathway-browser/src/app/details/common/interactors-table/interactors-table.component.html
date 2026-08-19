@@ -57,7 +57,7 @@
       <mat-header-cell *matHeaderCellDef>MI Score</mat-header-cell>
       <mat-cell *matCellDef="let element"
         ><span>{{ element.score | number: '1.2-2' }}</span>
-        <span [ngStyle]="{ opacity: element.score }" class="score"></span>
+        <span [style.opacity]="element.score" class="score"></span>
       </mat-cell>
     </ng-container>
 

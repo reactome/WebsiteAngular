@@ -516,6 +516,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return `${ICON_HOST}/icon/${entry.stId}.svg`;
   }
 
+  /**
+   * Not every search hit that looks like an icon has an SVG behind it, and a
+   * broken image box next to a result reads as a broken page. Hide the image
+   * and let the rest of the result stand on its own.
+   *
+   * The template has always called this; until strictTemplates was switched on
+   * nothing noticed that it did not exist, so a failed icon load threw instead.
+   */
+  onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement | null;
+    if (img) img.style.display = 'none';
+  }
+
   get allEntries(): SearchEntry[] {
     if (!this.results?.results) return [];
     return this.results.results.flatMap((g) => this.filterDeletedEntries(g.entries));
