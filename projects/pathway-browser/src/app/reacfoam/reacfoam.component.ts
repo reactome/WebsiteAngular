@@ -31,10 +31,11 @@ import chroma from 'chroma-js';
 import { MatDialog } from '@angular/material/dialog';
 import { BlockingLoaderComponent } from './blocking-loader/blocking-loader.component';
 import { SvgExporterService } from './svg-exporter.service';
+import { FlagBannerComponent } from '../diagram/flag-banner/flag-banner.component';
 
 @Component({
   selector: 'cr-reacfoam',
-  imports: [AnalysisLegendComponent],
+  imports: [AnalysisLegendComponent, FlagBannerComponent],
   templateUrl: './reacfoam.component.html',
   styleUrl: './reacfoam.component.scss',
 })

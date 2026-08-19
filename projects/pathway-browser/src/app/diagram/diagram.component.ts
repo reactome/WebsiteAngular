@@ -65,6 +65,7 @@ import {
   EntityPopupTarget,
 } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
+import { FlagBannerComponent } from './flag-banner/flag-banner.component';
 
 const INIT_RX = 2;
 
@@ -84,6 +85,7 @@ const FIT_PADDING = 100;
     MatSlider,
     MatSliderThumb,
     MatTooltip,
+    FlagBannerComponent,
     AnalysisLegendComponent,
     EntityPopupComponent,
   ],
@@ -97,7 +99,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private diagram = inject(DiagramService);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);
-  private state = inject(UrlStateService);
+  protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
   private router = inject(Router);

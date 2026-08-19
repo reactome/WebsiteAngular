@@ -12,6 +12,8 @@
   <!-- Suppress the browser's own menu so the diagram's can take its place. -->
   <div id="cytoscape" #cytoscape [class.pointer]="hovering()" (contextmenu)="$event.preventDefault()"></div>
 
+  <cr-flag-banner />
+
   <cr-entity-popup
     [target]="popupTarget()"
     (navigate)="onPopupNavigate($event)"
