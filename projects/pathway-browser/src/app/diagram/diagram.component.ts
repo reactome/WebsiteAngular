@@ -199,6 +199,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   async export(format: string) {
+    if (format === DownloadFormat.SVG) {
+      this.exportSvg();
+      return;
+    }
+
     const options: cytoscape.ExportJpgBlobPromiseOptions = {
       full: true,
       ...(format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
@@ -230,6 +235,65 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     a.download = `${this.pathwayId()}.${format}`;
     a.click();
     a.remove();
+  }
+
+  /**
+   * Export the diagram as SVG.
+   *
+   * cy.svg() comes from Reactome's cytoscape.js fork -- see the overrides entry
+   * in package.json -- and is not in upstream cytoscape yet. It runs the
+   * renderer's own drawing code against a context that records SVG, so what it
+   * produces is what the diagram draws, at any size, with selectable text.
+   *
+   * No bg is passed: an SVG with no background rect is transparent, which is
+   * what the raster exports ask for too.
+   */
+  private exportSvg() {
+    const svgs = this.cys.map((cy) => cy.svg({ full: true }));
+    if (!svgs.length) return;
+
+    const blob = new Blob([this.composeSvgs(svgs)], { type: 'image/svg+xml;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${this.pathwayId()}.svg`;
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /**
+   * Lay several exported diagrams side by side, for the comparison view.
+   *
+   * SVG nests, so each diagram goes in as a child <svg> offset along x rather
+   * than having its geometry rewritten -- the raster path has to composite
+   * bitmaps to do the same thing.
+   */
+  private composeSvgs(svgs: string[]): string {
+    if (svgs.length === 1) return svgs[0];
+
+    const sized = svgs.map((svg) => ({
+      svg,
+      width: Number(/\bwidth="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+      height: Number(/\bheight="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+    }));
+
+    const width = sized.reduce((total, s) => total + s.width, 0);
+    const height = Math.max(...sized.map((s) => s.height));
+    if (!width || !height) return svgs[0];
+
+    let x = 0;
+    const children = sized
+      .map((s) => {
+        const child = s.svg.replace('<svg ', `<svg x="${x}" y="0" `);
+        x += s.width;
+        return child;
+      })
+      .join('');
+
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"` +
+      ` viewBox="0 0 ${width} ${height}">${children}</svg>`
+    );
   }
 
   async mergeImages(

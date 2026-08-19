@@ -116,9 +116,10 @@ export class DownloadTabComponent {
   });
 
   getDiagramItems(isEHLD: boolean) {
-    const formats = isEHLD
-      ? this.reacfoamFormats
-      : this.formats.filter((f) => f !== DownloadFormat.SVG);
+    // SVG used to be dropped for a cytoscape diagram because only the
+    // server-side exporter could make one, and it only handles illustrations.
+    // cy.svg() now produces it client side, so every format is on offer.
+    const formats = isEHLD ? this.reacfoamFormats : this.formats;
 
     return formats.map((format) => {
       const hasAnalysis = isEHLD && !this.hasResult() ? format : false;
