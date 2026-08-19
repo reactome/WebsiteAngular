@@ -252,13 +252,38 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const svgs = this.cys.map((cy) => cy.svg({ full: true }));
     if (!svgs.length) return;
 
-    const blob = new Blob([this.composeSvgs(svgs)], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([this.withDiagramFont(this.composeSvgs(svgs))], {
+      type: 'image/svg+xml;charset=utf-8',
+    });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${this.pathwayId()}.svg`;
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
+  }
+
+  /**
+   * Ask the file to fetch the diagram's font when something opens it.
+   *
+   * The export names the font the style asks for, and the style asks for
+   * Roboto, which the page loads but a saved file does not have. Viewers were
+   * substituting their default serif, whose metrics are nothing like Roboto's,
+   * so labels laid out to fit their shapes no longer did.
+   *
+   * The font-family in the style now ends in Helvetica/Arial/sans-serif, which
+   * is what this falls back to offline or in an editor that ignores @import --
+   * close enough that labels still fit. This gets the real thing when the file
+   * is opened in a browser with a network, at the cost of one external request
+   * from the saved file.
+   */
+  private withDiagramFont(svg: string): string {
+    // Wrapped in CDATA: SVG is XML, and the ampersand in the font URL is an
+    // invalid entity reference otherwise -- it made the whole file unparseable.
+    const style =
+      `<style type="text/css"><![CDATA[@import url('https://fonts.googleapis.com/css2` +
+      `?family=Roboto:wght@300;400;500;600&display=block');]]></style>`;
+    return svg.replace(/(<svg\b[^>]*>)/, `$1${style}`);
   }
 
   /**
