@@ -40,6 +40,25 @@ jobs:
       - name: Build workspace libraries
         run: npm run build:libs
 
+      # The app build is the only thing that runs Angular's template type
+      # checking, and strictTemplates is on: a template referencing a member
+      # that does not exist, binding an input on a component it never imported,
+      # or using a pipe that is not in scope fails here. None of that shows up
+      # in the unit tests -- a merge once landed a dead @if block that compiled
+      # and passed every test. Without this step the only build was the deploy
+      # job, so a broken template reached main and was found by a person.
+      #
+      # reactome-cytoscape-style is built separately because build:libs does not
+      # cover it and styles.scss @use's it; content-dist is a gitignored asset
+      # input, so stage:content has to run or ng build cannot find it.
+      - name: Compile CMS content
+        run: npm run stage:content
+
+      - name: Build the app
+        run: |
+          npx ng build reactome-cytoscape-style
+          npm run build
+
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
       # Warnings are the ~1600 pre-existing findings, held to a baseline so they

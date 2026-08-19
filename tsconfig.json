@@ -30,10 +30,33 @@
     "useDefineForClassFields": false,
     "typeRoots": ["node_modules/@types", "node_modules/reactome-cytoscape-style/types", "src/types"]
   },
+  // Strictness here is a deliberate trade: each of these was measured against
+  // the codebase before being switched on. strictTemplates cost 83 fixes and
+  // was worth it; typeCheckHostBindings, strictStandalone and the checks below
+  // all cost nothing. noUncheckedIndexedAccess (185 errors) and
+  // exactOptionalPropertyTypes (72) are not on -- worth revisiting, but not
+  // free. The redundancy diagnostics (NG8107/NG8102, ~51 findings) stay at
+  // their default warning: they fire where a type says a value cannot be null,
+  // which is not the same as the API guaranteeing it, so making them errors
+  // would push people to delete defensive code on the word of an optimistic
+  // type.
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    "typeCheckHostBindings": true,
+    "strictStandalone": true,
+    "extendedDiagnostics": {
+      "checks": {
+        "invalidBananaInBox": "error",
+        "uninvokedFunctionInEventBinding": "error",
+        "missingControlFlowDirective": "error",
+        "textAttributeNotBinding": "error",
+        "suffixNotSupported": "error",
+        "skipHydrationNotStatic": "error",
+        "unusedStandaloneImports": "error"
+      }
+    }
   }
 }
