@@ -1,0 +1,211 @@
+<header>
+  <div>
+    <div class="eyebrow">Pathway perturbation prototype</div>
+    <h2>DeltaSignal</h2>
+    <p>Change one or more entities, solve the steady state, and overlay the predicted response.</p>
+  </div>
+  <button mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+@if (service.status() === 'loading') {
+  <div class="state-message">
+    <mat-spinner [diameter]="32" />
+    <span>Preparing the pathway network…</span>
+  </div>
+} @else if (service.error() && !service.network()) {
+  <div class="state-message error" role="alert">
+    <mat-icon>error_outline</mat-icon>
+    <div>
+      <strong>Network unavailable</strong>
+      <span>{{ service.error() }}</span>
+    </div>
+  </div>
+} @else if (service.network(); as network) {
+  <main>
+    <section class="setup card">
+      <div class="section-heading">
+        <div>
+          <span class="step">1</span>
+          <h3>Choose an input</h3>
+        </div>
+        <span class="network-count">{{ network.nodes.length }} logic nodes</span>
+      </div>
+
+      @if (selectedNodes().length) {
+        <div class="selected-entity">
+          <div>
+            <span class="label">Selected in diagram</span>
+            <strong>{{ selectedName() || selectedStId() }}</strong>
+            <span class="stable-id">
+              {{ selectedStId() }} · {{ selectedNodes().length }} matching logic
+              {{ selectedNodes().length === 1 ? 'node' : 'nodes' }}
+            </span>
+          </div>
+          <mat-icon>check_circle</mat-icon>
+        </div>
+      } @else {
+        <div class="selection-help">
+          <mat-icon>touch_app</mat-icon>
+          <div>
+            <strong>Select a molecule on the pathway diagram</strong>
+            <span>
+              @if (selectedStId()) {
+                {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
+              } @else {
+                The selected Reactome entity will be matched to its logic-network node or nodes.
+              }
+            </span>
+          </div>
+        </div>
+      }
+
+      <div class="activity-control" [class.disabled]="!selectedNodes().length">
+        <div class="activity-heading">
+          <label for="deltasignal-activity">Input activity</label>
+          <div class="activity-value">
+            <input
+              id="deltasignal-activity-number"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              [value]="activity()"
+              [disabled]="!selectedNodes().length"
+              (input)="setActivity($any($event.target).value)"
+            />
+            <span>× baseline</span>
+          </div>
+        </div>
+        <input
+          id="deltasignal-activity"
+          class="range"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          [value]="activity()"
+          [disabled]="!selectedNodes().length"
+          (input)="setActivity($any($event.target).value)"
+        />
+        <div class="presets">
+          <button mat-button (click)="setActivity(0)" [disabled]="!selectedNodes().length">Knock out · 0</button>
+          <button mat-button (click)="setActivity(1)" [disabled]="!selectedNodes().length">Baseline · 1</button>
+          <button mat-button (click)="setActivity(80)" [disabled]="!selectedNodes().length">Activate · 80</button>
+        </div>
+        <button mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!selectedNodes().length">
+          <mat-icon>add</mat-icon>
+          Add perturbation
+        </button>
+      </div>
+    </section>
+
+    <section class="queue card">
+      <div class="section-heading">
+        <div>
+          <span class="step">2</span>
+          <h3>Run prediction</h3>
+        </div>
+        @if (service.perturbations().length) {
+          <button mat-button class="clear" (click)="service.clear()">Clear all</button>
+        }
+      </div>
+
+      @if (service.perturbations().length) {
+        <div class="perturbations">
+          @for (item of service.perturbations(); track item.reactomeId) {
+            <div class="perturbation">
+              <div>
+                <strong>{{ item.name }}</strong>
+                <span
+                  >{{ item.reactomeId }} · {{ item.activity }}× · {{ item.nodeUuids.length }} logic
+                  {{ item.nodeUuids.length === 1 ? 'node' : 'nodes' }}</span
+                >
+              </div>
+              <button
+                mat-icon-button
+                (click)="service.removePerturbation(item.reactomeId)"
+                matTooltip="Remove perturbation"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+        <button
+          mat-flat-button
+          class="run-button"
+          (click)="service.solve()"
+          [disabled]="service.status() === 'solving'"
+        >
+          @if (service.status() === 'solving') {
+            <ng-container><mat-spinner [diameter]="20" /> Solving…</ng-container>
+          } @else {
+            <ng-container><mat-icon>play_arrow</mat-icon> Run DeltaSignal</ng-container>
+          }
+        </button>
+      } @else {
+        <p class="empty">Add at least one perturbation to run a prediction.</p>
+      }
+
+      @if (service.error() && service.network()) {
+        <div class="inline-error" role="alert"><mat-icon>error_outline</mat-icon>{{ service.error() }}</div>
+      }
+    </section>
+
+    @if (service.result(); as result) {
+      <section class="results card">
+        <div class="section-heading">
+          <div>
+            <span class="step">3</span>
+            <h3>Predicted response</h3>
+          </div>
+          <button mat-button (click)="service.clearResult()">Remove overlay</button>
+        </div>
+
+        <div class="summary" [class.warning]="!result.converged">
+          <div>
+            <mat-icon>{{ result.converged ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ result.converged ? 'Converged' : 'Did not converge' }}</span>
+          </div>
+          <span>{{ result.iterations }} iterations · {{ result.solve_time | number: '1.3-3' }} s</span>
+        </div>
+
+        <div class="legend">
+          <span>Lower than baseline</span>
+          <div class="gradient"></div>
+          <span>Higher than baseline</span>
+        </div>
+        <p class="method-note">
+          Diagram colours show change from each node's own baseline. When several logic nodes map to one Reactome
+          entity, all values appear as a gradient.
+        </p>
+
+        <div class="result-table" role="table" aria-label="DeltaSignal predictions">
+          <div class="result-row header" role="row">
+            <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
+          </div>
+          @for (row of visibleRows(); track row.uuid) {
+            <div class="result-row" role="row" [class.perturbed]="row.perturbed">
+              <span class="entity">
+                <strong>{{ row.name }}</strong>
+                <small>{{ row.reactomeId }}</small>
+              </span>
+              <span>{{ row.activity | number: '1.1-1' }}×</span>
+              <span [class.positive]="row.change > 0" [class.negative]="row.change < 0">
+                {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
+              </span>
+              <span>{{ row.influence | number: '1.2-2' }}</span>
+            </div>
+          }
+        </div>
+        @if (service.entityRows().length > visibleRows().length) {
+          <p class="truncated">
+            Showing the 40 largest predicted changes across {{ service.entityRows().length }} Reactome entities.
+          </p>
+        }
+      </section>
+    }
+  </main>
+}

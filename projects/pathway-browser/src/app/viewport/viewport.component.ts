@@ -51,6 +51,7 @@ import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { CompareFormComponent } from './compare-form/compare-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
+import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
 
 const DETAIL_MIN_HEIGHT = 0;
 
@@ -88,6 +89,7 @@ const DROPDOWN_DURATION = 500;
     DetailsComponent,
     AnalysisFormComponent,
     CompareFormComponent,
+    DeltaSignalPanelComponent,
   ],
 })
 @UntilDestroy()
@@ -153,11 +155,15 @@ export class ViewportComponent implements AfterViewInit {
   dropdownDuration = DROPDOWN_DURATION;
   readonly isCurator = IS_CURATOR;
 
-  dropdown = signal<'analysis' | 'compare' | null>(null);
+  dropdown = signal<'analysis' | 'compare' | 'deltasignal' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');
     if (this.dropdown() !== 'analysis') this.closeAnalysis();
+  }
+
+  toggleDeltaSignal() {
+    this.dropdown.update((open) => (open === 'deltasignal' ? null : 'deltasignal'));
   }
 
   closeAnalysis() {
