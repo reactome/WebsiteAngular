@@ -35,7 +35,9 @@
   // was worth it; typeCheckHostBindings, strictStandalone and the checks below
   // all cost nothing. noUncheckedIndexedAccess (185 errors) and
   // exactOptionalPropertyTypes (72) are not on -- worth revisiting, but not
-  // free. The redundancy diagnostics (NG8107/NG8102, ~51 findings) stay at
+  // free. strictStandalone is deliberately absent: reactome-table is still an
+  // NgModule library with declared, non-standalone components, and it is
+  // published, so converting it is not a config change. The redundancy diagnostics (NG8107/NG8102, ~51 findings) stay at
   // their default warning: they fire where a type says a value cannot be null,
   // which is not the same as the API guaranteeing it, so making them errors
   // would push people to delete defensive code on the word of an optimistic
@@ -46,7 +48,6 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true,
     "typeCheckHostBindings": true,
-    "strictStandalone": true,
     "extendedDiagnostics": {
       "checks": {
         "invalidBananaInBox": "error",
