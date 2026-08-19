@@ -14,6 +14,7 @@ import { ReacfoamComponent } from '../reacfoam/reacfoam.component';
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
+import { ActivatedRoute } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { defaultDownloadOptions } from '../services/download.service';
 
@@ -49,6 +50,15 @@ export class RenderComponent {
   private dataState = inject(DataStateService);
   private eventService = inject(EventService);
   private reacfoamExporter = inject(SvgExporterService);
+  private route = inject(ActivatedRoute);
+
+  /**
+   * ?subpathways=false leaves the sub-pathway tints and labels out, matching
+   * the checkbox in the download panel. A report wants this set once for every
+   * figure it generates rather than per download.
+   */
+  private readonly wantsSubpathways =
+    this.route.snapshot.queryParamMap.get('subpathways') !== 'false';
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
   readonly loading = this.dataState._currentPathway.isLoading;
@@ -168,7 +178,12 @@ export class RenderComponent {
       // confirms the renderer has painted, not merely that elements are loaded.
       const canvas = host.querySelector<HTMLCanvasElement>('#cytoscape canvas');
       if (elements > 0 && canvas && canvas.width > 0 && canvas.height > 0) {
-        return { view: 'diagram', instances: instances.length, elements };
+        return {
+          view: 'diagram',
+          instances: instances.length,
+          elements,
+          subpathways: this.wantsSubpathways,
+        };
       }
       return null;
     }
@@ -220,6 +235,12 @@ export class RenderComponent {
     if (diagram) {
       const instances = diagram.cys?.filter(Boolean) ?? [];
       if (!instances.length) throw new Error('no diagram to export');
+      // Applied here rather than while waiting: drawing continues after the
+      // diagram first has elements, and anything hidden earlier comes back.
+      // The page is disposable, so nothing needs restoring.
+      if (!this.wantsSubpathways) {
+        instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
+      }
       // One instance here by construction: this page never opens the
       // comparison view.
       return instances[0].svg({ full: true });
@@ -257,6 +278,9 @@ export class RenderComponent {
     const diagram = this.diagram();
     const instances = diagram?.cys?.filter(Boolean) ?? [];
     if (!instances.length) throw new Error('this view cannot export PNG yet');
+    if (!this.wantsSubpathways && diagram) {
+      instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
+    }
     return instances[0].png({ full: true, scale, bg: 'transparent' });
   }
 }

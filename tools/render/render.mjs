@@ -15,6 +15,7 @@
  *   --token     analysis token, to render with the analysis overlay
  *   --base      site to render against (default http://localhost:4200)
  *   --scale     PNG scale factor       (default 2)
+ *   --no-subpathways  leave out sub-pathway tints and labels
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
@@ -49,6 +50,7 @@ try {
     format,
     token: flag('token', ''),
     scale: Number(flag('scale', '2')),
+    subpathways: !args.includes('--no-subpathways'),
   });
 
   await writeFile(out, bytes);

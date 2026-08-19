@@ -16,11 +16,13 @@ const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000 };
  * The URL of the render page for a pathway. Omit the pathway for the
  * genome-wide view.
  */
-export function renderUrl({ base, pathway, token }) {
+export function renderUrl({ base, pathway, token, subpathways = true }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
   );
   if (token) url.searchParams.set('analysis', token);
+  // Set only when turning them off, so the ordinary URL stays the short one.
+  if (!subpathways) url.searchParams.set('subpathways', 'false');
   return url.toString();
 }
 
@@ -33,7 +35,15 @@ export function renderUrl({ base, pathway, token }) {
  */
 export async function render(
   page,
-  { base, pathway = '', format = 'svg', token = '', scale = 2, timeout = 120_000 }
+  {
+    base,
+    pathway = '',
+    format = 'svg',
+    token = '',
+    scale = 2,
+    subpathways = true,
+    timeout = 120_000,
+  }
 ) {
   if (!FORMATS.includes(format)) {
     throw new Error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
@@ -48,7 +58,10 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token }), { waitUntil: 'load', timeout });
+    await page.goto(renderUrl({ base, pathway, token, subpathways }), {
+      waitUntil: 'load',
+      timeout,
+    });
 
     // The page's own signal, and its failure signal. A diagram fetches its
     // layout, its overlays and its fonts, and no fixed wait is both correct and

@@ -100,11 +100,11 @@ function pump() {
 }
 
 // ---- cache ---------------------------------------------------------------
-function cacheKey({ pathway, format, token, scale }) {
+function cacheKey({ pathway, format, token, scale, subpathways }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
   return createHash('sha256')
-    .update([CACHE_KEY, pathway, format, token, scale].join(' '))
+    .update([CACHE_KEY, pathway, format, token, scale, subpathways].join(' '))
     .digest('hex');
 }
 
@@ -241,6 +241,7 @@ app.get('/render/:name.:ext', async (req, res) => {
     format,
     token: typeof req.query.token === 'string' ? req.query.token : '',
     scale: Number(req.query.scale || 2),
+    subpathways: req.query.subpathways !== 'false',
   };
 
   try {
