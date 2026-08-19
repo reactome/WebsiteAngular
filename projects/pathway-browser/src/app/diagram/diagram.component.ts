@@ -52,7 +52,7 @@ import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
 
 import { DarkService } from '../services/dark.service';
-import { DownloadFormat, DownloadService } from '../services/download.service';
+import { DownloadFormat, DownloadService, includeSubpathways } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
 import { Interactor } from '../interactors/model/interactor.model';
@@ -199,6 +199,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   async export(format: string) {
+    // The sub-pathway tints and labels are navigational aids, and in a figure
+    // they compete with the biology. Hidden for the duration of the export and
+    // put back afterwards, rather than exported and cropped out later.
+    const hideSubpathways = !includeSubpathways();
+    if (hideSubpathways) {
+      this.cys.filter(Boolean).forEach((cy) => this.setSubPathwayVisibility(false, cy));
+    }
+    try {
+      await this.exportRaster(format);
+    } finally {
+      if (hideSubpathways) {
+        // Back to what the view called for, which is not always "visible": with
+        // a flag active the diagram deliberately hides them.
+        const flagged = this.state.flag().length > 0;
+        this.cys.filter(Boolean).forEach((cy) => this.setSubPathwayVisibility(!flagged, cy));
+      }
+    }
+  }
+
+  private async exportRaster(format: string) {
     if (format === DownloadFormat.SVG) {
       this.exportSvg();
       return;

@@ -16,10 +16,13 @@ import {
   DownloadFormat,
   DownloadService,
   DownloadTarget,
+  includeSubpathways,
 } from '../../../services/download.service';
 import { DownloadButtonComponent, Icon } from './download-button/download-button.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
 
 type PathwayItem = {
   name: string;
@@ -47,7 +50,7 @@ type DiagramItem = {
 
 @Component({
   selector: 'cr-download-tab',
-  imports: [MatTooltip, MatProgressSpinner, DownloadButtonComponent],
+  imports: [MatTooltip, MatProgressSpinner, DownloadButtonComponent, MatCheckbox, FormsModule],
   templateUrl: './download-tab.component.html',
   styleUrl: './download-tab.component.scss',
 })
@@ -57,6 +60,7 @@ export class DownloadTabComponent {
   private dataState: DataStateService = inject(DataStateService);
   public analysis: AnalysisService = inject(AnalysisService);
   private download: DownloadService = inject(DownloadService);
+  protected readonly includeSubpathways = includeSubpathways;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 
