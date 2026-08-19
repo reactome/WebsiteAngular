@@ -26,13 +26,19 @@ const backend = new Map();
 page.on('console', (m) => {
   if (m.type() === 'error') errors.push(m.text().replace(/\s+/g, ' ').slice(0, 220));
 });
-page.on('pageerror', (e) => errors.push('PAGEERROR: ' + String(e).replace(/\s+/g, ' ').slice(0, 220)));
+page.on('pageerror', (e) =>
+  errors.push('PAGEERROR: ' + String(e).replace(/\s+/g, ' ').slice(0, 220))
+);
 page.on('requestfailed', (r) =>
   failedReqs.push(`${r.failure()?.errorText} ${r.url().slice(0, 150)}`)
 );
 page.on('response', (r) => {
   const u = r.url();
-  if (/newcurator|GraphContentService|ContentService|AnalysisService|ExperimentDigester|\/download\/|\/figures\//.test(u))
+  if (
+    /newcurator|GraphContentService|ContentService|AnalysisService|ExperimentDigester|\/download\/|\/figures\//.test(
+      u
+    )
+  )
     backend.set(u.replace(/^https?:\/\//, '').slice(0, 150), r.status());
 });
 
@@ -58,7 +64,10 @@ await step('website homepage renders the curator layout', async () => {
   await shot('01-home');
   const links = await page.locator('app-curator-home-shortcuts .shortcut-link').allInnerTexts();
   console.log('  shortcuts:', links.map((s) => s.trim().split('\n').pop()).join(' | '));
-  console.log('  app-home-shortcuts (main variant, expect 0):', await page.locator('app-home-shortcuts').count());
+  console.log(
+    '  app-home-shortcuts (main variant, expect 0):',
+    await page.locator('app-home-shortcuts').count()
+  );
 });
 
 await step('data schema browser loads from the curation graph', async () => {
@@ -92,7 +101,13 @@ const pathway = async (id, label, tag) => {
       'details tabs': await page.locator('[role=tab]').count(),
     };
     console.log('  ' + JSON.stringify(counts));
-    const title = (await page.locator('cr-details-panel h1, cr-details-panel h2, h1').first().innerText().catch(() => '(none)'))
+    const title = (
+      await page
+        .locator('cr-details-panel h1, cr-details-panel h2, h1')
+        .first()
+        .innerText()
+        .catch(() => '(none)')
+    )
       .replace(/\s+/g, ' ')
       .slice(0, 80);
     console.log('  details heading:', title);
@@ -104,7 +119,11 @@ const pathway = async (id, label, tag) => {
 // Apoptosis has an EHLD (SVG illustration); the Intrinsic Pathway below it is a
 // regular cytoscape-rendered diagram -- covers both render paths.
 await pathway('R-HSA-109581', 'Apoptosis, EHLD path', '03-pathway-ehld');
-await pathway('R-HSA-109606', 'Intrinsic Pathway for Apoptosis, diagram path', '04-pathway-diagram');
+await pathway(
+  'R-HSA-109606',
+  'Intrinsic Pathway for Apoptosis, diagram path',
+  '04-pathway-diagram'
+);
 
 await step('curator-hidden UI absent (Analyse / Compare / Overlay / Feedback)', async () => {
   for (const l of ['Analyse', 'Analyze', 'Compare', 'Overlay', 'Feedback']) {
