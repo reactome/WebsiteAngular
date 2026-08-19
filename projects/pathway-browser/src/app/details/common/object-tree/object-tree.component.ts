@@ -79,33 +79,6 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   private analysis = inject(AnalysisService);
 
   /**
-   * Expression values from the running analysis, keyed by every identifier the
-   * molecule is known by. Same shape the entity popup builds -- one request per
-   * pathway rather than per row, which matters here because a tree can be long.
-   */
-  private readonly foundEntities = rxResource({
-    params: () => {
-      const token = this.state.analysis();
-      const pathway = this.state.pathwayId();
-      return token && pathway ? { token, pathway } : undefined;
-    },
-    stream: ({ params }) => this.analysis.foundEntities(params.pathway, params.token),
-  });
-
-  private readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
-    const map = new Map<string, number[]>();
-    for (const entity of this.foundEntities.value()?.entities ?? []) {
-      const exp = entity.exp ?? [];
-      if (!exp.length) continue;
-      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
-      for (const id of [entity.id, ...mapped]) {
-        if (id) map.set(String(id).toUpperCase(), exp);
-      }
-    }
-    return map;
-  });
-
-  /**
    * The selected sample's expression value for this element, or undefined when
    * there is no expression analysis or this molecule was not in it.
    *
@@ -118,26 +91,24 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     () => this.analysis.samples()[this.analysis.sampleIndex()]
   );
 
+  /**
+   * The selected sample's expression value for this element, or undefined when
+   * there is no expression analysis or this molecule was not in it.
+   *
+   * Identifiers come off the element itself rather than a lookup per row: a
+   * complex or a set has no identifier an analysis would know, and those are
+   * not what the tag is for.
+   */
   expressionOf(element: E): number | undefined {
-    const values = this.expressionByIdentifier();
-    if (!values.size) return undefined;
     // Both reach the element through its index signature.
     const reference = element['referenceEntity'] as
       { identifier?: string; variantIdentifier?: string } | undefined;
-    const candidates = [
+    const exp = this.analysis.expressionFor([
       element['identifier'] as string | undefined,
       reference?.identifier,
       reference?.variantIdentifier,
-    ];
-    for (const candidate of candidates) {
-      const exp = candidate && values.get(String(candidate).toUpperCase());
-      if (!exp?.length) continue;
-      // The analysis model types these loosely; a non-numeric value is not
-      // something to colour a scale with.
-      const value = Number(exp[this.analysis.sampleIndex()]);
-      return Number.isFinite(value) ? value : undefined;
-    }
-    return undefined;
+    ]);
+    return exp?.[this.analysis.sampleIndex()];
   }
 
   hasDepthControl = input<boolean>(false);

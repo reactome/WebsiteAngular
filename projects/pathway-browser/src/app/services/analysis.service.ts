@@ -326,6 +326,48 @@ export class AnalysisService {
   gsaReportsRequired = signal(false);
   gsaReports = signal<Report[] | undefined>(undefined);
 
+  /**
+   * Expression values from the running analysis, keyed by every identifier the
+   * molecule is known by (its own id and everything it mapped to).
+   *
+   * One request per pathway, shared by everything that needs to put a value
+   * against a molecule -- the object tree does it per row and the results tab
+   * per selection, and neither should be issuing its own.
+   */
+  private readonly foundForExpression = rxResource({
+    params: () => {
+      const token = this.state.analysis();
+      const pathway = this.state.pathwayId();
+      return token && pathway ? { token, pathway } : undefined;
+    },
+    stream: ({ params }) => this.foundEntities(params.pathway, params.token),
+  });
+
+  readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
+    const map = new Map<string, number[]>();
+    for (const entity of this.foundForExpression.value()?.entities ?? []) {
+      const exp = (entity.exp ?? []).map(Number).filter((value) => Number.isFinite(value));
+      if (!exp.length) continue;
+      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      for (const id of [entity.id, ...mapped]) {
+        if (id) map.set(String(id).toUpperCase(), exp);
+      }
+    }
+    return map;
+  });
+
+  /** Every sample's expression for the first of these identifiers that is known. */
+  expressionFor(identifiers: (string | undefined)[]): number[] | undefined {
+    const values = this.expressionByIdentifier();
+    if (!values.size) return undefined;
+    for (const identifier of identifiers) {
+      if (!identifier) continue;
+      const exp = values.get(String(identifier).toUpperCase());
+      if (exp?.length) return exp;
+    }
+    return undefined;
+  }
+
   samples = computed(() => this.result()?.expression.columnNames || []);
   sampleIndex = linkedSignal({
     source: () => ({ result: this.result(), sample: this.state.sample() }),

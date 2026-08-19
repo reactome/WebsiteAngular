@@ -86,6 +86,31 @@ export class ResultTabComponent {
   trackBy = (index: number, pathway: Analysis.Pathway) => pathway.stId + '-' + index;
 
   hasExpression = computed(() => this.analysis.result()?.expression?.min !== undefined);
+
+  /**
+   * Expression of the entity currently selected in the diagram, across every
+   * sample.
+   *
+   * The pathway table answers "which pathways came up"; this answers "and what
+   * did the thing I just clicked do", which otherwise meant stepping through
+   * the samples one at a time and reading the value off the diagram.
+   *
+   * undefined when nothing is selected, when the selection is a complex or a
+   * set (whose own identifier means nothing to an analysis), or when the
+   * molecule was not in the submitted data.
+   */
+  selectedExpression = computed<{ name: string; values: number[] } | undefined>(() => {
+    const element = this.data.selectedElement();
+    if (!element || this.analysis.samples().length === 0) return undefined;
+    const reference = (element as Record<string, unknown>)['referenceEntity'] as
+      { identifier?: string; variantIdentifier?: string } | undefined;
+    const values = this.analysis.expressionFor([
+      (element as Record<string, unknown>)['identifier'] as string | undefined,
+      reference?.identifier,
+      reference?.variantIdentifier,
+    ]);
+    return values ? { name: element.displayName, values } : undefined;
+  });
   minExpression = computed(() =>
     this.hasExpression() ? Math.floor(this.analysis.result()!.expression.min) : 0
   );

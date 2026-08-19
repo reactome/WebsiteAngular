@@ -306,3 +306,44 @@ mat-expansion-panel {
     )
   );
 }
+
+// Expression of the currently selected molecule across every sample.
+.selected-expression-section {
+  padding: 8px 12px 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.selected-expression-title {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-medium);
+  font-weight: 500;
+  color: var(--on-surface-variant, var(--on-surface));
+
+  .selected-expression-name {
+    color: var(--on-surface);
+    font-weight: 600;
+  }
+}
+
+.selected-expression-table {
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 3px 10px 3px 0;
+    text-align: left;
+    font: var(--mat-sys-body-small);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--on-surface-variant, var(--on-surface));
+    font-weight: 500;
+  }
+
+  // The sample the rest of the view is currently showing.
+  .current {
+    color: var(--primary);
+    font-weight: 700;
+  }
+}
