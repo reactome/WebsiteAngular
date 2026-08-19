@@ -35,7 +35,14 @@
   // was worth it; typeCheckHostBindings, strictStandalone and the checks below
   // all cost nothing. noUncheckedIndexedAccess (185 errors) and
   // exactOptionalPropertyTypes (72) are not on -- worth revisiting, but not
-  // free. strictStandalone is deliberately absent: reactome-table is still an
+  // free. noUncheckedIndexedAccess was trialled properly rather than dismissed:
+  // of its 185 findings, roughly 44% are places the code already checks .length
+  // or iterates a bounded loop and TypeScript simply cannot connect the check to
+  // the access, where the only "fix" is a non-null assertion that documents
+  // nothing. The remainder did contain two real bugs, both since fixed (see
+  // 0178da7). Worth revisiting as its own piece of work, but adopting it in one
+  // go would trade 185 edits, most of them assertions, for that handful.
+  // strictStandalone is deliberately absent: reactome-table is still an
   // NgModule library with declared, non-standalone components, and it is
   // published, so converting it is not a config change. The redundancy diagnostics (NG8107/NG8102, ~51 findings) stay at
   // their default warning: they fire where a type says a value cannot be null,
