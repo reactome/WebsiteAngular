@@ -62,8 +62,17 @@
         </div>
 
         @if (!isCurator) {
-          <div class="thumbnail">
-            <img [src]="thumbnailImg()" #thumbnail (load)="thumbnailLoaded()" />
+          <!-- Press and drag to move the diagram: people were using the
+               thumbnail to navigate and finding it inert (#135). -->
+          <div
+            class="thumbnail"
+            role="presentation"
+            (pointerdown)="onThumbnailPointerDown($event)"
+            (pointermove)="onThumbnailPointerMove($event)"
+            (pointerup)="onThumbnailPointerUp($event)"
+            (pointercancel)="onThumbnailPointerUp($event)"
+          >
+            <img [src]="thumbnailImg()" #thumbnail (load)="thumbnailLoaded()" draggable="false" />
             <svg class="overlay" [attr.viewBox]="thumbnailViewBox()">
               <mask id="viewportMask" mask-type="luminance">
                 <rect [attr.width]="thumbnailSize().width" [attr.height]="thumbnailSize().height" fill="white"></rect>

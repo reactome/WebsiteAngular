@@ -430,6 +430,69 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.loadDiagram();
   }
 
+  /**
+   * Drag state for the thumbnail. Panning follows the pointer once pressed, so
+   * the whole gesture is one press-move-release rather than repeated clicks.
+   */
+  private thumbnailDragging = false;
+
+  onThumbnailPointerDown(event: PointerEvent) {
+    this.thumbnailDragging = true;
+    (event.target as Element).setPointerCapture?.(event.pointerId);
+    this.panFromThumbnail(event);
+  }
+
+  onThumbnailPointerMove(event: PointerEvent) {
+    if (this.thumbnailDragging) this.panFromThumbnail(event);
+  }
+
+  onThumbnailPointerUp(event: PointerEvent) {
+    this.thumbnailDragging = false;
+    (event.target as Element).releasePointerCapture?.(event.pointerId);
+  }
+
+  /**
+   * Centre the diagram on the point pressed in the thumbnail.
+   *
+   * This is the inverse of the mapping shrunkViewport() uses to draw the
+   * viewport rectangle: that turns graph coordinates into thumbnail pixels, and
+   * this turns thumbnail pixels back into graph coordinates. Keep the two in
+   * step -- if the scale or centring offset changes in one, the rectangle and
+   * the pointer stop agreeing about where the user is pointing.
+   */
+  private panFromThumbnail(event: PointerEvent) {
+    const cy = this.cy;
+    const image = this.thumbnailRef()?.nativeElement;
+    if (!cy || !image) return;
+
+    const bbox = this.boundingBox();
+    if (!bbox.w || !bbox.h) return;
+
+    const { width: thumbWidth, height: thumbHeight } = this.thumbnailSize();
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    // thumbnailSize comes from a ResizeObserver on the image's content box,
+    // which is the space shrunkViewport() and the svg viewBox both work in.
+    // Normalise the pointer into that space rather than assuming it matches
+    // the on-screen rectangle.
+    const thumbX = ((event.clientX - rect.left) / rect.width) * thumbWidth;
+    const thumbY = ((event.clientY - rect.top) / rect.height) * thumbHeight;
+
+    const scale = Math.min(thumbWidth / bbox.w, thumbHeight / bbox.h);
+    const offsetX = (thumbWidth - bbox.w * scale) / 2;
+    const offsetY = (thumbHeight - bbox.h * scale) / 2;
+
+    const graphX = (thumbX - offsetX) / scale + bbox.x1;
+    const graphY = (thumbY - offsetY) / scale + bbox.y1;
+
+    const zoom = cy.zoom();
+    cy.pan({
+      x: this.containerSize().width / 2 - graphX * zoom,
+      y: this.containerSize().height / 2 - graphY * zoom,
+    });
+  }
+
   thumbnailLoaded() {
     const thumbnail = this.thumbnailRef()?.nativeElement;
     if (thumbnail) this.thumbnailSize.set(thumbnail.getBoundingClientRect());
