@@ -5,6 +5,7 @@ import {
   Injectable,
   linkedSignal,
   signal,
+  untracked,
   WritableSignal,
 } from '@angular/core';
 import { catchError, EMPTY, Observable, of, switchMap, tap } from 'rxjs';
@@ -403,7 +404,14 @@ export class AnalysisService {
         summary.classes(result.summary.type === 'GSA_REGULATION' ? 5 : -1); // ALWAYS put classes after domain otherwise create bugs https://github.com/gka/chroma.js/issues/371
       }
 
-      this.state.sample.set(result?.expression.columnNames[0] || null);
+      // Default to the first sample, but never over one the URL already names:
+      // a link to a particular sample should open on that sample. Read
+      // untracked so this effect does not depend on what it writes.
+      const columns = result?.expression.columnNames ?? [];
+      const requested = untracked(this.state.sample);
+      if (!requested || !columns.includes(requested)) {
+        this.state.sample.set(columns[0] || null);
+      }
 
       this.paletteGroups.forEach((group) => (group.valid = validGroups.has(group.name)));
     });
