@@ -16,24 +16,13 @@
             <a [href]="contentDetail + '/person/' + firstAuthor.dbId">
               <span>{{ firstAuthor.name }}</span>
             </a>
-            <!-- Show the rest of the authors when expanded -->
-            @if (isExpanded) {
-              <ng-container class="additional-authors">
-                @for (author of authors().slice(1); track author) {
-                  <span>
-                    ,
-                    <a [href]="contentDetail + '/person/' + author.dbId"> {{ author.surname }} {{ author.initial }} </a>
-                  </span>
-                }
-              </ng-container>
-            }
+            <!-- The rest of the authors. additionalAuthors() is empty while
+                 collapsed, so it carries the expand/collapse state itself. -->
             <ng-container class="additional-authors">
               @for (author of additionalAuthors(); track $index) {
-                <span>
-                  <!--          <a [href]="environment + '/content/detail/person/'+ author.dbId" target="_blank">-->
-                  , {{ author.name }}
-                  <!--          </a>-->
-                </span>
+                <span
+                  >, <a [href]="contentDetail + '/person/' + author.dbId">{{ author.name }}</a></span
+                >
               }
             </ng-container>
             <!-- ORCID-->
