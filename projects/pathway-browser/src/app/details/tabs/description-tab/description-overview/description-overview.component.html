@@ -107,16 +107,12 @@
       }
     </div>
     <!-- Common info ends here-->
-    @if (reviewStatus()) {
+    @if (reviewScore(); as star) {
       <div class="row">
         <div class="label">Review Status</div>
         <div class="value spinner-container">
-          <mat-progress-spinner
-            color="primary"
-            mode="determinate"
-            [value]="reviewStar[reviewStatus()!.displayName].percentage"
-          ></mat-progress-spinner>
-          <div class="score">{{ reviewStar[reviewStatus()!.displayName].score }}/5</div>
+          <mat-progress-spinner color="primary" mode="determinate" [value]="star.percentage"></mat-progress-spinner>
+          <div class="score">{{ star.score }}/5</div>
         </div>
       </div>
     }
