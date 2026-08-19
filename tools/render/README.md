@@ -81,3 +81,73 @@ produces a valid SVG of zero width. The check reads
 `tree.get('geometry', tree.get('dataObject'))` — the same thing the exporter
 reads — which is the general lesson: gate on what the consumer needs, not on a
 proxy for it.
+
+## The service
+
+`tools/render/service.mjs` serves the same renders over HTTP.
+
+```bash
+node tools/render/service.mjs
+curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
+curl -o out.pdf 'http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=<analysis-token>'
+curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'
+curl -s http://127.0.0.1:4310/health
+```
+
+| variable             | default               |                                                                     |
+| -------------------- | --------------------- | ------------------------------------------------------------------- |
+| `RENDER_PORT`        | 4310                  |                                                                     |
+| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work |
+| `RENDER_BASE`        | http://localhost:4200 | site to render against                                              |
+| `RENDER_CACHE`       | `.render-cache`       |                                                                     |
+| `RENDER_CACHE_KEY`   | `v1`                  | change to invalidate everything, e.g. per release                   |
+| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                |
+| `RENDER_QUEUE`       | 8                     | pending renders before 503                                          |
+| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                     |
+
+### Measured behaviour
+
+|                                        |                                           |
+| -------------------------------------- | ----------------------------------------- |
+| cache miss                             | 4.2–6.9s                                  |
+| cache hit                              | **0.007–0.01s**, byte-identical           |
+| four concurrent requests, same pathway | one render, all four served               |
+| fourteen concurrent, distinct pathways | ten served, four `503` with `Retry-After` |
+| unknown id                             | `404` in **0.06s**                        |
+| unknown format                         | `400`, listing the formats                |
+
+### Why it is shaped this way
+
+**Loopback by default.** A render costs seconds, so an anonymous request must
+never be able to commission one. Crawling the old
+`/ContentService/exporter/*` document endpoints exhausted Tomcat's heap and took
+the origin down; the network is the strongest way to decide who may cause work,
+so it is the default and exposure is a deliberate act.
+
+**The cache is the point, not an optimisation.** 5s against 7ms is the whole
+argument. A diagram with no analysis token is identical for a release, so nearly
+every request should be a file read. Tokens are part of the cache key rather
+than a reason to skip caching — a report generator asks for the same analysis
+repeatedly.
+
+**Identical concurrent requests coalesce.** Several workers asking for the same
+pathway pay for it once.
+
+**It refuses rather than queues without limit.** Beyond two active and eight
+waiting it answers 503 with `Retry-After`. A saturated renderer that says no
+recovers; one holding a thousand jobs does not. Rejections are counted
+separately from failures, so a busy period does not bury real errors.
+
+**Unknown ids are rejected before a browser is involved.** Ids come from URLs,
+so typos are normal rather than exceptional, and a render page asked for one
+that does not resolve simply never becomes ready. One backend request costs
+60ms; letting it reach the renderer costs a browser and a timeout.
+
+### Known limitation
+
+An id that passes the existence check but still never draws — a real event with
+no diagram, say — costs `RENDER_TIMEOUT` and holds a render slot for it. The
+render page cannot currently tell that case apart from "still loading": the
+resource's error signal does not surface it, and reading the failed resource
+throws from somewhere the page's own wait does not catch. Worth fixing in the
+page rather than the service, since the page is the only thing that knows.

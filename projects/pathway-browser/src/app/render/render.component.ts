@@ -84,12 +84,46 @@ export class RenderComponent {
   }
 
   private async waitForDrawn(pathway: string | undefined) {
+    try {
+      await this.watchUntilDrawn(pathway);
+    } catch (failure) {
+      // Reading a resource that failed to load throws rather than returning
+      // undefined, so a 404 surfaces here rather than through an error signal.
+      // Without this the wait died silently and the caller paid a full timeout
+      // to learn nothing.
+      this.error.set(
+        `could not render ${pathway ?? 'the genome-wide view'}: ` +
+          ((failure as Error)?.message ?? String(failure))
+      );
+      this.publish();
+    }
+  }
+
+  private async watchUntilDrawn(pathway: string | undefined) {
     this.ready.set(false);
     this.error.set(null);
 
-    const deadline = Date.now() + 60_000;
+    const started = Date.now();
+    const deadline = started + 60_000;
+    // An id that does not resolve should not cost a full timeout. The resource's
+    // own error signal does not surface a 404 here, so judge it by what can
+    // actually be observed: the fetch has settled and there is nothing to draw.
+    const giveUpOnMissing = started + 10_000;
+
     while (Date.now() < deadline) {
       const drawn = this.drawn();
+
+      if (
+        !drawn &&
+        Date.now() > giveUpOnMissing &&
+        !this.loading() &&
+        !this.dataState.currentPathway() &&
+        pathway
+      ) {
+        this.error.set(`no pathway found for ${pathway}`);
+        this.publish();
+        return;
+      }
       if (drawn) {
         // Fonts change text metrics, so a diagram drawn before they load is
         // not the diagram the site shows.
