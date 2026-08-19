@@ -11,12 +11,12 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   page.on('console', (msg) => {
     const text = msg.text();
     if (msg.type() === 'error') consoleErrors.push(text);
-    // eslint-disable-next-line no-console
+
     console.log(`[browser:${msg.type()}] ${text}`);
   });
   page.on('pageerror', (err) => {
     consoleErrors.push(String(err));
-    // eslint-disable-next-line no-console
+
     console.log(`[pageerror] ${err}`);
   });
 
@@ -39,7 +39,7 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   );
 
   const status = await page.textContent('#status');
-  // eslint-disable-next-line no-console
+
   console.log('harness status:', status);
 
   // Capture screenshots and SVG markup.
@@ -53,10 +53,8 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
     fs.writeFileSync(path.join(OUT_DIR, 'legend.svg'), svgText);
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Snapshots saved to ${OUT_DIR}`);
   if (consoleErrors.length > 0) {
-    // eslint-disable-next-line no-console
     console.log(
       `Console errors during capture (${consoleErrors.length}):\n${consoleErrors.slice(0, 10).join('\n')}`
     );
