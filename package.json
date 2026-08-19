@@ -69,7 +69,7 @@
     "cytoscape": "git+https://github.com/reactome/cytoscape.js.git#svg-export-dist",
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^3.0.0",
-    "express": "4.18.2",
+    "express": "4.22.2",
     "fflate": "0.8.2",
     "gifenc": "1.0.3",
     "immer": "^10.2.0",
