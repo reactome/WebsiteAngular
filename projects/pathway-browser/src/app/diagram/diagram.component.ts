@@ -12,6 +12,7 @@ import {
   viewChild,
   ViewChild,
   inject,
+  HostListener,
 } from '@angular/core';
 import { DiagramService } from '../services/diagram.service';
 import {
@@ -433,24 +434,34 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
+  /**
    * Drag state for the thumbnail. Panning follows the pointer once pressed, so
    * the whole gesture is one press-move-release rather than repeated clicks.
+   *
+   * Deliberately no setPointerCapture: capturing on pointerdown and releasing
+   * on pointerup leaks the capture whenever the release does not arrive on the
+   * same element, and a retained capture retargets every later pointer event to
+   * the thumbnail -- which silently kills right-click, selection and hovering
+   * across the whole diagram. Tracking the drag on the window instead cannot
+   * leave that behind.
    */
   private thumbnailDragging = false;
 
   onThumbnailPointerDown(event: PointerEvent) {
+    event.preventDefault();
     this.thumbnailDragging = true;
-    (event.target as Element).setPointerCapture?.(event.pointerId);
     this.panFromThumbnail(event);
   }
 
-  onThumbnailPointerMove(event: PointerEvent) {
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMove(event: PointerEvent) {
     if (this.thumbnailDragging) this.panFromThumbnail(event);
   }
 
-  onThumbnailPointerUp(event: PointerEvent) {
+  @HostListener('window:pointerup')
+  @HostListener('window:pointercancel')
+  endThumbnailDrag() {
     this.thumbnailDragging = false;
-    (event.target as Element).releasePointerCapture?.(event.pointerId);
   }
 
   /**
@@ -478,8 +489,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     // which is the space shrunkViewport() and the svg viewBox both work in.
     // Normalise the pointer into that space rather than assuming it matches
     // the on-screen rectangle.
-    const thumbX = ((event.clientX - rect.left) / rect.width) * thumbWidth;
-    const thumbY = ((event.clientY - rect.top) / rect.height) * thumbHeight;
+    // Clamped: the drag is tracked on the window, so the pointer can be well
+    // outside the thumbnail and should pin to its edge rather than extrapolate.
+    const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
+    const thumbX = clamp(((event.clientX - rect.left) / rect.width) * thumbWidth, thumbWidth);
+    const thumbY = clamp(((event.clientY - rect.top) / rect.height) * thumbHeight, thumbHeight);
 
     const scale = Math.min(thumbWidth / bbox.w, thumbHeight / bbox.h);
     const offsetX = (thumbWidth - bbox.w * scale) / 2;
