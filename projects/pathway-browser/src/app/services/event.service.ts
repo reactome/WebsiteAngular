@@ -3,6 +3,7 @@ import { CONTENT_SERVICE, environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import {
   BehaviorSubject,
+  catchError,
   concatMap,
   EMPTY,
   filter,
@@ -99,13 +100,13 @@ export class EventService {
 
   fetchEventAncestors(stId: string): Observable<Pathway[][]> {
     const url = `${this._ANCESTORS}${stId}/ancestors`;
-    return this.http
-      .get<Pathway[][]>(url)
-      .pipe(
-        map((ancestorsOptions) =>
-          ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
-        )
-      );
+    return this.http.get<Pathway[][]>(url).pipe(
+      map((ancestorsOptions) => ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())),
+      // The backend 404s instead of returning an empty list for an event with
+      // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
+      // callers still emit and can render the event on its own.
+      catchError(() => of([] as Pathway[][]))
+    );
   }
 
   loadEventData(event: Event) {
@@ -796,7 +797,9 @@ export class EventService {
       // Take the first ancestor if no path is given
       finalAncestor = ancestors[0];
     }
-    return finalAncestor;
+    // An event with no ancestors at all yields no lineage; callers index and
+    // map over the result, so hand them an empty list rather than undefined.
+    return finalAncestor ?? [];
   }
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
     if (!lineages) return [];

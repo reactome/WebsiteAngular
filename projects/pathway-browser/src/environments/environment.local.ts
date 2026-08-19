@@ -1,18 +1,12 @@
 import { ENVIRONMENTS } from '../../../website-angular/src/config/environments';
-
-const env = ENVIRONMENTS.local;
-
 import { SITE_VARIANT } from './variant';
 
 export const IS_CURATOR = SITE_VARIANT === 'curator';
 
+const env = ENVIRONMENTS.local;
+
 export const environment = {
   production: false,
-  host: env.host,
-  s3: env.s3,
-  gsaServer: env.gsaServer,
-  gtagId: "G-96F1EYHQR3",
-  preferS3: env.preferS3,
   host: IS_CURATOR ? 'https://newcurator.reactome.org' : 'https://dev.reactome.org',
   s3: 'https://download.reactome.org',
   gsaServer: 'dev',
@@ -20,15 +14,18 @@ export const environment = {
   preferS3: false,
 };
 
-// Points at the locally run curator-service, which serves /data, /search,
-// /exporter and /interactors at its root rather than under a path segment.
 // Icon image files live on the Reactome backend and aren't proxied on every
 // front-end origin; use the dev backend host (see environment.ts).
 export const ICON_HOST = 'https://dev.reactome.org';
 
+// The curator host serves icon assets itself, so use it directly there rather
+// than falling back to ICON_HOST (see environment.ts).
+export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
+
 // Curator local dev points at the remote curation backend directly (running
 // a full local curation graph DB isn't practical); main local dev points at
-// a locally-run ContentService instance.
+// a locally-run ContentService instance, which serves /data, /search,
+// /exporter and /interactors at its root rather than under a path segment.
 export const CONTENT_SERVICE = IS_CURATOR
   ? env.contentService.replace(/\/+$/, '')
   : `http://127.0.0.1:8686`;
@@ -48,4 +45,3 @@ const schemaHost: string =
     : environment.host;
 export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;
-export const CONTENT_SCHEMA = `${environment.host}/curatorgraph/dataSchema`;

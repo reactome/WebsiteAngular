@@ -15,7 +15,7 @@ export const environment = {
   gsaServer: selectedEnv.gsaServer,
   gtagId: selectedEnv.gtagId,
   preferS3: selectedEnv.preferS3,
-}
+};
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served
 // by the Reactome backend, not by the Angular app. Unlike /ContentService they
@@ -54,17 +54,12 @@ export const CONTENT_DETAIL = `${environment.host}/content/detail`;
 // Path-only form for use with Angular RouterLink (which interprets absolute
 // URLs as relative paths and concatenates them onto the current route).
 export const CONTENT_DETAIL_PATH = '/content/detail';
-// Build person/schema links from the hosting app shell's base URL so they keep
-// working wherever the widget is deployed. document.baseURI resolves the page's
-// <base href> against the current origin, which yields "/" under `ng serve` and
-// "/curatorgraph/" on the deployed curator site - hardcoding "/curatorgraph"
-// here appended a second copy of that segment in local dev.
-const schemaHost: string =
-  typeof document !== 'undefined'
-    ? document.baseURI.replace(/\/+$/, '')
-    : environment.host;
-// Full-host base for the curator data-schema instance browser, used to build
-// author/person links so they resolve on the deployed host regardless of where
-// the embeddable pathway-browser element is hosted.
-export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
+// Unlike environment.ts, which resolves this against the hosting page's
+// <base href> (document.baseURI) and so keeps schema links on whatever origin
+// serves the bundle, this variant pins them to the deployed curator site. That
+// is the point of the `curator` configuration: run the bundle from `ng serve`
+// while every endpoint, including the data-schema instance browser, is the
+// deployed one. Consequence: following a person/schema link navigates off
+// localhost to newcurator.
+export const CONTENT_SCHEMA = `${environment.host}/curatorgraph/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

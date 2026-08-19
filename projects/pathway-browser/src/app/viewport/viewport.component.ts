@@ -107,8 +107,23 @@ export class ViewportComponent implements AfterViewInit {
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
 
-  loadingPathwayData = this.dataState._currentPathway.isLoading;
+  // Ancestors are part of deciding what to draw (see hasDiagram), so keep the
+  // spinner up until they have settled too - otherwise the "no diagram" notice
+  // flashes for pathways that do have one further up their lineage.
+  loadingPathwayData = computed(
+    () => this.dataState._currentPathway.isLoading() || this.dataState.ancestorsLoading()
+  );
   hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
+  // A pathway without a diagram of its own is still drawable when an ancestor
+  // has one - cr-diagram walks up and renders the parent, e.g. /R-HSA-69541.
+  // An event with neither, such as a newly cloned curation pathway that hangs
+  // off no top-level pathway, has nothing to draw and gets a notice instead.
+  hasDiagram = computed(() => {
+    const pathway = this.dataState.currentPathway();
+    if (!pathway || !isPathway(pathway)) return false;
+    if (pathway.hasDiagram) return true;
+    return (pathway.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
+  });
   title = computed(() => this.dataState.currentPathway()?.displayName);
 
   diseasePathways = computed(() => {

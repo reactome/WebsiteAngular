@@ -91,6 +91,10 @@
                 {
                   "replace": "projects/pathway-browser/src/environments/variant.ts",
                   "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                },
+                {
+                  "replace": "projects/pathway-browser/src/environments/environment.ts",
+                  "with": "projects/pathway-browser/src/environments/environment.curator.ts"
                 }
               ]
             },

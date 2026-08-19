@@ -236,8 +236,14 @@
                 } @else {
                   @if (hasEHLD()) {
                     <cr-ehld [(pathwayId)]="pathwayId" />
-                  } @else {
+                  } @else if (hasDiagram()) {
                     <cr-diagram [(pathwayId)]="pathwayId" #diagram [interactor]="interactors" />
+                  } @else {
+                    <div class="no-diagram">
+                      <mat-icon>hide_image</mat-icon>
+                      <p>No diagram is available for this pathway.</p>
+                      <p class="hint">Its details are shown below.</p>
+                    </div>
                   }
                 }
               } @else {

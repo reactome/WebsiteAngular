@@ -15,6 +15,10 @@ export const environment = {
 // front-end origin; use the dev backend host (see environment.ts).
 export const ICON_HOST = 'https://dev.reactome.org';
 
+// The curator host serves icon assets itself, so use it directly there rather
+// than falling back to ICON_HOST (see environment.ts).
+export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
+
 export const CONTENT_SERVICE = `${environment.host}/${IS_CURATOR ? 'GraphContentService' : 'ContentService'}`;
 export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
@@ -30,6 +34,5 @@ const schemaHost: string =
   typeof document !== 'undefined'
     ? document.baseURI.replace(/\/+$/, '')
     : environment.host;
-// export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
+export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;
-export const CONTENT_SCHEMA = `${environment.host}/curatorgraph/dataSchema`;
