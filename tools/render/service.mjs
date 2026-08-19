@@ -32,6 +32,8 @@
  *   RENDER_CACHE_KEY    salt; change it to invalidate everything (e.g. release)
  *   RENDER_CONCURRENCY  simultaneous renders, default 2
  *   RENDER_QUEUE        pending renders before 503, default 8
+ *
+ * Query parameters: token, scale, subpathways=false, delay and maxSize (GIF).
  */
 import express from 'express';
 import { chromium } from '@playwright/test';
@@ -55,7 +57,12 @@ const CONTENT_TYPE = {
   svg: 'image/svg+xml; charset=utf-8',
   png: 'image/png',
   pdf: 'application/pdf',
+  gif: 'image/gif',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
+
+/** Formats a browser would not usefully display, so offer them as a download. */
+const ATTACHMENT = new Set(['pptx']);
 
 const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0 };
 
@@ -100,11 +107,11 @@ function pump() {
 }
 
 // ---- cache ---------------------------------------------------------------
-function cacheKey({ pathway, format, token, scale, subpathways }) {
+function cacheKey({ pathway, format, token, scale, subpathways, delay, maxSize }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
   return createHash('sha256')
-    .update([CACHE_KEY, pathway, format, token, scale, subpathways].join(' '))
+    .update([CACHE_KEY, pathway, format, token, scale, subpathways, delay, maxSize].join(' '))
     .digest('hex');
 }
 
@@ -190,6 +197,7 @@ async function renderCached(params) {
         state.view,
         state.elements && `${state.elements} elements`,
         state.groups && `${state.groups} groups`,
+        state.frames && `${state.frames} frames`,
       ]
         .filter(Boolean)
         .join(', ');
@@ -242,6 +250,8 @@ app.get('/render/:name.:ext', async (req, res) => {
     token: typeof req.query.token === 'string' ? req.query.token : '',
     scale: Number(req.query.scale || 2),
     subpathways: req.query.subpathways !== 'false',
+    delay: Number(req.query.delay || 1000),
+    maxSize: Number(req.query.maxSize || 2000),
   };
 
   try {
@@ -257,7 +267,8 @@ app.get('/render/:name.:ext', async (req, res) => {
     );
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="${params.pathway || 'genome-wide'}.${format}"`
+      `${ATTACHMENT.has(format) ? 'attachment' : 'inline'}; ` +
+        `filename="${params.pathway || 'genome-wide'}.${format}"`
     );
     return res.end(bytes);
   } catch (error) {

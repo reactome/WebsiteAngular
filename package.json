@@ -70,6 +70,8 @@
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^3.0.0",
     "express": "4.18.2",
+    "fflate": "0.8.2",
+    "gifenc": "1.0.3",
     "immer": "^10.2.0",
     "marked": "^17.0.1",
     "minisearch": "^7.2.0",

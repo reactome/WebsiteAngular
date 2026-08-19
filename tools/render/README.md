@@ -1,22 +1,56 @@
 # Headless render
 
-Renders a pathway to SVG, PNG or PDF from outside the browser, by driving the
-site's own render page.
+Renders a pathway to SVG, PNG, PDF, animated GIF or PowerPoint from outside the
+browser, by driving the site's own render page.
 
 ```bash
 node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
 node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token <analysis-token>
+node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token <analysis-token>
+node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
 node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 ```
 
-| flag        | meaning                                                  |
-| ----------- | -------------------------------------------------------- |
-| `--pathway` | stable id; omit for the genome-wide view                 |
-| `--format`  | `svg`, `png` or `pdf` (default `svg`)                    |
-| `--token`   | analysis token, to render with the analysis overlay      |
-| `--base`    | site to render against (default `http://localhost:4200`) |
-| `--scale`   | PNG scale factor (default 2)                             |
-| `--out`     | output path                                              |
+| flag               | meaning                                                  |
+| ------------------ | -------------------------------------------------------- |
+| `--pathway`        | stable id; omit for the genome-wide view                 |
+| `--format`         | `svg`, `png`, `pdf`, `gif` or `pptx` (default `svg`)     |
+| `--token`          | analysis token, to render with the analysis overlay      |
+| `--base`           | site to render against (default `http://localhost:4200`) |
+| `--scale`          | raster scale factor (default 2; GIF never exceeds 1)     |
+| `--delay`          | GIF milliseconds per frame (default 1000)                |
+| `--max-size`       | GIF longest side in pixels (default 2000)                |
+| `--no-subpathways` | leave out sub-pathway tints and labels                   |
+| `--out`            | output path                                              |
+
+## GIF and PowerPoint
+
+These are the two formats the Java exporter still owned, and they are the two
+that most obviously looked like the old site.
+
+**GIF is the expression animation.** One frame per sample of an expression
+analysis, 1s each, looping; with no token it is a single frame, which is what a
+`.gif` of a plain diagram means. Encoding happens inside the browser: a frame of
+a diagram is tens of megabytes of pixel data and there is one per sample, so
+shipping them out to be assembled costs far more than the finished file. The
+palette is built from every frame, not the first — one frame's palette shifts
+colours on samples whose values land elsewhere on the scale — which is why the
+frames are drawn twice and never accumulated.
+
+Illustrated pathways animate too, through `EhldService.rasterise`. An EHLD is
+inline SVG, and its styling comes from the page's stylesheets rather than the
+markup, so it has to be inlined before a serialised copy means anything.
+
+**PPTX carries the SVG**, with a PNG beside it as the fallback. PowerPoint 2016
+and later draw the SVG and offer _Graphics Format → Convert to Shape_, which
+turns the diagram into ordinary editable shapes. The Java exporter emits
+DrawingML shapes directly — editable the moment the file opens — at the cost of
+a second renderer to keep in step with the first, and a commercial Aspose
+licence. One click is worth that trade; if curators disagree, that is the
+argument to have.
+
+The genome-wide view has no GIF: it draws to a canvas through FoamTree with no
+per-sample frame capture. It says so rather than producing a still.
 
 ## Why this exists
 
@@ -29,9 +63,10 @@ squared off every rounded node in the SVG export for months.
 Rendering through the site's own page means there is one renderer. Whatever a
 curator sees is what the file contains.
 
-This is deliberately **not a service**: no queue, no cache, no HTTP API. Those
-are worth designing once the cost of a render and the fidelity of an analysis
-overlay are known, which is what this measures.
+The CLI came first deliberately, with no queue, cache or HTTP API, so that the
+cost of a render and the fidelity of an analysis overlay were measured before
+anything was designed around them. `service.mjs`, below, is what those numbers
+argued for.
 
 ## Measured on this host
 
@@ -42,9 +77,16 @@ overlay are known, which is what this measures.
 | R-HSA-73857 → PDF                     | 5.6s     | 344 KB               |
 | R-HSA-109606 + expression token → SVG | 6.7s     | 806 KB, 431 elements |
 | R-HSA-2219528 (illustration) → SVG    | 3.5s     | 246 KB               |
+| R-HSA-109606 + token → GIF, 4 samples | 10–12s   | 735 KB, 2000×1121    |
+| R-HSA-109581 (illustration) → GIF     | 3.1s     | 276 KB, 1600×1000    |
+| R-HSA-109606 → PPTX                   | 4.8s     | 988 KB               |
 
 The analysis overlay renders correctly: not-found nodes grey, hits carrying
-their expression bars in the palette colours.
+their expression bars in the palette colours. Checked per frame rather than by
+file size — PMAIP1 goes from dark purple at 0.2 to bright green at 5.2 across
+the four samples, matching the dataset. Uncapped, that GIF was 3.1 MB at
+5976×3350: a diagram's own coordinate space is large and a GIF pays for it once
+per frame.
 
 ## The render page
 
@@ -91,6 +133,8 @@ node tools/render/service.mjs
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
 curl -o out.pdf 'http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=<analysis-token>'
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'
+curl -o out.gif  'http://127.0.0.1:4310/render/R-HSA-109606.gif?token=<analysis-token>'
+curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
@@ -104,6 +148,10 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                |
 | `RENDER_QUEUE`       | 8                     | pending renders before 503                                          |
 | `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                     |
+
+Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
+(ms per frame) and `maxSize` (longest side). All of them are part of the cache
+key, so two variants of a pathway never masquerade as each other.
 
 ### Measured behaviour
 

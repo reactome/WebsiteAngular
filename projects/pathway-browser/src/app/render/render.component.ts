@@ -16,6 +16,8 @@ import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
 import { ActivatedRoute } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
+import { AnalysisService } from '../services/analysis.service';
+import { EhldService } from '../services/ehld.service';
 import { defaultDownloadOptions } from '../services/download.service';
 
 /**
@@ -50,6 +52,8 @@ export class RenderComponent {
   private dataState = inject(DataStateService);
   private eventService = inject(EventService);
   private reacfoamExporter = inject(SvgExporterService);
+  private analysis = inject(AnalysisService);
+  private ehldService = inject(EhldService);
   private route = inject(ActivatedRoute);
 
   /**
@@ -145,7 +149,13 @@ export class RenderComponent {
         await document.fonts.ready;
         // Two frames: one to apply the last change, one to paint it.
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        this.stateForCaller.set({ pathway: pathway ?? null, ...drawn });
+        this.stateForCaller.set({
+          pathway: pathway ?? null,
+          // For a caller that puts the figure in a document and needs to label
+          // it. An stId is not a caption.
+          name: this.dataState.currentPathway()?.displayName ?? null,
+          ...drawn,
+        });
         this.publish();
         this.ready.set(true);
         return;
@@ -226,21 +236,77 @@ export class RenderComponent {
       svg: () => this.exportSvg(),
       // Reacfoam's exporter is async, so callers await whatever they get back.
       png: (scale = 1) => this.exportPng(scale),
+      // Animation primitives rather than an animation. What an animated format
+      // needs is a way to choose a sample and a way to grab what is on screen;
+      // deciding frame order, palette and timing is the caller's business, and
+      // it differs per format.
+      samples: () => this.analysis.samples(),
+      showSample: (name: string) => this.showSample(name),
+      frameCanvas: (scale = 1) => this.frameCanvas(scale),
     };
+  }
+
+  /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
+  private exportableInstances() {
+    const diagram = this.diagram();
+    const instances = diagram?.cys?.filter(Boolean) ?? [];
+    // Applied here rather than while waiting: drawing continues after the
+    // diagram first has elements, and anything hidden earlier comes back. The
+    // page is disposable, so nothing needs restoring.
+    if (diagram && !this.wantsSubpathways) {
+      instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
+    }
+    return { diagram, instances };
+  }
+
+  /**
+   * Colour the diagram by one sample of an expression analysis, and wait until
+   * that is on screen.
+   *
+   * Setting the signal is not enough to capture from: the recolour happens in an
+   * effect and the paint happens after it, so a frame grabbed immediately is the
+   * previous sample's. Two frames -- one to apply, one to paint -- is the same
+   * wait the readiness check uses.
+   */
+  private async showSample(name: string) {
+    this.state.sample.set(name);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  /**
+   * What is on screen, on a canvas, for a caller that needs pixels rather than a
+   * file. Frames stay inside the browser: an animation is tens of megabytes of
+   * pixel data, and sending each frame out to be assembled costs more than
+   * assembling it here.
+   */
+  private async frameCanvas(scale: number): Promise<HTMLCanvasElement> {
+    const { diagram, instances } = this.exportableInstances();
+    if (diagram && instances.length) {
+      // White, not transparent. Every animated format in play here either has no
+      // alpha channel or only a single transparent index, so a transparent
+      // background composites to black rather than to nothing.
+      return diagram.exportCanvas(instances[0], { full: true, scale, bg: '#ffffff' });
+    }
+
+    // An illustration is inline SVG rather than a canvas, so a frame has to be
+    // rasterised. That belongs to the illustration's own service, which knows
+    // that its styling comes from the page's stylesheets and has to be inlined
+    // before the markup means anything on its own.
+    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    if (svg) return await this.ehldService.rasterise(svg, scale, '#ffffff');
+
+    throw new Error(
+      this.reacfoam()
+        ? 'the genome-wide view has no frame capture; render it as svg or png'
+        : 'this view has no frames to capture'
+    );
   }
 
   /** The drawn view as SVG. Reacfoam's path is asynchronous. */
   private exportSvg(): string | Promise<string> {
-    const diagram = this.diagram();
-    if (diagram) {
-      const instances = diagram.cys?.filter(Boolean) ?? [];
+    if (this.diagram()) {
+      const { instances } = this.exportableInstances();
       if (!instances.length) throw new Error('no diagram to export');
-      // Applied here rather than while waiting: drawing continues after the
-      // diagram first has elements, and anything hidden earlier comes back.
-      // The page is disposable, so nothing needs restoring.
-      if (!this.wantsSubpathways) {
-        instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
-      }
       // One instance here by construction: this page never opens the
       // comparison view.
       return instances[0].svg({ full: true });
@@ -275,12 +341,8 @@ export class RenderComponent {
 
   /** The drawn view as a PNG data URL. */
   private exportPng(scale: number): string {
-    const diagram = this.diagram();
-    const instances = diagram?.cys?.filter(Boolean) ?? [];
+    const { instances } = this.exportableInstances();
     if (!instances.length) throw new Error('this view cannot export PNG yet');
-    if (!this.wantsSubpathways && diagram) {
-      instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
-    }
     return instances[0].png({ full: true, scale, bg: 'transparent' });
   }
 }

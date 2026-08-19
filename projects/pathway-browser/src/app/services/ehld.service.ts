@@ -389,7 +389,11 @@ export class EhldService {
       container.style.fill = `url(#${this.pattern}${analysisPathway.stId}-fdr)`;
       container.style.opacity = entities.fdr <= this.state.significance() ? '1' : '0.5';
 
+      // Not every illustration's analysis-info group has a label in it. Every
+      // other lookup here is guarded; this one was not, and an illustration
+      // without one threw part-way through, leaving the region half-decorated.
       const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
+      if (!textInfoElement) return;
       textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
       if (this.analysis.hasPValues())
@@ -446,45 +450,65 @@ export class EhldService {
     });
   }
 
-  downloadImage(format: DownloadFormat) {
-    const container = document.getElementById('ehld');
-    if (!container) return;
-    const svg = container.querySelector('svg') as SVGSVGElement;
+  async downloadImage(format: DownloadFormat) {
+    const svg = document.getElementById('ehld')?.querySelector('svg');
+    if (!svg) return;
+
+    const canvas = await this.rasterise(
+      svg as SVGSVGElement,
+      3,
+      // JPEG has no alpha channel, so a transparent background composites to
+      // black rather than to nothing.
+      format === DownloadFormat.JPEG ? '#ffffff' : undefined
+    );
+    const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
+    this.download.export(
+      canvas.toDataURL(mimeType, 1.0),
+      format,
+      `${this.data.currentPathway()?.stId}`
+    );
+  }
+
+  /**
+   * An illustration drawn onto a canvas at a multiple of its displayed size.
+   *
+   * An EHLD is inline SVG, so anything that wants pixels has to serialise it and
+   * decode it as an image. Two things about that are easy to get wrong and both
+   * were: its styling comes from the page's stylesheets, which do not travel
+   * with the markup, so the styles have to be inlined first; and the drawing has
+   * to be scaled exactly once. Scaling the context and passing scaled
+   * destination dimensions scales it twice, which showed the top-left ninth of
+   * the illustration filling the whole file.
+   *
+   * Shared with the headless render page, which builds animation frames from it.
+   */
+  async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
     this.getInlineStyles(svg, this.select());
-    // serialize the SVG
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const markup = new XMLSerializer().serializeToString(svg);
+    const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
 
-    const viewBoxWidth = svg.getBoundingClientRect().width;
-    const viewBoxHeight = svg.getBoundingClientRect().height;
-    // change to desired output size
-    const scale = 3;
-    const width = viewBoxWidth * scale;
-    const height = viewBoxHeight * scale;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    try {
+      // The illustration declares width and height of 100% and has no viewBox,
+      // so its size is whatever the page gave it.
+      const { width, height } = svg.getBoundingClientRect();
+      const image = new Image();
+      image.src = url;
+      await image.decode();
 
-    const ctx = canvas.getContext('2d')!;
-    ctx.scale(scale, scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
 
-    if (format === DownloadFormat.JPEG) {
-      ctx.fillStyle = '#ffffff'; // white background
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, width, height);
+      const context = canvas.getContext('2d')!;
+      if (background) {
+        context.fillStyle = background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    } finally {
       URL.revokeObjectURL(url);
-      const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
-      const dataURL = canvas.toDataURL(mimeType, 1.0);
-      const currentEHLD = this.data.currentPathway()?.stId;
-      this.download.export(dataURL, format, `${currentEHLD}`);
-    };
-
-    img.src = url;
+    }
   }
 
   // Collect computed style for analysis info

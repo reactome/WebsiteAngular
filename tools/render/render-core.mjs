@@ -5,12 +5,14 @@
  * "wait for the page, ask it for the artefact" -- the whole point of this work
  * is not having two renderers, and that argument applies to its callers too.
  */
+import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.mjs';
+import { pptx } from './pptx.mjs';
 
 /** Formats the render page can produce. */
-export const FORMATS = ['svg', 'png', 'pdf'];
+export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
 
 /** Anything smaller than this is not a real render; see the Reacfoam notes. */
-const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000 };
+const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
 
 /**
  * The URL of the render page for a pathway. Omit the pathway for the
@@ -42,6 +44,8 @@ export async function render(
     token = '',
     scale = 2,
     subpathways = true,
+    delay = DEFAULT_DELAY,
+    maxSize = MAX_SIZE,
     timeout = 120_000,
   }
 ) {
@@ -78,16 +82,31 @@ export async function render(
     if (state?.error) throw new Error(state.error);
 
     let bytes;
+    const detail = {};
     if (format === 'svg') {
       bytes = Buffer.from(
         await page.evaluate(async () => await window.__renderExport.svg()),
         'utf8'
       );
     } else if (format === 'png') {
-      const dataUrl = await page.evaluate((s) => window.__renderExport.png(s), scale);
-      bytes = Buffer.from(dataUrl.split(',')[1], 'base64');
-    } else {
+      bytes = await pngBytes(page, scale);
+    } else if (format === 'pdf') {
       bytes = await pdfFromSvg(page, timeout);
+    } else if (format === 'gif') {
+      // Never above 1x. A GIF stores every frame, so doubling the scale
+      // quadruples a file that already has one picture per sample -- and 256
+      // colours is the ceiling on quality regardless of size, so the pixels
+      // would buy nothing.
+      const gif = await gifFromPage(page, { scale: Math.min(scale, 1), delay, maxSize });
+      bytes = gif.bytes;
+      Object.assign(detail, {
+        size: gif.size.join('x'),
+        frames: gif.frames,
+        distinct: gif.distinct,
+        truncated: gif.truncated,
+      });
+    } else {
+      bytes = await pptxFromPage(page, { scale, title: state?.name ?? '' });
     }
 
     const floor = MIN_BYTES[format];
@@ -98,11 +117,44 @@ export async function render(
       );
     }
 
-    return { bytes, state: state ?? {}, problems };
+    return { bytes, state: { ...(state ?? {}), ...detail }, problems };
   } finally {
     page.off('pageerror', onPageError);
     page.off('console', onConsole);
   }
+}
+
+/** The diagram as PNG bytes, decoded from the data URL the page hands back. */
+async function pngBytes(page, scale) {
+  const dataUrl = await page.evaluate((s) => window.__renderExport.png(s), scale);
+  return Buffer.from(dataUrl.split(',')[1], 'base64');
+}
+
+/**
+ * The size the SVG declares, which is the diagram's own size rather than the
+ * viewport's. Everything that puts a diagram in a document needs it.
+ */
+function svgSize(svg) {
+  return {
+    width: Number(/\bwidth="([\d.]+)"/.exec(svg)?.[1] ?? 1600),
+    height: Number(/\bheight="([\d.]+)"/.exec(svg)?.[1] ?? 1000),
+  };
+}
+
+/**
+ * PowerPoint of the rendered diagram: the SVG for PowerPoint to draw and to
+ * convert to shapes, and a PNG for everything that cannot.
+ */
+async function pptxFromPage(page, { scale, title }) {
+  const svg = await page.evaluate(async () => await window.__renderExport.svg());
+  const size = svgSize(svg);
+  // The PNG is only what a viewer that cannot draw SVG falls back to, and a
+  // diagram's own coordinate space is around 6000px wide -- at the requested
+  // scale the fallback came out at 6MB, dwarfing the vector version PowerPoint
+  // actually uses. Cap it at the same size the animation uses.
+  const longest = Math.max(size.width, size.height);
+  const png = await pngBytes(page, Math.min(scale, MAX_SIZE / longest));
+  return pptx({ svg, png, title, ...size });
 }
 
 /**
@@ -113,8 +165,7 @@ export async function render(
  */
 async function pdfFromSvg(page, timeout) {
   const svg = await page.evaluate(async () => await window.__renderExport.svg());
-  const width = Number(/\bwidth="([\d.]+)"/.exec(svg)?.[1] ?? 1600);
-  const height = Number(/\bheight="([\d.]+)"/.exec(svg)?.[1] ?? 1000);
+  const { width, height } = svgSize(svg);
 
   // The same page, not a second one. The artefact is already extracted, so the
   // render page has done its job, and a page made by browser.newPage() has no

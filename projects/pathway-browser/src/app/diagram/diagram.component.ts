@@ -261,6 +261,34 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
+   * The whole diagram on a canvas, including anything drawn by a custom layer.
+   *
+   * cytoscape has two ways to produce this and only one of them sees
+   * everything. The renderer's own bufferCanvasImage draws the graph;
+   * cytoscape-layers composes the graph together with the layers on top of it
+   * -- which is where the analysis overlay and the interactor decorations live.
+   * Ask the layers when there are any, and the renderer when there are not.
+   *
+   * Public because the headless render page builds animation frames from it.
+   * Going through here rather than cy.png() means a frame contains what the
+   * screen contains.
+   */
+  exportCanvas(cy: cytoscape.Core, options: cytoscape.ExportJpgBlobPromiseOptions) {
+    const layers = cy.scratch('_layers') as
+      { hasCustomLayer?: () => boolean; toCanvas?: (o: unknown) => HTMLCanvasElement } | undefined;
+
+    return layers?.toCanvas && layers.hasCustomLayer?.()
+      ? layers.toCanvas({ ...options, bg: options.bg ?? '#fff' })
+      : (
+          cy as unknown as {
+            renderer: () => { bufferCanvasImage: (o: unknown) => HTMLCanvasElement };
+          }
+        )
+          .renderer()
+          .bufferCanvasImage(options);
+  }
+
+  /**
    * The diagram as JPEG.
    *
    * Not cy.jpg(). cytoscape-layers replaces cy.png/jpg/jpeg on the instance so
@@ -279,19 +307,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     cy: cytoscape.Core,
     options: cytoscape.ExportJpgBlobPromiseOptions
   ): Promise<Blob> {
-    const layers = cy.scratch('_layers') as
-      { hasCustomLayer?: () => boolean; toCanvas?: (o: unknown) => HTMLCanvasElement } | undefined;
-
-    const canvas =
-      layers?.toCanvas && layers.hasCustomLayer?.()
-        ? layers.toCanvas({ ...options, bg: options.bg ?? '#fff' })
-        : (
-            cy as unknown as {
-              renderer: () => { bufferCanvasImage: (o: unknown) => HTMLCanvasElement };
-            }
-          )
-            .renderer()
-            .bufferCanvasImage(options);
+    const canvas = this.exportCanvas(cy, options);
 
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(

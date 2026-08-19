@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Render one pathway to SVG, PNG or PDF from the command line.
+ * Render one pathway from the command line.
  *
  * A thin wrapper over render-core.mjs, which is shared with the service so
  * there is one implementation of the render itself.
@@ -10,12 +10,18 @@
  *   node tools/render/render.mjs --format svg --out genome-wide.svg
  *
  *   --pathway   stable id; omit for the genome-wide view
- *   --format    svg | png | pdf        (default svg)
+ *   --format    svg | png | pdf | gif | pptx   (default svg)
  *   --out       output path            (default <pathway>.<format>)
  *   --token     analysis token, to render with the analysis overlay
  *   --base      site to render against (default http://localhost:4200)
- *   --scale     PNG scale factor       (default 2)
+ *   --scale     raster scale factor    (default 2; GIF never exceeds 1)
+ *   --delay     GIF milliseconds per frame (default 1000)
+ *   --max-size  GIF longest side in pixels  (default 2000)
  *   --no-subpathways  leave out sub-pathway tints and labels
+ *
+ * GIF animates one frame per sample of an expression analysis, so it wants a
+ * --token; without one it is a single frame. PPTX carries the SVG, which
+ * PowerPoint can convert to editable shapes.
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
@@ -50,6 +56,8 @@ try {
     format,
     token: flag('token', ''),
     scale: Number(flag('scale', '2')),
+    delay: Number(flag('delay', '1000')),
+    maxSize: Number(flag('max-size', '2000')),
     subpathways: !args.includes('--no-subpathways'),
   });
 
@@ -59,6 +67,9 @@ try {
     state.view,
     state.elements && `${state.elements} elements`,
     state.groups && `${state.groups} groups`,
+    state.frames && `${state.frames} frames`,
+    state.size,
+    state.truncated ? `${state.truncated} samples dropped past the frame limit` : null,
   ]
     .filter(Boolean)
     .join(', ');
