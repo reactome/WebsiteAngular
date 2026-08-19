@@ -78,6 +78,7 @@ import { RheaComponent } from '../../common/rhea/rhea.component';
 import { InteractorsTableComponent } from '../../common/interactors-table/interactors-table.component';
 import { LocationsTreeComponent } from '../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component';
 import { ReactionDiagramComponent } from '../../common/reaction-diagram/reaction-diagram.component';
+import { Pathway } from '../../../model/graph/event/pathway.model';
 
 @Component({
   selector: 'cr-description-tab',
@@ -140,6 +141,41 @@ export class DescriptionTabComponent implements OnDestroy {
       this.referenceEntity() &&
       this.obj().stId,
     stream: (param) => (param.params ? this.entity.getOtherForms(param.params) : of(null)),
+  });
+
+  /**
+   * Pathways this entity participates in, beyond the one on screen. Only
+   * meaningful for a physical entity -- for an event the hierarchy already
+   * answers it.
+   */
+  _otherPathways = rxResource({
+    params: () => {
+      const obj = this.obj();
+      if (!isPhysicalEntity(obj) || isReferenceSummary(obj) || !obj.stId) return undefined;
+      return { stId: obj.stId, taxId: this.species.currentSpecies().taxId };
+    },
+    stream: ({ params }) =>
+      params ? this.entity.getParticipatingPathways(params.stId, params.taxId) : of([]),
+  });
+
+  /** Everything except the pathway already open, which is not "other". */
+  /**
+   * Open one of the participating pathways.
+   *
+   * Through navigateTo rather than a routerLink: an absolute ['/', stId] is
+   * resolved against the host and drops the /PathwayBrowser prefix, which is
+   * what broke the comparison menu.
+   */
+  openPathway(stId: string) {
+    void this.state.navigateTo(stId, {
+      queryParams: { select: null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  otherPathways = computed<Pathway[]>(() => {
+    const current = this.state.pathwayId();
+    return (this._otherPathways.value() ?? []).filter((pathway) => pathway.stId !== current);
   });
 
   _interactors = rxResource({
@@ -423,6 +459,7 @@ export class DescriptionTabComponent implements OnDestroy {
   modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
   crossReferencesTemplate$ = viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
   markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
+  otherPathwaysTemplate$ = viewChild.required<TemplateRef<unknown>>('otherPathwaysTemplate');
   regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
   regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
   catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivityTemplate');
@@ -513,6 +550,13 @@ export class DescriptionTabComponent implements OnDestroy {
       manual: true,
       template: this.markerTemplate$,
       isPresent: computed(() => this.proteinMarkers().length + this.rnaMarkers().length > 0),
+    },
+    {
+      key: 'otherPathways',
+      label: 'Other Pathways',
+      manual: true,
+      template: this.otherPathwaysTemplate$,
+      isPresent: computed(() => this.otherPathways().length > 0),
     },
 
     {
@@ -722,6 +766,8 @@ export class DescriptionTabComponent implements OnDestroy {
         return this.authorship() && this.authorship().length > 0;
       case DataKeys.INTERACTORS:
         return this.interactors() && this.interactors().length > 0;
+      case 'otherPathways':
+        return this.otherPathways().length > 0;
       default:
         return obj[key] !== undefined && obj[key];
     }

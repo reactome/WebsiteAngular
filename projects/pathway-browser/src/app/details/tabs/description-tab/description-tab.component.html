@@ -384,6 +384,23 @@
   </div>
 </ng-template>
 
+<!-- Where else this entity takes part. The diagram only ever shows the pathway
+     currently open, so this is the answer to "where else does this appear?" -->
+<ng-template #otherPathwaysTemplate>
+  <div class="element-container">
+    <ul class="other-pathways">
+      @for (pathway of otherPathways(); track pathway.stId) {
+        <li>
+          <button type="button" class="other-pathway" (click)="openPathway(pathway.stId)">
+            <mat-icon fontSet="symbols" class="other-pathway-icon">account_tree</mat-icon>
+            <span class="other-pathway-name">{{ pathway.displayName }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+</ng-template>
+
 <ng-template #locationsTemplate>
   <div class="element-container">
     <app-locations-tree [id]="obj().stId" />

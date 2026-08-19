@@ -2,7 +2,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
-import { filter, map, Observable, of, take } from 'rxjs';
+import { Pathway } from '../model/graph/event/pathway.model';
+import { catchError, filter, map, Observable, of, take } from 'rxjs';
 import { DataStateService } from './data-state.service';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
 import { DatabaseObject } from '../model/graph/database-object.model';
@@ -44,6 +45,21 @@ export class EntityService {
   getOtherForms(stId: string): Observable<PhysicalEntity[]> {
     const url = `${CONTENT_SERVICE}/data/entity/${stId}/otherForms`;
     return this.http.get<PhysicalEntity[]>(url);
+  }
+
+  /**
+   * The lower level pathways this entity takes part in.
+   *
+   * Answers "where else does this appear?", which the diagram alone cannot: it
+   * only shows the pathway currently open. 404s for an id that participates in
+   * nothing, which is a normal answer rather than a failure, so it comes back
+   * as an empty list.
+   */
+  getParticipatingPathways(stId: string, taxId: string): Observable<Pathway[]> {
+    const url = `${CONTENT_SERVICE}/data/pathways/low/entity/${stId}`;
+    return this.http
+      .get<Pathway[]>(url, { params: { species: taxId } })
+      .pipe(catchError(() => of([])));
   }
 
   getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
