@@ -86,7 +86,7 @@
     "svg-pan-zoom": "^3.6.1",
     "svgcanvas": "^2.6.0",
     "swagger-ui-dist": "^5.32.0",
-    "tinacms": "^3.8.1",
+    "tinacms": "^3.11.0",
     "tslib": "^2.3.0",
     "vectorious": "^6.1.12"
   },
