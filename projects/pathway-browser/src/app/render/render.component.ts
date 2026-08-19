@@ -77,8 +77,11 @@ export class RenderComponent {
       // Read what should retrigger the wait, then leave the tracked context:
       // the polling below must not register dependencies of its own.
       const pathway = this.pathwayId();
-      const loading = this.loading();
-      if (loading) return;
+      // Deliberately not gated on loading. Waiting for loading to finish first
+      // means an id whose fetch never settles -- one that does not exist, for
+      // instance -- leaves the wait unstarted, so the page neither draws nor
+      // reports anything and the caller pays a full timeout to learn nothing.
+      // The wait polls, so starting it early costs nothing.
       untracked(() => void this.waitForDrawn(pathway));
     });
   }
@@ -108,7 +111,9 @@ export class RenderComponent {
     // An id that does not resolve should not cost a full timeout. The resource's
     // own error signal does not surface a 404 here, so judge it by what can
     // actually be observed: the fetch has settled and there is nothing to draw.
-    const giveUpOnMissing = started + 10_000;
+    // Short, because the check only reads the pathway once its fetch has
+    // settled: a slow but valid load is still "loading" and never trips it.
+    const giveUpOnMissing = started + 3_000;
 
     while (Date.now() < deadline) {
       const drawn = this.drawn();

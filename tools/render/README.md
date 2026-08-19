@@ -143,11 +143,16 @@ so typos are normal rather than exceptional, and a render page asked for one
 that does not resolve simply never becomes ready. One backend request costs
 60ms; letting it reach the renderer costs a browser and a timeout.
 
-### Known limitation
+### Failures are fast
 
-An id that passes the existence check but still never draws — a real event with
-no diagram, say — costs `RENDER_TIMEOUT` and holds a render slot for it. The
-render page cannot currently tell that case apart from "still loading": the
-resource's error signal does not surface it, and reading the failed resource
-throws from somewhere the page's own wait does not catch. Worth fixing in the
-page rather than the service, since the page is the only thing that knows.
+An id that does not resolve, or one that is not an event at all, reports the
+backend's own error in about 6s rather than costing a full timeout. That took
+three attempts to get right, and the cause was not what it looked like: the wait
+was gated on the pathway having finished loading, and for an id whose fetch never
+settles that gate never opens — so the page neither drew nor reported, and the
+caller waited two minutes to learn nothing. The wait now starts regardless and
+polls, and reading a failed resource throws, which surfaces the real error.
+
+The service also refuses unknown ids before a browser is involved, so the two
+guards are independent: the page is correct on its own, and the service is cheap
+on its own.
