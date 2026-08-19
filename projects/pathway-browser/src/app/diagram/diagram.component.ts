@@ -204,15 +204,18 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const isJpeg = format === DownloadFormat.JPEG;
     const options: cytoscape.ExportJpgBlobPromiseOptions = {
       full: true,
-      ...(format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
-      bg: 'transparent',
+      ...(isJpeg ? { quality: 0.9 } : {}),
+      // JPEG has no alpha channel, so a transparent background composites to
+      // black rather than to nothing. PNG keeps the transparency.
+      bg: isJpeg ? '#ffffff' : 'transparent',
       output: 'blob-promise',
     };
 
     const blobs = this.cys.map((cy) =>
-      format === DownloadFormat.PNG ? cy.png(options) : cy.jpg(options)
+      format === DownloadFormat.PNG ? cy.png(options) : this.jpegBlob(cy, options)
     );
     let blob: Blob;
     if (blobs.length > 1) {
@@ -235,6 +238,48 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     a.download = `${this.pathwayId()}.${format}`;
     a.click();
     a.remove();
+  }
+
+  /**
+   * The diagram as JPEG.
+   *
+   * Not cy.jpg(). cytoscape-layers replaces cy.png/jpg/jpeg on the instance so
+   * custom layers appear in an export, and its jpg() ends with
+   * `output(o, this.toCanvas(o), 'image/png')` -- the wrong media type in the
+   * JPEG branch. The file was named .jpeg and contained PNG bytes.
+   *
+   * The override only takes effect when a custom layer exists, which the
+   * diagram has and a bare graph does not, so this looks like a cytoscape bug
+   * until you notice it only happens here.
+   *
+   * Take the canvas the layers compose -- so nothing is lost from the picture
+   * -- and encode it as JPEG.
+   */
+  private async jpegBlob(
+    cy: cytoscape.Core,
+    options: cytoscape.ExportJpgBlobPromiseOptions
+  ): Promise<Blob> {
+    const layers = cy.scratch('_layers') as
+      { hasCustomLayer?: () => boolean; toCanvas?: (o: unknown) => HTMLCanvasElement } | undefined;
+
+    const canvas =
+      layers?.toCanvas && layers.hasCustomLayer?.()
+        ? layers.toCanvas({ ...options, bg: options.bg ?? '#fff' })
+        : (
+            cy as unknown as {
+              renderer: () => { bufferCanvasImage: (o: unknown) => HTMLCanvasElement };
+            }
+          )
+            .renderer()
+            .bufferCanvasImage(options);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('canvas.toBlob returned null'))),
+        'image/jpeg',
+        options.quality ?? 0.9
+      );
+    });
   }
 
   /**
