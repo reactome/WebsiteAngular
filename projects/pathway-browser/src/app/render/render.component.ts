@@ -139,12 +139,20 @@ export class RenderComponent {
 
     const reacfoam = this.reacfoam();
     if (reacfoam) {
-      // A canvas exists long before FoamTree has any geometry, and exporting at
-      // that point yields a valid but empty SVG. Wait until the tree actually
-      // holds groups.
+      // Gate on the very thing the exporter reads. A canvas exists early, and
+      // the tree holds its groups before it has laid them out -- exporting in
+      // that window produces a valid SVG with zero width and nothing in it.
+      // Geometry only appears once FoamTree's relaxation has run.
       const tree = untracked(reacfoam.foamTree);
-      const groups = tree?.get('dataObject')?.groups ?? [];
-      return groups.length > 0 ? { view: 'reacfoam', groups: groups.length } : null;
+      const dataObject = tree?.get('dataObject');
+      const geometry = dataObject ? tree.get('geometry', dataObject) : undefined;
+      const groups = dataObject?.groups ?? [];
+      if (!geometry?.boxWidth || !geometry?.boxHeight) return null;
+      return {
+        view: 'reacfoam',
+        groups: groups.length,
+        box: [geometry.boxWidth, geometry.boxHeight],
+      };
     }
 
     return null;
@@ -185,8 +193,22 @@ export class RenderComponent {
     // exporter rather than going through cytoscape. It matters here because
     // Reacfoam is what replaced the old fireworks view, which is not being
     // reimplemented.
+    //
+    // That exporter hands back a blob URL rather than markup -- the download
+    // button feeds it straight to an anchor -- so read the blob to get the SVG
+    // itself, and release it afterwards.
     const reacfoam = this.reacfoam();
-    if (reacfoam) return this.reacfoamExporter.exportReacfoam(reacfoam, defaultDownloadOptions);
+    if (reacfoam) {
+      return this.reacfoamExporter
+        .exportReacfoam(reacfoam, defaultDownloadOptions)
+        .then(async (url) => {
+          try {
+            return await (await fetch(url)).text();
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        });
+    }
 
     throw new Error('nothing on this page can export SVG');
   }

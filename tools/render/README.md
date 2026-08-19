@@ -66,11 +66,18 @@ made that harder than expected and are worth knowing if you touch it:
   `EventService.setDiagramPathway`, which only the viewport used to do. Without
   it the page renders the legend and nothing else.
 
-## Known gap
+## Two traps in the genome-wide view
 
-**The genome-wide view exports an empty SVG** (63 bytes) and the CLI refuses to
-write it. `SvgExporterService.exportReacfoam` reads geometry from
-`untracked(reacfoam.foamTree)`, and `foamTree` is a `computed(() => new
-FoamTree(...))` — so reading it can construct a fresh, empty tree rather than
-returning the one on screen. Worth checking whether the in-app Reacfoam SVG
-download has the same problem, since it goes through the same service.
+Both cost time, and neither is a bug in Reacfoam.
+
+`SvgExporterService.exportReacfoam` resolves to a **blob URL, not markup** — the
+download button hands it straight to an anchor, so nothing in the app ever needed
+the string. Treating the return value as SVG yields exactly 63 characters, which
+is a URL. The render page fetches the blob and releases it.
+
+Readiness has to wait for FoamTree's **geometry**, not its data. The tree holds
+its groups well before relaxation has laid them out, and exporting in that window
+produces a valid SVG of zero width. The check reads
+`tree.get('geometry', tree.get('dataObject'))` — the same thing the exporter
+reads — which is the general lesson: gate on what the consumer needs, not on a
+proxy for it.
