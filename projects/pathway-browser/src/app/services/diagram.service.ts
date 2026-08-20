@@ -856,6 +856,22 @@ export class DiagramService {
     // visible on R-HSA-112307 transmission across electrical synapses,
     // where K+ connector segments are empty so this routine is what
     // builds the path through the edge's own segments.
+    //
+    // One exception, added deliberately and guarded: a segment may be recorded
+    // pointing away from the reaction rather than towards it, in which case the
+    // matching map has no entry for the point we are standing on and the edge
+    // simply stops short. The reaction exporter's own layouts do this on the
+    // input side -- for R-HSA-6805479 the backbone reads 267 -> 247 while a
+    // pathway diagram would read 2277 -> 2298 -- so inputs ended 26 units from
+    // the reaction and visibly failed to touch it, while outputs, whose
+    // orientation happens to suit the backward walk, were fine.
+    //
+    // The guard is what makes this safe where the old fallback was not: a step
+    // is only taken if it lands strictly closer to the point we are walking
+    // towards. A wrong-direction segment leads away from the stop and is
+    // refused, so a U-shape cannot be dragged out of shape.
+    this.bridgeReversedSegment(edge, points, direction, stop);
+
     if (direction === 'forward') {
       const map = this.extraLine;
       let pos = posToStr(edge, points.at(-1)!);
@@ -873,6 +889,38 @@ export class DiagramService {
         pos = posToStr(edge, points.at(0)!);
       }
     }
+  }
+
+  /**
+   * Take one step along a segment recorded in the opposite orientation, when it
+   * moves closer to where this walk is heading.
+   *
+   * Only ever one step, and only towards the stop: this exists to close the gap
+   * between a connector's last point and the reaction it belongs to, not to
+   * re-route an edge.
+   */
+  private bridgeReversedSegment(
+    edge: Edge,
+    points: Position[],
+    direction: 'forward' | 'backward',
+    stop: Position
+  ) {
+    const end = direction === 'forward' ? points.at(-1) : points.at(0);
+    if (!end || !isFinitePoint(end) || !isFinitePoint(stop)) return;
+
+    const own = direction === 'forward' ? this.extraLine : this.reverseExtraLine;
+    const pos = posToStr(edge, end);
+    // The walk about to happen can already get there; leave it alone.
+    if (own.has(pos)) return;
+
+    const opposite = direction === 'forward' ? this.reverseExtraLine : this.extraLine;
+    const next = opposite.get(pos);
+    if (!next || !isFinitePoint(next)) return;
+
+    if (dist(next, stop) >= dist(end, stop)) return;
+
+    if (direction === 'forward') points.push(next);
+    else points.unshift(next);
   }
 
   private endpoint(source: Position, point: Position): string | undefined {

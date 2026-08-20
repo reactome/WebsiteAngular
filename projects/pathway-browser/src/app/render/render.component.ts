@@ -79,6 +79,18 @@ export class RenderComponent {
    */
   private readonly wantsDark = this.route.snapshot.queryParamMap.get('dark') === 'true';
 
+  /**
+   * ?select=<stId> frames the figure on one event rather than the whole diagram.
+   *
+   * This is what a reaction page needs. Reactome's own reaction exporter draws a
+   * standalone figure by laying the reaction out afresh -- inputs, outputs,
+   * catalysts, arranged by its own algorithm -- which is a second layout to
+   * maintain and does not look like the diagram the curator drew. Framing the
+   * curated diagram on that reaction instead gives the same subject in the
+   * layout it actually has, and needs no new drawing code at all.
+   */
+  private readonly selection = this.route.snapshot.queryParamMap.get('select') ?? '';
+
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
   readonly loading = this.dataState._currentPathway.isLoading;
   readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
@@ -263,6 +275,34 @@ export class RenderComponent {
     };
   }
 
+  /**
+   * Point the viewport at the selected event, so an export of the viewport is a
+   * figure of that event.
+   *
+   * Returns whether it worked: an id that is not in this diagram should fall back
+   * to the whole thing rather than exporting an empty frame.
+   */
+  private frameSelection(cy: cytoscape.Core) {
+    if (!this.selection) return false;
+
+    const diagram = this.diagram();
+    if (!diagram) return false;
+
+    // The diagram's own lookup, so this matches what selecting in the app does --
+    // including pulling in the containers a reference entity appears in.
+    const selected = diagram.select(this.selection, cy);
+    if (!selected.length) return false;
+
+    // The reaction plus what it connects to: a reaction on its own is a node with
+    // no inputs or outputs visible, which is not a figure of anything.
+    const withNeighbours =
+      'connectedNodes' in selected ? selected.add(selected.connectedNodes()) : selected;
+
+    // No animation: this runs once, immediately before the export.
+    cy.fit(withNeighbours, 60);
+    return true;
+  }
+
   /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
   private exportableInstances() {
     const diagram = this.diagram();
@@ -328,7 +368,11 @@ export class RenderComponent {
       if (!instances.length) throw new Error('no diagram to export');
       // One instance here by construction: this page never opens the
       // comparison view.
-      return instances[0].svg({ full: true });
+      //
+      // full:false exports what the viewport shows, which is the point when the
+      // viewport has been framed on one event.
+      const framed = this.frameSelection(instances[0]);
+      return instances[0].svg({ full: !framed });
     }
 
     // Through the illustration's own service, which knows that its styling has
@@ -372,7 +416,10 @@ export class RenderComponent {
   /** The drawn view as a PNG data URL. */
   private async exportPng(scale: number): Promise<string> {
     const { instances } = this.exportableInstances();
-    if (instances.length) return instances[0].png({ full: true, scale, bg: 'transparent' });
+    if (instances.length) {
+      const framed = this.frameSelection(instances[0]);
+      return instances[0].png({ full: !framed, scale, bg: 'transparent' });
+    }
 
     // An illustration has no cytoscape instance to ask, so it goes through the
     // same rasteriser the animation frames use. Without this a .png of any

@@ -65,6 +65,13 @@ floor; the fourth is a decision, not work.
 | Selecting a result highlights it in the diagram                    | **auto** — `in-diagram-search.spec.ts`, by asserting the selection reaches the URL, which is what the diagram, the details panel and a shared link all read |
 | "All pathways" returns a larger hit count than the current pathway | **auto** — `in-diagram-search.spec.ts`                                                                                                                      |
 
+## Reaction pages (`/content/detail/{stId}`)
+
+| Item                                                                                    | Status                                                                                                                       |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| A reaction draws its own diagram, from the reaction exporter's layout through our style | **gap** — worth a test: the input edges failed to touch the reaction node until 2026-08-20, and nothing would have caught it |
+| Diagram and data formats offered for a reaction                                         | **gap**                                                                                                                      |
+
 ## Details panel
 
 | Item                                                                                         | Status                                                                |
