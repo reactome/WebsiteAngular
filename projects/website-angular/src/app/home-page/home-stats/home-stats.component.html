@@ -1,5 +1,11 @@
 <h1 class="stat-header">
-  Version {{ version }} Released on
+  <!-- No version, no claim about one: the number comes from the database and
+       says nothing until it arrives. -->
+  @if (version()) {
+    Version V{{ version() }} Released on
+  } @else {
+    Released on
+  }
   {{ releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' }) }}
 </h1>
 <app-carousel class="stats-container">

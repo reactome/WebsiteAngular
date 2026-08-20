@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 29 automated, 7 that need a person, 18 still to write, 2 not
+**Where it stands: 30 automated, 7 that need a person, 17 still to write, 2 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -33,15 +33,15 @@ floor; the fourth is a decision, not work.
 
 ## Navigation bar
 
-| Item                                                                   | Status                                                                                                |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| All six menus have dropdowns                                           | **auto** — `nav-links.spec.ts`                                                                        |
-| Every link in every dropdown reaches a real page                       | **auto** — `nav-links.spec.ts` crawls all 73 and fails naming any that 404s or renders an empty shell |
-| About → Statistics shows the current release and date                  | **gap**                                                                                               |
-| Content → Table of Contents: NEW and UPDATED flags correct             | **human** — correctness depends on what curators released                                             |
-| Content → DOI: NEW/UPDATED flags on the right pathways                 | **human** — as above                                                                                  |
-| Docs → Computational Inferred Events shows the current release's image | **gap**                                                                                               |
-| Download menu: every link valid and every file present                 | **gap** — the S3/CloudFront move lands here                                                           |
+| Item                                                                   | Status                                                                                                                         |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| All six menus have dropdowns                                           | **auto** — `nav-links.spec.ts`                                                                                                 |
+| Every link in every dropdown reaches a real page                       | **auto** — `nav-links.spec.ts` crawls all 73 and fails naming any that 404s or renders an empty shell                          |
+| About → Statistics shows the current release and date                  | **gap**                                                                                                                        |
+| Content → Table of Contents: NEW and UPDATED flags correct             | **human** — correctness depends on what curators released                                                                      |
+| Content → DOI: NEW/UPDATED flags on the right pathways                 | **human** — as above                                                                                                           |
+| Docs → Computational Inferred Events shows the current release's image | **gap**                                                                                                                        |
+| Download menu: every link valid and every file present                 | **auto** — `download-files.spec.ts` HEADs all 74 offered files and asserts the release matches what the content service serves |
 
 ## Pathway Browser
 

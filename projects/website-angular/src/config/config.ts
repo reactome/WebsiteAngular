@@ -1,7 +1,10 @@
 export const APP_CONFIG = {
   // app-level version info
   version: {
-    releaseNumber: '96',
+    // No releaseNumber here on purpose: the release comes from the database via
+    // /ContentService/data/database/version. A constant in the bundle is stale
+    // from the first release after a deploy, and it looks exactly as
+    // authoritative as the real answer.
     releaseDate: '2026-04-01',
   },
 

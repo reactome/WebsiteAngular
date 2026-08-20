@@ -25,7 +25,13 @@ export class HomeStatsComponent implements OnInit {
   private statsService = inject(StatsService);
   private generalService = inject(GeneralService);
 
-  version: string = '';
+  /**
+   * The release, straight from the database. A computed rather than a field:
+   * the answer arrives after this component first renders, and a field read once
+   * in ngOnInit would keep whatever was true then -- which, with no build-time
+   * fallback, is nothing at all.
+   */
+  readonly version = this.statsService.versionNow;
   releaseDate: Date = new Date();
   stats: Stats = {
     human_pathways: 0,
@@ -41,8 +47,6 @@ export class HomeStatsComponent implements OnInit {
   }
 
   getVersionAndDate() {
-    this.version =
-      'V' + (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
     this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }
