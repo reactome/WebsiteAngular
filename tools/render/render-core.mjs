@@ -140,7 +140,7 @@ export async function render(
 
 /** The diagram as PNG bytes, decoded from the data URL the page hands back. */
 async function pngBytes(page, scale) {
-  const dataUrl = await page.evaluate((s) => window.__renderExport.png(s), scale);
+  const dataUrl = await page.evaluate(async (s) => await window.__renderExport.png(s), scale);
   return Buffer.from(dataUrl.split(',')[1], 'base64');
 }
 

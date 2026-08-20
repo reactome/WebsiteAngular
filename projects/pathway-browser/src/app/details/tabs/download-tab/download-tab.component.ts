@@ -18,7 +18,6 @@ import {
   DownloadService,
   DownloadTarget,
   includeSubpathways,
-  RENDER_VERSION,
 } from '../../../services/download.service';
 import { DownloadButtonComponent, Icon } from './download-button/download-button.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -302,10 +301,6 @@ export class DownloadTabComponent {
     // Set only when turning them off, so the ordinary URL stays the short one
     // and the service's cache is not split by a parameter that says nothing.
     if (!includeSubpathways()) url.searchParams.set('subpathways', 'false');
-    // Not read by the service. It is here so that a change to the renderer
-    // changes the address, which is the only thing a CDN or a browser respects
-    // once it has stored a figure.
-    url.searchParams.set('v', RENDER_VERSION);
     return url.toString();
   }
 

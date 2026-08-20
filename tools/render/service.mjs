@@ -32,6 +32,7 @@
  *   RENDER_CACHE_KEY    salt; change it to invalidate everything (e.g. release)
  *   RENDER_CONCURRENCY  simultaneous renders, default 2
  *   RENDER_QUEUE        pending renders before 503, default 8
+ *   RENDER_CACHE_MAX    bytes of cache to keep, default 2 GB (0 disables)
  *
  * Query parameters: token, scale, subpathways=false, dark=true, and delay and
  * maxSize for GIF.
@@ -39,7 +40,16 @@
 import express from 'express';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile, stat, rename } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  writeFile,
+  stat,
+  rename,
+  readdir,
+  unlink,
+  utimes,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { FORMATS, render } from './render-core.mjs';
 
@@ -49,13 +59,25 @@ const BASE = process.env.RENDER_BASE || 'http://localhost:4200';
 const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // Bump this whenever the renderer's output changes, not only when the data
 // does: it keys the disk cache AND is the ETag, so it is the only thing that
-// tells a browser its copy is stale. v2 = full-size differenced GIFs.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v2';
+// tells a browser its copy is stale. v2 = full-size differenced GIFs; v3 =
+// illustrations export as standalone SVG, styles inlined and size written down.
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v3';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
 const RENDER_TIMEOUT = Number(process.env.RENDER_TIMEOUT || 45_000);
 const MAX_QUEUE = Number(process.env.RENDER_QUEUE || 8);
+/**
+ * How much cache to keep, in bytes.
+ *
+ * A figure averages a couple of megabytes and there are thousands of diagrams
+ * times five formats, so an unbounded cache is tens of gigabytes -- on a host
+ * that also runs Tomcat, Neo4j and the site's own builds. Filling that disk
+ * takes the site down, which is a far worse outcome than paying for a render
+ * again, and this cache is pure derived data: everything in it can be rebuilt
+ * from the pathway id.
+ */
+const MAX_CACHE = Number(process.env.RENDER_CACHE_MAX ?? 2 * 1024 ** 3);
 
 const CONTENT_TYPE = {
   svg: 'image/svg+xml; charset=utf-8',
@@ -68,7 +90,7 @@ const CONTENT_TYPE = {
 /** Formats a browser would not usefully display, so offer them as a download. */
 const ATTACHMENT = new Set(['pptx']);
 
-const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0 };
+const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0, evicted: 0 };
 
 /**
  * Keep a request's numbers inside what this box can draw.
@@ -137,7 +159,13 @@ async function fromCache(key, format) {
   const file = path.join(CACHE, `${key}.${format}`);
   try {
     await stat(file);
-    return await readFile(file);
+    const bytes = await readFile(file);
+    // Mark it as used, so eviction drops what nobody asks for rather than what
+    // happens to be oldest. relatime makes read atimes unreliable, so the
+    // timestamp has to be set deliberately.
+    const now = new Date();
+    void utimes(file, now, now).catch(() => {});
+    return bytes;
   } catch {
     return null;
   }
@@ -150,6 +178,65 @@ async function toCache(key, format, bytes) {
   const temp = `${file}.${process.pid}.tmp`;
   await writeFile(temp, bytes);
   await rename(temp, file);
+  await evict();
+}
+
+/**
+ * Drop least-recently-used figures until the cache is back under its limit.
+ *
+ * Runs after a write, which is the only thing that grows it, and reads the
+ * directory rather than tracking a running total -- the total has to survive
+ * restarts and a cache directory shared with a previous run, and a readdir of a
+ * few thousand entries costs less than one render.
+ *
+ * Evictions are logged. A cache that silently discards half of what it is asked
+ * to keep looks exactly like a cache that is working.
+ */
+async function evict() {
+  if (!MAX_CACHE) return;
+  try {
+    const names = await readdir(CACHE);
+    const entries = [];
+    let total = 0;
+    for (const name of names) {
+      if (name.endsWith('.tmp')) continue;
+      const file = path.join(CACHE, name);
+      const info = await stat(file).catch(() => null);
+      if (!info?.isFile()) continue;
+      entries.push({ file, size: info.size, used: info.mtimeMs });
+      total += info.size;
+    }
+    if (total <= MAX_CACHE) return;
+
+    // Down to 90%, not to exactly the limit, so the next write does not evict
+    // again immediately.
+    const target = MAX_CACHE * 0.9;
+    entries.sort((a, b) => a.used - b.used);
+    let removed = 0;
+    let freed = 0;
+    for (const entry of entries) {
+      if (total <= target) break;
+      if (
+        await unlink(entry.file).then(
+          () => true,
+          () => false
+        )
+      ) {
+        total -= entry.size;
+        freed += entry.size;
+        removed++;
+      }
+    }
+    stats.evicted += removed;
+    console.log(
+      `evicted ${removed} cached figure(s), ${(freed / 1024 ** 2).toFixed(1)} MB, ` +
+        `cache now ${(total / 1024 ** 2).toFixed(1)} MB of ` +
+        `${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB`
+    );
+  } catch (error) {
+    // A cache that cannot be tidied is not a reason to fail a render.
+    console.error(`could not evict from the cache: ${error.message}`);
+  }
 }
 
 // ---- renders -------------------------------------------------------------
@@ -294,15 +381,19 @@ app.get('/render/:name.:ext', async (req, res) => {
     res.setHeader('Content-Type', CONTENT_TYPE[format]);
     res.setHeader('ETag', etag);
     res.setHeader('X-Render-Cache', cached ? 'hit' : 'miss');
-    // Short, deliberately. A figure is stable for a release, and a day of
-    // caching would be right if the renderer were finished -- but it is not, and
-    // a browser that has a figure from an older renderer will not ask again:
-    // reloading the page does not revalidate a URL fetched by a download link.
-    // A curator downloaded a 2000px GIF and kept getting it back after the
-    // full-size fix shipped. Five minutes plus an ETag means a repeat download
-    // is still a 304 and a change still lands. Raise it when the renderer
-    // settles.
-    res.setHeader('Cache-Control', params.token ? 'private, max-age=300' : 'public, max-age=300');
+    // Never reused without asking first. Not a performance decision: the
+    // expensive part is already cached on disk here, so answering a conditional
+    // request is a 304 and one round trip.
+    //
+    // Anything longer let a figure outlive the renderer that drew it. `public`
+    // meant Cloudflare stored one and kept serving it with the max-age it was
+    // stored under; Cloudflare's Browser Cache TTL overrode what this sends
+    // anyway (300s went out as 4h); and a download link's URL is never
+    // revalidated by reloading the page, so a curator kept getting a 2000px GIF
+    // after the full-size fix had shipped. The alternative was stamping a
+    // version into every figure's URL, which worked and which nobody should have
+    // to remember to bump.
+    res.setHeader('Cache-Control', 'private, no-cache');
     res.setHeader(
       'Content-Disposition',
       `${ATTACHMENT.has(format) ? 'attachment' : 'inline'}; ` +
@@ -325,6 +416,11 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`  rendering against ${BASE}`);
   console.log(`  cache ${CACHE} (key ${CACHE_KEY})`);
   console.log(`  ${CONCURRENCY} concurrent, ${MAX_QUEUE} queued before 503`);
+  console.log(
+    MAX_CACHE
+      ? `  keeping up to ${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB of figures`
+      : `  cache size unbounded (RENDER_CACHE_MAX=0)`
+  );
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

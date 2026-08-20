@@ -482,15 +482,35 @@ export class EhldService {
    *
    * Shared with the headless render page, which builds animation frames from it.
    */
-  async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
+  /**
+   * The illustration as standalone SVG: styles inlined, size made explicit.
+   *
+   * Two things stop a serialised EHLD meaning anything on its own. Its styling
+   * comes from the page's stylesheets, which do not travel with the markup. And
+   * it declares width and height of 100% with no viewBox, so outside the page it
+   * has no intrinsic size at all -- a PDF of one came out as a blank 674 bytes.
+   * Its size is whatever the page gave it, so that is what gets written down.
+   */
+  svgMarkup(svg: SVGSVGElement) {
     this.getInlineStyles(svg, this.select());
-    const markup = new XMLSerializer().serializeToString(svg);
+
+    const { width, height } = svg.getBoundingClientRect();
+    const box = { width: Math.round(width), height: Math.round(height) };
+
+    // A copy, so the page keeps its own responsive sizing.
+    const copy = svg.cloneNode(true) as SVGSVGElement;
+    copy.setAttribute('width', String(box.width));
+    copy.setAttribute('height', String(box.height));
+    copy.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+
+    return { markup: new XMLSerializer().serializeToString(copy), ...box };
+  }
+
+  async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
+    const { markup, width, height } = this.svgMarkup(svg);
     const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
 
     try {
-      // The illustration declares width and height of 100% and has no viewBox,
-      // so its size is whatever the page gave it.
-      const { width, height } = svg.getBoundingClientRect();
       const image = new Image();
       image.src = url;
       await image.decode();

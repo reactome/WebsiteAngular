@@ -331,8 +331,10 @@ export class RenderComponent {
       return instances[0].svg({ full: true });
     }
 
-    const svg = document.querySelector('cr-render cr-ehld svg');
-    if (svg) return new XMLSerializer().serializeToString(svg);
+    // Through the illustration's own service, which knows that its styling has
+    // to be inlined and its size written down before the markup stands alone.
+    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    if (svg) return this.ehldService.svgMarkup(svg).markup;
 
     // The genome-wide view draws to a canvas via FoamTree, so it has its own
     // exporter rather than going through cytoscape. It matters here because
@@ -368,9 +370,22 @@ export class RenderComponent {
   }
 
   /** The drawn view as a PNG data URL. */
-  private exportPng(scale: number): string {
+  private async exportPng(scale: number): Promise<string> {
     const { instances } = this.exportableInstances();
-    if (!instances.length) throw new Error('this view cannot export PNG yet');
-    return instances[0].png({ full: true, scale, bg: 'transparent' });
+    if (instances.length) return instances[0].png({ full: true, scale, bg: 'transparent' });
+
+    // An illustration has no cytoscape instance to ask, so it goes through the
+    // same rasteriser the animation frames use. Without this a .png of any
+    // illustrated pathway was a 500 -- and illustrations are the top-level
+    // pathways, so it was the ones a report is most likely to want.
+    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    if (svg) {
+      // No background: a PNG has an alpha channel, and a figure that can sit on
+      // any page is more useful than one with a colour baked in.
+      const canvas = await this.ehldService.rasterise(svg, scale);
+      return canvas.toDataURL('image/png');
+    }
+
+    throw new Error('this view cannot export PNG yet');
   }
 }

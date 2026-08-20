@@ -71,25 +71,23 @@ Three things bound the damage when it is fronted:
 - **A cache key per release.** `RENDER_CACHE_KEY` exists for it; bump it when the
   data changes or figures outlive their diagrams.
 
-## Two versions, and why
+## One knob: RENDER_CACHE_KEY
 
-Changing the renderer means two things have to be bumped together:
+Bump it whenever the renderer's **output** changes, not whenever the code does.
+It keys the service's disk cache and is the `ETag`, so it is what makes a figure
+drawn by an older renderer stop being served.
 
-| where                                     | what it invalidates                          |
-| ----------------------------------------- | -------------------------------------------- |
-| `RENDER_CACHE_KEY` in `service.mjs`       | the service's own disk cache, and the `ETag` |
-| `RENDER_VERSION` in `download.service.ts` | every cache downstream, by changing the URL  |
+Figures go out as `Cache-Control: private, no-cache`, so nothing reuses one
+without asking. That is not a performance decision — the expensive part is the
+render, which is cached on disk here, and a conditional request is a 304 and one
+round trip. Longer caching let a figure outlive its renderer: `public` meant
+Cloudflare stored it and kept serving it with the max-age it was stored under,
+Cloudflare's Browser Cache TTL overrode what the service sent anyway (300s went
+out as 4h), and a download link's URL is never revalidated by reloading the page.
 
-Headers alone are not enough. A figure is served `public`, so Cloudflare stores
-it and keeps serving that copy with the max-age it was stored under — a day, in
-the case that sent curators a 2000px GIF after the full-size fix had shipped.
-Reloading the page does not help, because a download link's URL is never
-revalidated, and Cloudflare's Browser Cache TTL setting overrides the max-age the
-service sends anyway (it rewrote 300s to 4h). The only thing every layer respects
-is a different address.
-
-The service ignores the `v` parameter, so both versions of a figure share one
-entry in its disk cache; only the downstream address changes.
+There was briefly a second version stamped into every figure's URL to defeat all
+that. It worked, and it was one more thing to remember to bump in step; the
+no-cache header does the same job with nothing to remember.
 
 ## Watching it
 
