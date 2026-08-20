@@ -46,7 +46,10 @@ const PORT = Number(process.env.RENDER_PORT || 4310);
 const HOST = process.env.RENDER_HOST || '127.0.0.1';
 const BASE = process.env.RENDER_BASE || 'http://localhost:4200';
 const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v1';
+// Bump this whenever the renderer's output changes, not only when the data
+// does: it keys the disk cache AND is the ETag, so it is the only thing that
+// tells a browser its copy is stale. v2 = full-size differenced GIFs.
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v2';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
@@ -273,17 +276,31 @@ app.get('/render/:name.:ext', async (req, res) => {
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),
   };
 
+  // Everything that determines the bytes is in the key, so it is also the
+  // validator -- and answering here means a repeat download costs a round trip
+  // rather than a render.
+  const etag = `"${cacheKey(params)}"`;
+  if (req.headers['if-none-match'] === etag) {
+    stats.served++;
+    res.setHeader('ETag', etag);
+    return res.status(304).end();
+  }
+
   try {
     const { bytes, cached } = await renderCached(params);
     stats.served++;
     res.setHeader('Content-Type', CONTENT_TYPE[format]);
+    res.setHeader('ETag', etag);
     res.setHeader('X-Render-Cache', cached ? 'hit' : 'miss');
-    // Without a token a render is stable for a release; with one it lives about
-    // as long as the analysis does.
-    res.setHeader(
-      'Cache-Control',
-      params.token ? 'private, max-age=3600' : 'public, max-age=86400'
-    );
+    // Short, deliberately. A figure is stable for a release, and a day of
+    // caching would be right if the renderer were finished -- but it is not, and
+    // a browser that has a figure from an older renderer will not ask again:
+    // reloading the page does not revalidate a URL fetched by a download link.
+    // A curator downloaded a 2000px GIF and kept getting it back after the
+    // full-size fix shipped. Five minutes plus an ETag means a repeat download
+    // is still a 304 and a change still lands. Raise it when the renderer
+    // settles.
+    res.setHeader('Cache-Control', params.token ? 'private, max-age=300' : 'public, max-age=300');
     res.setHeader(
       'Content-Disposition',
       `${ATTACHMENT.has(format) ? 'attachment' : 'inline'}; ` +

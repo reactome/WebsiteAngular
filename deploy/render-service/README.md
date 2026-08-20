@@ -70,6 +70,26 @@ Three things bound the damage when it is fronted:
 - **A cache key per release.** `RENDER_CACHE_KEY` exists for it; bump it when the
   data changes or figures outlive their diagrams.
 
+## Two versions, and why
+
+Changing the renderer means two things have to be bumped together:
+
+| where                                     | what it invalidates                          |
+| ----------------------------------------- | -------------------------------------------- |
+| `RENDER_CACHE_KEY` in `service.mjs`       | the service's own disk cache, and the `ETag` |
+| `RENDER_VERSION` in `download.service.ts` | every cache downstream, by changing the URL  |
+
+Headers alone are not enough. A figure is served `public`, so Cloudflare stores
+it and keeps serving that copy with the max-age it was stored under — a day, in
+the case that sent curators a 2000px GIF after the full-size fix had shipped.
+Reloading the page does not help, because a download link's URL is never
+revalidated, and Cloudflare's Browser Cache TTL setting overrides the max-age the
+service sends anyway (it rewrote 300s to 4h). The only thing every layer respects
+is a different address.
+
+The service ignores the `v` parameter, so both versions of a figure share one
+entry in its disk cache; only the downstream address changes.
+
 ## Watching it
 
 ```bash

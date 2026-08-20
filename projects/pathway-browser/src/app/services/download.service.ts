@@ -37,6 +37,23 @@ export interface DownloadOptions {
  */
 export const includeSubpathways = signal(true);
 
+/**
+ * Which version of the renderer a downloaded figure came from.
+ *
+ * Carried in the URL of every server-rendered figure, purely so that changing
+ * the renderer changes the URL. Headers are not enough: a figure is served
+ * `public`, so Cloudflare stores it, and a stale entry keeps being served with
+ * the max-age it was stored under -- for a day, in the case that sent curators
+ * a 2000px GIF after the full-size fix had shipped. Reloading the page does not
+ * help either, because a download link's URL is never revalidated.
+ *
+ * Bump it whenever the renderer's output changes, together with
+ * RENDER_CACHE_KEY in tools/render/service.mjs. The service ignores the
+ * parameter, so the two versions of a figure share one entry in its own cache;
+ * everything downstream sees a new address.
+ */
+export const RENDER_VERSION = 'v2';
+
 export const defaultDownloadOptions: DownloadOptions = {
   animate: false,
   includeLegend: true,
