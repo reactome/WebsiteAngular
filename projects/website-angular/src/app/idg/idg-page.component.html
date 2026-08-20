@@ -157,6 +157,35 @@
         </div>
       }
 
+      @if (pathwayPlot()) {
+        @let plot = pathwayPlot()!;
+        <figure class="chart">
+          <figcaption>Interacting Pathway Plot</figcaption>
+          <div class="plot tall">
+            <span class="axis-label y">−log<sub>10</sub>(p-value)</span>
+            @for (point of plot.points; track point.stId) {
+              <a
+                class="point"
+                [routerLink]="['/PathwayBrowser', point.stId]"
+                [style.left.%]="point.x"
+                [style.top.%]="point.y"
+                [style.background]="point.colour"
+                [title]="point.name + ' — ' + point.top + ', p ' + format(point.pVal)"
+              ></a>
+            }
+          </div>
+          <div class="axis-x plain"><span>Pathway</span></div>
+          <ul class="legend">
+            @for (entry of plot.legend; track entry.top) {
+              <li>
+                <span class="dot" [style.background]="entry.colour"></span>
+                {{ entry.top }} <span class="quiet">({{ entry.count }})</span>
+              </li>
+            }
+          </ul>
+        </figure>
+      }
+
       @if (scatter()) {
         @let plot = scatter()!;
         <figure class="scatter">
@@ -197,6 +226,7 @@
           <thead>
             <tr>
               <th scope="col">Pathway</th>
+              <th scope="col" class="numeric">Genes</th>
               <th scope="col" class="numeric">p-value</th>
               <th scope="col" class="numeric">FDR</th>
               <th scope="col" class="numeric">
@@ -217,6 +247,7 @@
                   <a [routerLink]="['/PathwayBrowser', pathway.stId]">{{ pathway.name }}</a>
                   <span class="stid">{{ pathway.stId }}</span>
                 </th>
+                <td class="numeric">{{ pathway.numGenes }}</td>
                 <td class="numeric">{{ format(pathway.pVal) }}</td>
                 <td class="numeric">{{ format(pathway.fdr) }}</td>
                 <td class="numeric tdl">
@@ -241,12 +272,97 @@
         </table>
       </div>
 
-      @if (counts().matching > counts().shown) {
-        <p class="more">
-          Showing the {{ counts().shown }} most significant.
-          <button mat-button type="button" (click)="showAll.set(true)">Show all {{ counts().matching }}</button>
-        </p>
-      }
+      <div class="pager">
+        <label>
+          Rows per page
+          <select [ngModel]="perPage()" (ngModelChange)="perPage.set($event); page.set(0)" name="perPage">
+            @for (size of pageSizes; track size) {
+              <option [ngValue]="size">{{ size }}</option>
+            }
+          </select>
+        </label>
+        <span class="quiet">{{ range().from }}–{{ range().to }} of {{ range().total }}</span>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="page() === 0"
+          (click)="page.set(page() - 1)"
+          aria-label="Previous page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="page() >= lastPage()"
+          (click)="page.set(page() + 1)"
+          aria-label="Next page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="summaries">
+        @if (genesByScore()) {
+          @let curve = genesByScore()!;
+          <figure class="chart">
+            <figcaption>Genes vs Functional Interaction Score for {{ term() }}</figcaption>
+            <div class="plot">
+              <span class="axis-label y">Number of Genes</span>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <polyline class="curve" [attr.points]="curve.polyline" fill="none" />
+              </svg>
+              @for (point of curve.points; track point.score) {
+                <span
+                  class="point small"
+                  [style.left.%]="point.x"
+                  [style.top.%]="point.y"
+                  [title]="point.genes + ' genes score ' + point.score.toFixed(2) + ' or better'"
+                ></span>
+              }
+            </div>
+            <div class="axis-x plain"><span>0</span><span>Functional Interaction Score</span><span>1</span></div>
+            <p class="quiet">Highest count {{ curve.most }} genes.</p>
+          </figure>
+        }
+
+        @if (featurePlot()) {
+          @let features = featurePlot()!;
+          <figure class="chart">
+            <figcaption>Feature Summary for {{ term() }}</figcaption>
+            <div class="plot">
+              <span class="axis-label y">Number of Interactions</span>
+              @for (point of features.points; track point.id) {
+                <span
+                  class="point"
+                  [style.left.%]="point.x"
+                  [style.top.%]="point.y"
+                  [style.background]="point.colour"
+                  [title]="
+                    point.provenance +
+                    ' — ' +
+                    point.dataType.replace('_', ' ') +
+                    ' (' +
+                    point.species.replace('_', ' ') +
+                    '): ' +
+                    point.count +
+                    ' interactions'
+                  "
+                ></span>
+              }
+            </div>
+            <div class="axis-x plain"><span>Feature</span></div>
+            <ul class="legend">
+              @for (entry of features.legend; track entry.dataType) {
+                <li>
+                  <span class="dot" [style.background]="entry.colour"></span>
+                  {{ entry.dataType.replace('_', ' ') }}
+                </li>
+              }
+            </ul>
+          </figure>
+        }
+      </div>
 
       @if (mode() === 'datasets' && chosen().length) {
         <footer class="provenance">

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import {
   ANALYSIS_SERVICE,
   IDG_SERVICE,
@@ -36,6 +36,16 @@ export interface IdgPathway {
   pVal: number;
   fdr: number;
   bottomLevel: boolean;
+  numGenes: number;
+}
+
+/** One data source's interaction count for a gene, for the feature summary. */
+export interface IdgFeature {
+  id: string;
+  provenance: string;
+  species: string;
+  dataType: string;
+  count: number;
 }
 
 /**
@@ -186,6 +196,62 @@ export class IdgService {
         }),
         // A missing level is a missing column, not a broken page.
         catchError(() => of({}))
+      );
+  }
+
+  /**
+   * Every pathway's top-level pathway, keyed by stable id.
+   *
+   * The portal colours its pathway plot by this, which is the one thing a list of
+   * p-values cannot tell you: whether the hits cluster in one part of biology or
+   * scatter across all of it. Served hierarchically ordered, which is also the
+   * order the plot puts them in, so the colours form bands rather than confetti.
+   *
+   * 283KB and the same for everyone, so it is fetched once and shared.
+   */
+  private topPathways?: Observable<Record<string, string>>;
+  hierarchy(): Observable<Record<string, string>> {
+    this.topPathways ??= this.http
+      .get<{ stId: string; topPathway: string }[]>(
+        `${IDG_SERVICE}/realtionships/getHierarchicalOrderedPathways`
+      )
+      .pipe(
+        map((entries) => {
+          const order: Record<string, string> = {};
+          for (const entry of entries) order[entry.stId] = entry.topPathway;
+          return order;
+        }),
+        catchError(() => of<Record<string, string>>({})),
+        shareReplay({ bufferSize: 1, refCount: false })
+      );
+    return this.topPathways;
+  }
+
+  /**
+   * How many interactions each data source reports for the gene.
+   *
+   * The portal's "Feature Summary". Note the request shape: gene *names* and
+   * dataset *id strings*, not the digital keys everything else uses -- sending
+   * keys returns an empty list rather than an error.
+   */
+  featureSummary(term: string, datasets: IdgDataset[]): Observable<IdgFeature[]> {
+    if (!datasets.length) return of([]);
+    return this.http
+      .post<{ dataDesc?: { id?: string }; posNum?: number }[]>(
+        `${IDG_SERVICE}/pairwise/term/true`,
+        { genes: [term], dataDescs: datasets.map((dataset) => dataset.id) }
+      )
+      .pipe(
+        map((entries) =>
+          entries.flatMap((entry) => {
+            const id = entry.dataDesc?.id;
+            if (!id || !entry.posNum) return [];
+            // "BioGridStringDB|Mus_musculus|Protein_Interaction"
+            const [provenance = id, species = '', dataType = ''] = id.split('|');
+            return [{ id, provenance, species, dataType, count: entry.posNum }];
+          })
+        ),
+        catchError(() => of<IdgFeature[]>([]))
       );
   }
 

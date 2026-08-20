@@ -10,7 +10,7 @@ import {
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
@@ -20,7 +20,7 @@ import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
-import { IdgDataset, IdgDruggability, IdgPathway, IdgService } from './idg.service';
+import { IdgDataset, IdgDruggability, IdgFeature, IdgPathway, IdgService } from './idg.service';
 
 /** A row of the table: the pathway, plus how well studied its proteins are. */
 interface IdgRow extends IdgPathway {
@@ -50,8 +50,30 @@ function normalise(term: string) {
 /** Buckets in the score histogram. Enough to show shape, few enough to read. */
 const BUCKETS = 28;
 
-/** Rows shown before asking whether you really want all of them. */
-const PAGE = 100;
+/** Rows per page, and the portal's own default first. */
+const PAGE_SIZES = [10, 25, 50, 100];
+
+/**
+ * The portal's own starting threshold.
+ *
+ * Clamped down to a gene's best score when 0.8 is above it, which the portal does
+ * not do: TANC1's best predicted interactor is 0.891 so 0.8 is fine there, but a
+ * gene whose scores top out lower would otherwise open on an empty page and no
+ * clue that the threshold is why.
+ */
+const DEFAULT_THRESHOLD = 0.8;
+
+/**
+ * A stable colour per top-level pathway.
+ *
+ * Hue from the name, so "Metabolism" is the same colour on every gene's plot and
+ * nobody has to maintain a list of 28 top-level pathways in two places.
+ */
+function hueFor(name: string) {
+  let hash = 0;
+  for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) % 360;
+  return `hsl(${hash} 65% 45%)`;
+}
 
 /**
  * "What does this protein have to do with Reactome?"
@@ -71,6 +93,7 @@ const PAGE = 100;
     FormsModule,
     RouterLink,
     MatButton,
+    MatIconButton,
     MatButtonToggle,
     MatButtonToggleGroup,
     MatCheckbox,
@@ -168,8 +191,9 @@ export class IdgPageComponent {
     source: () => (this.sortedScores().length ? this.sortedScores() : undefined),
     computation: (sorted, previous) => {
       if (previous?.value !== undefined && previous.source) return previous.value;
-      if (!sorted?.length) return 0.5;
-      return Math.round(sorted[Math.floor(sorted.length * 0.9)] * 100) / 100;
+      if (!sorted?.length) return DEFAULT_THRESHOLD;
+      const best = sorted[sorted.length - 1];
+      return Math.min(DEFAULT_THRESHOLD, Math.round(best * 100) / 100);
     },
   });
 
@@ -259,10 +283,26 @@ export class IdgPageComponent {
     stream: ({ params }) => this.idg.checkTerm(params.term),
   });
 
+  /** Every pathway's top-level pathway, for colouring the pathway plot. */
+  readonly hierarchy = rxResource({ stream: () => this.idg.hierarchy() });
+
+  /** Interactions per data source: the portal's "Feature Summary". */
+  readonly features = rxResource({
+    params: () => {
+      const term = this.term().trim();
+      const available = this.datasets.hasValue() ? this.datasets.value() : undefined;
+      return term && available?.length ? { term, available } : undefined;
+    },
+    stream: ({ params }) => this.idg.featureSummary(params.term, params.available),
+  });
+
   /** Default to the specific and the significant, which is the readable answer. */
   readonly leavesOnly = signal(true);
   readonly significantOnly = signal(true);
-  readonly showAll = signal(false);
+
+  readonly pageSizes = PAGE_SIZES;
+  readonly perPage = signal(PAGE_SIZES[0]);
+  readonly page = signal(0);
 
   private readonly matching = computed<IdgRow[]>(() => {
     const found = (this.results.hasValue() ? this.results.value() : []) ?? [];
@@ -276,8 +316,23 @@ export class IdgPageComponent {
       .map((pathway) => ({ ...pathway, tdl: levels[pathway.stId] }));
   });
 
-  readonly pathways = computed(() =>
-    this.showAll() ? this.matching() : this.matching().slice(0, PAGE)
+  readonly pathways = computed(() => {
+    const rows = this.matching();
+    const size = this.perPage();
+    const from = Math.min(this.page() * size, Math.max(0, rows.length - 1));
+    return rows.slice(from, from + size);
+  });
+
+  /** "1-10 of 54", the way the portal says it. */
+  readonly range = computed(() => {
+    const total = this.matching().length;
+    const size = this.perPage();
+    const from = Math.min(this.page() * size, Math.max(0, total - 1));
+    return { from: total ? from + 1 : 0, to: Math.min(from + size, total), total };
+  });
+
+  readonly lastPage = computed(() =>
+    Math.max(0, Math.ceil(this.matching().length / this.perPage()) - 1)
   );
 
   readonly counts = computed(() => ({
@@ -286,7 +341,119 @@ export class IdgPageComponent {
     total: ((this.results.hasValue() ? this.results.value() : []) ?? []).length,
   }));
 
-  readonly pageSize = PAGE;
+  /**
+   * The portal's "Interacting Pathway Plot": significance per pathway, coloured
+   * by which part of biology the pathway sits in.
+   *
+   * Pathways run along x in hierarchy order, so a gene whose hits cluster in one
+   * area shows as a band of one colour -- which is the point of the plot, and
+   * something the table cannot show at any length.
+   */
+  readonly pathwayPlot = computed(() => {
+    const rows = this.matching();
+    if (!rows.length) return undefined;
+    const tops = (this.hierarchy.hasValue() ? this.hierarchy.value() : {}) ?? {};
+
+    const significance = (value: number) => (value > 0 ? -Math.log10(value) : 20);
+    const tallest = Math.max(...rows.map((row) => significance(row.pVal)), 1);
+
+    // Hierarchy order, so same-coloured points sit together.
+    const ordered = [...rows].sort((a, b) =>
+      (tops[a.stId] ?? 'zz').localeCompare(tops[b.stId] ?? 'zz')
+    );
+
+    const groups = new Map<string, number>();
+    const points = ordered.map((row, index) => {
+      const top = tops[row.stId] ?? 'Other';
+      groups.set(top, (groups.get(top) ?? 0) + 1);
+      return {
+        stId: row.stId,
+        name: row.name,
+        top,
+        colour: hueFor(top),
+        pVal: row.pVal,
+        x: ordered.length === 1 ? 50 : (index / (ordered.length - 1)) * 100,
+        y: (1 - significance(row.pVal) / tallest) * 100,
+      };
+    });
+
+    return {
+      points,
+      tallest,
+      legend: [...groups.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([top, count]) => ({ top, count, colour: hueFor(top) })),
+    };
+  });
+
+  /**
+   * The portal's "Genes vs Functional Interaction Score": how many predicted
+   * interactors survive each threshold.
+   *
+   * A cumulative count rather than a histogram, which is what makes it useful for
+   * choosing the threshold: the curve says what a move costs you.
+   */
+  readonly genesByScore = computed(() => {
+    const sorted = this.sortedScores();
+    if (!sorted.length) return undefined;
+    const steps = 25;
+    const points = Array.from({ length: steps + 1 }, (_, index) => {
+      const score = index / steps;
+      // sorted ascending, so everything from the first index at or above `score`.
+      let low = 0;
+      let high = sorted.length;
+      while (low < high) {
+        const middle = (low + high) >> 1;
+        if (sorted[middle] < score) low = middle + 1;
+        else high = middle;
+      }
+      return { score, genes: sorted.length - low };
+    });
+    const most = Math.max(...points.map((point) => point.genes), 1);
+    const placed = points.map((point) => ({
+      ...point,
+      x: point.score * 100,
+      y: (1 - point.genes / most) * 100,
+    }));
+    return {
+      most,
+      points: placed,
+      // The line through them, built here rather than in the template: a
+      // polyline wants one string and the template should not be assembling it.
+      polyline: placed.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' '),
+    };
+  });
+
+  /**
+   * The portal's "Feature Summary": how many interactions each data source
+   * reports, coloured by what kind of evidence it is.
+   */
+  readonly featurePlot = computed(() => {
+    const found = (this.features.hasValue() ? this.features.value() : []) ?? [];
+    if (!found.length) return undefined;
+    const most = Math.max(...found.map((feature) => feature.count), 1);
+    const kinds = new Map<string, number>();
+    for (const feature of found) {
+      kinds.set(feature.dataType, (kinds.get(feature.dataType) ?? 0) + 1);
+    }
+    const ordered = [...found].sort(
+      (a, b) => a.dataType.localeCompare(b.dataType) || b.count - a.count
+    );
+    return {
+      most,
+      points: ordered.map((feature, index) => ({
+        ...feature,
+        colour: hueFor(feature.dataType),
+        x: ordered.length === 1 ? 50 : (index / (ordered.length - 1)) * 100,
+        y: (1 - feature.count / most) * 100,
+      })),
+      legend: [...kinds.entries()].map(([dataType, count]) => ({
+        dataType,
+        count,
+        colour: hueFor(dataType),
+      })),
+    };
+  });
 
   /**
    * Significance against how well studied: the portal's actual question.
@@ -355,12 +522,17 @@ export class IdgPageComponent {
     });
   }
 
+  /** Any change to what is listed puts you back on the first page. */
+  private resetPage() {
+    this.page.set(0);
+  }
+
   search() {
     const gene = normalise(this.entered());
     // Put it back in the box too, so what was searched for is what is shown.
     this.entered.set(gene);
     this.term.set(gene);
-    this.showAll.set(false);
+    this.resetPage();
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { gene: gene || null },
