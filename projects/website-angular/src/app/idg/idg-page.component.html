@@ -127,6 +127,16 @@
           }
         </h2>
         <div class="filters">
+          <a
+            class="pharos"
+            [href]="pharos(term())"
+            target="_blank"
+            rel="noopener"
+            [title]="'Open ' + term() + ' in Pharos, the IDG target portal'"
+          >
+            Pharos target
+            <mat-icon>open_in_new</mat-icon>
+          </a>
           <mat-checkbox [(ngModel)]="significantOnly" [ngModelOptions]="{ standalone: true }" name="significantOnly">
             FDR ≤ 0.05
           </mat-checkbox>
@@ -220,6 +230,25 @@
           </div>
         </figure>
       }
+
+      <details class="interactors">
+        <summary>
+          {{ interactors().length }} interacting gene{{ interactors().length === 1 ? '' : 's' }} above
+          {{ threshold().toFixed(2) }}
+        </summary>
+        <button mat-button type="button" (click)="downloadGenes()">
+          <mat-icon>download</mat-icon>
+          Download genes
+        </button>
+        <ul class="gene-list">
+          @for (interactor of interactors(); track interactor.gene) {
+            <li>
+              <span class="gene">{{ interactor.gene }}</span>
+              <span class="quiet">{{ interactor.score.toFixed(2) }}</span>
+            </li>
+          }
+        </ul>
+      </details>
 
       <div class="table-scroll">
         <table class="pathways">

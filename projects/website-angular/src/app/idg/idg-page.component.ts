@@ -283,6 +283,52 @@ export class IdgPageComponent {
     stream: ({ params }) => this.idg.checkTerm(params.term),
   });
 
+  /**
+   * Pharos is the IDG programme's own target portal, and the portal links out to
+   * it from every result. It is where the Target Development Level in the table
+   * comes from, so it is the right place to send someone who wants the evidence
+   * behind that number.
+   */
+  pharos(term: string) {
+    return `https://pharos.ncats.nih.gov/targets/${encodeURIComponent(term)}`;
+  }
+
+  /** The interactors the threshold kept, strongest first. */
+  readonly interactors = computed(() => {
+    const scores = (this.scores.hasValue() ? this.scores.value() : {}) ?? {};
+    return this.kept()
+      .genes.map((gene) => ({ gene, score: scores[gene] ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+  });
+
+  /**
+   * The interactors as a CSV.
+   *
+   * Built here rather than through the service's own download endpoint: the data
+   * is already loaded to draw the list, so asking a second machine for a file it
+   * would derive from the same numbers is a round trip and a failure mode for
+   * nothing.
+   */
+  downloadGenes() {
+    const rows = [
+      ['Gene', 'Functional interaction score'],
+      ...this.interactors().map(({ gene, score }) => [gene, String(score)]),
+    ];
+    const csv = rows
+      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    try {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${this.term()}-interactors.csv`;
+      anchor.click();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   /** Which row is open, if any. One at a time, as the portal does it. */
   readonly expanded = signal<string | null>(null);
 
