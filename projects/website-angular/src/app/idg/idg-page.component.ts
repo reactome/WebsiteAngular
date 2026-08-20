@@ -20,7 +20,7 @@ import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
-import { IdgDataset, IdgDruggability, IdgFeature, IdgPathway, IdgService } from './idg.service';
+import { IdgDataset, IdgDruggability, IdgPathway, IdgService } from './idg.service';
 
 /** A row of the table: the pathway, plus how well studied its proteins are. */
 interface IdgRow extends IdgPathway {
