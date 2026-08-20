@@ -32,8 +32,10 @@ module.exports = {
   // whatever fronts the site decides who may commission a render -- a render
   // costs seconds, and crawlers hitting the old /ContentService/exporter/*
   // endpoints are what exhausted Tomcat's heap and took the origin down.
+  // In compose the service is another container, so the target has to be its
+  // service name; on the host it is loopback. Same shape as REACTOME_BACKEND.
   '/RenderService': {
-    target: 'http://127.0.0.1:4310',
+    target: process.env.RENDER_TARGET || 'http://127.0.0.1:4310',
     secure: false,
     changeOrigin: true,
     pathRewrite: { '^/RenderService': '' },

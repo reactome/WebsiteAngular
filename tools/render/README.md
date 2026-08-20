@@ -37,6 +37,20 @@ palette is built from every frame, not the first — one frame's palette shifts
 colours on samples whose values land elsewhere on the scale — which is why the
 frames are drawn twice and never accumulated.
 
+It renders at the diagram's own size, because that is where its labels are
+legible: a pathway's coordinate space is around 6000px wide and its font sizes
+are chosen for 1:1, so fitting it into 2000px scaled 8pt type to under 3pt. The
+words were unreadable and the arrows were soft.
+
+That is affordable because **frames are differenced**. 255 palette colours are
+used for the picture and one index is kept back to mean "unchanged"; every pixel
+equal to the previous frame becomes that index, written with disposal 1 so the
+previous frame shows through. Between two samples only the node fills differ —
+compartments, edges and every label are identical — and a long run of one
+repeated index is what LZW compresses best. R-HSA-109606 over four samples:
+**3.1 MB undifferenced at full size, 966 KB differenced**, against 735 KB for the
+unreadable 2000px version. Three times the resolution for 30% more bytes.
+
 Illustrated pathways animate too, through `EhldService.rasterise`. An EHLD is
 inline SVG, and its styling comes from the page's stylesheets rather than the
 markup, so it has to be inlined before a serialised copy means anything.

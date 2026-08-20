@@ -269,7 +269,8 @@ app.get('/render/:name.:ext', async (req, res) => {
     scale: clamp(req.query.scale ?? 2, 0.25, 2, 2),
     subpathways: req.query.subpathways !== 'false',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
-    maxSize: clamp(req.query.maxSize ?? 2000, 200, 4000, 2000),
+    // 0 means "the diagram's own size", which is where its labels are legible.
+    maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),
   };
 
   try {

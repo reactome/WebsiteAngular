@@ -22,15 +22,18 @@ export const MAX_FRAMES = 50;
 export const DEFAULT_DELAY = 1000;
 
 /**
- * Longest side of the animation, in pixels.
+ * Longest side of the animation in pixels, or 0 to draw it at its own size.
  *
- * A diagram's own coordinate space is large -- an ordinary pathway exports
- * around 6000px wide -- and a GIF pays for that once per frame. Left uncapped,
- * a four-sample analysis came out at 3MB and a twenty-sample one would be
- * unusable. Fitting to 2000px keeps labels legible at the size a figure is
- * actually looked at.
+ * Zero by default, because a diagram's coordinate space *is* its legible size:
+ * label font sizes are chosen for 1:1. Fitting a 6000px pathway into 2000px
+ * scales 8pt text to under 3pt, which is what "I can't read the words when I
+ * zoom in" means -- the animation was sharp, and the type was gone.
+ *
+ * What made a cap look necessary was paying for every pixel of every frame.
+ * Frames are differenced now (see below), so a sample costs what it changes
+ * rather than what it contains, and the full-size version is affordable.
  */
-export const MAX_SIZE = 2000;
+export const MAX_SIZE = 0;
 
 const require = createRequire(import.meta.url);
 
@@ -102,7 +105,7 @@ export async function gifFromPage(
       let probe = await capture(frames[0], null, scale);
       const natural = [probe.width, probe.height];
       const longest = Math.max(probe.width, probe.height);
-      const fit = longest > maxSize ? (scale * maxSize) / longest : scale;
+      const fit = maxSize && longest > maxSize ? (scale * maxSize) / longest : scale;
       const size = fit === scale ? probe : await capture(frames[0], null, fit);
       // A full-size frame is tens of megabytes; do not hold one that is not
       // going into the animation.
@@ -122,25 +125,55 @@ export async function gifFromPage(
         }
       }
 
-      const palette = quantize(new Uint8Array(sampled), 256);
+      // 255 colours, not 256: one index is kept back to mean "unchanged", which
+      // is what makes the full-size animation affordable.
+      const colours = quantize(new Uint8Array(sampled), 255);
+      const clear = colours.length;
+      const palette = [...colours, [0, 0, 0]];
 
       const gif = GIFEncoder();
       const checksums = [];
+      let previous = null;
+      let changedPixels = 0;
+
       for (const [index, sample] of frames.entries()) {
         const frame = await capture(sample, size, fit);
-        const indexed = applyPalette(frame.data, palette);
-        // The palette goes in once, as the global colour table. Passing it again
-        // writes a local table per frame, which is the same colours at the cost
-        // of a kilobyte each.
-        gif.writeFrame(indexed, frame.width, frame.height, {
-          delay,
-          ...(index === 0 ? { palette } : {}),
-        });
-        // Cheap fingerprint, to catch an animation whose frames are all the
-        // same picture -- a plausible-looking file that shows nothing.
+        const indexed = applyPalette(frame.data, colours);
+
+        // Cheap fingerprint of the frame as drawn, before differencing, to catch
+        // an animation whose frames are all the same picture -- a
+        // plausible-looking file that shows nothing.
         let checksum = 0;
         for (let at = 0; at < indexed.length; at += 101) checksum = (checksum + indexed[at]) | 0;
         checksums.push(checksum);
+
+        let written = indexed;
+        if (previous) {
+          // Only what changed. Between two samples of an expression analysis
+          // that is the node fills and nothing else -- the compartments, the
+          // edges and every label are identical -- and a run of one repeated
+          // index is what LZW compresses best. Disposal 1 leaves the previous
+          // frame in place, so a transparent pixel means "what was already
+          // here".
+          written = new Uint8Array(indexed);
+          let changed = 0;
+          for (let at = 0; at < written.length; at++) {
+            if (written[at] === previous[at]) written[at] = clear;
+            else changed++;
+          }
+          changedPixels += changed;
+        }
+        previous = indexed;
+
+        // The palette goes in once, as the global colour table. Passing it again
+        // writes a local table per frame, which is the same colours at the cost
+        // of a kilobyte each.
+        gif.writeFrame(written, frame.width, frame.height, {
+          delay,
+          ...(index === 0
+            ? { palette }
+            : { transparent: true, transparentIndex: clear, dispose: 1 }),
+        });
       }
       gif.finish();
 
@@ -159,6 +192,8 @@ export async function gifFromPage(
         samples: samples.length,
         distinct: new Set(checksums).size,
         natural,
+        colours: colours.length,
+        changedPixels,
       };
     },
     { scale, delay, maxFrames: MAX_FRAMES, maxSize }
@@ -175,6 +210,8 @@ export async function gifFromPage(
     frames: result.frames,
     samples: result.samples,
     distinct: result.distinct,
+    colours: result.colours,
+    changedPixels: result.changedPixels,
     size: [result.width, result.height],
     natural: result.natural,
     truncated: Math.max(0, result.samples - result.frames),

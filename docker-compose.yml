@@ -28,5 +28,45 @@ services:
       - NG_CLI_ANALYTICS=false
       - NODE_ENV=development
       - REACTOME_BACKEND=http://host.docker.internal:8080
+      # The render service is a sibling container, not loopback. proxy.conf.js
+      # reads this and otherwise defaults to 127.0.0.1:4310, which is correct
+      # when both run on the host.
+      - RENDER_TARGET=http://render:4310
     stdin_open: true
     tty: true
+
+  # Diagram figures for documents -- GIF, PPTX, PDF, PNG, SVG -- rendered by
+  # driving the app's own render page, so an exported figure cannot drift from
+  # what a curator sees. Replaces the Java exporters, which reimplement the
+  # drawing.
+  render:
+    build:
+      context: .
+      dockerfile: deploy/render-service/Dockerfile
+    # A render is a browser holding a large canvas, and this box also runs the
+    # site, Tomcat and Neo4j. If it wedges or runs out of memory, restarting is
+    # the right response -- there is no state to lose but the cache, which is on
+    # a volume.
+    restart: unless-stopped
+    # Deliberately no `ports:`. The service is reachable from the app container
+    # and nowhere else, so a render can only be commissioned through whatever
+    # fronts the site -- crawlers on the old /ContentService/exporter/* URLs are
+    # what exhausted Tomcat's heap and took the origin down.
+    environment:
+      # The app container is what it renders.
+      - RENDER_BASE=http://app:4200
+      - RENDER_CACHE=/cache
+      - RENDER_CONCURRENCY=2
+      - RENDER_QUEUE=8
+    volumes:
+      - render-cache:/cache
+    depends_on:
+      - app
+    # Chromium's default 64 MB /dev/shm is not enough for a 6000px canvas; a
+    # renderer that fails only on large diagrams is the usual symptom.
+    shm_size: '1gb'
+
+volumes:
+  # Survives a container replacement, which is the point: a cached figure is a
+  # file read, and rebuilding the cache means paying for every render again.
+  render-cache:

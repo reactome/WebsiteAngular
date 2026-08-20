@@ -16,7 +16,7 @@
  *   --base      site to render against (default http://localhost:4200)
  *   --scale     raster scale factor    (default 2; GIF never exceeds 1)
  *   --delay     GIF milliseconds per frame (default 1000)
- *   --max-size  GIF longest side in pixels  (default 2000)
+ *   --max-size  GIF longest side in pixels  (default 0: the diagram's own size)
  *   --no-subpathways  leave out sub-pathway tints and labels
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
@@ -57,7 +57,7 @@ try {
     token: flag('token', ''),
     scale: Number(flag('scale', '2')),
     delay: Number(flag('delay', '1000')),
-    maxSize: Number(flag('max-size', '2000')),
+    maxSize: Number(flag('max-size', '0')),
     subpathways: !args.includes('--no-subpathways'),
   });
 
