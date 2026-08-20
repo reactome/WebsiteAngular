@@ -73,6 +73,21 @@ Last updated: 2026-08-20
 
 - **ORCID "Claim Your Work" ([#114](https://github.com/reactome/WebsiteAngular/issues/114))** — blocked on a backend deploy, not on frontend work. The person-page endpoints return real data, but `/ContentService/orcid/authenticated`, `/orcid/login` and `/orcid/claim/*` all 404: the `org.reactome.server.orcid.*` package is not in the deployed WAR. Needs that build deployed plus ORCID credentials in `service.properties`. Deferred by agreement, 2026-08-19.
 
+## In the old browser, not in this one
+
+Found while turning the release checklist into tests. Neither is a regression from
+a working state here -- they were never built -- but the old browser has both, so
+curators will look for them:
+
+- **No confidence threshold for interactors.** The old browser has a sliding scale
+  where raising the confidence score shows fewer interactors; there is no such
+  control here, and no threshold concept in the interactor services or the URL
+  state. The overlay is all-or-nothing per resource.
+- **No interactor download.** The old browser offers one beside that slider.
+
+Both are small next to what they enable, and neither is on the critical path for
+the release. Say if they matter to you and they go on the list.
+
 ## Known and deliberately not fixed
 
 - [#136](https://github.com/reactome/WebsiteAngular/issues/136) node spacing / text size — already labelled `wontfix` upstream of us.

@@ -9,11 +9,13 @@ Each item is marked:
 - **auto** — a test asserts it. If the suite is green, this is true. The spec is named.
 - **human** — cannot honestly be automated, and why.
 - **gap** — should be automated and is not yet. These are the work queue.
+- **missing** — the old site does this and the new one does not. Not a test gap; a feature decision.
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 23 automated, 7 that need a person, 23 still to write.** The
-last number is the one to drive down; the middle one is the honest floor.
+**Where it stands: 25 automated, 7 that need a person, 19 still to write, 2 not
+built.** The third number is the one to drive down; the second is the honest
+floor; the fourth is a decision, not work.
 
 > Where the old document says "clear your browser cache before testing", note that
 > figures are served `private, no-cache` now and the app's own assets are
@@ -43,17 +45,17 @@ last number is the one to drive down; the middle one is the honest floor.
 
 ## Pathway Browser
 
-| Item                                                                        | Status                                       |
-| --------------------------------------------------------------------------- | -------------------------------------------- |
-| Opens with the top-level pathway list                                       | **auto** — `pathway-browser.spec.ts`         |
-| Exactly the 16 documented species in the dropdown                           | **auto** — `release-checklist.spec.ts`       |
-| Every top-level pathway draws a diagram                                     | **gap** — one pathway is covered, not all 28 |
-| Species switch to _Mus musculus_ still draws diagrams                       | **gap**                                      |
-| An EHLD appears for DNA repair, and unfurls                                 | **auto** — `pathway-browser.spec.ts`         |
-| Hovering a sub-pathway lights up its reactions; selecting one highlights it | **gap**                                      |
-| Scroll wheel zooms                                                          | **auto** — `interactive-state.spec.ts`       |
-| Diagram key is visible                                                      | **gap**                                      |
-| Zoom in, out, centre                                                        | **auto** — `interactive-state.spec.ts`       |
+| Item                                                                        | Status                                                                                                                                            |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opens with the top-level pathway list                                       | **auto** — `pathway-browser.spec.ts`                                                                                                              |
+| Exactly the 16 documented species in the dropdown                           | **auto** — `release-checklist.spec.ts`                                                                                                            |
+| Every top-level pathway draws a diagram                                     | **auto** — `diagram-coverage.spec.ts` walks all 29 from the content service, so a pathway promoted to top level is covered the release it appears |
+| Species switch to _Mus musculus_ still draws diagrams                       | **gap**                                                                                                                                           |
+| An EHLD appears for DNA repair, and unfurls                                 | **auto** — `pathway-browser.spec.ts`                                                                                                              |
+| Hovering a sub-pathway lights up its reactions; selecting one highlights it | **gap**                                                                                                                                           |
+| Scroll wheel zooms                                                          | **auto** — `interactive-state.spec.ts`                                                                                                            |
+| Diagram key is visible                                                      | **gap**                                                                                                                                           |
+| Zoom in, out, centre                                                        | **auto** — `interactive-state.spec.ts`                                                                                                            |
 
 ## In-diagram search
 
@@ -75,13 +77,13 @@ last number is the one to drive down; the middle one is the honest floor.
 
 ## Context menus and interactors
 
-| Item                                                           | Status                                    |
-| -------------------------------------------------------------- | ----------------------------------------- |
-| Right-click an entity offers Molecule, Pathways, Interactors   | **auto** — `diagram-entity-popup.spec.ts` |
-| Pathways list navigates to a different diagram                 | **auto** — `diagram-entity-popup.spec.ts` |
-| Interactor overlay toggles on an entity                        | **gap**                                   |
-| Raising the confidence threshold reduces the interactors shown | **gap**                                   |
-| Interactor download                                            | **gap**                                   |
+| Item                                                           | Status                                                                                                                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Right-click an entity offers Molecule, Pathways, Interactors   | **auto** — `diagram-entity-popup.spec.ts`                                                                                                              |
+| Pathways list navigates to a different diagram                 | **auto** — `diagram-entity-popup.spec.ts`                                                                                                              |
+| Interactor overlay draws, and clearing removes it              | **auto** — `interactors.spec.ts`, asserted by looking at the diagram rather than at the button                                                         |
+| Raising the confidence threshold reduces the interactors shown | **missing** — there is no confidence control in this UI, and no threshold concept in the interactor services or the URL state. The old browser has one |
+| Interactor download                                            | **missing** — no such control exists here                                                                                                              |
 
 ## Analysis tools
 
