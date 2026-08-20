@@ -7,18 +7,42 @@
 # layers are shared rather than downloaded again.
 FROM node:22
 
-# Chromium and the system libraries it needs. --with-deps runs apt, so it has to
-# happen before dropping root. Chromium only: nothing here opens Firefox.
 WORKDIR /render
-COPY tools/render/package.json ./
-RUN npm install --omit=dev \
+
+# The four packages the service actually imports, at the versions the repo
+# already pins -- taken from the root package.json rather than restated here.
+#
+# A second manifest with its own pins was the obvious way to do this and the
+# wrong one: dependabot only watches the root, so a bump there would leave this
+# behind, and a Playwright whose version does not match its browser download
+# fails in a way that looks like a rendering bug. One source of truth means the
+# container cannot disagree with the CLI everything was tested against.
+#
+# Adding an import to the service means adding it here too; `docker compose up
+# render` is what proves it.
+COPY package.json ./root-package.json
+RUN node -e " \
+      const root = require('./root-package.json'); \
+      const needed = ['express', '@playwright/test', 'gifenc', 'fflate']; \
+      const dependencies = {}; \
+      for (const name of needed) { \
+        const version = (root.dependencies ?? {})[name] ?? (root.devDependencies ?? {})[name]; \
+        if (!version) throw new Error(name + ' is not a dependency of the root package'); \
+        dependencies[name] = version; \
+      } \
+      require('node:fs').writeFileSync('package.json', JSON.stringify({ \
+        name: 'reactome-render-service', private: true, type: 'module', dependencies \
+      }, null, 2)); \
+    " \
+    && npm install --omit=dev \
     && npx playwright install --with-deps chromium \
-    && npm cache clean --force
+    && npm cache clean --force \
+    && rm root-package.json
 
 COPY tools/render/*.mjs ./
 
 # Renders arrive from the network. Nothing here needs root, and the browser is
-# the part running untrusted-ish input (a page of our own, but a page).
+# the part handling input.
 RUN mkdir -p /cache && chown -R node:node /cache /render
 USER node
 
@@ -27,8 +51,8 @@ ENV RENDER_HOST=0.0.0.0 \
     RENDER_CACHE=/cache
 
 # 0.0.0.0 inside the container, and the port deliberately NOT published to the
-# host in docker-compose.yml. The service is reachable from the app container
-# and nowhere else, which keeps the property that matters: a render can only be
+# host in docker-compose.yml. The service is reachable from the app container and
+# nowhere else, which keeps the property that matters: a render can only be
 # commissioned through whatever fronts the site.
 EXPOSE 4310
 

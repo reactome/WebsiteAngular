@@ -17,11 +17,12 @@ which is on the `render-cache` volume and survives replacement.
 
 The image is `node:22` plus Chromium, not a Playwright image. The Playwright
 images carry three browsers and land around 3 GB; this needs one, and node:22 is
-already here as the app image's base, so the layers are shared. `tools/render/`
-has its own `package.json` for the same reason — four packages instead of the
-site's whole tree — and `render-deps.spec.ts` fails if its pins drift from the
-root's. That matters most for Playwright, whose browser download is
-version-locked to the library.
+already here as the app image's base, so the layers are shared. It installs four
+packages rather than the site's whole tree, and reads their versions out of the
+root `package.json` at build time rather than restating them: dependabot only
+watches the root, so a second set of pins would silently fall behind, and a
+Playwright that does not match its browser download fails in a way that looks
+like a rendering bug.
 
 Running on the host instead, without a container:
 
