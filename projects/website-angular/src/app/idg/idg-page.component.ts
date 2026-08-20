@@ -302,18 +302,15 @@ export class IdgPageComponent {
   });
 
   /**
-   * The interactors as a CSV.
+   * Save rows as a CSV.
    *
-   * Built here rather than through the service's own download endpoint: the data
-   * is already loaded to draw the list, so asking a second machine for a file it
+   * Built here rather than through the service's own download endpoints: the data
+   * is already loaded to draw the page, so asking a second machine for a file it
    * would derive from the same numbers is a round trip and a failure mode for
-   * nothing.
+   * nothing. It also means the pathway file carries the TDL column, which the
+   * portal's own download does not have.
    */
-  downloadGenes() {
-    const rows = [
-      ['Gene', 'Functional interaction score'],
-      ...this.interactors().map(({ gene, score }) => [gene, String(score)]),
-    ];
+  private saveCsv(name: string, rows: string[][]) {
     const csv = rows
       .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
       .join('\n');
@@ -322,11 +319,36 @@ export class IdgPageComponent {
     try {
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${this.term()}-interactors.csv`;
+      anchor.download = name;
       anchor.click();
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  downloadGenes() {
+    this.saveCsv(`${this.term()}-interactors.csv`, [
+      ['Gene', 'Functional interaction score'],
+      ...this.interactors().map(({ gene, score }) => [gene, String(score)]),
+    ]);
+  }
+
+  /**
+   * Every row the filters kept, not just the page on screen -- a file of ten rows
+   * because that is the page size would be a surprise.
+   */
+  downloadPathways() {
+    this.saveCsv(`${this.term()}-pathways.csv`, [
+      ['Stable ID', 'Pathway', 'Genes', 'p-value', 'FDR', 'Weighted TDL'],
+      ...this.matching().map((row) => [
+        row.stId,
+        row.name,
+        String(row.numGenes),
+        String(row.pVal),
+        String(row.fdr),
+        row.tdl ? String(row.tdl.weightedTDL) : '',
+      ]),
+    ]);
   }
 
   /** Which row is open, if any. One at a time, as the portal does it. */
