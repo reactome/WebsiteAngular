@@ -215,3 +215,99 @@
   margin-top: 0.75rem;
   font-size: 0.875rem;
 }
+
+// Significance against how well studied. Points are positioned elements rather
+// than SVG circles so each can be a link with a tooltip; the SVG behind them
+// carries only the significance line.
+.scatter {
+  margin: 1.25rem 0 0;
+
+  figcaption {
+    max-width: 46rem;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant, #556);
+    margin-bottom: 0.5rem;
+  }
+
+  .plot {
+    position: relative;
+    height: 12rem;
+    border-left: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    background: var(--mat-sys-surface-container-lowest, #fbfdfe);
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cutoff {
+      stroke: var(--mat-sys-outline, #90a4ae);
+      stroke-width: 0.4;
+      stroke-dasharray: 2 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .point {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      opacity: 0.75;
+
+      &:hover {
+        opacity: 1;
+        outline: 2px solid var(--mat-sys-on-surface, #123);
+      }
+    }
+
+    .axis-y {
+      position: absolute;
+      top: 0.25rem;
+      left: 0.4rem;
+      font-size: 0.7rem;
+      color: var(--mat-sys-on-surface-variant, #667);
+    }
+  }
+
+  .axis-x {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant, #667);
+
+    .scale {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      // The portal's own scale: red for under-studied, blue for drugged.
+      background: linear-gradient(to right, #f44336, #ff9800, #9e9e9e, #337ab7);
+    }
+  }
+}
+
+.tdl .swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  margin-right: 0.35rem;
+  vertical-align: baseline;
+}
+
+.pathways th .hint {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  line-height: 1rem;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--mat-sys-outline-variant, #e0e0e0);
+  font-size: 0.7rem;
+  cursor: help;
+}

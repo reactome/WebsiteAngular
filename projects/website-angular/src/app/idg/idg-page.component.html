@@ -157,6 +157,41 @@
         </div>
       }
 
+      @if (scatter()) {
+        @let plot = scatter()!;
+        <figure class="scatter">
+          <figcaption>
+            Significance against how well studied — the pathways worth a second look are
+            <strong>high and to the left</strong>: enriched for {{ term() }}'s interactors, and full of proteins nobody
+            has drugged yet.
+          </figcaption>
+          <div class="plot">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <!-- FDR 0.05: everything above this line is significant. -->
+              <line class="cutoff" x1="0" [attr.y1]="plot.cutoff" x2="100" [attr.y2]="plot.cutoff" />
+            </svg>
+            <!-- Points as elements rather than SVG circles, so each can carry a
+                 link and a tooltip without a second lookup. -->
+            @for (point of plot.points; track point.stId) {
+              <a
+                class="point"
+                [routerLink]="['/PathwayBrowser', point.stId]"
+                [style.left.%]="point.x"
+                [style.top.%]="point.y"
+                [style.background]="point.colour"
+                [title]="point.name + ' — TDL ' + point.tdl.toFixed(2) + ', FDR ' + format(point.fdr)"
+              ></a>
+            }
+            <span class="axis-y">more significant ↑</span>
+          </div>
+          <div class="axis-x">
+            <span>tDark ({{ plot.range.min.toFixed(2) }})</span>
+            <span class="scale"></span>
+            <span>tClin ({{ plot.range.max.toFixed(2) }})</span>
+          </div>
+        </figure>
+      }
+
       <div class="table-scroll">
         <table class="pathways">
           <thead>
@@ -164,6 +199,14 @@
               <th scope="col">Pathway</th>
               <th scope="col" class="numeric">p-value</th>
               <th scope="col" class="numeric">FDR</th>
+              <th scope="col" class="numeric">
+                TDL
+                <span
+                  class="hint"
+                  title="Target Development Level: low is under-studied (tDark), high is clinically drugged (tClin)"
+                  >?</span
+                >
+              </th>
               <th scope="col"><span class="visually-hidden">Open</span></th>
             </tr>
           </thead>
@@ -176,6 +219,14 @@
                 </th>
                 <td class="numeric">{{ format(pathway.pVal) }}</td>
                 <td class="numeric">{{ format(pathway.fdr) }}</td>
+                <td class="numeric tdl">
+                  @if (pathway.tdl) {
+                    <span class="swatch" [style.background]="pathway.tdl.colour"></span>
+                    {{ pathway.tdl.weightedTDL.toFixed(2) }}
+                  } @else {
+                    <span class="quiet">—</span>
+                  }
+                </td>
                 <td class="open">
                   <a
                     [routerLink]="['/PathwayBrowser', pathway.stId]"

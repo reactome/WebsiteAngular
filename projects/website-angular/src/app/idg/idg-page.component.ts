@@ -20,13 +20,32 @@ import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
-import { IdgDataset, IdgPathway, IdgService } from './idg.service';
+import { IdgDataset, IdgDruggability, IdgPathway, IdgService } from './idg.service';
+
+/** A row of the table: the pathway, plus how well studied its proteins are. */
+interface IdgRow extends IdgPathway {
+  tdl?: IdgDruggability;
+}
 
 /**
  * The dataset to start from in dataset mode: human protein interactions, pooled
  * across BioGrid, BioPlex and StringDB.
  */
 const DEFAULT_DATASET = 'BioGridBioPlexStringDB|Homo_sapiens|Protein_Interaction';
+
+/**
+ * The service's index holds upper-case human gene symbols and nothing else.
+ *
+ * checkTerm says TANC1 and TP53 exist while tanc1, Tanc1 and Trp53 do not, and
+ * the enrichment endpoint answers a lower-case term with zero pathways rather
+ * than an error -- so a typed-as-you-speak "tanc1" looked exactly like a gene
+ * with no enriched pathways. Upper-casing cannot collide with a mixed-case
+ * symbol from another species, because no mixed-case symbol is in there.
+ * UniProt accessions, which the service also accepts, are upper-case already.
+ */
+function normalise(term: string) {
+  return term.trim().toUpperCase();
+}
 
 /** Buckets in the score histogram. Enough to show shape, few enough to read. */
 const BUCKETS = 28;
@@ -76,10 +95,10 @@ export class IdgPageComponent {
   private router = inject(Router);
 
   /** What is in the box, which is not yet what has been searched for. */
-  readonly entered = signal(this.route.snapshot.queryParamMap.get('gene') ?? '');
+  readonly entered = signal(normalise(this.route.snapshot.queryParamMap.get('gene') ?? ''));
 
   /** The searched term, in the URL so a result can be sent to someone. */
-  readonly term = signal(this.route.snapshot.queryParamMap.get('gene') ?? '');
+  readonly term = signal(normalise(this.route.snapshot.queryParamMap.get('gene') ?? ''));
 
   /**
    * How to choose which interactors count.
@@ -203,6 +222,30 @@ export class IdgPageComponent {
   });
 
   /**
+   * Target Development Level per pathway: the druggability signal.
+   *
+   * Requested alongside the results rather than folded into them, because it
+   * comes from a different endpoint and its absence should cost a column rather
+   * than the page.
+   */
+  readonly druggability = rxResource({
+    params: () => {
+      const term = this.term().trim();
+      if (!term) return undefined;
+      if (this.mode() === 'datasets') {
+        const datasets = this.selected();
+        return datasets.length ? { term, datasets } : undefined;
+      }
+      return this.scores.hasValue() ? { term, score: this.threshold() } : undefined;
+    },
+    stream: ({ params }) =>
+      this.idg.druggability(params.term, {
+        datasets: 'datasets' in params ? params.datasets : undefined,
+        score: 'score' in params ? params.score : undefined,
+      }),
+  });
+
+  /**
    * Whether the service knows the term at all.
    *
    * Only interesting when nothing came back: "never heard of this symbol" and
@@ -221,13 +264,16 @@ export class IdgPageComponent {
   readonly significantOnly = signal(true);
   readonly showAll = signal(false);
 
-  private readonly matching = computed<IdgPathway[]>(() => {
+  private readonly matching = computed<IdgRow[]>(() => {
     const found = (this.results.hasValue() ? this.results.value() : []) ?? [];
-    return found.filter(
-      (pathway) =>
-        (!this.leavesOnly() || pathway.bottomLevel) &&
-        (!this.significantOnly() || pathway.fdr <= 0.05)
-    );
+    const levels = (this.druggability.hasValue() ? this.druggability.value() : {}) ?? {};
+    return found
+      .filter(
+        (pathway) =>
+          (!this.leavesOnly() || pathway.bottomLevel) &&
+          (!this.significantOnly() || pathway.fdr <= 0.05)
+      )
+      .map((pathway) => ({ ...pathway, tdl: levels[pathway.stId] }));
   });
 
   readonly pathways = computed(() =>
@@ -241,6 +287,44 @@ export class IdgPageComponent {
   }));
 
   readonly pageSize = PAGE;
+
+  /**
+   * Significance against how well studied: the portal's actual question.
+   *
+   * A pathway high on this plot is enriched for the searched protein's
+   * interactors; one on the left is full of proteins nobody has drugged. Top
+   * left is therefore where there is something to find, which no ranking by
+   * p-value alone will show you.
+   */
+  readonly scatter = computed(() => {
+    // flatMap rather than filter: it narrows tdl to present, so the rest of this
+    // reads without a non-null assertion on every line.
+    const rows = this.matching().flatMap((row) =>
+      row.tdl ? [{ stId: row.stId, name: row.name, fdr: row.fdr, tdl: row.tdl }] : []
+    );
+    if (!rows.length) return undefined;
+
+    const levels = rows.map((row) => row.tdl.weightedTDL);
+    const range = { min: Math.min(...levels), max: Math.max(...levels) };
+    const span = range.max - range.min || 1;
+    // -log10, so more significant is higher up, which is how these are read.
+    const significance = (fdr: number) => (fdr > 0 ? -Math.log10(fdr) : 20);
+    const tallest = Math.max(...rows.map((row) => significance(row.fdr)), 1.5);
+
+    return {
+      range,
+      cutoff: (1 - Math.log10(1 / 0.05) / tallest) * 100,
+      points: rows.map((row) => ({
+        stId: row.stId,
+        name: row.name,
+        colour: row.tdl.colour ?? '#888',
+        tdl: row.tdl.weightedTDL,
+        fdr: row.fdr,
+        x: ((row.tdl.weightedTDL - range.min) / span) * 100,
+        y: (1 - significance(row.fdr) / tallest) * 100,
+      })),
+    };
+  });
 
   /**
    * Whether the service is the problem.
@@ -263,7 +347,7 @@ export class IdgPageComponent {
 
   constructor() {
     effect(() => {
-      const gene = this.route.snapshot.queryParamMap.get('gene') ?? '';
+      const gene = normalise(this.route.snapshot.queryParamMap.get('gene') ?? '');
       if (gene !== untracked(this.term)) {
         this.entered.set(gene);
         this.term.set(gene);
@@ -272,7 +356,9 @@ export class IdgPageComponent {
   }
 
   search() {
-    const gene = this.entered().trim();
+    const gene = normalise(this.entered());
+    // Put it back in the box too, so what was searched for is what is shown.
+    this.entered.set(gene);
     this.term.set(gene);
     this.showAll.set(false);
     void this.router.navigate([], {
