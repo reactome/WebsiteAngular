@@ -11,6 +11,17 @@ import { pptx } from './pptx.mjs';
 /** Formats the render page can produce. */
 export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
 
+/**
+ * Longest side of the raster PowerPoint falls back to when it cannot draw SVG.
+ *
+ * Its own constant, deliberately not the GIF's: that one is 0 now, meaning "the
+ * diagram's own size", and `MAX_SIZE / longest` with a zero would have asked for
+ * a PNG at scale 0. The zip would still have cleared the size floor, because the
+ * SVG in it is the real picture -- a blank fallback nobody looks at until the one
+ * viewer that needs it opens the file.
+ */
+const FALLBACK_MAX_SIZE = 2000;
+
 /** Anything smaller than this is not a real render; see the Reacfoam notes. */
 const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
 
@@ -18,13 +29,15 @@ const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
  * The URL of the render page for a pathway. Omit the pathway for the
  * genome-wide view.
  */
-export function renderUrl({ base, pathway, token, subpathways = true }) {
+function renderUrl({ base, pathway, token, subpathways = true, dark = false }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
   );
   if (token) url.searchParams.set('analysis', token);
   // Set only when turning them off, so the ordinary URL stays the short one.
   if (!subpathways) url.searchParams.set('subpathways', 'false');
+  // Likewise: light is the default for a figure, so only dark is spelled out.
+  if (dark) url.searchParams.set('dark', 'true');
   return url.toString();
 }
 
@@ -44,6 +57,7 @@ export async function render(
     token = '',
     scale = 2,
     subpathways = true,
+    dark = false,
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -62,7 +76,7 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token, subpathways }), {
+    await page.goto(renderUrl({ base, pathway, token, subpathways, dark }), {
       waitUntil: 'load',
       timeout,
     });
@@ -153,7 +167,7 @@ async function pptxFromPage(page, { scale, title }) {
   // scale the fallback came out at 6MB, dwarfing the vector version PowerPoint
   // actually uses. Cap it at the same size the animation uses.
   const longest = Math.max(size.width, size.height);
-  const png = await pngBytes(page, Math.min(scale, MAX_SIZE / longest));
+  const png = await pngBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
   return pptx({ svg, png, title, ...size });
 }
 

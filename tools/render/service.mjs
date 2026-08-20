@@ -33,7 +33,8 @@
  *   RENDER_CONCURRENCY  simultaneous renders, default 2
  *   RENDER_QUEUE        pending renders before 503, default 8
  *
- * Query parameters: token, scale, subpathways=false, delay and maxSize (GIF).
+ * Query parameters: token, scale, subpathways=false, dark=true, and delay and
+ * maxSize for GIF.
  */
 import express from 'express';
 import { chromium } from '@playwright/test';
@@ -124,11 +125,11 @@ function pump() {
 }
 
 // ---- cache ---------------------------------------------------------------
-function cacheKey({ pathway, format, token, scale, subpathways, delay, maxSize }) {
+function cacheKey({ pathway, format, token, scale, subpathways, delay, maxSize, dark }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
   return createHash('sha256')
-    .update([CACHE_KEY, pathway, format, token, scale, subpathways, delay, maxSize].join(' '))
+    .update([CACHE_KEY, pathway, format, token, scale, subpathways, delay, maxSize, dark].join(' '))
     .digest('hex');
 }
 
@@ -271,6 +272,7 @@ app.get('/render/:name.:ext', async (req, res) => {
     // gigabyte and nobody has needed more detail than the default.
     scale: clamp(req.query.scale ?? 2, 0.25, 2, 2),
     subpathways: req.query.subpathways !== 'false',
+    dark: req.query.dark === 'true',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),

@@ -18,6 +18,7 @@
  *   --delay     GIF milliseconds per frame (default 1000)
  *   --max-size  GIF longest side in pixels  (default 0: the diagram's own size)
  *   --no-subpathways  leave out sub-pathway tints and labels
+ *   --dark      render the dark theme (light by default, whatever the host prefers)
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX carries the SVG, which
@@ -59,6 +60,7 @@ try {
     delay: Number(flag('delay', '1000')),
     maxSize: Number(flag('max-size', '0')),
     subpathways: !args.includes('--no-subpathways'),
+    dark: args.includes('--dark'),
   });
 
   await writeFile(out, bytes);

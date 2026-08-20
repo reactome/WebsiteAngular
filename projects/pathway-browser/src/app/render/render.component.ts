@@ -18,6 +18,8 @@ import { ActivatedRoute } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { AnalysisService } from '../services/analysis.service';
 import { EhldService } from '../services/ehld.service';
+import { DarkService } from '../services/dark.service';
+import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
 
 /**
@@ -54,6 +56,7 @@ export class RenderComponent {
   private reacfoamExporter = inject(SvgExporterService);
   private analysis = inject(AnalysisService);
   private ehldService = inject(EhldService);
+  private dark = inject(DarkService);
   private route = inject(ActivatedRoute);
 
   /**
@@ -63,6 +66,18 @@ export class RenderComponent {
    */
   private readonly wantsSubpathways =
     this.route.snapshot.queryParamMap.get('subpathways') !== 'false';
+
+  /**
+   * ?dark=true renders the dark theme. Light otherwise -- and explicitly so.
+   *
+   * The theme is not just the chrome: the diagram has its own dark palette, and
+   * DarkService picks a default from localStorage or, failing that, from the
+   * browser's prefers-color-scheme. Neither belongs anywhere near a figure. A
+   * renderer whose output depends on the machine it runs on is a renderer whose
+   * cache is lying, and "the exports changed colour and nobody touched
+   * anything" is a bad afternoon.
+   */
+  private readonly wantsDark = this.route.snapshot.queryParamMap.get('dark') === 'true';
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
   readonly loading = this.dataState._currentPathway.isLoading;
@@ -78,6 +93,8 @@ export class RenderComponent {
   private readonly stateForCaller = signal<Record<string, unknown>>({});
 
   constructor() {
+    this.dark.isDark.set(this.wantsDark);
+
     // The diagram waits on EventService.diagramPathway$ before it will load,
     // and the only thing that ever fed that stream was the viewport. Without
     // this the page draws the diagram's legend and nothing else, which is a
@@ -293,7 +310,9 @@ export class RenderComponent {
     // that its styling comes from the page's stylesheets and has to be inlined
     // before the markup means anything on its own.
     const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
-    if (svg) return await this.ehldService.rasterise(svg, scale, '#ffffff');
+    if (svg) {
+      return await this.ehldService.rasterise(svg, scale, this.wantsDark ? '#0d1617' : '#ffffff');
+    }
 
     throw new Error(
       this.reacfoam()
@@ -337,6 +356,15 @@ export class RenderComponent {
     }
 
     throw new Error('nothing on this page can export SVG');
+  }
+
+  /** The colour the diagram draws itself on, whichever theme is active. */
+  private diagramBackground(cy: cytoscape.Core) {
+    const container = cy.container();
+    const background = container ? getComputedStyle(container).backgroundColor : '';
+    // A container with no background of its own would give "rgba(0, 0, 0, 0)",
+    // which is the transparency this exists to avoid.
+    return background && !background.startsWith('rgba(0, 0, 0, 0') ? background : '#ffffff';
   }
 
   /** The drawn view as a PNG data URL. */

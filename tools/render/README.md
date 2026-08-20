@@ -23,6 +23,20 @@ node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 | `--no-subpathways` | leave out sub-pathway tints and labels                   |
 | `--out`            | output path                                              |
 
+## The theme is an explicit choice
+
+Light unless `?dark=true`. Not a preference to inherit: `DarkService` defaults
+from `localStorage`, and failing that from the browser's `prefers-color-scheme`,
+so a renderer that took either would produce different figures on different
+machines — and a cache keyed on the request would happily serve one for the
+other.
+
+Dark is plumbed through and cached separately, but it is worth knowing what it
+gives you: the dark palette is designed for the screen, with the app's own dark
+chrome around it. As a standalone figure it reads as muddy — pale mauve
+compartments, and sub-pathway labels whose dark halos exist to sit on a dark
+canvas. Nothing in the download panel offers it, deliberately.
+
 ## GIF and PowerPoint
 
 These are the two formats the Java exporter still owned, and they are the two

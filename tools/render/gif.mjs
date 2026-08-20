@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 
 /** Frames past this are dropped rather than rendered; reported, never silent. */
-export const MAX_FRAMES = 50;
+const MAX_FRAMES = 50;
 
 /** Milliseconds per frame. Slow enough to read the sample name on screen. */
 export const DEFAULT_DELAY = 1000;
