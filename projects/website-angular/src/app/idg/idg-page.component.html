@@ -3,8 +3,8 @@
     <header>
       <h1>Illuminating the Druggable Genome</h1>
       <p class="lede">
-        Find the Reactome pathways a protein is associated with, through interaction data from BioGrid, BioPlex,
-        StringDB and others. Results link into the Pathway Browser.
+        Find the Reactome pathways a protein's interactors are enriched in, using predicted functional interactions or
+        curated interaction datasets. Results link into the Pathway Browser.
       </p>
     </header>
 
@@ -15,25 +15,74 @@
         <mat-hint>A gene symbol, for example TANC1 or TP53</mat-hint>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="datasets">
-        <mat-label>Interaction datasets</mat-label>
-        <mat-select name="datasets" [(ngModel)]="selected" multiple>
-          @for (group of bySpecies(); track group[0]) {
-            <mat-optgroup [label]="group[0]">
-              @for (dataset of group[1]; track dataset.digitalKey) {
-                <mat-option [value]="dataset.digitalKey">{{ label(dataset) }}</mat-option>
-              }
-            </mat-optgroup>
-          }
-        </mat-select>
-        <mat-hint>{{ selected().length }} selected</mat-hint>
-      </mat-form-field>
-
-      <button mat-flat-button type="submit" [disabled]="!entered().trim() || !selected().length">
+      <button mat-flat-button type="submit" [disabled]="!entered().trim()">
         <mat-icon>search</mat-icon>
         Search
       </button>
     </form>
+
+    <mat-button-toggle-group
+      class="mode"
+      name="mode"
+      [(ngModel)]="mode"
+      [ngModelOptions]="{ standalone: true }"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle value="score">Functional interaction score</mat-button-toggle>
+      <mat-button-toggle value="datasets">Interaction datasets</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (mode() === 'score') {
+      <section class="score-filter">
+        @if (scores.isLoading()) {
+          <p class="quiet">Loading interaction scores…</p>
+        } @else if (scoreRange()) {
+          @let range = scoreRange()!;
+          <div class="threshold">
+            <label for="threshold">
+              Minimum score
+              <strong>{{ threshold().toFixed(2) }}</strong>
+            </label>
+            <mat-slider [min]="range.min" [max]="range.max" step="0.01" discrete>
+              <input matSliderThumb id="threshold" [(ngModel)]="threshold" [ngModelOptions]="{ standalone: true }" />
+            </mat-slider>
+            <p class="quiet">
+              {{ kept().genes.length }} of {{ kept().total }} predicted interactors score
+              {{ threshold().toFixed(2) }} or better. This gene's best is {{ range.max.toFixed(2) }}.
+            </p>
+          </div>
+
+          <!-- The distribution, so the threshold is chosen against something
+               rather than guessed. Kept buckets are filled, dropped ones faded. -->
+          <div class="histogram" role="img" aria-label="Distribution of interactor scores">
+            @for (bucket of histogram(); track bucket.from) {
+              <span
+                class="bar"
+                [class.dropped]="!bucket.kept"
+                [style.height.%]="bucket.height"
+                [title]="bucket.count + ' interactors near ' + bucket.from.toFixed(2)"
+              ></span>
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <section class="dataset-filter">
+        <mat-form-field appearance="outline" class="datasets">
+          <mat-label>Interaction datasets</mat-label>
+          <mat-select name="datasets" [(ngModel)]="selected" [ngModelOptions]="{ standalone: true }" multiple>
+            @for (group of bySpecies(); track group[0]) {
+              <mat-optgroup [label]="group[0]">
+                @for (dataset of group[1]; track dataset.digitalKey) {
+                  <mat-option [value]="dataset.digitalKey">{{ label(dataset) }}</mat-option>
+                }
+              </mat-optgroup>
+            }
+          </mat-select>
+          <mat-hint>{{ selected().length }} selected. The score threshold does not apply here.</mat-hint>
+        </mat-form-field>
+      </section>
+    }
 
     @if (failed()) {
       <div class="state error">
@@ -44,7 +93,7 @@
         </p>
         <button mat-button type="button" (click)="retry()">Try again</button>
       </div>
-    } @else if (results.isLoading()) {
+    } @else if (results.isLoading() || scores.isLoading()) {
       <div class="state">
         <mat-spinner diameter="36" />
         <p>Looking for pathways associated with {{ term() }}…</p>
@@ -53,30 +102,60 @@
       <div class="state">
         <p>Enter a gene or protein to begin.</p>
       </div>
-    } @else if (!pathways().length) {
+    } @else if (!counts().matching) {
       <div class="state">
         @if (known.value() === false) {
           <h2>{{ term() }} is not in the IDG data</h2>
+          <p>No dataset here mentions that name, so it is worth checking the spelling.</p>
+        } @else if (counts().total) {
+          <h2>Nothing passed the filters</h2>
           <p>
-            No dataset here mentions that name. Gene symbols are what it knows — TANC1, TP53 — so it is worth checking
-            the spelling.
+            {{ counts().total }} pathways came back, but none is both significant and lowest-level. Untick a filter
+            below, or lower the score threshold.
           </p>
         } @else {
           <h2>Nothing found for {{ term() }}</h2>
-          <p>
-            {{ term() }} is known, but no pathway passed the significance cut-off in the datasets you picked. Try adding
-            datasets.
-          </p>
+          <p>{{ term() }} is known, but no pathway is enriched at this threshold. Try lowering it.</p>
         }
       </div>
     } @else {
       <div class="results-header">
         <h2>
-          {{ pathways().length }} pathway{{ pathways().length === 1 ? '' : 's' }} for
-          {{ term() }}
+          {{ counts().matching }} pathway{{ counts().matching === 1 ? '' : 's' }} for {{ term() }}
+          @if (counts().matching !== counts().total) {
+            <span class="quiet">of {{ counts().total }} enriched</span>
+          }
         </h2>
-        <mat-checkbox [(ngModel)]="leavesOnly" name="leavesOnly"> Lowest-level pathways only </mat-checkbox>
+        <div class="filters">
+          <mat-checkbox [(ngModel)]="significantOnly" [ngModelOptions]="{ standalone: true }" name="significantOnly">
+            FDR ≤ 0.05
+          </mat-checkbox>
+          <mat-checkbox [(ngModel)]="leavesOnly" [ngModelOptions]="{ standalone: true }" name="leavesOnly">
+            Lowest-level only
+          </mat-checkbox>
+        </div>
       </div>
+
+      @if (mode() === 'score' && kept().genes.length) {
+        <div class="overlay-action">
+          <button mat-stroked-button type="button" (click)="overlay()" [disabled]="analysing()">
+            @if (analysing()) {
+              <mat-spinner diameter="18" />
+            } @else {
+              <mat-icon>bubble_chart</mat-icon>
+            }
+            Show these interactors on the genome-wide map
+          </button>
+          <p class="quiet">
+            Runs the {{ kept().genes.length }} interactors through Reactome's own analysis and opens the genome-wide
+            view coloured by it. That is Reactome's overrepresentation of the interactor list, not the IDG statistics in
+            the table.
+          </p>
+          @if (analysisFailed()) {
+            <p class="failed">The analysis could not be created. Please try again.</p>
+          }
+        </div>
+      }
 
       <div class="table-scroll">
         <table class="pathways">
@@ -111,7 +190,14 @@
         </table>
       </div>
 
-      @if (chosen().length) {
+      @if (counts().matching > counts().shown) {
+        <p class="more">
+          Showing the {{ counts().shown }} most significant.
+          <button mat-button type="button" (click)="showAll.set(true)">Show all {{ counts().matching }}</button>
+        </p>
+      }
+
+      @if (mode() === 'datasets' && chosen().length) {
         <footer class="provenance">
           <h3>Data sources</h3>
           <ul>

@@ -133,3 +133,85 @@
   overflow: hidden;
   clip-path: inset(50%);
 }
+
+.mode {
+  margin-bottom: 1rem;
+}
+
+.score-filter,
+.dataset-filter {
+  margin-bottom: 1.5rem;
+}
+
+.threshold {
+  max-width: 34rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  mat-slider {
+    width: 100%;
+  }
+}
+
+.quiet {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant, #667);
+}
+
+.failed {
+  color: var(--mat-sys-error, #b3261e);
+  font-size: 0.875rem;
+}
+
+// The score distribution: bars for kept buckets, faded for dropped ones. Plain
+// elements rather than a charting library -- it is 28 numbers.
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 4rem;
+  max-width: 34rem;
+  margin-top: 0.75rem;
+
+  .bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background: var(--mat-sys-primary, #0f7f8f);
+    border-radius: 1px 1px 0 0;
+
+    &.dropped {
+      background: var(--mat-sys-outline-variant, #cfd8dc);
+    }
+  }
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.overlay-action {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  border-radius: 0.5rem;
+
+  mat-spinner {
+    display: inline-block;
+    margin-right: 0.4rem;
+  }
+
+  p {
+    max-width: 46rem;
+  }
+}
+
+.more {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
