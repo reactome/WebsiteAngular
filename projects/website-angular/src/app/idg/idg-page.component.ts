@@ -283,6 +283,22 @@ export class IdgPageComponent {
     stream: ({ params }) => this.idg.checkTerm(params.term),
   });
 
+  /** Which row is open, if any. One at a time, as the portal does it. */
+  readonly expanded = signal<string | null>(null);
+
+  /** What the open row shows: the pathway's description and its ancestry. */
+  readonly detail = rxResource({
+    params: () => {
+      const stId = this.expanded();
+      return stId ? { stId } : undefined;
+    },
+    stream: ({ params }) => this.idg.pathwayDetail(params.stId),
+  });
+
+  toggle(stId: string) {
+    this.expanded.update((open) => (open === stId ? null : stId));
+  }
+
   /** Every pathway's top-level pathway, for colouring the pathway plot. */
   readonly hierarchy = rxResource({ stream: () => this.idg.hierarchy() });
 

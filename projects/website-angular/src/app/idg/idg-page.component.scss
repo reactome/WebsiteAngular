@@ -431,3 +431,49 @@
     padding: 0.15rem 0.25rem;
   }
 }
+
+.pathways {
+  .expander button {
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--mat-sys-on-surface-variant, #667);
+  }
+
+  tr.open {
+    background: var(--mat-sys-surface-container, #f2f7f9);
+  }
+
+  tr.detail td {
+    padding: 0.75rem 1rem 1rem 2.5rem;
+    background: var(--mat-sys-surface-container-low, #f7fbfc);
+  }
+
+  tr.detail h3 {
+    font-size: 0.9375rem;
+    margin: 0.5rem 0 0.25rem;
+  }
+
+  .summation {
+    max-width: 60rem;
+    margin: 0;
+    font-size: 0.875rem;
+    // The text carries its own paragraph breaks now that the markup is gone.
+    white-space: pre-line;
+  }
+
+  // Indented like a breadcrumb read downwards, which is how the portal shows it.
+  .hierarchy {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+
+    li {
+      padding-left: calc(var(--depth) * 1.25rem);
+    }
+  }
+}

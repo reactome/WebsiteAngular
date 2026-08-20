@@ -225,6 +225,7 @@
         <table class="pathways">
           <thead>
             <tr>
+              <th scope="col"><span class="visually-hidden">Expand</span></th>
               <th scope="col">Pathway</th>
               <th scope="col" class="numeric">Genes</th>
               <th scope="col" class="numeric">p-value</th>
@@ -242,7 +243,17 @@
           </thead>
           <tbody>
             @for (pathway of pathways(); track pathway.stId) {
-              <tr>
+              <tr [class.open]="expanded() === pathway.stId">
+                <td class="expander">
+                  <button
+                    type="button"
+                    (click)="toggle(pathway.stId)"
+                    [attr.aria-expanded]="expanded() === pathway.stId"
+                    [attr.aria-label]="(expanded() === pathway.stId ? 'Hide' : 'Show') + ' details for ' + pathway.name"
+                  >
+                    <mat-icon>{{ expanded() === pathway.stId ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </td>
                 <th scope="row">
                   <a [routerLink]="['/PathwayBrowser', pathway.stId]">{{ pathway.name }}</a>
                   <span class="stid">{{ pathway.stId }}</span>
@@ -267,6 +278,33 @@
                   </a>
                 </td>
               </tr>
+              @if (expanded() === pathway.stId) {
+                <tr class="detail">
+                  <td [attr.colspan]="6">
+                    @if (detail.isLoading()) {
+                      <p class="quiet">Loading…</p>
+                    } @else if (detail.hasValue()) {
+                      @let open = detail.value();
+                      @if (open.summation) {
+                        <h3>Description</h3>
+                        <p class="summation">{{ open.summation }}</p>
+                      }
+                      @if (open.hierarchy.length) {
+                        <h3>Hierarchy</h3>
+                        <ol class="hierarchy">
+                          @for (step of open.hierarchy; track step.stId; let depth = $index) {
+                            <li [style.--depth]="depth">
+                              <a [routerLink]="['/PathwayBrowser', step.stId]">{{ step.name }}</a>
+                            </li>
+                          }
+                        </ol>
+                      }
+                    } @else {
+                      <p class="quiet">No description available.</p>
+                    }
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>

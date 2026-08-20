@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, Observable, of, shareReplay } from 'rxjs';
+import { catchError, combineLatest, map, Observable, of, shareReplay } from 'rxjs';
 import {
   ANALYSIS_SERVICE,
+  CONTENT_SERVICE,
   IDG_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
 
@@ -62,6 +63,34 @@ export interface IdgDruggability {
   weightedTDL: number;
   colour?: string;
   genes?: number;
+}
+
+/**
+ * A summation as text.
+ *
+ * Reactome summations carry markup -- `<br>` between paragraphs, the occasional
+ * `<i>` -- and rendering the string raw shows the tags to the reader. Turned into
+ * text with real line breaks rather than passed through innerHTML: nothing here
+ * needs to be clickable, and text cannot inject anything.
+ */
+function plainText(html: string | undefined) {
+  if (!html) return undefined;
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** What a pathway row expands to show: what it is, and where it sits. */
+export interface IdgPathwayDetail {
+  summation?: string;
+  /** Root first, the pathway itself last, as a breadcrumb reads. */
+  hierarchy: { stId: string; name: string }[];
 }
 
 /**
@@ -253,6 +282,42 @@ export class IdgService {
         ),
         catchError(() => of<IdgFeature[]>([]))
       );
+  }
+
+  /**
+   * A pathway's description and its place in the hierarchy.
+   *
+   * From our own content service rather than the IDG server -- which is what the
+   * portal does too, and it means an expanded row costs nothing extra from a
+   * machine we do not control. Two calls because the description and the
+   * ancestry live on different endpoints.
+   */
+  pathwayDetail(stId: string): Observable<IdgPathwayDetail> {
+    const detail = this.http
+      .get<{ summation?: { text?: string }[] }>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
+      .pipe(
+        map((event) => plainText(event.summation?.[0]?.text)),
+        catchError(() => of(undefined))
+      );
+
+    const ancestors = this.http
+      .get<{ stId: string; displayName: string }[][]>(
+        `${CONTENT_SERVICE}/data/event/${stId}/ancestors`
+      )
+      .pipe(
+        // The first branch, reversed: the service returns the pathway first and
+        // the root last, which is the opposite of how a breadcrumb reads.
+        map((branches) =>
+          [...(branches[0] ?? [])]
+            .reverse()
+            .map((event) => ({ stId: event.stId, name: event.displayName }))
+        ),
+        catchError(() => of<{ stId: string; name: string }[]>([]))
+      );
+
+    return combineLatest([detail, ancestors]).pipe(
+      map(([summation, hierarchy]) => ({ summation, hierarchy }))
+    );
   }
 
   /**
