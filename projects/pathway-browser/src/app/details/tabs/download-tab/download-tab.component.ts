@@ -7,6 +7,7 @@ import { AnalysisService } from '../../../services/analysis.service';
 import {
   ANALYSIS_SERVICE,
   CONTENT_SERVICE,
+  RENDER_SERVICE,
   RESTFUL_API,
 } from '../../../../environments/environment';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -23,6 +24,23 @@ import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
+
+/**
+ * An analysis token in its raw form.
+ *
+ * Tokens come back from the analysis service percent-encoded, but not always --
+ * a token read from a URL the user pasted may already be decoded. Decoding a
+ * decoded token is a no-op for the characters a token contains, and a stray `%`
+ * that is not an escape would throw rather than return, so fall back to what
+ * came in.
+ */
+function decodeToken(token: string) {
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
+}
 
 type PathwayItem = {
   name: string;
@@ -134,7 +152,12 @@ export class DownloadTabComponent {
       if (isExportable) {
         return {
           format,
-          url: signal(this.getExportUrl(format)),
+          // A diagram's GIF and PowerPoint come from the render service, which
+          // drives the site's own renderer; an illustration's still go through
+          // the content service, which serves the same illustration file either
+          // way. That is why a downloaded GIF used to look like the old site
+          // and no longer does.
+          url: signal(isEHLD ? this.getExportUrl(format) : this.getRenderUrl(format)),
           icon: { id: 'image' },
           download: true,
         };
@@ -257,6 +280,28 @@ export class DownloadTabComponent {
   getGsaLabel(name: string) {
     if (name === 'MS Excel Report (xlsx)') return 'Excel Report';
     return name;
+  }
+
+  /**
+   * A figure from the render service.
+   *
+   * The analysis token travels with it, because that is what makes a GIF worth
+   * having: one frame per sample of an expression analysis rather than a still.
+   * So does the sub-pathway preference, so the checkbox above means the same
+   * thing for a server-rendered file as for one the browser produces.
+   */
+  getRenderUrl(format: string) {
+    const url = new URL(`${RENDER_SERVICE}/render/${this.pathwayId()}.${format}`);
+    const token = this.token();
+    // The analysis service hands the token back already percent-encoded
+    // ("...%3D%3D"), and setSearchParam encodes it a second time, which produces
+    // "...%253D%253D" -- a different token to anything downstream, and a
+    // different cache entry. Decode first so it is encoded exactly once.
+    if (token) url.searchParams.set('token', decodeToken(token));
+    // Set only when turning them off, so the ordinary URL stays the short one
+    // and the service's cache is not split by a parameter that says nothing.
+    if (!includeSubpathways()) url.searchParams.set('subpathways', 'false');
+    return url.toString();
   }
 
   getExportUrl(format: string) {

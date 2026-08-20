@@ -39,6 +39,11 @@ export const CONTENT_SERVICE = `http://localhost:${LOCAL_CONTENT_SERVICE_PORT}`;
 // reactome.org, which sends Access-Control-Allow-Origin: *.
 export const VERSION_FALLBACK = `https://reactome.org/ContentService/data/database/version`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
+// The headless render service: diagram figures for documents (GIF, PPTX, PDF),
+// rendered by the site's own renderer rather than by the Java exporters'
+// reimplementation of it. Served under the site's own origin by a proxy, so a
+// render can only be commissioned through whatever fronts the site.
+export const RENDER_SERVICE = `${environment.host}/RenderService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 // EHLDs and pre-generated diagram JSON aren't served by a local content

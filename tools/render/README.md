@@ -5,8 +5,8 @@ browser, by driving the site's own render page.
 
 ```bash
 node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
-node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token <analysis-token>
-node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token <analysis-token>
+node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
 node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
 node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 ```
@@ -131,9 +131,9 @@ proxy for it.
 ```bash
 node tools/render/service.mjs
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
-curl -o out.pdf 'http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=<analysis-token>'
+curl -o out.pdf "http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=$ANALYSIS_TOKEN"
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'
-curl -o out.gif  'http://127.0.0.1:4310/render/R-HSA-109606.gif?token=<analysis-token>'
+curl -o out.gif  "http://127.0.0.1:4310/render/R-HSA-109606.gif?token=$ANALYSIS_TOKEN"
 curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```

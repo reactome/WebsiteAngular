@@ -66,6 +66,20 @@ const ATTACHMENT = new Set(['pptx']);
 
 const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0 };
 
+/**
+ * Keep a request's numbers inside what this box can draw.
+ *
+ * These arrive from a query string, and the service is reachable through the
+ * site, so they are attacker-controlled: scale=50 asks for a canvas of a few
+ * hundred million pixels, which is an out-of-memory kill rather than an error.
+ * Clamped rather than rejected -- a number slightly out of range is a caller
+ * being optimistic, not a caller being wrong.
+ */
+function clamp(value, low, high, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(high, Math.max(low, number)) : fallback;
+}
+
 // ---- browser -------------------------------------------------------------
 // One browser for the process, a fresh page per render. Reusing a page leaks
 // state between renders -- a stale analysis token being the obvious one -- and a
@@ -248,10 +262,14 @@ app.get('/render/:name.:ext', async (req, res) => {
     pathway: name === 'genome-wide' ? '' : name,
     format,
     token: typeof req.query.token === 'string' ? req.query.token : '',
-    scale: Number(req.query.scale || 2),
+    // 2 is both the default and the ceiling. A diagram's own coordinate space
+    // is around 6000px, so scale 4 asks for a 320-megapixel canvas -- it does
+    // render, which is worse than failing: one query string costs the box a
+    // gigabyte and nobody has needed more detail than the default.
+    scale: clamp(req.query.scale ?? 2, 0.25, 2, 2),
     subpathways: req.query.subpathways !== 'false',
-    delay: Number(req.query.delay || 1000),
-    maxSize: Number(req.query.maxSize || 2000),
+    delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
+    maxSize: clamp(req.query.maxSize ?? 2000, 200, 4000, 2000),
   };
 
   try {

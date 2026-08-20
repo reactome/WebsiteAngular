@@ -6,7 +6,7 @@
  * there is one implementation of the render itself.
  *
  *   node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
- *   node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token <analysis-token>
+ *   node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
  *   node tools/render/render.mjs --format svg --out genome-wide.svg
  *
  *   --pathway   stable id; omit for the genome-wide view

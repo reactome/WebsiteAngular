@@ -23,6 +23,11 @@ export const CONTENT_SERVICE = IS_CURATOR
   : `http://127.0.0.1:8686`;
 export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
+// The headless render service: diagram figures for documents (GIF, PPTX, PDF),
+// rendered by the site's own renderer rather than by the Java exporters'
+// reimplementation of it. Served under the site's own origin by a proxy, so a
+// render can only be commissioned through whatever fronts the site.
+export const RENDER_SERVICE = `${environment.host}/RenderService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 export const DOWNLOAD = `${environment.host}/download/current`;
