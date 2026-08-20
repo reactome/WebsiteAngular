@@ -4,7 +4,7 @@ export interface DeltaSignalPathway {
   name: string;
 }
 
-export interface DeltaSignalNode {
+interface DeltaSignalNode {
   uuid: string;
   name: string;
   reactome_id: string;
@@ -13,7 +13,7 @@ export interface DeltaSignalNode {
   set_id: string | null;
 }
 
-export interface DeltaSignalEdge {
+interface DeltaSignalEdge {
   parent_uuid: string;
   child_uuid: string;
   is_and: boolean;

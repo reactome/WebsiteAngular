@@ -5,7 +5,7 @@ import {
   DeltaSignalSolveResult,
 } from './deltasignal.model';
 
-export const toDisplayActivity = (activity: number) => activity * 100;
+const toDisplayActivity = (activity: number) => activity * 100;
 
 export function buildObservations(
   perturbations: Iterable<DeltaSignalPerturbation>
