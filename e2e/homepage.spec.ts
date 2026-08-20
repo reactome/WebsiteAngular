@@ -14,6 +14,7 @@ const SHORTCUTS = [
   { name: 'Analysis Tools', href: '/PathwayBrowser?analysisTab=qualitative' },
   { name: 'AI Chatbot', href: '/chat' },
   { name: 'ReactomeFIViz', href: '/documentation/userguide/reactome-fiviz' },
+  { name: 'IDG', href: '/idg' },
   { name: 'Documentation', href: '/documentation' },
 ];
 
