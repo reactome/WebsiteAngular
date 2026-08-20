@@ -86,4 +86,33 @@ test.describe('Download catalogue', () => {
       `${checked.length} files offered`
     ).toEqual([]);
   });
+
+  // Icons are released files too, published at <version>/icons/svg. They used to
+  // be fetched from a hardcoded backend host, because they are not proxied on
+  // beta or release -- so the site's own icons came cross-origin from
+  // dev.reactome.org. This fails if that ever comes back.
+  test('the icon library draws its artwork from the release bucket', async ({ page }) => {
+    const hosts = new Set<string>();
+    page.on('response', (response) => {
+      const url = response.url();
+      if (/icons?\//.test(url) && url.endsWith('.svg')) hosts.add(new URL(url).host);
+    });
+
+    await page.goto('/community/icon-lib');
+    await expect(page.locator('img').first()).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(4000);
+
+    expect([...hosts], 'icons come from the download bucket and nowhere else').toEqual([
+      'download.reactome.org',
+    ]);
+
+    // And they are really drawn, not merely requested.
+    const drawn = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('img')].filter(
+          (image) => image.src.includes('/icons/svg/') && image.complete && image.naturalWidth > 0
+        ).length
+    );
+    expect(drawn, 'icons that actually rendered').toBeGreaterThan(5);
+  });
 });

@@ -22,9 +22,6 @@ export const environment = {
   preferS3: false,
 };
 
-// Icon image files live on the Reactome backend and aren't proxied on every
-// front-end origin; use the dev backend host (see environment.ts).
-export const ICON_HOST = 'https://dev.reactome.org';
 export const ICON_BASE = environment.host;
 
 // A locally-run content service is a bare Spring Boot app: its endpoints sit

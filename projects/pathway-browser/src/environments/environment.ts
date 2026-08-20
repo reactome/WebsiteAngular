@@ -38,7 +38,9 @@ export const environment = {
 // returns 404), so build their URLs from the dev backend host rather than
 // window.location.origin. The assets send Access-Control-Allow-Origin: *, so
 // cross-origin <img> loads work from any front-end.
-export const ICON_HOST = 'https://dev.reactome.org';
+// Not exported any more: icons come from the release bucket now, and this is
+// only the fallback ICON_BASE uses until the release resolves (and on curator).
+const ICON_HOST = 'https://dev.reactome.org';
 
 // The curator host serves icon assets itself (no cross-origin proxying
 // limitation like beta/release/production have), so use it directly instead
