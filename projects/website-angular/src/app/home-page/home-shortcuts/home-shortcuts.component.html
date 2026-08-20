@@ -24,6 +24,11 @@
       ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
     </app-button></a
   >
+  <a class="shortcut-link" routerLink="/idg"
+    ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
+      ><mat-icon class="large-button-icon">medication</mat-icon>IDG
+    </app-button></a
+  >
   <a class="shortcut-link" [routerLink]="navOptions()['documentation']?.link || '/documentation'"
     ><app-button [variant]="dark ? 'dark' : 'light'" size="large">
       <mat-icon class="large-button-icon">school</mat-icon>Documentation

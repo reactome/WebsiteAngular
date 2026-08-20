@@ -28,6 +28,13 @@ export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 // reimplementation of it. Served under the site's own origin by a proxy, so a
 // render can only be commissioned through whatever fronts the site.
 export const RENDER_SERVICE = `${environment.host}/RenderService`;
+
+// The IDG pairwise service (reactome-idg/idg-pairwise-ws), which relates a gene
+// or protein to Reactome pathways through third-party interaction datasets.
+// Absolute and cross-origin on purpose: the service answers with
+// Access-Control-Allow-Origin, and its data lives on the IDG server rather than
+// here. When that data moves, this is the line that changes.
+export const IDG_SERVICE = 'https://idg.reactome.org/idgpairwise';
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 export const DOWNLOAD = `${environment.host}/download/current`;

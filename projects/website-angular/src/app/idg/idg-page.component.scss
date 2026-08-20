@@ -1,0 +1,135 @@
+.idg-page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.lede {
+  max-width: 46rem;
+  color: var(--mat-sys-on-surface-variant, #555);
+}
+
+.query {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+
+  .gene {
+    flex: 1 1 14rem;
+  }
+
+  .datasets {
+    flex: 2 1 22rem;
+  }
+
+  button {
+    // Line the button up with the inputs rather than their hint text.
+    margin-top: 0.5rem;
+  }
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant, #555);
+
+  &.error {
+    color: inherit;
+  }
+}
+
+.results-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+// The table can be long and, on a narrow screen, wider than the page. Scrolling
+// it inside its own box keeps the page itself from scrolling sideways.
+.table-scroll {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.pathways {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--mat-sys-surface, #fff);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  .numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .stid {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+
+  .open a {
+    display: inline-flex;
+  }
+
+  tbody tr:hover {
+    background: var(--mat-sys-surface-container, #f5f5f5);
+  }
+}
+
+.provenance {
+  margin-top: 2rem;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant, #555);
+
+  h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  .species {
+    font-style: italic;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

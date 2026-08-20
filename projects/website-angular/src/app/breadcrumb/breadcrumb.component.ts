@@ -242,12 +242,23 @@ export class BreadcrumbComponent implements OnInit {
   }
 
   /**
+   * Segments that are acronyms rather than words. Title-casing turns "idg" into
+   * "Idg", which reads as a typo -- and these are the only segments in the site
+   * where capitalising the first letter is the wrong answer.
+   */
+  private static readonly ACRONYMS = new Set(['idg', 'api', 'doi', 'faq', 'orcid', 'toc']);
+
+  /**
    * Format a URL segment into a readable label (e.g., "why-reactome" -> "Why Reactome")
    */
   private formatSegmentLabel(segment: string): string {
     return segment
       .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) =>
+        BreadcrumbComponent.ACRONYMS.has(word.toLowerCase())
+          ? word.toUpperCase()
+          : word.charAt(0).toUpperCase() + word.slice(1)
+      )
       .join(' ');
   }
 }
