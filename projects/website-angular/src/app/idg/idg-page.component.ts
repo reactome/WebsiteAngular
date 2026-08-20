@@ -207,6 +207,38 @@ export class IdgPageComponent {
     return { genes, total: Object.keys(scores ?? {}).length };
   });
 
+  /**
+   * One analysis of the interactors, shared by every link off this page.
+   *
+   * Opening a pathway with no analysis shows the pathway, which is not what the
+   * click was for: the question being asked is where this protein's interactors
+   * turn up, and the answer is the overlay. So the interactors go through
+   * Reactome's own analysis once per gene list, and every pathway link carries
+   * the resulting token -- the diagram then colours the entities that were found.
+   */
+  private readonly interactorAnalysis = rxResource({
+    params: () => {
+      const term = this.term();
+      const genes = this.kept().genes;
+      // No analysis of nothing, and none before there is a search.
+      return term && genes.length ? { term, genes } : undefined;
+    },
+    stream: ({ params }) => this.idg.analyseInteractors(params.term, params.genes),
+  });
+
+  readonly analysisToken = computed(() =>
+    this.interactorAnalysis.hasValue() ? this.interactorAnalysis.value() : undefined
+  );
+
+  /**
+   * Query parameters for a pathway link. Empty until the analysis is ready, so a
+   * click that lands early opens the pathway rather than waiting or failing.
+   */
+  readonly analysisParams = computed(() => {
+    const token = this.analysisToken();
+    return token ? { analysis: token } : {};
+  });
+
   /** The score distribution, so the threshold is chosen against something. */
   readonly histogram = computed(() => {
     const sorted = this.sortedScores();
@@ -640,9 +672,15 @@ export class IdgPageComponent {
     this.analysing.set(true);
     this.analysisFailed.set(false);
     try {
-      const token = await new Promise<string | undefined>((resolve, reject) =>
-        this.idg.analyseInteractors(this.term(), genes).subscribe({ next: resolve, error: reject })
-      );
+      // The page has usually already made one for its pathway links; asking for a
+      // second would analyse the same genes twice and produce a different token.
+      const token =
+        this.analysisToken() ??
+        (await new Promise<string | undefined>((resolve, reject) =>
+          this.idg
+            .analyseInteractors(this.term(), genes)
+            .subscribe({ next: resolve, error: reject })
+        ));
       if (!token) throw new Error('no token');
       await this.router.navigate(['/PathwayBrowser'], { queryParams: { analysis: token } });
     } catch {

@@ -1,6 +1,6 @@
 @if (state.pathwayId()) {
   @if (ehld.hasEHLD()) {
-    <h3>🖼️ EHLD: The Big Picture of Biology</h3>
+    <h3><mat-icon fontSet="symbols" class="heading-icon">image</mat-icon> EHLD: The Big Picture of Biology</h3>
     Explore pathways through beautifully illustrated, textbook-style overviews — designed to show how major biological
     mechanisms fit together.
     <ul>
@@ -12,7 +12,10 @@
     </ul>
     See the system at a glance — and zoom into the science beneath.
   } @else {
-    <h3>🧬 Dive into the Details: Pathway Diagram View</h3>
+    <h3>
+      <mat-icon fontSet="symbols" class="heading-icon">account_tree</mat-icon> Dive into the Details: Pathway Diagram
+      View
+    </h3>
     See how biology actually happens — with interactive, step-by-step pathway diagrams.
     <ul>
       <li><b>Drag</b> to move around the pathway map.</li>
@@ -30,7 +33,7 @@
     Explore biology in motion — from pathways to molecules.
   }
 } @else {
-  <h3>🔍 Explore Reactome Pathways</h3>
+  <h3><mat-icon fontSet="symbols" class="heading-icon">search</mat-icon> Explore Reactome Pathways</h3>
   Discover all pathways in a dynamic Voronoi map — each cell scaled by its molecular content.
   <ul>
     <li><b>Drag & zoom</b> to explore.</li>

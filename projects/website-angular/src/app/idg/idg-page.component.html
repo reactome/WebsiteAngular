@@ -177,6 +177,7 @@
               <a
                 class="point"
                 [routerLink]="['/PathwayBrowser', point.stId]"
+                [queryParams]="analysisParams()"
                 [style.left.%]="point.x"
                 [style.top.%]="point.y"
                 [style.background]="point.colour"
@@ -215,6 +216,7 @@
               <a
                 class="point"
                 [routerLink]="['/PathwayBrowser', point.stId]"
+                [queryParams]="analysisParams()"
                 [style.left.%]="point.x"
                 [style.top.%]="point.y"
                 [style.background]="point.colour"
@@ -284,7 +286,9 @@
                   </button>
                 </td>
                 <th scope="row">
-                  <a [routerLink]="['/PathwayBrowser', pathway.stId]">{{ pathway.name }}</a>
+                  <a [routerLink]="['/PathwayBrowser', pathway.stId]" [queryParams]="analysisParams()">{{
+                    pathway.name
+                  }}</a>
                   <span class="stid">{{ pathway.stId }}</span>
                 </th>
                 <td class="numeric">{{ pathway.numGenes }}</td>
@@ -301,6 +305,7 @@
                 <td class="open">
                   <a
                     [routerLink]="['/PathwayBrowser', pathway.stId]"
+                    [queryParams]="analysisParams()"
                     [attr.aria-label]="'Open ' + pathway.name + ' in the Pathway Browser'"
                   >
                     <mat-icon>account_tree</mat-icon>
@@ -323,7 +328,9 @@
                         <ol class="hierarchy">
                           @for (step of open.hierarchy; track step.stId; let depth = $index) {
                             <li [style.--depth]="depth">
-                              <a [routerLink]="['/PathwayBrowser', step.stId]">{{ step.name }}</a>
+                              <a [routerLink]="['/PathwayBrowser', step.stId]" [queryParams]="analysisParams()">{{
+                                step.name
+                              }}</a>
                             </li>
                           }
                         </ol>
