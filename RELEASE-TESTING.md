@@ -12,6 +12,9 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
+**Where it stands: 23 automated, 7 that need a person, 23 still to write.** The
+last number is the one to drive down; the middle one is the honest floor.
+
 > Where the old document says "clear your browser cache before testing", note that
 > figures are served `private, no-cache` now and the app's own assets are
 > content-hashed, so a stale page is a bug rather than something to work around.
@@ -54,10 +57,11 @@ Run everything with `npm test && npm run check:dead && npm run check:lint && npx
 
 ## In-diagram search
 
-| Item                                                                          | Status  |
-| ----------------------------------------------------------------------------- | ------- |
-| Searching USP10 in DNA damage bypass highlights it and its containers         | **gap** |
-| "All Diagrams" returns a different, larger hit count than the current diagram | **gap** |
+| Item                                                               | Status                                                                                                                                                      |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Searching USP10 in DNA damage bypass finds it                      | **auto** — `in-diagram-search.spec.ts`                                                                                                                      |
+| Selecting a result highlights it in the diagram                    | **auto** — `in-diagram-search.spec.ts`, by asserting the selection reaches the URL, which is what the diagram, the details panel and a shared link all read |
+| "All pathways" returns a larger hit count than the current pathway | **auto** — `in-diagram-search.spec.ts`                                                                                                                      |
 
 ## Details panel
 
