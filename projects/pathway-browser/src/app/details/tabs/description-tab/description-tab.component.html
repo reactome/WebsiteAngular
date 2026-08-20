@@ -408,7 +408,15 @@
 </ng-template>
 
 <ng-template #reactionDiagramTemplate>
-  <div class="element-container">
+  <div class="element-container reaction-figure">
+    <!-- Caller-projected download links, so a reaction's exports sit with the
+         figure they produce rather than up beside the summation. PathwayBrowser
+         projects nothing here: it has a Download tab of its own. -->
+    <ng-content select="[figureTools]"></ng-content>
     <cr-reaction-diagram [stId]="obj().stId" />
+    <p class="reaction-figure-note">
+      <mat-icon fontSet="symbols" class="note-icon">info</mat-icon>
+      This reaction is drawn in its own layout, which may differ from how it appears in a pathway diagram.
+    </p>
   </div>
 </ng-template>

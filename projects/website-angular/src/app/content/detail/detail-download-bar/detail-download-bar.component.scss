@@ -2,30 +2,36 @@
   display: block;
 }
 
-.download-bar {
+.figure-tools {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  // Data exports on the left, figure exports on the right: the same split the
+  // current site uses, so a curator reading down the page finds them where
+  // they expect to.
+  justify-content: space-between;
+  gap: 6px 16px;
   padding: 6px 10px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
   border: 1px solid var(--outline-variant);
   border-radius: 6px;
   font-size: 0.875rem;
 }
 
-.download-icon {
+.tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-icon {
   color: var(--primary);
   font-size: 18px;
   width: 18px;
   height: 18px;
-}
-
-.download-label {
-  font-weight: 500;
-  color: var(--on-surface);
-  margin-right: 4px;
+  margin-right: 2px;
 }
 
 .dl-link {

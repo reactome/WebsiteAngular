@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 25 automated, 7 that need a person, 19 still to write, 2 not
+**Where it stands: 29 automated, 7 that need a person, 18 still to write, 2 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -67,10 +67,12 @@ floor; the fourth is a decision, not work.
 
 ## Reaction pages (`/content/detail/{stId}`)
 
-| Item                                                                                    | Status                                                                                                                       |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| A reaction draws its own diagram, from the reaction exporter's layout through our style | **gap** — worth a test: the input edges failed to touch the reaction node until 2026-08-20, and nothing would have caught it |
-| Diagram and data formats offered for a reaction                                         | **gap**                                                                                                                      |
+| Item                                                                                    | Status                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A reaction draws its own diagram, from the reaction exporter's layout through our style | **auto** — `downloads.spec.ts` waits on the canvas before every reaction-page check; the input edges failed to touch the reaction node until 2026-08-20 and nothing would have caught it |
+| Download links sit in the reaction diagram section, above the figure                    | **auto** — `downloads.spec.ts` checks the section, the ordering, and that only one copy of the toolbar renders                                                                           |
+| Diagram and data formats offered for a reaction                                         | **auto** — `downloads.spec.ts` asserts the full set (SBML, BioPAX, PDF, SVG, PNG, PPTX, SBGN) and downloads SBML, SBGN and PDF                                                           |
+| A reaction's figure formats come from our renderer, in the reaction's own layout        | **auto** — `downloads.spec.ts` checks the links carry `view=reaction` and that the SVG is reaction-sized rather than the containing diagram                                              |
 
 ## Details panel
 
@@ -114,6 +116,7 @@ floor; the fourth is a decision, not work.
 | PPTX opens in PowerPoint and converts to editable shapes                 | **human** — needs PowerPoint. This is the one item we cannot close                            |
 | Sub-pathway highlighting checkbox changes the exported figure            | **auto** — `downloads.spec.ts`                                                                |
 | Animated SVG timeline: play/pause, click to seek, hover names the sample | **gap**                                                                                       |
+| PNG quality tiers produce three different sizes                          | **gap** — the links are checked, the three sizes are not                                      |
 
 ## Post-release
 

@@ -34,7 +34,9 @@
  *   RENDER_QUEUE        pending renders before 503, default 8
  *   RENDER_CACHE_MAX    bytes of cache to keep, default 2 GB (0 disables)
  *
- * Query parameters: token, scale, subpathways=false, dark=true, and delay and
+ * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
+ * view=reaction,
+ * and delay and
  * maxSize for GIF.
  */
 import express from 'express';
@@ -147,11 +149,36 @@ function pump() {
 }
 
 // ---- cache ---------------------------------------------------------------
-function cacheKey({ pathway, format, token, scale, subpathways, delay, maxSize, dark }) {
+function cacheKey({
+  pathway,
+  format,
+  token,
+  scale,
+  subpathways,
+  delay,
+  maxSize,
+  dark,
+  select,
+  view,
+}) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
   return createHash('sha256')
-    .update([CACHE_KEY, pathway, format, token, scale, subpathways, delay, maxSize, dark].join(' '))
+    .update(
+      [
+        CACHE_KEY,
+        pathway,
+        format,
+        token,
+        scale,
+        subpathways,
+        delay,
+        maxSize,
+        dark,
+        select,
+        view,
+      ].join(' ')
+    )
     .digest('hex');
 }
 
@@ -360,6 +387,12 @@ app.get('/render/:name.:ext', async (req, res) => {
     scale: clamp(req.query.scale ?? 2, 0.25, 2, 2),
     subpathways: req.query.subpathways !== 'false',
     dark: req.query.dark === 'true',
+    // Frames the figure on one event: a reaction page asks for its own reaction,
+    // not the diagram around it.
+    select: typeof req.query.select === 'string' ? req.query.select : '',
+    // The only view worth naming: everything else the page decides for itself
+    // from the id it is given.
+    view: req.query.view === 'reaction' ? 'reaction' : '',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),

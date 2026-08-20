@@ -124,3 +124,113 @@ test.describe('Server-rendered figures', () => {
     });
   }
 });
+
+// The reaction page's own downloads.
+//
+// They used to sit above the summation, nowhere near the figure they produce,
+// and a reaction had no figure formats at all -- the bar only offered them for
+// pathways. They now live in the reaction diagram section, the way the current
+// site lists them, and the figure formats come from the render service asked for
+// the reaction's own layout rather than from the old server-side exporters.
+const REACTION = 'R-HSA-6805479'; // TP53RK phosphorylates TP53
+
+async function openReaction(page: Page) {
+  await page.goto(`/content/detail/${REACTION}`);
+  await page.waitForSelector('cr-reaction-diagram canvas', { timeout: 90_000 });
+  await page.waitForTimeout(2000);
+}
+
+async function grabFrom(page: Page, format: string): Promise<Buffer> {
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 240_000 }),
+    page.locator('.figure-tools').first().getByText(format, { exact: true }).click(),
+  ]);
+  return readFileSync(await (download as Download).path());
+}
+
+test.describe('Reaction page downloads', () => {
+  test.describe.configure({ timeout: 6 * 60 * 1000 });
+
+  test('the download links sit in the reaction diagram section, above the figure', async ({
+    page,
+  }) => {
+    await openReaction(page);
+
+    const tools = page.locator('.reaction-figure .figure-tools');
+    await expect(tools, 'the toolbar belongs to the reaction diagram section').toBeVisible();
+
+    // Exactly one: the page projects a copy for reactions and a copy for
+    // everything else, and only one of them may ever render.
+    await expect(page.locator('.figure-tools')).toHaveCount(1);
+
+    // Defaults that fail the comparison rather than assertions that throw: a
+    // missing box means the thing is not laid out, which is a real failure and
+    // should read as one.
+    const bar = (await tools.boundingBox()) ?? { y: Infinity };
+    const figure = (await page.locator('cr-reaction-diagram').boundingBox()) ?? { y: -Infinity };
+    expect(bar.y, 'the links are above the figure').toBeLessThan(figure.y);
+
+    // The set the current site offers for a reaction, nothing dropped. BioPAX
+    // and PNG open menus, and their material icon renders as a ligature inside
+    // the button, so their text reads "BioPAXarrow_drop_down" -- an exact match
+    // against those two finds nothing.
+    for (const label of ['SBML', 'PDF', 'SVG', 'PPTX', 'SBGN']) {
+      await expect(tools.getByText(label, { exact: true })).toBeVisible();
+    }
+    for (const label of ['BioPAX', 'PNG']) {
+      await expect(tools.getByRole('button', { name: new RegExp(`^${label}`) })).toBeVisible();
+    }
+  });
+
+  test('a figure format asks the render service for the reaction layout', async ({ page }) => {
+    await openReaction(page);
+    const tools = page.locator('.figure-tools').first();
+
+    for (const format of ['svg', 'pptx']) {
+      const href = await tools
+        .getByText(format.toUpperCase(), { exact: true })
+        .getAttribute('href');
+      expect(href, `${format} comes from the render service`).toContain(
+        `/RenderService/render/${REACTION}.${format}`
+      );
+      expect(href, `${format} asks for the reaction's own layout`).toContain('view=reaction');
+    }
+  });
+
+  for (const format of ['SBML', 'SBGN', 'PDF']) {
+    test(`a reaction's ${format} downloads`, async ({ page }) => {
+      await openReaction(page);
+      const bytes = await grabFrom(page, format);
+      expect(bytes.length, `${format} size`).toBeGreaterThan(1000);
+      // All three are documents rather than pictures: XML for the two exchange
+      // formats, PDF for the report.
+      const head = bytes.subarray(0, 8).toString('latin1');
+      expect(
+        format === 'PDF' ? head.startsWith('%PDF') : head.includes('<'),
+        `${format} content`
+      ).toBe(true);
+    });
+  }
+
+  for (const format of ['SVG', 'PPTX']) {
+    test(`a reaction's ${format} is the reaction's own figure`, async ({ page, request }) => {
+      const health = await request.get('/RenderService/health').catch(() => null);
+      test.skip(
+        !health?.ok(),
+        'the render service is not running; a reaction figure comes from it, so this says nothing about the build'
+      );
+
+      await openReaction(page);
+      const bytes = await grabFrom(page, format);
+      assertLooksLike(format, bytes);
+
+      if (format === 'SVG') {
+        // The reaction's layout is around a thousand points across; the pathway
+        // diagram it lives in is four thousand. This is the difference between
+        // the figure the page shows and the whole diagram behind it.
+        const width = Number(/\bwidth="([\d.]+)"/.exec(bytes.toString('utf8'))?.[1] ?? 0);
+        expect(width, 'the figure is the reaction, not its containing diagram').toBeLessThan(2500);
+      }
+    });
+  }
+});

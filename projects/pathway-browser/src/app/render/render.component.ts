@@ -11,6 +11,7 @@ import {
 import { DiagramComponent } from '../diagram/diagram.component';
 import { EhldComponent } from '../ehld/ehld.component';
 import { ReacfoamComponent } from '../reacfoam/reacfoam.component';
+import { ReactionDiagramComponent } from '../details/common/reaction-diagram/reaction-diagram.component';
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
@@ -41,7 +42,7 @@ import { defaultDownloadOptions } from '../services/download.service';
 @Component({
   selector: 'cr-render',
   standalone: true,
-  imports: [DiagramComponent, EhldComponent, ReacfoamComponent],
+  imports: [DiagramComponent, EhldComponent, ReacfoamComponent, ReactionDiagramComponent],
   templateUrl: './render.component.html',
   styleUrl: './render.component.scss',
   host: {
@@ -91,12 +92,25 @@ export class RenderComponent {
    */
   private readonly selection = this.route.snapshot.queryParamMap.get('select') ?? '';
 
+  /**
+   * ?view=reaction draws the reaction's own layout instead of the pathway
+   * diagram, which is what the reaction page shows and therefore what its
+   * downloads have to contain. `select` frames the curated diagram on an event
+   * and is the right answer for a figure that wants the surrounding context;
+   * this is the right answer for a figure that has to match a page.
+   */
+  private readonly reactionView = this.route.snapshot.queryParamMap.get('view') === 'reaction';
+
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
   readonly loading = this.dataState._currentPathway.isLoading;
   readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
 
   private readonly diagram = viewChild(DiagramComponent);
   private readonly reacfoam = viewChild(ReacfoamComponent);
+  private readonly reaction = viewChild(ReactionDiagramComponent);
+
+  /** Non-empty only in the reaction view, which is what the template keys on. */
+  readonly reactionId = computed(() => (this.reactionView ? (this.pathwayId() ?? '') : ''));
 
   readonly ready = signal(false);
   readonly error = signal<string | null>(null);
@@ -166,7 +180,11 @@ export class RenderComponent {
         Date.now() > giveUpOnMissing &&
         !this.loading() &&
         !this.dataState.currentPathway() &&
-        pathway
+        pathway &&
+        // A reaction is not a pathway, so currentPathway is empty for the whole
+        // of this view's life. Without this the reaction view failed after three
+        // seconds while its own fetch was still in flight.
+        !this.reactionView
       ) {
         this.error.set(`no pathway found for ${pathway}`);
         this.publish();
@@ -182,7 +200,8 @@ export class RenderComponent {
           pathway: pathway ?? null,
           // For a caller that puts the figure in a document and needs to label
           // it. An stId is not a caption.
-          name: this.dataState.currentPathway()?.displayName ?? null,
+          name:
+            this.dataState.currentPathway()?.displayName || this.reaction()?.figureName() || null,
           ...drawn,
         });
         this.publish();
@@ -204,6 +223,17 @@ export class RenderComponent {
   private drawn(): Record<string, unknown> | null {
     const host = document.querySelector('cr-render');
     if (!host) return null;
+
+    const reaction = this.reaction();
+    if (reaction) {
+      const cy = reaction.core();
+      const canvas = host.querySelector<HTMLCanvasElement>('cr-reaction-diagram canvas');
+      const elements = cy?.elements().length ?? 0;
+      if (elements > 0 && canvas && canvas.width > 0 && canvas.height > 0) {
+        return { view: 'reaction', instances: 1, elements };
+      }
+      return null;
+    }
 
     const diagram = this.diagram();
     if (diagram) {
@@ -363,6 +393,11 @@ export class RenderComponent {
 
   /** The drawn view as SVG. Reacfoam's path is asynchronous. */
   private exportSvg(): string | Promise<string> {
+    // full:true either way: the reaction's layout is the figure, so there is
+    // nothing to frame and nothing outside it to leave out.
+    const reaction = this.reaction()?.core();
+    if (reaction) return reaction.svg({ full: true });
+
     if (this.diagram()) {
       const { instances } = this.exportableInstances();
       if (!instances.length) throw new Error('no diagram to export');
@@ -415,6 +450,9 @@ export class RenderComponent {
 
   /** The drawn view as a PNG data URL. */
   private async exportPng(scale: number): Promise<string> {
+    const reaction = this.reaction()?.core();
+    if (reaction) return reaction.png({ full: true, scale, bg: 'transparent' });
+
     const { instances } = this.exportableInstances();
     if (instances.length) {
       const framed = this.frameSelection(instances[0]);

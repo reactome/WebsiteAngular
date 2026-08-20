@@ -19,6 +19,8 @@
  *   --max-size  GIF longest side in pixels  (default 0: the diagram's own size)
  *   --no-subpathways  leave out sub-pathway tints and labels
  *   --dark      render the dark theme (light by default, whatever the host prefers)
+ *   --select    frame the figure on one event, e.g. a reaction's stable id
+ *   --view      reaction, to draw a reaction's own layout rather than a diagram
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX carries the SVG, which
@@ -61,6 +63,8 @@ try {
     maxSize: Number(flag('max-size', '0')),
     subpathways: !args.includes('--no-subpathways'),
     dark: args.includes('--dark'),
+    select: flag('select', ''),
+    view: flag('view', ''),
   });
 
   await writeFile(out, bytes);

@@ -29,7 +29,15 @@ const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
  * The URL of the render page for a pathway. Omit the pathway for the
  * genome-wide view.
  */
-function renderUrl({ base, pathway, token, subpathways = true, dark = false }) {
+function renderUrl({
+  base,
+  pathway,
+  token,
+  subpathways = true,
+  dark = false,
+  select = '',
+  view = '',
+}) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
   );
@@ -38,6 +46,13 @@ function renderUrl({ base, pathway, token, subpathways = true, dark = false }) {
   if (!subpathways) url.searchParams.set('subpathways', 'false');
   // Likewise: light is the default for a figure, so only dark is spelled out.
   if (dark) url.searchParams.set('dark', 'true');
+  // Frames the figure on one event -- what a reaction page wants, rather than
+  // the whole diagram the reaction happens to live in.
+  if (select) url.searchParams.set('select', select);
+  // view=reaction draws the reaction's own layout, which is the figure the
+  // reaction page shows -- so its downloads are that picture rather than the
+  // pathway diagram the reaction sits in.
+  if (view) url.searchParams.set('view', view);
   return url.toString();
 }
 
@@ -58,6 +73,8 @@ export async function render(
     scale = 2,
     subpathways = true,
     dark = false,
+    select = '',
+    view = '',
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -76,7 +93,7 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token, subpathways, dark }), {
+    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, view }), {
       waitUntil: 'load',
       timeout,
     });

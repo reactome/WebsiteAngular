@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   input,
+  signal,
   OnDestroy,
   viewChild,
 } from '@angular/core';
@@ -35,6 +36,19 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
   private cy?: cytoscape.Core;
   private reactomeStyle?: Style;
 
+  /**
+   * What was drawn, for anything that needs to export this figure rather than
+   * look at it -- the render page, which serves the reaction page's downloads.
+   * A download of a reaction should be the picture the reaction page shows, and
+   * that is this instance: the reaction's own layout, not the pathway diagram it
+   * came from framed on one node.
+   */
+  private readonly drawn = signal<cytoscape.Core | undefined>(undefined);
+  readonly core = this.drawn.asReadonly();
+
+  /** The reaction's name, for a caller that has to caption the figure. */
+  readonly figureName = signal('');
+
   ngAfterViewInit() {
     const container = this.containerRef().nativeElement;
     this.reactomeStyle = new Style(container);
@@ -60,6 +74,8 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
 
         this.reactomeStyle?.bindToCytoscape(this.cy);
         this.cy.fit(undefined, 20);
+        this.figureName.set(diagram.displayName ?? '');
+        this.drawn.set(this.cy);
         this.cy.userZoomingEnabled(true);
         this.cy.userPanningEnabled(true);
         this.cy.autoungrabify(true);
@@ -67,6 +83,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.drawn.set(undefined);
     this.cy?.destroy();
   }
 }
