@@ -48,20 +48,28 @@ services:
     # the right response -- there is no state to lose but the cache, which is on
     # a volume.
     restart: unless-stopped
-    # Deliberately no `ports:`. The service is reachable from the app container
-    # and nowhere else, so a render can only be commissioned through whatever
-    # fronts the site -- crawlers on the old /ContentService/exporter/* URLs are
-    # what exhausted Tomcat's heap and took the origin down.
+    # Loopback only, never 0.0.0.0. The site's own origin proxies /RenderService
+    # to this, so a render can only be commissioned through whatever fronts the
+    # site -- crawlers on the old /ContentService/exporter/* URLs are what
+    # exhausted Tomcat's heap and took the origin down. Publishing it here rather
+    # than relying on the compose network because on the dev box the site itself
+    # runs on the host, not in compose; a deployment where both are containers can
+    # drop this line and reach it by service name.
+    ports:
+      - '127.0.0.1:4310:4310'
     environment:
-      # The app container is what it renders.
-      - RENDER_BASE=http://app:4200
+      # What it renders. The service name when the site is a container here, the
+      # host when it is not -- which is the case on the dev box.
+      - RENDER_BASE=${RENDER_BASE:-http://host.docker.internal:4200}
       - RENDER_CACHE=/cache
       - RENDER_CONCURRENCY=2
       - RENDER_QUEUE=8
     volumes:
       - render-cache:/cache
-    depends_on:
-      - app
+    # No depends_on: the site it renders may be the app service or may be on the
+    # host, and starting a second app container would fight the first for :4200.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     # Chromium's default 64 MB /dev/shm is not enough for a 6000px canvas; a
     # renderer that fails only on large diagrams is the usual symptom.
     shm_size: '1gb'

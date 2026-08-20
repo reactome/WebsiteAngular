@@ -6,14 +6,40 @@ container that compose restarts, rather than something installed on a host.
 ## Running it
 
 ```bash
-docker compose up -d render      # builds on first run
+docker compose up -d render      # builds on first run, ~2.15 GB image
 docker compose logs -f render
-docker compose exec render node -e "fetch('http://127.0.0.1:4310/health').then(r=>r.text()).then(console.log)"
+curl -s http://127.0.0.1:4310/health
 ```
+
+On this box the site itself runs on the host rather than in compose, so the
+container renders `host.docker.internal:4200` and publishes 4310 **on loopback**
+for the host's `serve-prod` to proxy. Where both are containers, drop the
+`ports:` line and set `RENDER_BASE=http://app:4200`.
+
+Two things that cost time getting this up, both worth knowing:
+
+- **The browser has to live outside either user's home.** `playwright install` puts
+  it in the installing user's cache, so running it as root and the service as
+  `node` gives a container that builds, starts, reports **healthy**, and fails
+  every render with "Executable doesn't exist". `PLAYWRIGHT_BROWSERS_PATH` fixes
+  it. Note what the health check does not prove: it only says the HTTP server is
+  up, not that a browser can launch.
+- **A first `up` that fails on the port leaves a container that will not publish
+  it.** The binding is in `HostConfig` but `NetworkSettings.Ports` stays empty
+  even after a successful start; `docker compose up -d --force-recreate render`
+  is the fix.
 
 `restart: unless-stopped` means a wedged browser or an out-of-memory kill costs
 one request rather than the feature; there is no state to lose except the cache,
-which is on the `render-cache` volume and survives replacement.
+which is on the `render-cache` volume and survives replacement -- verified, a
+repeat request after a container replacement is a 6ms cache hit.
+
+The policy is **configured but not proven by test here**. A crash is hard to
+simulate honestly: `docker kill` is a manual stop, which docker deliberately does
+not restart; `kill -9 1` inside the container is ignored, because the kernel
+shields a namespace's init from its own signals; and signalling the process from
+the host needs root. Take the policy on docker's terms, or confirm it the next
+time the box reboots.
 
 The image is `node:22` plus Chromium, not a Playwright image. The Playwright
 images carry three browsers and land around 3 GB; this needs one, and node:22 is

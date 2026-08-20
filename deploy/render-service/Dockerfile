@@ -7,6 +7,15 @@
 # layers are shared rather than downloaded again.
 FROM node:22
 
+# Where the browser goes.
+#
+# Without this, `playwright install` puts it in the *installing* user's home --
+# /root/.cache/ms-playwright -- and the service, which runs as `node`, looks in
+# /home/node/.cache/ms-playwright and finds nothing. The container built, started,
+# reported healthy, and failed every render with "Executable doesn't exist".
+# A path outside either home, owned by node, cannot go wrong that way.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 WORKDIR /render
 
 # The four packages the service actually imports, at the versions the repo
@@ -35,7 +44,8 @@ RUN node -e " \
       }, null, 2)); \
     " \
     && npm install --omit=dev \
-    && npx playwright install --with-deps chromium \
+    && npx playwright install --with-deps chromium chromium-headless-shell \
+    && chown -R node:node /ms-playwright \
     && npm cache clean --force \
     && rm root-package.json
 
