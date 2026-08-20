@@ -233,6 +233,7 @@
         class="pathway-row"
         [id]="'pathway-' + pathway.stId + '-row'"
         [class.selected]="pathway.stId === data.selectedPathwayStId()"
+        [crReveal]="pathway.stId === data.selectedPathwayStId()"
         [class.expanded]="isExpanded(0, pathway)"
         [style.--header-row-height]="headerRowHeight()"
         [style.--row-height]="expandedRowHeight()"

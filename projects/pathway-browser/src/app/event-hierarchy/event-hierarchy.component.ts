@@ -1,6 +1,7 @@
 import {
   AfterViewInit,
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -49,18 +50,7 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
-
-// Revealing the selected event must not move the tree when that event is already
-// on screen. The default block:'start' scrolls the node to the top of the
-// container every time -- which is what "the hierarchy jumps to the top" is --
-// and, because scrollIntoView walks every scrollable ancestor, it drags the page
-// with it. 'nearest' scrolls the minimum needed, and nothing at all when the node
-// is already visible.
-const REVEAL_SELECTED: ScrollIntoViewOptions = {
-  behavior: 'smooth',
-  block: 'nearest',
-  inline: 'nearest',
-};
+import { RevealDirective } from '../utils/reveal.directive';
 
 @Component({
   selector: 'cr-event-hierarchy',
@@ -80,6 +70,7 @@ const REVEAL_SELECTED: ScrollIntoViewOptions = {
     NgClass,
     MatTooltip,
     PassiveDirective,
+    RevealDirective,
   ],
 })
 @UntilDestroy()
@@ -95,6 +86,19 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   private dboService: DatabaseObjectService = inject(DatabaseObjectService);
 
   readonly pathwayId = model<string>();
+
+  /**
+   * The node the tree should bring into view: whatever the URL selects, or the
+   * current pathway when it selects nothing.
+   *
+   * Nodes reveal themselves against this rather than the component finding them
+   * afterwards with a selector, so a node that renders later -- as its branch
+   * expands, or when the tree is rebuilt for an analysis -- is revealed when it
+   * appears instead of racing whatever finished first. `node.isSelected` would
+   * have been the obvious input and is the wrong one: it is also set on every
+   * ancestor of the selection, to draw the path.
+   */
+  readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
   readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
   @ViewChild('treeControlButton', { read: ElementRef }) treeControlButton?: ElementRef;
   @ViewChild('eventIcon', { read: ElementRef }) eventIcon?: ElementRef<HTMLElement>;
@@ -182,11 +186,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       }),
       untilDestroyed(this)
     )
-    .subscribe(() => {
-      document
-        .querySelector(`[st-id='${this.selectedIdFromUrl}']`)
-        ?.scrollIntoView(REVEAL_SELECTED);
-    });
+    .subscribe();
 
   analysing = toObservable(this.state.analysis)
     .pipe(
@@ -319,13 +319,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         //tap(d => console.log('Final data', d)),
       )
       .subscribe({
-        next: () => {
-          // Give pathway id when idToUse is PEs
-          const element =
-            document.querySelector(`[st-id='${idToUse}']`) ||
-            document.querySelector(`[st-id='${this.pathwayId()}']`);
-          element?.scrollIntoView(REVEAL_SELECTED);
-        },
         error: (err: Error) => {
           console.error(err, err.stack);
           throw err;
