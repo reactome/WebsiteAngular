@@ -13,9 +13,9 @@ import { test, expect } from '@playwright/test';
 // pathway promoted to top level is covered the release it appears.
 
 test.describe('Every top-level pathway', () => {
-  test('draws a diagram or an illustration', async ({ page, request }) => {
-    // 29 pathways, each a real diagram load.
-    test.setTimeout(10 * 60 * 1000);
+  test('draws a diagram or an illustration', async ({ context, request }) => {
+    // 29 pathways, each a real diagram load, three at a time.
+    test.setTimeout(12 * 60 * 1000);
 
     const response = await request.get('/ContentService/data/pathways/top/9606');
     expect(response.ok(), 'the content service listed the top-level pathways').toBe(true);
@@ -25,28 +25,51 @@ test.describe('Every top-level pathway', () => {
     // when the data grows is a test people learn to ignore.
     expect(pathways.length, 'top-level pathways').toBeGreaterThan(25);
 
+    // Three at a time, each in its own page.
+    //
+    // Sequentially this walked 29 real diagram loads inside one test, and in CI --
+    // an unoptimised dev build on a two-core runner -- the three largest
+    // (Circadian clock, Gene expression, Neuronal System) did not finish inside a
+    // 60s wait, so the whole guarantee failed on the slowest members rather than
+    // on anything being broken. Playwright shards by test, so it cannot split one
+    // test for us; doing our own concurrency here is what brings the wall clock
+    // down and gives each diagram room.
     const empty: string[] = [];
-    for (const { stId, displayName } of pathways) {
-      await page.goto(`/PathwayBrowser/${stId}`);
-      try {
-        // Either kind of view counts: most are cytoscape diagrams, the
-        // well-illustrated ones are EHLDs, and both are a drawn pathway.
-        await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: 60_000 });
+    const queue = [...pathways];
+    const budget = 120_000;
 
-        // A canvas exists before anything is on it, so ask what was drawn. The
-        // legend is a second cytoscape instance that appears first and would
-        // otherwise make an empty diagram look fine.
-        const drawn = await page.evaluate(() => {
-          const illustration = document.querySelector('cr-ehld svg');
-          if (illustration) return illustration.querySelectorAll('*').length;
-          const canvas = document.querySelector<HTMLCanvasElement>('#cytoscape canvas');
-          return canvas && canvas.width > 0 && canvas.height > 0 ? canvas.width : 0;
-        });
-        if (!drawn) empty.push(`${displayName} (${stId}) — nothing drawn`);
-      } catch {
-        empty.push(`${displayName} (${stId}) — no diagram appeared`);
+    const walk = async () => {
+      const page = await context.newPage();
+      try {
+        for (let next = queue.shift(); next; next = queue.shift()) {
+          const { stId, displayName } = next;
+          await page.goto(`/PathwayBrowser/${stId}`);
+          try {
+            // Either kind of view counts: most are cytoscape diagrams, the
+            // well-illustrated ones are EHLDs, and both are a drawn pathway.
+            await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: budget });
+
+            // A canvas exists before anything is on it, so ask what was drawn.
+            // The legend is a second cytoscape instance that appears first and
+            // would otherwise make an empty diagram look fine.
+            const drawn = await page.evaluate(() => {
+              const illustration = document.querySelector('cr-ehld svg');
+              if (illustration) return illustration.querySelectorAll('*').length;
+              const canvas = document.querySelector<HTMLCanvasElement>('#cytoscape canvas');
+              return canvas && canvas.width > 0 && canvas.height > 0 ? canvas.width : 0;
+            });
+            if (!drawn) empty.push(`${displayName} (${stId}) — nothing drawn`);
+          } catch {
+            empty.push(`${displayName} (${stId}) — no diagram appeared`);
+          }
+        }
+      } finally {
+        await page.close();
       }
-    }
+    };
+
+    await Promise.all([walk(), walk(), walk()]);
+    empty.sort();
 
     expect(empty, 'top-level pathways that did not draw').toEqual([]);
   });
