@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 30 automated, 7 that need a person, 17 still to write, 2 not
+**Where it stands: 34 automated, 7 that need a person, 13 still to write, 2 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -101,10 +101,10 @@ floor; the fourth is a decision, not work.
 | All four tools reachable, each opening on its own tab           | **auto** — `release-checklist.spec.ts`. _The old document notes the old site opened every tool on "Analyse gene list"; ours does not, and the test asserts that_ |
 | Gene list analysis runs and returns results                     | **auto** — `analysis.spec.ts`                                                                                                                                    |
 | GSA methods load from GSAServer                                 | **auto** — `analysis.spec.ts`                                                                                                                                    |
-| Hit counts and FDR appear beside pathway names in the hierarchy | **gap**                                                                                                                                                          |
-| Filters change the result set                                   | **gap**                                                                                                                                                          |
-| Species comparison and tissue distribution produce an overlay   | **gap**                                                                                                                                                          |
-| Analysis result downloads                                       | **gap**                                                                                                                                                          |
+| Hit counts and FDR appear beside pathway names in the hierarchy | **auto** — `analysis-results.spec.ts` checks every badge reads found/total with found ≤ total, and that the table's Entities FDR column holds numbers            |
+| Filters change the result set                                   | **auto** — `analysis-results.spec.ts` tightens the FDR slider and asserts fewer pathways survive, but not none                                                   |
+| Species comparison and tissue distribution produce an overlay   | **auto** — `analysis-results.spec.ts` runs both to completion and waits for the hierarchy to carry counts                                                        |
+| Analysis result downloads                                       | **auto** — `analysis-results.spec.ts` downloads the CSV and the gzipped JSON and checks the bytes                                                                |
 
 ## Downloads and figures
 
@@ -159,3 +159,15 @@ not. Send a Referer, or drive a browser.
 renders its icon as a font ligature inside the same anchor, so the element's text
 content is `imageSVG`, and an anchored match against the button finds nothing.
 `getByText('SVG', { exact: true })` inside the container is what works.
+
+The same trap has two more faces. A **menu item** concatenates its icon too, so the
+Diseases filter reads `microbiology Diseases` and an exact match finds nothing --
+use a regex. And a **title assembled from several elements** cannot be matched by a
+regex spanning them at all: assert containment on a container instead, which is why
+the IDG test checks `toContainText(/Overrepresentation/)` rather than locating the
+title.
+
+**Not every filter shows its effect on screen.** The Diseases toggle changes a total
+the page never displays, and the species facet is disabled outright for a human gene
+list -- there is nothing to choose between. A filter test has to pick a control whose
+result is visible: the FDR slider drops the table from 80 rows to 42.
