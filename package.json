@@ -101,7 +101,7 @@
     "@angular/cli": "^21.2.21",
     "@angular/compiler-cli": "^21.2.20",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "1.62.1",
     "@types/chroma-js": "^3.1.1",
     "@types/cytoscape-fcose": "^2.2.4",
     "@types/lodash": "^4.14.202",
@@ -120,7 +120,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.67.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.4",
+    "vitest": "3.2.7",
     "wait-on": "^8.0.1"
   },
   "engines": {
