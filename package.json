@@ -34,7 +34,8 @@
     "dead": "knip",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts"
   },
   "private": true,
   "dependencies": {

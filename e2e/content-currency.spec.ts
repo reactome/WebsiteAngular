@@ -5,10 +5,10 @@ import { test, expect, type Page } from '@playwright/test';
 // places: the database (the homepage), an uploaded figure (statistics,
 // inferred events) and the news items someone writes.
 //
-// Two of them are stale right now. They are marked `test.fail()` rather than
-// deleted or fudged: CI stays green, and the moment the content is published the
-// test passes unexpectedly and says so, which is exactly when someone should
-// come back here and turn it into an ordinary assertion.
+// Both were stale when these were written. The statistics page embedded a
+// release number typed into the markdown, which the renderer now substitutes;
+// the news announcement for the current release had not been imported, and
+// `npm run import:news` brings it over verbatim from the current site.
 
 /** What the site is actually serving, straight from the database. */
 async function servedRelease(page: Page) {
@@ -86,16 +86,17 @@ test.describe('Release currency', () => {
   });
 
   test('the latest news item is for the current release', async ({ page }) => {
-    // Known stale: the newest announcement is V96 while the database serves 97.
-    // Someone has to write the V97 item; nothing in the build can. Unlike the
-    // statistics page, there is no artefact to point at -- the announcement is
-    // written content.
-    test.fail();
-
     const release = await servedRelease(page);
     await page.goto('/about/news');
-    await expect(page.getByText(/V\d+ Released/).first()).toContainText(`V${release}`, {
-      timeout: 60_000,
-    });
+
+    // Announcements are imported verbatim from the current site by
+    // `npm run import:news`; nothing generates their prose. This asserts the
+    // import has been run for the release being served.
+    const newest = page
+      .locator('a')
+      .filter({ hasText: /V\d+ Released/ })
+      .first();
+    await expect(newest).toBeVisible({ timeout: 60_000 });
+    await expect(newest).toContainText(`V${release} Released`);
   });
 });
