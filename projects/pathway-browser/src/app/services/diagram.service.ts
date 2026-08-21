@@ -536,10 +536,15 @@ export class DiagramService {
           '. Potential reason could be a wrong normal pathway for a disease'
         );
       const preferredId = unitId || graphData?.identifier;
-      //console.log(chebiMapping, graphData?.chebiIdentifier, graphData?.identifier, preferredId)
+      // Optional, not asserted. The line above says this node may have no graph
+      // entry, and asserting it here threw for the whole build rather than for
+      // the one node -- so any diagram with a single unmatched node drew nothing
+      // at all. Every inferred species diagram has some: switching to Mus
+      // musculus left an empty canvas with the rest of the page updated around
+      // it, which reads as "the species switch is broken".
       const chebiStructure =
-        chebiMapping.get(graphData!.chebiIdentifier?.substring(6) || '') ||
-        chebiMapping.get(graphData!.identifier!);
+        chebiMapping.get(graphData?.chebiIdentifier?.substring(6) || '') ||
+        (graphData?.identifier ? chebiMapping.get(graphData.identifier) : undefined);
       if (classes.some((clazz) => clazz === 'Protein')) {
         html = this.getStructureVideoHtml({ ...item, type: 'Protein' }, width, height, preferredId);
       }

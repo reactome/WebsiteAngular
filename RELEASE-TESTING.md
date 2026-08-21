@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 34 automated, 7 that need a person, 13 still to write, 2 not
+**Where it stands: 36 automated, 8 that need a person, 10 still to write, 2 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -45,17 +45,17 @@ floor; the fourth is a decision, not work.
 
 ## Pathway Browser
 
-| Item                                                                        | Status                                                                                                                                            |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Opens with the top-level pathway list                                       | **auto** — `pathway-browser.spec.ts`                                                                                                              |
-| Exactly the 16 documented species in the dropdown                           | **auto** — `release-checklist.spec.ts`                                                                                                            |
-| Every top-level pathway draws a diagram                                     | **auto** — `diagram-coverage.spec.ts` walks all 29 from the content service, so a pathway promoted to top level is covered the release it appears |
-| Species switch to _Mus musculus_ still draws diagrams                       | **gap**                                                                                                                                           |
-| An EHLD appears for DNA repair, and unfurls                                 | **auto** — `pathway-browser.spec.ts`                                                                                                              |
-| Hovering a sub-pathway lights up its reactions; selecting one highlights it | **gap**                                                                                                                                           |
-| Scroll wheel zooms                                                          | **auto** — `interactive-state.spec.ts`                                                                                                            |
-| Diagram key is visible                                                      | **gap**                                                                                                                                           |
-| Zoom in, out, centre                                                        | **auto** — `interactive-state.spec.ts`                                                                                                            |
+| Item                                                                        | Status                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opens with the top-level pathway list                                       | **auto** — `pathway-browser.spec.ts`                                                                                                                                                                                               |
+| Exactly the 16 documented species in the dropdown                           | **auto** — `release-checklist.spec.ts`                                                                                                                                                                                             |
+| Every top-level pathway draws a diagram                                     | **auto** — `diagram-coverage.spec.ts` walks all 29 from the content service, so a pathway promoted to top level is covered the release it appears                                                                                  |
+| Species switch to _Mus musculus_ still draws diagrams                       | **auto** — `diagram-behaviour.spec.ts`. _This found a real bug: one node with no graph entry took the whole diagram down, so every inferred species drew a blank canvas_                                                           |
+| An EHLD appears for DNA repair, and unfurls                                 | **auto** — `pathway-browser.spec.ts`                                                                                                                                                                                               |
+| Hovering a sub-pathway lights up its reactions; selecting one highlights it | **human** — the tints are drawn on a canvas and the sidebar's hover handler only scrolls long names, so there is nothing to assert against but pixels. A screenshot comparison here would fail on font rendering, not on behaviour |
+| Scroll wheel zooms                                                          | **auto** — `interactive-state.spec.ts`                                                                                                                                                                                             |
+| Diagram key is visible                                                      | **auto** — `diagram-behaviour.spec.ts` checks the key and the boundary it is dragged within                                                                                                                                        |
+| Zoom in, out, centre                                                        | **auto** — `interactive-state.spec.ts`                                                                                                                                                                                             |
 
 ## In-diagram search
 
