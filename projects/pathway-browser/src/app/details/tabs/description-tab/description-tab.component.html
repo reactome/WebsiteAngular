@@ -92,7 +92,7 @@
     @for (f of figures(); track f.url) {
       @let expanded = figure.expanded() === f;
       <div class="icon-container figure" (click)="figure.toggle(f)" [class.expanded]="expanded">
-        <img class="icon" [src]="environment.host + f.url" [alt]="f.displayName" />
+        <img class="icon" [src]="figure.src(f)" [alt]="f.displayName" (error)="figure.fallback($event, f)" />
       </div>
     }
   </div>
@@ -103,7 +103,8 @@
       <div class="composition-container flex-grow">
         <img
           class="icon figure expanded"
-          [src]="environment.host + f.url"
+          [src]="figure.src(f)"
+          (error)="figure.fallback($event, f)"
           [alt]="f.displayName"
           (click)="figure.toggle(f)"
         />
