@@ -62,8 +62,7 @@ export class DetailDownloadBarComponent {
 
   sbmlUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbml`);
   sbgnUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbgn`);
-  biopax2Url = computed(() => `${RESTFUL_API}/biopaxExporter/Level2/${this.dbId()}`);
-  biopax3Url = computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.dbId()}`);
+  biopaxUrl = computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.dbId()}`);
   pdfUrl = computed(() => `${CONTENT_SERVICE}/exporter/document/event/${this.stId()}.pdf`);
 
   svgUrl = computed(() => this.figureUrl('svg'));

@@ -170,16 +170,21 @@ test.describe('Reaction page downloads', () => {
     const figure = (await page.locator('cr-reaction-diagram').boundingBox()) ?? { y: -Infinity };
     expect(bar.y, 'the links are above the figure').toBeLessThan(figure.y);
 
-    // The set the current site offers for a reaction, nothing dropped. BioPAX
-    // and PNG open menus, and their material icon renders as a ligature inside
-    // the button, so their text reads "BioPAXarrow_drop_down" -- an exact match
-    // against those two finds nothing.
-    for (const label of ['SBML', 'PDF', 'SVG', 'PPTX', 'SBGN']) {
+    // The set the current site offers for a reaction, nothing dropped -- except
+    // BioPAX Level 2, which is superseded: one BioPAX link, Level 3.
+    for (const label of ['SBML', 'BioPAX', 'PDF', 'SVG', 'PPTX', 'SBGN']) {
       await expect(tools.getByText(label, { exact: true })).toBeVisible();
     }
-    for (const label of ['BioPAX', 'PNG']) {
-      await expect(tools.getByRole('button', { name: new RegExp(`^${label}`) })).toBeVisible();
-    }
+    // PNG still opens a menu, and its material icon renders as a ligature inside
+    // the button, so the text reads "PNGarrow_drop_down" -- an exact match against
+    // that finds nothing.
+    await expect(tools.getByRole('button', { name: /^PNG/ })).toBeVisible();
+
+    // And the one link really is Level 3.
+    expect(
+      await tools.getByText('BioPAX', { exact: true }).getAttribute('href'),
+      'BioPAX means Level 3'
+    ).toContain('Level3');
   });
 
   test('a figure format asks the render service for the reaction layout', async ({ page }) => {

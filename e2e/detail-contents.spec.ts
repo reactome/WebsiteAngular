@@ -75,13 +75,20 @@ test.describe('Protein page', () => {
 
     const viewer = page.locator('cr-structure-viewer');
     await expect(viewer).toBeVisible({ timeout: BOOT });
-    // The structure it found, by accession. Not the 3D render: headless Chromium
-    // has no WebGL, and the viewer says so in place of drawing -- which is a
-    // property of the test machine, not of the site.
-    // No whitespace in the assertion: the label and the accession are separate
-    // elements, so the text reads "StructurePDB5JSN".
-    await expect(viewer).toContainText(/PDB/i);
-    await expect(viewer).toContainText(/\d[A-Za-z0-9]{3}/);
+    // The structure it found, by accession. Either source counts: the PDB ids
+    // come from the entity's cross-references while the AlphaFold model comes
+    // from its own endpoint, so which one is selected depends on what has
+    // resolved -- this page has shown both. Whether an experimental structure
+    // should be preferred over a predicted one is a question for the curators,
+    // not something to pin here.
+    //
+    // Not the 3D render: headless Chromium has no WebGL and the viewer says so
+    // in place of drawing, which is a property of the test machine.
+    await expect(viewer).toContainText(/PDB|AlphaFold/i);
+    // An accession, not just a heading: 4-character PDB codes like 5JSN, or an
+    // AlphaFold model id. The label and the accession are separate elements, so
+    // an assertion with whitespace in it would never match.
+    await expect(viewer).toContainText(/(\d[A-Za-z0-9]{3}|AF-[A-Z0-9]+)/);
   });
 });
 
@@ -197,4 +204,38 @@ test.describe('Pathway tabs', () => {
       );
     }
   });
+});
+
+// The framed box around the reaction diagram had its right border clipped: the
+// container is width:100% with a 1px border, and without border-box that box
+// came out 2px wider than its column, which an ancestor with overflow-x:auto
+// then cut off. Two pixels, so it read as "the border is missing on one side"
+// rather than as a layout bug.
+test.describe('Reaction diagram frame', () => {
+  test.describe.configure({ timeout: 4 * 60 * 1000 });
+
+  for (const width of [1500, 1100]) {
+    test(`the framed diagram fits its column at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(`/content/detail/${REACTION}`);
+      await page.waitForSelector('cr-reaction-diagram canvas', { timeout: 90_000 });
+      await page.waitForTimeout(2500);
+
+      const fit = await page.evaluate(() => {
+        const box = document.querySelector('cr-reaction-diagram .reaction-diagram-container');
+        const host = box?.closest('cr-reaction-diagram');
+        if (!box || !host) return null;
+        return {
+          overflow: host.scrollWidth - host.clientWidth,
+          past: Math.round(box.getBoundingClientRect().right - host.getBoundingClientRect().right),
+        };
+      });
+
+      // Defaults that fail rather than assertions that throw: no box means the
+      // diagram is not laid out, which is a failure worth reading as one.
+      const { overflow, past } = fit ?? { overflow: Infinity, past: Infinity };
+      expect(overflow, 'the frame overflows its column').toBeLessThanOrEqual(0);
+      expect(past, 'the frame reaches past its column').toBeLessThanOrEqual(0);
+    });
+  }
 });

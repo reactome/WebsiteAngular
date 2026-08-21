@@ -50,6 +50,13 @@ decisions, not bugs:
   our interactor services or URL state)
 - an interactor download
 
+**Which structure should a protein page show?** The viewer can show an
+experimental PDB entry (from the entity's cross-references) or AlphaFold's
+predicted model (from AlphaFold's own endpoint), and today it shows whichever has
+resolved first — BCL2 has been seen with both `5JSN` and `AF-P10415-F1`. If an
+experimental structure should always win when one exists, that is a small change;
+we did not want to decide it for you.
+
 **`/tag/release` was not ported.** It 404s with "some pages have not moved across
 from the previous site yet". Worth keeping, or worth dropping?
 
@@ -89,6 +96,11 @@ test named in `RELEASE-TESTING.md`.
 - **A pathway page's figure** is drawn by the same renderer as its downloads. It
   came from the old server-side exporter, so the picture on the page was in the
   previous site's style while the download beside it was in the new one.
+- **BioPAX** is a single link now, Level 3. Level 2 has been superseded for years,
+  and offering both put a menu in front of the one people want.
+- **The frame around the reaction diagram** no longer has its right border cut
+  off, and **the statistics charts** display in full instead of scrolling inside
+  their own box.
 - **GIF and PowerPoint exports** come from our renderer too, at the diagram's own
   size — the previous GIF was unreadable when zoomed.
 - **Icons** come from the release bucket rather than cross-origin from the dev

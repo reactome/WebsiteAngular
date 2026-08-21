@@ -5,13 +5,11 @@
 
       <a class="dl-link" [href]="sbmlUrl()" [download]="stId() + '.sbml'" matTooltip="Export as SBML">SBML</a>
 
-      <button type="button" class="dl-link dl-menu" [matMenuTriggerFor]="biopaxMenu" matTooltip="Export as BioPAX">
-        BioPAX<mat-icon fontSet="symbols">arrow_drop_down</mat-icon>
-      </button>
-      <mat-menu #biopaxMenu="matMenu">
-        <a mat-menu-item [href]="biopax2Url()" [download]="stId() + '_level2.owl'">Level 2</a>
-        <a mat-menu-item [href]="biopax3Url()" [download]="stId() + '_level3.owl'">Level 3</a>
-      </mat-menu>
+      <!-- Level 3 only, and called what it is. Level 2 has been superseded for
+           years; offering both put a menu in the way of the one people want. -->
+      <a class="dl-link" [href]="biopaxUrl()" [download]="stId() + '.owl'" matTooltip="Export as BioPAX Level 3"
+        >BioPAX</a
+      >
 
       <a class="dl-link" [href]="pdfUrl()" [download]="stId() + '.pdf'" matTooltip="Export as a PDF document">PDF</a>
     </div>
