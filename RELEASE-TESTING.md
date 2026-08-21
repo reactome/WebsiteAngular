@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 43 automated, 8 that need a person, 2 still to write, 3 not
+**Where it stands: 45 automated, 7 that need a person, 1 still to write, 3 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -108,15 +108,15 @@ floor; the fourth is a decision, not work.
 
 ## Downloads and figures
 
-| Item                                                                     | Status                                                                                        |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Every diagram format produces a file of the type it claims               | **auto** — `downloads.spec.ts` checks magic bytes, not just that a file arrived               |
-| Illustrated pathways export the whole illustration                       | **auto** — `downloads.spec.ts`                                                                |
-| GIF animates one frame per analysis sample                               | **auto** — `downloads.spec.ts`, skipped with a message when the render service is not running |
-| PPTX opens in PowerPoint and converts to editable shapes                 | **human** — needs PowerPoint. This is the one item we cannot close                            |
-| Sub-pathway highlighting checkbox changes the exported figure            | **auto** — `downloads.spec.ts`                                                                |
-| Animated SVG timeline: play/pause, click to seek, hover names the sample | **gap**                                                                                       |
-| PNG quality tiers produce three different sizes                          | **gap** — the links are checked, the three sizes are not                                      |
+| Item                                                                     | Status                                                                                              |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Every diagram format produces a file of the type it claims               | **auto** — `downloads.spec.ts` checks magic bytes, not just that a file arrived                     |
+| Illustrated pathways export the whole illustration                       | **auto** — `downloads.spec.ts`                                                                      |
+| GIF animates one frame per analysis sample                               | **auto** — `downloads.spec.ts`, skipped with a message when the render service is not running       |
+| PPTX opens in PowerPoint and converts to editable shapes                 | **human** — needs PowerPoint. This is the one item we cannot close                                  |
+| Sub-pathway highlighting checkbox changes the exported figure            | **auto** — `downloads.spec.ts`                                                                      |
+| Animated SVG timeline: play/pause, click to seek, hover names the sample | **gap**                                                                                             |
+| PNG quality tiers produce three different sizes                          | **auto** — `downloads.spec.ts` reads the width out of each PNG's header and checks all three differ |
 
 ## Post-release
 

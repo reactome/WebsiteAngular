@@ -233,4 +233,32 @@ test.describe('Reaction page downloads', () => {
       }
     });
   }
+
+  // The three PNG entries have to be three different pictures. A menu that
+  // offers Low, Medium and High and returns the same bytes for each is worse
+  // than one that offers a single PNG.
+  test('the PNG tiers are three different sizes', async ({ page, request }) => {
+    const health = await request.get('/RenderService/health').catch(() => null);
+    test.skip(!health?.ok(), 'the render service is not running; the tiers come from it');
+
+    await openReaction(page);
+    const tools = page.locator('.figure-tools').first();
+
+    const widths: number[] = [];
+    for (const tier of ['Low', 'Medium', 'High']) {
+      await tools.getByRole('button', { name: /^PNG/ }).click();
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 240_000 }),
+        page.getByRole('menuitem', { name: tier }).click(),
+      ]);
+      const bytes = readFileSync(await (download as Download).path());
+      assertLooksLike('PNG', bytes);
+      // The width is in the IHDR chunk, at a fixed offset in every PNG.
+      widths.push(bytes.readUInt32BE(16));
+    }
+
+    expect(new Set(widths).size, `three distinct widths, got ${widths.join(', ')}`).toBe(3);
+    expect(widths[0], 'Low is the smallest').toBeLessThan(widths[1]);
+    expect(widths[1], 'High is the largest').toBeLessThan(widths[2]);
+  });
 });
