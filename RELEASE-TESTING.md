@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 39 automated, 8 that need a person, 7 still to write, 2 not
+**Where it stands: 43 automated, 8 that need a person, 2 still to write, 3 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -23,25 +23,25 @@ floor; the fourth is a decision, not work.
 
 ## Front page
 
-| Item                                                                                  | Status                                                                                 |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Version number and release date at the bottom of the homepage                         | **gap**                                                                                |
-| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards; institute links are a **gap** |
-| News is current, and the links inside the latest news item work                       | **gap**                                                                                |
-| Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `release-checklist.spec.ts`                                                 |
-| A newly added pathway, reaction and complex render; and an old one                    | **human** — "newly added" changes every release and comes from the project calendar    |
+| Item                                                                                  | Status                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Version number and release date at the bottom of the homepage                         | **auto** — `content-currency.spec.ts` compares it against `/data/database/version`                                                                                                                                      |
+| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards; institute links are a **gap**                                                                                                                                  |
+| News is current, and the links inside the latest news item work                       | **auto** (mechanics) — `content-currency.spec.ts` opens the latest item. _Currency is a marked expected failure: the newest announcement is V96 while the database serves 97, and only a person can write the V97 item_ |
+| Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `release-checklist.spec.ts`                                                                                                                                                                                  |
+| A newly added pathway, reaction and complex render; and an old one                    | **human** — "newly added" changes every release and comes from the project calendar                                                                                                                                     |
 
 ## Navigation bar
 
-| Item                                                                   | Status                                                                                                                         |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| All six menus have dropdowns                                           | **auto** — `nav-links.spec.ts`                                                                                                 |
-| Every link in every dropdown reaches a real page                       | **auto** — `nav-links.spec.ts` crawls all 73 and fails naming any that 404s or renders an empty shell                          |
-| About → Statistics shows the current release and date                  | **gap**                                                                                                                        |
-| Content → Table of Contents: NEW and UPDATED flags correct             | **human** — correctness depends on what curators released                                                                      |
-| Content → DOI: NEW/UPDATED flags on the right pathways                 | **human** — as above                                                                                                           |
-| Docs → Computational Inferred Events shows the current release's image | **gap**                                                                                                                        |
-| Download menu: every link valid and every file present                 | **auto** — `download-files.spec.ts` HEADs all 74 offered files and asserts the release matches what the content service serves |
+| Item                                                                   | Status                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All six menus have dropdowns                                           | **auto** — `nav-links.spec.ts`                                                                                                                                                                             |
+| Every link in every dropdown reaches a real page                       | **auto** — `nav-links.spec.ts` crawls all 73 and fails naming any that 404s or renders an empty shell                                                                                                      |
+| About → Statistics shows the current release and date                  | **auto** — `content-currency.spec.ts`. _This was stale: the markdown embedded release 95's figures because the number was typed in once. Content asks for `{release}` now and the renderer substitutes it_ |
+| Content → Table of Contents: NEW and UPDATED flags correct             | **human** — correctness depends on what curators released                                                                                                                                                  |
+| Content → DOI: NEW/UPDATED flags on the right pathways                 | **human** — as above                                                                                                                                                                                       |
+| Docs → Computational Inferred Events shows the current release's image | **auto** (the figure loads) — `content-currency.spec.ts`. _Whether the figure depicts the current release cannot be read off the image_                                                                    |
+| Download menu: every link valid and every file present                 | **auto** — `download-files.spec.ts` HEADs all 74 offered files and asserts the release matches what the content service serves                                                                             |
 
 ## Pathway Browser
 
@@ -120,12 +120,12 @@ floor; the fourth is a decision, not work.
 
 ## Post-release
 
-| Item                               | Status                                                          |
-| ---------------------------------- | --------------------------------------------------------------- |
-| New EHLDs present on the live site | **human** — depends on the release                              |
-| Editorial calendar visible         | **human**                                                       |
-| `/tag/release` page visible        | **gap**                                                         |
-| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report |
+| Item                               | Status                                                                                   |
+| ---------------------------------- | ---------------------------------------------------------------------------------------- |
+| New EHLDs present on the live site | **human** — depends on the release                                                       |
+| Editorial calendar visible         | **human**                                                                                |
+| `/tag/release` page visible        | **missing** — it 404s with "some pages have not moved across from the previous site yet" |
+| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report                          |
 
 ## What a test cannot do
 
