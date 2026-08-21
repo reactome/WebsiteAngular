@@ -81,9 +81,18 @@ jobs:
         run: npm run check:dead
 
   e2e:
-    name: End-to-end
+    # Sharded because the suite outgrew a single runner: on 21 Aug it passed the
+    # job's 30 minute limit and was killed mid-run, which reads like a hang
+    # rather than like "this got bigger". Four shards keep the whole suite --
+    # playwright splits it by test, so coverage is unchanged -- and bring the
+    # wall clock back to what it was.
+    name: End-to-end (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
 
@@ -128,12 +137,14 @@ jobs:
       - name: Run e2e
         env:
           REACTOME_BACKEND: https://reactome.org
-        run: npm run e2e
+        run: npm run e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          # One name per shard: artifacts with the same name collide and the
+          # upload fails, losing the report exactly when it is wanted.
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
