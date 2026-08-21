@@ -13,9 +13,13 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 46 automated, 7 that need a person, 1 still to write, 3 not
-built.** The third number is the one to drive down; the second is the honest
-floor; the fourth is a decision, not work.
+What the curators need to be **told** rather than tested lives next door in
+`FOR-CURATORS.md`: what changed since their last pass, what is waiting on a
+decision of theirs, and the limits worth stating out loud.
+
+**Where it stands: 49 automated, 8 that need a person, none still to write, 3
+not built.** The third number is the one to drive down, and it is zero for the
+first time; the second is the honest floor; the fourth is a decision, not work.
 
 > Where the old document says "clear your browser cache before testing", note that
 > figures are served `private, no-cache` now and the app's own assets are
@@ -26,7 +30,7 @@ floor; the fourth is a decision, not work.
 | Item                                                                                  | Status                                                                                                                                                                                               |
 | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Version number and release date at the bottom of the homepage                         | **auto** — `content-currency.spec.ts` compares it against `/data/database/version`                                                                                                                   |
-| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards; institute links are a **gap**                                                                                                               |
+| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards, and the institute logos: each has an absolute destination that answers, and each logo really draws                                          |
 | News is current, and the links inside the latest news item work                       | **auto** — `content-currency.spec.ts` checks the newest announcement against the release being served. _Announcements are imported verbatim by `npm run import:news`; nothing generates their prose_ |
 | Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `release-checklist.spec.ts`                                                                                                                                                               |
 | A newly added pathway, reaction and complex render; and an old one                    | **human** — "newly added" changes every release and comes from the project calendar                                                                                                                  |
@@ -78,7 +82,7 @@ floor; the fourth is a decision, not work.
 
 | Item                                                                                         | Status                                                                                                                                                                                                                                                                                           |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Six tabs present and populated for a pathway                                                 | **auto** — `release-checklist.spec.ts` (presence), contents a **gap**                                                                                                                                                                                                                            |
+| Six tabs present and populated for a pathway                                                 | **auto** — `release-checklist.spec.ts` for presence, `detail-contents.spec.ts` for the contents of the four that need no analysis; the other two are covered by `analysis-results.spec.ts` once there is one                                                                                     |
 | Molecules tab: counts per protein, icon cycles instances, selection shades the list          | **auto** — `detail-contents.spec.ts` checks the groups, their counts and the stoichiometry multipliers, and that selecting shades a row. _Selection only shades while the tab is already open: arriving with `?select=` set opens the entity's own details and the molecule list is not offered_ |
 | Molecules tab: filters and downloads                                                         | **auto** — `pathway-browser.spec.ts` covers the download table                                                                                                                                                                                                                                   |
 | Structures shown for proteins                                                                | **auto** — `detail-contents.spec.ts` checks the viewer names its PDB entry. _Not the 3D render: headless Chromium has no WebGL and says so in place of drawing_                                                                                                                                  |
@@ -115,7 +119,8 @@ floor; the fourth is a decision, not work.
 | GIF animates one frame per analysis sample                               | **auto** — `downloads.spec.ts`, skipped with a message when the render service is not running                                                                                                                                                                          |
 | PPTX opens in PowerPoint and converts to editable shapes                 | **human** — needs PowerPoint. This is the one item we cannot close                                                                                                                                                                                                     |
 | Sub-pathway highlighting checkbox changes the exported figure            | **auto** — `downloads.spec.ts`                                                                                                                                                                                                                                         |
-| Animated SVG timeline: play/pause, click to seek, hover names the sample | **gap**                                                                                                                                                                                                                                                                |
+| Animated SVG timeline: play/pause, click to seek, hover names the sample | **human** — the timeline scrubs a canvas, so seeking and hovering can only be judged by eye. Asserting pixels fails on font rendering rather than on behaviour, as with the sub-pathway hover row                                                                      |
+| A pathway page's figure is drawn by the site's own renderer              | **auto** — `detail-contents.spec.ts`, for a cytoscape diagram and an illustration. _It came from the old server-side exporter until 21 Aug, so the picture on the page and the one the download gave you were in different styles_                                     |
 | Figures on entity pages render, from the release bucket                  | **auto** — `download-files.spec.ts` checks the host and that the image really drew. _Every figure on the site was broken before 21 Aug: they were served from the legacy Joomla root, and our origin answers those paths with index.html — a 200 that is not an image_ |
 | PNG quality tiers produce three different sizes                          | **auto** — `downloads.spec.ts` reads the width out of each PNG's header and checks all three differ                                                                                                                                                                    |
 

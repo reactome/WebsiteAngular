@@ -85,4 +85,34 @@ test.describe('Homepage', () => {
       timeout: 30_000,
     });
   });
+
+  // The participating institutes, which are the one set of homepage links that
+  // leave the site. Their hrefs come from the nav config, so an empty or
+  // mistyped entry renders a logo that goes nowhere and looks fine.
+  test('every participating institute logo links out', async ({ page, request }) => {
+    await page.goto('/');
+    const logos = page.locator('app-home-why-reactome a:has(img.sponsor-logo)');
+    await expect(logos.first()).toBeVisible({ timeout: 60_000 });
+    expect(await logos.count(), 'institute logos').toBeGreaterThan(2);
+
+    for (const logo of await logos.all()) {
+      const href = await logo.getAttribute('href');
+      expect(href, 'an institute logo with no destination').toMatch(/^https?:\/\//);
+
+      // And the destination answers. Followed rather than HEADed: several
+      // university sites reject HEAD outright.
+      // Already asserted to be an absolute URL above, but narrowed properly
+      // rather than asserted away.
+      const response = href ? await request.get(href, { maxRedirects: 5 }).catch(() => null) : null;
+      expect(response?.status() ?? 0, `${href} answered`).toBeLessThan(400);
+
+      // The logo itself is drawn, not a broken asset with alt text.
+      const drawn = await logo
+        .locator('img')
+        .evaluate(
+          (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0
+        );
+      expect(drawn, `${href} logo drew`).toBe(true);
+    }
+  });
 });

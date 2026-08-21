@@ -130,3 +130,71 @@ test.describe('Reaction page', () => {
     await expect(detail.locator('a[href*="pubmed"]').first()).toBeVisible();
   });
 });
+
+// One page, one renderer. The thumbnail used to come from the content service's
+// diagram exporter -- which reimplements the drawing server side -- while the
+// download buttons beside it went through the render service, so the picture on
+// the page and the picture you downloaded were in two different styles.
+test.describe('Pathway page figure', () => {
+  test.describe.configure({ timeout: 6 * 60 * 1000 });
+
+  for (const [pathway, kind] of [
+    ['R-HSA-109606', 'a cytoscape diagram'],
+    ['R-HSA-109581', 'an illustration'],
+  ] as const) {
+    test(`${kind} is drawn by the site's own renderer`, async ({ page, request }) => {
+      const health = await request.get('/RenderService/health').catch(() => null);
+      test.skip(!health?.ok(), 'the render service is not running; the figure comes from it');
+
+      await page.goto(`/content/detail/${pathway}`);
+      const figure = page.locator('.detail-diagram img').first();
+      await expect(figure).toBeVisible({ timeout: 120_000 });
+
+      // Both halves: the source, so a silent fall back to the old exporter fails
+      // this, and naturalWidth, so an error page with a 200 on it fails too.
+      await expect
+        .poll(async () => (await figure.getAttribute('src')) ?? '', { timeout: 120_000 })
+        .toContain('/RenderService/render/');
+      await expect
+        .poll(
+          async () =>
+            figure.evaluate(
+              (image) =>
+                (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0
+            ),
+          { timeout: 120_000 }
+        )
+        .toBe(true);
+    });
+  }
+});
+
+// "Six tabs present and populated" was asserted as presence only. The analysis
+// two (Results, Expression) need an analysis to have anything in them and are
+// covered in analysis-results.spec.ts; these are the four that should hold
+// something for any pathway with a diagram.
+test.describe('Pathway tabs', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('the tabs that do not need an analysis are populated', async ({ page }) => {
+    await openDiagram(page);
+
+    for (const [tab, holds] of [
+      ['Details', /Intrinsic Pathway for Apoptosis/i],
+      ['Molecule', /Proteins/i],
+      ['Info', /Drag|Zoom|Hover/i],
+      ['Download', /SVG|PNG|SBML/i],
+    ] as const) {
+      await page.getByText(tab, { exact: true }).first().click();
+      await page.waitForTimeout(1500);
+      // By the panel's accessible name: the analysis wizard is a mat-tab-group
+      // too, so its body carries the same "active" class at the same time and a
+      // class selector matches both. Scoped to the panel either way, so matching
+      // the tab's own label cannot pass this.
+      await expect(page.getByRole('tabpanel', { name: tab }), `the ${tab} tab`).toContainText(
+        holds,
+        { timeout: 60_000 }
+      );
+    }
+  });
+});
