@@ -9,6 +9,21 @@ const PROTEIN = 'R-HSA-50757'; // BCL2
 const REACTION = 'R-HSA-6805479'; // TP53RK phosphorylates TP53
 const BOOT = 90_000;
 
+/**
+ * Whether this backend serves a reaction's own diagram.
+ *
+ * `exporter/reaction/{id}/diagram` exists on the dev host's unreleased branch and
+ * 404s on production, so in CI -- which points at production -- the canvas never
+ * appears. Waiting it out cost 23 minutes of a sharded run and read as a hang, so
+ * ask once and skip with a reason instead.
+ */
+async function servesReactionDiagram(request: import('@playwright/test').APIRequestContext) {
+  const response = await request
+    .get(`/ContentService/exporter/reaction/${REACTION}/diagram`)
+    .catch(() => null);
+  return !!response?.ok();
+}
+
 async function openDiagram(page: Page, id = PATHWAY, query = '') {
   await page.goto(`/PathwayBrowser/${id}${query}`);
   await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
@@ -22,7 +37,7 @@ async function openMolecules(page: Page) {
 }
 
 test.describe('Molecules tab', () => {
-  test.describe.configure({ timeout: 5 * 60 * 1000 });
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
 
   test('molecules are grouped, counted, and carry their stoichiometry', async ({ page }) => {
     await openDiagram(page);
@@ -68,7 +83,7 @@ test.describe('Molecules tab', () => {
 });
 
 test.describe('Protein page', () => {
-  test.describe.configure({ timeout: 4 * 60 * 1000 });
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
 
   test('a protein names its experimental structure', async ({ page }) => {
     await page.goto(`/content/detail/${PROTEIN}`);
@@ -93,9 +108,13 @@ test.describe('Protein page', () => {
 });
 
 test.describe('Reaction page', () => {
-  test.describe.configure({ timeout: 4 * 60 * 1000 });
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
 
-  test('every section a curator checks is present and filled', async ({ page }) => {
+  test('every section a curator checks is present and filled', async ({ page, request }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
     await page.goto(`/content/detail/${REACTION}`);
     await page.waitForSelector('cr-reaction-diagram canvas', { timeout: BOOT });
 
@@ -143,7 +162,7 @@ test.describe('Reaction page', () => {
 // download buttons beside it went through the render service, so the picture on
 // the page and the picture you downloaded were in two different styles.
 test.describe('Pathway page figure', () => {
-  test.describe.configure({ timeout: 6 * 60 * 1000 });
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
 
   for (const [pathway, kind] of [
     ['R-HSA-109606', 'a cytoscape diagram'],
@@ -181,7 +200,7 @@ test.describe('Pathway page figure', () => {
 // covered in analysis-results.spec.ts; these are the four that should hold
 // something for any pathway with a diagram.
 test.describe('Pathway tabs', () => {
-  test.describe.configure({ timeout: 5 * 60 * 1000 });
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
 
   test('the tabs that do not need an analysis are populated', async ({ page }) => {
     await openDiagram(page);
@@ -212,10 +231,14 @@ test.describe('Pathway tabs', () => {
 // then cut off. Two pixels, so it read as "the border is missing on one side"
 // rather than as a layout bug.
 test.describe('Reaction diagram frame', () => {
-  test.describe.configure({ timeout: 4 * 60 * 1000 });
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
 
   for (const width of [1500, 1100]) {
-    test(`the framed diagram fits its column at ${width}px`, async ({ page }) => {
+    test(`the framed diagram fits its column at ${width}px`, async ({ page, request }) => {
+      test.skip(
+        !(await servesReactionDiagram(request)),
+        'this backend does not serve a reaction its own diagram'
+      );
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(`/content/detail/${REACTION}`);
       await page.waitForSelector('cr-reaction-diagram canvas', { timeout: 90_000 });

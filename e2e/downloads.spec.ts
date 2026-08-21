@@ -134,6 +134,14 @@ test.describe('Server-rendered figures', () => {
 // the reaction's own layout rather than from the old server-side exporters.
 const REACTION = 'R-HSA-6805479'; // TP53RK phosphorylates TP53
 
+/** Same reason as in detail-contents: production 404s this endpoint. */
+async function servesReactionDiagram(request: import('@playwright/test').APIRequestContext) {
+  const response = await request
+    .get(`/ContentService/exporter/reaction/${REACTION}/diagram`)
+    .catch(() => null);
+  return !!response?.ok();
+}
+
 async function openReaction(page: Page) {
   await page.goto(`/content/detail/${REACTION}`);
   await page.waitForSelector('cr-reaction-diagram canvas', { timeout: 90_000 });
@@ -153,7 +161,12 @@ test.describe('Reaction page downloads', () => {
 
   test('the download links sit in the reaction diagram section, above the figure', async ({
     page,
+    request,
   }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
     await openReaction(page);
 
     const tools = page.locator('.reaction-figure .figure-tools');
@@ -187,7 +200,14 @@ test.describe('Reaction page downloads', () => {
     ).toContain('Level3');
   });
 
-  test('a figure format asks the render service for the reaction layout', async ({ page }) => {
+  test('a figure format asks the render service for the reaction layout', async ({
+    page,
+    request,
+  }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
     await openReaction(page);
     const tools = page.locator('.figure-tools').first();
 
@@ -203,7 +223,11 @@ test.describe('Reaction page downloads', () => {
   });
 
   for (const format of ['SBML', 'SBGN', 'PDF']) {
-    test(`a reaction's ${format} downloads`, async ({ page }) => {
+    test(`a reaction's ${format} downloads`, async ({ page, request }) => {
+      test.skip(
+        !(await servesReactionDiagram(request)),
+        'this backend does not serve a reaction its own diagram'
+      );
       await openReaction(page);
       const bytes = await grabFrom(page, format);
       expect(bytes.length, `${format} size`).toBeGreaterThan(1000);
