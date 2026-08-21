@@ -34,41 +34,52 @@ test.describe('Every top-level pathway', () => {
     // on anything being broken. Playwright shards by test, so it cannot split one
     // test for us; doing our own concurrency here is what brings the wall clock
     // down and gives each diagram room.
+    // One lane against a deployed site, three against a local dev server.
+    //
+    // Three concurrent diagram loads is a fair use of a developer's machine and
+    // far too much for beta, which is a single node process behind Cloudflare:
+    // the burst had six pathways "not drawing" that render perfectly by hand.
+    // Verification would rather be slow than wrong.
+    const local = /localhost|127\.0\.0\.1/.test(process.env['E2E_BASE_URL'] ?? 'localhost');
+    const lanes = local ? 3 : 1;
     const empty: string[] = [];
     const queue = [...pathways];
-    const budget = 120_000;
+    const budget = local ? 120_000 : 180_000;
 
+    // A fresh page per pathway. Twenty-nine large diagrams in one page leaves
+    // twenty-nine cytoscape instances' worth of canvases and buffers behind, and
+    // the failures were all late in the walk -- pathways that draw perfectly when
+    // asked for on their own. A page costs a fraction of a second; being wrong
+    // about which diagrams work costs a curator an afternoon.
     const walk = async () => {
-      const page = await context.newPage();
-      try {
-        for (let next = queue.shift(); next; next = queue.shift()) {
-          const { stId, displayName } = next;
+      for (let next = queue.shift(); next; next = queue.shift()) {
+        const { stId, displayName } = next;
+        const page = await context.newPage();
+        try {
           await page.goto(`/PathwayBrowser/${stId}`);
-          try {
-            // Either kind of view counts: most are cytoscape diagrams, the
-            // well-illustrated ones are EHLDs, and both are a drawn pathway.
-            await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: budget });
+          // Either kind of view counts: most are cytoscape diagrams, the
+          // well-illustrated ones are EHLDs, and both are a drawn pathway.
+          await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: budget });
 
-            // A canvas exists before anything is on it, so ask what was drawn.
-            // The legend is a second cytoscape instance that appears first and
-            // would otherwise make an empty diagram look fine.
-            const drawn = await page.evaluate(() => {
-              const illustration = document.querySelector('cr-ehld svg');
-              if (illustration) return illustration.querySelectorAll('*').length;
-              const canvas = document.querySelector<HTMLCanvasElement>('#cytoscape canvas');
-              return canvas && canvas.width > 0 && canvas.height > 0 ? canvas.width : 0;
-            });
-            if (!drawn) empty.push(`${displayName} (${stId}) — nothing drawn`);
-          } catch {
-            empty.push(`${displayName} (${stId}) — no diagram appeared`);
-          }
+          // A canvas exists before anything is on it, so ask what was drawn. The
+          // legend is a second cytoscape instance that appears first and would
+          // otherwise make an empty diagram look fine.
+          const drawn = await page.evaluate(() => {
+            const illustration = document.querySelector('cr-ehld svg');
+            if (illustration) return illustration.querySelectorAll('*').length;
+            const canvas = document.querySelector<HTMLCanvasElement>('#cytoscape canvas');
+            return canvas && canvas.width > 0 && canvas.height > 0 ? canvas.width : 0;
+          });
+          if (!drawn) empty.push(`${displayName} (${stId}) — nothing drawn`);
+        } catch {
+          empty.push(`${displayName} (${stId}) — no diagram appeared`);
+        } finally {
+          await page.close();
         }
-      } finally {
-        await page.close();
       }
     };
 
-    await Promise.all([walk(), walk(), walk()]);
+    await Promise.all(Array.from({ length: lanes }, () => walk()));
     empty.sort();
 
     expect(empty, 'top-level pathways that did not draw').toEqual([]);

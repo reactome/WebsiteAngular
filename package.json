@@ -22,7 +22,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "playwright test --project=code",
     "e2e:ui": "playwright test --ui",
     "serve:ssr:website": "node dist/website-angular/server/server.mjs",
     "serve:prod": "node projects/website-angular/src/scripts/serve-prod.js",
@@ -35,7 +35,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts"
+    "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts",
+    "e2e:release": "playwright test --project=release"
   },
   "private": true,
   "dependencies": {

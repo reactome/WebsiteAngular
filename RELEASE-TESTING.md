@@ -11,7 +11,22 @@ Each item is marked:
 - **gap** — should be automated and is not yet. These are the work queue.
 - **missing** — the old site does this and the new one does not. Not a test gap; a feature decision.
 
-Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
+Two suites, because they answer different questions:
+
+- **`npm run e2e`** — _is the code right?_ Runs on every push and while
+  developing. It must not need freshly generated release data, and anything that
+  depends on a backend feature the target may lack asks first and skips with a
+  reason.
+- **`npm run e2e:release`** — _is the release right?_ Run after the release
+  process has generated the database and published the files, against the site
+  being released: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`.
+  Also runs nightly against beta (`release-verification.yml`).
+
+Everything else: `npm test && npm run check:dead && npm run check:lint`.
+
+The split came from a day of CI trouble that was entirely release checks failing
+in a code-verification context: endpoints the target did not have, data it could
+not serve, and 29 diagram loads on a two-core runner.
 
 What the curators need to be **told** rather than tested lives next door in
 `FOR-CURATORS.md`: what changed since their last pass, what is waiting on a

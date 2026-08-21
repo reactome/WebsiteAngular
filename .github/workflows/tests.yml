@@ -81,11 +81,13 @@ jobs:
         run: npm run check:dead
 
   e2e:
-    # Sharded because the suite outgrew a single runner: on 21 Aug it passed the
-    # job's 30 minute limit and was killed mid-run, which reads like a hang
-    # rather than like "this got bigger". Four shards keep the whole suite --
-    # playwright splits it by test, so coverage is unchanged -- and bring the
-    # wall clock back to what it was.
+    # The code suite only: "is the code right?". The release checks -- every
+    # top-level pathway draws, every download link resolves, the version and news
+    # and statistics match what is being served -- depend on generated release
+    # data this runner does not have, and live in release-verification.yml.
+    #
+    # Still sharded: playwright splits by test, so coverage is unchanged and the
+    # wall clock stays a few minutes rather than the 30 that got a job killed.
     name: End-to-end (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 25
