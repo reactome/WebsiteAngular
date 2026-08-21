@@ -91,7 +91,14 @@ test.describe('Download catalogue', () => {
   // be fetched from a hardcoded backend host, because they are not proxied on
   // beta or release -- so the site's own icons came cross-origin from
   // dev.reactome.org. This fails if that ever comes back.
-  test('the icon library draws its artwork from the release bucket', async ({ page }) => {
+  test('the icon library draws its artwork from the release bucket', async ({ page, request }) => {
+    // The icon *listing* comes from search/icon/facet, which the dev host serves
+    // and production 404s -- so on a production backend the page has no icons to
+    // draw and there is nothing to attribute. Ask first rather than assert about
+    // an empty page.
+    const listing = await request.get('/ContentService/search/icon/facet').catch(() => null);
+    test.skip(!listing?.ok(), 'this backend does not serve the icon library');
+
     const hosts = new Set<string>();
     page.on('response', (response) => {
       const url = response.url();
