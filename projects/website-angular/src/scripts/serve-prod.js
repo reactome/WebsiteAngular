@@ -17,7 +17,11 @@ const fs = require('node:fs');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const ROOT = path.resolve(__dirname, '../../../..');
-const DIST = path.join(ROOT, 'dist/reactome/browser');
+// DIST_DIR exists so this can be tested against a directory a test controls.
+// Unset -- which is every real deployment -- it is the build output as before.
+const DIST = process.env.DIST_DIR
+  ? path.resolve(process.env.DIST_DIR)
+  : path.join(ROOT, 'dist/reactome/browser');
 const PORT = Number(process.env.PORT) || 4200;
 const HOST = process.env.HOST || '0.0.0.0';
 
