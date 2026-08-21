@@ -13,7 +13,7 @@ Each item is marked:
 
 Run everything with `npm test && npm run check:dead && npm run check:lint && npx playwright test`.
 
-**Where it stands: 36 automated, 8 that need a person, 10 still to write, 2 not
+**Where it stands: 39 automated, 8 that need a person, 7 still to write, 2 not
 built.** The third number is the one to drive down; the second is the honest
 floor; the fourth is a decision, not work.
 
@@ -76,13 +76,13 @@ floor; the fourth is a decision, not work.
 
 ## Details panel
 
-| Item                                                                                         | Status                                                                |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Six tabs present and populated for a pathway                                                 | **auto** — `release-checklist.spec.ts` (presence), contents a **gap** |
-| Molecules tab: counts per protein, icon cycles instances, selection shades the list          | **gap**                                                               |
-| Molecules tab: filters and downloads                                                         | **auto** — `pathway-browser.spec.ts` covers the download table        |
-| Structures shown for proteins                                                                | **gap**                                                               |
-| Reaction: name, StableID, summation, input, output, catalyst, references, authored, reviewed | **gap**                                                               |
+| Item                                                                                         | Status                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Six tabs present and populated for a pathway                                                 | **auto** — `release-checklist.spec.ts` (presence), contents a **gap**                                                                                                                                                                                                                            |
+| Molecules tab: counts per protein, icon cycles instances, selection shades the list          | **auto** — `detail-contents.spec.ts` checks the groups, their counts and the stoichiometry multipliers, and that selecting shades a row. _Selection only shades while the tab is already open: arriving with `?select=` set opens the entity's own details and the molecule list is not offered_ |
+| Molecules tab: filters and downloads                                                         | **auto** — `pathway-browser.spec.ts` covers the download table                                                                                                                                                                                                                                   |
+| Structures shown for proteins                                                                | **auto** — `detail-contents.spec.ts` checks the viewer names its PDB entry. _Not the 3D render: headless Chromium has no WebGL and says so in place of drawing_                                                                                                                                  |
+| Reaction: name, StableID, summation, input, output, catalyst, references, authored, reviewed | **auto** — `detail-contents.spec.ts` checks the name, id, type, species, the summation prose, every section heading, and that a reference resolves to PubMed                                                                                                                                     |
 
 ## Context menus and interactors
 
