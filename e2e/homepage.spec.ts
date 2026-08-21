@@ -99,12 +99,15 @@ test.describe('Homepage', () => {
       const href = await logo.getAttribute('href');
       expect(href, 'an institute logo with no destination').toMatch(/^https?:\/\//);
 
-      // And the destination answers. Followed rather than HEADed: several
-      // university sites reject HEAD outright.
-      // Already asserted to be an absolute URL above, but narrowed properly
-      // rather than asserted away.
-      const response = href ? await request.get(href, { maxRedirects: 5 }).catch(() => null) : null;
-      expect(response?.status() ?? 0, `${href} answered`).toBeLessThan(400);
+      // And the destination answers -- but not in CI, where reaching four
+      // university websites would make this suite depend on their uptime and on
+      // the runner's egress. The href assertion above is the part that catches
+      // the failure we own: an empty or mistyped entry in the nav config.
+      // GET rather than HEAD: several university sites refuse HEAD outright.
+      if (!process.env['CI'] && href) {
+        const response = await request.get(href, { maxRedirects: 5 }).catch(() => null);
+        expect(response?.status() ?? 0, `${href} answered`).toBeLessThan(400);
+      }
 
       // The logo itself is drawn, not a broken asset with alt text.
       const drawn = await logo
