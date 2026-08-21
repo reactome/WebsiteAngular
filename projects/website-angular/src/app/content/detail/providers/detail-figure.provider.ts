@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import {
   FigureService,
   figureFallback,
@@ -6,7 +6,6 @@ import {
   figureSrc,
 } from '../../../../../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
 import { Figure } from '../../../../../../pathway-browser/src/app/model/graph/figure.model';
-import { GeneralService } from '../../../../../../pathway-browser/src/app/services/general.service';
 
 /**
  * The detail page's own figure state: no diagram selection to react to, so none
@@ -19,8 +18,6 @@ import { GeneralService } from '../../../../../../pathway-browser/src/app/servic
  */
 @Injectable()
 export class DetailFigureService implements Omit<FigureService, 'toggle'> {
-  private general = inject(GeneralService);
-
   readonly expanded = signal<Figure | undefined>(undefined);
 
   toggle(figure: Figure) {
@@ -28,7 +25,7 @@ export class DetailFigureService implements Omit<FigureService, 'toggle'> {
   }
 
   src(figure: Figure) {
-    return figureSrc(figure, this.general.version.value());
+    return figureSrc(figure);
   }
 
   onOrigin(figure: Figure) {

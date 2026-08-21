@@ -115,4 +115,33 @@ test.describe('Download catalogue', () => {
     );
     expect(drawn, 'icons that actually rendered').toBeGreaterThan(5);
   });
+
+  // Figures were the last asset the new site took from somewhere other than the
+  // release: they lived in the legacy Joomla document root, and our own origin
+  // answers those paths with the application's index.html -- so every figure on
+  // the site was a 200 that was not an image. They are published at the bucket
+  // root now, outside any version, because a figure is the same file in every
+  // release.
+  test('an entity page draws its figure from the download bucket', async ({ page }) => {
+    const drawn: { host: string; drawn: boolean }[] = [];
+
+    // Biosynthesis of the N-glycan precursor: one plain (non-illustration) figure.
+    await page.goto('/content/detail/R-HSA-446193');
+    const figure = page.locator('.icon-container.figure img').first();
+    await expect(figure).toBeVisible({ timeout: 90_000 });
+    await page.waitForTimeout(3000);
+
+    drawn.push(
+      await figure.evaluate((image) => ({
+        host: new URL((image as HTMLImageElement).src).host,
+        drawn: (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0,
+      }))
+    );
+
+    // Both halves matter. The host proves it is not falling back to our origin,
+    // and naturalWidth proves what came back was an image rather than the
+    // application's own HTML with a 200 on it.
+    expect(drawn[0].host, 'figures come from the download bucket').toBe('download.reactome.org');
+    expect(drawn[0].drawn, 'the figure really rendered').toBe(true);
+  });
 });

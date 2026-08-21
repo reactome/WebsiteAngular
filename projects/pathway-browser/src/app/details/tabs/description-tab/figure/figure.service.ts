@@ -1,26 +1,26 @@
 import { effect, Injectable, signal, inject } from '@angular/core';
 import { Figure } from '../../../../model/graph/figure.model';
 import { DataStateService } from '../../../../services/data-state.service';
-import { GeneralService } from '../../../../services/general.service';
 import { environment } from '../../../../../environments/environment';
 
-/** Where a figure's image comes from, given the release being served. */
-function figureBucket(version: number | undefined) {
-  return environment.preferS3 && version ? `${environment.s3}/${version}` : '';
-}
-
 /**
- * The URL to try first: the release bucket if we can name a release.
+ * The URL to try first: the release bucket, outside any version.
  *
- * Exported, along with the two below, because the detail page substitutes its own
+ * Figures are not release artefacts. Icons and illustrations are regenerated per
+ * release, which is why the bucket versions those; a figure is a curated image
+ * that the database references by a stable, version-free path and that is the
+ * same file in release 95 and 97. Copying 150MB into every release directory
+ * four times a year would buy nothing, and keying the URL on the release meant
+ * no figure could be addressed until /data/database/version had answered.
+ *
+ * Exported, with the fallback below, because the detail page substitutes its own
  * FigureService and the two must not disagree about where figures live.
  */
-export function figureSrc(figure: Figure, version: number | undefined) {
-  const bucket = figureBucket(version);
-  return bucket ? `${bucket}${figure.url}` : figureOnOrigin(figure);
+export function figureSrc(figure: Figure) {
+  return environment.preferS3 ? `${environment.s3}${figure.url}` : figureOnOrigin(figure);
 }
 
-/** Where figures have always been served from. */
+/** Where figures have always been served from: the legacy document root. */
 export function figureOnOrigin(figure: Figure) {
   return `${environment.host}${figure.url}`;
 }
@@ -44,13 +44,12 @@ export function figureFallback(event: Event, figure: Figure) {
 })
 export class FigureService {
   private data = inject(DataStateService);
-  private general = inject(GeneralService);
 
   readonly expanded = signal<Figure | undefined>(undefined);
 
   /** The URL to try first for a figure. */
   src(figure: Figure) {
-    return figureSrc(figure, this.general.version.value());
+    return figureSrc(figure);
   }
 
   /** Where the figure has always been served from. */
