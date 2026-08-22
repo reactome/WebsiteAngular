@@ -326,9 +326,10 @@ test.describe('Release calendar', () => {
     ).not.toBe('none');
 
     // And the link actually opens that release's announcement.
-    const href = await link.getAttribute('href');
+    const href = (await link.getAttribute('href')) ?? '';
+    expect(href, 'the link has a destination').not.toBe('');
     await link.click();
-    await expect(page).toHaveURL(new RegExp(href!.replace(/\//g, '\\/')), { timeout: 60_000 });
+    await expect(page).toHaveURL(new RegExp(href.replace(/\//g, '\\/')), { timeout: 60_000 });
     await expect(page.locator('app-page-layout')).toContainText(/Released/i, { timeout: 60_000 });
   });
 });
