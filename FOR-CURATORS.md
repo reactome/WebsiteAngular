@@ -26,7 +26,10 @@ reactome.org today, so this is not new with the redesign.
 | 387457      | `/figures/Kaufman2002-PERK.jpg`                 |
 | 387436      | `/figures/Rutter2006-KinesinVesicleComplex.jpg` |
 | 111218      | `/figures/linoleoylcoa.jpg`                     |
-| 396952–56   | `/figures/striatedmuscle1–4.jpg`                |
+| 396956      | `/figures/striatedmuscle1.jpg`                  |
+| 396954      | `/figures/striatedmuscle2.jpg`                  |
+| 396953      | `/figures/striatedmuscle3.jpg`                  |
+| 396952      | `/figures/striatedmuscle4.jpg`                  |
 | 1028823     | `/figures/man7a.png`                            |
 
 Two questions:
@@ -40,8 +43,8 @@ Two questions:
   — `man8a`, `man8b`, `man8c` — is present and referenced. Rename the file, or
   correct the reference: either fixes it.
 
-The other six may be recoverable from an old backup. Awright is checking an
-external drive.
+The other six were searched for across the whole dev host, following symlinks,
+and are not on it. An old external drive is the remaining hope.
 
 **Two interactor features the old browser has and this one does not.** Both are
 decisions, not bugs:
@@ -65,7 +68,8 @@ from the previous site yet". Worth keeping, or worth dropping?
 ## 2. Fixed since the last curator pass — worth re-testing
 
 Each of these was broken when curators last looked, and each is now covered by a
-test named in `RELEASE-TESTING.md`.
+test — `RELEASE-TESTING.md` names the spec for every row, and says plainly where
+a check can only be made by eye.
 
 - **Diagrams for every species other than human were blank.** One node without
   graph data threw for the whole diagram build, so switching species left an

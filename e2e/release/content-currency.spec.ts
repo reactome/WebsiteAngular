@@ -85,6 +85,28 @@ test.describe('Release currency', () => {
     await expect(figure).toContainText(new RegExp(`Version ${release}\\b`), { timeout: 60_000 });
   });
 
+  test('the statistics charts fit their frames rather than scrolling', async ({ page }) => {
+    await page.goto('/about/statistics');
+    const embeds = page.locator('iframe[src*="download.reactome.org"]');
+    await expect(embeds.first()).toBeAttached({ timeout: 60_000 });
+    await page.waitForTimeout(4000);
+
+    // The first chart is responsive -- 611px tall at 1070 wide, 457 at 800 -- and
+    // sat in a fixed 500px box, so it scrolled inside its own frame; the second is
+    // a fixed 611 in a 595 box. Ask each document how tall it needs to be and
+    // compare with what it was given.
+    for (const frame of page.frames().slice(1)) {
+      const fit = await frame
+        .evaluate(() => ({
+          needs: document.documentElement.scrollHeight,
+          shows: document.documentElement.clientHeight,
+        }))
+        .catch(() => null);
+      if (!fit) continue;
+      expect(fit.needs, 'the chart fits the frame it was given').toBeLessThanOrEqual(fit.shows);
+    }
+  });
+
   test('the latest news item is for the current release', async ({ page }) => {
     const release = await servedRelease(page);
     await page.goto('/about/news');
