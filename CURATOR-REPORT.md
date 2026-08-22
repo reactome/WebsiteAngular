@@ -73,6 +73,11 @@ a check can only be made by eye.
 - **The frame around the reaction diagram** no longer has its right border cut
   off, and **the statistics charts** display in full instead of scrolling inside
   their own box.
+- **Release calendar cards no longer pretend to be clickable.** They lifted under
+  the pointer and did nothing, which is what was reported. The 40 releases that
+  have an announcement on this site are now links to it — v57 onwards, near
+  continuously — and the other 57, plus anything upcoming, carry no hover
+  response at all. A small document icon marks the ones that open something.
 - **Icons** come from the release bucket rather than cross-origin from the dev
   machine, so the site no longer depends on that host to draw its own icons.
 - **The V97 announcement** is on the site, imported verbatim. V96's text was
@@ -93,6 +98,7 @@ Each row is one thing to check and what a correct result looks like.
 | [/about/news](https://beta.reactome.org/about/news)                                     | **V97 Released** at the top. Open it: the figure loads and `help@reactome.org` is a working link                                                                                                                                                                                                                        |
 | [/content/detail/R-HSA-446193](https://beta.reactome.org/content/detail/R-HSA-446193)   | The Glycobiology figure appears. Figures were broken everywhere on this site until 21 Aug                                                                                                                                                                                                                               |
 | [/content/detail/R-HSA-109606](https://beta.reactome.org/content/detail/R-HSA-109606)   | The diagram thumbnail is in the new style — the same picture its download gives you                                                                                                                                                                                                                                     |
+| [/about/release-calendar](https://beta.reactome.org/about/release-calendar)             | Cards for v57 and later open that release's announcement; older ones and upcoming ones do not move under the pointer                                                                                                                                                                                                    |
 | [/community/icon-lib](https://beta.reactome.org/community/icon-lib)                     | Icons all draw (they come from the release bucket now, not the dev machine)                                                                                                                                                                                                                                             |
 | [PathwayBrowser → Tissue](https://beta.reactome.org/PathwayBrowser?analysisTab=tissue)  | Pick a tissue, move it across, Next: an overlay appears. This could not run at all before                                                                                                                                                                                                                               |
 

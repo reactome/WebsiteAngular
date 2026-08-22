@@ -281,3 +281,54 @@ test.describe('Entity detail: pathway locations', () => {
     await expect(page.locator('.no-locations')).toHaveCount(0);
   });
 });
+
+// A curator reported that the release cards "look and act clickable but aren't":
+// they lifted under the pointer, which is what a clickable card does, and then did
+// nothing. Forty of the ninety-seven releases have an announcement on this site,
+// so those are links now and the rest carry no affordance at all. Both halves are
+// asserted, because fixing this by making everything inert would also pass a test
+// that only checked the links.
+test.describe('Release calendar', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  test('releases with an announcement link to it, and the rest do not pretend', async ({
+    page,
+  }) => {
+    await page.goto('/about/release-calendar');
+    await expect(page.locator('.release-card').first()).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(2000);
+
+    const linked = page.locator('a.release-card');
+    const plain = page.locator('div.release-card');
+    expect(await linked.count(), 'releases with an announcement').toBeGreaterThan(30);
+    expect(await plain.count(), 'releases without one').toBeGreaterThan(10);
+
+    // Every link goes to a news article, not somewhere invented.
+    for (const card of (await linked.all()).slice(0, 5)) {
+      expect(await card.getAttribute('href')).toMatch(/^\/about\/news\/[\w-]+$/);
+    }
+
+    // The pointer distinguishes them, and only the link responds to hover.
+    const link = linked.first();
+    const card = plain.first();
+    expect(await link.evaluate((e) => getComputedStyle(e).cursor)).toBe('pointer');
+    expect(await card.evaluate((e) => getComputedStyle(e).cursor)).not.toBe('pointer');
+
+    await card.hover();
+    expect(
+      await card.evaluate((e) => getComputedStyle(e).transform),
+      'a card that cannot be clicked must not move under the pointer'
+    ).toBe('none');
+    await link.hover();
+    expect(
+      await link.evaluate((e) => getComputedStyle(e).transform),
+      'a card that can be clicked should respond'
+    ).not.toBe('none');
+
+    // And the link actually opens that release's announcement.
+    const href = await link.getAttribute('href');
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(href!.replace(/\//g, '\\/')), { timeout: 60_000 });
+    await expect(page.locator('app-page-layout')).toContainText(/Released/i, { timeout: 60_000 });
+  });
+});
