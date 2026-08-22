@@ -1,9 +1,16 @@
 # Curator report
 
-Running list for the next round with the curators. Three kinds of entry: things
-we need **them** to check, things we have **decided** and they should know, and
-things **waiting on someone else**. Fixed-and-confirmed items get deleted from
-here rather than accumulating — git history is the record of what was fixed.
+Running list for the next round with the curators. What is in here: things we
+need **them** to check, what has been **fixed** since their last pass and is
+worth re-testing, decisions we have **made** that they should know about, things
+we need them to **decide**, what is **waiting on someone else**, and the checks a
+machine cannot make. Fixed-and-confirmed items get deleted rather than
+accumulating — git history is the record of what was fixed.
+
+**Found something?** Add it to the beta QA spreadsheet you have been using, or
+open an issue on the WebsiteAngular repository — either reaches us. A screenshot
+and the URL is usually enough; if a diagram is involved, the pathway's stable id
+saves us guessing.
 
 Last updated: 2026-08-22
 
@@ -66,8 +73,6 @@ a check can only be made by eye.
 - **The frame around the reaction diagram** no longer has its right border cut
   off, and **the statistics charts** display in full instead of scrolling inside
   their own box.
-- **GIF and PowerPoint exports** come from our renderer too, at the diagram's own
-  size — the previous GIF was unreadable when zoomed.
 - **Icons** come from the release bucket rather than cross-origin from the dev
   machine, so the site no longer depends on that host to draw its own icons.
 - **The V97 announcement** is on the site, imported verbatim. V96's text was
@@ -78,18 +83,18 @@ a check can only be made by eye.
 
 Each row is one thing to check and what a correct result looks like.
 
-| Page                                                                                    | What to see                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [/content/detail/R-HSA-6805479](https://beta.reactome.org/content/detail/R-HSA-6805479) | Download links **inside** the Reaction Diagram section — `SBML BioPAX PDF` at the left, `SVG PNG▾ PPTX SBGN` at the right. Every arrow touches the reaction node. A downloaded SVG is the picture on the page |
-| [/PathwayBrowser/R-HSA-109606](https://beta.reactome.org/PathwayBrowser/R-HSA-109606)   | Switch Species to _M. musculus_: the diagram redraws. It used to go blank                                                                                                                                     |
-| [/idg?gene=TANC1](https://beta.reactome.org/idg?gene=TANC1)                             | Click any pathway in the results: it opens with the overlay applied — hit counts beside the pathways, and a Results tab titled "…of TANC1 interactors"                                                        |
-| [/download-data](https://beta.reactome.org/download-data)                               | Badge reads **Current Release: V97**, and every link downloads a file rather than an error page                                                                                                               |
-| [/about/statistics](https://beta.reactome.org/about/statistics)                         | The charts say **Version 97, Panther, June 2026**                                                                                                                                                             |
-| [/about/news](https://beta.reactome.org/about/news)                                     | **V97 Released** at the top. Open it: the figure loads and `help@reactome.org` is a working link                                                                                                              |
-| [/content/detail/R-HSA-446193](https://beta.reactome.org/content/detail/R-HSA-446193)   | The Glycobiology figure appears. Figures were broken everywhere on this site until 21 Aug                                                                                                                     |
-| [/content/detail/R-HSA-109606](https://beta.reactome.org/content/detail/R-HSA-109606)   | The diagram thumbnail is in the new style — the same picture its download gives you                                                                                                                           |
-| [/community/icon-lib](https://beta.reactome.org/community/icon-lib)                     | Icons all draw (they come from the release bucket now, not the dev machine)                                                                                                                                   |
-| [PathwayBrowser → Tissue](https://beta.reactome.org/PathwayBrowser?analysisTab=tissue)  | Pick a tissue, move it across, Next: an overlay appears. This could not run at all before                                                                                                                     |
+| Page                                                                                    | What to see                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [/content/detail/R-HSA-6805479](https://beta.reactome.org/content/detail/R-HSA-6805479) | Download links **inside** the Reaction Diagram section — `SBML BioPAX PDF` at the left, `SVG PNG▾ PPTX SBGN` at the right. Every arrow touches the reaction node, and the frame around the diagram is unbroken on all four sides. BioPAX is one link (Level 3), not a menu. A downloaded SVG is the picture on the page |
+| [/PathwayBrowser/R-HSA-109606](https://beta.reactome.org/PathwayBrowser/R-HSA-109606)   | Switch Species to _M. musculus_: the diagram redraws. It used to go blank                                                                                                                                                                                                                                               |
+| [/idg?gene=TANC1](https://beta.reactome.org/idg?gene=TANC1)                             | Click any pathway in the results: it opens with the overlay applied — hit counts beside the pathways, and a Results tab titled "…of TANC1 interactors"                                                                                                                                                                  |
+| [/download-data](https://beta.reactome.org/download-data)                               | Badge reads **Current Release: V97**, and every link downloads a file rather than an error page                                                                                                                                                                                                                         |
+| [/about/statistics](https://beta.reactome.org/about/statistics)                         | The charts say **Version 97, Panther, June 2026**                                                                                                                                                                                                                                                                       |
+| [/about/news](https://beta.reactome.org/about/news)                                     | **V97 Released** at the top. Open it: the figure loads and `help@reactome.org` is a working link                                                                                                                                                                                                                        |
+| [/content/detail/R-HSA-446193](https://beta.reactome.org/content/detail/R-HSA-446193)   | The Glycobiology figure appears. Figures were broken everywhere on this site until 21 Aug                                                                                                                                                                                                                               |
+| [/content/detail/R-HSA-109606](https://beta.reactome.org/content/detail/R-HSA-109606)   | The diagram thumbnail is in the new style — the same picture its download gives you                                                                                                                                                                                                                                     |
+| [/community/icon-lib](https://beta.reactome.org/community/icon-lib)                     | Icons all draw (they come from the release bucket now, not the dev machine)                                                                                                                                                                                                                                             |
+| [PathwayBrowser → Tissue](https://beta.reactome.org/PathwayBrowser?analysisTab=tissue)  | Pick a tissue, move it across, Next: an overlay appears. This could not run at all before                                                                                                                                                                                                                               |
 
 Not bugs, so as not to waste your time:
 
@@ -240,5 +245,10 @@ notice:
   does not match the source word for word. It does not write prose.
 - **Figures**: `~/publish-figures.sh add` on the dev host publishes new figures to
   the bucket. Needs sudo; the credentials belong to `s3bot`.
+- **Verifying a release**: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`
+  runs the checks that only a finished release can answer — every top-level pathway
+  draws, every download link resolves, the version and news and statistics match
+  what is being served. It also runs nightly against beta, so a data problem is
+  usually found by a machine before anyone reads this document.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.
