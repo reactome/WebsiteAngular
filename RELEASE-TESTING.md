@@ -32,8 +32,8 @@ What the curators need to be **told** rather than tested lives next door in
 `FOR-CURATORS.md`: what changed since their last pass, what is waiting on a
 decision of theirs, and the limits worth stating out loud.
 
-**Where it stands: 49 automated, 8 that need a person, none still to write, 3
-not built.** The third number is the one to drive down, and it is zero for the
+**Where it stands: 49 automated, 7 that need a person, 1 still to write, 3 not
+built.** The third number is the one to drive down, and it is zero for the
 first time; the second is the honest floor; the fourth is a decision, not work.
 
 > Where the old document says "clear your browser cache before testing", note that
@@ -42,13 +42,13 @@ first time; the second is the honest floor; the fourth is a decision, not work.
 
 ## Front page
 
-| Item                                                                                  | Status                                                                                                                                                                                               |
-| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Version number and release date at the bottom of the homepage                         | **auto** — `content-currency.spec.ts` compares it against `/data/database/version`                                                                                                                   |
-| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards, and the institute logos: each has an absolute destination that answers, and each logo really draws                                          |
-| News is current, and the links inside the latest news item work                       | **auto** — `content-currency.spec.ts` checks the newest announcement against the release being served. _Announcements are imported verbatim by `npm run import:news`; nothing generates their prose_ |
-| Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `release-checklist.spec.ts`                                                                                                                                                               |
-| A newly added pathway, reaction and complex render; and an old one                    | **human** — "newly added" changes every release and comes from the project calendar                                                                                                                  |
+| Item                                                                                  | Status                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Version number and release date at the bottom of the homepage                         | **auto** — `content-currency.spec.ts` compares it against `/data/database/version`                                                                                                                                                                                                                                 |
+| Every button links where it says, including the participating-institute links         | **auto** — `homepage.spec.ts` covers the shortcut cards, and the institute logos: each has an absolute destination that answers, and each logo really draws                                                                                                                                                        |
+| News is current, and the links inside the latest news item work                       | **auto** — `content-currency.spec.ts` checks the newest announcement against the release being served. _Announcements are imported verbatim by `npm run import:news`; nothing generates their prose_                                                                                                               |
+| Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `release-checklist.spec.ts`                                                                                                                                                                                                                                                                             |
+| A newly added pathway, reaction and complex render; and an old one                    | **gap** — the checklist means "something added in _this_ release", which a test cannot hardcode. It does not need to: the release announcement we import names the new and updated pathways as links, so the release suite could read that list and load each one. Until then a person picks from the announcement |
 
 ## Navigation bar
 

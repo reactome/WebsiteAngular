@@ -148,8 +148,10 @@ notice:
 - **Sub-pathway hover, and the animated SVG timeline.** Both are canvas
   behaviours with nothing to assert but pixels, and a screenshot comparison there
   fails on font rendering rather than on behaviour.
-- **"A newly added pathway renders"** changes every release and comes from the
-  project calendar, not from the code.
+- **"Check that a pathway added in this release renders."** Which pathways are new
+  changes every release, so no test can name them in advance. For now someone
+  picks one from the release announcement — which is also how we could automate
+  it, since that announcement lists the new and updated pathways as links.
 
 ---
 
