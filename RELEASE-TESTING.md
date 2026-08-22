@@ -32,8 +32,7 @@ What the curators need to be **told** rather than tested lives next door in
 `FOR-CURATORS.md`: what changed since their last pass, what is waiting on a
 decision of theirs, and the limits worth stating out loud.
 
-**Where it stands: 46 automated, 8 that need a person, 1 still to write, 3 not
-built.** The third number is the one to drive down; the second is the honest
+**Where it stands: 47 automated, 8 that need a person, 1 still to write, 2 not built.** The third number is the one to drive down; the second is the honest
 floor -- each of those says why a machine cannot judge it; the fourth is a
 decision for the curators, not work for us.
 
@@ -145,12 +144,12 @@ rows, the rows are right: this line has drifted twice from being edited by hand.
 
 ## Post-release
 
-| Item                               | Status                                                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------------------------- |
-| New EHLDs present on the live site | **human** — depends on the release                                                       |
-| Editorial calendar visible         | **human**                                                                                |
-| `/tag/release` page visible        | **missing** — it 404s with "some pages have not moved across from the previous site yet" |
-| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report                          |
+| Item                               | Status                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New EHLDs present on the live site | **human** — depends on the release                                                                                                                                                                                                                                                                                                                                                              |
+| Editorial calendar visible         | **human**                                                                                                                                                                                                                                                                                                                                                                                       |
+| `/tag/release` page visible        | **auto** — `e2e/release/content-currency.spec.ts` covers the listing that replaced it. _Production's `/tag/release` is a tag page listing the 21 release announcements; ours lists all 39 of them at `/about/news`, so the content is not missing. What is missing is that one URL: an inbound link or bookmark to `/tag/release` 404s here, which a redirect would fix if anyone relies on it_ |
+| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report                                                                                                                                                                                                                                                                                                                                 |
 
 ## What a test cannot do
 

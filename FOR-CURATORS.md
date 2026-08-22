@@ -60,8 +60,11 @@ resolved first — BCL2 has been seen with both `5JSN` and `AF-P10415-F1`. If an
 experimental structure should always win when one exists, that is a small change;
 we did not want to decide it for you.
 
-**`/tag/release` was not ported.** It 404s with "some pages have not moved across
-from the previous site yet". Worth keeping, or worth dropping?
+**DisGeNet is not being ported.** Its overlay service returns 404 on both dev and
+production — DisGeNET moved to a commercial licence — so the button in the
+interactor overlay list could only ever fail. It has been removed from that list
+rather than left there to be clicked. The service-side plumbing is still in the
+code if the decision is ever revisited.
 
 ---
 
@@ -135,7 +138,10 @@ Not bugs, so as not to waste your time:
 - **Ten or eleven figures are still missing** — the list is in section 1. They are
   broken on reactome.org too.
 - **`/admin` returns 403.** Deliberate: the content editor is not exposed publicly.
-- **`/tag/release` is a 404.** Not ported; a decision is in section 1.
+- **`/tag/release` 404s, and that is not a missing page.** Production's version is
+  a tag listing of the 21 release announcements; `/about/news` here lists all 39.
+  Only the old URL is gone, and a redirect would cover that if anything links to
+  it.
 - **The first GIF or PowerPoint download of a given diagram can take a while.**
   It is rendered on demand and then cached; the second is immediate.
 
