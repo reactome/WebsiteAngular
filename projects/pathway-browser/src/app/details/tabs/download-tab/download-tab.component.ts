@@ -181,14 +181,12 @@ export class DownloadTabComponent {
       url: computed(() => `${CONTENT_SERVICE}/exporter/event/${this.finalEventId()}.sbgn`),
     },
     {
-      name: 'BioPAX2',
-      url: computed(() => `${RESTFUL_API}/biopaxExporter/Level2/${this.biopaxId()}`),
-      fileName: computed(() => `${this.biopaxId()}.xml`),
-    },
-    {
-      name: 'BioPAX3',
+      // One BioPAX, Level 3: Level 2 has been superseded for years, and the
+      // detail page's toolbar offers exactly this -- two panels disagreeing about
+      // what the site exports is worse than either choice.
+      name: 'BioPAX',
       url: computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.biopaxId()}`),
-      fileName: computed(() => `${this.biopaxId()}.xml`),
+      fileName: computed(() => `${this.biopaxId()}.owl`),
     },
     {
       name: 'PDF',
