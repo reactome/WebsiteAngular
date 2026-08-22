@@ -260,7 +260,7 @@
                 <cr-compare-form (close)="dropdown.set(null)" />
               </div>
               @let deltaSignalStatus = dropdown() === 'deltasignal' ? 'open' : 'closed';
-              <div class="dropdown" [class.open]="dropdown() === 'deltasignal'">
+              <div class="dropdown deltasignal-dropdown" [class.open]="dropdown() === 'deltasignal'">
                 <cr-deltasignal-panel
                   [pathwayId]="normalPathway()?.stId || pathwayId()"
                   [selectedStId]="state.select()"

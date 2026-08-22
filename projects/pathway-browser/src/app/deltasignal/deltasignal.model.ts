@@ -13,7 +13,7 @@ interface DeltaSignalNode {
   set_id: string | null;
 }
 
-interface DeltaSignalEdge {
+export interface DeltaSignalEdge {
   parent_uuid: string;
   child_uuid: string;
   is_and: boolean;

@@ -14,13 +14,22 @@ import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DeltaSignalService } from './deltasignal.service';
+import { DeltaSignalLogicGraphComponent } from './deltasignal-logic-graph.component';
 
 @Component({
   selector: 'cr-deltasignal-panel',
   templateUrl: './deltasignal-panel.component.html',
   styleUrl: './deltasignal-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, MatButton, MatIconButton, MatIcon, MatProgressSpinner, MatTooltip],
+  imports: [
+    DecimalPipe,
+    DeltaSignalLogicGraphComponent,
+    MatButton,
+    MatIconButton,
+    MatIcon,
+    MatProgressSpinner,
+    MatTooltip,
+  ],
 })
 export class DeltaSignalPanelComponent {
   readonly service = inject(DeltaSignalService);
@@ -31,6 +40,7 @@ export class DeltaSignalPanelComponent {
   readonly dismissed = output<void>();
 
   readonly activity = signal(0);
+  readonly resultView = signal<'diagram' | 'logic'>('diagram');
   readonly selectedNodes = computed(() => this.service.matchingNodes(this.selectedStId()));
   readonly selectedName = computed(() =>
     [...new Set(this.selectedNodes().map((node) => node.name))].join(' / ')

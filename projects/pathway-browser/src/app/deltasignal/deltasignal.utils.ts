@@ -1,4 +1,5 @@
 import {
+  DeltaSignalEdge,
   DeltaSignalNetwork,
   DeltaSignalPerturbation,
   DeltaSignalResultRow,
@@ -6,6 +7,16 @@ import {
 } from './deltasignal.model';
 
 const toDisplayActivity = (activity: number) => activity * 100;
+
+export interface DeltaSignalLogicGraphNode extends DeltaSignalResultRow {
+  entityType: string;
+  mappingMultiplicity: number;
+}
+
+export interface DeltaSignalLogicGraph {
+  nodes: DeltaSignalLogicGraphNode[];
+  edges: DeltaSignalEdge[];
+}
 
 export function buildObservations(
   perturbations: Iterable<DeltaSignalPerturbation>
@@ -81,4 +92,48 @@ export function aggregateRowsByReactomeId(rows: DeltaSignalResultRow[]): DeltaSi
       perturbed: members.some((member) => member.perturbed),
     }))
     .sort((a, b) => Math.abs(b.change) - Math.abs(a.change) || b.influence - a.influence);
+}
+
+/**
+ * Keep the largest logic-node responses as separate UUIDs, including every
+ * perturbed node even when it falls outside the display limit. Edges are only
+ * retained when both endpoints are visible, so the graph never implies a
+ * connection through a node that has been omitted.
+ */
+export function buildLogicGraph(
+  network: DeltaSignalNetwork | null,
+  rows: DeltaSignalResultRow[],
+  limit = 40
+): DeltaSignalLogicGraph {
+  if (!network || !rows.length || limit < 1) return { nodes: [], edges: [] };
+
+  const ranked = [...rows].sort(
+    (a, b) => Math.abs(b.change) - Math.abs(a.change) || b.influence - a.influence
+  );
+  const selected = ranked.slice(0, limit);
+  const selectedIds = new Set(selected.map((row) => row.uuid));
+  for (const row of ranked) {
+    if (row.perturbed && !selectedIds.has(row.uuid)) {
+      selected.push(row);
+      selectedIds.add(row.uuid);
+    }
+  }
+
+  const networkNodes = new Map(network.nodes.map((node) => [node.uuid, node]));
+  const multiplicities = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.reactomeId) continue;
+    multiplicities.set(row.reactomeId, (multiplicities.get(row.reactomeId) ?? 0) + 1);
+  }
+
+  return {
+    nodes: selected.map((row) => ({
+      ...row,
+      entityType: networkNodes.get(row.uuid)?.entity_type ?? 'unknown',
+      mappingMultiplicity: multiplicities.get(row.reactomeId) ?? 1,
+    })),
+    edges: network.edges.filter(
+      (edge) => selectedIds.has(edge.parent_uuid) && selectedIds.has(edge.child_uuid)
+    ),
+  };
 }

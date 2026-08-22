@@ -2,6 +2,7 @@
   display: block;
   height: 100%;
   overflow: auto;
+  container-type: inline-size;
   color: var(--on-surface);
   background:
     radial-gradient(
@@ -276,6 +277,37 @@ main {
   }
 }
 
+.view-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 520px);
+  margin: 18px 0 4px;
+  padding: 3px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  background: var(--surface-container-high);
+
+  button {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 5px;
+    color: var(--on-surface-variant);
+    background: transparent;
+    cursor: pointer;
+    font: var(--mat-sys-label-large);
+
+    &.active {
+      color: var(--on-primary-container);
+      background: var(--primary-container);
+    }
+  }
+}
+
 .legend {
   display: grid;
   grid-template-columns: auto minmax(120px, 1fr) auto;
@@ -386,6 +418,17 @@ main {
 
   header {
     padding-inline: 20px;
+  }
+}
+
+@container (max-width: 760px) {
+  main {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .results {
+    grid-column: auto;
   }
 }
 

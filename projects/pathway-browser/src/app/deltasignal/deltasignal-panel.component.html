@@ -172,38 +172,65 @@
           <span>{{ result.iterations }} iterations · {{ result.solve_time | number: '1.3-3' }} s</span>
         </div>
 
-        <div class="legend">
-          <span>Lower than baseline</span>
-          <div class="gradient"></div>
-          <span>Higher than baseline</span>
+        <div class="view-toggle" role="tablist" aria-label="DeltaSignal result view">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="resultView() === 'diagram'"
+            [class.active]="resultView() === 'diagram'"
+            (click)="resultView.set('diagram')"
+          >
+            <mat-icon>account_tree</mat-icon>
+            Reactome diagram
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="resultView() === 'logic'"
+            [class.active]="resultView() === 'logic'"
+            (click)="resultView.set('logic')"
+          >
+            <mat-icon>hub</mat-icon>
+            Logic nodes &amp; edges
+          </button>
         </div>
-        <p class="method-note">
-          Diagram colours show change from each node's own baseline. When several logic nodes map to one Reactome
-          entity, all values appear as a gradient.
-        </p>
 
-        <div class="result-table" role="table" aria-label="DeltaSignal predictions">
-          <div class="result-row header" role="row">
-            <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
+        @if (resultView() === 'diagram') {
+          <div class="legend">
+            <span>Lower than baseline</span>
+            <div class="gradient"></div>
+            <span>Higher than baseline</span>
           </div>
-          @for (row of visibleRows(); track row.uuid) {
-            <div class="result-row" role="row" [class.perturbed]="row.perturbed">
-              <span class="entity">
-                <strong>{{ row.name }}</strong>
-                <small>{{ row.reactomeId }}</small>
-              </span>
-              <span>{{ row.activity | number: '1.1-1' }}×</span>
-              <span [class.positive]="row.change > 0" [class.negative]="row.change < 0">
-                {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
-              </span>
-              <span>{{ row.influence | number: '1.2-2' }}</span>
-            </div>
-          }
-        </div>
-        @if (service.entityRows().length > visibleRows().length) {
-          <p class="truncated">
-            Showing the 40 largest predicted changes across {{ service.entityRows().length }} Reactome entities.
+          <p class="method-note">
+            Diagram colours show change from each node's own baseline. When several logic nodes map to one Reactome
+            entity, all values appear as a gradient. The pathway diagram remains interactive beside this panel.
           </p>
+
+          <div class="result-table" role="table" aria-label="DeltaSignal predictions">
+            <div class="result-row header" role="row">
+              <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
+            </div>
+            @for (row of visibleRows(); track row.uuid) {
+              <div class="result-row" role="row" [class.perturbed]="row.perturbed">
+                <span class="entity">
+                  <strong>{{ row.name }}</strong>
+                  <small>{{ row.reactomeId }}</small>
+                </span>
+                <span>{{ row.activity | number: '1.1-1' }}×</span>
+                <span [class.positive]="row.change > 0" [class.negative]="row.change < 0">
+                  {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
+                </span>
+                <span>{{ row.influence | number: '1.2-2' }}</span>
+              </div>
+            }
+          </div>
+          @if (service.entityRows().length > visibleRows().length) {
+            <p class="truncated">
+              Showing the 40 largest predicted changes across {{ service.entityRows().length }} Reactome entities.
+            </p>
+          }
+        } @else {
+          <cr-deltasignal-logic-graph />
         }
       </section>
     }

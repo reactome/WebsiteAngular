@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateRowsByReactomeId,
+  buildLogicGraph,
   buildObservations,
   groupChangesByReactomeId,
   resultRows,
@@ -15,7 +16,16 @@ const network: DeltaSignalNetwork = {
   status: 'success',
   message: 'ok',
   network_id: 'pw:test',
-  edges: [],
+  edges: [
+    {
+      parent_uuid: 'a',
+      child_uuid: 'b',
+      is_and: true,
+      is_positive: false,
+      stoichiometry: 1,
+      edge_type: 'input',
+    },
+  ],
   pathways: [],
   nodes: [
     {
@@ -87,5 +97,14 @@ describe('DeltaSignal result mapping', () => {
       influence: 5,
       perturbed: true,
     });
+  });
+
+  it('keeps logic UUIDs separate and retains edges between visible nodes', () => {
+    const graph = buildLogicGraph(network, resultRows(network, result, [perturbation]), 1);
+
+    // Both perturbed UUIDs remain visible even though the ordinary limit is one.
+    expect(graph.nodes.map((node) => node.uuid)).toEqual(['a', 'b']);
+    expect(graph.nodes.every((node) => node.mappingMultiplicity === 2)).toBe(true);
+    expect(graph.edges).toEqual([network.edges[0]]);
   });
 });
