@@ -29,8 +29,9 @@ in a code-verification context: endpoints the target did not have, data it could
 not serve, and 29 diagram loads on a two-core runner.
 
 What the curators need to be **told** rather than tested lives next door in
-`FOR-CURATORS.md`: what changed since their last pass, what is waiting on a
-decision of theirs, and the limits worth stating out loud.
+`CURATOR-REPORT.md`: what to re-check on beta, what changed since their last
+pass, what is waiting on a decision of theirs, and the limits worth stating out
+loud.
 
 **Where it stands: 47 automated, 8 that need a person, 1 still to write, 2 not built.** The third number is the one to drive down; the second is the honest
 floor -- each of those says why a machine cannot judge it; the fourth is a
