@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of, timeout } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
 import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
+import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 
 export interface ReactomeStats {
   pathways: number;
@@ -29,10 +30,26 @@ export class StatsService {
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
-   * Get the current Reactome version from APP_CONFIG
+   * Get the current Reactome version from APP_CONFIG.
+   *
+   * This is the release number used as a path segment when building download
+   * URLs, so it stays numeric even on the curator site: the files under
+   * download.reactome.org are release artefacts regardless of which front end
+   * links to them. Use `getVersionLabel()` for anything user-visible.
    */
   async getVersion(): Promise<string> {
     return (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
+  }
+
+  /**
+   * Display text for the current database version, already prefixed.
+   *
+   * The curation graph is not a release and has no release number to show, so
+   * it is named instead of numbered.
+   */
+  getVersionLabel(): string {
+    if (IS_CURATOR) return 'curator';
+    return `V${this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber}`;
   }
 
   /**

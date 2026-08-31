@@ -14,7 +14,11 @@ export const environment = {
   s3: selectedEnv.s3,
   gsaServer: selectedEnv.gsaServer,
   gtagId: selectedEnv.gtagId,
-  preferS3: selectedEnv.preferS3,
+  // Not inherited from the selected environment: that resolves to `production`
+  // here, which prefers S3. S3 diagram paths are keyed on a released database
+  // version and the curation graph has none (see environment.curator-local.ts),
+  // so diagrams have to come from the content service.
+  preferS3: false,
 };
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served

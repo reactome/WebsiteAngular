@@ -11,8 +11,11 @@ import { rxResource } from '@angular/core/rxjs-interop';
 export class TissueExperimentService {
   private http = inject(HttpClient);
 
+  // Disabled: /ExperimentDigester is not deployed on the curator host and the
+  // tissue experiment list is unused. Returning undefined params keeps the
+  // resource idle so no request is sent.
   summaries = rxResource({
-    params: () => ({}),
+    params: () => undefined,
     stream: () => this.getExperimentsSummary(),
   });
 

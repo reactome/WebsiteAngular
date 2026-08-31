@@ -12,18 +12,20 @@
       </ng-template>
       <cr-qualitative-analysis (close)="close.emit($event)" [status]="status()" />
     </mat-tab>
-    <mat-tab>
-      <ng-template mat-tab-label>
-        <div class="analysis-type-header">
-          <div class="analysis-type-icon" [innerHTML]="quantitative | async | safe: 'html' : true"></div>
-          <div class="analysis-type-label">
-            <u>Quantitative</u>
-            <span class="normal">Pathway Enrichment</span>
+    @if (!isCurator) {
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div class="analysis-type-header">
+            <div class="analysis-type-icon" [innerHTML]="quantitative | async | safe: 'html' : true"></div>
+            <div class="analysis-type-label">
+              <u>Quantitative</u>
+              <span class="normal">Pathway Enrichment</span>
+            </div>
           </div>
-        </div>
-      </ng-template>
-      <cr-quantitative-analysis (close)="close.emit($event)" [status]="status()" />
-    </mat-tab>
+        </ng-template>
+        <cr-quantitative-analysis (close)="close.emit($event)" [status]="status()" />
+      </mat-tab>
+    }
     <mat-tab>
       <ng-template mat-tab-label>
         <div class="analysis-type-header">

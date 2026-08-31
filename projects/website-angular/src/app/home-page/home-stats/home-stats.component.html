@@ -1,6 +1,7 @@
 <h1 class="stat-header">
-  Version {{ version }} Released on
+  @if (isCurator) { Version {{ version }} } @else { Version {{ version }} Released on
   {{ releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' }) }}
+  }
 </h1>
 <app-carousel class="stats-container">
   <div class="stat-item">

@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angu
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
+import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import {
   TOC_ITEMS,
   SERVICE_CARDS,
@@ -38,7 +39,15 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
 
+  // The curator badge names the database rather than claiming a release, since
+  // the downloads it links to are release artefacts either way.
+  readonly isCurator = IS_CURATOR;
+
+  // Release number, used only as a path segment for download URLs.
   version = '';
+  // What the badge shows. Separate from `version` because the curator site has
+  // no release number to display, but still links to release artefacts.
+  versionLabel = '';
   baseUrl = '';
 
   // Data
@@ -82,6 +91,7 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
 
   private async load() {
     this.version = await this.stats.getVersion();
+    this.versionLabel = this.stats.getVersionLabel();
     this.baseUrl = await this.stats.getDownloadBaseUrl();
 
     if (isPlatformBrowser(this.platformId)) {

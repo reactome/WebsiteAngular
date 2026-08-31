@@ -3,7 +3,7 @@ import { MatIcon } from '@angular/material/icon';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { StatsService } from '../../../services/stats.service';
 import { APP_CONFIG } from '../../../config/config'; // NEW import
-import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
+import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 
 interface Stats {
   human_pathways: number;
@@ -23,7 +23,10 @@ interface Stats {
 })
 export class HomeStatsComponent implements OnInit {
   private statsService = inject(StatsService);
-  private generalService = inject(GeneralService);
+
+  // The curation graph is not a release, so the heading names the database
+  // instead of announcing a release date.
+  readonly isCurator = IS_CURATOR;
 
   version: string = '';
   releaseDate: Date = new Date();
@@ -41,8 +44,7 @@ export class HomeStatsComponent implements OnInit {
   }
 
   getVersionAndDate() {
-    this.version =
-      'V' + (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
+    this.version = this.statsService.getVersionLabel();
     this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }
