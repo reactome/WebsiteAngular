@@ -57,7 +57,7 @@
                   <span class="node-name">{{ node.className }}</span>
                 </button>
                 <button class="node-count" (click)="onTreeNodeCountClick(node.className, $event)" title="Show entries">
-                  [{{ node.count }}]
+                  [{{ getNodeCount(node.className) }}]
                 </button>
               </div>
             }
@@ -69,7 +69,7 @@
           @if (selectedClass) {
             <div class="class-header">
               <h1>{{ selectedClass }}</h1>
-              <span class="instance-count">{{ entryCount}} instances</span>
+              <span class="instance-count">{{ entryCount }} instances</span>
             </div>
 
             <div class="tab-bar">
