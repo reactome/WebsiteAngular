@@ -11,6 +11,7 @@ import {
   inject,
 } from '@angular/core';
 import { AnalysisService } from '../../../services/analysis.service';
+import { RevealDirective } from '../../../utils/reveal.directive';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import type { Analysis } from '../../../model/analysis.model';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -43,6 +44,7 @@ import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
   selector: 'cr-result-tab',
   imports: [
     MatTableModule,
+    RevealDirective,
     MatSortModule,
     MatPaginatorModule,
     DecimalPipe,
@@ -86,6 +88,31 @@ export class ResultTabComponent {
   trackBy = (index: number, pathway: Analysis.Pathway) => pathway.stId + '-' + index;
 
   hasExpression = computed(() => this.analysis.result()?.expression?.min !== undefined);
+
+  /**
+   * Expression of the entity currently selected in the diagram, across every
+   * sample.
+   *
+   * The pathway table answers "which pathways came up"; this answers "and what
+   * did the thing I just clicked do", which otherwise meant stepping through
+   * the samples one at a time and reading the value off the diagram.
+   *
+   * undefined when nothing is selected, when the selection is a complex or a
+   * set (whose own identifier means nothing to an analysis), or when the
+   * molecule was not in the submitted data.
+   */
+  selectedExpression = computed<{ name: string; values: number[] } | undefined>(() => {
+    const element = this.data.selectedElement();
+    if (!element || this.analysis.samples().length === 0) return undefined;
+    const reference = (element as Record<string, unknown>)['referenceEntity'] as
+      { identifier?: string; variantIdentifier?: string } | undefined;
+    const values = this.analysis.expressionFor([
+      (element as Record<string, unknown>)['identifier'] as string | undefined,
+      reference?.identifier,
+      reference?.variantIdentifier,
+    ]);
+    return values ? { name: element.displayName, values } : undefined;
+  });
   minExpression = computed(() =>
     this.hasExpression() ? Math.floor(this.analysis.result()!.expression.min) : 0
   );
@@ -306,14 +333,9 @@ export class ResultTabComponent {
           pageSize,
           pageIndex,
         });
-
-        setTimeout(() => {
-          document.getElementById(`pathway-${stId}-row`)?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-            inline: 'start',
-          });
-        });
+        // The row brings itself into view once it is on the page -- see
+        // RevealDirective in the template. This effect only has to get the
+        // paginator to the page the row is on.
       });
     });
 

@@ -15,6 +15,8 @@ import {
 } from '@angular/material/table';
 import { MatAnchor } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { DecimalPipe } from '@angular/common';
 
 @Component({
   selector: 'cr-interactors-table',
@@ -34,6 +36,8 @@ import { MatIcon } from '@angular/material/icon';
     MatRowDef,
     MatAnchor,
     MatIcon,
+    MatTooltip,
+    DecimalPipe,
   ],
 })
 export class InteractorsTableComponent {

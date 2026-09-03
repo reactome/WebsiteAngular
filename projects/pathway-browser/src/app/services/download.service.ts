@@ -26,6 +26,17 @@ export interface DownloadOptions {
   transitionTime: number;
 }
 
+/**
+ * Whether an exported diagram carries the sub-pathway tints and their labels.
+ *
+ * They are navigational aids: useful on screen, and noise in a figure, where
+ * they compete with the biology for attention. One preference rather than a
+ * second button beside every format -- it is a property of the picture, not a
+ * different kind of file -- and it travels to the headless renderer as a
+ * parameter.
+ */
+export const includeSubpathways = signal(true);
+
 export const defaultDownloadOptions: DownloadOptions = {
   animate: false,
   includeLegend: true,

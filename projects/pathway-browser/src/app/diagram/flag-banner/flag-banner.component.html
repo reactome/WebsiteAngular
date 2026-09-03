@@ -1,0 +1,15 @@
+@if (state.flag().length) {
+  <div class="flag-banner">
+    <mat-icon fontSet="symbols" class="flag-banner-icon">flag</mat-icon>
+    <span class="flag-banner-label">Flagged: {{ summary() }}</span>
+    <button
+      mat-icon-button
+      class="flag-banner-clear"
+      (click)="clear()"
+      matTooltip="Clear flagged elements"
+      aria-label="Clear flagged elements"
+    >
+      <mat-icon fontSet="symbols">close</mat-icon>
+    </button>
+  </div>
+}

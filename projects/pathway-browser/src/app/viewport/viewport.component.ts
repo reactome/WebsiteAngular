@@ -51,7 +51,6 @@ import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { CompareFormComponent } from './compare-form/compare-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
-import { RouterLink } from '@angular/router';
 
 const DETAIL_MIN_HEIGHT = 0;
 
@@ -83,7 +82,6 @@ const DROPDOWN_DURATION = 500;
     MatIconButton,
     MatRadioGroup,
     MatRadioButton,
-    RouterLink,
     DiagramComponent,
     EhldComponent,
     ReacfoamComponent,
@@ -126,10 +124,36 @@ export class ViewportComponent implements AfterViewInit {
   });
   title = computed(() => this.dataState.currentPathway()?.displayName);
 
+  /**
+   * Switch the diagram to another pathway for comparison.
+   *
+   * Goes through navigateTo so the PathwayBrowser base is resolved: a plain
+   * routerLink of ['/', stId] is absolute against the host, which dropped the
+   * /PathwayBrowser prefix and navigated out of the app entirely. Clearing
+   * `select` because a selection from the previous diagram means nothing in
+   * the new one.
+   */
+  compareWith(stId: string) {
+    void this.state.navigateTo(stId, {
+      queryParams: { select: null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  /**
+   * Disease variants that can actually be compared against this pathway.
+   *
+   * Comparison is a feature of the cytoscape diagram, and a pathway with an
+   * enhanced illustration renders the illustration instead -- there is no
+   * toggle back to the diagram -- so choosing one just navigated to a picture
+   * with no comparison happening (#147). They are left out of the menu rather
+   * than offered and then quietly doing nothing; if that empties the list the
+   * button disables itself.
+   */
   diseasePathways = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (pathway && isPathway(pathway)) {
-      return pathway.diseasePathways || [];
+      return (pathway.diseasePathways || []).filter((diseasePathway) => !diseasePathway.hasEHLD);
     }
     return [] as Pathway[];
   });

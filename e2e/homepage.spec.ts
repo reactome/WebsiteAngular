@@ -14,6 +14,7 @@ const SHORTCUTS = [
   { name: 'Analysis Tools', href: '/PathwayBrowser?analysisTab=qualitative' },
   { name: 'AI Chatbot', href: '/chat' },
   { name: 'ReactomeFIViz', href: '/documentation/userguide/reactome-fiviz' },
+  { name: 'IDG', href: '/idg' },
   { name: 'Documentation', href: '/documentation' },
 ];
 
@@ -83,5 +84,38 @@ test.describe('Homepage', () => {
     await expect(page.getByText('Qualitative Entity Enrichment Analysis')).toBeVisible({
       timeout: 30_000,
     });
+  });
+
+  // The participating institutes, which are the one set of homepage links that
+  // leave the site. Their hrefs come from the nav config, so an empty or
+  // mistyped entry renders a logo that goes nowhere and looks fine.
+  test('every participating institute logo links out', async ({ page, request }) => {
+    await page.goto('/');
+    const logos = page.locator('app-home-why-reactome a:has(img.sponsor-logo)');
+    await expect(logos.first()).toBeVisible({ timeout: 60_000 });
+    expect(await logos.count(), 'institute logos').toBeGreaterThan(2);
+
+    for (const logo of await logos.all()) {
+      const href = await logo.getAttribute('href');
+      expect(href, 'an institute logo with no destination').toMatch(/^https?:\/\//);
+
+      // And the destination answers -- but not in CI, where reaching four
+      // university websites would make this suite depend on their uptime and on
+      // the runner's egress. The href assertion above is the part that catches
+      // the failure we own: an empty or mistyped entry in the nav config.
+      // GET rather than HEAD: several university sites refuse HEAD outright.
+      if (!process.env['CI'] && href) {
+        const response = await request.get(href, { maxRedirects: 5 }).catch(() => null);
+        expect(response?.status() ?? 0, `${href} answered`).toBeLessThan(400);
+      }
+
+      // The logo itself is drawn, not a broken asset with alt text.
+      const drawn = await logo
+        .locator('img')
+        .evaluate(
+          (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0
+        );
+      expect(drawn, `${href} logo drew`).toBe(true);
+    }
   });
 });

@@ -107,7 +107,7 @@
     <div class="">
       @if (getFacetItems(allFacets.speciesFacet); as items) {
         @if (items.length) {
-          <app-dropdown-toggle name="Species" (toggleEvent)="toggleAdvancedFacet('species')">
+          <app-dropdown-toggle name="Species">
             @for (item of items; track item.name) {
               <label class="facet-option">
                 <input

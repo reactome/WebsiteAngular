@@ -7,11 +7,19 @@ import { FormsModule } from '@angular/forms';
 import { NavOptionsService } from '../../services/nav-options.service';
 import { NavLink, NavOption, linkPath, linkQueryParams } from '../../types/link';
 import { DarkService } from '../../../../pathway-browser/src/app/services/dark.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   standalone: true,
   selector: 'app-navigation-bar',
-  imports: [CommonModule, RouterModule, MatIconModule, MatSlideToggleModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatIconModule,
+    MatSlideToggleModule,
+    FormsModule,
+    MatTooltipModule,
+  ],
   templateUrl: './navigation-bar.component.html',
   styleUrl: './navigation-bar.component.scss',
 })

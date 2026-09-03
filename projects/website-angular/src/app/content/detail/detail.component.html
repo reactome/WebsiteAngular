@@ -23,6 +23,11 @@
   } @else if (obj()) {
     <div class="detail-container">
       <cr-description-tab [obj]="obj()!" [showLocations]="true">
+        <!-- A reaction's downloads go into the reaction diagram section; every
+             other event keeps them with the pathway figure. Both copies are
+             projected because projected content cannot sit inside a @if, and
+             each renders only where it belongs. -->
+        <app-detail-download-bar figureTools placement="reaction" [obj]="obj()!" />
         <app-detail-download-bar [obj]="obj()!" />
         <app-detail-diagram [obj]="obj()!" />
       </cr-description-tab>

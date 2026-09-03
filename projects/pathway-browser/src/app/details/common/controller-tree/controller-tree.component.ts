@@ -10,13 +10,21 @@ import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
+import { GaEventDirective } from '@hakimio/ngx-google-analytics';
 
 @Component({
   selector: 'cr-controller-tree',
   templateUrl: './controller-tree.component.html',
   styleUrl: './controller-tree.component.scss',
   standalone: true,
-  imports: [ObjectTreeComponent, MatTooltip, MatIcon, MatIconButton, MatPaginator],
+  imports: [
+    ObjectTreeComponent,
+    MatTooltip,
+    MatIcon,
+    MatIconButton,
+    MatPaginator,
+    GaEventDirective,
+  ],
 })
 export class ControllerTreeComponent<
   E extends DatabaseObject & InDepth,

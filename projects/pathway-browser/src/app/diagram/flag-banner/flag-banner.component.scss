@@ -1,0 +1,39 @@
+// Overlays the view it sits in, top-centre, only while something is flagged.
+:host {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.flag-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(420px, 70vw);
+  padding: 2px 2px 2px 12px;
+
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  box-shadow: var(--mat-sys-level1);
+  font: var(--mat-sys-body-medium);
+  color: var(--on-surface);
+}
+
+.flag-banner-icon {
+  color: var(--primary);
+  flex: none;
+}
+
+.flag-banner-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flag-banner-clear {
+  flex: none;
+}

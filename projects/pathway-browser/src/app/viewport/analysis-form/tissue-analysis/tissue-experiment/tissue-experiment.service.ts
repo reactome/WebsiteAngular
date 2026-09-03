@@ -2,7 +2,7 @@ import { Injectable, ResourceRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import type { TissueExperiment } from './tissue-experiment.model';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../../environments/environment';
+import { DIGESTER_FOR_BACKEND, environment } from '../../../../../environments/environment';
 import { rxResource } from '@angular/core/rxjs-interop';
 
 @Injectable({
@@ -23,11 +23,21 @@ export class TissueExperimentService {
     return this.http.get<TissueExperiment.Summaries>(`/ExperimentDigester/experiments/summaries`);
   }
 
+  /**
+   * Where the analysis service should fetch this sample from.
+   *
+   * Not a URL for the browser: it is posted to the analysis service, which
+   * downloads it itself. So it has to resolve from inside the backend, and the
+   * hardcoded https://127.0.0.1/... it used to return does not -- the analysis
+   * service answered 422 for every tissue analysis, because nothing terminates
+   * TLS for that name.
+   */
   getSampleURL(
     id: number,
     { omitNulls, columns }: { omitNulls: boolean; columns: number[] }
   ): string {
-    return `https://127.0.0.1/ExperimentDigester/experiments/${id}/sample?omitNulls=${omitNulls}&${columns.map((c) => `included=${c}`).join('&')}`;
+    const included = columns.map((column) => `included=${column}`).join('&');
+    return `${DIGESTER_FOR_BACKEND}/experiments/${id}/sample?omitNulls=${omitNulls}&${included}`;
   }
 
   /**

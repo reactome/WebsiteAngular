@@ -9,6 +9,14 @@ export const routes: Routes = [
   },
 
   /* Non - CMS Pages Below this Line */
+  // Illuminating the Druggable Genome: which Reactome pathways a protein is
+  // associated with, from the IDG portal's interaction data.
+  {
+    path: 'idg',
+    loadComponent: () => import('./idg/idg-page.component').then((m) => m.IdgPageComponent),
+    pathMatch: 'full',
+  },
+
   //News Pages
   {
     path: 'about/news',

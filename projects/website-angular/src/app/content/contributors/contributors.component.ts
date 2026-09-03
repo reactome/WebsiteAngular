@@ -180,7 +180,9 @@ export class ContributorsComponent implements OnInit, OnDestroy {
     }
   }
 
-  personUrl(person: { dbId: number; orcidId?: string }): string {
+  // orcidId is nullable on SimplePerson, and the `||` below already treats
+  // null and undefined alike.
+  personUrl(person: { dbId: number; orcidId?: string | null }): string {
     // Prefer the ORCID in the URL (matches production reactome.org's
     // /content/detail/person/<orcid> format); fall back to dbId when a
     // person has no ORCID recorded. The /content/detail/person/:id

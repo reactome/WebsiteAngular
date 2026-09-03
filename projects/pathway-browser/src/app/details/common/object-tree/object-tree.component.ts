@@ -47,6 +47,8 @@ import { MatIconButton } from '@angular/material/button';
 import { Species } from '../../../model/graph/species.model';
 import { ObjectTreeDetailsComponent } from './object-details/object-tree-details.component';
 import { CONTENT_DETAIL } from '../../../../environments/environment';
+import { AnalysisService } from '../../../services/analysis.service';
+import { ExpressionTagComponent } from '../../tabs/result-tab/expression-tag/expression-tag.component';
 
 type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
 
@@ -54,6 +56,7 @@ type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
   selector: 'cr-object-tree',
   templateUrl: './object-tree.component.html',
   imports: [
+    ExpressionTagComponent,
     MatTree,
     MatNestedTreeNode,
     NgClass,
@@ -73,6 +76,40 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   private dataStateService = inject(DataStateService);
   private state = inject(UrlStateService);
   private extractCompartmentPipe = inject(ExtractCompartmentPipe);
+  private analysis = inject(AnalysisService);
+
+  /**
+   * The selected sample's expression value for this element, or undefined when
+   * there is no expression analysis or this molecule was not in it.
+   *
+   * Identifiers come off the element itself rather than from a lookup per row:
+   * a complex or a set has no identifier an analysis would know, and those are
+   * not what the bubble is for.
+   */
+  /** Name of the sample the bubble is showing, for its tooltip. */
+  readonly analysisSampleName = computed(
+    () => this.analysis.samples()[this.analysis.sampleIndex()]
+  );
+
+  /**
+   * The selected sample's expression value for this element, or undefined when
+   * there is no expression analysis or this molecule was not in it.
+   *
+   * Identifiers come off the element itself rather than a lookup per row: a
+   * complex or a set has no identifier an analysis would know, and those are
+   * not what the tag is for.
+   */
+  expressionOf(element: E): number | undefined {
+    // Both reach the element through its index signature.
+    const reference = element['referenceEntity'] as
+      { identifier?: string; variantIdentifier?: string } | undefined;
+    const exp = this.analysis.expressionFor([
+      element['identifier'] as string | undefined,
+      reference?.identifier,
+      reference?.variantIdentifier,
+    ]);
+    return exp?.[this.analysis.sampleIndex()];
+  }
 
   hasDepthControl = input<boolean>(false);
   depthIndex = model<number | undefined>();

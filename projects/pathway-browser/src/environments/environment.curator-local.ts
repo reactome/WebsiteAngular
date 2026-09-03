@@ -22,9 +22,6 @@ export const environment = {
   preferS3: false,
 };
 
-// Icon image files live on the Reactome backend and aren't proxied on every
-// front-end origin; use the dev backend host (see environment.ts).
-export const ICON_HOST = 'https://dev.reactome.org';
 export const ICON_BASE = environment.host;
 
 // A locally-run content service is a bare Spring Boot app: its endpoints sit
@@ -39,7 +36,31 @@ export const CONTENT_SERVICE = `http://localhost:${LOCAL_CONTENT_SERVICE_PORT}`;
 // reactome.org, which sends Access-Control-Allow-Origin: *.
 export const VERSION_FALLBACK = `https://reactome.org/ContentService/data/database/version`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
+// The headless render service: diagram figures for documents (GIF, PPTX, PDF),
+// rendered by the site's own renderer rather than by the Java exporters'
+// reimplementation of it. Served under the site's own origin by a proxy, so a
+// render can only be commissioned through whatever fronts the site.
+export const RENDER_SERVICE = `${environment.host}/RenderService`;
+
+// The IDG pairwise service (reactome-idg/idg-pairwise-ws), which relates a gene
+// or protein to Reactome pathways through third-party interaction datasets.
+// Absolute and cross-origin on purpose: the service answers with
+// Access-Control-Allow-Origin, and its data lives on the IDG server rather than
+// here. When that data moves, this is the line that changes.
+export const IDG_SERVICE = 'https://idg.reactome.org/idgpairwise';
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
+
+// The experiment digester, as the *analysis service* must address it -- not as
+// the browser does.
+//
+// Tissue analysis hands the analysis service a URL and that service fetches it
+// server-side, so this has to resolve from inside the backend rather than from
+// the page. It used to read https://127.0.0.1/ExperimentDigester/..., which the
+// analysis service cannot fetch -- it answers 422 -- because nothing there
+// terminates TLS for that name. Plain HTTP to the Tomcat both services share
+// works, and avoids sending the request out through the public hostname and back,
+// which is the hairpin that took Apache down with 522s once already.
+export const DIGESTER_FOR_BACKEND = 'http://localhost:8080/ExperimentDigester';
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 // EHLDs and pre-generated diagram JSON aren't served by a local content
 // service, and newcurator's /download sends no Access-Control-Allow-Origin,

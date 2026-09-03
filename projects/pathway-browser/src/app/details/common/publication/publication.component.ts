@@ -32,14 +32,38 @@ export class PublicationComponent{
   private readonly usesAuthorName = computed(() =>
     this.people().length === 0 && this.authorNames().length > 0);
 
-  // Authors come from the linked Person instances when they exist, and fall back
-  // to the curated free-text authorName values otherwise. Both attributes are
-  // multivalued, so every value is listed. ORCID ids only exist on Person, so
-  // they are undefined for the authorName case.
-  readonly authors = computed<{ name: string, orcidId?: string }[]>(() =>
-    this.usesAuthorName()
-      ? this.authorNames().map(name => ({name}))
-      : this.people().map(person => ({name: person.displayName, orcidId: person.orcidId})));
+  /** Heading text: `title` for newer instances, `displayName` for older ones. */
+  readonly heading = computed<string>(() => {
+    const ref = this.ref();
+    return (this.isNewerInstance() ? ref.title?.trim() : '') || ref.displayName;
+  });
+
+  /** Free-text author byline, only used when no structured authors exist. */
+  readonly authorName = computed<string>(() =>
+    this.authors().length ? '' : composeAuthorByline(this.ref().authorName)
+  );
+
+  /** Whether there is any byline to show at all, from either source. */
+  readonly hasByline = computed<boolean>(() => this.authors().length > 0 || !!this.authorName());
+
+  readonly firstAuthor = computed<AuthorView | undefined>(() => {
+    const first = this.authors().at(0);
+    return first && this.toAuthorView(first);
+  });
+
+  /** The authors after the first, empty while collapsed. */
+  readonly additionalAuthors = computed<AuthorView[]>(() =>
+    this.expanded()
+      ? this.authors()
+          .slice(1)
+          .map((author) => this.toAuthorView(author))
+      : []
+  );
+
+  readonly orcidUrl = computed<string>(() => {
+    const orcidId = this.firstAuthor()?.orcidId;
+    return orcidId ? `https://orcid.org/${orcidId}` : '';
+  });
 
   // displayName is the composed citation ("Kerr JF et al, 1972") in the public
   // content service. The curation graph leaves it unset or unhelpful, so use the
@@ -53,6 +77,15 @@ export class PublicationComponent{
 
 
   toggleAuthors() {
+    this.expanded.update((expanded) => !expanded);
+  }
+
+  private toAuthorView(author: Person): AuthorView {
+    return {
+      name: [author.surname, author.initial].filter(Boolean).join(' '),
+      dbId: author.dbId,
+      orcidId: author.orcidId,
+    };
     this.isExpanded = !this.isExpanded;
   }
 }

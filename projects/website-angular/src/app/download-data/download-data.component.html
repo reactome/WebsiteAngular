@@ -424,7 +424,7 @@
           </h2>
           <div class="download-list">
             @for (item of functionalInteractions; track item.label) {
-              <a class="download-item" [href]="getCurrentUrl(item.file)" target="_blank" rel="noopener">
+              <a class="download-item" [href]="item.url" target="_blank" rel="noopener">
                 <span class="material-symbols-rounded dl-icon">download</span>
                 <div class="dl-info">
                   <span class="dl-label">{{ item.label }}</span>
@@ -442,15 +442,17 @@
             Curator Tool
           </h2>
           <div class="download-list">
-            <a class="download-item" [href]="getCurrentUrl(curatorTool.file)" target="_blank" rel="noopener">
-              <span class="material-symbols-rounded dl-icon">download</span>
-              <div class="dl-info">
-                <span class="dl-label">{{ curatorTool.label }}</span>
-                <span class="dl-desc"
-                  >{{ curatorTool.version }} ({{ curatorTool.date }}) &mdash; {{ curatorTool.description }}</span
-                >
-              </div>
-            </a>
+            @for (installer of curatorTool.installers; track installer.label) {
+              <a class="download-item" [href]="installer.url" target="_blank" rel="noopener">
+                <span class="material-symbols-rounded dl-icon">download</span>
+                <div class="dl-info">
+                  <span class="dl-label">{{ curatorTool.label }} &mdash; {{ installer.label }}</span>
+                  <span class="dl-desc"
+                    >{{ curatorTool.version }} ({{ curatorTool.date }}) &mdash; {{ curatorTool.description }}</span
+                  >
+                </div>
+              </a>
+            }
           </div>
         </section>
 

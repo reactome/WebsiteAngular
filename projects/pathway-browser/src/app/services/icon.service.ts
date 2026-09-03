@@ -1,17 +1,45 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { computed, Injectable, signal, inject } from '@angular/core';
 import { map, Observable, of, switchMap } from 'rxjs';
-import { CONTENT_SERVICE, ICON_BASE } from '../../environments/environment';
+import { CONTENT_SERVICE, ICON_BASE, environment } from '../../environments/environment';
+import { GeneralService } from './general.service';
 import { HttpClient } from '@angular/common/http';
 import { isExactlyCellLineagePath, isRLE } from './utils';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { SchemaClasses } from '../constants/constants';
 import { Search } from '../viewport/search/search.component';
 
+/**
+ * Where an icon's artwork comes from, given the release the site is serving.
+ *
+ * The release bucket publishes icons at <version>/icons/svg -- the same place
+ * every other released file comes from, and reachable from any origin. The
+ * alternative was a hardcoded backend host: icons are not proxied on beta or
+ * release, so the site's own icons were fetched cross-origin from
+ * dev.reactome.org. Until the release resolves, and on curator (whose database
+ * is not versioned), that host is still the answer.
+ *
+ * Exported because two IconServices build icon URLs -- this one and the
+ * website's -- and they must not disagree about where icons live.
+ */
+export function iconArtworkBase(version: number | undefined) {
+  return environment.preferS3 && version
+    ? `${environment.s3}/${version}/icons/svg`
+    : `${ICON_BASE}/icon`;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class IconService {
   private http = inject(HttpClient);
+  private general = inject(GeneralService);
+
+  private readonly iconBase = computed(() => iconArtworkBase(this.general.version.value()));
+
+  /** The URL of an icon's SVG, wherever icons are being served from. */
+  iconUrl(stId: string) {
+    return `${this.iconBase()}/${stId}.svg`;
+  }
 
   currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
 
@@ -219,7 +247,7 @@ export class IconService {
   }
 
   loadIcon(id: string): Observable<string> {
-    return this.http.get(`${ICON_BASE}/icon/${id}.svg`, { responseType: 'text' });
+    return this.http.get(this.iconUrl(id), { responseType: 'text' });
   }
 
   fetchIcon(identifier: string): Observable<string | null> {

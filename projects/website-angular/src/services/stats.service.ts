@@ -1,7 +1,8 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { computed, Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of, timeout } from 'rxjs';
+import { Observable, map, catchError, of, timeout, filter, firstValueFrom, take } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
 import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
@@ -30,16 +31,30 @@ export class StatsService {
   private isBrowser = isPlatformBrowser(this.platformId);
 
   /**
-   * Get the current Reactome version from APP_CONFIG.
+   * The release the site is serving, as a signal, or '' until the database says.
    *
-   * This is the release number used as a path segment when building download
-   * URLs, so it stays numeric even on the curator site: the files under
-   * download.reactome.org are release artefacts regardless of which front end
-   * links to them. Use `getVersionLabel()` for anything user-visible.
+   * Deliberately without a hardcoded fallback. A build-time constant goes stale
+   * the moment a release ships, and a page that states "Current Release: V96"
+   * while serving 97 is worse than one that states nothing for a moment: the
+   * wrong number looks just as authoritative as the right one, and every file
+   * link built from it points at the previous release.
+   */
+  readonly versionNow = computed(() => this.generalService.version.value()?.toString() ?? '');
+
+  /**
+   * The release, once the database has answered. For callers that cannot wait on
+   * a signal -- a URL built before it resolves is a URL to nowhere.
    */
   async getVersion(): Promise<string> {
-    return (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
+    return (await this.versionSettled).toString();
   }
+
+  private readonly versionSettled: Promise<number> = firstValueFrom(
+    toObservable(this.generalService.version.value).pipe(
+      filter((version): version is number => !!version),
+      take(1)
+    )
+  );
 
   /**
    * Display text for the current database version, already prefixed.

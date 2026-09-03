@@ -21,15 +21,24 @@ import { MolecularProcess } from '../../../model/graph/molecular-process.model';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';
 import { MatIcon } from '@angular/material/icon';
-import { MatTooltip } from '@angular/material/tooltip';
 import { SortByDatePipe } from '../../../pipes/sort-by-date.pipe';
+import { FormatClassNamePipe } from '../../../pipes/format-class-name.pipe';
+import { PublicationComponent } from '../publication/publication.component';
+import { OntologyTermComponent } from '../ontology-term/ontology-term.component';
 
 @Component({
   selector: 'cr-molecular-process',
   standalone: true,
   templateUrl: './molecular-process.component.html',
   styleUrl: './molecular-process.component.scss',
-  imports: [ObjectTreeComponent, MatIcon, SortByDatePipe],
+  imports: [
+    ObjectTreeComponent,
+    MatIcon,
+    SortByDatePipe,
+    FormatClassNamePipe,
+    PublicationComponent,
+    OntologyTermComponent,
+  ],
 })
 /**
  * This is a shared component for regulation, catalystActivity and modifiedResidue(modifications)

@@ -7,6 +7,7 @@ import { AnalysisService } from '../../../services/analysis.service';
 import {
   ANALYSIS_SERVICE,
   CONTENT_SERVICE,
+  RENDER_SERVICE,
   RESTFUL_API,
 } from '../../../../environments/environment';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -16,10 +17,30 @@ import {
   DownloadFormat,
   DownloadService,
   DownloadTarget,
+  includeSubpathways,
 } from '../../../services/download.service';
 import { DownloadButtonComponent, Icon } from './download-button/download-button.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
+import { MatCheckbox } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
+
+/**
+ * An analysis token in its raw form.
+ *
+ * Tokens come back from the analysis service percent-encoded, but not always --
+ * a token read from a URL the user pasted may already be decoded. Decoding a
+ * decoded token is a no-op for the characters a token contains, and a stray `%`
+ * that is not an escape would throw rather than return, so fall back to what
+ * came in.
+ */
+function decodeToken(token: string) {
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
+}
 
 type PathwayItem = {
   name: string;
@@ -47,7 +68,7 @@ type DiagramItem = {
 
 @Component({
   selector: 'cr-download-tab',
-  imports: [MatTooltip, MatProgressSpinner, DownloadButtonComponent],
+  imports: [MatTooltip, MatProgressSpinner, DownloadButtonComponent, MatCheckbox, FormsModule],
   templateUrl: './download-tab.component.html',
   styleUrl: './download-tab.component.scss',
 })
@@ -57,6 +78,7 @@ export class DownloadTabComponent {
   private dataState: DataStateService = inject(DataStateService);
   public analysis: AnalysisService = inject(AnalysisService);
   private download: DownloadService = inject(DownloadService);
+  protected readonly includeSubpathways = includeSubpathways;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 
@@ -116,9 +138,10 @@ export class DownloadTabComponent {
   });
 
   getDiagramItems(isEHLD: boolean) {
-    const formats = isEHLD
-      ? this.reacfoamFormats
-      : this.formats.filter((f) => f !== DownloadFormat.SVG);
+    // SVG used to be dropped for a cytoscape diagram because only the
+    // server-side exporter could make one, and it only handles illustrations.
+    // cy.svg() now produces it client side, so every format is on offer.
+    const formats = isEHLD ? this.reacfoamFormats : this.formats;
 
     return formats.map((format) => {
       const hasAnalysis = isEHLD && !this.hasResult() ? format : false;
@@ -129,7 +152,12 @@ export class DownloadTabComponent {
       if (isExportable) {
         return {
           format,
-          url: signal(this.getExportUrl(format)),
+          // A diagram's GIF and PowerPoint come from the render service, which
+          // drives the site's own renderer; an illustration's still go through
+          // the content service, which serves the same illustration file either
+          // way. That is why a downloaded GIF used to look like the old site
+          // and no longer does.
+          url: signal(isEHLD ? this.getExportUrl(format) : this.getRenderUrl(format)),
           icon: { id: 'image' },
           download: true,
         };
@@ -153,14 +181,12 @@ export class DownloadTabComponent {
       url: computed(() => `${CONTENT_SERVICE}/exporter/event/${this.finalEventId()}.sbgn`),
     },
     {
-      name: 'BioPAX2',
-      url: computed(() => `${RESTFUL_API}/biopaxExporter/Level2/${this.biopaxId()}`),
-      fileName: computed(() => `${this.biopaxId()}.xml`),
-    },
-    {
-      name: 'BioPAX3',
+      // One BioPAX, Level 3: Level 2 has been superseded for years, and the
+      // detail page's toolbar offers exactly this -- two panels disagreeing about
+      // what the site exports is worse than either choice.
+      name: 'BioPAX',
       url: computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.biopaxId()}`),
-      fileName: computed(() => `${this.biopaxId()}.xml`),
+      fileName: computed(() => `${this.biopaxId()}.owl`),
     },
     {
       name: 'PDF',
@@ -252,6 +278,28 @@ export class DownloadTabComponent {
   getGsaLabel(name: string) {
     if (name === 'MS Excel Report (xlsx)') return 'Excel Report';
     return name;
+  }
+
+  /**
+   * A figure from the render service.
+   *
+   * The analysis token travels with it, because that is what makes a GIF worth
+   * having: one frame per sample of an expression analysis rather than a still.
+   * So does the sub-pathway preference, so the checkbox above means the same
+   * thing for a server-rendered file as for one the browser produces.
+   */
+  getRenderUrl(format: string) {
+    const url = new URL(`${RENDER_SERVICE}/render/${this.pathwayId()}.${format}`);
+    const token = this.token();
+    // The analysis service hands the token back already percent-encoded
+    // ("...%3D%3D"), and setSearchParam encodes it a second time, which produces
+    // "...%253D%253D" -- a different token to anything downstream, and a
+    // different cache entry. Decode first so it is encoded exactly once.
+    if (token) url.searchParams.set('token', decodeToken(token));
+    // Set only when turning them off, so the ordinary URL stays the short one
+    // and the service's cache is not split by a parameter that says nothing.
+    if (!includeSubpathways()) url.searchParams.set('subpathways', 'false');
+    return url.toString();
   }
 
   getExportUrl(format: string) {

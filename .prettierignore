@@ -21,3 +21,8 @@ projects/website-angular/content
 
 # Session scratch
 .claude
+
+# Written by `tinacms dev`, gitignored, and reformatting it just churns.
+# Without this, anyone who has run the CMS locally fails format:check on a file
+# they never wrote.
+projects/website-angular/public/admin/index.html

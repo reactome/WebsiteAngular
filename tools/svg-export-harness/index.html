@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Reactome legend — PNG vs SVG export</title>
+    <style>
+      body {
+        font-family: -apple-system, sans-serif;
+        margin: 0;
+        padding: 12px;
+        background: #f4f4f4;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 8px 0;
+      }
+      .panes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .pane {
+        background: #fff;
+        border: 1px solid #ccc;
+        padding: 6px;
+      }
+      .label {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      #cy-live {
+        width: 100%;
+        height: 600px;
+        background: #fff;
+      }
+      img.png-out {
+        width: 100%;
+        height: 600px;
+        object-fit: contain;
+        background: #fff;
+      }
+      .svg-host {
+        width: 100%;
+        height: 600px;
+        background: #fff;
+      }
+      .svg-host > svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #status {
+        margin-top: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Reactome legend — PNG vs SVG export comparison</h1>
+    <div class="panes">
+      <div class="pane">
+        <div class="label">cytoscape live (canvas)</div>
+        <div id="cy-live"></div>
+      </div>
+      <div class="pane">
+        <div class="label">cy.png() output</div>
+        <img id="out-png" class="png-out" />
+      </div>
+      <div class="pane">
+        <div class="label">cy.svg() output</div>
+        <div id="out-svg" class="svg-host"></div>
+      </div>
+    </div>
+    <pre id="status">running…</pre>
+
+    <script type="module" src="harness.bundle.js"></script>
+  </body>
+</html>

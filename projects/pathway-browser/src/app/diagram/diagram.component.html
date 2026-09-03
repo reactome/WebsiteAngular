@@ -12,6 +12,8 @@
   <!-- Suppress the browser's own menu so the diagram's can take its place. -->
   <div id="cytoscape" #cytoscape [class.pointer]="hovering()" (contextmenu)="$event.preventDefault()"></div>
 
+  <cr-flag-banner />
+
   <cr-entity-popup
     [target]="popupTarget()"
     (navigate)="onPopupNavigate($event)"
@@ -62,8 +64,10 @@
         </div>
 
         @if (!isCurator) {
-          <div class="thumbnail">
-            <img [src]="thumbnailImg()" #thumbnail (load)="thumbnailLoaded()" />
+          <!-- Press and drag to move the diagram: people were using the
+               thumbnail to navigate and finding it inert (#135). -->
+          <div class="thumbnail" role="presentation" (pointerdown)="onThumbnailPointerDown($event)">
+            <img [src]="thumbnailImg()" #thumbnail (load)="thumbnailLoaded()" draggable="false" />
             <svg class="overlay" [attr.viewBox]="thumbnailViewBox()">
               <mask id="viewportMask" mask-type="luminance">
                 <rect [attr.width]="thumbnailSize().width" [attr.height]="thumbnailSize().height" fill="white"></rect>

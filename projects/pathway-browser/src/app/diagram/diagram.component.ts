@@ -12,6 +12,7 @@ import {
   viewChild,
   ViewChild,
   inject,
+  HostListener,
 } from '@angular/core';
 import { DiagramService } from '../services/diagram.service';
 import {
@@ -51,7 +52,7 @@ import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
 
 import { DarkService } from '../services/dark.service';
-import { DownloadFormat, DownloadService } from '../services/download.service';
+import { DownloadFormat, DownloadService, includeSubpathways } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
 import { Interactor } from '../interactors/model/interactor.model';
@@ -65,6 +66,7 @@ import {
   EntityPopupTarget,
 } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
+import { FlagBannerComponent } from './flag-banner/flag-banner.component';
 
 const INIT_RX = 2;
 
@@ -84,6 +86,7 @@ const FIT_PADDING = 100;
     MatSlider,
     MatSliderThumb,
     MatTooltip,
+    FlagBannerComponent,
     AnalysisLegendComponent,
     EntityPopupComponent,
   ],
@@ -97,7 +100,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private diagram = inject(DiagramService);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);
-  private state = inject(UrlStateService);
+  protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
   private router = inject(Router);
@@ -196,15 +199,43 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   async export(format: string) {
+    // The sub-pathway tints and labels are navigational aids, and in a figure
+    // they compete with the biology. Hidden for the duration of the export and
+    // put back afterwards, rather than exported and cropped out later.
+    const hideSubpathways = !includeSubpathways();
+    if (hideSubpathways) {
+      this.cys.filter(Boolean).forEach((cy) => this.setSubPathwayVisibility(false, cy));
+    }
+    try {
+      await this.exportRaster(format);
+    } finally {
+      if (hideSubpathways) {
+        // Back to what the view called for, which is not always "visible": with
+        // a flag active the diagram deliberately hides them.
+        const flagged = this.state.flag().length > 0;
+        this.cys.filter(Boolean).forEach((cy) => this.setSubPathwayVisibility(!flagged, cy));
+      }
+    }
+  }
+
+  private async exportRaster(format: string) {
+    if (format === DownloadFormat.SVG) {
+      this.exportSvg();
+      return;
+    }
+
+    const isJpeg = format === DownloadFormat.JPEG;
     const options: cytoscape.ExportJpgBlobPromiseOptions = {
       full: true,
-      ...(format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
-      bg: 'transparent',
+      ...(isJpeg ? { quality: 0.9 } : {}),
+      // JPEG has no alpha channel, so a transparent background composites to
+      // black rather than to nothing. PNG keeps the transparency.
+      bg: isJpeg ? '#ffffff' : 'transparent',
       output: 'blob-promise',
     };
 
     const blobs = this.cys.map((cy) =>
-      format === DownloadFormat.PNG ? cy.png(options) : cy.jpg(options)
+      format === DownloadFormat.PNG ? cy.png(options) : this.jpegBlob(cy, options)
     );
     let blob: Blob;
     if (blobs.length > 1) {
@@ -227,6 +258,148 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     a.download = `${this.pathwayId()}.${format}`;
     a.click();
     a.remove();
+  }
+
+  /**
+   * The whole diagram on a canvas, including anything drawn by a custom layer.
+   *
+   * cytoscape has two ways to produce this and only one of them sees
+   * everything. The renderer's own bufferCanvasImage draws the graph;
+   * cytoscape-layers composes the graph together with the layers on top of it
+   * -- which is where the analysis overlay and the interactor decorations live.
+   * Ask the layers when there are any, and the renderer when there are not.
+   *
+   * Public because the headless render page builds animation frames from it.
+   * Going through here rather than cy.png() means a frame contains what the
+   * screen contains.
+   */
+  exportCanvas(cy: cytoscape.Core, options: cytoscape.ExportJpgBlobPromiseOptions) {
+    const layers = cy.scratch('_layers') as
+      { hasCustomLayer?: () => boolean; toCanvas?: (o: unknown) => HTMLCanvasElement } | undefined;
+
+    return layers?.toCanvas && layers.hasCustomLayer?.()
+      ? layers.toCanvas({ ...options, bg: options.bg ?? '#fff' })
+      : (
+          cy as unknown as {
+            renderer: () => { bufferCanvasImage: (o: unknown) => HTMLCanvasElement };
+          }
+        )
+          .renderer()
+          .bufferCanvasImage(options);
+  }
+
+  /**
+   * The diagram as JPEG.
+   *
+   * Not cy.jpg(). cytoscape-layers replaces cy.png/jpg/jpeg on the instance so
+   * custom layers appear in an export, and its jpg() ends with
+   * `output(o, this.toCanvas(o), 'image/png')` -- the wrong media type in the
+   * JPEG branch. The file was named .jpeg and contained PNG bytes.
+   *
+   * The override only takes effect when a custom layer exists, which the
+   * diagram has and a bare graph does not, so this looks like a cytoscape bug
+   * until you notice it only happens here.
+   *
+   * Take the canvas the layers compose -- so nothing is lost from the picture
+   * -- and encode it as JPEG.
+   */
+  private async jpegBlob(
+    cy: cytoscape.Core,
+    options: cytoscape.ExportJpgBlobPromiseOptions
+  ): Promise<Blob> {
+    const canvas = this.exportCanvas(cy, options);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('canvas.toBlob returned null'))),
+        'image/jpeg',
+        options.quality ?? 0.9
+      );
+    });
+  }
+
+  /**
+   * Export the diagram as SVG.
+   *
+   * cy.svg() comes from Reactome's cytoscape.js fork -- see the overrides entry
+   * in package.json -- and is not in upstream cytoscape yet. It runs the
+   * renderer's own drawing code against a context that records SVG, so what it
+   * produces is what the diagram draws, at any size, with selectable text.
+   *
+   * No bg is passed: an SVG with no background rect is transparent, which is
+   * what the raster exports ask for too.
+   */
+  private exportSvg() {
+    const svgs = this.cys.map((cy) => cy.svg({ full: true }));
+    if (!svgs.length) return;
+
+    const blob = new Blob([this.withDiagramFont(this.composeSvgs(svgs))], {
+      type: 'image/svg+xml;charset=utf-8',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${this.pathwayId()}.svg`;
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /**
+   * Ask the file to fetch the diagram's font when something opens it.
+   *
+   * The export names the font the style asks for, and the style asks for
+   * Roboto, which the page loads but a saved file does not have. Viewers were
+   * substituting their default serif, whose metrics are nothing like Roboto's,
+   * so labels laid out to fit their shapes no longer did.
+   *
+   * The font-family in the style now ends in Helvetica/Arial/sans-serif, which
+   * is what this falls back to offline or in an editor that ignores @import --
+   * close enough that labels still fit. This gets the real thing when the file
+   * is opened in a browser with a network, at the cost of one external request
+   * from the saved file.
+   */
+  private withDiagramFont(svg: string): string {
+    // Wrapped in CDATA: SVG is XML, and the ampersand in the font URL is an
+    // invalid entity reference otherwise -- it made the whole file unparseable.
+    const style =
+      `<style type="text/css"><![CDATA[@import url('https://fonts.googleapis.com/css2` +
+      `?family=Roboto:wght@300;400;500;600&display=block');]]></style>`;
+    return svg.replace(/(<svg\b[^>]*>)/, `$1${style}`);
+  }
+
+  /**
+   * Lay several exported diagrams side by side, for the comparison view.
+   *
+   * SVG nests, so each diagram goes in as a child <svg> offset along x rather
+   * than having its geometry rewritten -- the raster path has to composite
+   * bitmaps to do the same thing.
+   */
+  private composeSvgs(svgs: string[]): string {
+    if (svgs.length === 1) return svgs[0];
+
+    const sized = svgs.map((svg) => ({
+      svg,
+      width: Number(/\bwidth="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+      height: Number(/\bheight="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+    }));
+
+    const width = sized.reduce((total, s) => total + s.width, 0);
+    const height = Math.max(...sized.map((s) => s.height));
+    if (!width || !height) return svgs[0];
+
+    let x = 0;
+    const children = sized
+      .map((s) => {
+        const child = s.svg.replace('<svg ', `<svg x="${x}" y="0" `);
+        x += s.width;
+        return child;
+      })
+      .join('');
+
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"` +
+      ` viewBox="0 0 ${width} ${height}">${children}</svg>`
+    );
   }
 
   async mergeImages(
@@ -428,6 +601,82 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (thumbnail) this.sizeObserver.observe(thumbnail);
 
     this.loadDiagram();
+  }
+
+  /**
+  /**
+   * Drag state for the thumbnail. Panning follows the pointer once pressed, so
+   * the whole gesture is one press-move-release rather than repeated clicks.
+   *
+   * Deliberately no setPointerCapture: capturing on pointerdown and releasing
+   * on pointerup leaks the capture whenever the release does not arrive on the
+   * same element, and a retained capture retargets every later pointer event to
+   * the thumbnail -- which silently kills right-click, selection and hovering
+   * across the whole diagram. Tracking the drag on the window instead cannot
+   * leave that behind.
+   */
+  private thumbnailDragging = false;
+
+  onThumbnailPointerDown(event: PointerEvent) {
+    event.preventDefault();
+    this.thumbnailDragging = true;
+    this.panFromThumbnail(event);
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMove(event: PointerEvent) {
+    if (this.thumbnailDragging) this.panFromThumbnail(event);
+  }
+
+  @HostListener('window:pointerup')
+  @HostListener('window:pointercancel')
+  endThumbnailDrag() {
+    this.thumbnailDragging = false;
+  }
+
+  /**
+   * Centre the diagram on the point pressed in the thumbnail.
+   *
+   * This is the inverse of the mapping shrunkViewport() uses to draw the
+   * viewport rectangle: that turns graph coordinates into thumbnail pixels, and
+   * this turns thumbnail pixels back into graph coordinates. Keep the two in
+   * step -- if the scale or centring offset changes in one, the rectangle and
+   * the pointer stop agreeing about where the user is pointing.
+   */
+  private panFromThumbnail(event: PointerEvent) {
+    const cy = this.cy;
+    const image = this.thumbnailRef()?.nativeElement;
+    if (!cy || !image) return;
+
+    const bbox = this.boundingBox();
+    if (!bbox.w || !bbox.h) return;
+
+    const { width: thumbWidth, height: thumbHeight } = this.thumbnailSize();
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    // thumbnailSize comes from a ResizeObserver on the image's content box,
+    // which is the space shrunkViewport() and the svg viewBox both work in.
+    // Normalise the pointer into that space rather than assuming it matches
+    // the on-screen rectangle.
+    // Clamped: the drag is tracked on the window, so the pointer can be well
+    // outside the thumbnail and should pin to its edge rather than extrapolate.
+    const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
+    const thumbX = clamp(((event.clientX - rect.left) / rect.width) * thumbWidth, thumbWidth);
+    const thumbY = clamp(((event.clientY - rect.top) / rect.height) * thumbHeight, thumbHeight);
+
+    const scale = Math.min(thumbWidth / bbox.w, thumbHeight / bbox.h);
+    const offsetX = (thumbWidth - bbox.w * scale) / 2;
+    const offsetY = (thumbHeight - bbox.h * scale) / 2;
+
+    const graphX = (thumbX - offsetX) / scale + bbox.x1;
+    const graphY = (thumbY - offsetY) / scale + bbox.y1;
+
+    const zoom = cy.zoom();
+    cy.pan({
+      x: this.containerSize().width / 2 - graphX * zoom,
+      y: this.containerSize().height / 2 - graphY * zoom,
+    });
   }
 
   thumbnailLoaded() {

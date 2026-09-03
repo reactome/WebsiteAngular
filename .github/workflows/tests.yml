@@ -40,6 +40,25 @@ jobs:
       - name: Build workspace libraries
         run: npm run build:libs
 
+      # The app build is the only thing that runs Angular's template type
+      # checking, and strictTemplates is on: a template referencing a member
+      # that does not exist, binding an input on a component it never imported,
+      # or using a pipe that is not in scope fails here. None of that shows up
+      # in the unit tests -- a merge once landed a dead @if block that compiled
+      # and passed every test. Without this step the only build was the deploy
+      # job, so a broken template reached main and was found by a person.
+      #
+      # reactome-cytoscape-style is built separately because build:libs does not
+      # cover it and styles.scss @use's it; content-dist is a gitignored asset
+      # input, so stage:content has to run or ng build cannot find it.
+      - name: Compile CMS content
+        run: npm run stage:content
+
+      - name: Build the app
+        run: |
+          npx ng build reactome-cytoscape-style
+          npm run build
+
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
       # Warnings are the ~1600 pre-existing findings, held to a baseline so they
@@ -62,9 +81,20 @@ jobs:
         run: npm run check:dead
 
   e2e:
-    name: End-to-end
+    # The code suite only: "is the code right?". The release checks -- every
+    # top-level pathway draws, every download link resolves, the version and news
+    # and statistics match what is being served -- depend on generated release
+    # data this runner does not have, and live in release-verification.yml.
+    #
+    # Still sharded: playwright splits by test, so coverage is unchanged and the
+    # wall clock stays a few minutes rather than the 30 that got a job killed.
+    name: End-to-end (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
 
@@ -109,12 +139,14 @@ jobs:
       - name: Run e2e
         env:
           REACTOME_BACKEND: https://reactome.org
-        run: npm run e2e
+        run: npm run e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          # One name per shard: artifacts with the same name collide and the
+          # upload fails, losing the report exactly when it is wanted.
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7

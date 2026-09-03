@@ -121,8 +121,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       const pathwayId = this.pathwayId();
 
       if (request && this.download.isRasterFormat(request.format)) {
-        this.ehldService.downloadImage(request.format);
-        this.download.resetDownload();
+        void this.ehldService
+          .downloadImage(request.format)
+          .then(() => this.download.resetDownload())
+          .catch((error) => console.error('EHLD image export failed', error));
       } else if (request?.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)

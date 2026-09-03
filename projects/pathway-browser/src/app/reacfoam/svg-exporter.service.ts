@@ -324,7 +324,6 @@ export class SvgExporterService {
     frame.setAttribute('id', id);
     const appear = this.calcTransitionTime(i);
     const disappear = this.calcTransitionTime(i + 1);
-    console.table({ appear, disappear });
 
     const kfName = `kf_frame_${i}`;
     let keyframes = `@keyframes ${kfName} {\n`;
@@ -425,7 +424,7 @@ export class SvgExporterService {
         pos = y + labelSpace * (i + 0.5) - fontSize;
       }
 
-      output.elements += `<text id="${labelId}" x="${x + gWidth + sw}" y="${pos}" class="legend-label">${label}</text>\n`;
+      output.elements += `<text id="${labelId}" x="${x + gWidth + sw}" y="${pos}" class="legend-label">${this.escapeXml(label)}</text>\n`;
     });
 
     return output;
@@ -470,7 +469,7 @@ export class SvgExporterService {
       const disappear = this.calcTransitionTime(i + 1);
 
       const titleId = `title-${i}`;
-      output.elements += `<text id="${titleId}" x="${tlStart + dotSpace * (i + 0.5) - dotSize / 2}" y="${y + tlHeight + sw + fontSize / 2}" class="title center">${title}</text>\n`;
+      output.elements += `<text id="${titleId}" x="${tlStart + dotSpace * (i + 0.5) - dotSize / 2}" y="${y + tlHeight + sw + fontSize / 2}" class="title center">${this.escapeXml(title)}</text>\n`;
 
       const titleKFName = `kf_title_${i}`;
       let keyframes = `@keyframes ${titleKFName} {\n`;
@@ -496,18 +495,58 @@ export class SvgExporterService {
       output.css += keyframes;
     });
 
-    output.elements += `<rect id="pause-button" x="${x + sw / 2}" y="${y + sw / 2}" width="${tlHeight - sw}" height="${tlHeight - sw}" fill="${primary}" stroke="${onPrimary}" stroke-width="${sw}" rx="${tlHeight / 2}"/>`;
-    output.elements += `<line x1="${x + tlHeight / 2 - (1 / 10) * tlHeight}" x2="${x + tlHeight / 2 - (1 / 10) * tlHeight}" y1="${y + (1 / 3) * tlHeight}" y2="${y + (2 / 3) * tlHeight}" stroke="${onPrimary}" stroke-width="${sw}" class="ignore-event"/>`;
-    output.elements += `<line x1="${x + tlHeight / 2 + (1 / 10) * tlHeight}" x2="${x + tlHeight / 2 + (1 / 10) * tlHeight}" y1="${y + (1 / 3) * tlHeight}" y2="${y + (2 / 3) * tlHeight}" stroke="${onPrimary}" stroke-width="${sw}" class="ignore-event"/>`;
+    output.elements += `<rect id="pause-button" x="${x + sw / 2}" y="${y + sw / 2}" width="${tlHeight - sw}" height="${tlHeight - sw}" fill="${primary}" stroke="${onPrimary}" stroke-width="${sw}" rx="${tlHeight / 2}"><title>Play / pause</title></rect>`;
+
+    // Both icons ship; which one shows is a class on the root, so the button
+    // says what clicking it will do rather than what the animation is doing.
+    const barLeft = x + tlHeight / 2 - (1 / 10) * tlHeight;
+    const barRight = x + tlHeight / 2 + (1 / 10) * tlHeight;
+    output.elements += `<g id="icon-pause" class="ignore-event">`;
+    output.elements += `<line x1="${barLeft}" x2="${barLeft}" y1="${y + (1 / 3) * tlHeight}" y2="${y + (2 / 3) * tlHeight}" stroke="${onPrimary}" stroke-width="${sw}"/>`;
+    output.elements += `<line x1="${barRight}" x2="${barRight}" y1="${y + (1 / 3) * tlHeight}" y2="${y + (2 / 3) * tlHeight}" stroke="${onPrimary}" stroke-width="${sw}"/>`;
+    output.elements += `</g>`;
+
+    const playLeft = x + tlHeight / 2 - (1 / 8) * tlHeight;
+    const playRight = x + tlHeight / 2 + (1 / 6) * tlHeight;
+    output.elements += `<g id="icon-play" class="ignore-event">`;
+    output.elements += `<path d="M ${playLeft} ${y + (1 / 3) * tlHeight} L ${playRight} ${y + tlHeight / 2} L ${playLeft} ${y + (2 / 3) * tlHeight} Z" fill="${onPrimary}"/>`;
+    output.elements += `</g>`;
 
     output.elements += `<line id="timeline" x1="${tlStart}" y1="${y + tlHeight / 2}" x2="${width - tlHeight / 2}" y2="${y + tlHeight / 2}" stroke="${primary}" stroke-width="${sw}" stroke-linecap="round"/>`;
     output.css += `@keyframes drawLine { to { stroke-dashoffset: 0; } }\n`;
     output.css += `#timeline { animation: drawLine ${this.options.totalTime}s linear infinite; stroke-dasharray: ${tlWidth}; stroke-dashoffset: ${tlWidth};}\n`;
 
+    // One click target per sample, added last so they sit above the line and the
+    // dots. Each carries its own <title>, which is the browser's own tooltip and
+    // needs no script: hovering says where a click will take you even in a viewer
+    // that will not run one.
+    titles.forEach((title, i) => {
+      const at = ((i + 0.5) * this.options.timePerFrame).toFixed(3);
+      output.elements +=
+        `<rect class="segment" data-time="${at}" x="${(tlStart + dotSpace * i).toFixed(3)}" ` +
+        `y="${y + sw / 2}" width="${dotSpace.toFixed(3)}" height="${tlHeight - sw}" ` +
+        `fill="${onPrimary}" fill-opacity="0">` +
+        `<title>${this.escapeXml(title)}</title></rect>\n`;
+    });
+
     //language=css
-    output.css += `svg:has(#pause-button:hover) * {
-      animation-play-state: paused !important;
-    }    `;
+    output.css += `
+      #pause-button, .segment { cursor: pointer; }
+      .segment:hover { fill-opacity: 0.25; }
+      #icon-play { display: none; }
+
+      /* Set by the controls script, so a paused animation looks paused. */
+      svg.paused * { animation-play-state: paused !important; }
+      svg.paused #icon-pause { display: none; }
+      svg.paused #icon-play { display: inline; }
+
+      /* No script: hovering the button is the only way to hold the animation
+         still, which is what this did before clicking was possible. The script
+         marks the root so the two do not fight. */
+      svg:not(.js-controls):has(#pause-button:hover) * {
+        animation-play-state: paused !important;
+      }
+    `;
     return output;
   }
 
@@ -534,7 +573,7 @@ export class SvgExporterService {
       const disappear = this.calcTransitionTime(i + 1);
 
       const titleId = `title-${i}`;
-      output.elements += `<text id="${titleId}" x="${x + width / 2}" y="${y + height / 2}" class="title center">${title}</text>\n`;
+      output.elements += `<text id="${titleId}" x="${x + width / 2}" y="${y + height / 2}" class="title center">${this.escapeXml(title)}</text>\n`;
 
       if (titles.length > 1) {
         // Only add animation if more than one title is available
@@ -552,6 +591,98 @@ export class SvgExporterService {
     });
 
     return output;
+  }
+
+  /**
+   * Text safe to put in the SVG, which is XML rather than HTML.
+   *
+   * Sample names come from whatever the user uploaded, and a column called "A&B"
+   * produced a document that no viewer would open at all -- the failure is the
+   * whole file, not the one label.
+   */
+  private escapeXml(text: string) {
+    const entities: Record<string, string> = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      "'": '&apos;',
+      '"': '&quot;',
+    };
+    return String(text).replace(/[<>&'"]/g, (character) => entities[character] ?? character);
+  }
+
+  /**
+   * The script that makes the timeline clickable.
+   *
+   * The animation is CSS keyframes, so seeking means reaching for the animations
+   * themselves: the Web Animations API exposes each one's currentTime, and
+   * setting it on all of them at once moves the whole picture to that sample.
+   * Pausing is a class on the root as well as a call on each animation -- the
+   * class alone holds the picture still in a browser too old for the API, so
+   * play/pause degrades to working while only seeking is lost.
+   *
+   * Added as a DOM node with textContent rather than as serialised markup: the
+   * serialiser escapes the angle brackets and ampersands for us, and a script
+   * built by string concatenation into an XML document is one stray `&&` away
+   * from a file that will not parse.
+   *
+   * A script in an SVG runs when the file is opened as a document. Inside an
+   * <img>, or in most viewers embedding it, it does not -- which is why the
+   * hover fallback and the native <title> tooltips carry the no-script case.
+   */
+  private addTimelineControls(svg: SVGSVGElement | undefined) {
+    if (!svg) return;
+    const script = document.createElementNS('http://www.w3.org/2000/svg', 'script');
+    script.setAttribute('data-generated', 'true');
+    script.textContent = `
+(function () {
+  var button = document.getElementById('pause-button');
+  if (!button) return;
+  var root = button.ownerSVGElement;
+  if (!root) return;
+
+  // Tells the stylesheet to stop pausing on hover: clicking is the control now.
+  //
+  // classList, not setAttribute with a split and a join: this text lives in a
+  // TypeScript template literal, where a backslash is the template's escape
+  // before it is ever the regex's. A /\\s+/ written the obvious way reached the
+  // file as /s+/ and split the class list on the letter s, so "js-controls"
+  // became "j -control".
+  root.classList.add('js-controls');
+
+  function animations() {
+    if (root.getAnimations) return root.getAnimations({ subtree: true });
+    if (document.getAnimations) return document.getAnimations();
+    return [];
+  }
+
+  var paused = false;
+  button.addEventListener('click', function () {
+    paused = !paused;
+    root.classList.toggle('paused', paused);
+    animations().forEach(function (animation) {
+      try {
+        if (paused) animation.pause();
+        else animation.play();
+      } catch (ignored) {}
+    });
+  });
+
+  var segments = root.querySelectorAll('.segment');
+  Array.prototype.forEach.call(segments, function (segment) {
+    segment.addEventListener('click', function () {
+      var at = parseFloat(segment.getAttribute('data-time')) * 1000;
+      if (!isFinite(at)) return;
+      animations().forEach(function (animation) {
+        try {
+          animation.currentTime = at;
+        } catch (ignored) {}
+      });
+    });
+  });
+})();
+`;
+    svg.append(script);
   }
 
   private calcTransitionTime(frame: number) {
@@ -802,6 +933,7 @@ export class SvgExporterService {
       : this.generateTitle(samples, { x: 0, y: height, height: decorationSize, width: width });
     css += title.css;
     const titleGroup = this.addElementToSVG('title-group', title.elements, svg!);
+    if (options.includeTimeline) this.addTimelineControls(svg);
 
     // Add space for labels
     const bbox = this.measureGroup(titleGroup, width, height, css);

@@ -1,0 +1,68 @@
+name: Release verification
+
+# Is the release right?
+#
+# Run this after the release process has generated the database and published the
+# files -- not on every push. It asks questions only a finished release can
+# answer: does every top-level pathway draw, does every download link resolve,
+# do the version, the news and the statistics say the release actually being
+# served. Those checks fail on a code runner for want of data rather than for
+# want of correctness, which is why they are not in tests.yml.
+#
+# Run it by hand against whichever environment is being released (the default is
+# beta), and nightly against beta so a data problem is found by a machine rather
+# than by a curator.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: The site to verify
+        required: true
+        default: https://beta.reactome.org
+      backend:
+        description: Backend the site's API calls should reach
+        required: false
+        default: https://reactome.org
+  schedule:
+    # 05:30 UTC: after the nightly build window, before the working day.
+    - cron: '30 5 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # No build and no server: this runs against a deployed site, which serves
+      # its own assets and routes its own API calls. That is the point -- it
+      # verifies what was published, not what this checkout would produce.
+      - name: Verify
+        env:
+          E2E_BASE_URL: ${{ inputs.base_url || 'https://beta.reactome.org' }}
+          REACTOME_BACKEND: ${{ inputs.backend || 'https://reactome.org' }}
+        run: npm run e2e:release
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: release-verification-report
+          path: playwright-report/
+          retention-days: 14

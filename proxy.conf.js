@@ -26,6 +26,20 @@ module.exports = {
   ...Object.fromEntries(
     ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
   ),
+  // The headless render service (tools/render/service.mjs), which produces the
+  // formats the Java exporters used to: GIF, PPTX and anything else a document
+  // needs. It binds to loopback and is reached only through this proxy, so
+  // whatever fronts the site decides who may commission a render -- a render
+  // costs seconds, and crawlers hitting the old /ContentService/exporter/*
+  // endpoints are what exhausted Tomcat's heap and took the origin down.
+  // In compose the service is another container, so the target has to be its
+  // service name; on the host it is loopback. Same shape as REACTOME_BACKEND.
+  '/RenderService': {
+    target: process.env.RENDER_TARGET || 'http://127.0.0.1:4310',
+    secure: false,
+    changeOrigin: true,
+    pathRewrite: { '^/RenderService': '' },
+  },
   // GSAServer is not part of the local Tomcat deployment, so it always goes out
   // -- but to the GSA service itself, not via dev.reactome.org. That host
   // resolves back through this machine's Apache, which is the same hairpin that

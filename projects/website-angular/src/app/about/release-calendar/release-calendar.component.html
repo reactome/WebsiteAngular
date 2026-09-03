@@ -31,18 +31,25 @@
             </div>
             <div class="releases">
               @for (release of group.releases; track release.version) {
-                <div class="release-card" [class.latest]="isLatest(release)" [class.future]="!isPast(release)">
-                  <div class="version">
-                    v{{ release.version }}
-                    @if (isLatest(release)) {
-                      <span class="latest-badge">Latest</span>
-                    }
-                    @if (!isPast(release)) {
-                      <span class="upcoming-badge">Upcoming</span>
-                    }
+                <!-- A link when this release has an announcement to open, a plain
+                     card when it does not. Only the link carries the hover
+                     styling: a card that lifts under the pointer and does nothing
+                     is what the curators reported. -->
+                @if (release.announcement) {
+                  <a
+                    class="release-card linked"
+                    [class.latest]="isLatest(release)"
+                    [class.future]="!isPast(release)"
+                    [routerLink]="['/about/news', release.announcement]"
+                    [attr.aria-label]="'Release notes for v' + release.version"
+                  >
+                    <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: release }" />
+                  </a>
+                } @else {
+                  <div class="release-card" [class.latest]="isLatest(release)" [class.future]="!isPast(release)">
+                    <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: release }" />
                   </div>
-                  <div class="date">{{ release.label }}</div>
-                </div>
+                }
               }
             </div>
           </section>
@@ -51,3 +58,19 @@
     }
   </article>
 </app-page-layout>
+
+<ng-template #cardBody let-release>
+  <div class="version">
+    v{{ release.version }}
+    @if (isLatest(release)) {
+      <span class="latest-badge">Latest</span>
+    }
+    @if (!isPast(release)) {
+      <span class="upcoming-badge">Upcoming</span>
+    }
+    @if (release.announcement) {
+      <span class="material-symbols-rounded notes-icon" aria-hidden="true">description</span>
+    }
+  </div>
+  <div class="date">{{ release.label }}</div>
+</ng-template>

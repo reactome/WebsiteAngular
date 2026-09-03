@@ -46,11 +46,25 @@ export class DescriptionOverviewComponent {
     getProperty(this.obj(), DataKeys.TISSUE_LAYER)
   );
 
-  reviewStar: { [key: string]: { percentage: number; score: number } } = {
+  // Keys are ReviewStatus displayName values exactly as the graph database
+  // spells them -- note "one star" is singular there, which this map used to get
+  // wrong, so a one-star pathway looked up undefined and threw on .percentage.
+  private readonly reviewStar: Record<string, { percentage: number; score: number }> = {
     'five stars': { percentage: 100, score: 5 },
     'four stars': { percentage: 80, score: 4 },
     'three stars': { percentage: 60, score: 3 },
     'two stars': { percentage: 40, score: 2 },
-    'one stars': { percentage: 20, score: 1 },
+    'one star': { percentage: 20, score: 1 },
   };
+
+  /**
+   * The star rating for the current review status, or undefined if it is one
+   * this map does not know. Curators can add ReviewStatus values without this
+   * code changing, so an unknown one has to render nothing rather than break
+   * the whole overview.
+   */
+  readonly reviewScore = computed(() => {
+    const status = this.reviewStatus()?.displayName;
+    return status ? this.reviewStar[status] : undefined;
+  });
 }

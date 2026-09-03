@@ -66,3 +66,16 @@ ps -o etime=,rss= -p "$(pgrep -f catalina | head -1)"   # tomcat uptime and heap
 Note that bot traffic is not the only way to exhaust that heap: a full e2e run
 is ~52 page loads, each fanning out to many backend calls, several of them the
 most expensive queries the content service has.
+
+## /admin returns 403 on beta, and should
+
+The TinaCMS admin is part of the build output (`dist/reactome/browser/admin/`),
+so it is present on any host that serves the site. It is meant to be reachable
+only when an editor runs the site on their own machine -- `npm run dev:serve`,
+which starts `tinacms dev` alongside `ng serve` -- and never on a publicly
+reachable host. beta.reactome.org therefore answers `/admin` with 403 while
+localhost:4200 serves it normally. Confirmed intentional 2026-08-18.
+
+The rule is not in this directory; it lives in the live Apache config, so
+finding it needs sudo. If a future change makes `/admin` load on beta, that is a
+regression to fix rather than a feature to keep.

@@ -3,13 +3,14 @@ import { EntityWithAccessionedSequence } from '../../../model/graph/physical-ent
 import { DataKeys, SchemaClasses } from '../../../constants/constants';
 import { MarkerReference } from '../../../model/graph/control-reference/marker-reference.model';
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';
+import { RefsTreeComponent } from '../refs-tree/refs-tree.component';
 
 @Component({
   selector: 'cr-cell-marker',
   templateUrl: './cell-marker.component.html',
   styleUrl: './cell-marker.component.scss',
   standalone: true,
-  imports: [ObjectTreeComponent],
+  imports: [ObjectTreeComponent, RefsTreeComponent],
 })
 export class CellMarkerComponent {
   readonly proteinMarkers = input.required<EntityWithAccessionedSequence[]>();

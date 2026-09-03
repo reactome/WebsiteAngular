@@ -59,6 +59,18 @@
       </div>
 
       <div class="right">
+        <!-- The selected sample's expression for this molecule, when an
+             expression analysis is running (#145). -->
+        @let expression = expressionOf(element);
+        @if (expression !== undefined) {
+          <cr-expression-tag
+            class="expression-bubble"
+            [value]="expression"
+            [scientificFormat]="false"
+            [matTooltip]="'Expression in ' + (analysisSampleName() || 'the selected sample')"
+          />
+        }
+
         @if (moleculeView()) {
           <span class="molecule name">
             {{ element.identifier }}

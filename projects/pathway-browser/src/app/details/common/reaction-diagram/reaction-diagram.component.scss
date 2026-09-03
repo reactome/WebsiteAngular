@@ -5,6 +5,10 @@
 
 .reaction-diagram-container {
   position: relative;
+  // width:100% is the content box unless this says otherwise, so the 1px border
+  // was added outside it: the box came out 2px wider than its parent and an
+  // ancestor with overflow-x:auto clipped the right border off.
+  box-sizing: border-box;
   width: 100%;
   height: 500px;
   border: 1px solid var(--outline-variant);

@@ -1,8 +1,7 @@
-import { Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
+import { computed, Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
-import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import {
   TOC_ITEMS,
   SERVICE_CARDS,
@@ -26,7 +25,6 @@ import {
   INFO_PANELS,
   buildUrl,
   buildMappingUrl,
-  buildCurrentUrl,
 } from './download-data.data';
 
 @Component({
@@ -39,15 +37,7 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
 
-  // The curator badge names the database rather than claiming a release, since
-  // the downloads it links to are release artefacts either way.
-  readonly isCurator = IS_CURATOR;
-
-  // Release number, used only as a path segment for download URLs.
   version = '';
-  // What the badge shows. Separate from `version` because the curator site has
-  // no release number to display, but still links to release artefacts.
-  versionLabel = '';
   baseUrl = '';
 
   // Data
@@ -91,7 +81,6 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
 
   private async load() {
     this.version = await this.stats.getVersion();
-    this.versionLabel = this.stats.getVersionLabel();
     this.baseUrl = await this.stats.getDownloadBaseUrl();
 
     if (isPlatformBrowser(this.platformId)) {
@@ -99,19 +88,17 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
     }
   }
 
-  getDownloadUrl(file: string): string {
-    if (!this.baseUrl || !this.version) return '#';
-    return buildUrl(this.baseUrl, this.version, file);
+  // Null rather than a URL while the release is unknown: an anchor with no href
+  // is inert, which is the honest state for a link whose target cannot be named
+  // yet. It becomes a real link the moment the database answers.
+  getDownloadUrl(file: string): string | null {
+    const version = this.version;
+    return version ? buildUrl(this.baseUrl, version, file) : null;
   }
 
-  getCurrentUrl(file: string): string {
-    if (!this.baseUrl) return '#';
-    return buildCurrentUrl(this.baseUrl, file);
-  }
-
-  getMappingUrl(dbPrefix: string, suffix: string): string {
-    if (!this.baseUrl || !this.version) return '#';
-    return buildMappingUrl(this.baseUrl, this.version, dbPrefix, suffix);
+  getMappingUrl(dbPrefix: string, suffix: string): string | null {
+    const version = this.version;
+    return version ? buildMappingUrl(this.baseUrl, version, dbPrefix, suffix) : null;
   }
 
   toggleInfo(key: string): void {

@@ -40,6 +40,12 @@
         </cr-download-button>
       }
     </div>
+
+    <!-- One preference rather than a second button beside every format: it is a
+         property of the picture, not a different kind of file. -->
+    <mat-checkbox class="diagram-option" [(ngModel)]="includeSubpathways">
+      Include sub-pathway highlighting and labels
+    </mat-checkbox>
   }
 
   <!-- reacfoam -->

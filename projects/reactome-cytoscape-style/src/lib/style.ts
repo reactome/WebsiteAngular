@@ -75,7 +75,11 @@ export class Style {
       {
         selector: '*',
         css: {
-          'font-family': 'Roboto',
+          // A stack, not a bare family: an exported SVG carries this string
+          // to wherever it is opened, and a viewer without Roboto was falling
+          // all the way back to its default serif, whose metrics are nothing
+          // like Roboto's -- so labels stopped fitting inside their shapes.
+          'font-family': 'Roboto, Helvetica, Arial, sans-serif',
           'font-weight': 600,
           'z-index': 1,
         },

@@ -144,13 +144,12 @@
             </mat-menu>
 
             @if (!isCurator) {
-              @if (normalPathway()) {
-                <button
-                  mat-stroked-button
-                  [routerLink]="['/', normalPathway()?.stId]"
-                  [queryParams]="{ select: null }"
-                  queryParamsHandling="merge"
-                >
+              <!-- These navigate through state.navigateTo rather than a
+                   routerLink: an absolute ['/', stId] resolves against the host
+                   root, which drops the /PathwayBrowser prefix and lands the
+                   user on the website app instead of the diagram. -->
+              @if (normalPathway(); as normal) {
+                <button mat-stroked-button (click)="compareWith(normal.stId)">
                   <mat-icon>compare</mat-icon>
                   <span>Compare</span>
                   <mat-icon iconPositionEnd>check</mat-icon>
@@ -162,13 +161,9 @@
                 </button>
                 <mat-menu #compare="matMenu">
                   @for (comparablePathway of diseasePathways(); track comparablePathway.stId) {
-                    <a
-                      mat-menu-item
-                      [routerLink]="['/', comparablePathway.stId]"
-                      [queryParams]="{ select: null }"
-                      queryParamsHandling="merge"
-                      >{{ comparablePathway.displayName }}</a
-                    >
+                    <button mat-menu-item (click)="compareWith(comparablePathway.stId)">
+                      {{ comparablePathway.displayName }}
+                    </button>
                   }
                 </mat-menu>
               }

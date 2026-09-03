@@ -1,0 +1,17 @@
+// A fixed, opaque surface at a known size. Fixed because the page's own
+// navigation and footer are irrelevant here and must not shift the diagram;
+// known size because a render has to be reproducible.
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: block;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+
+:host > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

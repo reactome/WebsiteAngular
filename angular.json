@@ -424,12 +424,6 @@
               "includePaths": ["node_modules/", "dist/"]
             }
           }
-        },
-        "deploy": {
-          "builder": "angular-cli-ghpages:deploy",
-          "options": {
-            "remote": "origin"
-          }
         }
       }
     },

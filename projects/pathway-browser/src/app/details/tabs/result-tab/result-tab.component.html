@@ -23,6 +23,37 @@
       </mat-form-field>
     }
   </div>
+  <!-- What the currently selected molecule did across the samples. The pathway
+       table below answers which pathways came up; this answers what the thing
+       you just clicked was doing (#146). -->
+  @if (selectedExpression(); as selected) {
+    <div class="selected-expression-section">
+      <h3 class="selected-expression-title">
+        Expression of <span class="selected-expression-name">{{ selected.name }}</span>
+      </h3>
+      <table class="selected-expression-table">
+        <thead>
+          <tr>
+            @for (sample of analysis.samples(); track sample) {
+              <th [class.current]="sample === state.sample()">{{ sample }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            @for (sample of analysis.samples(); track sample; let i = $index) {
+              <td [class.current]="sample === state.sample()">
+                @if (selected.values[i] !== undefined) {
+                  <cr-expression-tag [value]="selected.values[i]" [scientificFormat]="false" />
+                }
+              </td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+
   <div class="found-section">
     <table
       mat-table
@@ -202,6 +233,7 @@
         class="pathway-row"
         [id]="'pathway-' + pathway.stId + '-row'"
         [class.selected]="pathway.stId === data.selectedPathwayStId()"
+        [crReveal]="pathway.stId === data.selectedPathwayStId()"
         [class.expanded]="isExpanded(0, pathway)"
         [style.--header-row-height]="headerRowHeight()"
         [style.--row-height]="expandedRowHeight()"

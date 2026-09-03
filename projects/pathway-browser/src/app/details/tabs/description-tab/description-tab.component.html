@@ -92,7 +92,7 @@
     @for (f of figures(); track f.url) {
       @let expanded = figure.expanded() === f;
       <div class="icon-container figure" (click)="figure.toggle(f)" [class.expanded]="expanded">
-        <img class="icon" [src]="environment.host + f.url" [alt]="f.displayName" />
+        <img class="icon" [src]="figure.src(f)" [alt]="f.displayName" (error)="figure.fallback($event, f)" />
       </div>
     }
   </div>
@@ -103,7 +103,8 @@
       <div class="composition-container flex-grow">
         <img
           class="icon figure expanded"
-          [src]="environment.host + f.url"
+          [src]="figure.src(f)"
+          (error)="figure.fallback($event, f)"
           [alt]="f.displayName"
           (click)="figure.toggle(f)"
         />
@@ -242,9 +243,11 @@
           </a>
           <div class="other-forms-meta">
             <span class="other-forms-compartment">{{ row.compartment }}</span>
-            @if (row.entity.startCoordinate || row.entity.endCoordinate) {
+            <!-- Coordinates are EWAS-specific, so they reach the base
+                 PhysicalEntity type through its index signature. -->
+            @if (row.entity['startCoordinate'] || row.entity['endCoordinate']) {
               <span class="other-forms-coords">
-                {{ row.entity.startCoordinate }}&ndash;{{ row.entity.endCoordinate }}
+                {{ row.entity['startCoordinate'] }}&ndash;{{ row.entity['endCoordinate'] }}
               </span>
             }
             @if (row.entity.inDisease) {
@@ -382,6 +385,23 @@
   </div>
 </ng-template>
 
+<!-- Where else this entity takes part. The diagram only ever shows the pathway
+     currently open, so this is the answer to "where else does this appear?" -->
+<ng-template #otherPathwaysTemplate>
+  <div class="element-container">
+    <ul class="other-pathways">
+      @for (pathway of otherPathways(); track pathway.stId) {
+        <li>
+          <button type="button" class="other-pathway" (click)="openPathway(pathway.stId)">
+            <mat-icon fontSet="symbols" class="other-pathway-icon">account_tree</mat-icon>
+            <span class="other-pathway-name">{{ pathway.displayName }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+</ng-template>
+
 <ng-template #locationsTemplate>
   <div class="element-container">
     <app-locations-tree [id]="obj().stId" />
@@ -389,7 +409,15 @@
 </ng-template>
 
 <ng-template #reactionDiagramTemplate>
-  <div class="element-container">
+  <div class="element-container reaction-figure">
+    <!-- Caller-projected download links, so a reaction's exports sit with the
+         figure they produce rather than up beside the summation. PathwayBrowser
+         projects nothing here: it has a Download tab of its own. -->
+    <ng-content select="[figureTools]"></ng-content>
     <cr-reaction-diagram [stId]="obj().stId" />
+    <p class="reaction-figure-note">
+      <mat-icon fontSet="symbols" class="note-icon">info</mat-icon>
+      This reaction is drawn in its own layout, which may differ from how it appears in a pathway diagram.
+    </p>
   </div>
 </ng-template>
