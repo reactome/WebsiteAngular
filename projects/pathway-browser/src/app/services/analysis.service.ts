@@ -39,6 +39,32 @@ export type PaletteName = CustomPalette | StandardPalette;
 
 export type PaletteGroup = 'sequential' | 'diverging' | 'continuous';
 
+/**
+ * The palette an analysis type gets when the user has not chosen one.
+ *
+ * Every type in Analysis.TYPES needs an entry. GSA_STATISTICS had none, and
+ * because both lookups in `palette` below carried a `!`, the miss produced an
+ * undefined palette instead of an error. Every consumer calls .scale() on it,
+ * so one missing entry blanked the diagram, the event hierarchy, the Voronoi
+ * view and the results table together -- which is what a PADOG run did.
+ * analysis-palette.spec.ts walks Analysis.TYPES so the next added type fails a
+ * test rather than a render.
+ */
+export const TYPE_DEFAULT_PALETTE = new Map<Analysis.Type, PaletteName>([
+  ['GSA_REGULATION', 'ancient'],
+  // Statistics carry a magnitude with no direction, so a sequential scale, the
+  // same as over-representation. Regulation is the signed one and keeps
+  // 'ancient'.
+  ['GSA_STATISTICS', 'primary'],
+  ['GSVA', 'Viridis'],
+  ['EXPRESSION', 'Viridis'],
+  ['OVERREPRESENTATION', 'primary'],
+  ['SPECIES_COMPARISON', 'primary'],
+]);
+
+/** Used when a type is not in the map at all -- see `palette` below. */
+const FALLBACK_PALETTE: PaletteName = 'primary';
+
 export class PaletteSummary {
   lightColors: Color[];
   darkColors: Color[];
@@ -218,20 +244,21 @@ export class AnalysisService {
       : this.palette()
   );
 
-  typeToDefaultPalette = new Map<Analysis.Type, PaletteName>([
-    ['GSA_REGULATION', 'ancient'],
-    ['GSVA', 'Viridis'],
-    ['EXPRESSION', 'Viridis'],
-    ['OVERREPRESENTATION', 'primary'],
-    ['SPECIES_COMPARISON', 'primary'],
-  ]);
-
   palette: WritableSignal<PaletteSummary> = linkedSignal({
     source: () => ({ palette: this.state.palette(), type: this.type() }),
-    computation: ({ palette, type }) =>
-      this.paletteOptions.get(
-        palette || this.typeToDefaultPalette.get(type || 'OVERREPRESENTATION')!
-      )!,
+    computation: ({ palette, type }) => {
+      // Fall back rather than assert. Callers do `palette().scale(...)`, so an
+      // undefined palette is not a missing colour scheme -- it throws and takes
+      // the whole render with it. A type the backend adds before we know about
+      // it should draw in the default colours instead.
+      const chosen = palette ?? TYPE_DEFAULT_PALETTE.get(type ?? 'OVERREPRESENTATION');
+      // 'primary' is built unconditionally in paletteOptions above, so this last
+      // lookup is the one that genuinely cannot miss.
+      return (
+        this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ??
+        this.paletteOptions.get(FALLBACK_PALETTE)!
+      );
+    },
   });
 
   paletteGroups: { name: PaletteGroup; palettes: PaletteName[]; valid: boolean }[] = [
@@ -421,7 +448,10 @@ export class AnalysisService {
         // validGroups.add('diverging')
         validGroups.add('sequential');
         validGroups.add('continuous');
-      } else if (result.summary.type === 'OVERREPRESENTATION') {
+      } else if (
+        result.summary.type === 'OVERREPRESENTATION' ||
+        result.summary.type === 'GSA_STATISTICS'
+      ) {
         validGroups.add('sequential');
       } else if (result.summary.type === 'SPECIES_COMPARISON') {
         validGroups.add('sequential');
