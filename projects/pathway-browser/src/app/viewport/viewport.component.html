@@ -76,6 +76,20 @@
                     <mat-spinner [diameter]="18"></mat-spinner>
                   }
                 </button>
+                <button
+                  (click)="toggleDeltaSignal()"
+                  mat-ripple
+                  class="primary"
+                  [disabled]="!pathwayId() || hasEHLD() || !!analysis.result()"
+                  [matTooltip]="
+                    analysis.result()
+                      ? 'Clear the analysis overlay before running DeltaSignal'
+                      : 'Predict the effect of a pathway perturbation'
+                  "
+                >
+                  <mat-icon>conversion_path</mat-icon>
+                  Perturb
+                </button>
               }
 
               @if (hasMultipleProfile()) {
@@ -250,6 +264,15 @@
               </div>
               <div class="dropdown" [class.open]="dropdown() === 'compare'">
                 <cr-compare-form (close)="dropdown.set(null)" />
+              </div>
+              @let deltaSignalStatus = dropdown() === 'deltasignal' ? 'open' : 'closed';
+              <div class="dropdown deltasignal-dropdown" [class.open]="dropdown() === 'deltasignal'">
+                <cr-deltasignal-panel
+                  [pathwayId]="normalPathway()?.stId || pathwayId()"
+                  [selectedStId]="state.select()"
+                  [status]="deltaSignalStatus"
+                  (dismissed)="dropdown.set(null)"
+                />
               </div>
             </as-split-area>
 

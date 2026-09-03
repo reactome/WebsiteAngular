@@ -13,10 +13,16 @@
  */
 const backend = process.env.REACTOME_BACKEND || 'http://localhost:8080';
 const secure = backend.startsWith('https');
+const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:8080';
 
 const localService = (context) => [context, { target: backend, secure, changeOrigin: true }];
 
 module.exports = {
+  '/api': {
+    target: deltaSignalBackend,
+    secure: deltaSignalBackend.startsWith('https'),
+    changeOrigin: true,
+  },
   '/reactome': {
     target: 'https://download.reactome.org',
     secure: true,
