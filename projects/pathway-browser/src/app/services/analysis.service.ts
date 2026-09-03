@@ -65,6 +65,29 @@ export const TYPE_DEFAULT_PALETTE = new Map<Analysis.Type, PaletteName>([
 /** Used when a type is not in the map at all -- see `palette` below. */
 const FALLBACK_PALETTE: PaletteName = 'primary';
 
+/**
+ * Which resource to show when the user has not picked one.
+ *
+ * Production shows the specific resource, not the pooled TOTAL, and the two do
+ * not merely count differently -- they carry different statistics. For the
+ * human/mouse species comparison, Macroautophagy is 158 entities at FDR 0.109
+ * under TOTAL and 145 at FDR 0.536 under UNIPROT, because TOTAL pools proteins
+ * and chemicals and so compares against a different background. Curators read
+ * the two sites side by side and reported the difference as a defect.
+ *
+ * Only when there is exactly one specific resource: with several, which one
+ * production favours is not established, and picking arbitrarily would trade a
+ * known difference for an unknown one. TOTAL stays the default there.
+ */
+export function defaultResource(
+  summary: readonly { resource: Analysis.Resource }[]
+): Analysis.Resource | null {
+  const specific = summary
+    .map((entry) => entry.resource)
+    .filter((resource) => resource !== 'TOTAL');
+  return specific.length === 1 ? specific[0] : null;
+}
+
 export class PaletteSummary {
   lightColors: Color[];
   darkColors: Color[];
@@ -433,6 +456,16 @@ export class AnalysisService {
       [...this.paletteOptions.values()].forEach((summary) => (summary.dark = this.darkS.isDark()));
     });
     effect(() => this.resultResource.error() && this.state.analysis.set(null)); // remove token if it is wrong
+
+    // Match what production shows. Setting the filter refetches against that
+    // resource, and the guard makes this run once: on the second pass the
+    // filter is no longer null. A resource the user picks by hand is never
+    // overridden.
+    effect(() => {
+      if (this.state.resourceFilter() !== null) return;
+      const resource = defaultResource(this.resourceOptions());
+      if (resource) this.state.resourceFilter.set(resource);
+    });
 
     effect(() => {
       const result = this.result();

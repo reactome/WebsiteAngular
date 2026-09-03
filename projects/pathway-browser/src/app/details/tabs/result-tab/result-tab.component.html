@@ -355,7 +355,7 @@
   <button
     mat-menu-item
     [matMenuTriggerFor]="resourcesMenu"
-    [disabled]="analysis.resourceOptions().length <= 2"
+    [disabled]="analysis.resourceOptions().length <= 1"
     [class.filter-active]="analysis.resourceFilterActive()"
   >
     Resources
