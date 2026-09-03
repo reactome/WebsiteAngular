@@ -388,9 +388,11 @@ export class AnalysisService {
     params: () => {
       const token = this.state.analysis();
       const pathway = this.state.pathwayId();
-      return token && pathway ? { token, pathway } : undefined;
+      const resource = this.state.resourceFilter();
+      return token && pathway ? { token, pathway, resource } : undefined;
     },
-    stream: ({ params }) => this.foundEntities(params.pathway, params.token),
+    stream: ({ params }) =>
+      this.foundEntities(params.pathway, params.token, params.resource ?? undefined),
   });
 
   readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
@@ -616,7 +618,10 @@ export class AnalysisService {
   foundEntities(
     pathway: string,
     token?: string,
-    resource: Analysis.Resource = 'TOTAL'
+    // Follow whatever resource is being displayed. Pinned to TOTAL, this marked
+    // TOTAL entities on the diagram while the results table listed UNIPROT ones,
+    // so the highlighting and the numbers described different sets.
+    resource: Analysis.Resource = this.state.resourceFilter() ?? 'TOTAL'
   ): Observable<Analysis.FoundEntities> {
     return this.http
       .get<Analysis.FoundEntities>(
@@ -643,7 +648,10 @@ export class AnalysisService {
   pathwaysResults(
     pathwayIds: number[] | string[],
     token?: string,
-    resource: Analysis.Resource = 'TOTAL'
+    // Follow whatever resource is being displayed. Pinned to TOTAL, this marked
+    // TOTAL entities on the diagram while the results table listed UNIPROT ones,
+    // so the highlighting and the numbers described different sets.
+    resource: Analysis.Resource = this.state.resourceFilter() ?? 'TOTAL'
   ): Observable<Analysis.Pathway[]> {
     if (pathwayIds.length === 0) return of([]);
     return this.http

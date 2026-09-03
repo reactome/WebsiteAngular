@@ -263,9 +263,13 @@ export class EntityPopupComponent {
     params: () => {
       const token = this.state.analysis();
       const pathway = this.state.pathwayId();
-      return token && pathway && this.tab() === 'molecules' ? { token, pathway } : undefined;
+      const resource = this.analysis.resourceFilter();
+      return token && pathway && this.tab() === 'molecules'
+        ? { token, pathway, resource }
+        : undefined;
     },
-    stream: ({ params }) => this.analysis.foundEntities(params.pathway, params.token),
+    stream: ({ params }) =>
+      this.analysis.foundEntities(params.pathway, params.token, params.resource ?? undefined),
   });
 
   private readonly analysisHits = computed<Map<string, number[]> | undefined>(() => {
