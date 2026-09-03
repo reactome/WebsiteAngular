@@ -23,7 +23,10 @@ interface Stats {
 })
 export class HomeStatsComponent implements OnInit {
   private statsService = inject(StatsService);
-  private generalService = inject(GeneralService);
+
+  // The curation graph is not a release, so the heading names the database
+  // instead of announcing a release date.
+  readonly isCurator = IS_CURATOR;
 
   /**
    * The release, straight from the database. A computed rather than a field:
@@ -31,7 +34,7 @@ export class HomeStatsComponent implements OnInit {
    * in ngOnInit would keep whatever was true then -- which, with no build-time
    * fallback, is nothing at all.
    */
-  readonly version = this.statsService.versionNow;
+  readonly versionLabel = this.statsService.versionLabel;
   releaseDate: Date = new Date();
   stats: Stats = {
     human_pathways: 0,
@@ -47,7 +50,6 @@ export class HomeStatsComponent implements OnInit {
   }
 
   getVersionAndDate() {
-    this.version = this.statsService.getVersionLabel();
     this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }

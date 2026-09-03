@@ -2,6 +2,8 @@ import { computed, Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } f
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { StatsService } from '../../services/stats.service';
+import { APP_CONFIG } from '../../config/config';
+import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import {
   TOC_ITEMS,
   SERVICE_CARDS,
@@ -37,8 +39,24 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
 
-  version = '';
-  baseUrl = '';
+  // The curator badge names the database rather than claiming a release, since
+  // the downloads it links to are release artefacts either way.
+  readonly isCurator = IS_CURATOR;
+
+  // What the badge shows. Separate from `version` because the curator site has
+  // no release number to display, but still links to release artefacts.
+  readonly versionLabel = this.stats.versionLabel;
+
+  /**
+   * The release these files belong to, followed reactively.
+   *
+   * It used to be read once in ngOnInit, before the content service had
+   * answered, so every link on the page was built from the hardcoded fallback --
+   * the whole catalogue pointed at the previous release. A computed keeps the
+   * links in step with the answer whenever it lands.
+   */
+  readonly version = computed(() => this.stats.versionNow());
+  readonly baseUrl = APP_CONFIG.downloadUrl;
 
   // Data
   readonly tocItems = TOC_ITEMS;
@@ -80,9 +98,6 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   }
 
   private async load() {
-    this.version = await this.stats.getVersion();
-    this.baseUrl = await this.stats.getDownloadBaseUrl();
-
     if (isPlatformBrowser(this.platformId)) {
       this.setupIntersectionObserver();
     }
@@ -92,12 +107,12 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   // is inert, which is the honest state for a link whose target cannot be named
   // yet. It becomes a real link the moment the database answers.
   getDownloadUrl(file: string): string | null {
-    const version = this.version;
+    const version = this.version();
     return version ? buildUrl(this.baseUrl, version, file) : null;
   }
 
   getMappingUrl(dbPrefix: string, suffix: string): string | null {
-    const version = this.version;
+    const version = this.version();
     return version ? buildMappingUrl(this.baseUrl, version, dbPrefix, suffix) : null;
   }
 

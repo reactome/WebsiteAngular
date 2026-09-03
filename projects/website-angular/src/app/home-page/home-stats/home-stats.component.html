@@ -1,6 +1,17 @@
 <h1 class="stat-header">
-  @if (isCurator) { Version {{ version }} } @else { Version {{ version }} Released on
-  {{ releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' }) }}
+  @if (isCurator) {
+    Version {{ versionLabel() }}
+  } @else {
+    <!-- No version, no claim about one: the number comes from the database and
+         says nothing until it arrives. -->
+    @if (versionLabel()) {
+      Version {{ versionLabel() }} Released on
+    } @else {
+      Released on
+    }
+    {{
+      releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' })
+    }}
   }
 </h1>
 <app-carousel class="stats-container">

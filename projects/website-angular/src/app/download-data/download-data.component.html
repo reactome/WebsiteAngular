@@ -11,11 +11,11 @@
         >
         license.
       </p>
-      @if (versionLabel) {
+      @if (versionLabel()) {
         @if (isCurator) {
-          <span class="version-badge">{{ versionLabel }}</span>
+          <span class="version-badge">{{ versionLabel() }}</span>
         } @else {
-          <span class="version-badge">Current Release: {{ versionLabel }}</span>
+          <span class="version-badge">Current Release: {{ versionLabel() }}</span>
         }
       }
     </header>

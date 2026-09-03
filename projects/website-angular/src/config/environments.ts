@@ -71,11 +71,11 @@ function buildTimeEnvName(): string | undefined {
 // need to choose an environment without rebuilding. Takes precedence over the
 // build-time define.
 function runtimeEnvName(): string | undefined {
-  return (typeof window !== 'undefined' && (window as any).__APP_ENV) || undefined;
+  if (typeof window === 'undefined') return undefined;
+  return (window as Window & { __APP_ENV?: string }).__APP_ENV || undefined;
 }
 
-export const SELECTED_ENV_NAME: string | undefined =
-  runtimeEnvName() ?? buildTimeEnvName();
+export const SELECTED_ENV_NAME: string | undefined = runtimeEnvName() ?? buildTimeEnvName();
 
 // Helper: pick environment at runtime (fallback to production)
 export function getEnv(envName?: string) {
