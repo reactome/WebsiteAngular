@@ -55,7 +55,22 @@ export interface SiteProfile {
    * received, and nobody reading them afterwards could separate the two.
    */
   gtagId?: string;
-  preferS3: boolean;
+  /**
+   * Take diagram JSON, EHLDs, figures and icons from the deployment's own host
+   * instead of the release bucket.
+   *
+   * Absent is the norm: released assets live in the bucket, keyed by release
+   * number, served by CloudFront with CORS. Only a deployment whose assets are
+   * not in a release needs this -- the curator site's diagram JSON is derived
+   * from the curation graph and is ahead of any release (18 nodes for Signal
+   * Transduction against release 97's 17), so no bucket path holds it.
+   *
+   * Named for the exception rather than the norm on purpose: the old flag was
+   * `preferS3`, which named the common case and read as a soft preference, and a
+   * deployment that failed to set it silently fell back to a host path that in
+   * some contexts nothing serves.
+   */
+  assetsFromHost?: true;
   /**
    * Where to ask for the database version when `contentService` cannot answer.
    *
@@ -94,7 +109,6 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
-    preferS3: true,
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
@@ -108,7 +122,6 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     originFallback: 'https://beta.reactome.org',
     s3: S3,
     gsaServer: 'production',
-    preferS3: true,
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
@@ -119,12 +132,6 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     originFallback: 'https://dev.reactome.org',
     s3: S3,
     gsaServer: 'dev',
-    // Diagram and EHLD assets come from the release bucket, as they do for every
-    // main deployment. The alternative is `${host}/download/current`, and under
-    // `ng serve` that is localhost:4200, which proxy.conf.js does not proxy --
-    // so no diagram JSON arrives and no canvas is drawn. The rule before the
-    // environment rework was `preferS3: !IS_CURATOR`; this keeps it.
-    preferS3: true,
     versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
@@ -137,10 +144,16 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // No analytics property for the curator site yet. Deliberately absent rather
     // than borrowed: pointing it at the public property would file curation
     // traffic as public traffic, and nobody looking at those numbers would know.
-    preferS3: false,
+    assetsFromHost: true,
     // A curation graph has no released version, so this asks the released
     // instance on the same host -- not a different deployment.
-    versionFallback: 'https://newcurator.reactome.org/ContentService/data/database/version',
+    // The curator host cannot report a release number: its GraphContentService
+    // answers 500 for the version, and the /ContentService this used to name does
+    // not exist there at all -- it 404s, so this fallback had never once worked.
+    // The number is needed to key bucket paths for the assets curator does take
+    // from the release (figures, icons, EHLDs), so it comes from the public site,
+    // which is the authority on which release is current.
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
     schemaPath: '/curatorgraph/dataSchema',
   },
   'curator-local': {
@@ -151,7 +164,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     contentService: 'http://localhost:8686',
     s3: S3,
     gsaServer: 'dev',
-    preferS3: false,
+    assetsFromHost: true,
     versionFallback: 'https://reactome.org/ContentService/data/database/version',
     // Proxied at the root by proxy.curator-local.conf.json, because
     // newcurator.reactome.org/download sends no Access-Control-Allow-Origin.

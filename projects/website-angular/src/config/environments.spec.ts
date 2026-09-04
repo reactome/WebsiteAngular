@@ -63,17 +63,25 @@ describe('site profiles', () => {
     }
   });
 
-  it('never sends one deployment to another for a fallback', () => {
-    // A fallback naming a different deployment reports someone else's release as
-    // this one's. For an origin-served site the canonical public host is its own
-    // deployment, so that is what its fallback may name -- nothing else.
-    // curator-local is the exception and says why in the profile.
+  it('never asks another deployment for data, only for which release is current', () => {
+    // The rule that matters: no deployment answers with another's data. A
+    // fallback naming a different site would report someone else's release as
+    // this one's, which is how the curation database came to be served from beta.
+    //
+    // One narrow exception, chosen deliberately. The curator host cannot report a
+    // release number at all -- its GraphContentService 500s and it serves no
+    // /ContentService -- and it needs one to key bucket paths for the assets it
+    // does take from the release. reactome.org is the authority on which release
+    // is current, and a release number is not another deployment's data.
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
-      if (name === 'curator-local') continue;
+      const fallback = new URL(profile.versionFallback).origin;
+      if (profile.variant === 'curator') {
+        expect(fallback, `${name} may only ask the public site`).toBe('https://reactome.org');
+        continue;
+      }
       const canonical = profile.host === 'origin' ? profile.originFallback : profile.host;
       expect(canonical, `${name} needs a canonical host`).toBeDefined();
-      const own = new URL(canonical as string).origin;
-      expect(new URL(profile.versionFallback).origin, `${name}.versionFallback`).toBe(own);
+      expect(fallback, `${name}.versionFallback`).toBe(new URL(canonical as string).origin);
     }
   });
 
@@ -100,16 +108,19 @@ describe('site profiles', () => {
     }
   });
 
-  it('takes diagram assets from the bucket on every main deployment', () => {
-    // The rule before the environment rework was `preferS3: !IS_CURATOR`, and it
-    // is load-bearing: the alternative is `${host}/download/current`, which under
-    // `ng serve` is localhost:4200 and is not proxied. CI caught this as
-    // `#cytoscape canvas` never becoming visible -- the diagram JSON simply never
-    // arrived. A curation graph has no released version, so curator builds cannot
-    // use the bucket and correctly opt out.
+  it('takes assets from the bucket unless a deployment says otherwise', () => {
+    // The bucket is the default and says nothing; only a deployment whose assets
+    // are not in a release opts out. Curator's diagram JSON is derived from the
+    // curation graph and is ahead of any release, so no bucket path holds it.
+    //
+    // The inverse of this was load-bearing and got it wrong once: with the old
+    // `preferS3` flag the development profile carried `false`, assets resolved to
+    // ${host}/download/current, and under `ng serve` that is localhost:4200,
+    // which proxy.conf.js does not proxy. CI caught it as `#cytoscape canvas`
+    // never appearing.
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
-      const expected = profile.variant !== 'curator';
-      expect(profile.preferS3, `${name}.preferS3`).toBe(expected);
+      const expected = profile.variant === 'curator' ? true : undefined;
+      expect(profile.assetsFromHost, `${name}.assetsFromHost`).toBe(expected);
     }
   });
 });

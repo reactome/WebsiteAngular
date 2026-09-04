@@ -55,7 +55,7 @@ export const environment = {
   s3: profile.s3,
   gsaServer: profile.gsaServer,
   gtagId: profile.gtagId,
-  preferS3: profile.preferS3,
+  assetsFromHost: profile.assetsFromHost === true,
 };
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served

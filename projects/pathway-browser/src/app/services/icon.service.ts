@@ -22,7 +22,7 @@ import { Search } from '../viewport/search/search.component';
  * website's -- and they must not disagree about where icons live.
  */
 export function iconArtworkBase(version: number | undefined) {
-  return environment.preferS3 && version
+  return !environment.assetsFromHost && version
     ? `${environment.s3}/${version}/icons/svg`
     : `${ICON_BASE}/icon`;
 }
