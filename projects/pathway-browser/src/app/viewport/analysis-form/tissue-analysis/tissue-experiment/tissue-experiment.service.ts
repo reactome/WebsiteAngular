@@ -2,7 +2,11 @@ import { Injectable, ResourceRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import type { TissueExperiment } from './tissue-experiment.model';
 import { Observable } from 'rxjs';
-import { DIGESTER_FOR_BACKEND, environment } from '../../../../../environments/environment';
+import {
+  DIGESTER_FOR_BACKEND,
+  environment,
+  IS_CURATOR,
+} from '../../../../../environments/environment';
 import { rxResource } from '@angular/core/rxjs-interop';
 
 @Injectable({
@@ -11,11 +15,16 @@ import { rxResource } from '@angular/core/rxjs-interop';
 export class TissueExperimentService {
   private http = inject(HttpClient);
 
-  // Disabled: /ExperimentDigester is not deployed on the curator host and the
-  // tissue experiment list is unused. Returning undefined params keeps the
-  // resource idle so no request is sent.
+  // The curator host has no /ExperimentDigester, so the curator variant asks for
+  // nothing and the resource stays idle. Every other deployment does have one --
+  // beta and dev answer /ExperimentDigester/experiments/summaries with the tissue
+  // list -- and disabling it for all of them emptied the Available Tissues column
+  // on the public site, where tissue analysis is a real feature.
+  //
+  // A constraint that belongs to one deployment is expressed as one deployment's
+  // constraint. Gate on the variant, not on everyone.
   summaries = rxResource({
-    params: () => undefined,
+    params: () => (IS_CURATOR ? undefined : {}),
     stream: () => this.getExperimentsSummary(),
   });
 
