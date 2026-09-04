@@ -22,6 +22,12 @@ import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
 import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
+import type {
+  RenderEdgeShape,
+  RenderNodeShape,
+  RenderShapes,
+  ShapeGeometry,
+} from './render-shapes.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is
@@ -204,8 +210,13 @@ export class RenderComponent {
             this.dataState.currentPathway()?.displayName || this.reaction()?.figureName() || null,
           ...drawn,
         });
-        this.publish();
+        // Set before publishing, not after: publish() copies the signal's value
+        // into __renderState, so doing it the other way round left that object
+        // permanently reporting ready:false while the DOM attribute the render
+        // service waits on said otherwise. Anything trusting the published flag
+        // waited forever.
         this.ready.set(true);
+        this.publish();
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -293,6 +304,10 @@ export class RenderComponent {
     // caller poking at renderer internals would break the first time they move.
     api['__renderExport'] = {
       svg: () => this.exportSvg(),
+      // The diagram as shapes rather than as a picture, for exporters that draw
+      // shapes -- PowerPoint. Null where the view is not made of shapes (an
+      // illustration, the genome-wide view) and the caller embeds the picture.
+      shapes: () => this.exportShapes(),
       // Reacfoam's exporter is async, so callers await whatever they get back.
       png: (scale = 1) => this.exportPng(scale),
       // Animation primitives rather than an animation. What an animated format
@@ -392,6 +407,147 @@ export class RenderComponent {
   }
 
   /** The drawn view as SVG. Reacfoam's path is asynchronous. */
+  /**
+   * The diagram described as shapes, in diagram coordinates.
+   *
+   * Reads what cytoscape resolved rather than the stylesheet: a node's fill
+   * depends on its type, on whether an analysis is overlaid and on which sample
+   * is showing, and only the live style knows the answer.
+   *
+   * Null for views that are not made of shapes -- an illustration is artwork and
+   * the genome-wide view draws to a canvas -- so a caller can fall back to
+   * embedding the picture rather than emitting an empty slide.
+   */
+  private exportShapes(): RenderShapes | null {
+    const cy = this.reaction()?.core() ?? this.exportableInstances().instances[0];
+    if (!cy) return null;
+
+    const shapes: (RenderNodeShape | RenderEdgeShape)[] = [];
+    // toArray() rather than iterating the collection: a cytoscape collection is
+    // array-like without being an array, and its filter hands back the loose
+    // element type rather than a node.
+    const visible = cy
+      .nodes()
+      .toArray()
+      .filter((node) => node.visible());
+
+    // Compartments first: OOXML paints in document order, and a compartment
+    // covers everything inside it.
+    const ordered = [
+      ...visible.filter((node) => this.isCompartment(node)),
+      ...visible.filter((node) => !this.isCompartment(node)),
+    ];
+
+    for (const node of ordered) {
+      const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
+      const label = String(node.data('displayName') ?? '').trim();
+      shapes.push({
+        kind: 'node',
+        id: String(node.id()),
+        name: label || String(node.data('schemaClass') ?? node.id()),
+        x: box.x1,
+        y: box.y1,
+        w: box.w,
+        h: box.h,
+        geom: this.geometryOf(String(node.style('shape') ?? '')),
+        fill: this.colour(node.style('background-color'), node.style('background-opacity')),
+        stroke: this.colour(node.style('border-color'), node.style('border-opacity')),
+        strokeWidth: this.pixels(node.style('border-width')),
+        label,
+        fontSize: this.pixels(node.style('font-size')) || 8,
+        fontColor: this.colour(node.style('color'), '1'),
+        bold: String(node.style('font-weight') ?? '').includes('bold'),
+      });
+    }
+
+    for (const edge of cy
+      .edges()
+      .toArray()
+      .filter((edge) => edge.visible())) {
+      // Bend points are how the diagram's orthogonal routing is stored; without
+      // them every connector exports as a straight diagonal.
+      const points = [edge.sourceEndpoint(), ...this.bendPoints(edge), edge.targetEndpoint()];
+      shapes.push({
+        kind: 'edge',
+        id: String(edge.id()),
+        name: String(edge.data('schemaClass') ?? 'connector'),
+        points: points.map((point) => ({ x: point.x, y: point.y })),
+        stroke: this.colour(edge.style('line-color'), edge.style('opacity')),
+        strokeWidth: this.pixels(edge.style('width')) || 1,
+        arrow: String(edge.style('target-arrow-shape') ?? 'none') !== 'none',
+      });
+    }
+
+    const extent = cy.elements().boundingBox();
+    return { x: extent.x1, y: extent.y1, width: extent.w, height: extent.h, shapes };
+  }
+
+  private isCompartment(node: cytoscape.NodeSingular): boolean {
+    return /compartment/i.test(
+      String(node.data('schemaClass') ?? '') + ' ' + node.classes().join(' ')
+    );
+  }
+
+  private geometryOf(shape: string): ShapeGeometry {
+    if (shape.includes('ellipse')) return 'ellipse';
+    if (shape.includes('round')) return 'roundRect';
+    return 'rect';
+  }
+
+  /** Cytoscape hands numbers back as "12px" as often as 12. */
+  private pixels(value: unknown): number {
+    const parsed = parseFloat(String(value ?? ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  /**
+   * A style colour as six hex digits, or null where it would not be painted.
+   *
+   * OOXML's srgbClr carries no alpha, so anything fully transparent becomes "no
+   * fill" rather than a colour nobody can see.
+   */
+  private colour(value: unknown, opacity: unknown): string | null {
+    const alpha = String(opacity ?? '');
+    if (alpha !== '' && this.pixels(alpha) === 0) return null;
+    const text = String(value ?? '').trim();
+    const rgb = /^rgba?\(([^)]+)\)$/.exec(text);
+    if (rgb) {
+      const parts = rgb[1].split(',').map((part) => parseFloat(part));
+      if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isFinite(part))) {
+        if (parts[3] === 0) return null;
+        return parts
+          .slice(0, 3)
+          .map((part) =>
+            Math.max(0, Math.min(255, Math.round(part)))
+              .toString(16)
+              .padStart(2, '0')
+          )
+          .join('');
+      }
+    }
+    const hex = /^#?([0-9a-f]{6})$/i.exec(text);
+    if (hex) return hex[1].toLowerCase();
+    const short = /^#?([0-9a-f]{3})$/i.exec(text);
+    if (short) {
+      return short[1]
+        .split('')
+        .map((digit) => digit + digit)
+        .join('')
+        .toLowerCase();
+    }
+    return null;
+  }
+
+  /** Whatever bend points an edge carries, in whichever form it stores them. */
+  private bendPoints(edge: cytoscape.EdgeSingular): { x: number; y: number }[] {
+    const candidate = edge as unknown as {
+      segmentPoints?: () => { x: number; y: number }[];
+      controlPoints?: () => { x: number; y: number }[];
+    };
+    const points = candidate.segmentPoints?.() ?? candidate.controlPoints?.() ?? [];
+    return Array.isArray(points) ? points.filter((point) => Number.isFinite(point?.x)) : [];
+  }
+
   private exportSvg(): string | Promise<string> {
     // full:true either way: the reaction's layout is the figure, so there is
     // nothing to frame and nothing outside it to leave out.
