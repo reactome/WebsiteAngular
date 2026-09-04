@@ -23,12 +23,30 @@ export async function serves(
   url: string,
   { timeout = 30_000 }: { timeout?: number } = {}
 ): Promise<boolean> {
-  const response = await request.get(url, { timeout });
-  if (response.status() === 404 || response.status() === 501) return false;
+  let response;
+  try {
+    response = await request.get(url, { timeout });
+  } catch (error) {
+    // Nothing listening is genuinely "absent": CI proxies /RenderService to
+    // 127.0.0.1:4310 and runs no render service, so the connection is refused
+    // and those tests should stand down.
+    //
+    // A timeout is not. That is the case this helper exists for -- a request
+    // that never answered used to read as a missing feature, and two identical
+    // runs against beta skipped 12 tests and then 7 without saying so.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/timed?\s?out|Timeout/i.test(message)) throw error;
+    return false;
+  }
+
+  const status = response.status();
+  // 404/501: the backend does not implement it. 502/503/504: a proxy could not
+  // reach it, which on a dev server means it is not running.
+  if ([404, 501, 502, 503, 504].includes(status)) return false;
   if (!response.ok()) {
     throw new Error(
-      `${url} answered ${response.status()}. A probe may only skip a test when the endpoint ` +
-        `is absent (404/501); any other failure is worth seeing rather than skipping past.`
+      `${url} answered ${status}. A probe may only skip a test when the endpoint is absent; ` +
+        `any other failure is worth seeing rather than skipping past.`
     );
   }
   return true;
