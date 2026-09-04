@@ -20,6 +20,11 @@
 #   npm run preflight          # everything (a few minutes)
 #   npm run preflight -- fast  # skip the end-to-end smoke
 #
+# Fast mode is for iterating, not for deciding you are done. The smoke it skips
+# is the only check that downloads a file and looks inside it, so a change to an
+# exporter can sit in the tree with fast mode reporting all clear -- which is
+# exactly what happened to the PowerPoint work.
+#
 # It is wired to pre-push. `git push --no-verify` skips it when you need it to.
 set -uo pipefail
 
