@@ -379,7 +379,22 @@ export class EntityPopupComponent {
   readonly sampleNames = computed(() => this.analysis.samples());
 
   /** The sample the rest of the browser is currently showing. */
-  readonly selectedSample = computed(() => Number(this.state.sample() ?? 0));
+  /**
+   * Which sample the diagram is currently coloured by, as an index into the
+   * values on a row.
+   *
+   * `state.sample` holds the column's *name* -- `samples()[index]` is what sets
+   * it -- so reading it as a number gave NaN for every real analysis, and the
+   * value a reader was actually looking at on the canvas was never the one
+   * emphasised here. It only ever appeared to work when no sample was set,
+   * where the fallback happened to be the first column anyway.
+   */
+  readonly selectedSample = computed(() => {
+    const name = this.state.sample();
+    if (!name) return 0;
+    const at = this.sampleNames().indexOf(name);
+    return at === -1 ? 0 : at;
+  });
 
   /** Group components by molecule type, in a stable order, as production does. */
   private group(components: any[], refs: Map<string, ComponentRef>): PopupGroup[] {

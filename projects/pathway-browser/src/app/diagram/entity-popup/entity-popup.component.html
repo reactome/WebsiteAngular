@@ -72,29 +72,43 @@
                   <button type="button" (click)="open(row)">
                     <!-- With an analysis running, every molecule says whether it
                            was in it: otherwise a complex whose components are
-                           half hit looks the same as one nothing touched. -->
-                    @if (row.found !== undefined) {
-                      <span
-                        class="row-hit"
-                        [class.row-hit--found]="row.found"
-                        [matTooltip]="row.found ? 'In your analysis' : 'Not in your analysis'"
-                      ></span>
-                    }
-                    <span class="row-label" [class.row-label--missed]="row.found === false">{{ row.label }}</span>
+                           half hit looks the same as one nothing touched.
+                           The marker sits on the label's own line: stacked above
+                           it, curators read straight past it and reported the
+                           indication as missing. -->
+                    <span class="row-head">
+                      @if (row.found !== undefined) {
+                        <span
+                          class="row-hit"
+                          [class.row-hit--found]="row.found"
+                          [matTooltip]="row.found ? 'In your analysis' : 'Not in your analysis'"
+                        ></span>
+                      }
+                      <span class="row-label" [class.row-label--missed]="row.found === false">{{ row.label }}</span>
+                    </span>
                     @if (row.expression?.length) {
                       <span class="row-expression">
                         @for (value of row.expression; track $index) {
                           <!-- One value per sample, as the GWT panel shows one
-                                 column per sample. The one the rest of the
-                                 browser is displaying is the emphasised one. -->
+                                 column per sample. The sample's name is here
+                                 rather than in a tooltip only: three bare
+                                 numbers say nothing about which tissue is
+                                 which. The one the rest of the browser is
+                                 displaying is the emphasised one. -->
                           <span
                             class="row-expression__value"
                             [class.row-expression__value--current]="$index === selectedSample()"
-                            [matTooltip]="sampleNames()[$index] ?? 'Sample ' + ($index + 1)"
-                            >{{ value | number: '1.0-2' }}</span
                           >
+                            <span class="row-expression__name">{{
+                              sampleNames()[$index] ?? 'Sample ' + ($index + 1)
+                            }}</span>
+                            {{ value | number: '1.0-2' }}
+                          </span>
                         }
                       </span>
+                    } @else if (row.found === false) {
+                      <!-- Said in words, not only by an unfilled dot. -->
+                      <span class="row-missed">not in your data</span>
                     }
                     @if (row.detail) {
                       <span class="row-detail">{{ row.detail }}</span>
