@@ -548,10 +548,25 @@ export class Interactivity {
       shadowLabels.style({
         'text-opacity': shadowLabelOpacity,
       });
-      trivial.style({
-        opacity: trivialOpacity,
-        'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
-      });
+      // Not the ones flagging has pinned visible.
+      //
+      // This writes an inline opacity, and in cytoscape an inline style beats
+      // any stylesheet rule -- so it silently overrode the `.trivial
+      // .always-visible` rule that flagging relies on. Detaching this handler
+      // from the zoom event was not enough to stop it: `triggerZoom()` calls it
+      // directly, and that runs on every restyle (a theme change, an analysis
+      // loading) and whenever an interactor is opened. Curators saw H2O and H+
+      // vanish as they zoomed out with something flagged, and saw chemical
+      // structures drawn with no molecule underneath -- the same fault, since
+      // the structures are drawn by a different handler that was still running.
+      //
+      // The class is the authority. Anything wearing it is left alone.
+      trivial
+        .filter((element) => !element.hasClass('always-visible'))
+        .style({
+          opacity: trivialOpacity,
+          'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
+        });
     };
     const updateDecorationPosition = (node: cytoscape.NodeSingular) => {
       if (!this.structureContainers.has(node)) return;

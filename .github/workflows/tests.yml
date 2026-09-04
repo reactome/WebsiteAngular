@@ -48,16 +48,17 @@ jobs:
       # and passed every test. Without this step the only build was the deploy
       # job, so a broken template reached main and was found by a person.
       #
-      # reactome-cytoscape-style is built separately because build:libs does not
-      # cover it and styles.scss @use's it; content-dist is a gitignored asset
-      # input, so stage:content has to run or ng build cannot find it.
+      # content-dist is a gitignored asset input, so stage:content has to run or
+      # ng build cannot find it. The libraries no longer need a step of their
+      # own: `npm run build` builds them, because a build that does not produce
+      # what it links against is a build that can pass here and ship something
+      # else -- a fix to reactome-cytoscape-style reached CI and never reached
+      # the dev server, which builds the app without building the library.
       - name: Compile CMS content
         run: npm run stage:content
 
       - name: Build the app
-        run: |
-          npx ng build reactome-cytoscape-style
-          npm run build
+        run: npm run build
 
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
@@ -110,11 +111,7 @@ jobs:
       # pathway-browser build copies reactome-cytoscape-style's assets, so the
       # app cannot be served until they exist.
       - name: Build workspace libraries
-        run: |
-          npx ng build reactome-cytoscape-style
-          npx ng build ngx-reactome-style
-          npx ng build reactome-table
-          npx ng build reactome-gsa-form
+        run: npm run build:libs
 
       # site-search-index.json is generated, not committed, and the search
       # specs depend on it.
