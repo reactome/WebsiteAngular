@@ -35,7 +35,7 @@ jobs:
           # Deploy the commit that was tested, not whatever main points at now.
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
