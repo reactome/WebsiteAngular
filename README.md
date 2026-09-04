@@ -2,14 +2,44 @@
 
 REACTOME is an open-source, open access, manually curated and peer-reviewed pathway database.
 
-## Local Development Server
-
-To setup a local environment
+## Running it from a fresh clone
 
 ```bash
-npm install --legacy-peer-deps
+npm ci
 npm start
 ```
+
+`npm start` builds the workspace libraries and stages content first, so there are
+no manual steps before it. It serves the **development** deployment, which
+resolves its own origin and reaches the backend through the dev-server proxy.
+
+That proxy points at `http://localhost:8080` by default, because on the Reactome
+dev host the whole stack runs there and answering locally is ~2ms against ~17s
+out through Cloudflare and back. **On a machine without that stack — any laptop —
+point it somewhere real instead**, or every API call is refused and you get a
+shell with no data:
+
+```bash
+REACTOME_BACKEND=https://dev.reactome.org npm start
+```
+
+What each deployment needs locally:
+
+| command                       | backend it uses                       | needs anything running?                   |
+| ----------------------------- | ------------------------------------- | ----------------------------------------- |
+| `npm start`                   | the proxy, i.e. `REACTOME_BACKEND`    | a backend at `:8080`, or the variable set |
+| `ng serve -c curator`         | newcurator.reactome.org               | no                                        |
+| `npm run start:curator-local` | `localhost:8686` for the graph API    | a local curator-service                   |
+| `npm run start:simple`        | same as `npm start`, skipping TinaCMS | as above                                  |
+
+The curator deployment is the one that needs nothing running locally, so it is
+the quickest way to check a clone works at all.
+
+### Editing content
+
+Content editors want `npm start`, which runs TinaCMS alongside the app. No
+credentials are needed for local editing — the `.env` file is only a UID mapping
+for the Docker workflow below.
 
 ### Running it in Docker
 
