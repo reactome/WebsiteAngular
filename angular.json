@@ -81,6 +81,7 @@
               "outputHashing": "all"
             },
             "development": {
+              "define": { "APP_ENV": "\"development\"" },
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true

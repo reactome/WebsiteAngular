@@ -92,9 +92,24 @@ function runtimeEnvName(): string | undefined {
 
 export const SELECTED_ENV_NAME: string | undefined = runtimeEnvName() ?? buildTimeEnvName();
 
-// Helper: pick environment at runtime (fallback to production)
-export function getEnv(envName?: string) {
+/**
+ * The environment a build talks to.
+ *
+ * No name is the ordinary case rather than an error: `production` and the
+ * curator configurations define no APP_ENV and are meant to land on the public
+ * entry. A name that is *not in the map* is different -- a typo in a define, or
+ * an entry renamed while a configuration still asks for it. Answering that with
+ * production would point a build confidently at the wrong backend and say
+ * nothing, which is how the curation database came to be served from
+ * beta.reactome.org. It throws instead, at startup, where it can be seen.
+ */
+export function getEnv(envName?: string): EnvConfig {
   if (!envName) return ENVIRONMENTS.production;
-  const key = envName as EnvName;
-  return ENVIRONMENTS[key] ?? ENVIRONMENTS.production;
+  const config = ENVIRONMENTS[envName as EnvName];
+  if (!config) {
+    throw new Error(
+      `Unknown APP_ENV "${envName}". Known environments: ${Object.keys(ENVIRONMENTS).join(', ')}.`
+    );
+  }
+  return config;
 }
