@@ -1,3 +1,4 @@
+import { serves } from './fixtures/serves';
 import { test, expect } from '@playwright/test';
 
 // Coverage for the content pages and shared navigation chrome.
@@ -51,14 +52,10 @@ test.describe('Content pages render backend data', () => {
   let contentEndpoints: boolean | undefined;
   test.beforeEach(async ({ request, baseURL }) => {
     if (contentEndpoints === undefined) {
-      try {
-        const res = await request.get(`${baseURL}/ContentService/data/content/toc`, {
-          timeout: 30_000,
-        });
-        contentEndpoints = res.ok();
-      } catch {
-        contentEndpoints = false;
-      }
+      // Not wrapped in try/catch on purpose: a backend without the endpoint
+      // answers 404 and these tests stand down, but a timeout used to land here
+      // too and quietly disabled all four for the whole run.
+      contentEndpoints = await serves(request, `${baseURL}/ContentService/data/content/toc`);
     }
   });
 

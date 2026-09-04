@@ -1,3 +1,4 @@
+import { serves } from './fixtures/serves';
 import { test, expect, type Page, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
@@ -113,9 +114,9 @@ test.describe('Server-rendered figures', () => {
 
   for (const format of ['GIF', 'PPTX']) {
     test(`a diagram's ${format} contains ${format}`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
+      const renderServiceUp = await serves(request, '/RenderService/health');
       test.skip(
-        !health?.ok(),
+        !renderServiceUp,
         'the render service is not running; GIF and PPTX come from it, so this says nothing about the build'
       );
 
@@ -243,9 +244,9 @@ test.describe('Reaction page downloads', () => {
 
   for (const format of ['SVG', 'PPTX']) {
     test(`a reaction's ${format} is the reaction's own figure`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
+      const renderServiceUp = await serves(request, '/RenderService/health');
       test.skip(
-        !health?.ok(),
+        !renderServiceUp,
         'the render service is not running; a reaction figure comes from it, so this says nothing about the build'
       );
 
@@ -267,8 +268,8 @@ test.describe('Reaction page downloads', () => {
   // offers Low, Medium and High and returns the same bytes for each is worse
   // than one that offers a single PNG.
   test('the PNG tiers are three different sizes', async ({ page, request }) => {
-    const health = await request.get('/RenderService/health').catch(() => null);
-    test.skip(!health?.ok(), 'the render service is not running; the tiers come from it');
+    const renderServiceUp = await serves(request, '/RenderService/health');
+    test.skip(!renderServiceUp, 'the render service is not running; the tiers come from it');
 
     await openReaction(page);
     const tools = page.locator('.figure-tools').first();

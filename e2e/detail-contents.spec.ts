@@ -1,3 +1,4 @@
+import { serves } from './fixtures/serves';
 import { test, expect, type Page } from '@playwright/test';
 
 // Contents of the panels curators read, rather than the presence of the panels.
@@ -18,10 +19,7 @@ const BOOT = 90_000;
  * ask once and skip with a reason instead.
  */
 async function servesReactionDiagram(request: import('@playwright/test').APIRequestContext) {
-  const response = await request
-    .get(`/ContentService/exporter/reaction/${REACTION}/diagram`)
-    .catch(() => null);
-  return !!response?.ok();
+  return serves(request, `/ContentService/exporter/reaction/${REACTION}/diagram`);
 }
 
 async function openDiagram(page: Page, id = PATHWAY, query = '') {
@@ -169,8 +167,10 @@ test.describe('Pathway page figure', () => {
     ['R-HSA-109581', 'an illustration'],
   ] as const) {
     test(`${kind} is drawn by the site's own renderer`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
-      test.skip(!health?.ok(), 'the render service is not running; the figure comes from it');
+      test.skip(
+        !(await serves(request, '/RenderService/health')),
+        'the render service is not running; the figure comes from it'
+      );
 
       await page.goto(`/content/detail/${pathway}`);
       const figure = page.locator('.detail-diagram img').first();
