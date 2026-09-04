@@ -1,6 +1,7 @@
 import { serves } from './fixtures/serves';
 import { test, expect, type Page, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { unzipSync, strFromU8 } from 'fflate';
 
 // Downloads, checked by what is *in* the file rather than that a file arrived.
 //
@@ -39,9 +40,32 @@ const SIGNATURES: Record<string, { magic: (bytes: Buffer) => boolean; floor: num
       bytes[0] === 0x50 &&
       bytes[1] === 0x4b &&
       bytes.toString('latin1').includes('ppt/presentation.xml'),
-    floor: 10_000,
+    // A slide of shapes is small: the package boilerplate is around 4.9KB and
+    // each shape adds tens of bytes, so a reaction's figure is 5.6KB. The 10KB
+    // this used to be was right when the package carried a picture of the
+    // diagram, and rejected a perfectly good reaction. `shapesIn` below is what
+    // now says whether there is a diagram in there.
+    floor: 4000,
   },
 };
+
+/**
+ * How many shapes a slide holds, and how large the slide is.
+ *
+ * A PowerPoint download is worth having because a person can take the diagram
+ * apart on the slide, and a byte count cannot tell you whether they can. This
+ * reads the slide itself.
+ */
+function slideOf(bytes: Buffer) {
+  const parts = unzipSync(new Uint8Array(bytes));
+  const slide = strFromU8(parts['ppt/slides/slide1.xml']);
+  const size = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(strFromU8(parts['ppt/presentation.xml']));
+  return {
+    shapes: (slide.match(/<p:sp>/g) ?? []).length,
+    pictures: (slide.match(/<p:pic>/g) ?? []).length,
+    width: Number(size?.[1] ?? 0),
+  };
+}
 
 async function openDownloadTab(page: Page, pathway: string) {
   await page.goto(`/PathwayBrowser/${pathway}`);
@@ -121,7 +145,19 @@ test.describe('Server-rendered figures', () => {
       );
 
       await openDownloadTab(page, DIAGRAM);
-      assertLooksLike(format, await grab(page, format));
+      const bytes = await grab(page, format);
+      assertLooksLike(format, bytes);
+
+      if (format === 'PPTX') {
+        // The point of the format. Curators reported the diagram arriving as
+        // "a single item", which is what one picture on a slide is, so a slide
+        // with a picture on it is the failure this guards.
+        const slide = slideOf(bytes);
+        expect(slide.shapes, 'a shape per glyph, not a picture of all of them').toBeGreaterThan(
+          100
+        );
+        expect(slide.pictures, 'no picture of the diagram').toBe(0);
+      }
     });
   }
 });
@@ -260,6 +296,19 @@ test.describe('Reaction page downloads', () => {
         // the figure the page shows and the whole diagram behind it.
         const width = Number(/\bwidth="([\d.]+)"/.exec(bytes.toString('utf8'))?.[1] ?? 0);
         expect(width, 'the figure is the reaction, not its containing diagram').toBeLessThan(2500);
+      }
+
+      if (format === 'PPTX') {
+        // The same claim, made the way a slide can be asked it: a handful of
+        // shapes on a slide a few inches across, rather than the hundreds on
+        // the 56in slide a whole pathway needs.
+        const slide = slideOf(bytes);
+        expect(slide.shapes, 'the reaction is drawn as shapes').toBeGreaterThan(2);
+        expect(slide.pictures, 'no picture of the reaction').toBe(0);
+        expect(
+          slide.width / 914400,
+          'the slide is the reaction, not its containing diagram'
+        ).toBeLessThan(30);
       }
     });
   }
