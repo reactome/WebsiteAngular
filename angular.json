@@ -306,13 +306,10 @@
                   "maximumError": "10kb"
                 }
               ],
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.production.ts"
-                }
-              ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"production\""
+              }
             },
             "release": {
               "outputHashing": "all",
@@ -328,21 +325,15 @@
                   "maximumError": "10kb"
                 }
               ],
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.release.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "development": {
               "outputHashing": "all",
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.development.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "remote": {
               "optimization": false,
@@ -355,24 +346,18 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true,
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.local.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "github": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true,
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.github.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             }
           },
           "defaultConfiguration": "production"
