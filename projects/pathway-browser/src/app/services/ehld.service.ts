@@ -363,7 +363,26 @@ export class EhldService {
     ) as SVGGElement;
 
     if (analysisInfoElement) {
-      // Make it visible
+      // The label is the whole point of this box, so find it before revealing
+      // anything.
+      //
+      // Illustrations ship the box as artwork with an "xxx/yyy" placeholder
+      // baked in as vector outlines, and the label this writes into has to be a
+      // <text> element. None of them carry one -- checked across
+      // R-HSA-162582, -1640170, -109581 and -8953897: 28 ANALINFO groups, zero
+      // with a <text>. So this used to make the box visible and then return at
+      // the guard below, putting the placeholder on screen. On Signal
+      // Transduction that was 14 boxes reading "xxx/yyy", which is what curators
+      // reported as "odd shadow boxes on pathway labels in EHLDs".
+      //
+      // Production draws nothing here at all: the same analysis on
+      // reactome.org leaves the illustration undecorated and reports the counts
+      // in the event hierarchy, which this site does too. So a box we cannot
+      // label is a box that should stay hidden -- and if an illustration ever
+      // ships with a label, this fills it as it always meant to.
+      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
+      if (!textInfoElement) return;
+
       analysisInfoElement.classList.add(`${this.analysisInfoContainer}`);
 
       const entities = analysisPathway.entities;
@@ -389,11 +408,6 @@ export class EhldService {
       container.style.fill = `url(#${this.pattern}${analysisPathway.stId}-fdr)`;
       container.style.opacity = entities.fdr <= this.state.significance() ? '1' : '0.5';
 
-      // Not every illustration's analysis-info group has a label in it. Every
-      // other lookup here is guarded; this one was not, and an illustration
-      // without one threw part-way through, leaving the region half-decorated.
-      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
-      if (!textInfoElement) return;
       textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
       if (this.analysis.hasPValues())
