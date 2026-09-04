@@ -46,6 +46,7 @@ echo "Preflight"
 # desynced lock is invisible to `npm ls` and fatal in CI.
 step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
 step "format" npm run format:check
+step "types" npm run check:types
 step "lint" npm run check:lint
 step "dead code" npm run check:dead
 step "unit tests" npm test

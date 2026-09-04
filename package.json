@@ -43,7 +43,8 @@
     "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts",
     "e2e:release": "playwright test --project=release",
     "preflight": "bash scripts/preflight.sh",
-    "deployed": "bash scripts/deployed.sh"
+    "deployed": "bash scripts/deployed.sh",
+    "check:types": "node scripts/check-types.mjs"
   },
   "private": true,
   "dependencies": {
