@@ -82,12 +82,20 @@ which UI it presents. The list lives in `projects/website-angular/src/config/env
 as `SITE_PROFILES`, one row per deployment, and the `APP_ENV` define in
 `angular.json` picks the row.
 
-| deployment      | backend                                                 | UI      |
-| --------------- | ------------------------------------------------------- | ------- |
-| `production`    | reactome.org                                            | main    |
-| `development`   | dev.reactome.org                                        | main    |
-| `curator`       | newcurator.reactome.org, `/GraphContentService`         | curator |
-| `curator-local` | graph API on `localhost:8686`, the rest from newcurator | curator |
+| deployment      | backend                                                     | UI      |
+| --------------- | ----------------------------------------------------------- | ------- |
+| `production`    | its own origin (falls back to reactome.org off-browser)     | main    |
+| `development`   | its own origin (falls back to dev.reactome.org off-browser) | main    |
+| `curator`       | newcurator.reactome.org, `/GraphContentService`             | curator |
+| `curator-local` | graph API on `localhost:8686`, the rest from newcurator     | curator |
+
+The public deployments resolve `window.location.origin` rather than naming a
+host, and that matters: beta.reactome.org reverse-proxies its own
+`/ContentService` to the Tomcat on its box, and that Tomcat serves endpoints the
+public one does not -- the reaction-diagram exporter among them. A build that
+names `reactome.org` instead loads fine and then fails to draw its reaction
+diagrams. A site talks to itself; the fallback applies only where there is no
+window (SSR, unit tests).
 
 ```sh
 npm start                                  # public site, dev backend
