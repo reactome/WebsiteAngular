@@ -75,14 +75,27 @@ const S3 = 'https://download.reactome.org';
 
 export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
+    // The published artifact: `deploy.yml` builds this and syncs it to
+    // s3://<bucket>/<version>/website/. It is served from the bucket, not from a
+    // host that proxies the services -- so unlike the deployments below it
+    // cannot use its own origin. download.reactome.org answers 403 for
+    // /ContentService, and every call would fail.
+    //
+    // It names beta because beta is the only host serving the whole set the app
+    // needs. reactome.org has no /RenderService and no /overlays, so figure
+    // rendering and overlays would be dead there today. When those move to
+    // reactome.org this becomes one line.
+    //
+    // Cross-origin from the bucket works: ContentService and AnalysisService
+    // send Access-Control-Allow-Origin: *, and RenderService is only ever an
+    // <img src> or a download href, where CORS does not apply.
     variant: 'main',
-    host: 'origin',
-    originFallback: 'https://reactome.org',
+    host: 'https://beta.reactome.org',
     s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
     preferS3: true,
-    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
   beta: {

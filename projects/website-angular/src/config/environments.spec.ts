@@ -32,16 +32,27 @@ describe('site profiles', () => {
     }
   });
 
-  it('serves the public deployments from their own origin', () => {
-    // The point of 'origin'. beta.reactome.org proxies its own /ContentService
-    // to the Tomcat on its box, and that Tomcat answers endpoints the public one
-    // does not -- the reaction-diagram exporter among them. Naming a host here
+  it('uses its own origin where the serving host proxies the services', () => {
+    // beta and dev are served by hosts that reverse-proxy their own
+    // /ContentService, and that local Tomcat answers endpoints the public one
+    // does not -- the reaction-diagram exporter among them. Naming a host
     // instead sent beta to reactome.org, which 404s that endpoint, and reaction
-    // pages stopped drawing their diagram.
-    for (const name of ['production', 'development'] as ProfileName[]) {
+    // pages stopped drawing.
+    for (const name of ['beta', 'development'] as ProfileName[]) {
       expect(SITE_PROFILES[name].host, `${name}.host`).toBe('origin');
       expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
     }
+  });
+
+  it('names a backend for the artifact that is served from a bucket', () => {
+    // `production` is built by deploy.yml and synced to S3. Its origin is
+    // download.reactome.org, which answers 403 for /ContentService -- so it is
+    // the one deployment that cannot ask its own origin and must name a host
+    // that actually serves the app's services.
+    const host = SITE_PROFILES.production.host;
+    expect(host, 'the published artifact names a host').not.toBe('origin');
+    expect(host).toMatch(/^https:\/\//);
+    expect(host, 'and not the bucket it is served from').not.toContain('download.reactome.org');
   });
 
   it('keeps the public deployments off the curator backend', () => {
