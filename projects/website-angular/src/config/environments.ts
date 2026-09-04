@@ -15,7 +15,7 @@
 
 type SiteVariant = 'main' | 'curator';
 
-export type ProfileName = 'production' | 'development' | 'curator' | 'curator-local';
+export type ProfileName = 'production' | 'beta' | 'development' | 'curator' | 'curator-local';
 
 export interface SiteProfile {
   /** Which UI this deployment presents. */
@@ -77,6 +77,22 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     versionFallback: 'https://reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
+  beta: {
+    // beta.reactome.org: a production-shaped build of the public site, served
+    // from its own origin against the dev backend behind it. It is a deployment
+    // in its own right and not "production served elsewhere" -- most visibly in
+    // analytics, where its traffic must not land in the public property.
+    variant: 'main',
+    host: 'origin',
+    originFallback: 'https://beta.reactome.org',
+    s3: S3,
+    gsaServer: 'production',
+    gtagId: 'G-96F1EYHQR3',
+    preferS3: true,
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+
   development: {
     variant: 'main',
     host: 'origin',
@@ -94,7 +110,9 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     contentServicePath: '/GraphContentService',
     s3: S3,
     gsaServer: 'production',
-    gtagId: 'G-EDHZ92GXZP',
+    // No analytics property for the curator site yet. Deliberately absent rather
+    // than borrowed: pointing it at the public property would file curation
+    // traffic as public traffic, and nobody looking at those numbers would know.
     preferS3: false,
     // A curation graph has no released version, so this asks the released
     // instance on the same host -- not a different deployment.

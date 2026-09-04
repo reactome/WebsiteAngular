@@ -82,12 +82,19 @@ which UI it presents. The list lives in `projects/website-angular/src/config/env
 as `SITE_PROFILES`, one row per deployment, and the `APP_ENV` define in
 `angular.json` picks the row.
 
-| deployment      | backend                                                     | UI      |
-| --------------- | ----------------------------------------------------------- | ------- |
-| `production`    | its own origin (falls back to reactome.org off-browser)     | main    |
-| `development`   | its own origin (falls back to dev.reactome.org off-browser) | main    |
-| `curator`       | newcurator.reactome.org, `/GraphContentService`             | curator |
-| `curator-local` | graph API on `localhost:8686`, the rest from newcurator     | curator |
+| deployment      | backend                                                 | UI      | analytics |
+| --------------- | ------------------------------------------------------- | ------- | --------- |
+| `production`    | its own origin (falls back to reactome.org off-browser) | main    | public    |
+| `beta`          | its own origin (falls back to beta.reactome.org)        | main    | dev       |
+| `development`   | its own origin (falls back to dev.reactome.org)         | main    | dev       |
+| `curator`       | newcurator.reactome.org, `/GraphContentService`         | curator | none yet  |
+| `curator-local` | graph API on `localhost:8686`, the rest from newcurator | curator | none      |
+
+Analytics is a profile field too, and the site reports only when its deployment
+names a property — so beta's traffic files under beta's, and the curator site
+reports nothing until it has one of its own. Before this, the pathway browser
+reported and the site around it did not, so everything outside the browser went
+uncounted.
 
 The public deployments resolve `window.location.origin` rather than naming a
 host, and that matters: beta.reactome.org reverse-proxies its own

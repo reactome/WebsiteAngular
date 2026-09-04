@@ -76,4 +76,16 @@ describe('site profiles', () => {
     ).sort();
     expect(configurations).toEqual(Object.keys(SITE_PROFILES).sort());
   });
+
+  it("files each deployment's traffic under its own analytics property", () => {
+    // The site reports to whatever gtagId its profile names, so beta sharing
+    // production's property would file beta traffic as public traffic and nobody
+    // reading those numbers would know. A profile with no property does not
+    // report at all, which is what the curator site wants.
+    expect(SITE_PROFILES.beta.gtagId).not.toBe(SITE_PROFILES.production.gtagId);
+    expect(SITE_PROFILES.curator.gtagId, 'curator has no property yet').toBeUndefined();
+    for (const [name, profile] of Object.entries(SITE_PROFILES)) {
+      if (profile.gtagId) expect(profile.gtagId, `${name}.gtagId`).toMatch(/^G-[A-Z0-9]+$/);
+    }
+  });
 });

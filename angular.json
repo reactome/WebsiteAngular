@@ -104,6 +104,24 @@
               "define": {
                 "APP_ENV": "\"curator-local\""
               }
+            },
+            "beta": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "450kB",
+                  "maximumError": "550kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "20kB",
+                  "maximumError": "25kB"
+                }
+              ],
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"beta\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -126,6 +144,9 @@
             "curator-local": {
               "buildTarget": "reactome:build:curator-local",
               "proxyConfig": "proxy.curator-local.conf.json"
+            },
+            "beta": {
+              "buildTarget": "reactome:build:beta"
             }
           },
           "defaultConfiguration": "development"
