@@ -29,8 +29,25 @@ const SITE_VARIANT = profile.variant;
  */
 export const IS_CURATOR = SITE_VARIANT === 'curator';
 
+/**
+ * Where this build's services live.
+ *
+ * `'origin'` means "wherever this bundle is served from", which is what the
+ * public deployments want: beta.reactome.org proxies its own /ContentService to
+ * the Tomcat on its box, and that Tomcat serves endpoints the public one does
+ * not -- the reaction-diagram exporter among them. Naming a host instead broke
+ * reaction pages on beta for exactly that reason. The fallback applies only off
+ * the browser, in SSR and unit tests.
+ */
+const resolvedHost =
+  profile.host === 'origin'
+    ? typeof window !== 'undefined'
+      ? window.location.origin
+      : (profile.originFallback ?? '')
+    : profile.host;
+
 // Normalised so building URLs cannot produce a double slash.
-const host = profile.host.replace(/\/+$/, '');
+const host = resolvedHost.replace(/\/+$/, '');
 
 export const environment = {
   production: SELECTED_PROFILE_NAME === 'production',
@@ -51,7 +68,11 @@ export const environment = {
 const ICON_HOST = 'https://dev.reactome.org';
 export const ICON_BASE = IS_CURATOR ? host : ICON_HOST;
 
-export const CONTENT_SERVICE = profile.contentService.replace(/\/+$/, '');
+// Absolute only where the graph API is not on `host` at all (a locally run
+// curator-service answers at its own root); otherwise a path on this host.
+export const CONTENT_SERVICE = (
+  profile.contentService ?? `${host}${profile.contentServicePath ?? '/ContentService'}`
+).replace(/\/+$/, '');
 
 // Used only when CONTENT_SERVICE cannot answer for the database version, which
 // in practice means a curation graph -- it has no released version, and one is

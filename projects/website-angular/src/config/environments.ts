@@ -20,15 +20,30 @@ export type ProfileName = 'production' | 'development' | 'curator' | 'curator-lo
 export interface SiteProfile {
   /** Which UI this deployment presents. */
   variant: SiteVariant;
-  /** Origin the services are reached at. No trailing slash. */
-  host: string;
   /**
-   * Base the app appends /data, /search, /exporter and /interactors to. Separate
-   * from `host` because the path segment differs per deployment: the curator
-   * site serves it under /GraphContentService, and a locally run
-   * curator-service serves the same routes straight off its root.
+   * Where the services are, or `'origin'` for "wherever this bundle is served
+   * from".
+   *
+   * `'origin'` is what the public deployments want, and it is not a convenience.
+   * beta.reactome.org reverse-proxies its own /ContentService to the Tomcat on
+   * its box, and that Tomcat serves endpoints the public one does not -- the
+   * reaction-diagram exporter among them. Pointing beta at reactome.org by name
+   * therefore breaks reaction pages, which is precisely what happened while this
+   * field was a fixed string. A site should talk to itself.
    */
-  contentService: string;
+  host: 'origin' | string;
+  /** Used when `host` is `'origin'` and there is no window: SSR, unit tests. */
+  originFallback?: string;
+  /**
+   * Path appended to the host for the graph API. The curator site serves it
+   * under /GraphContentService rather than /ContentService.
+   */
+  contentServicePath?: string;
+  /**
+   * Absolute override, for when the graph API is not on `host` at all -- a
+   * locally run curator-service answers at its own root, with no path segment.
+   */
+  contentService?: string;
   s3: string;
   gsaServer: string;
   gtagId?: string;
@@ -53,8 +68,8 @@ const S3 = 'https://download.reactome.org';
 export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
     variant: 'main',
-    host: 'https://reactome.org',
-    contentService: 'https://reactome.org/ContentService',
+    host: 'origin',
+    originFallback: 'https://reactome.org',
     s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
@@ -64,8 +79,8 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   },
   development: {
     variant: 'main',
-    host: 'https://dev.reactome.org',
-    contentService: 'https://dev.reactome.org/ContentService',
+    host: 'origin',
+    originFallback: 'https://dev.reactome.org',
     s3: S3,
     gsaServer: 'dev',
     gtagId: 'G-96F1EYHQR3',
@@ -76,7 +91,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   curator: {
     variant: 'curator',
     host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    contentServicePath: '/GraphContentService',
     s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',

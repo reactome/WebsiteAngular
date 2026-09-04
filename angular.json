@@ -104,14 +104,6 @@
               "define": {
                 "APP_ENV": "\"curator-local\""
               }
-            },
-            "local": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true,
-              "define": {
-                "APP_ENV": "\"development\""
-              }
             }
           },
           "defaultConfiguration": "production"
@@ -134,9 +126,6 @@
             "curator-local": {
               "buildTarget": "reactome:build:curator-local",
               "proxyConfig": "proxy.curator-local.conf.json"
-            },
-            "local": {
-              "buildTarget": "reactome:build:local"
             }
           },
           "defaultConfiguration": "development"

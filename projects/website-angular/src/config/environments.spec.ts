@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getProfile, SITE_PROFILES, type ProfileName } from './environments';
+import angularJson from '../../../../angular.json';
 
 // A build reaches its backend and picks its UI through this table. When the two
 // were chosen separately, the curator site could only reach its own backend by
@@ -24,32 +25,55 @@ describe('site profiles', () => {
   });
 
   it('gives each deployment both halves: a backend and a UI', () => {
-    // The point of the table. A profile that named only a backend would let the
-    // two drift apart again.
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
-      expect(profile.host, `${name}.host`).toMatch(/^https?:\/\//);
-      expect(profile.contentService, `${name}.contentService`).toMatch(/^https?:\/\//);
+      const host = profile.host;
+      expect(host === 'origin' || /^https?:\/\//.test(host), `${name}.host`).toBe(true);
       expect(['main', 'curator'], `${name}.variant`).toContain(profile.variant);
+    }
+  });
+
+  it('serves the public deployments from their own origin', () => {
+    // The point of 'origin'. beta.reactome.org proxies its own /ContentService
+    // to the Tomcat on its box, and that Tomcat answers endpoints the public one
+    // does not -- the reaction-diagram exporter among them. Naming a host here
+    // instead sent beta to reactome.org, which 404s that endpoint, and reaction
+    // pages stopped drawing their diagram.
+    for (const name of ['production', 'development'] as ProfileName[]) {
+      expect(SITE_PROFILES[name].host, `${name}.host`).toBe('origin');
+      expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
     }
   });
 
   it('keeps the public deployments off the curator backend', () => {
     for (const name of ['production', 'development'] as ProfileName[]) {
       const profile = SITE_PROFILES[name];
-      expect(profile.host, `${name}.host`).not.toContain('newcurator');
-      expect(profile.contentService, `${name}.contentService`).not.toContain('newcurator');
+      expect(JSON.stringify(profile), `${name}`).not.toContain('newcurator');
       expect(profile.variant).toBe('main');
     }
   });
 
   it('never sends one deployment to another for a fallback', () => {
-    // A fallback that names a different deployment reports someone else's
-    // release as this one's. Each profile's fallbacks stay on its own host --
-    // except curator-local, which has no released graph of its own and says so.
+    // A fallback naming a different deployment reports someone else's release as
+    // this one's. For an origin-served site the canonical public host is its own
+    // deployment, so that is what its fallback may name -- nothing else.
+    // curator-local is the exception and says why in the profile.
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
       if (name === 'curator-local') continue;
-      const origin = new URL(profile.host).origin;
-      expect(new URL(profile.versionFallback).origin, `${name}.versionFallback`).toBe(origin);
+      const canonical = profile.host === 'origin' ? profile.originFallback : profile.host;
+      expect(canonical, `${name} needs a canonical host`).toBeDefined();
+      const own = new URL(canonical as string).origin;
+      expect(new URL(profile.versionFallback).origin, `${name}.versionFallback`).toBe(own);
     }
+  });
+
+  it('has exactly one build configuration per deployment, and vice versa', () => {
+    // The whole promise of the design: a name means a deployment. A
+    // configuration with no profile would throw at startup; a profile with no
+    // configuration is unreachable, which is what five of the old environment
+    // files were.
+    const configurations = Object.keys(
+      angularJson.projects.reactome.architect.build.configurations
+    ).sort();
+    expect(configurations).toEqual(Object.keys(SITE_PROFILES).sort());
   });
 });
