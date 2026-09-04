@@ -23,8 +23,14 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     preferS3: false,
   },
   production: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    // The public site, and it must stay public. 8289afd ("stash.") repointed this
+    // at the curator host, and because getEnv() falls back to `production` when no
+    // APP_ENV is defined -- which is every non-curator build -- beta.reactome.org
+    // silently began serving the curator database. Its event hierarchy grew
+    // "GOCAM test events", "Krishna: NRF2-KEAP1 pathway" and other draft
+    // pathways, on the site curators were reviewing at the time.
+    host: 'https://reactome.org',
+    contentService: 'https://reactome.org/ContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
