@@ -99,4 +99,17 @@ describe('site profiles', () => {
       expect(profile.gtagId, `${name} must not report to Google`).toBeUndefined();
     }
   });
+
+  it('takes diagram assets from the bucket on every main deployment', () => {
+    // The rule before the environment rework was `preferS3: !IS_CURATOR`, and it
+    // is load-bearing: the alternative is `${host}/download/current`, which under
+    // `ng serve` is localhost:4200 and is not proxied. CI caught this as
+    // `#cytoscape canvas` never becoming visible -- the diagram JSON simply never
+    // arrived. A curation graph has no released version, so curator builds cannot
+    // use the bucket and correctly opt out.
+    for (const [name, profile] of Object.entries(SITE_PROFILES)) {
+      const expected = profile.variant !== 'curator';
+      expect(profile.preferS3, `${name}.preferS3`).toBe(expected);
+    }
+  });
 });

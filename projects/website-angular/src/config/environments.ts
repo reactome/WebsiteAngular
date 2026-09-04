@@ -119,7 +119,12 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     originFallback: 'https://dev.reactome.org',
     s3: S3,
     gsaServer: 'dev',
-    preferS3: false,
+    // Diagram and EHLD assets come from the release bucket, as they do for every
+    // main deployment. The alternative is `${host}/download/current`, and under
+    // `ng serve` that is localhost:4200, which proxy.conf.js does not proxy --
+    // so no diagram JSON arrives and no canvas is drawn. The rule before the
+    // environment rework was `preferS3: !IS_CURATOR`; this keeps it.
+    preferS3: true,
     versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
