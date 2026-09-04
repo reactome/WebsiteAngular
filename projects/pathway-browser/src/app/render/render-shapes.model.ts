@@ -15,6 +15,21 @@
 /** Preset geometries an OOXML writer can name directly. */
 export type ShapeGeometry = 'roundRect' | 'rect' | 'ellipse';
 
+/**
+ * A colour as lowercase hex digits with no leading `#`: six when the colour is
+ * opaque, eight when it is not, the last pair being alpha. Null means no colour
+ * at all -- a fully transparent glyph, or a style an exporter should leave
+ * unpainted rather than guess at.
+ *
+ * The page resolves whatever the live stylesheet holds -- `rgb()`, `rgba()`,
+ * hex long or short, and the separate opacity a diagram style carries -- down
+ * to this one spelling, so an exporter has a single form to read. Written down
+ * because it is not the form any of those sources uses: an exporter that
+ * assumed `#rrggbb` silently painted nothing, and one that ignored the alpha
+ * painted this pathway's compartments as solid slabs over their own contents.
+ */
+export type ShapeColour = string | null;
+
 export interface RenderNodeShape {
   kind: 'node';
   id: string;
@@ -25,13 +40,15 @@ export interface RenderNodeShape {
   w: number;
   h: number;
   geom: ShapeGeometry;
-  fill: string | null;
-  stroke: string | null;
+  fill: ShapeColour;
+  stroke: ShapeColour;
   strokeWidth: number;
   label: string;
   fontSize: number;
-  fontColor: string | null;
+  fontColor: ShapeColour;
   bold: boolean;
+  /** A broken border, which the diagram uses to mark inferred entities. */
+  dashed: boolean;
 }
 
 export interface RenderEdgeShape {
@@ -40,17 +57,28 @@ export interface RenderEdgeShape {
   name: string;
   /** Source, any bend points, then target -- in diagram coordinates. */
   points: { x: number; y: number }[];
-  stroke: string | null;
+  stroke: ShapeColour;
   strokeWidth: number;
   /** Reactions draw arrowheads; a plain link does not. */
   arrow: boolean;
+  /** A broken line, which the diagram uses for the links between glyphs. */
+  dashed: boolean;
 }
 
 export interface RenderShapes {
-  /** The extent every coordinate above is relative to. */
+  /**
+   * The extent every coordinate above is relative to -- the framed region when
+   * the request asked for one event, and the whole diagram otherwise, matching
+   * what the SVG export covers for the same request.
+   */
   x: number;
   y: number;
   width: number;
   height: number;
+  /**
+   * Draw order, back to front. An exporter can emit these in the order given:
+   * formats that paint in document order will then stack them as the diagram
+   * does, with compartments behind, connectors next, and entities in front.
+   */
   shapes: (RenderNodeShape | RenderEdgeShape)[];
 }

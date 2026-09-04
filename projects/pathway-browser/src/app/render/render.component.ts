@@ -26,6 +26,7 @@ import type {
   RenderEdgeShape,
   RenderNodeShape,
   RenderShapes,
+  ShapeColour,
   ShapeGeometry,
 } from './render-shapes.model';
 
@@ -419,29 +420,61 @@ export class RenderComponent {
    * embedding the picture rather than emitting an empty slide.
    */
   private exportShapes(): RenderShapes | null {
-    const cy = this.reaction()?.core() ?? this.exportableInstances().instances[0];
+    const reaction = this.reaction()?.core();
+    const cy = reaction ?? this.exportableInstances().instances[0];
     if (!cy) return null;
 
-    const shapes: (RenderNodeShape | RenderEdgeShape)[] = [];
+    // Mirror exportSvg exactly. A reaction's layout is the whole figure, so
+    // there is nothing to frame; a diagram asked for one event is framed on it,
+    // and exportSvg then exports the viewport rather than everything. Without
+    // this the same request produced a framed SVG and an unframed slide.
+    const framed = !reaction && this.frameSelection(cy);
+    const extent = framed ? cy.extent() : cy.elements().boundingBox();
+    const within = (box: { x1: number; y1: number; x2: number; y2: number }) =>
+      !framed ||
+      (box.x2 >= extent.x1 && box.x1 <= extent.x2 && box.y2 >= extent.y1 && box.y1 <= extent.y2);
+
     // toArray() rather than iterating the collection: a cytoscape collection is
     // array-like without being an array, and its filter hands back the loose
     // element type rather than a node.
     const visible = cy
       .nodes()
       .toArray()
-      .filter((node) => node.visible());
+      .filter((node) => node.visible())
+      .filter((node) => within(node.boundingBox({ includeLabels: false, includeOverlays: false })));
 
-    // Compartments first: OOXML paints in document order, and a compartment
-    // covers everything inside it.
-    const ordered = [
-      ...visible.filter((node) => this.isCompartment(node)),
-      ...visible.filter((node) => !this.isCompartment(node)),
-    ];
+    const compartments: RenderNodeShape[] = [];
+    const nodes: RenderNodeShape[] = [];
+    const nodeUnderlays: RenderNodeShape[] = [];
+    const edges: RenderEdgeShape[] = [];
+    const edgeUnderlays: RenderEdgeShape[] = [];
 
-    for (const node of ordered) {
+    for (const node of visible) {
       const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
       const label = String(node.data('displayName') ?? '').trim();
-      shapes.push({
+      const under = this.underlay(node);
+      if (under) {
+        nodeUnderlays.push({
+          kind: 'node',
+          id: `${node.id()}-underlay`,
+          name: `${label || node.id()} highlight`,
+          x: box.x1 - under.padding,
+          y: box.y1 - under.padding,
+          w: box.w + 2 * under.padding,
+          h: box.h + 2 * under.padding,
+          geom: this.geometryOf(String(node.style('shape') ?? '')),
+          fill: under.colour,
+          stroke: null,
+          strokeWidth: 0,
+          label: '',
+          fontSize: 0,
+          fontColor: null,
+          bold: false,
+          dashed: false,
+        });
+      }
+
+      (this.isCompartment(node) ? compartments : nodes).push({
         kind: 'node',
         id: String(node.id()),
         name: label || String(node.data('schemaClass') ?? node.id()),
@@ -457,29 +490,62 @@ export class RenderComponent {
         fontSize: this.pixels(node.style('font-size')) || 8,
         fontColor: this.colour(node.style('color'), '1'),
         bold: String(node.style('font-weight') ?? '').includes('bold'),
+        dashed: this.dashed(node.style('border-style')),
       });
     }
 
     for (const edge of cy
       .edges()
       .toArray()
-      .filter((edge) => edge.visible())) {
+      .filter((edge) => edge.visible())
+      .filter((edge) => within(edge.boundingBox()))) {
       // Bend points are how the diagram's orthogonal routing is stored; without
       // them every connector exports as a straight diagonal.
       const points = [edge.sourceEndpoint(), ...this.bendPoints(edge), edge.targetEndpoint()];
-      shapes.push({
+      const width = this.pixels(edge.style('width')) || 1;
+      const under = this.underlay(edge);
+      if (under) {
+        edgeUnderlays.push({
+          kind: 'edge',
+          id: `${edge.id()}-underlay`,
+          name: `${String(edge.data('schemaClass') ?? 'connector')} highlight`,
+          points: points.map((point) => ({ x: point.x, y: point.y })),
+          stroke: under.colour,
+          // Cytoscape pads an underlay outwards from the line, so the band is
+          // the line plus that padding on each side.
+          strokeWidth: width + 2 * under.padding,
+          arrow: false,
+          dashed: false,
+        });
+      }
+
+      edges.push({
         kind: 'edge',
         id: String(edge.id()),
         name: String(edge.data('schemaClass') ?? 'connector'),
         points: points.map((point) => ({ x: point.x, y: point.y })),
         stroke: this.colour(edge.style('line-color'), edge.style('opacity')),
-        strokeWidth: this.pixels(edge.style('width')) || 1,
+        strokeWidth: width,
         arrow: String(edge.style('target-arrow-shape') ?? 'none') !== 'none',
+        dashed: this.dashed(edge.style('line-style')),
       });
     }
 
-    const extent = cy.elements().boundingBox();
-    return { x: extent.x1, y: extent.y1, width: extent.w, height: extent.h, shapes };
+    return {
+      x: extent.x1,
+      y: extent.y1,
+      width: extent.x2 - extent.x1,
+      height: extent.y2 - extent.y1,
+      // Draw order, back to front: OOXML paints in document order, a
+      // compartment covers everything inside it, and the diagram draws
+      // connectors under the entities they join. An exporter can emit this
+      // array as it stands without knowing what any of the shapes are.
+      //
+      // The underlays are how the diagram tints an event by the sub-pathway it
+      // belongs to, and each sits immediately behind the glyph it marks -- so
+      // they go in front of the compartments and behind everything else.
+      shapes: [...compartments, ...edgeUnderlays, ...edges, ...nodeUnderlays, ...nodes],
+    };
   }
 
   private isCompartment(node: cytoscape.NodeSingular): boolean {
@@ -506,36 +572,80 @@ export class RenderComponent {
    * OOXML's srgbClr carries no alpha, so anything fully transparent becomes "no
    * fill" rather than a colour nobody can see.
    */
-  private colour(value: unknown, opacity: unknown): string | null {
-    const alpha = String(opacity ?? '');
-    if (alpha !== '' && this.pixels(alpha) === 0) return null;
+  /**
+   * A style's colour, with its opacity folded in.
+   *
+   * The opacity is not a detail: this diagram fills its compartments at 6% and
+   * draws 206 of its borders at 14%, so dropping it painted a compartment as a
+   * solid orange slab over everything inside it. Fully opaque colours stay six
+   * digits, so the common case reads the same as it did.
+   */
+  private colour(value: unknown, opacity: unknown): ShapeColour {
+    const given = String(opacity ?? '');
+    const alpha = given === '' ? 1 : this.pixels(given);
+    if (alpha <= 0) return null;
+
     const text = String(value ?? '').trim();
+    const withAlpha = (channels: number[], own = 1) => {
+      const combined = Math.max(0, Math.min(1, alpha * own));
+      if (combined <= 0) return null;
+      const hex = channels
+        .map((channel) =>
+          Math.max(0, Math.min(255, Math.round(channel)))
+            .toString(16)
+            .padStart(2, '0')
+        )
+        .join('');
+      // Six digits when opaque, eight when not: an exporter that only knows
+      // about six still reads the colour right.
+      return combined >= 1
+        ? hex
+        : hex +
+            Math.round(combined * 255)
+              .toString(16)
+              .padStart(2, '0');
+    };
+
     const rgb = /^rgba?\(([^)]+)\)$/.exec(text);
     if (rgb) {
-      const parts = rgb[1].split(',').map((part) => parseFloat(part));
+      const parts = rgb[1].split(/[,\s/]+/).map((part) => parseFloat(part));
       if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isFinite(part))) {
-        if (parts[3] === 0) return null;
-        return parts
-          .slice(0, 3)
-          .map((part) =>
-            Math.max(0, Math.min(255, Math.round(part)))
-              .toString(16)
-              .padStart(2, '0')
-          )
-          .join('');
+        const own = parts.length > 3 && Number.isFinite(parts[3]) ? parts[3] : 1;
+        return withAlpha(parts.slice(0, 3), own);
       }
     }
     const hex = /^#?([0-9a-f]{6})$/i.exec(text);
-    if (hex) return hex[1].toLowerCase();
+    if (hex) {
+      return withAlpha([0, 2, 4].map((at) => parseInt(hex[1].slice(at, at + 2), 16)));
+    }
     const short = /^#?([0-9a-f]{3})$/i.exec(text);
     if (short) {
-      return short[1]
-        .split('')
-        .map((digit) => digit + digit)
-        .join('')
-        .toLowerCase();
+      return withAlpha([...short[1]].map((digit) => parseInt(digit + digit, 16)));
     }
     return null;
+  }
+
+  /**
+   * The band the diagram draws behind a glyph, if it draws one.
+   *
+   * This is how a pathway shows which sub-pathway an event belongs to: the
+   * style puts a thick, semi-transparent underlay in the sub-pathway's colour
+   * behind the event's glyph and its connectors. It is not the glyph's own
+   * colour, so reading `line-color` alone lost every tint -- this diagram draws
+   * 216 of them, and they are the most visible thing on it after the glyphs.
+   */
+  private underlay(element: cytoscape.NodeSingular | cytoscape.EdgeSingular): {
+    colour: ShapeColour;
+    padding: number;
+  } | null {
+    const colour = this.colour(element.style('underlay-color'), element.style('underlay-opacity'));
+    if (!colour) return null;
+    return { colour, padding: Math.max(0, this.pixels(element.style('underlay-padding'))) };
+  }
+
+  /** Whether a style draws a broken line; the diagram uses one dash pattern. */
+  private dashed(value: unknown): boolean {
+    return /dash|dot/i.test(String(value ?? ''));
   }
 
   /** Whatever bend points an edge carries, in whichever form it stores them. */

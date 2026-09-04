@@ -69,13 +69,29 @@ Illustrated pathways animate too, through `EhldService.rasterise`. An EHLD is
 inline SVG, and its styling comes from the page's stylesheets rather than the
 markup, so it has to be inlined before a serialised copy means anything.
 
-**PPTX carries the SVG**, with a PNG beside it as the fallback. PowerPoint 2016
-and later draw the SVG and offer _Graphics Format → Convert to Shape_, which
-turns the diagram into ordinary editable shapes. The Java exporter emits
-DrawingML shapes directly — editable the moment the file opens — at the cost of
-a second renderer to keep in step with the first, and a commercial Aspose
-licence. One click is worth that trade; if curators disagree, that is the
-argument to have.
+**PPTX is built out of shapes** — one per compartment, connector, entity and
+sub-pathway tint, editable the moment the file opens. Curators reported that
+"the whole pathway diagram is treated as a single item", which is what a slide
+holding one picture is, however good the picture.
+
+The page decides every position, colour, opacity, dash and font from the live
+style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+a rectangle and nothing more, so it is not a second opinion about what the
+diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
+976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
+The slide is the size of the diagram, as production's is, so labels land at 5–53pt
+rather than the 1.65pt that fitting a 5976px diagram onto a 13.3in slide gives.
+
+Two things a slide of shapes does not carry yet:
+
+- **Node decorations.** The style draws them with `background-image` — 140 small
+  rasters on this diagram — so a complex loses the band that marks it as one.
+- **Rounded corners on connectors.** Edges with weights use `round-segments`;
+  the export draws the same points with square corners.
+
+Views that are not made of shapes fall back to the picture: an illustration is
+artwork, and the genome-wide view draws to a canvas. That view cannot produce a
+PNG at all, so its slide carries the SVG alone.
 
 The genome-wide view has no GIF: it draws to a canvas through FoamTree with no
 per-sample frame capture. It says so rather than producing a still.

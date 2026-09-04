@@ -26,6 +26,19 @@ const FALLBACK_MAX_SIZE = 2000;
 const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
 
 /**
+ * The floor for a PowerPoint built out of shapes.
+ *
+ * The 10KB above is right for a package carrying a picture, because the picture
+ * of any real diagram is far larger than that. A slide of shapes is not: the
+ * package boilerplate is around 4.9KB compressed and each shape adds tens of
+ * bytes, so a reaction framed down to a dozen glyphs came to 7.2KB and was
+ * rejected as "too small to be a real render". What makes that package real is
+ * that it has shapes in it, which is already established before it is built --
+ * this is left only as a guard against a truncated zip.
+ */
+const MIN_SHAPE_BYTES = 4000;
+
+/**
  * The URL of the render page for a pathway. Omit the pathway for the
  * genome-wide view.
  */
@@ -137,10 +150,14 @@ export async function render(
         truncated: gif.truncated,
       });
     } else {
-      bytes = await pptxFromPage(page, { scale, title: state?.name ?? '' });
+      const slide = await pptxFromPage(page, { scale, title: state?.name ?? '' });
+      bytes = slide.bytes;
+      // "430 shapes" against "one picture" is the whole difference between this
+      // export and the one it replaces, so it belongs in the line the run logs.
+      Object.assign(detail, slide.detail);
     }
 
-    const floor = MIN_BYTES[format];
+    const floor = detail.shapes ? MIN_SHAPE_BYTES : MIN_BYTES[format];
     if (bytes.length < floor) {
       throw new Error(
         `${format} came out at ${bytes.length} bytes, too small to be a real render ` +
@@ -177,15 +194,38 @@ function svgSize(svg) {
  * convert to shapes, and a PNG for everything that cannot.
  */
 async function pptxFromPage(page, { scale, title }) {
+  // Shapes first: a slide of shapes needs no picture, and the diagram is around
+  // 6000px wide, so rendering one to throw it away is the expensive half of the
+  // export.
+  const shapes = await page.evaluate(async () => (await window.__renderExport.shapes?.()) ?? null);
+  if (shapes?.shapes?.length) {
+    return {
+      bytes: pptx({ title, shapes, width: shapes.width, height: shapes.height }),
+      detail: { shapes: shapes.shapes.length },
+    };
+  }
+
   const svg = await page.evaluate(async () => await window.__renderExport.svg());
   const size = svgSize(svg);
+
   // The PNG is only what a viewer that cannot draw SVG falls back to, and a
   // diagram's own coordinate space is around 6000px wide -- at the requested
   // scale the fallback came out at 6MB, dwarfing the vector version PowerPoint
   // actually uses. Cap it at the same size the animation uses.
   const longest = Math.max(size.width, size.height);
-  const png = await pngBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
-  return pptx({ svg, png, title, ...size });
+  // The genome-wide view draws to a canvas and declines to export a PNG at all.
+  // It has an SVG, so it gets a slide; losing the fallback raster costs viewers
+  // older than PowerPoint 2016, and is better than losing the export.
+  let png = null;
+  try {
+    png = await pngBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
+  } catch (error) {
+    if (!/cannot export PNG/i.test(String(error))) throw error;
+  }
+  return {
+    bytes: pptx({ svg, png, title, ...size }),
+    detail: { picture: png ? 'svg+png' : 'svg' },
+  };
 }
 
 /**

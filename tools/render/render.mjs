@@ -23,8 +23,8 @@
  *   --view      reaction, to draw a reaction's own layout rather than a diagram
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
- * --token; without one it is a single frame. PPTX carries the SVG, which
- * PowerPoint can convert to editable shapes.
+ * --token; without one it is a single frame. PPTX is drawn as shapes, one per
+ * glyph, and says how many it drew.
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
@@ -35,6 +35,35 @@ const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? fallback : args[i + 1];
 };
+
+/**
+ * Every flag this understands, checked before anything renders.
+ *
+ * Without this a misspelled `--pathway` was simply not there: the run went off
+ * and rendered the genome-wide view instead, and reported a genome-wide
+ * failure. A tool that quietly does something else when asked something it does
+ * not understand costs more than the check.
+ */
+const KNOWN = [
+  'pathway',
+  'format',
+  'out',
+  'base',
+  'token',
+  'scale',
+  'delay',
+  'max-size',
+  'no-subpathways',
+  'dark',
+  'select',
+  'view',
+];
+const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
+if (unknown.length) {
+  console.error(`unknown flag${unknown.length > 1 ? 's' : ''} ${unknown.join(', ')}`);
+  console.error(`known flags: ${KNOWN.map((name) => '--' + name).join(', ')}`);
+  process.exit(2);
+}
 
 const pathway = flag('pathway', '');
 const format = (flag('format', 'svg') || '').toLowerCase();
@@ -73,6 +102,8 @@ try {
     state.view,
     state.elements && `${state.elements} elements`,
     state.groups && `${state.groups} groups`,
+    state.shapes && `${state.shapes} shapes`,
+    state.picture && `picture: ${state.picture}`,
     state.frames && `${state.frames} frames`,
     state.size,
     state.truncated ? `${state.truncated} samples dropped past the frame limit` : null,

@@ -7,6 +7,11 @@ coverage
 playwright-report
 test-results
 
+# Captured from the running site, not authored. Reformatting it would make every
+# recapture a two-step job and the diff unreadable; see tools/render/pptx.spec.mjs
+# for how it is taken.
+tools/render/fixtures
+
 # Generated, not authored
 projects/website-angular/content-dist
 projects/website-angular/tina/__generated__
