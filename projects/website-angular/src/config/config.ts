@@ -12,14 +12,14 @@ export const APP_CONFIG = {
   // assets like .tar.gz dumps live on a CDN, not the application host).
   downloadUrl: 'https://download.reactome.org',
 
-  // SSR / non-browser fallback for the Swagger spec source and the
-  // ContentService search API. In the browser both consumers prefer
-  // window.location.origin so requests stay same-origin (avoids the
-  // CORS / SSO 302 trap on cross-host AnalysisService). This value
-  // only matters during server-side rendering and for any laptop dev
-  // workflow that doesn't run a local tomcat on :8080.
-  swaggerSpecBaseUrl: 'https://newcurator.reactome.org',
-  contentServiceBaseUrl: 'https://newcurator.reactome.org/ContentService',
+  // No cross-host fallback belongs here. Both of these named
+  // newcurator.reactome.org for the case where window was undefined:
+  // contentServiceBaseUrl was read by nothing at all, and swaggerSpecBaseUrl sat
+  // behind a branch that could not be reached, because the component returns
+  // early off-browser. Anything put back here would be a host to fall back to
+  // silently, and a site answering with another deployment's data is worse than
+  // one that fails -- the reader cannot tell they are looking at the wrong
+  // database. Services resolve same-origin instead.
 
   // pathway browser config
   pathwayBrowser: {
