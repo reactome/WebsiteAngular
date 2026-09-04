@@ -82,6 +82,12 @@ diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
 The slide is the size of the diagram, as production's is, so labels land at 5–53pt
 rather than the 1.65pt that fitting a 5976px diagram onto a 13.3in slide gives.
 
+Arrowheads are geometry rather than OOXML line ends. The diagram draws four and
+three of them mean something a triangle does not — catalysis is a hollow circle,
+positive regulation a hollow triangle, negative regulation a bar across the line
+— while a line end is always filled and always the line's own colour, and has no
+spelling for a bar at all. Drawn as line ends, inhibition came out as activation.
+
 Two things a slide of shapes does not carry yet:
 
 - **Node decorations.** The style draws them with `background-image` — 140 small

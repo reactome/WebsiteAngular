@@ -434,6 +434,21 @@ export class RenderComponent {
       !framed ||
       (box.x2 >= extent.x1 && box.x1 <= extent.x2 && box.y2 >= extent.y1 && box.y1 <= extent.y2);
 
+    // Keeping a glyph that merely crosses the frame is right; keeping the parts
+    // of it that fall outside is not. An SVG has a viewBox and simply does not
+    // draw them, and a slide has nothing of the sort -- a connector that ran the
+    // width of the diagram arrived as an object sitting 31 inches off the side
+    // of an 11 inch slide, which is what a reader would find when they opened it.
+    const clipBox = (box: { x1: number; y1: number; x2: number; y2: number }) =>
+      framed
+        ? {
+            x1: Math.max(box.x1, extent.x1),
+            y1: Math.max(box.y1, extent.y1),
+            x2: Math.min(box.x2, extent.x2),
+            y2: Math.min(box.y2, extent.y2),
+          }
+        : box;
+
     // toArray() rather than iterating the collection: a cytoscape collection is
     // array-like without being an array, and its filter hands back the loose
     // element type rather than a node.
@@ -448,9 +463,11 @@ export class RenderComponent {
     const nodeUnderlays: RenderNodeShape[] = [];
     const edges: RenderEdgeShape[] = [];
     const edgeUnderlays: RenderEdgeShape[] = [];
+    const arrowheads: (RenderNodeShape | RenderEdgeShape)[] = [];
 
     for (const node of visible) {
-      const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
+      const box = clipBox(node.boundingBox({ includeLabels: false, includeOverlays: false }));
+      if (box.x2 <= box.x1 || box.y2 <= box.y1) continue;
       const label = String(node.data('displayName') ?? '').trim();
       const under = this.underlay(node);
       if (under) {
@@ -458,10 +475,14 @@ export class RenderComponent {
           kind: 'node',
           id: `${node.id()}-underlay`,
           name: `${label || node.id()} highlight`,
-          x: box.x1 - under.padding,
-          y: box.y1 - under.padding,
-          w: box.w + 2 * under.padding,
-          h: box.h + 2 * under.padding,
+          x: Math.max(box.x1 - under.padding, framed ? extent.x1 : -Infinity),
+          y: Math.max(box.y1 - under.padding, framed ? extent.y1 : -Infinity),
+          w:
+            Math.min(box.x2 + under.padding, framed ? extent.x2 : Infinity) -
+            Math.max(box.x1 - under.padding, framed ? extent.x1 : -Infinity),
+          h:
+            Math.min(box.y2 + under.padding, framed ? extent.y2 : Infinity) -
+            Math.max(box.y1 - under.padding, framed ? extent.y1 : -Infinity),
           geom: this.geometryOf(String(node.style('shape') ?? '')),
           fill: under.colour,
           stroke: null,
@@ -480,8 +501,8 @@ export class RenderComponent {
         name: label || String(node.data('schemaClass') ?? node.id()),
         x: box.x1,
         y: box.y1,
-        w: box.w,
-        h: box.h,
+        w: box.x2 - box.x1,
+        h: box.y2 - box.y1,
         geom: this.geometryOf(String(node.style('shape') ?? '')),
         fill: this.colour(node.style('background-color'), node.style('background-opacity')),
         stroke: this.colour(node.style('border-color'), node.style('border-opacity')),
@@ -501,34 +522,58 @@ export class RenderComponent {
       .filter((edge) => within(edge.boundingBox()))) {
       // Bend points are how the diagram's orthogonal routing is stored; without
       // them every connector exports as a straight diagonal.
-      const points = [edge.sourceEndpoint(), ...this.bendPoints(edge), edge.targetEndpoint()];
+      const whole = [edge.sourceEndpoint(), ...this.bendPoints(edge), edge.targetEndpoint()].map(
+        (point) => ({ x: point.x, y: point.y })
+      );
+      // Unframed, this is the polyline itself; framed, only the parts in view.
+      const runs = framed ? this.clipRuns(whole, extent) : [whole];
+      if (!runs.length) continue;
+      const points = whole;
       const width = this.pixels(edge.style('width')) || 1;
       const under = this.underlay(edge);
       if (under) {
-        edgeUnderlays.push({
-          kind: 'edge',
-          id: `${edge.id()}-underlay`,
-          name: `${String(edge.data('schemaClass') ?? 'connector')} highlight`,
-          points: points.map((point) => ({ x: point.x, y: point.y })),
-          stroke: under.colour,
-          // Cytoscape pads an underlay outwards from the line, so the band is
-          // the line plus that padding on each side.
-          strokeWidth: width + 2 * under.padding,
-          arrow: false,
-          dashed: false,
+        // One band per run, or a connector clipped into two pieces keeps its
+        // tint on the first and loses it on the rest.
+        runs.forEach((run, at) => {
+          edgeUnderlays.push({
+            kind: 'edge',
+            id: at === 0 ? `${edge.id()}-underlay` : `${edge.id()}-underlay-${at}`,
+            name: `${String(edge.data('schemaClass') ?? 'connector')} highlight`,
+            points: run,
+            stroke: under.colour,
+            // Cytoscape pads an underlay outwards from the line, so the band is
+            // the line plus that padding on each side.
+            strokeWidth: width + 2 * under.padding,
+            closed: false,
+            fill: null,
+            dashed: false,
+          });
         });
       }
 
-      edges.push({
-        kind: 'edge',
-        id: String(edge.id()),
-        name: String(edge.data('schemaClass') ?? 'connector'),
-        points: points.map((point) => ({ x: point.x, y: point.y })),
-        stroke: this.colour(edge.style('line-color'), edge.style('opacity')),
-        strokeWidth: width,
-        arrow: String(edge.style('target-arrow-shape') ?? 'none') !== 'none',
-        dashed: this.dashed(edge.style('line-style')),
+      const stroke = this.colour(edge.style('line-color'), edge.style('opacity'));
+      const dashed = this.dashed(edge.style('line-style'));
+      runs.forEach((run, at) => {
+        edges.push({
+          kind: 'edge',
+          id: at === 0 ? String(edge.id()) : `${edge.id()}-${at}`,
+          name: String(edge.data('schemaClass') ?? 'connector'),
+          points: run,
+          stroke,
+          strokeWidth: width,
+          closed: false,
+          fill: null,
+          dashed,
+        });
       });
+
+      // The arrowhead is drawn after its line, so it sits on top of it -- and
+      // only when the end it marks is in view.
+      const tip = points[points.length - 1];
+      const showsTip =
+        !framed ||
+        (tip.x >= extent.x1 && tip.x <= extent.x2 && tip.y >= extent.y1 && tip.y <= extent.y2);
+      if (showsTip) arrowheads.push(...this.arrowhead(edge, points, width));
     }
 
     return {
@@ -544,7 +589,14 @@ export class RenderComponent {
       // The underlays are how the diagram tints an event by the sub-pathway it
       // belongs to, and each sits immediately behind the glyph it marks -- so
       // they go in front of the compartments and behind everything else.
-      shapes: [...compartments, ...edgeUnderlays, ...edges, ...nodeUnderlays, ...nodes],
+      shapes: [
+        ...compartments,
+        ...edgeUnderlays,
+        ...edges,
+        ...arrowheads,
+        ...nodeUnderlays,
+        ...nodes,
+      ],
     };
   }
 
@@ -623,6 +675,185 @@ export class RenderComponent {
       return withAlpha([...short[1]].map((digit) => parseInt(digit + digit, 16)));
     }
     return null;
+  }
+
+  /**
+   * A polyline cut down to a rectangle, as the runs that survive.
+   *
+   * Liang-Barsky per segment. A connector crossing the frame twice comes back
+   * as two runs rather than one line joining them through the middle, which is
+   * what naive clipping to the endpoints would draw.
+   */
+  private clipRuns(
+    points: { x: number; y: number }[],
+    box: { x1: number; y1: number; x2: number; y2: number }
+  ): { x: number; y: number }[][] {
+    const runs: { x: number; y: number }[][] = [];
+    let run: { x: number; y: number }[] = [];
+
+    const near = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
+
+    for (let at = 0; at < points.length - 1; at++) {
+      const from = points[at];
+      const to = points[at + 1];
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      let enter = 0;
+      let leave = 1;
+      let inside = true;
+
+      for (const [p, q] of [
+        [-dx, from.x - box.x1],
+        [dx, box.x2 - from.x],
+        [-dy, from.y - box.y1],
+        [dy, box.y2 - from.y],
+      ]) {
+        if (p === 0) {
+          // Parallel to this edge: outside it means the whole segment is out.
+          if (q < 0) {
+            inside = false;
+            break;
+          }
+          continue;
+        }
+        const at2 = q / p;
+        if (p < 0) enter = Math.max(enter, at2);
+        else leave = Math.min(leave, at2);
+      }
+      if (!inside || enter > leave) {
+        if (run.length > 1) runs.push(run);
+        run = [];
+        continue;
+      }
+
+      const start = { x: from.x + dx * enter, y: from.y + dy * enter };
+      const end = { x: from.x + dx * leave, y: from.y + dy * leave };
+      if (!run.length) run.push(start);
+      else if (!near(run[run.length - 1], start)) {
+        if (run.length > 1) runs.push(run);
+        run = [start];
+      }
+      run.push(end);
+      // A segment that left the box ends the run.
+      if (leave < 1) {
+        runs.push(run);
+        run = [];
+      }
+    }
+
+    if (run.length > 1) runs.push(run);
+    return runs;
+  }
+
+  /**
+   * The mark at the target end of a connector, as geometry.
+   *
+   * The diagram uses four, and three of them mean something a triangle does
+   * not: catalysis is a hollow circle, positive regulation a hollow triangle,
+   * and negative regulation a bar across the line. Exporting them all as a
+   * filled triangle drew inhibition as activation, which is a figure that says
+   * the opposite of what the pathway does.
+   *
+   * Built here rather than in the exporter because it is diagram geometry --
+   * where the line ends, which way it points -- and because OOXML's own line
+   * ends cannot express a bar, a hollow head, or a colour of their own.
+   */
+  private arrowhead(
+    edge: cytoscape.EdgeSingular,
+    points: { x: number; y: number }[],
+    width: number
+  ): (RenderNodeShape | RenderEdgeShape)[] {
+    const shape = String(edge.style('target-arrow-shape') ?? 'none');
+    if (shape === 'none' || points.length < 2) return [];
+
+    const colour = this.colour(edge.style('target-arrow-color'), edge.style('opacity'));
+    if (!colour) return [];
+
+    const hollow = String(edge.style('target-arrow-fill') ?? 'filled') === 'hollow';
+    // Cytoscape scales an arrow by the line's width; measured against the
+    // exported SVG, a 4px connector carries a 16px head.
+    const scale = this.pixels(edge.style('arrow-scale')) || 1;
+    const size = Math.max(6, width * 4 * scale);
+
+    const tip = points[points.length - 1];
+    const from = points[points.length - 2];
+    const run = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
+    // Along the line, and across it.
+    const ax = (tip.x - from.x) / run;
+    const ay = (tip.y - from.y) / run;
+    const cx = -ay;
+    const cy = ax;
+
+    const name = `${String(edge.data('schemaClass') ?? 'connector')} ${shape}`;
+    const id = `${edge.id()}-arrow`;
+
+    if (shape === 'tee') {
+      // A bar across the line's end. Its thickness is the line's, not the
+      // head's, or inhibition on a hairline connector becomes a black square.
+      return [
+        {
+          kind: 'edge',
+          id,
+          name,
+          points: [
+            { x: tip.x + cx * (size / 2), y: tip.y + cy * (size / 2) },
+            { x: tip.x - cx * (size / 2), y: tip.y - cy * (size / 2) },
+          ],
+          stroke: colour,
+          strokeWidth: Math.max(width, size / 4),
+          closed: false,
+          fill: null,
+          dashed: false,
+        },
+      ];
+    }
+
+    if (shape === 'circle') {
+      // Centred where the line stops, which is how cytoscape seats it.
+      return [
+        {
+          kind: 'node',
+          id,
+          name,
+          x: tip.x - ax * (size / 2) - size / 2,
+          y: tip.y - ay * (size / 2) - size / 2,
+          w: size,
+          h: size,
+          geom: 'ellipse',
+          fill: hollow ? null : colour,
+          stroke: colour,
+          strokeWidth: hollow ? Math.max(1, width) : 0,
+          label: '',
+          fontSize: 0,
+          fontColor: null,
+          bold: false,
+          dashed: false,
+        },
+      ];
+    }
+
+    // Everything else is a triangle: the tip on the line's end, the base back
+    // along it. `stealth`, `diamond` and the rest do not occur in this diagram,
+    // and a triangle is the honest approximation if one ever does.
+    const base = { x: tip.x - ax * size, y: tip.y - ay * size };
+    return [
+      {
+        kind: 'edge',
+        id,
+        name,
+        points: [
+          { x: tip.x, y: tip.y },
+          { x: base.x + cx * (size / 2), y: base.y + cy * (size / 2) },
+          { x: base.x - cx * (size / 2), y: base.y - cy * (size / 2) },
+        ],
+        stroke: colour,
+        strokeWidth: hollow ? Math.max(1, width) : 0,
+        closed: true,
+        fill: hollow ? null : colour,
+        dashed: false,
+      },
+    ];
   }
 
   /**

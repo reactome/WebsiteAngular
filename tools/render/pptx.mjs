@@ -258,7 +258,11 @@ function textBody({ label, fontSize, fontColor, bold, emuPerPx }) {
   return (
     `<p:txBody>${body}<a:p><a:pPr algn="ctr"/><a:r>` +
     `<a:rPr lang="en-US" sz="${points}"${bold ? ' b="1"' : ''} dirty="0">` +
-    (colour ? `<a:solidFill><a:srgbClr val="${colour.hex}"/></a:solidFill>` : '') +
+    (colour
+      ? `<a:solidFill><a:srgbClr val="${colour.hex}">` +
+        (colour.alpha < 1 ? `<a:alpha val="${Math.round(colour.alpha * 100000)}"/>` : '') +
+        `</a:srgbClr></a:solidFill>`
+      : '') +
     `</a:rPr><a:t>${escapeXml(label)}</a:t></a:r></a:p></p:txBody>`
   );
 }
@@ -266,13 +270,17 @@ function textBody({ label, fontSize, fontColor, bold, emuPerPx }) {
 /** A node: a preset rectangle, rounded rectangle or ellipse, with its label. */
 function nodeShape(shape, id, place, emuPerPx) {
   const at = place(shape.x, shape.y, shape.w, shape.h);
+  const stroke =
+    shape.strokeWidth > 0 || !shape.fill
+      ? outline(shape.stroke, shape.strokeWidth, emuPerPx, { dashed: Boolean(shape.dashed) })
+      : '<a:ln><a:noFill/></a:ln>';
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${escapeXml(shape.name || shape.id)}"/>` +
     `<p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>` +
     `<a:xfrm><a:off x="${at.x}" y="${at.y}"/><a:ext cx="${at.cx}" cy="${at.cy}"/></a:xfrm>` +
     `<a:prstGeom prst="${shape.geom}"><a:avLst/></a:prstGeom>` +
     solidFill(shape.fill) +
-    outline(shape.stroke, shape.strokeWidth, emuPerPx, { dashed: Boolean(shape.dashed) }) +
+    stroke +
     `</p:spPr>` +
     textBody({ ...shape, emuPerPx }) +
     `</p:sp>`
@@ -290,6 +298,8 @@ function nodeShape(shape, id, place, emuPerPx) {
  * is legal but which PowerPoint handles badly, so both sides have a floor.
  */
 function edgeShape(shape, id, place, emuPerPx) {
+  // Closed and filled means an arrowhead; the page hands those over as points
+  // for the same reason it hands over everything else.
   const points = (shape.points ?? []).filter(
     (point) => Number.isFinite(point?.x) && Number.isFinite(point?.y)
   );
@@ -302,14 +312,15 @@ function edgeShape(shape, id, place, emuPerPx) {
   const cx = Math.max(1, at.cx);
   const cy = Math.max(1, at.cy);
 
-  const path = points
-    .map((point, index) => {
-      const x = Math.round((point.x - box.x) * emuPerPx);
-      const y = Math.round((point.y - box.y) * emuPerPx);
-      const pt = `<a:pt x="${x}" y="${y}"/>`;
-      return index === 0 ? `<a:moveTo>${pt}</a:moveTo>` : `<a:lnTo>${pt}</a:lnTo>`;
-    })
-    .join('');
+  const path =
+    points
+      .map((point, index) => {
+        const x = Math.round((point.x - box.x) * emuPerPx);
+        const y = Math.round((point.y - box.y) * emuPerPx);
+        const pt = `<a:pt x="${x}" y="${y}"/>`;
+        return index === 0 ? `<a:moveTo>${pt}</a:moveTo>` : `<a:lnTo>${pt}</a:lnTo>`;
+      })
+      .join('') + (shape.closed ? '<a:close/>' : '');
 
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${escapeXml(shape.name || shape.id)}"/>` +
@@ -318,11 +329,13 @@ function edgeShape(shape, id, place, emuPerPx) {
     `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/>` +
     `<a:rect l="0" t="0" r="r" b="b"/><a:pathLst>` +
     `<a:path w="${cx}" h="${cy}">${path}</a:path>` +
-    `</a:pathLst></a:custGeom><a:noFill/>` +
-    outline(shape.stroke, shape.strokeWidth, emuPerPx, {
-      dashed: Boolean(shape.dashed),
-      extra: shape.arrow ? '<a:tailEnd type="triangle" w="med" len="med"/>' : '',
-    }) +
+    `</a:pathLst></a:custGeom>` +
+    solidFill(shape.fill) +
+    // A filled arrowhead has no outline to draw; giving it one at width 0 makes
+    // PowerPoint draw a hairline, which on a small head is most of the head.
+    (shape.strokeWidth > 0 || !shape.fill
+      ? outline(shape.stroke, shape.strokeWidth, emuPerPx, { dashed: Boolean(shape.dashed) })
+      : '<a:ln><a:noFill/></a:ln>') +
     `</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>`
   );
 }
