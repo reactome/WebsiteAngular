@@ -42,7 +42,8 @@
     "prepare": "husky",
     "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts",
     "e2e:release": "playwright test --project=release",
-    "preflight": "bash scripts/preflight.sh"
+    "preflight": "bash scripts/preflight.sh",
+    "deployed": "bash scripts/deployed.sh"
   },
   "private": true,
   "dependencies": {
