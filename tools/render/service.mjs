@@ -62,8 +62,9 @@ const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // Bump this whenever the renderer's output changes, not only when the data
 // does: it keys the disk cache AND is the ETag, so it is the only thing that
 // tells a browser its copy is stale. v2 = full-size differenced GIFs; v3 =
-// illustrations export as standalone SVG, styles inlined and size written down.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v3';
+// illustrations export as standalone SVG, styles inlined and size written down;
+// v4 = PowerPoint is shapes rather than a picture of them.
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v4';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.

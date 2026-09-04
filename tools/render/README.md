@@ -96,6 +96,19 @@ PNG at all, so its slide carries the SVG alone.
 The genome-wide view has no GIF: it draws to a canvas through FoamTree with no
 per-sample frame capture. It says so rather than producing a still.
 
+## Changing an exporter
+
+Two things are easy to miss, and both leave the site serving the old artefact
+while the code and its tests say otherwise:
+
+- **The service holds the code in memory.** It is a long-running node process,
+  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  from the site is the only check that says whether the running service has your
+  change — the CLI reads the files from disk and will happily agree with you.
+- **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
+  `service.mjs` when the output of a format changes, or every diagram rendered
+  before your change keeps its old file.
+
 ## Why this exists
 
 Server-side artefacts are produced today by Java libraries (`diagram-exporter`,
