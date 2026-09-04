@@ -41,7 +41,8 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts",
-    "e2e:release": "playwright test --project=release"
+    "e2e:release": "playwright test --project=release",
+    "preflight": "bash scripts/preflight.sh"
   },
   "private": true,
   "dependencies": {
