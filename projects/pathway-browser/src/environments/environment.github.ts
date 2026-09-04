@@ -55,8 +55,6 @@ export const CONTENT_DETAIL_PATH = '/content/detail';
 // Resolve against the hosting page's <base href> ("/" locally, "/curatorgraph/"
 // when deployed) instead of hardcoding the deployed path segment.
 const schemaHost: string =
-  typeof document !== 'undefined'
-    ? document.baseURI.replace(/\/+$/, '')
-    : environment.host;
+  typeof document !== 'undefined' ? document.baseURI.replace(/\/+$/, '') : environment.host;
 export const CONTENT_SCHEMA = `${schemaHost}/dataSchema`;
 export const CONTENT_QUERY = `${environment.host}/content/query`;

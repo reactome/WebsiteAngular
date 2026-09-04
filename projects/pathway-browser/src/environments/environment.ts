@@ -15,7 +15,7 @@ export const environment = {
   gsaServer: selectedEnv.gsaServer,
   gtagId: selectedEnv.gtagId,
   preferS3: selectedEnv.preferS3,
-}
+};
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served
 // by the Reactome backend, not by the Angular app. Unlike /ContentService they
@@ -86,9 +86,7 @@ export const CONTENT_DETAIL_PATH = '/content/detail';
 // "/curatorgraph/" on the deployed curator site - hardcoding "/curatorgraph"
 // here appended a second copy of that segment in local dev.
 const schemaHost: string =
-  typeof document !== 'undefined'
-    ? document.baseURI.replace(/\/+$/, '')
-    : environment.host;
+  typeof document !== 'undefined' ? document.baseURI.replace(/\/+$/, '') : environment.host;
 // Full-host base for the curator data-schema instance browser, used to build
 // author/person links so they resolve on the deployed host regardless of where
 // the embeddable pathway-browser element is hosted.

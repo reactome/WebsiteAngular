@@ -10,5 +10,5 @@ export const API_ROUTES = {
   DOWNLOAD: `${env.host}/download/current`,
   OVERLAYS: `${env.host}/overlays`,
   CONTENT_DETAIL: `${env.host}/content/detail`,
-  CONTENT_QUERY: `${env.host}/content/query`
+  CONTENT_QUERY: `${env.host}/content/query`,
 } as const;

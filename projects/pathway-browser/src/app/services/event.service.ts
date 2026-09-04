@@ -101,7 +101,9 @@ export class EventService {
   fetchEventAncestors(stId: string): Observable<Pathway[][]> {
     const url = `${this._ANCESTORS}${stId}/ancestors`;
     return this.http.get<Pathway[][]>(url).pipe(
-      map((ancestorsOptions) => ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())),
+      map((ancestorsOptions) =>
+        ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
+      ),
       // The backend 404s instead of returning an empty list for an event with
       // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
       // callers still emit and can render the event on its own.

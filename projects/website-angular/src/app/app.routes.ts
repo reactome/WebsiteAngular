@@ -187,10 +187,7 @@ export const routes: Routes = [
   },
   {
     path: 'dataSchema/:className/:dbId',
-    loadComponent: () =>
-      import('./content/schema/schema.component').then(
-        (m) => m.SchemaComponent
-      ),
+    loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
 

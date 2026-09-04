@@ -207,10 +207,7 @@ export class BreadcrumbComponent implements OnInit {
 
   /** True for the schema browser routes, new (/dataSchema) and legacy. */
   private isSchemaPath(segments: string[]): boolean {
-    return (
-      segments[0] === 'dataSchema' ||
-      (segments[0] === 'content' && segments[1] === 'schema')
-    );
+    return segments[0] === 'dataSchema' || (segments[0] === 'content' && segments[1] === 'schema');
   }
 
   /**
