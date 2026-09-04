@@ -13,10 +13,17 @@ export interface EnvConfig {
   preferS3?: boolean;
 }
 
+// No entry here points at the curator host. The curator site is a build
+// variant, not an environment: `--configuration curator` swaps in
+// environment.curator.ts, and `curator-local` swaps in
+// environment.curator-local.ts, both of which name their own hosts outright.
+// Keeping the two apart is deliberate -- while a curator host sat in this map,
+// `production` was the only lever that reached it, and pulling that lever put
+// the curation database on beta.reactome.org.
 export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
   development: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://dev.reactome.org',
+    contentService: 'https://dev.reactome.org/ContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     gtagId: 'G-96F1EYHQR3',
@@ -37,25 +44,27 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     preferS3: true,
   },
   local: {
-    // Only the content service moves to the locally run curator-service; the
-    // analysis service, downloads, overlays and detail pages have no local
-    // equivalent, so they stay pointed at the curator host.
-    host: 'https://newcurator.reactome.org',
-    contentService: 'http://localhost:8686',
+    // Running the site locally against the dev backend. This is the non-curator
+    // local workflow: for the curator one, whose content service runs on
+    // localhost:8686, use the `curator-local` build configuration -- it pairs
+    // variant.curator.ts with environment.curator-local.ts, which names its own
+    // hosts and does not read this map at all.
+    host: 'https://dev.reactome.org',
+    contentService: 'https://dev.reactome.org/ContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     preferS3: false,
   },
   github: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://dev.reactome.org',
+    contentService: 'https://dev.reactome.org/ContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
     preferS3: true,
   },
   remote: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://dev.reactome.org',
+    contentService: 'https://dev.reactome.org/ContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     preferS3: false,
