@@ -30,7 +30,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Deploy the commit that was tested, not whatever main points at now.
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
