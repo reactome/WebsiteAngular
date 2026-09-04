@@ -9,7 +9,24 @@ import type { Analysis } from '../model/analysis.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { toSignal } from '@angular/core/rxjs-interop';
 
-const FRAGMENT_PATTERN = /\/(?<id>R-[A-Z]{3}-\d+)?&?(?<params>.*)/;
+/**
+ * A legacy pathway link, as the old browser addressed one in the URL fragment.
+ *
+ * Both spellings are in the wild, because the old site produced both: 770 links
+ * in this site's own news archive say `#/R-HSA-1430728` and 86 say
+ * `#R-HSA-202733` with no slash. Requiring the slash meant the second kind
+ * matched nothing, so every one of them opened the browser with no pathway in
+ * it -- a blank page from a link in a release announcement.
+ *
+ * The id must be there for this to match at all. A fragment that is not a
+ * pathway reference -- `#introduction`, naming a section to scroll to -- has to
+ * fall through untouched rather than be read as a stale route.
+ *
+ * A trailing `.4` is a stIdVersion. The old links carry it, the content service
+ * does not want it, and it was previously parsed as a query parameter called
+ * ".4"; it is consumed and dropped here.
+ */
+export const FRAGMENT_PATTERN = /^\/?(?<id>R-[A-Z]{3}-\d+)(?:\.\d+)?(?:&(?<params>.*))?$/;
 
 export type UrlParam<T> = WritableSignal<T> & {
   otherTokens?: string[];
