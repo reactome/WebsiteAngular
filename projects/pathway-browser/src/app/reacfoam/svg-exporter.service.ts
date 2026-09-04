@@ -752,6 +752,11 @@ export class SvgExporterService {
     map: Map<string, { fill?: string }[]>
   ) {
     const overlays = svg.querySelectorAll(
+      // .analysis-info-container matches nothing today: that class is applied only
+      // to an analysis box the illustration gives a <text> label to, and no
+      // published EHLD has one (28 ANALINFO groups across four of them, zero
+      // labels). Kept rather than trimmed because it is the same condition that
+      // gates the box being drawn at all -- see showAnalysisInfo in ehld.service.
       'g[id^="OVERLAY-"] rect, .analysis-info-container rect'
     ) as NodeListOf<SVGSVGElement>;
     overlays.forEach((rect) => {
@@ -793,6 +798,11 @@ export class SvgExporterService {
   ) {
     if (!svg) return;
     const rects = svg.querySelectorAll(
+      // .analysis-info-container matches nothing today: that class is applied only
+      // to an analysis box the illustration gives a <text> label to, and no
+      // published EHLD has one (28 ANALINFO groups across four of them, zero
+      // labels). Kept rather than trimmed because it is the same condition that
+      // gates the box being drawn at all -- see showAnalysisInfo in ehld.service.
       'g[id^="OVERLAY-"] rect, .analysis-info-container rect'
     ) as NodeListOf<SVGSVGElement>;
     rects.forEach((rect) => {
