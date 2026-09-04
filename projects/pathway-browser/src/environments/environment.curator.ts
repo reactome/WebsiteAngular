@@ -5,8 +5,19 @@ export const IS_CURATOR = SITE_VARIANT === 'curator';
 
 const selectedEnv = getEnv(SELECTED_ENV_NAME);
 
-// Normalize host to avoid accidental double slashes when building URLs.
-const host = selectedEnv.host.replace(/\/+$/, '');
+// Named here rather than inherited, and deliberately so.
+//
+// This used to read selectedEnv.host, and the `curator` build configuration
+// defines no APP_ENV -- so getEnv() fell through to ENVIRONMENTS.production.
+// That made the *public* site's environment the only lever for pointing the
+// curator site at its own backend, and 8289afd duly pulled it: production moved
+// to newcurator, and beta.reactome.org began serving the curation database to
+// the curators reviewing it.
+//
+// The curator site names its own host, the public site names its own, and
+// neither can move the other by accident. environment.curator-local.ts already
+// worked this way.
+const host = 'https://newcurator.reactome.org';
 
 export const environment = {
   production: false,
@@ -37,7 +48,9 @@ export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
 // Base URL the app appends /data, /search, /exporter and /interactors to. Comes
 // from the environment rather than being derived from `host` because a local
 // curator-service serves those routes at its root, with no path segment.
-export const CONTENT_SERVICE = selectedEnv.contentService.replace(/\/+$/, '');
+// Same reasoning as `host` above: stated, not inherited. The curator deployment
+// serves the graph API under /GraphContentService.
+export const CONTENT_SERVICE = 'https://newcurator.reactome.org/GraphContentService';
 // CORS-enabled public endpoint used only as a fallback to resolve the current
 // database version when the primary CONTENT_SERVICE version call fails. The
 // version is needed to build CORS-enabled S3 diagram URLs.
@@ -45,6 +58,22 @@ export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/
 // CORS-enabled public content service. Used as a fallback for version-static
 // metadata endpoints (e.g. the data-schema model) when the primary curator
 // CONTENT_SERVICE is slow or unavailable, so those pages still render.
+// Three exports the curator variant was missing, which is why
+// `npm run build:curator` failed with TS2305 before its first line of output:
+// detail-download-bar imports RENDER_SERVICE, idg.service imports IDG_SERVICE,
+// and the experiment digester import needs DIGESTER_FOR_BACKEND. A variant file
+// stands in for environment.ts wholesale, so it has to carry everything
+// environment.ts exports or the build cannot resolve the import.
+export const RENDER_SERVICE = `${host}/RenderService`;
+
+// Not host-derived: IDG data lives on the IDG server, wherever the front end is.
+export const IDG_SERVICE = 'https://idg.reactome.org/idgpairwise';
+
+// Loopback on purpose -- see the note in environment.ts. The digester is called
+// by the backend, not the browser, so this must not go out through the public
+// hostname and back.
+export const DIGESTER_FOR_BACKEND = 'http://localhost:8080/ExperimentDigester';
+
 export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
