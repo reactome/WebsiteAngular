@@ -60,10 +60,11 @@ ENV RENDER_HOST=0.0.0.0 \
     RENDER_PORT=4310 \
     RENDER_CACHE=/cache
 
-# 0.0.0.0 inside the container, and the port deliberately NOT published to the
-# host in docker-compose.yml. The service is reachable from the app container and
-# nowhere else, which keeps the property that matters: a render can only be
-# commissioned through whatever fronts the site.
+# 0.0.0.0 inside the container, which is the container's own interface and not
+# the box's. docker-compose.yml publishes it to 127.0.0.1 only -- never 0.0.0.0
+# -- because on the dev box the site runs on the host rather than in compose, so
+# it cannot reach a sibling by service name. Either way the property that matters
+# holds: a render can only be commissioned through whatever fronts the site.
 EXPOSE 4310
 
 # A render is a page load, a wait and an export; if the browser wedges, the
