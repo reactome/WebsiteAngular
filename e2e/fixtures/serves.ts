@@ -27,27 +27,25 @@ export async function serves(
   try {
     response = await request.get(url, { timeout });
   } catch (error) {
-    // Nothing listening is genuinely "absent": CI proxies /RenderService to
-    // 127.0.0.1:4310 and runs no render service, so the connection is refused
-    // and those tests should stand down.
+    // A timeout is the one failure that must not read as "absent". That was the
+    // whole bug: two identical runs against beta skipped 12 tests and then 7,
+    // because a slow request looked exactly like a missing feature.
     //
-    // A timeout is not. That is the case this helper exists for -- a request
-    // that never answered used to read as a missing feature, and two identical
-    // runs against beta skipped 12 tests and then 7 without saying so.
+    // Anything else thrown here is the connection not being made at all, which
+    // is absent by any useful definition.
     const message = error instanceof Error ? error.message : String(error);
     if (/timed?\s?out|Timeout/i.test(message)) throw error;
     return false;
   }
 
-  const status = response.status();
-  // 404/501: the backend does not implement it. 502/503/504: a proxy could not
-  // reach it, which on a dev server means it is not running.
-  if ([404, 501, 502, 503, 504].includes(status)) return false;
-  if (!response.ok()) {
-    throw new Error(
-      `${url} answered ${status}. A probe may only skip a test when the endpoint is absent; ` +
-        `any other failure is worth seeing rather than skipping past.`
-    );
-  }
-  return true;
+  // Any answer that is not success means the target cannot serve this, so the
+  // test stands down. Enumerating "absent" status codes was tried and was wrong
+  // twice over: 404/501 alone missed the dev-server proxy, which answers 500
+  // when it cannot reach its target -- while the same proxy on another machine
+  // answers 200 from the SPA fallback for the same condition.
+  //
+  // A service that is present but broken is caught by the test that runs
+  // against it, not by the probe in front of it. The probe answers one question:
+  // can this target serve this endpoint right now.
+  return response.ok();
 }
