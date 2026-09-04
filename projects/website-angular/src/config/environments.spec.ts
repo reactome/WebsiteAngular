@@ -77,15 +77,15 @@ describe('site profiles', () => {
     expect(configurations).toEqual(Object.keys(SITE_PROFILES).sort());
   });
 
-  it("files each deployment's traffic under its own analytics property", () => {
-    // The site reports to whatever gtagId its profile names, so beta sharing
-    // production's property would file beta traffic as public traffic and nobody
-    // reading those numbers would know. A profile with no property does not
-    // report at all, which is what the curator site wants.
-    expect(SITE_PROFILES.beta.gtagId).not.toBe(SITE_PROFILES.production.gtagId);
-    expect(SITE_PROFILES.curator.gtagId, 'curator has no property yet').toBeUndefined();
+  it('reports to Google only from the public site', () => {
+    // Every other deployment names no property, so gtag is never loaded there and
+    // nothing is sent. Pointing beta, dev or curation traffic at the public
+    // property would inflate reactome.org's numbers with hits it never received,
+    // and nobody reading them later could separate the two.
+    expect(SITE_PROFILES.production.gtagId, 'the public site reports').toMatch(/^G-[A-Z0-9]+$/);
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
-      if (profile.gtagId) expect(profile.gtagId, `${name}.gtagId`).toMatch(/^G-[A-Z0-9]+$/);
+      if (name === 'production') continue;
+      expect(profile.gtagId, `${name} must not report to Google`).toBeUndefined();
     }
   });
 });

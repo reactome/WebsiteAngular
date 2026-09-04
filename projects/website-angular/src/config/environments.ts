@@ -46,6 +46,14 @@ export interface SiteProfile {
   contentService?: string;
   s3: string;
   gsaServer: string;
+  /**
+   * Google Analytics property, and only reactome.org has one.
+   *
+   * Absent everywhere else on purpose: a deployment with no property does not
+   * load gtag and reports nothing. Sending beta, dev or curation traffic to the
+   * public property would inflate the public site's numbers with hits it never
+   * received, and nobody reading them afterwards could separate the two.
+   */
   gtagId?: string;
   preferS3: boolean;
   /**
@@ -87,7 +95,6 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     originFallback: 'https://beta.reactome.org',
     s3: S3,
     gsaServer: 'production',
-    gtagId: 'G-96F1EYHQR3',
     preferS3: true,
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
@@ -99,7 +106,6 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     originFallback: 'https://dev.reactome.org',
     s3: S3,
     gsaServer: 'dev',
-    gtagId: 'G-96F1EYHQR3',
     preferS3: false,
     versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',

@@ -84,17 +84,22 @@ as `SITE_PROFILES`, one row per deployment, and the `APP_ENV` define in
 
 | deployment      | backend                                                 | UI      | analytics |
 | --------------- | ------------------------------------------------------- | ------- | --------- |
-| `production`    | its own origin (falls back to reactome.org off-browser) | main    | public    |
-| `beta`          | its own origin (falls back to beta.reactome.org)        | main    | dev       |
-| `development`   | its own origin (falls back to dev.reactome.org)         | main    | dev       |
-| `curator`       | newcurator.reactome.org, `/GraphContentService`         | curator | none yet  |
-| `curator-local` | graph API on `localhost:8686`, the rest from newcurator | curator | none      |
+| `production`    | its own origin (falls back to reactome.org off-browser) | main    | reports   |
+| `beta`          | its own origin (falls back to beta.reactome.org)        | main    | none      |
+| `development`   | its own origin (falls back to dev.reactome.org)         | main    | none      |
+| `curator`       | newcurator.reactome.org, `/GraphContentService`         | curator | none      |
+| `curator-local` | graph API on `localhost:8686`, rest from newcurator     | curator | none      |
 
-Analytics is a profile field too, and the site reports only when its deployment
-names a property — so beta's traffic files under beta's, and the curator site
-reports nothing until it has one of its own. Before this, the pathway browser
-reported and the site around it did not, so everything outside the browser went
-uncounted.
+Analytics is a profile field, and **only `production` names a property**. Every
+other deployment leaves it unset, which means gtag is never loaded and nothing is
+sent — beta, dev and the curator site report nothing at all. Sending their hits
+to the public property would inflate reactome.org's numbers with traffic it never
+received, and no one reading those numbers later could separate the two.
+
+The trade-off worth knowing: nothing outside production exercises the analytics
+path, so the first real run is on reactome.org. To check the wiring before then,
+give a non-production profile a property temporarily, or use GA4's DebugView —
+don't leave one set.
 
 The public deployments resolve `window.location.origin` rather than naming a
 host, and that matters: beta.reactome.org reverse-proxies its own
