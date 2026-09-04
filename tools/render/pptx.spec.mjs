@@ -96,7 +96,25 @@ const EDGE = {
   ],
   stroke: 'rgb(0,0,0)',
   strokeWidth: 1.2,
-  arrow: true,
+  closed: false,
+  fill: null,
+  dashed: false,
+};
+
+/** An arrowhead, which the page hands over as a closed, filled polygon. */
+const ARROW = {
+  kind: 'edge',
+  id: 'e1-arrow',
+  name: 'production triangle',
+  points: [
+    { x: 60, y: 20 },
+    { x: 48, y: 26 },
+    { x: 48, y: 14 },
+  ],
+  stroke: '001f25',
+  strokeWidth: 0,
+  closed: true,
+  fill: '001f25',
   dashed: false,
 };
 
@@ -207,13 +225,40 @@ describe('a slide built from shapes', () => {
     expect((slide.match(/<a:moveTo>/g) ?? []).length).toBe(1);
   });
 
-  it('gives a reaction an arrowhead and a plain link none', () => {
-    const arrow = open(pptx({ shapes: { ...SHAPES, shapes: [EDGE] } })).slide();
-    const plain = open(
-      pptx({ shapes: { ...SHAPES, shapes: [{ ...EDGE, arrow: false }] } })
+  it('closes and fills an arrowhead, and leaves a connector open', () => {
+    // OOXML line ends are always filled and always the line's own colour, so an
+    // arrowhead drawn as one cannot be hollow, cannot be a bar, and cannot be
+    // green. The page sends geometry instead; this is the shape of that.
+    const head = open(pptx({ shapes: { ...SHAPES, shapes: [ARROW] } })).slide();
+    expect(head).toContain('<a:close/>');
+    expect(head).toContain('<a:srgbClr val="001F25">');
+    expect(head, 'a filled head draws no outline of its own').toContain('<a:ln><a:noFill/></a:ln>');
+
+    const line = open(pptx({ shapes: { ...SHAPES, shapes: [EDGE] } })).slide();
+    expect(line).not.toContain('<a:close/>');
+    expect(line).toContain('<a:noFill/>');
+  });
+
+  it('leaves a hollow arrowhead unfilled and outlined', () => {
+    const slide = open(
+      pptx({
+        shapes: {
+          ...SHAPES,
+          shapes: [{ ...ARROW, fill: null, stroke: '0c9509', strokeWidth: 2 }],
+        },
+      })
     ).slide();
-    expect(arrow).toContain('tailEnd');
-    expect(plain).not.toContain('tailEnd');
+    expect(slide).toContain('<a:close/>');
+    expect(slide).toContain('<a:noFill/>');
+    expect(slide, 'the outline carries the arrowhead colour').toContain('<a:srgbClr val="0C9509">');
+  });
+
+  it('never spells an arrowhead as a line end', () => {
+    // A line end would be the obvious way to draw one and cannot say what the
+    // diagram says: a tee has no line end at all.
+    const slide = open(pptx({ shapes: REAL })).slide();
+    expect(slide).not.toContain('tailEnd');
+    expect(slide).not.toContain('headEnd');
   });
 
   it('keeps the diagram square, mapping both axes by one scale', () => {
@@ -376,10 +421,12 @@ describe('a slide built from a payload the page produced', () => {
         expect(slide, fill).toContain(`<a:alpha val="${permille}"/>`);
       }
     }
-    // And nothing the page coloured may come out unfilled: one noFill per
-    // uncoloured node, plus one per edge, and no more.
-    const uncoloured = REAL.shapes.filter((shape) => shape.kind === 'edge' || !shape.fill).length;
-    expect((slide.match(/<a:noFill\/>/g) ?? []).length).toBe(uncoloured);
+    // And nothing the page coloured may come out unfilled. An outline can be
+    // noFill too, so strip the outlines first: what is left is one body fill
+    // per shape, empty exactly where the page sent no colour.
+    const bodies = slide.replace(/<a:ln[ >][\s\S]*?<\/a:ln>/g, '');
+    const unfilled = REAL.shapes.filter((shape) => !shape.fill).length;
+    expect((bodies.match(/<a:noFill\/>/g) ?? []).length).toBe(unfilled);
   });
 
   it('keeps every label the page gave it, escaped', () => {
@@ -476,6 +523,68 @@ describe('the slide itself', () => {
   it('sizes the slide to the picture on the fallback path too', () => {
     const { cx, cy } = slideSize(pptx({ ...PICTURE }));
     expect((cx - MARGINS) / (cy - MARGINS)).toBeCloseTo(400 / 200, 1);
+  });
+});
+
+describe('a payload framed on one event', () => {
+  /**
+   * The same diagram asked for one reaction, which is what `?select=` does.
+   *
+   * Here because framing is where the contract "every shape lies inside the
+   * extent" is easy to break and impossible to notice: an SVG has a viewBox and
+   * simply does not draw what falls outside, so the same payload looks right in
+   * one format and puts objects 31 inches off the side of the slide in another.
+   */
+  const FRAMED = JSON.parse(
+    readFileSync(new URL('./fixtures/shapes-framed-reaction.json', import.meta.url), 'utf8')
+  );
+
+  it('is a frame, not the whole diagram', () => {
+    expect(FRAMED.shapes.length).toBeLessThan(REAL.shapes.length / 4);
+    expect(FRAMED.width).toBeLessThan(REAL.width / 2);
+  });
+
+  it.each([
+    ['framed', () => FRAMED],
+    ['whole', () => REAL],
+  ])('keeps every %s shape inside the extent it declares', (_name, payload) => {
+    const page = payload();
+    const right = page.x + page.width;
+    const bottom = page.y + page.height;
+    // A hair of tolerance: the extent and the geometry are both floats.
+    const slack = 0.5;
+    for (const shape of page.shapes) {
+      const points =
+        shape.kind === 'edge'
+          ? shape.points
+          : [
+              { x: shape.x, y: shape.y },
+              { x: shape.x + shape.w, y: shape.y + shape.h },
+            ];
+      for (const point of points) {
+        expect(point.x, `${shape.name} x`).toBeGreaterThanOrEqual(page.x - slack);
+        expect(point.x, `${shape.name} x`).toBeLessThanOrEqual(right + slack);
+        expect(point.y, `${shape.name} y`).toBeGreaterThanOrEqual(page.y - slack);
+        expect(point.y, `${shape.name} y`).toBeLessThanOrEqual(bottom + slack);
+      }
+    }
+  });
+
+  it('puts no shape past the edge of the slide it is drawn on', () => {
+    const { files, drawn } = open(pptx({ title: 'Framed', shapes: FRAMED }));
+    const [, cx, cy] = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(
+      strFromU8(files['ppt/presentation.xml'])
+    );
+    const placed = [
+      ...drawn().matchAll(/<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/g),
+    ];
+    expect(placed.length).toBeGreaterThan(10);
+    for (const [, x, y, w, h] of placed) {
+      expect(Number(x)).toBeGreaterThanOrEqual(0);
+      expect(Number(y)).toBeGreaterThanOrEqual(0);
+      expect(Number(x) + Number(w)).toBeLessThanOrEqual(Number(cx));
+      expect(Number(y) + Number(h)).toBeLessThanOrEqual(Number(cy));
+    }
   });
 });
 

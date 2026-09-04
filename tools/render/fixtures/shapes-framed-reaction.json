@@ -1,0 +1,996 @@
+{
+ "x": 3197.8181818181815,
+ "y": 992.1363636363637,
+ "width": 1036.3636363636365,
+ "height": 647.7272727272727,
+ "shapes": [
+  {
+   "kind": "node",
+   "id": "262-outer",
+   "name": "cytosol",
+   "x": 3197.8181818181815,
+   "y": 992.1363636363637,
+   "w": 1036.3636363636365,
+   "h": 647.7272727272727,
+   "geom": "roundRect",
+   "fill": "e5834a0f",
+   "stroke": "e5834a",
+   "strokeWidth": 4,
+   "label": "cytosol",
+   "fontSize": 16,
+   "fontColor": "e5834a",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "262-inner",
+   "name": "262-inner",
+   "x": 3197.8181818181815,
+   "y": 992.1363636363637,
+   "w": 1036.3636363636365,
+   "h": 647.7272727272727,
+   "geom": "roundRect",
+   "fill": "e5834a0f",
+   "stroke": "e5834a",
+   "strokeWidth": 4,
+   "label": "",
+   "fontSize": 16,
+   "fontColor": "e5834a",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "90-outer",
+   "name": "mitochondrial outer membrane",
+   "x": 3197.8181818181815,
+   "y": 992.1363636363637,
+   "w": 576.1818181818185,
+   "h": 647.7272727272727,
+   "geom": "roundRect",
+   "fill": "e5834a0f",
+   "stroke": "e5834a",
+   "strokeWidth": 4,
+   "label": "mitochondrial outer membrane",
+   "fontSize": 16,
+   "fontColor": "e5834a",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "91-outer",
+   "name": "mitochondrial inner membrane",
+   "x": 3197.8181818181815,
+   "y": 1015,
+   "w": 225.18181818181847,
+   "h": 624.8636363636365,
+   "geom": "roundRect",
+   "fill": "e5834a0f",
+   "stroke": "e5834a",
+   "strokeWidth": 4,
+   "label": "mitochondrial inner membrane",
+   "fontSize": 16,
+   "fontColor": "e5834a",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --- 2828",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4146,
+     "y": 1154
+    },
+    {
+     "x": 4062.0000000000005,
+     "y": 1153.9999999999998
+    },
+    {
+     "x": 4060.9256838294455,
+     "y": 992.1363636363637
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --- 2841",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4188,
+     "y": 1126
+    },
+    {
+     "x": 4188,
+     "y": 992.1363636363637
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --- 2846",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4230,
+     "y": 1166
+    },
+    {
+     "x": 4234.181818181818,
+     "y": 1167.5681818181818
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --- 2851",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4162,
+     "y": 1182
+    },
+    {
+     "x": 4075.9999999999995,
+     "y": 1256
+    },
+    {
+     "x": 3986,
+     "y": 1256
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --- 2981",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4180,
+     "y": 1182
+    },
+    {
+     "x": 4138,
+     "y": 1319.9999999999998
+    },
+    {
+     "x": 4190,
+     "y": 1320
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --| 2244",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4230,
+     "y": 1152
+    },
+    {
+     "x": 4234.181818181818,
+     "y": 1152
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2823 --| 2249",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4188,
+     "y": 1182
+    },
+    {
+     "x": 4188,
+     "y": 1212
+    },
+    {
+     "x": 4234.181818181818,
+     "y": 1211.9130285909946
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2824 --| 2851",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4032.7746107483676,
+     "y": 992.1363636363637
+    },
+    {
+     "x": 4034,
+     "y": 1140
+    },
+    {
+     "x": 3992.387232484355,
+     "y": 1239.0780178943926
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2851 --> 2825",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3986,
+     "y": 1256
+    },
+    {
+     "x": 3986.497855917667,
+     "y": 992.1363636363637
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3374 --+ 2144",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3808,
+     "y": 1472
+    },
+    {
+     "x": 3772,
+     "y": 1560
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 8,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3375 --+ 2144",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3656,
+     "y": 1348
+    },
+    {
+     "x": 3636,
+     "y": 1350
+    },
+    {
+     "x": 3756,
+     "y": 1560
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 8,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2145 --- 2144",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3686,
+     "y": 1576
+    },
+    {
+     "x": 3764,
+     "y": 1576
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 8,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2146 --- 2178",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3952,
+     "y": 1606
+    },
+    {
+     "x": 4011.517906336089,
+     "y": 1639.8636363636365
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2144 --> 2146",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3764,
+     "y": 1576
+    },
+    {
+     "x": 3872,
+     "y": 1576
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 8,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2187 --- 2851",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4234.181818181818,
+     "y": 1256.2502876869964
+    },
+    {
+     "x": 4075.9999999999995,
+     "y": 1256
+    },
+    {
+     "x": 3986,
+     "y": 1256
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2982 --- 2981",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4096,
+     "y": 1320
+    },
+    {
+     "x": 4138,
+     "y": 1320
+    },
+    {
+     "x": 4190,
+     "y": 1320
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2981 --> 2983",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4190,
+     "y": 1320
+    },
+    {
+     "x": 4234.181818181818,
+     "y": 1320
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2531 --+ 2144",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3606,
+     "y": 1124
+    },
+    {
+     "x": 3604.0000000000005,
+     "y": 1522
+    },
+    {
+     "x": 3746,
+     "y": 1570
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 8,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2531 --+ 2175",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3632,
+     "y": 1028
+    },
+    {
+     "x": 3657.403409090909,
+     "y": 992.1363636363637
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2532",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3197.8181818181815,
+     "y": 1145.8866989990713
+    },
+    {
+     "x": 3462.039594137117,
+     "y": 1099.400525435581
+    }
+   ],
+   "stroke": "001f2580",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": true
+  },
+  {
+   "kind": "edge",
+   "id": "2533",
+   "name": "connector",
+   "points": [
+    {
+     "x": 3197.8181818181815,
+     "y": 1279.0412020412023
+    },
+    {
+     "x": 3522.6758164328735,
+     "y": 1127.4184598977545
+    }
+   ],
+   "stroke": "001f2580",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": true
+  },
+  {
+   "kind": "edge",
+   "id": "3688",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4050,
+     "y": 1432
+    },
+    {
+     "x": 3932,
+     "y": 1430
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3678",
+   "name": "connector",
+   "points": [
+    {
+     "x": 4050,
+     "y": 1406
+    },
+    {
+     "x": 3934,
+     "y": 1366
+    },
+    {
+     "x": 3902,
+     "y": 1360
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2824 --| 2851-arrow",
+   "name": "connector tee",
+   "points": [
+    {
+     "x": 3981.3234472170666,
+     "y": 1234.4312280821314
+    },
+    {
+     "x": 4003.4510177516436,
+     "y": 1243.7248077066538
+    }
+   ],
+   "stroke": "ba1a1a",
+   "strokeWidth": 6,
+   "closed": false,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3374 --+ 2144-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3772,
+     "y": 1560
+    },
+    {
+     "x": 3769.3074997637655,
+     "y": 1524.3243718698902
+    },
+    {
+     "x": 3798.9250023623467,
+     "y": 1536.4406229329463
+    }
+   ],
+   "stroke": "0c9509",
+   "strokeWidth": 8,
+   "closed": true,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3375 --+ 2144-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3756,
+     "y": 1560
+    },
+    {
+     "x": 3726.2316636985897,
+     "y": 1540.1544424657268
+    },
+    {
+     "x": 3754.0154442465728,
+     "y": 1524.277996438308
+    }
+   ],
+   "stroke": "0c9509",
+   "strokeWidth": 8,
+   "closed": true,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2144 --> 2146-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3872,
+     "y": 1576
+    },
+    {
+     "x": 3840,
+     "y": 1592
+    },
+    {
+     "x": 3840,
+     "y": 1560
+    }
+   ],
+   "stroke": "0561a6",
+   "strokeWidth": 0,
+   "closed": true,
+   "fill": "0561a6",
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "2531 --+ 2144-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3746,
+     "y": 1570
+    },
+    {
+     "x": 3710.561456958307,
+     "y": 1574.9101595780658
+    },
+    {
+     "x": 3720.8087465125313,
+     "y": 1544.595261313485
+    }
+   ],
+   "stroke": "0c9509",
+   "strokeWidth": 8,
+   "closed": true,
+   "fill": null,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2532-arrow",
+   "name": "connector circle",
+   "x": 3438.22111262668,
+   "y": 1089.4798269499029,
+   "w": 24,
+   "h": 24,
+   "geom": "ellipse",
+   "fill": "001f2580",
+   "stroke": "001f2580",
+   "strokeWidth": 0,
+   "label": "",
+   "fontSize": 0,
+   "fontColor": null,
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2533-arrow",
+   "name": "connector circle",
+   "x": 3499.801907544541,
+   "y": 1120.493704274949,
+   "w": 24,
+   "h": 24,
+   "geom": "ellipse",
+   "fill": "001f2580",
+   "stroke": "001f2580",
+   "strokeWidth": 0,
+   "label": "",
+   "fontSize": 0,
+   "fontColor": null,
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3688-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3932,
+     "y": 1430
+    },
+    {
+     "x": 3956.199914079815,
+     "y": 1418.4084445163912
+    },
+    {
+     "x": 3955.7931928347757,
+     "y": 1442.4049979736865
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 0,
+   "closed": true,
+   "fill": "001f25",
+   "dashed": false
+  },
+  {
+   "kind": "edge",
+   "id": "3678-arrow",
+   "name": "connector triangle",
+   "points": [
+    {
+     "x": 3902,
+     "y": 1360
+    },
+    {
+     "x": 3927.800394907026,
+     "y": 1352.6284585979924
+    },
+    {
+     "x": 3923.3774700658214,
+     "y": 1376.2173910844162
+    }
+   ],
+   "stroke": "001f25",
+   "strokeWidth": 0,
+   "closed": true,
+   "fill": "001f25",
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2851",
+   "name": "2851",
+   "x": 3971,
+   "y": 1241,
+   "w": 30,
+   "h": 30,
+   "geom": "ellipse",
+   "fill": "001f25",
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "label": "",
+   "fontSize": 16,
+   "fontColor": "001f25",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2981",
+   "name": "2981",
+   "x": 4175,
+   "y": 1305,
+   "w": 30,
+   "h": 30,
+   "geom": "ellipse",
+   "fill": "001f25",
+   "stroke": "001f25",
+   "strokeWidth": 4,
+   "label": "",
+   "fontSize": 16,
+   "fontColor": "001f25",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2144",
+   "name": "2144",
+   "x": 3748,
+   "y": 1560,
+   "w": 32,
+   "h": 32,
+   "geom": "roundRect",
+   "fill": "effbff",
+   "stroke": "0561a6",
+   "strokeWidth": 6,
+   "label": "",
+   "fontSize": 16,
+   "fontColor": "001f25",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2823",
+   "name": "XIAP",
+   "x": 4151,
+   "y": 1131,
+   "w": 74,
+   "h": 46,
+   "geom": "roundRect",
+   "fill": "001f29",
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "XIAP",
+   "fontSize": 6,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "3374",
+   "name": "GSDMD(1-​275):​cardiolipin",
+   "x": 3722,
+   "y": 1393,
+   "w": 204,
+   "h": 74,
+   "geom": "rect",
+   "fill": null,
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "GSDMD(1-​275):​cardiolipin",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "3375",
+   "name": "GSDME:​cardiolipin",
+   "x": 3660,
+   "y": 1319,
+   "w": 236,
+   "h": 46,
+   "geom": "rect",
+   "fill": null,
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "GSDME:​cardiolipin",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "3674",
+   "name": "Pyroptosis",
+   "x": 4054,
+   "y": 1394,
+   "w": 176,
+   "h": 84,
+   "geom": "rect",
+   "fill": "006782",
+   "stroke": "ffffff",
+   "strokeWidth": 12,
+   "label": "Pyroptosis",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2145",
+   "name": "CYCS",
+   "x": 3599,
+   "y": 1555,
+   "w": 82,
+   "h": 46,
+   "geom": "roundRect",
+   "fill": "001f29",
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "CYCS",
+   "fontSize": 6,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2146",
+   "name": "CYCS",
+   "x": 3877,
+   "y": 1555,
+   "w": 82,
+   "h": 46,
+   "geom": "roundRect",
+   "fill": "001f29",
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "CYCS",
+   "fontSize": 6,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2982",
+   "name": "SEPT4 dimer",
+   "x": 3914,
+   "y": 1301,
+   "w": 176,
+   "h": 46,
+   "geom": "rect",
+   "fill": null,
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "SEPT4 dimer",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2496",
+   "name": "CASP3(1-​277) dimer",
+   "x": 4214,
+   "y": 992.1363636363637,
+   "w": 20.181818181818016,
+   "h": 60.86363636363626,
+   "geom": "rect",
+   "fill": null,
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "CASP3(1-​277) dimer",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  },
+  {
+   "kind": "node",
+   "id": "2531",
+   "name": "Activated BAX,​BAK oligomers",
+   "x": 3473,
+   "y": 1031,
+   "w": 270,
+   "h": 90,
+   "geom": "roundRect",
+   "fill": null,
+   "stroke": "000000",
+   "strokeWidth": 0,
+   "label": "Activated BAX,​BAK oligomers",
+   "fontSize": 12,
+   "fontColor": "ffffff",
+   "bold": false,
+   "dashed": false
+  }
+ ]
+}

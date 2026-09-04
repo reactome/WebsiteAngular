@@ -51,6 +51,18 @@ export interface RenderNodeShape {
   dashed: boolean;
 }
 
+/**
+ * A polyline, and also the shape every arrowhead is drawn as.
+ *
+ * An arrowhead is geometry, not a line decoration. The diagram draws four of
+ * them and three carry meaning a triangle does not: catalysis is a hollow
+ * circle, positive regulation a hollow triangle, and negative regulation a bar
+ * across the line. OOXML's line ends offer `triangle`, `oval`, `stealth`,
+ * `diamond` and `arrow`, always filled and always the line's own colour -- so a
+ * tee has no spelling there at all, and an export that reached for the nearest
+ * line end drew inhibition as activation. Handing over the points instead means
+ * the exporter needs to know none of that.
+ */
 export interface RenderEdgeShape {
   kind: 'edge';
   id: string;
@@ -59,8 +71,9 @@ export interface RenderEdgeShape {
   points: { x: number; y: number }[];
   stroke: ShapeColour;
   strokeWidth: number;
-  /** Reactions draw arrowheads; a plain link does not. */
-  arrow: boolean;
+  /** Closed and filled, for an arrowhead; open and stroked, for a connector. */
+  closed: boolean;
+  fill: ShapeColour;
   /** A broken line, which the diagram uses for the links between glyphs. */
   dashed: boolean;
 }
