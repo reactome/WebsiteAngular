@@ -78,48 +78,39 @@
                   "maximumError": "25kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"production\""
+              }
             },
             "development": {
-              "define": { "APP_ENV": "\"development\"" },
+              "define": {
+                "APP_ENV": "\"development\""
+              },
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
             },
             "curator": {
               "baseHref": "/curatorgraph/",
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/variant.ts",
-                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
-                },
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.curator.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"curator\""
+              }
             },
             "curator-local": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/variant.ts",
-                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
-                },
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.curator-local.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"curator-local\""
+              }
             },
             "local": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
               "define": {
-                "APP_ENV": "\"local\""
+                "APP_ENV": "\"development\""
               }
             }
           },

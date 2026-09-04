@@ -1,115 +1,147 @@
-export type EnvName = 'development' | 'production' | 'local' | 'github' | 'remote';
+/**
+ * The deployments this repository can build, one row each.
+ *
+ * A profile names both halves of a deployment: the backend it talks to and the
+ * UI variant it presents. They used to be chosen by separate mechanisms -- the
+ * backend by an APP_ENV define, the UI by swapping variant.ts through
+ * fileReplacements -- and nothing kept the two in step. The curator site could
+ * only reach its own backend by editing the *public* site's entry, so someone
+ * did, and beta.reactome.org served the curation database to the curators
+ * reviewing it. One row per deployment makes that particular mistake unsayable.
+ *
+ * Adding a deployment (Plant Reactome, say) is a row here plus whatever UI
+ * genuinely differs -- not a new environment file, and not a new boolean.
+ */
 
-export interface EnvConfig {
+type SiteVariant = 'main' | 'curator';
+
+export type ProfileName = 'production' | 'development' | 'curator' | 'curator-local';
+
+export interface SiteProfile {
+  /** Which UI this deployment presents. */
+  variant: SiteVariant;
+  /** Origin the services are reached at. No trailing slash. */
   host: string;
-  // Full base URL of the graph content service, kept separate from `host`
-  // because the path segment differs per deployment: the curator site serves it
-  // under /GraphContentService, while a locally run curator-service serves the
-  // same routes (/data, /search, /exporter, /interactors) straight off its root.
+  /**
+   * Base the app appends /data, /search, /exporter and /interactors to. Separate
+   * from `host` because the path segment differs per deployment: the curator
+   * site serves it under /GraphContentService, and a locally run
+   * curator-service serves the same routes straight off its root.
+   */
   contentService: string;
   s3: string;
   gsaServer: string;
   gtagId?: string;
-  preferS3?: boolean;
+  preferS3: boolean;
+  /**
+   * Where to ask for the database version when `contentService` cannot answer.
+   *
+   * Only a curation graph needs this: it has no released version, and one is
+   * required to build S3 diagram URLs. A released deployment answers for itself,
+   * so its "fallback" is its own service -- deliberately not another
+   * deployment's, which would mean quietly reporting someone else's release.
+   */
+  versionFallback: string;
+  /** Absolute, unless a proxy serves the assets at the root. */
+  downloadBase?: string;
+  /** Where the data-schema instance browser is mounted. */
+  schemaPath: string;
 }
 
-// No entry here points at the curator host. The curator site is a build
-// variant, not an environment: `--configuration curator` swaps in
-// environment.curator.ts, and `curator-local` swaps in
-// environment.curator-local.ts, both of which name their own hosts outright.
-// Keeping the two apart is deliberate -- while a curator host sat in this map,
-// `production` was the only lever that reached it, and pulling that lever put
-// the curation database on beta.reactome.org.
-export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
-  development: {
-    host: 'https://dev.reactome.org',
-    contentService: 'https://dev.reactome.org/ContentService',
-    s3: 'https://download.reactome.org',
-    gsaServer: 'dev',
-    gtagId: 'G-96F1EYHQR3',
-    preferS3: false,
-  },
+const S3 = 'https://download.reactome.org';
+
+export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
-    // The public site, and it must stay public. 8289afd ("stash.") repointed this
-    // at the curator host, and because getEnv() falls back to `production` when no
-    // APP_ENV is defined -- which is every non-curator build -- beta.reactome.org
-    // silently began serving the curator database. Its event hierarchy grew
-    // "GOCAM test events", "Krishna: NRF2-KEAP1 pathway" and other draft
-    // pathways, on the site curators were reviewing at the time.
+    variant: 'main',
     host: 'https://reactome.org',
     contentService: 'https://reactome.org/ContentService',
-    s3: 'https://download.reactome.org',
+    s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
     preferS3: true,
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
   },
-  local: {
-    // Running the site locally against the dev backend. This is the non-curator
-    // local workflow: for the curator one, whose content service runs on
-    // localhost:8686, use the `curator-local` build configuration -- it pairs
-    // variant.curator.ts with environment.curator-local.ts, which names its own
-    // hosts and does not read this map at all.
+  development: {
+    variant: 'main',
     host: 'https://dev.reactome.org',
     contentService: 'https://dev.reactome.org/ContentService',
-    s3: 'https://download.reactome.org',
+    s3: S3,
     gsaServer: 'dev',
+    gtagId: 'G-96F1EYHQR3',
     preferS3: false,
+    versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
   },
-  github: {
-    host: 'https://dev.reactome.org',
-    contentService: 'https://dev.reactome.org/ContentService',
-    s3: 'https://download.reactome.org',
+  curator: {
+    variant: 'curator',
+    host: 'https://newcurator.reactome.org',
+    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    s3: S3,
     gsaServer: 'production',
-    preferS3: true,
+    gtagId: 'G-EDHZ92GXZP',
+    preferS3: false,
+    // A curation graph has no released version, so this asks the released
+    // instance on the same host -- not a different deployment.
+    versionFallback: 'https://newcurator.reactome.org/ContentService/data/database/version',
+    schemaPath: '/curatorgraph/dataSchema',
   },
-  remote: {
-    host: 'https://dev.reactome.org',
-    contentService: 'https://dev.reactome.org/ContentService',
-    s3: 'https://download.reactome.org',
+  'curator-local': {
+    variant: 'curator',
+    // Only the graph content API runs locally. The analysis and experiment
+    // services, downloads and detail pages have no local equivalent.
+    host: 'https://newcurator.reactome.org',
+    contentService: 'http://localhost:8686',
+    s3: S3,
     gsaServer: 'dev',
     preferS3: false,
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    // Proxied at the root by proxy.curator-local.conf.json, because
+    // newcurator.reactome.org/download sends no Access-Control-Allow-Origin.
+    downloadBase: '/download/current',
+    schemaPath: '/curatorgraph/dataSchema',
   },
-} as const;
+};
 
-// Build-time environment selector. The `define` option in angular.json replaces
-// this identifier with a string literal per build configuration, so it works in
-// the browser and under SSR without needing a `process` shim. When a build
-// configuration sets no define the identifier is absent, which is why this is
-// read through `typeof` rather than directly.
+// Build-time selector. The `define` option in angular.json replaces this
+// identifier with a string literal per build configuration, so it works in the
+// browser and under SSR without a `process` shim. A configuration that sets no
+// define leaves the identifier absent, which is why this is read through
+// `typeof`.
 declare const APP_ENV: string | undefined;
 
-function buildTimeEnvName(): string | undefined {
+function buildTimeProfileName(): string | undefined {
   return typeof APP_ENV !== 'undefined' ? APP_ENV : undefined;
 }
 
 // Runtime override, for host pages that embed the pathway-browser element and
-// need to choose an environment without rebuilding. Takes precedence over the
-// build-time define.
-function runtimeEnvName(): string | undefined {
+// need to choose a deployment without rebuilding. Takes precedence.
+function runtimeProfileName(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   return (window as Window & { __APP_ENV?: string }).__APP_ENV || undefined;
 }
 
-export const SELECTED_ENV_NAME: string | undefined = runtimeEnvName() ?? buildTimeEnvName();
+export const SELECTED_PROFILE_NAME: string | undefined =
+  runtimeProfileName() ?? buildTimeProfileName();
 
 /**
- * The environment a build talks to.
+ * The deployment a build is for.
  *
- * No name is the ordinary case rather than an error: `production` and the
- * curator configurations define no APP_ENV and are meant to land on the public
- * entry. A name that is *not in the map* is different -- a typo in a define, or
- * an entry renamed while a configuration still asks for it. Answering that with
- * production would point a build confidently at the wrong backend and say
- * nothing, which is how the curation database came to be served from
- * beta.reactome.org. It throws instead, at startup, where it can be seen.
+ * No name means `production`: that is what a bare `ng build` is for, and the
+ * public site is the safe default to be wrong about. A name that is *not* a
+ * profile is a different matter -- a typo in a define, or a profile renamed
+ * while a configuration still asks for it. Answering that with production would
+ * point a build confidently at the wrong backend and say nothing, which is the
+ * shape of the failure that put curation data on the public beta. It throws
+ * instead, at startup, where it can be seen.
  */
-export function getEnv(envName?: string): EnvConfig {
-  if (!envName) return ENVIRONMENTS.production;
-  const config = ENVIRONMENTS[envName as EnvName];
-  if (!config) {
+export function getProfile(name?: string): SiteProfile {
+  if (!name) return SITE_PROFILES.production;
+  const profile = SITE_PROFILES[name as ProfileName];
+  if (!profile) {
     throw new Error(
-      `Unknown APP_ENV "${envName}". Known environments: ${Object.keys(ENVIRONMENTS).join(', ')}.`
+      `Unknown APP_ENV "${name}". Known deployments: ${Object.keys(SITE_PROFILES).join(', ')}.`
     );
   }
-  return config;
+  return profile;
 }
