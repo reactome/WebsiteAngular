@@ -248,9 +248,6 @@
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
                 <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
               </div>
-              <div class="dropdown" [class.open]="dropdown() === 'compare'">
-                <cr-compare-form (close)="dropdown.set(null)" />
-              </div>
             </as-split-area>
 
             <div
