@@ -48,7 +48,6 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
-import { CompareFormComponent } from './compare-form/compare-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 
@@ -87,7 +86,6 @@ const DROPDOWN_DURATION = 500;
     ReacfoamComponent,
     DetailsComponent,
     AnalysisFormComponent,
-    CompareFormComponent,
   ],
 })
 @UntilDestroy()
@@ -168,7 +166,13 @@ export class ViewportComponent implements AfterViewInit {
   dropdownDuration = DROPDOWN_DURATION;
   readonly isCurator = IS_CURATOR;
 
-  dropdown = signal<'analysis' | 'compare' | null>(null);
+  // Only the analysis form opens here. There was a 'compare' state too, with a
+  // panel of its own in the template, and nothing anywhere set it -- the form
+  // behind it was the CLI's `<p>compare-form works!</p>` scaffold, shipped in
+  // the initial commit and never written. Comparing against a disease variant
+  // is the Compare button in the toolbar, which navigates rather than opening a
+  // panel.
+  dropdown = signal<'analysis' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');
