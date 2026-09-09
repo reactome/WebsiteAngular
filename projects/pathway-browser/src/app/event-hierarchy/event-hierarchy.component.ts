@@ -9,6 +9,7 @@ import {
   model,
   OnDestroy,
   ViewChild,
+  viewChild,
 } from '@angular/core';
 import { Event } from '../model/graph/event/event.model';
 import { EventService, SelectableObject } from '../services/event.service';
@@ -121,6 +122,9 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     return [];
   };
 
+  /** The element that scrolls, so its position can survive a tree rebuild. */
+  private readonly eventsContainer = viewChild<ElementRef<HTMLElement>>('eventsContainer');
+
   treeDataSource = new MatTreeNestedDataSource<Event>();
 
   breadcrumbs: Event[] = [];
@@ -218,12 +222,29 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe((events) => {
       // Save expanded node stIds before resetting the data source
       const expandedIds = this.collectExpandedIds(this.treeDataSource.data);
+      // The workaround below empties the tree, which destroys every row: the
+      // container collapses to nothing and the browser resets its scroll to the
+      // top. Clicking a sub-event near the bottom of the hierarchy therefore
+      // jumped to the top and scrolled back -- measured at 274px, then 0, then
+      // 6. Expansion state is already carried across this rebuild; the scroll
+      // position has to be carried the same way.
+      const scroller = this.eventsContainer()?.nativeElement;
+      const scrollTop = scroller?.scrollTop ?? 0;
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue
       this.treeDataSource.data = events as Event[];
       // Restore expansion state
       this.restoreExpandedIds(events as Event[], expandedIds);
+      if (scroller && scrollTop > 0) {
+        scroller.scrollTop = scrollTop;
+        // Again once the rows have been laid out: the height is not final until
+        // the restored branches have rendered, and the browser clamps a
+        // scrollTop set against a container that is still short.
+        requestAnimationFrame(() => {
+          if (scroller.scrollTop !== scrollTop) scroller.scrollTop = scrollTop;
+        });
+      }
       this.adjustWidths();
     });
 
