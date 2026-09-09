@@ -9,3 +9,28 @@
     align-items: center;
   }
 }
+
+// While the file is being made. Kept quiet: the spinner and the word are the
+// signal, and a button that changes colour every time someone downloads a
+// figure is noise.
+.button--busy {
+  cursor: progress;
+
+  .button__state {
+    opacity: 0.85;
+  }
+}
+
+// A failure has to look like one. The reason is in the tooltip, and clicking
+// again retries -- which is the whole point of not having saved a broken file.
+.button--failed {
+  background: var(--error-container, #fdd);
+  color: var(--on-error-container, #5f1412);
+}
+
+.button__state {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
