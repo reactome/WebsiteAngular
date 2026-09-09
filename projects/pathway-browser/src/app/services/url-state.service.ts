@@ -71,20 +71,6 @@ export class UrlStateService implements State {
   private router: Router = inject(Router);
   private http: HttpClient = inject(HttpClient);
 
-  /**
-   * The stable id for a dbId.
-   *
-   * Falls back to the dbId when the lookup fails, and says so: a page that
-   * loads on a less-good URL beats a link that goes nowhere, and the alternative
-   * -- refusing to navigate -- would turn a working legacy link into a dead one.
-   */
-  private stableIdFor(dbId: string) {
-    return this.http.get<{ stId?: string }>(`${CONTENT_SERVICE}/data/query/${dbId}`).pipe(
-      map((object) => object?.stId),
-      catchError(() => of(undefined))
-    );
-  }
-
   private readonly tabsCompatibility: [string | null, string][] = [
     ['ST', 'details'],
     [null, 'details'],
@@ -183,7 +169,7 @@ export class UrlStateService implements State {
 
       void this.navigateTo(this.pathwayId() ?? null, {
         queryParamsHandling: 'preserve',
-        preserveFragment: true,
+        preserveFragment: !this.carriesLegacyPathway(),
       });
     });
 
@@ -214,18 +200,33 @@ export class UrlStateService implements State {
             fragment: fragment.replace(FRAGMENT_PATTERN, ''),
             preserveFragment: false,
             queryParams: params,
+            // Replace, do not add. Rewriting a legacy fragment into a proper
+            // route is a correction, not a step the reader took: pushing it
+            // left the old URL one Back away, and going back to it rewrote it
+            // again -- so someone who followed a link out of the news archive
+            // could not get back to the news archive.
+            replaceUrl: true,
           });
 
-        // A legacy link may name a pathway by dbId. The browser can load one,
-        // but the reader would then be left on a dbId URL to copy and share,
-        // and a dbId is not stable across releases. Resolve it and navigate to
-        // the stable id instead, so an old link hands over a good one.
+        // A legacy link may name a pathway by dbId. Navigate on it straight
+        // away -- the browser resolves one, and going first means the fragment
+        // is consumed in the same turn as an `#R-HSA-…` one, before anything
+        // else writes a history entry that still carries it.
+        //
+        // Then swap the URL for the stable id, replacing rather than pushing: a
+        // dbId is not stable across releases, so it is not a URL to leave a
+        // reader holding, but correcting it is not a step they took.
+        go(id);
         if (id && /^\d+$/.test(id)) {
-          this.stableIdFor(id)
-            .pipe(untilDestroyed(this))
-            .subscribe((stId) => go(stId ?? id));
-        } else {
-          go(id);
+          void this.dbIdToStId(Number(id)).then((stId) => {
+            if (stId && stId !== id) {
+              void this.navigateTo(stId, {
+                queryParamsHandling: 'preserve',
+                preserveFragment: false,
+                replaceUrl: true,
+              });
+            }
+          });
         }
       }
     });
@@ -291,7 +292,10 @@ export class UrlStateService implements State {
         // console.log('In content or search route, not navigating on state change');
         return;
       }
-      void this.navigateTo(this.pathwayId() ?? null, { queryParams, preserveFragment: true });
+      void this.navigateTo(this.pathwayId() ?? null, {
+        queryParams,
+        preserveFragment: !this.carriesLegacyPathway(),
+      });
     });
   }
 
@@ -305,6 +309,20 @@ export class UrlStateService implements State {
    * are always reported; the promise is still returned for the one caller that
    * legitimately chains on navigation having finished.
    */
+  /**
+   * Whether the URL still carries a legacy pathway reference in its fragment.
+   *
+   * Such a fragment is on its way out: it is being rewritten into a proper
+   * route. Until then the other navigations here -- writing state into the URL,
+   * following a pathway change -- must not carry it along, because every entry
+   * they carry it into is one that rewrites itself forward when the reader goes
+   * back to it. Someone who followed a link out of the news archive could not
+   * get back to the news archive: three Backs, still on the pathway.
+   */
+  private carriesLegacyPathway(): boolean {
+    return FRAGMENT_PATTERN.test(this.route.snapshot.fragment ?? '');
+  }
+
   navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
     let route = this.router.routerState.root;
     while (route.firstChild) route = route.firstChild;
@@ -321,6 +339,13 @@ export class UrlStateService implements State {
     return isNumber(id) ? this.dbIdToStId(id) : id;
   }
 
+  /**
+   * The stable id for a dbId, asked for as text rather than as an object.
+   *
+   * `/stId` answers 13 bytes; fetching the object to read one field off it is
+   * 12,682. Falls back to the dbId, which the browser can still load: a page on
+   * a worse URL beats a link that goes nowhere.
+   */
   async dbIdToStId(dbId: number): Promise<string> {
     return firstValueFrom(
       this.http
