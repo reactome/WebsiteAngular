@@ -292,9 +292,16 @@ export class UrlStateService implements State {
         // console.log('In content or search route, not navigating on state change');
         return;
       }
+      // Settling is not a step the reader took, so it replaces rather than
+      // adds. Opening a pathway used to write ?tab=info and then ?tab=details,
+      // two entries for a choice nobody made -- so pressing Back changed the
+      // tab twice before it left the page.
+      const settling = this.settling;
+      this.settling = false;
       void this.navigateTo(this.pathwayId() ?? null, {
         queryParams,
         preserveFragment: !this.carriesLegacyPathway(),
+        replaceUrl: settling,
       });
     });
   }
@@ -321,6 +328,21 @@ export class UrlStateService implements State {
    */
   private carriesLegacyPathway(): boolean {
     return FRAGMENT_PATTERN.test(this.route.snapshot.fragment ?? '');
+  }
+
+  /** Whether the URL write now pending is the app settling its own defaults. */
+  private settling = false;
+
+  /**
+   * Make a state change that the reader did not ask for.
+   *
+   * The URL still has to say what is on screen -- a link has to be shareable --
+   * but writing a default nobody chose should not cost them a press of Back.
+   * Choosing a tab pushes; being given one replaces.
+   */
+  settle(change: () => void): void {
+    this.settling = true;
+    change();
   }
 
   navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
