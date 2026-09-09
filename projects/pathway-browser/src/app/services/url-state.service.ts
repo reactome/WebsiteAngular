@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { effect, inject, Injectable, signal, untracked, WritableSignal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, NavigationExtras, Params, Router } from '@angular/router';
 import { catchError, filter, firstValueFrom, map, of, switchMap } from 'rxjs';
 import { isArray, isNumber } from 'lodash';
@@ -273,35 +273,25 @@ export class UrlStateService implements State {
       })().catch((error) => console.error('Could not apply URL parameters', error));
     });
     effect(() => {
-      const queryParams = {} as any;
-      for (const key in this.values) {
-        const param = this.values[key as keyof State];
-        let paramValue = param();
-        if (
-          paramValue === undefined ||
-          paramValue === null ||
-          (isArray(paramValue) && paramValue.length === 0) ||
-          paramValue === param.initialValue
-        )
-          continue;
-        if (typeof paramValue === 'string') paramValue = paramValue.replaceAll(' ', '__');
-        queryParams[key] = isArray(paramValue) ? paramValue.join(';') : paramValue;
-      }
-      // console.log('Updating URL from state', queryParams)
-      if (this.router.url.includes('content') || this.router.url.includes('query')) {
-        // console.log('In content or search route, not navigating on state change');
-        return;
-      }
-      // Settling is not a step the reader took, so it replaces rather than
-      // adds. Opening a pathway used to write ?tab=info and then ?tab=details,
-      // two entries for a choice nobody made -- so pressing Back changed the
-      // tab twice before it left the page.
-      const settling = this.settling;
-      this.settling = false;
+      const queryParams = this.currentQueryParams();
+      if (this.router.url.includes('content') || this.router.url.includes('query')) return;
+
+      // Settling is not a step the reader took, so it replaces rather than adds:
+      // opening a pathway wrote ?tab=info and then ?tab=details, two entries for a
+      // choice nobody made, so Back changed the tab twice before it left.
+      //
+      // Decided from the values rather than from a flag. A flag raised by
+      // settle() and read here outlives its turn whenever this does not run --
+      // the early return above, or a default that was already the current value,
+      // so no signal changed at all -- and the reader's next write, a real one,
+      // would then quietly replace their history instead of adding to it.
+      const settled = this.settledParams;
+      this.settledParams = null;
+
       void this.navigateTo(this.pathwayId() ?? null, {
         queryParams,
         preserveFragment: !this.carriesLegacyPathway(),
-        replaceUrl: settling,
+        replaceUrl: settled !== null && settled === JSON.stringify(queryParams),
       });
     });
   }
@@ -330,19 +320,45 @@ export class UrlStateService implements State {
     return FRAGMENT_PATTERN.test(this.route.snapshot.fragment ?? '');
   }
 
-  /** Whether the URL write now pending is the app settling its own defaults. */
-  private settling = false;
+  /** The params settle() last wrote, so the writer can recognise its own work. */
+  private settledParams: string | null = null;
 
   /**
-   * Make a state change that the reader did not ask for.
+   * Make a state change the reader did not ask for.
    *
    * The URL still has to say what is on screen -- a link has to be shareable --
    * but writing a default nobody chose should not cost them a press of Back.
    * Choosing a tab pushes; being given one replaces.
    */
   settle(change: () => void): void {
-    this.settling = true;
     change();
+    // What the URL should now say. The writer replaces only if it is about to
+    // write exactly this, which is what keeps the decision out of a flag.
+    //
+    // Untracked, and that is the whole of it: settle() is called from inside an
+    // effect, so reading every param here made that effect depend on every
+    // param. Choosing a tab then re-ran the defaulting effect, which set the
+    // tab back to its default -- the reader's click did nothing at all.
+    this.settledParams = JSON.stringify(untracked(() => this.currentQueryParams()));
+  }
+
+  /** The query params the current state should put in the URL. */
+  private currentQueryParams(): Record<string, unknown> {
+    const queryParams: Record<string, unknown> = {};
+    for (const key in this.values) {
+      const param = this.values[key as keyof State];
+      let paramValue: unknown = param();
+      if (
+        paramValue === undefined ||
+        paramValue === null ||
+        (isArray(paramValue) && paramValue.length === 0) ||
+        paramValue === param.initialValue
+      )
+        continue;
+      if (typeof paramValue === 'string') paramValue = paramValue.replaceAll(' ', '__');
+      queryParams[key] = isArray(paramValue) ? paramValue.join(';') : paramValue;
+    }
+    return queryParams;
   }
 
   navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
