@@ -13,6 +13,7 @@ import {
   isPathwayWithDiagram,
   isRLE,
 } from '../../../../../../pathway-browser/src/app/services/utils';
+import { ManagedDownloadDirective } from '../../../../../../pathway-browser/src/app/services/managed-download.directive';
 
 /** Scale a PNG tier asks the renderer for. The service clamps above 2. */
 const PNG_TIERS = [
@@ -24,7 +25,7 @@ const PNG_TIERS = [
 @Component({
   selector: 'app-detail-download-bar',
   standalone: true,
-  imports: [MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip],
+  imports: [MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip, ManagedDownloadDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detail-download-bar.component.html',
   styleUrl: './detail-download-bar.component.scss',

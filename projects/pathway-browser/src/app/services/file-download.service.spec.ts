@@ -14,6 +14,8 @@
 import { describe, expect, it } from 'vitest';
 import { HttpEventType, HttpResponse } from '@angular/common/http';
 import {
+  describeProgress,
+  describeSize,
   failureKind,
   filenameFrom,
   filenameFromUrl,
@@ -149,5 +151,43 @@ describe('telling a refusal apart from never arriving', () => {
     // Access-Control-Allow-Origin, so the page's own fetch was blocked outright
     // where the old plain link had worked.
     expect(failureKind(0)).toBe('unreachable');
+  });
+});
+
+describe('what a link says while it works', () => {
+  it('shows a percentage only when the total is known', () => {
+    expect(describeProgress({ status: 'transferring', received: 512, total: 2048 })).toBe('25%');
+  });
+
+  it('shows how much has arrived when nobody said how much to expect', () => {
+    // The content service's exporters send no Content-Length: an 807KB SBML and
+    // a 2MB PDF both arrive over eight seconds without one. "62%" would be a
+    // number we made up.
+    expect(describeProgress({ status: 'transferring', received: 1_258_291, total: null })).toBe(
+      '1.2 MB'
+    );
+    expect(describeProgress({ status: 'transferring', received: 14_486, total: null })).toBe(
+      '14 KB'
+    );
+  });
+
+  it('never claims to be finished before it is', () => {
+    // 100% next to a file that has not been saved is a lie; the last percent
+    // belongs to the save.
+    expect(describeProgress({ status: 'transferring', received: 2048, total: 2048 })).toBe('99%');
+  });
+
+  it('says nothing when there is nothing to say', () => {
+    expect(describeProgress({ status: 'idle' })).toBeNull();
+    expect(describeProgress({ status: 'saved', bytes: 10 })).toBeNull();
+    expect(describeProgress({ status: 'handed-off' })).toBeNull();
+  });
+
+  it('rounds sizes the way a person reads them', () => {
+    expect(describeSize(0)).toBe('0 B');
+    expect(describeSize(999)).toBe('999 B');
+    expect(describeSize(1024)).toBe('1 KB');
+    expect(describeSize(807_164)).toBe('788 KB');
+    expect(describeSize(2_074_132)).toBe('2.0 MB');
   });
 });
