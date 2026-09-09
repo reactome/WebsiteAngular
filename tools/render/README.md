@@ -88,10 +88,19 @@ positive regulation a hollow triangle, negative regulation a bar across the line
 — while a line end is always filled and always the line's own colour, and has no
 spelling for a bar at all. Drawn as line ends, inhibition came out as activation.
 
-Two things a slide of shapes does not carry yet:
+Glyph bodies come from the images the style draws them with. A complex, a set
+and a gene set `background-opacity: 0` and carry their whole body in a
+`background-image`, so reading `background-color` alone exported 65 of this
+diagram's 203 nodes as empty outlined rectangles. Those images are SVG markup
+rather than rasters, so the path is flattened with the browser's own geometry
+(`getPointAtLength`, which walks arcs exactly), simplified, and handed over as a
+closed filled polygon — a shape the exporter already knew how to write. Each
+image keeps its own position and size, a masked outline is clipped to the pieces
+the mask reveals, and the contents of `defs`, `clipPath` and `mask` are
+definitions rather than content and are not drawn.
 
-- **Node decorations.** The style draws them with `background-image` — 140 small
-  rasters on this diagram — so a complex loses the band that marks it as one.
+One thing a slide of shapes does not carry yet:
+
 - **Rounded corners on connectors.** Edges with weights use `round-segments`;
   the export draws the same points with square corners.
 

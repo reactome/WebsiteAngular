@@ -637,3 +637,123 @@ describe('the tints the diagram paints behind its glyphs', () => {
     expect(slide).toContain('<a:prstDash val="dash"/><a:round/>');
   });
 });
+
+describe('the glyph bodies the diagram draws with an image', () => {
+  const glyphs = REAL.shapes.filter((shape) => shape.id.includes('-glyph-'));
+  const boxes = REAL.shapes.filter(
+    (shape) =>
+      shape.kind === 'node' && !shape.id.includes('-arrow') && !shape.id.includes('-underlay')
+  );
+
+  it('draws a body for the glyphs whose fill is an image', () => {
+    // Complexes, sets and genes carry their whole body in a background-image
+    // and set background-opacity to 0. Reading only background-color exported
+    // 65 of this diagram's 203 nodes as empty outlined rectangles.
+    expect(glyphs.length).toBeGreaterThan(150);
+    expect(new Set(glyphs.map((shape) => shape.fill).filter(Boolean)).size).toBeGreaterThan(3);
+  });
+
+  it('leaves no shape as an empty outlined box', () => {
+    // The invariant that was broken: a shape with no fill and a visible outline
+    // is a hollow rectangle where the diagram draws a filled glyph.
+    const hollow = boxes.filter((shape) => !shape.fill && shape.stroke && shape.strokeWidth > 0);
+    expect(hollow.map((shape) => shape.name)).toEqual([]);
+  });
+
+  it('gives every box without a fill a body of its own, or nothing to draw', () => {
+    const backed = new Set(glyphs.map((shape) => shape.id.split('-glyph-')[0]));
+    const bare = boxes.filter((shape) => !shape.fill && !backed.has(shape.id));
+    // What is left is the sub-pathway labels: text with no box, which is what
+    // the diagram draws too.
+    expect(bare.length).toBeLessThan(10);
+    for (const shape of bare) expect(shape.label, shape.name).not.toBe('');
+  });
+
+  it('draws a body under the label it belongs to', () => {
+    const order = new Map(REAL.shapes.map((shape, at) => [shape.id, at]));
+    for (const glyph of glyphs.slice(0, 40)) {
+      const owner = glyph.id.split('-glyph-')[0];
+      if (!order.has(owner)) continue;
+      expect(order.get(glyph.id), glyph.name).toBeLessThan(order.get(owner));
+    }
+  });
+
+  it('keeps the polygons simple enough to be worth having', () => {
+    // Walked at two units a step an octagon comes back as 161 points, and 229
+    // of those put 37,000 points and 2MB of XML on one slide.
+    const most = Math.max(...glyphs.map((shape) => shape.points.length));
+    expect(most).toBeLessThanOrEqual(60);
+    const total = glyphs.reduce((sum, shape) => sum + shape.points.length, 0);
+    expect(total).toBeLessThan(12000);
+  });
+
+  it('emits them as closed, painted shapes', () => {
+    const slide = open(pptx({ shapes: REAL })).slide();
+    // One close per closed shape: the glyph bodies plus the arrowheads.
+    const closed = REAL.shapes.filter((shape) => shape.closed).length;
+    expect(closed).toBeGreaterThan(glyphs.length);
+    expect((slide.match(/<a:close\/>/g) ?? []).length).toBe(closed);
+    for (const glyph of glyphs) {
+      expect(Boolean(glyph.fill) || Boolean(glyph.stroke), glyph.name).toBe(true);
+    }
+  });
+});
+
+describe("how a glyph's own images are placed", () => {
+  const layersOf = (name) =>
+    REAL.shapes.filter((shape) => shape.id.includes('-glyph-') && shape.name.startsWith(name));
+  const extent = (shape) => {
+    const xs = shape.points.map((point) => point.x);
+    const ys = shape.points.map((point) => point.y);
+    return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  };
+
+  it('draws a marker at its own size, not stretched over the glyph', () => {
+    // A drug set carries three images: its body twice, and a 22x24 "Rx" marker
+    // at a fixed offset. Every image was being stretched over the whole node,
+    // which drew that marker across the entire glyph.
+    const layers = layersOf('BCL2 antagonists');
+    expect(layers.length).toBeGreaterThan(2);
+    const smallest = Math.min(...layers.map((shape) => extent(shape).w));
+    const largest = Math.max(...layers.map((shape) => extent(shape).w));
+    expect(largest).toBeGreaterThan(200);
+    expect(smallest, 'the marker keeps its own size').toBeLessThan(60);
+  });
+
+  it('draws a masked outline as the pieces the mask reveals', () => {
+    // A set's braces are its whole outline stroked and masked down to the two
+    // ends. Ignoring the mask drew a white line all the way round it.
+    const layers = layersOf('BCL2 antagonists');
+    const open = layers.filter((shape) => !shape.closed);
+    expect(open.length, 'the mask leaves more than one piece').toBeGreaterThan(1);
+    for (const piece of open) {
+      expect(piece.fill, 'a piece of an outline is not a filled shape').toBeNull();
+      expect(piece.stroke).toBeTruthy();
+    }
+    // And the pieces stay at the ends rather than spanning the glyph.
+    const body = layers.find((shape) => shape.closed && extent(shape).w > 200);
+    const bodyExtent = extent(body);
+    for (const piece of open) {
+      expect(extent(piece).w, 'a brace is not the width of the glyph').toBeLessThan(
+        bodyExtent.w * 0.5
+      );
+    }
+  });
+
+  it('draws nothing for a definition, a clip path or a mask', () => {
+    // These hold definitions, not content. Reading every element in the
+    // document drew a mask's white and black rectangles as two shapes and the
+    // bare <use> inside a clipPath as a shape with no paint at all.
+    const glyphs = REAL.shapes.filter((shape) => shape.id.includes('-glyph-'));
+    expect(glyphs.filter((shape) => !shape.fill && !shape.stroke)).toEqual([]);
+    // A mask rectangle would arrive as a four-cornered box painted flat white
+    // or black across a whole glyph; nothing like that survives.
+    const suspicious = glyphs.filter(
+      (shape) =>
+        shape.points.length <= 5 &&
+        (shape.fill === 'ffffff' || shape.fill === '000000') &&
+        extent(shape).w > 100
+    );
+    expect(suspicious.map((shape) => shape.id)).toEqual([]);
+  });
+});

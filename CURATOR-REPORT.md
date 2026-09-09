@@ -124,10 +124,12 @@ Not bugs, so as not to waste your time:
   The site's page still decides every position, colour, opacity, dash and font,
   and hands them over as data — so this is a spelling of the diagram, not a
   second opinion about it, which is what drifted before.
-  Two things it does not carry yet: the small decorations the style draws with
-  background images, so a complex loses the band that marks it as one; and edges
-  with weights keep their points but not their rounded corners. **Say if either
-  matters** and they go in next.
+  Complexes, sets and genes draw their body from an image rather than a fill, and
+  those now come through as their real shape — an octagon for a complex, a
+  braced box for a set, with the drug marker at its own size. Before that they
+  were empty rectangles: 65 of the 203 glyphs on one diagram. One thing it still
+  does not carry: edges with weights keep their points but not their rounded
+  corners. **Say if that matters** and it goes in next.
 - **The slide is the size of the diagram**, as production's is — 56 by 32 inches
   for Apoptosis, with labels at 5 to 53pt. Fitting the diagram onto an ordinary
   13.3in slide instead put every label at 1.65pt.

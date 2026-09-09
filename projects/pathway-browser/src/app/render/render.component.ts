@@ -464,6 +464,7 @@ export class RenderComponent {
     const edges: RenderEdgeShape[] = [];
     const edgeUnderlays: RenderEdgeShape[] = [];
     const arrowheads: (RenderNodeShape | RenderEdgeShape)[] = [];
+    const glyphs: RenderEdgeShape[] = [];
 
     for (const node of visible) {
       const box = clipBox(node.boundingBox({ includeLabels: false, includeOverlays: false }));
@@ -495,6 +496,18 @@ export class RenderComponent {
         });
       }
 
+      // A node whose body is an image is drawn as that image's own geometry,
+      // and its own rectangle then carries nothing but the label -- otherwise
+      // the plain box outlines the glyph a second time.
+      const glyph = this.glyphShapes(node, {
+        x1: box.x1,
+        y1: box.y1,
+        w: box.x2 - box.x1,
+        h: box.y2 - box.y1,
+      });
+      glyphs.push(...glyph);
+      const bodyIsImage = glyph.length > 0;
+
       (this.isCompartment(node) ? compartments : nodes).push({
         kind: 'node',
         id: String(node.id()),
@@ -505,8 +518,10 @@ export class RenderComponent {
         h: box.y2 - box.y1,
         geom: this.geometryOf(String(node.style('shape') ?? '')),
         fill: this.colour(node.style('background-color'), node.style('background-opacity')),
-        stroke: this.colour(node.style('border-color'), node.style('border-opacity')),
-        strokeWidth: this.pixels(node.style('border-width')),
+        stroke: bodyIsImage
+          ? null
+          : this.colour(node.style('border-color'), node.style('border-opacity')),
+        strokeWidth: bodyIsImage ? 0 : this.pixels(node.style('border-width')),
         label,
         fontSize: this.pixels(node.style('font-size')) || 8,
         fontColor: this.colour(node.style('color'), '1'),
@@ -595,6 +610,8 @@ export class RenderComponent {
         ...edges,
         ...arrowheads,
         ...nodeUnderlays,
+        // The glyph body sits under the box that carries its label.
+        ...glyphs,
         ...nodes,
       ],
     };
@@ -624,6 +641,384 @@ export class RenderComponent {
    * OOXML's srgbClr carries no alpha, so anything fully transparent becomes "no
    * fill" rather than a colour nobody can see.
    */
+  /**
+   * The glyph a node's background image draws, as geometry.
+   *
+   * Complexes, sets and genes have `background-opacity: 0` and carry their
+   * whole body in a `background-image` instead -- an octagon for a complex, a
+   * curly-braced box for a set. Reading only `background-color` therefore
+   * exported 65 of this diagram's 203 nodes as empty outlined rectangles: every
+   * complex and every set on the slide was a hollow box.
+   *
+   * The style hands those images over as SVG markup rather than a raster, so
+   * the real path is available. It is flattened here with the browser's own
+   * geometry -- `getPointAtLength` walks a path including its arcs exactly --
+   * and comes out as a closed, filled polygon, which is a shape the exporter
+   * already knows how to write. Nothing about Reactome's glyph vocabulary needs
+   * to reach the exporter.
+   */
+  private glyphShapes(
+    node: cytoscape.NodeSingular,
+    box: { x1: number; y1: number; w: number; h: number }
+  ): RenderEdgeShape[] {
+    const markups = this.backgroundMarkup(node);
+    if (!markups.length) return [];
+
+    // Each image is placed and sized on its own. A complex's body is the width
+    // of the node and overhangs it by 8px; the drug marker beside a set's name
+    // is 22 by 24 at a fixed offset. Stretching every image over the whole box
+    // drew that marker across the entire glyph.
+    const positionsX = this.styleList(node, 'background-position-x');
+    const positionsY = this.styleList(node, 'background-position-y');
+    const widths = this.styleList(node, 'background-width');
+    const heights = this.styleList(node, 'background-height');
+
+    const shapes: RenderEdgeShape[] = [];
+    markups.forEach((markup, at) => {
+      const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
+      const root = parsed.documentElement;
+      if (!root || root.nodeName === 'parsererror') return;
+
+      const width = parseFloat(root.getAttribute('width') ?? '0');
+      const height = parseFloat(root.getAttribute('height') ?? '0');
+      if (!(width > 0 && height > 0)) return;
+
+      const drawnWidth = this.measure(widths[at], box.w) ?? box.w;
+      const drawnHeight = this.measure(heights[at], box.h) ?? box.h;
+      const offsetX = this.measure(positionsX[at], box.w) ?? 0;
+      const offsetY = this.measure(positionsY[at], box.h) ?? 0;
+      const scaleX = drawnWidth / width;
+      const scaleY = drawnHeight / height;
+      const originX = box.x1 + offsetX;
+      const originY = box.y1 + offsetY;
+
+      for (const [index, element] of this.drawableElements(root).entries()) {
+        const fill = this.colour(element.fill, '1');
+        const stroke = this.colour(element.stroke, '1');
+        // Nothing to draw is nothing to export.
+        if (!fill && !stroke) continue;
+
+        const points = this.flatten(element.geometry);
+        if (points.length < 3) continue;
+
+        const scale = this.transformScale(element.geometry);
+        const place = (point: { x: number; y: number }) => ({
+          x: originX + point.x * scale * scaleX,
+          y: originY + point.y * scale * scaleY,
+        });
+        // The stroke is part of these glyphs rather than an outline on them:
+        // the style fattens and rounds a corner by stroking the fill's own
+        // colour over it.
+        const strokeWidth = element.strokeWidth * Math.min(scaleX, scaleY);
+        const common = {
+          kind: 'edge' as const,
+          name: `${String(node.data('displayName') ?? node.id())} body`,
+          stroke,
+          strokeWidth,
+          dashed: false,
+        };
+
+        if (!element.mask) {
+          shapes.push({
+            ...common,
+            id: `${node.id()}-glyph-${at}-${index}`,
+            points: points.map(place),
+            closed: true,
+            fill,
+          });
+          continue;
+        }
+
+        // Masked: only the spans the mask reveals, and each is an open run
+        // rather than a closed shape -- a brace is a piece of an outline.
+        const spans = this.maskSpans(element.mask);
+        spans.forEach(([from, to], span) => {
+          const runs = this.clipRuns(points, {
+            x1: from / scale,
+            y1: 0,
+            x2: to / scale,
+            y2: height / scale,
+          });
+          runs.forEach((run, at2) => {
+            if (run.length < 2) return;
+            shapes.push({
+              ...common,
+              id: `${node.id()}-glyph-${at}-${index}-${span}-${at2}`,
+              points: run.map(place),
+              closed: false,
+              fill: null,
+            });
+          });
+        });
+      }
+    });
+    return shapes;
+  }
+
+  /**
+   * A polyline with the points a straight run does not need taken out.
+   *
+   * Ramer-Douglas-Peucker: keep the point furthest from the chord if it is
+   * further than the tolerance, and recurse. An octagon walked at two units a
+   * step comes back as its eight corners; a set's curly edge keeps enough
+   * points to stay curved. Tolerance is in the glyph's own units, which are
+   * roughly diagram pixels.
+   */
+  private simplify(
+    points: { x: number; y: number }[],
+    tolerance: number
+  ): { x: number; y: number }[] {
+    if (points.length < 3) return points;
+
+    const keep = new Array<boolean>(points.length).fill(false);
+    keep[0] = true;
+    keep[points.length - 1] = true;
+
+    const stack: [number, number][] = [[0, points.length - 1]];
+    for (let next = stack.pop(); next; next = stack.pop()) {
+      const [from, to] = next;
+      if (to - from < 2) continue;
+
+      const a = points[from];
+      const b = points[to];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const span = Math.hypot(dx, dy);
+
+      let worst = -1;
+      let at = -1;
+      for (let index = from + 1; index < to; index++) {
+        const point = points[index];
+        // Distance to the chord, or to its endpoint when the chord is a point.
+        const distance =
+          span === 0
+            ? Math.hypot(point.x - a.x, point.y - a.y)
+            : Math.abs(dy * (point.x - a.x) - dx * (point.y - a.y)) / span;
+        if (distance > worst) {
+          worst = distance;
+          at = index;
+        }
+      }
+
+      if (worst > tolerance && at > 0) {
+        keep[at] = true;
+        stack.push([from, at], [at, to]);
+      }
+    }
+
+    return points.filter((_, index) => keep[index]);
+  }
+
+  /**
+   * A background property's per-image values.
+   *
+   * Cytoscape returns these as one space-separated string, in the same order as
+   * the images: `background-position-x: "-8px -8px 20px"` for a set's three.
+   */
+  private styleList(node: cytoscape.NodeSingular, property: string): string[] {
+    return String(node.style(property) ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  /** A background length: pixels, or a percentage of the node's own size. */
+  private measure(value: string | undefined, basis: number): number | null {
+    if (!value) return null;
+    if (value.endsWith('%')) {
+      const percent = parseFloat(value);
+      return Number.isFinite(percent) ? (percent / 100) * basis : null;
+    }
+    const pixels = parseFloat(value);
+    return Number.isFinite(pixels) ? pixels : null;
+  }
+
+  /**
+   * A uniform `scale()` from an element's transform, or 1.
+   *
+   * The drug marker is drawn at half size and scaled up in CSS, which
+   * `getPointAtLength` does not apply -- it reports the path's own geometry.
+   */
+  private transformScale(element: Element): number {
+    const transform = element.getAttribute('transform') ?? element.getAttribute('style') ?? '';
+    const scale = /scale\(\s*([\d.]+)/.exec(transform);
+    const value = scale ? parseFloat(scale[1]) : 1;
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+
+  /**
+   * A node's background images, as SVG markup; rasters and URLs are skipped.
+   *
+   * Cytoscape hands several images back as **one** space-separated string
+   * rather than as an array -- a complex carries two in 1800 characters -- so
+   * they have to be split apart before any of them will parse.
+   */
+  private backgroundMarkup(node: cytoscape.NodeSingular): string[] {
+    const style = node.style('background-image');
+    const values = (Array.isArray(style) ? style : [style]).flatMap((value) =>
+      String(value ?? '').split(/\s+(?=data:)/)
+    );
+    return values
+      .map((value) => value.trim())
+      .filter((value) => value.startsWith('data:image/svg+xml'))
+      .map((value) => {
+        const comma = value.indexOf(',');
+        const body = value.slice(comma + 1);
+        try {
+          return value.slice(0, comma).includes(';base64') ? atob(body) : decodeURIComponent(body);
+        } catch {
+          return '';
+        }
+      })
+      .filter(Boolean);
+  }
+
+  /**
+   * The elements of a glyph that are actually drawn, with their paint.
+   *
+   * `<defs>`, `<clipPath>` and `<mask>` hold definitions, not content. Reading
+   * every `path` and `rect` in the document drew a set's mask -- a white
+   * rectangle and a black one -- onto the slide as two shapes, and pulled the
+   * bare `<use>` inside its clipPath out as a shape with no paint at all: 40 of
+   * those on one diagram.
+   *
+   * `<use href="#id">` is how these glyphs are written -- the shape in `<defs>`
+   * and the paint on the reference -- so the reference is resolved here and its
+   * own paint wins, which is what a browser does with it.
+   */
+  private drawableElements(root: Element): {
+    geometry: SVGGraphicsElement;
+    fill: string | null;
+    stroke: string | null;
+    strokeWidth: number;
+    mask: Element | null;
+  }[] {
+    const out: {
+      geometry: SVGGraphicsElement;
+      fill: string | null;
+      stroke: string | null;
+      strokeWidth: number;
+      mask: Element | null;
+    }[] = [];
+
+    const maskOf = (element: Element) => {
+      const reference = /url\(#([^)]+)\)/.exec(element.getAttribute('mask') ?? '');
+      return reference ? root.querySelector(`mask[id="${reference[1]}"]`) : null;
+    };
+
+    for (const element of Array.from(
+      root.querySelectorAll('use, path, rect, polygon, circle, ellipse')
+    )) {
+      // Definitions are not content.
+      if (element.closest('defs, clipPath, mask, pattern, symbol, marker')) continue;
+
+      if (element.nodeName === 'use') {
+        const href = element.getAttribute('href') ?? element.getAttribute('xlink:href') ?? '';
+        const target = href.startsWith('#') ? root.querySelector(href) : null;
+        if (!target) continue;
+        out.push({
+          geometry: target as SVGGraphicsElement,
+          fill: element.getAttribute('fill') ?? target.getAttribute('fill'),
+          stroke: element.getAttribute('stroke') ?? target.getAttribute('stroke'),
+          strokeWidth: parseFloat(
+            element.getAttribute('stroke-width') ?? target.getAttribute('stroke-width') ?? '0'
+          ),
+          mask: maskOf(element),
+        });
+        continue;
+      }
+
+      out.push({
+        geometry: element as SVGGraphicsElement,
+        fill: element.getAttribute('fill'),
+        stroke: element.getAttribute('stroke'),
+        strokeWidth: parseFloat(element.getAttribute('stroke-width') ?? '0'),
+        mask: maskOf(element),
+      });
+    }
+    return out;
+  }
+
+  /**
+   * What a mask leaves visible, as spans across the glyph's width.
+   *
+   * A set's braces are drawn by stroking its whole outline and masking all but
+   * the two ends, so honouring the mask is the difference between a brace at
+   * each end and a white line all the way round. The style writes these as
+   * axis-aligned rectangles, white to show and black to hide; anything else
+   * returns nothing and the element it belongs to is left out rather than drawn
+   * in the wrong place.
+   */
+  private maskSpans(mask: Element): [number, number][] {
+    const rects = Array.from(mask.querySelectorAll('rect'));
+    if (!rects.length) return [];
+
+    let spans: [number, number][] = [];
+    for (const rect of rects) {
+      const from = parseFloat(rect.getAttribute('x') ?? '0');
+      const to = from + parseFloat(rect.getAttribute('width') ?? '0');
+      const paint = (rect.getAttribute('fill') ?? '').trim().toLowerCase();
+      const shows = paint === 'white' || paint === '#fff' || paint === '#ffffff';
+      const hides = paint === 'black' || paint === '#000' || paint === '#000000';
+
+      if (shows) spans.push([from, to]);
+      else if (hides) {
+        spans = spans.flatMap(([start, end]) => {
+          if (to <= start || from >= end) return [[start, end] as [number, number]];
+          const kept: [number, number][] = [];
+          if (from > start) kept.push([start, Math.min(from, end)]);
+          if (to < end) kept.push([Math.max(to, start), end]);
+          return kept;
+        });
+      } else return [];
+    }
+    return spans.filter(([start, end]) => end - start > 0.01).length ? spans : [];
+  }
+
+  /**
+   * A path walked into points, using the browser's own geometry.
+   *
+   * The alternative is parsing `d` by hand, and these paths carry elliptical
+   * arcs -- a set's curly edge is six of them. `getPointAtLength` is exact and
+   * already here. The element has to be in the document to measure, so it is
+   * put in a hidden host and taken out again.
+   */
+  private flatten(element: SVGGraphicsElement): { x: number; y: number }[] {
+    const host = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    host.setAttribute('width', '0');
+    host.setAttribute('height', '0');
+    host.style.position = 'absolute';
+    host.style.visibility = 'hidden';
+    const clone = element.cloneNode(true) as SVGGraphicsElement;
+    host.appendChild(clone);
+    document.body.appendChild(host);
+
+    try {
+      const measurable = clone as SVGGraphicsElement & {
+        getTotalLength?: () => number;
+        getPointAtLength?: (at: number) => DOMPoint;
+      };
+      if (!measurable.getTotalLength || !measurable.getPointAtLength) return [];
+
+      const total = measurable.getTotalLength();
+      if (!(total > 0)) return [];
+      // Sample densely, then drop what the straight runs do not need. Walking
+      // an octagon at this rate gives 160 points for eight corners, and 229
+      // glyphs of that put 37,000 points on the slide.
+      const steps = Math.max(8, Math.min(200, Math.ceil(total / 2)));
+      const points: { x: number; y: number }[] = [];
+      for (let step = 0; step <= steps; step++) {
+        const point = measurable.getPointAtLength((total * step) / steps);
+        points.push({ x: point.x, y: point.y });
+      }
+      return this.simplify(points, 0.4);
+    } catch {
+      return [];
+    } finally {
+      host.remove();
+    }
+  }
+
   /**
    * A style's colour, with its opacity folded in.
    *
