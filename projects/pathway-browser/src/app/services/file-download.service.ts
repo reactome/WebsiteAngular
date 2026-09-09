@@ -133,6 +133,36 @@ export function nextPhase(event: HttpEvent<Blob>): DownloadPhase | null {
   }
 }
 
+/** A size a person can read, for a download whose total nobody knows. */
+export function describeSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * The short phrase a link shows while it works.
+ *
+ * The content service's exporters send no `Content-Length` at all -- an 807KB
+ * SBML and a 2MB PDF both arrive over eight seconds with no length -- so for
+ * those there is no percentage to show, only how much has come. Saying "1.2 MB"
+ * is honest where "62%" would be invented.
+ */
+export function describeProgress(phase: DownloadPhase): string | null {
+  switch (phase.status) {
+    case 'preparing':
+      return 'Preparing…';
+    case 'transferring':
+      return phase.total
+        ? `${Math.min(99, Math.floor((phase.received / phase.total) * 100))}%`
+        : describeSize(phase.received);
+    case 'failed':
+      return 'Failed';
+    default:
+      return null;
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class FileDownloadService {
   private http = inject(HttpClient);

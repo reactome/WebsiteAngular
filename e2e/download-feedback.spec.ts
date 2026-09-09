@@ -128,3 +128,94 @@ test.describe('Download feedback', () => {
     expect(href, 'still a real anchor with a real href').toContain('/RenderService/render/');
   });
 });
+
+/**
+ * The same treatment on the detail page's download bar, where the waits are
+ * longest.
+ *
+ * These come from the content service's exporters, which stream while they
+ * generate: a pathway's SBML is 807KB over eight seconds and a PDF 2MB over
+ * eight, both with **no Content-Length at all**. So the browser cannot know how
+ * big the file is, and a failure part-way through leaves a truncated file that
+ * looks complete. Fetching it in the page cannot stop the streaming, but a
+ * stream that breaks throws, and nothing broken is saved.
+ */
+test.describe('Download feedback on the detail bar', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  const bar = (page: Page) => page.locator('.figure-tools');
+  const sbml = (page: Page) =>
+    page
+      .locator('.dl-link')
+      .filter({ hasText: /^SBML$/ })
+      .first();
+
+  async function openDetail(page: Page) {
+    await page.goto(`/content/detail/${DIAGRAM}`);
+    await expect(bar(page)).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(1500);
+  }
+
+  test('shows the reason a slow export failed, and saves nothing', async ({ page }) => {
+    // A 403 with an HTML body is what the exporter block answers, and an
+    // `<a download>` saves that page as an .sbml file.
+    await page.route('**/ContentService/exporter/**', (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: 'text/html',
+        body: '<!DOCTYPE HTML><html><head><title>403 Forbidden</title></head></html>',
+      })
+    );
+
+    await openDetail(page);
+
+    let saved: string | null = null;
+    page.on('download', (download) => {
+      saved = download.suggestedFilename();
+    });
+
+    await sbml(page).click();
+    await expect(page.locator('.dl--failed')).toHaveCount(1, { timeout: 30_000 });
+
+    expect(saved, 'a failed export must not be saved').toBeNull();
+
+    // And the reader is not shown a page of HTML as the reason.
+    const reason = await page.locator('.dl--failed').first().getAttribute('title');
+    expect(reason).toContain('403');
+    expect(reason).not.toContain('<');
+  });
+
+  test('says it is working during the wait', async ({ page, request }) => {
+    // Gated on the content service, not on the exporter path: the exporters are
+    // blocked for non-browser agents on beta, so probing one from the API
+    // request context answers 403 and this test would skip for ever while the
+    // browser it actually runs in gets a 200.
+    const reachable = await serves(request, `/ContentService/data/query/${DIAGRAM}`);
+    test.skip(!reachable, 'the content service is not reachable from here');
+
+    await openDetail(page);
+
+    const seen: string[] = [];
+    const watch = setInterval(() => {
+      void page
+        .locator('.dl--busy')
+        .first()
+        .getAttribute('data-download-state', { timeout: 150 })
+        .then((state) => {
+          if (state && !seen.includes(state)) seen.push(state);
+        })
+        .catch(() => undefined);
+    }, 150);
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 240_000 }),
+      sbml(page).click(),
+    ]);
+    clearInterval(watch);
+
+    expect(download.suggestedFilename()).toBe(`${DIAGRAM}.sbml`);
+    const bytes = readFileSync(await download.path());
+    expect(bytes.subarray(0, 400).toString('utf8')).toContain('<sbml');
+    expect(seen.join(' '), `states seen: ${seen.join(', ')}`).toMatch(/Preparing|KB|MB|%/);
+  });
+});
