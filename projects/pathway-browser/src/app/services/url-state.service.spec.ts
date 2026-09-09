@@ -51,6 +51,27 @@ describe('a legacy pathway link in the fragment', () => {
     expect(params).toEqual({ PATH: 'R-HSA-1643685,R-HSA-5663205' });
   });
 
+  it('opens the pathway a release announcement links to', () => {
+    // Every announcement writes its list of what is new as bare dbIds: 278 in
+    // this site's own news, 24 in the current release's. The browser already
+    // resolves a dbId given in the path; only the fragment form was missing.
+    for (const [fragment, id] of [
+      ['1280218', '1280218'],
+      ['/9932451', '9932451'],
+      ['73864', '73864'],
+    ]) {
+      expect(route(fragment).id, fragment).toBe(id);
+    }
+  });
+
+  it('does not mistake a page anchor for a dbId', () => {
+    // A section anchor is short or not a number at all. The shortest dbId in
+    // the content is five digits, so four is the floor.
+    for (const fragment of ['12', '999', 'top', 'section-2', '2024-news']) {
+      expect(route(fragment).id, fragment).toBeUndefined();
+    }
+  });
+
   it('leaves a fragment that is not a pathway alone', () => {
     // A section to scroll to, and the old analysis-tool fragment. Matching
     // these would turn them into a route to nowhere and a junk query

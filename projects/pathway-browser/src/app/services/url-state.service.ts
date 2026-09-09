@@ -22,11 +22,19 @@ import { toSignal } from '@angular/core/rxjs-interop';
  * pathway reference -- `#introduction`, naming a section to scroll to -- has to
  * fall through untouched rather than be read as a stale route.
  *
+ * A bare number is a **dbId**, which is how every release announcement writes
+ * its list of what is new: `#1280218`, not `#R-HSA-1280218`. There are 278 of
+ * those in this site's own news, 24 in the current release's announcement, and
+ * every one opened the browser with no pathway in it. The browser already
+ * resolves a dbId given in the path, so only the fragment form was missing.
+ * Four digits at least, so an ordinary page anchor cannot be mistaken for one --
+ * the shortest dbId in the content is five.
+ *
  * A trailing `.4` is a stIdVersion. The old links carry it, the content service
  * does not want it, and it was previously parsed as a query parameter called
  * ".4"; it is consumed and dropped here.
  */
-export const FRAGMENT_PATTERN = /^\/?(?<id>R-[A-Z]{3}-\d+)(?:\.\d+)?(?:&(?<params>.*))?$/;
+export const FRAGMENT_PATTERN = /^\/?(?<id>R-[A-Z]{3}-\d+|\d{4,})(?:\.\d+)?(?:&(?<params>.*))?$/;
 
 export type UrlParam<T> = WritableSignal<T> & {
   otherTokens?: string[];
@@ -62,6 +70,20 @@ export class UrlStateService implements State {
   private route: ActivatedRoute = inject(ActivatedRoute);
   private router: Router = inject(Router);
   private http: HttpClient = inject(HttpClient);
+
+  /**
+   * The stable id for a dbId.
+   *
+   * Falls back to the dbId when the lookup fails, and says so: a page that
+   * loads on a less-good URL beats a link that goes nowhere, and the alternative
+   * -- refusing to navigate -- would turn a working legacy link into a dead one.
+   */
+  private stableIdFor(dbId: string) {
+    return this.http.get<{ stId?: string }>(`${CONTENT_SERVICE}/data/query/${dbId}`).pipe(
+      map((object) => object?.stId),
+      catchError(() => of(undefined))
+    );
+  }
 
   private readonly tabsCompatibility: [string | null, string][] = [
     ['ST', 'details'],
@@ -186,12 +208,25 @@ export class UrlStateService implements State {
           }
         }
 
-        void this.navigateTo(id ?? null, {
-          queryParamsHandling: 'merge',
-          fragment: fragment.replace(FRAGMENT_PATTERN, ''),
-          preserveFragment: false,
-          queryParams: params,
-        });
+        const go = (resolved: string | undefined) =>
+          void this.navigateTo(resolved ?? null, {
+            queryParamsHandling: 'merge',
+            fragment: fragment.replace(FRAGMENT_PATTERN, ''),
+            preserveFragment: false,
+            queryParams: params,
+          });
+
+        // A legacy link may name a pathway by dbId. The browser can load one,
+        // but the reader would then be left on a dbId URL to copy and share,
+        // and a dbId is not stable across releases. Resolve it and navigate to
+        // the stable id instead, so an old link hands over a good one.
+        if (id && /^\d+$/.test(id)) {
+          this.stableIdFor(id)
+            .pipe(untilDestroyed(this))
+            .subscribe((stId) => go(stId ?? id));
+        } else {
+          go(id);
+        }
       }
     });
 
