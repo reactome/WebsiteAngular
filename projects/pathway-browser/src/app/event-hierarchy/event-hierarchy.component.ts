@@ -241,6 +241,12 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         // Again once the rows have been laid out: the height is not final until
         // the restored branches have rendered, and the browser clamps a
         // scrollTop set against a container that is still short.
+        //
+        // One frame, and it has to stay one: RevealDirective brings a selected
+        // row into view on its *second* frame, so restoring first is what lets
+        // its `block: 'nearest'` see the reader's real position and decide the
+        // row is already visible. Restore on a later frame than reveal and every
+        // click scrolls twice again.
         requestAnimationFrame(() => {
           if (scroller.scrollTop !== scrollTop) scroller.scrollTop = scrollTop;
         });
