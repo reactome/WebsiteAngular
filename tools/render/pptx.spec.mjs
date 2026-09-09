@@ -544,8 +544,22 @@ describe('a payload framed on one event', () => {
     expect(FRAMED.width).toBeLessThan(REAL.width / 2);
   });
 
+  /**
+   * A second framed payload, from a selection whose frame an arrowhead used to
+   * stick out of.
+   *
+   * One captured frame is not enough to hold the invariant: framing was applied
+   * by each producer as it built its shapes, so every shape type added later
+   * bypassed it silently, and whether that showed depended entirely on which
+   * reaction was framed. Two of five sampled reactions leaked.
+   */
+  const FRAMED_ARROWHEAD = JSON.parse(
+    readFileSync(new URL('./fixtures/shapes-framed-arrowhead.json', import.meta.url), 'utf8')
+  );
+
   it.each([
     ['framed', () => FRAMED],
+    ['framed on another reaction', () => FRAMED_ARROWHEAD],
     ['whole', () => REAL],
   ])('keeps every %s shape inside the extent it declares', (_name, payload) => {
     const page = payload();
@@ -755,5 +769,45 @@ describe("how a glyph's own images are placed", () => {
         extent(shape).w > 100
     );
     expect(suspicious.map((shape) => shape.id)).toEqual([]);
+  });
+});
+
+describe('a glyph the frame cuts through', () => {
+  const FRAMED_CUT = JSON.parse(
+    readFileSync(new URL('./fixtures/shapes-framed-reaction.json', import.meta.url), 'utf8')
+  );
+
+  it('is clipped at the frame, not squashed into what is left of its box', () => {
+    // The tell. A clipped polygon has points *on* the frame edge, because that
+    // is where it was cut. A glyph scaled into its clipped box -- which is what
+    // happened while the body was built from an already-clipped rectangle --
+    // has none: `CASP3(1-277) dimer` arrived as a whole 248-wide octagon
+    // squeezed into a 20px sliver, with every corner intact and nothing
+    // touching the edge.
+    const right = FRAMED_CUT.x + FRAMED_CUT.width;
+    const bottom = FRAMED_CUT.y + FRAMED_CUT.height;
+    const near = (value, edge) => Math.abs(value - edge) < 0.6;
+
+    const cut = FRAMED_CUT.shapes.filter(
+      (shape) =>
+        shape.id.includes('-glyph-') &&
+        shape.points.some(
+          (point) =>
+            near(point.x, FRAMED_CUT.x) ||
+            near(point.x, right) ||
+            near(point.y, FRAMED_CUT.y) ||
+            near(point.y, bottom)
+        )
+    );
+    expect(cut.length, 'a frame through a glyph leaves it touching the edge').toBeGreaterThan(0);
+  });
+
+  it('keeps its fill when cut, rather than falling open', () => {
+    // Clipping a filled polygon as a polygon keeps it closed and painted. Doing
+    // it as a polyline would leave a complex outlined and hollow.
+    const glyphs = FRAMED_CUT.shapes.filter((shape) => shape.id.includes('-glyph-'));
+    const filled = glyphs.filter((shape) => shape.fill);
+    expect(filled.length).toBeGreaterThan(0);
+    for (const shape of filled) expect(shape.closed, shape.name).toBe(true);
   });
 });

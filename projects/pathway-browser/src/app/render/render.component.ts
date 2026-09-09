@@ -434,20 +434,9 @@ export class RenderComponent {
       !framed ||
       (box.x2 >= extent.x1 && box.x1 <= extent.x2 && box.y2 >= extent.y1 && box.y1 <= extent.y2);
 
-    // Keeping a glyph that merely crosses the frame is right; keeping the parts
-    // of it that fall outside is not. An SVG has a viewBox and simply does not
-    // draw them, and a slide has nothing of the sort -- a connector that ran the
-    // width of the diagram arrived as an object sitting 31 inches off the side
-    // of an 11 inch slide, which is what a reader would find when they opened it.
-    const clipBox = (box: { x1: number; y1: number; x2: number; y2: number }) =>
-      framed
-        ? {
-            x1: Math.max(box.x1, extent.x1),
-            y1: Math.max(box.y1, extent.y1),
-            x2: Math.min(box.x2, extent.x2),
-            y2: Math.min(box.y2, extent.y2),
-          }
-        : box;
+    // Everything below is built at its true size and position. Framing is
+    // applied once, to the finished list, by clipToExtent -- see the note there
+    // for why doing it per producer does not hold.
 
     // toArray() rather than iterating the collection: a cytoscape collection is
     // array-like without being an array, and its filter hands back the loose
@@ -467,8 +456,7 @@ export class RenderComponent {
     const glyphs: RenderEdgeShape[] = [];
 
     for (const node of visible) {
-      const box = clipBox(node.boundingBox({ includeLabels: false, includeOverlays: false }));
-      if (box.x2 <= box.x1 || box.y2 <= box.y1) continue;
+      const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
       const label = String(node.data('displayName') ?? '').trim();
       const under = this.underlay(node);
       if (under) {
@@ -476,14 +464,10 @@ export class RenderComponent {
           kind: 'node',
           id: `${node.id()}-underlay`,
           name: `${label || node.id()} highlight`,
-          x: Math.max(box.x1 - under.padding, framed ? extent.x1 : -Infinity),
-          y: Math.max(box.y1 - under.padding, framed ? extent.y1 : -Infinity),
-          w:
-            Math.min(box.x2 + under.padding, framed ? extent.x2 : Infinity) -
-            Math.max(box.x1 - under.padding, framed ? extent.x1 : -Infinity),
-          h:
-            Math.min(box.y2 + under.padding, framed ? extent.y2 : Infinity) -
-            Math.max(box.y1 - under.padding, framed ? extent.y1 : -Infinity),
+          x: box.x1 - under.padding,
+          y: box.y1 - under.padding,
+          w: box.w + 2 * under.padding,
+          h: box.h + 2 * under.padding,
           geom: this.geometryOf(String(node.style('shape') ?? '')),
           fill: under.colour,
           stroke: null,
@@ -499,12 +483,7 @@ export class RenderComponent {
       // A node whose body is an image is drawn as that image's own geometry,
       // and its own rectangle then carries nothing but the label -- otherwise
       // the plain box outlines the glyph a second time.
-      const glyph = this.glyphShapes(node, {
-        x1: box.x1,
-        y1: box.y1,
-        w: box.x2 - box.x1,
-        h: box.y2 - box.y1,
-      });
+      const glyph = this.glyphShapes(node, box);
       glyphs.push(...glyph);
       const bodyIsImage = glyph.length > 0;
 
@@ -514,8 +493,8 @@ export class RenderComponent {
         name: label || String(node.data('schemaClass') ?? node.id()),
         x: box.x1,
         y: box.y1,
-        w: box.x2 - box.x1,
-        h: box.y2 - box.y1,
+        w: box.w,
+        h: box.h,
         geom: this.geometryOf(String(node.style('shape') ?? '')),
         fill: this.colour(node.style('background-color'), node.style('background-opacity')),
         stroke: bodyIsImage
@@ -540,55 +519,41 @@ export class RenderComponent {
       const whole = [edge.sourceEndpoint(), ...this.bendPoints(edge), edge.targetEndpoint()].map(
         (point) => ({ x: point.x, y: point.y })
       );
-      // Unframed, this is the polyline itself; framed, only the parts in view.
-      const runs = framed ? this.clipRuns(whole, extent) : [whole];
-      if (!runs.length) continue;
       const points = whole;
       const width = this.pixels(edge.style('width')) || 1;
       const under = this.underlay(edge);
       if (under) {
-        // One band per run, or a connector clipped into two pieces keeps its
-        // tint on the first and loses it on the rest.
-        runs.forEach((run, at) => {
-          edgeUnderlays.push({
-            kind: 'edge',
-            id: at === 0 ? `${edge.id()}-underlay` : `${edge.id()}-underlay-${at}`,
-            name: `${String(edge.data('schemaClass') ?? 'connector')} highlight`,
-            points: run,
-            stroke: under.colour,
-            // Cytoscape pads an underlay outwards from the line, so the band is
-            // the line plus that padding on each side.
-            strokeWidth: width + 2 * under.padding,
-            closed: false,
-            fill: null,
-            dashed: false,
-          });
+        edgeUnderlays.push({
+          kind: 'edge',
+          id: `${edge.id()}-underlay`,
+          name: `${String(edge.data('schemaClass') ?? 'connector')} highlight`,
+          points,
+          stroke: under.colour,
+          // Cytoscape pads an underlay outwards from the line, so the band is
+          // the line plus that padding on each side.
+          strokeWidth: width + 2 * under.padding,
+          closed: false,
+          fill: null,
+          dashed: false,
         });
       }
 
       const stroke = this.colour(edge.style('line-color'), edge.style('opacity'));
       const dashed = this.dashed(edge.style('line-style'));
-      runs.forEach((run, at) => {
-        edges.push({
-          kind: 'edge',
-          id: at === 0 ? String(edge.id()) : `${edge.id()}-${at}`,
-          name: String(edge.data('schemaClass') ?? 'connector'),
-          points: run,
-          stroke,
-          strokeWidth: width,
-          closed: false,
-          fill: null,
-          dashed,
-        });
+      edges.push({
+        kind: 'edge',
+        id: String(edge.id()),
+        name: String(edge.data('schemaClass') ?? 'connector'),
+        points,
+        stroke,
+        strokeWidth: width,
+        closed: false,
+        fill: null,
+        dashed,
       });
 
-      // The arrowhead is drawn after its line, so it sits on top of it -- and
-      // only when the end it marks is in view.
-      const tip = points[points.length - 1];
-      const showsTip =
-        !framed ||
-        (tip.x >= extent.x1 && tip.x <= extent.x2 && tip.y >= extent.y1 && tip.y <= extent.y2);
-      if (showsTip) arrowheads.push(...this.arrowhead(edge, points, width));
+      // The arrowhead is drawn after its line, so it sits on top of it.
+      arrowheads.push(...this.arrowhead(edge, points, width));
     }
 
     return {
@@ -604,7 +569,7 @@ export class RenderComponent {
       // The underlays are how the diagram tints an event by the sub-pathway it
       // belongs to, and each sits immediately behind the glyph it marks -- so
       // they go in front of the compartments and behind everything else.
-      shapes: [
+      shapes: this.clipToExtent(framed ? extent : null, [
         ...compartments,
         ...edgeUnderlays,
         ...edges,
@@ -613,7 +578,7 @@ export class RenderComponent {
         // The glyph body sits under the box that carries its label.
         ...glyphs,
         ...nodes,
-      ],
+      ]),
     };
   }
 
@@ -1070,6 +1035,103 @@ export class RenderComponent {
       return withAlpha([...short[1]].map((digit) => parseInt(digit + digit, 16)));
     }
     return null;
+  }
+
+  /**
+   * Every shape cut down to the framed region, in one place.
+   *
+   * Framing used to be applied by each producer as it built its shapes, and
+   * that did not hold: every shape type added afterwards bypassed it. An
+   * arrowhead could protrude past the frame -- two of five sampled reactions
+   * did -- and a glyph body was scaled into its *clipped* box rather than cut,
+   * so a complex half in view arrived as a whole octagon squashed into a 20px
+   * sliver. Clipping the finished list means a new kind of shape cannot forget.
+   *
+   * A closed shape stays closed: a filled glyph cut by the frame is clipped as
+   * a polygon, so it keeps its fill and gains an edge along the frame, rather
+   * than falling open and losing it.
+   */
+  private clipToExtent(
+    extent: { x1: number; y1: number; x2: number; y2: number } | null,
+    shapes: (RenderNodeShape | RenderEdgeShape)[]
+  ): (RenderNodeShape | RenderEdgeShape)[] {
+    if (!extent) return shapes;
+
+    const out: (RenderNodeShape | RenderEdgeShape)[] = [];
+    for (const shape of shapes) {
+      if (shape.kind === 'node') {
+        const x1 = Math.max(shape.x, extent.x1);
+        const y1 = Math.max(shape.y, extent.y1);
+        const x2 = Math.min(shape.x + shape.w, extent.x2);
+        const y2 = Math.min(shape.y + shape.h, extent.y2);
+        if (x2 - x1 <= 0 || y2 - y1 <= 0) continue;
+        out.push({ ...shape, x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
+        continue;
+      }
+
+      if (shape.closed) {
+        const polygon = this.clipPolygon(shape.points, extent);
+        if (polygon.length >= 3) out.push({ ...shape, points: polygon });
+        continue;
+      }
+
+      const runs = this.clipRuns(shape.points, extent);
+      runs.forEach((run, at) => {
+        if (run.length < 2) return;
+        out.push({ ...shape, id: at === 0 ? shape.id : `${shape.id}-${at}`, points: run });
+      });
+    }
+    return out;
+  }
+
+  /**
+   * A polygon cut to a rectangle -- Sutherland-Hodgman, one side at a time.
+   *
+   * The rectangle is convex, so clipping against its four sides in turn is
+   * exact and cannot leave the polygon self-intersecting.
+   */
+  private clipPolygon(
+    points: { x: number; y: number }[],
+    box: { x1: number; y1: number; x2: number; y2: number }
+  ): { x: number; y: number }[] {
+    const atX = (a: { x: number; y: number }, b: { x: number; y: number }, x: number) => ({
+      x,
+      y: a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x || Number.EPSILON),
+    });
+    const atY = (a: { x: number; y: number }, b: { x: number; y: number }, y: number) => ({
+      x: a.x + ((b.x - a.x) * (y - a.y)) / (b.y - a.y || Number.EPSILON),
+      y,
+    });
+
+    const sides: [
+      (point: { x: number; y: number }) => boolean,
+      (a: { x: number; y: number }, b: { x: number; y: number }) => { x: number; y: number },
+    ][] = [
+      [(point) => point.x >= box.x1, (a, b) => atX(a, b, box.x1)],
+      [(point) => point.x <= box.x2, (a, b) => atX(a, b, box.x2)],
+      [(point) => point.y >= box.y1, (a, b) => atY(a, b, box.y1)],
+      [(point) => point.y <= box.y2, (a, b) => atY(a, b, box.y2)],
+    ];
+
+    let polygon = points;
+    for (const [inside, cut] of sides) {
+      if (polygon.length < 3) return [];
+      const next: { x: number; y: number }[] = [];
+      for (let index = 0; index < polygon.length; index++) {
+        const current = polygon[index];
+        const previous = polygon[(index + polygon.length - 1) % polygon.length];
+        const currentIn = inside(current);
+        const previousIn = inside(previous);
+        if (currentIn) {
+          if (!previousIn) next.push(cut(previous, current));
+          next.push(current);
+        } else if (previousIn) {
+          next.push(cut(previous, current));
+        }
+      }
+      polygon = next;
+    }
+    return polygon;
   }
 
   /**
