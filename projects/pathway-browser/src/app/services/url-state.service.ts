@@ -36,6 +36,34 @@ import { toSignal } from '@angular/core/rxjs-interop';
  */
 export const FRAGMENT_PATTERN = /^\/?(?<id>R-[A-Z]{3}-\d+|\d{4,})(?:\.\d+)?(?:&(?<params>.*))?$/;
 
+/**
+ * Whether this URL is one of the content pages rather than the pathway browser.
+ *
+ * The content pages render some of the same panels from this same service, but
+ * they own their own addresses -- so the two effects that write pathway browser
+ * state into the URL have to stand down there, or opening a detail page rewrites
+ * its address into a pathway browser one.
+ *
+ * The path, and whole segments of it. This used to ask whether the whole URL
+ * *contained* "content" or "query", and the query string answers that just as
+ * readily as the path does: `sample` holds a column name out of the reader's own
+ * expression file -- set automatically to the first column of it -- so a file
+ * with a column called "GC content" puts `?sample=GC__content` in the URL, and
+ * from that moment nothing the reader did was written to the URL again. Not
+ * selecting a node, not flagging, not changing tab. None of it survived a
+ * reload, and none of it was in a link they shared.
+ *
+ * "query" is gone rather than fixed: the search page is `content/query`, which
+ * the first test already covers, and of the two words it is the likelier to turn
+ * up in somebody's data.
+ */
+export function isContentRoute(url: string): boolean {
+  return url
+    .split(/[?#]/, 1)[0]
+    .split('/')
+    .some((segment) => segment === 'content');
+}
+
 export type UrlParam<T> = WritableSignal<T> & {
   otherTokens?: string[];
   initialValue: T;
@@ -161,11 +189,7 @@ export class UrlStateService implements State {
     effect(() => {
       // console.log('Updating patwhayId to ', this.pathwayId())
 
-      //If in content/search do not navigate
-      if (this.router.url.includes('content') || this.router.url.includes('query')) {
-        // console.log('In content or search route, not navigating on pathwayId change');
-        return;
-      }
+      if (isContentRoute(this.router.url)) return;
 
       void this.navigateTo(this.pathwayId() ?? null, {
         queryParamsHandling: 'preserve',
@@ -274,7 +298,7 @@ export class UrlStateService implements State {
     });
     effect(() => {
       const queryParams = this.currentQueryParams();
-      if (this.router.url.includes('content') || this.router.url.includes('query')) return;
+      if (isContentRoute(this.router.url)) return;
 
       // Settling is not a step the reader took, so it replaces rather than adds:
       // opening a pathway wrote ?tab=info and then ?tab=details, two entries for a

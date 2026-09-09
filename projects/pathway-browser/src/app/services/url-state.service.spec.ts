@@ -9,7 +9,7 @@
  * The cases below are taken from what is actually in the content, not invented.
  */
 import { describe, expect, it } from 'vitest';
-import { FRAGMENT_PATTERN } from './url-state.service';
+import { FRAGMENT_PATTERN, isContentRoute } from './url-state.service';
 
 /** What the subscriber does with a fragment, reduced to its decisions. */
 function route(fragment: string) {
@@ -86,5 +86,43 @@ describe('a legacy pathway link in the fragment', () => {
     for (const fragment of ['see-R-HSA-202733-here', 'XR-HSA-202733']) {
       expect(route(fragment).id, fragment).toBeUndefined();
     }
+  });
+});
+
+/**
+ * Standing down on the content pages, without standing down anywhere else.
+ *
+ * The guard used to be a substring test over the whole URL, so a query parameter
+ * carrying either word decided it. `sample` is a column name out of the reader's
+ * own expression file, set automatically to the first column, and "GC content" is
+ * an ordinary thing for a column to be called.
+ */
+describe('recognising a content page', () => {
+  it('stands down on the content pages', () => {
+    expect(isContentRoute('/content/detail/R-HSA-1430728')).toBe(true);
+    expect(isContentRoute('/content/schema/Pathway')).toBe(true);
+  });
+
+  it('still stands down on the search page, which is a content page', () => {
+    expect(isContentRoute('/content/query')).toBe(true);
+    expect(isContentRoute('/content/query?q=kinase')).toBe(true);
+  });
+
+  it('does not stand down in the pathway browser', () => {
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1430728')).toBe(false);
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1430728?tab=details&sel=R-HSA-9')).toBe(false);
+  });
+
+  it('does not stand down because the reader named a column "GC content"', () => {
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1430728?sample=GC__content')).toBe(false);
+  });
+
+  it('does not stand down for a value that merely contains the word', () => {
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1?overlay=contents')).toBe(false);
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1#content')).toBe(false);
+  });
+
+  it('does not stand down for the word "query" anywhere but a content path', () => {
+    expect(isContentRoute('/PathwayBrowser/R-HSA-1?sample=query__1')).toBe(false);
   });
 });
