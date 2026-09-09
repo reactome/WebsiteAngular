@@ -1,6 +1,6 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
-import { Subscription } from 'rxjs';
+import { Subscription, TimeoutError, timeout } from 'rxjs';
 
 /**
  * A download the page waits for on the user's behalf, rather than handing to
@@ -163,6 +163,17 @@ export function describeProgress(phase: DownloadPhase): string | null {
   }
 }
 
+/**
+ * How long to wait before calling it dead.
+ *
+ * Generous on purpose: a genome-wide figure takes six seconds, a pathway's PDF
+ * nine, and the render service allows itself forty-five for a page that will
+ * not settle. Three minutes is past any of those and well short of forever --
+ * which is what it was, because a request that never answers produced a
+ * spinner that never stopped and no way for the reader to give up.
+ */
+const GIVE_UP_AFTER = 180_000;
+
 @Injectable({ providedIn: 'root' })
 export class FileDownloadService {
   private http = inject(HttpClient);
@@ -179,6 +190,7 @@ export class FileDownloadService {
 
     subscription = this.http
       .get(url, { observe: 'events', reportProgress: true, responseType: 'blob' })
+      .pipe(timeout({ first: GIVE_UP_AFTER, each: GIVE_UP_AFTER }))
       .subscribe({
         next: (event) => {
           const next = nextPhase(event);
@@ -195,6 +207,13 @@ export class FileDownloadService {
           }
         },
         error: (error: unknown) => {
+          if (error instanceof TimeoutError) {
+            phase.set({
+              status: 'failed',
+              message: 'it took too long -- the server may be busy',
+            });
+            return;
+          }
           if (error instanceof HttpErrorResponse && failureKind(error.status) === 'unreachable') {
             // Hand it to the browser, which is not bound by CORS for a
             // download. This is how it behaved before any of this existed: no
