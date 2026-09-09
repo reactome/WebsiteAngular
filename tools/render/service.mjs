@@ -438,6 +438,17 @@ app.get('/render/:name.:ext', async (req, res) => {
     // version into every figure's URL, which worked and which nobody should have
     // to remember to bump.
     res.setHeader('Cache-Control', 'private, no-cache');
+    // A figure is public and read-only, and anyone can already ask for one
+    // through the site -- CORS decides whether a *browser* may read the
+    // response, not who may ask. Without it, a deployment served from a
+    // different origin than its backend (the published artefact points at beta)
+    // cannot fetch its own downloads, so the page can neither show progress nor
+    // catch a failure. /ContentService already says the same thing.
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Only safelisted headers are readable cross-origin, so without this the
+    // page cannot see the name the server chose for the file, nor whether the
+    // figure was already made. Both are things it displays.
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Render-Cache');
     res.setHeader(
       'Content-Disposition',
       `${ATTACHMENT.has(format) ? 'attachment' : 'inline'}; ` +

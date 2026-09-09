@@ -1,13 +1,20 @@
 <a
   mat-flat-button
   class="button"
+  [class.button--busy]="busy()"
+  [class.button--failed]="failed()"
   [attr.href]="url()"
   [attr.download]="download() === true ? '' : download()"
   [attr.target]="openInNewTab()"
-  [matTooltip]="tooltip()"
+  [attr.aria-busy]="busy() ? 'true' : null"
+  [matTooltip]="hint()"
   (click)="onClick($event)"
 >
-  @if (icon(); as icon) {
+  <!-- The spinner takes the icon's place rather than sitting beside it, so the
+       button does not change width while it works. -->
+  @if (busy()) {
+    <mat-progress-spinner mode="indeterminate" [diameter]="16" [strokeWidth]="2" />
+  } @else if (icon(); as icon) {
     <mat-icon [svgIcon]="icon.svg ? icon.id : ''" [fontSet]="!icon.svg ? 'symbols' : ''">
       @if (!icon.svg) {
         {{ icon.id }}
@@ -16,4 +23,10 @@
   }
 
   <span>{{ label() }}</span>
+
+  <!-- Announced as it changes: someone using a screen reader gets told the file
+       is being made, which the spinner alone does not tell them. The region is
+       always here, empty when there is nothing to say -- a live region added to
+       the page at the same moment as its text is not reliably read out. -->
+  <span class="button__state" role="status" aria-live="polite">{{ state() }}</span>
 </a>
