@@ -1,5 +1,4 @@
 import { Directive, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { DestroyRef } from '@angular/core';
 import {
   DownloadPhase,
   FileDownloadService,
@@ -27,6 +26,7 @@ import {
  */
 @Directive({
   selector: 'a[crManagedDownload]',
+  exportAs: 'managedDownload',
   host: {
     '[class.dl--busy]': 'busy()',
     '[class.dl--failed]': 'failed()',
@@ -40,11 +40,10 @@ export class ManagedDownloadDirective {
   private anchor = inject<ElementRef<HTMLAnchorElement>>(ElementRef);
   private active = signal<ManagedDownload | null>(null);
 
-  constructor() {
-    // These take seconds. A reader who moves on should not have a file arrive
-    // on a page they have left.
-    inject(DestroyRef).onDestroy(() => this.active()?.cancel());
-  }
+  // Deliberately not cancelled when the link goes away. A reader who clicked
+  // download asked for the file, and some of these links live inside a menu
+  // that closes on the click -- cancelling then would have thrown away the
+  // download they just asked for the moment it was slow enough to matter.
 
   private phase = computed<DownloadPhase>(() => this.active()?.phase() ?? { status: 'idle' });
 
@@ -59,7 +58,9 @@ export class ManagedDownloadDirective {
 
   readonly reason = computed(() => {
     const phase = this.phase();
-    return phase.status === 'failed' ? `Could not download: ${phase.message}` : null;
+    if (phase.status === 'failed') return `Could not download: ${phase.message}`;
+    if (this.busy()) return 'Being made on the server… click to stop';
+    return null;
   });
 
   @HostListener('click', ['$event'])
@@ -74,7 +75,16 @@ export class ManagedDownloadDirective {
     if (!url) return;
 
     event.preventDefault();
-    if (this.busy()) return;
+
+    // Clicking a download that is already working stops it. Without that a
+    // request the server never answers leaves the reader with a spinner and
+    // nothing to do about it; a link that says "Preparing…" and stops when
+    // clicked is the way out.
+    if (this.busy()) {
+      this.active()?.cancel();
+      this.active.set(null);
+      return;
+    }
 
     const name = element.getAttribute('download');
     this.active.set(this.downloads.start(url, name || undefined));

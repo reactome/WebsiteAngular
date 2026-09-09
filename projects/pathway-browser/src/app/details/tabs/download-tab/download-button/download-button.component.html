@@ -1,18 +1,21 @@
+<!-- The directive only takes over when this is a link to a file: a button that
+     runs something in the page has no href, and clicks through as before. -->
 <a
   mat-flat-button
   class="button"
-  [class.button--busy]="busy()"
-  [class.button--failed]="failed()"
+  crManagedDownload
+  #managed="managedDownload"
+  [class.button--busy]="managed.busy()"
+  [class.button--failed]="managed.failed()"
   [attr.href]="url()"
   [attr.download]="download() === true ? '' : download()"
   [attr.target]="openInNewTab()"
-  [attr.aria-busy]="busy() ? 'true' : null"
-  [matTooltip]="hint()"
+  [matTooltip]="managed.reason() ?? tooltip()"
   (click)="onClick($event)"
 >
   <!-- The spinner takes the icon's place rather than sitting beside it, so the
        button does not change width while it works. -->
-  @if (busy()) {
+  @if (managed.busy()) {
     <mat-progress-spinner mode="indeterminate" [diameter]="16" [strokeWidth]="2" />
   } @else if (icon(); as icon) {
     <mat-icon [svgIcon]="icon.svg ? icon.id : ''" [fontSet]="!icon.svg ? 'symbols' : ''">
@@ -28,5 +31,5 @@
        is being made, which the spinner alone does not tell them. The region is
        always here, empty when there is nothing to say -- a live region added to
        the page at the same moment as its text is not reliably read out. -->
-  <span class="button__state" role="status" aria-live="polite">{{ state() }}</span>
+  <span class="button__state" role="status" aria-live="polite">{{ managed.label() }}</span>
 </a>

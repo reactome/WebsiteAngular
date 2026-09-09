@@ -185,6 +185,30 @@ test.describe('Download feedback on the detail bar', () => {
     expect(reason).not.toContain('<');
   });
 
+  test('can be stopped when the server never answers', async ({ page }) => {
+    // A request that is never answered used to leave "Preparing…" on screen for
+    // ever with nothing the reader could do: clicking again was ignored while
+    // busy, and there is no browser download UI to cancel from because the page
+    // is doing the fetching. There is a three minute ceiling as well, but
+    // nobody should have to wait for it.
+    await page.route('**/ContentService/exporter/**', () => {
+      /* deliberately never fulfilled */
+    });
+
+    await openDetail(page);
+    const sbml = page
+      .locator('.dl-link')
+      .filter({ hasText: /^SBML$/ })
+      .first();
+
+    await sbml.click();
+    await expect(page.locator('.dl--busy')).toHaveCount(1, { timeout: 15_000 });
+    await expect(sbml).toHaveAttribute('title', /click to stop/i);
+
+    await sbml.click();
+    await expect(page.locator('.dl--busy')).toHaveCount(0, { timeout: 15_000 });
+  });
+
   test('says it is working during the wait', async ({ page, request }) => {
     // Gated on the content service, not on the exporter path: the exporters are
     // blocked for non-browser agents on beta, so probing one from the API
