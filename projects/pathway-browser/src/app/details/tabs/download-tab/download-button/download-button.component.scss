@@ -29,6 +29,11 @@
 }
 
 .button__state {
+  // Empty when idle, and an empty live region must not push the label around.
+  &:empty {
+    display: none;
+  }
+
   margin-left: 0.4rem;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;

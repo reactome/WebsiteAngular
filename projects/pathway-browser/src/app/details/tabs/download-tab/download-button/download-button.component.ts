@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { MatAnchor } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -41,6 +41,13 @@ export class DownloadButtonComponent {
   click = output<void>();
 
   private active = signal<ManagedDownload | null>(null);
+
+  constructor() {
+    // A render takes seconds, and a reader who moves on should not leave one
+    // running: the request would finish into a component that no longer exists
+    // and drop a file on a page they have left.
+    inject(DestroyRef).onDestroy(() => this.active()?.cancel());
+  }
 
   private phase = computed(() => this.active()?.phase() ?? { status: 'idle' as const });
 

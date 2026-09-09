@@ -30,8 +30,23 @@ export type DownloadPhase =
   | { status: 'idle' }
   | { status: 'preparing' }
   | { status: 'transferring'; received: number; total: number | null }
-  | { status: 'saved'; bytes: number; cached: boolean }
+  | { status: 'saved'; bytes: number }
+  /** Given to the browser instead, because the page could not fetch it. */
+  | { status: 'handed-off' }
   | { status: 'failed'; message: string };
+
+/**
+ * Whether a failure means the server refused, or that we never reached it.
+ *
+ * Status 0 is not an answer: it is a request that did not happen -- blocked by
+ * CORS, offline, stopped by an extension. That matters, because the browser can
+ * still fetch the file itself, and a reader would rather have the download
+ * without a progress bar than a button that does nothing. A real status is a
+ * real answer and has to be shown.
+ */
+export function failureKind(status: number): 'unreachable' | 'refused' {
+  return status === 0 ? 'unreachable' : 'refused';
+}
 
 /** A download in flight, and the handle to give up on it. */
 export interface ManagedDownload {
@@ -101,7 +116,7 @@ export function messageFrom(status: number, body: string | null): string {
  * that needs saying out loud: a progress bar cannot be honest here, because the
  * server is not sending. Only once bytes arrive is there a fraction to show.
  */
-export function nextPhase(event: HttpEvent<Blob>, cached: boolean): DownloadPhase | null {
+export function nextPhase(event: HttpEvent<Blob>): DownloadPhase | null {
   switch (event.type) {
     case HttpEventType.Sent:
       return { status: 'preparing' };
@@ -112,7 +127,7 @@ export function nextPhase(event: HttpEvent<Blob>, cached: boolean): DownloadPhas
         total: typeof event.total === 'number' && event.total > 0 ? event.total : null,
       };
     case HttpEventType.Response:
-      return { status: 'saved', bytes: event.body?.size ?? 0, cached };
+      return { status: 'saved', bytes: event.body?.size ?? 0 };
     default:
       return null;
   }
@@ -136,11 +151,7 @@ export class FileDownloadService {
       .get(url, { observe: 'events', reportProgress: true, responseType: 'blob' })
       .subscribe({
         next: (event) => {
-          const cached =
-            event.type === HttpEventType.Response
-              ? event.headers.get('x-render-cache') === 'hit'
-              : false;
-          const next = nextPhase(event, cached);
+          const next = nextPhase(event);
           if (next) phase.set(next);
 
           if (event.type === HttpEventType.Response && event.body) {
@@ -154,6 +165,15 @@ export class FileDownloadService {
           }
         },
         error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && failureKind(error.status) === 'unreachable') {
+            // Hand it to the browser, which is not bound by CORS for a
+            // download. This is how it behaved before any of this existed: no
+            // progress, and a failure would be saved -- but a file rather than
+            // a button that does nothing.
+            this.handOff(url, fallbackName);
+            phase.set({ status: 'handed-off' });
+            return;
+          }
           if (error instanceof HttpErrorResponse) {
             // The body is a Blob because that is what was asked for, so the
             // reason has to be read out of it before it can be shown.
@@ -171,6 +191,23 @@ export class FileDownloadService {
         phase.set({ status: 'idle' });
       },
     };
+  }
+
+  /**
+   * Let the browser fetch it, when the page cannot.
+   *
+   * `download` is ignored on a cross-origin link, which is exactly the case
+   * that brings us here, so the name comes from the server's own
+   * Content-Disposition -- which it sends.
+   */
+  private handOff(url: string, filename?: string): void {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    if (filename) anchor.download = filename;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
   }
 
   private async readError(error: HttpErrorResponse): Promise<string> {
@@ -201,6 +238,9 @@ export class FileDownloadService {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    URL.revokeObjectURL(href);
+    // Not revoked on the spot. Chromium copes, but revoking a blob URL in the
+    // same task as the click cancels the save in other browsers -- and this one
+    // holds the whole file, so it cannot simply be left either.
+    setTimeout(() => URL.revokeObjectURL(href), 60_000);
   }
 }

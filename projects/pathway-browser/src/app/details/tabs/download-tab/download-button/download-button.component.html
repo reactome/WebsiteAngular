@@ -25,8 +25,8 @@
   <span>{{ label() }}</span>
 
   <!-- Announced as it changes: someone using a screen reader gets told the file
-       is being made, which the spinner alone does not tell them. -->
-  @if (state(); as state) {
-    <span class="button__state" role="status" aria-live="polite">{{ state }}</span>
-  }
+       is being made, which the spinner alone does not tell them. The region is
+       always here, empty when there is nothing to say -- a live region added to
+       the page at the same moment as its text is not reliably read out. -->
+  <span class="button__state" role="status" aria-live="polite">{{ state() }}</span>
 </a>

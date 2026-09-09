@@ -49,7 +49,7 @@ test.describe('Download feedback', () => {
     const seen: string[] = [];
     const watch = setInterval(() => {
       void page
-        .locator('.button__state')
+        .locator('.button--busy .button__state')
         .first()
         .textContent({ timeout: 150 })
         .then((text) => {
@@ -100,7 +100,9 @@ test.describe('Download feedback', () => {
 
     await pptxButton(page).click();
     await expect(page.locator('.button--failed')).toHaveCount(1, { timeout: 30_000 });
-    await expect(page.locator('.button__state').first()).toHaveText('Failed');
+    // Scoped to the button that failed: every button carries a live region,
+    // empty until it has something to say, so `.first()` is somebody else's.
+    await expect(page.locator('.button--failed .button__state')).toHaveText('Failed');
 
     // The whole point: nothing was written to disk.
     expect(saved, 'a failed download must not save a file').toBeNull();

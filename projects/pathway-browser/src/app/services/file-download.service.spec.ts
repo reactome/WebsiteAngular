@@ -13,43 +13,52 @@
  */
 import { describe, expect, it } from 'vitest';
 import { HttpEventType, HttpResponse } from '@angular/common/http';
-import { filenameFrom, filenameFromUrl, messageFrom, nextPhase } from './file-download.service';
+import {
+  failureKind,
+  filenameFrom,
+  filenameFromUrl,
+  messageFrom,
+  nextPhase,
+} from './file-download.service';
 
 describe('the phase a download reports', () => {
   it('says it is preparing as soon as the request goes out', () => {
-    expect(nextPhase({ type: HttpEventType.Sent }, false)).toEqual({ status: 'preparing' });
+    expect(nextPhase({ type: HttpEventType.Sent })).toEqual({ status: 'preparing' });
   });
 
   it('shows a fraction only once bytes are actually arriving', () => {
     // The server sends nothing until the file exists, so there is no honest
     // fraction to show before then -- which is why "preparing" is its own state
     // rather than 0%.
-    expect(
-      nextPhase({ type: HttpEventType.DownloadProgress, loaded: 512, total: 2048 }, false)
-    ).toEqual({ status: 'transferring', received: 512, total: 2048 });
+    expect(nextPhase({ type: HttpEventType.DownloadProgress, loaded: 512, total: 2048 })).toEqual({
+      status: 'transferring',
+      received: 512,
+      total: 2048,
+    });
   });
 
   it('reports no total when the server did not give one', () => {
-    expect(nextPhase({ type: HttpEventType.DownloadProgress, loaded: 512 }, false)).toEqual({
+    expect(nextPhase({ type: HttpEventType.DownloadProgress, loaded: 512 })).toEqual({
       status: 'transferring',
       received: 512,
       total: null,
     });
     // A zero total is not a total.
-    expect(nextPhase({ type: HttpEventType.DownloadProgress, loaded: 1, total: 0 }, false)).toEqual(
-      { status: 'transferring', received: 1, total: null }
-    );
+    expect(nextPhase({ type: HttpEventType.DownloadProgress, loaded: 1, total: 0 })).toEqual({
+      status: 'transferring',
+      received: 1,
+      total: null,
+    });
   });
 
-  it('is saved only on a response, and says whether it was already made', () => {
+  it('is saved only on a response, and carries what arrived', () => {
     const response = new HttpResponse({ body: new Blob(['x'.repeat(64)]), status: 200 });
-    expect(nextPhase(response, true)).toEqual({ status: 'saved', bytes: 64, cached: true });
-    expect(nextPhase(response, false)).toEqual({ status: 'saved', bytes: 64, cached: false });
+    expect(nextPhase(response)).toEqual({ status: 'saved', bytes: 64 });
   });
 
   it('ignores the events that say nothing about progress', () => {
-    expect(nextPhase({ type: HttpEventType.ResponseHeader } as never, false)).toBeNull();
-    expect(nextPhase({ type: HttpEventType.User } as never, false)).toBeNull();
+    expect(nextPhase({ type: HttpEventType.ResponseHeader } as never)).toBeNull();
+    expect(nextPhase({ type: HttpEventType.User } as never)).toBeNull();
   });
 });
 
@@ -122,5 +131,23 @@ describe('a header parser that has to hold up', () => {
     for (const header of ['attachment; filename=""', 'attachment; filename=', 'inline']) {
       expect(filenameFrom(header, 'safe.pptx'), header).toBe('safe.pptx');
     }
+  });
+});
+
+describe('telling a refusal apart from never arriving', () => {
+  it('treats a real status as a real answer', () => {
+    // The server spoke. Show what it said, and save nothing.
+    for (const status of [400, 404, 500, 503]) {
+      expect(failureKind(status), String(status)).toBe('refused');
+    }
+  });
+
+  it('treats status 0 as a request that never happened', () => {
+    // CORS, offline, an extension. The browser can still fetch the file, and
+    // the published artefact needs that: it is served from one origin and asks
+    // another for its downloads, and /RenderService sent no
+    // Access-Control-Allow-Origin, so the page's own fetch was blocked outright
+    // where the old plain link had worked.
+    expect(failureKind(0)).toBe('unreachable');
   });
 });
