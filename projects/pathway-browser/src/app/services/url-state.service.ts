@@ -40,7 +40,36 @@ import { toSignal } from '@angular/core/rxjs-interop';
  * does not want it, and it was previously parsed as a query parameter called
  * ".4"; it is consumed and dropped here.
  */
-export const FRAGMENT_PATTERN = /^\/?(?<id>R-[A-Z]{3}-\d+|\d{4,})(?:\.\d+)?(?:&(?<params>.*))?$/;
+/**
+ * The keys the old browser wrote into the fragment, and the only ones that make
+ * a settings-only fragment a legacy link rather than a page anchor.
+ */
+const LEGACY_FRAGMENT_KEYS = [
+  'TOOL',
+  'DIAGRAM',
+  'PATH',
+  'SEL',
+  'DTAB',
+  'ANALYSIS',
+  'FLG',
+  'FLGINT',
+] as const;
+
+export const FRAGMENT_PATTERN = new RegExp(
+  // Not empty, and not a lone slash. Both halves below are optional, so without
+  // this an absent fragment -- read as '' -- would match, and carriesLegacyPathway()
+  // would answer true for every URL in the app.
+  String.raw`^\/?(?=.)` +
+    // The pathway, when the link names one. Optional now: the old browser also
+    // produced fragments that are only settings, `#TOOL=AT` being 45 of them in
+    // this site's own news.
+    String.raw`(?:(?<id>R-[A-Z]{3}-\d+|\d{4,})(?:\.\d+)?)?` +
+    // The settings. The `&` is optional because it separates them from an id that
+    // may not be there. Only the old browser's own keys count, so `#introduction`
+    // -- a section to scroll to -- still falls through untouched rather than being
+    // read as a stale route.
+    String.raw`(?:&?(?<params>(?:${LEGACY_FRAGMENT_KEYS.join('|')})=.*))?$`
+);
 
 /**
  * Whether this URL is one of the content pages rather than the pathway browser.
@@ -74,7 +103,17 @@ export type UrlParam<T> = WritableSignal<T> & {
   otherTokens?: string[];
   initialValue: T;
   type: 'number' | 'boolean' | 'string' | 'id';
-  otherTransform?: (value: T) => T;
+  /**
+   * Translates a value written under one of the legacy `otherTokens` into what
+   * this param means now.
+   *
+   * The argument is a string because that is what it is: this runs only for a
+   * legacy token, whose value came out of the query string unparsed. It was
+   * declared `(value: T) => T`, which was true of no caller -- it went
+   * unnoticed only because `tab` is a `string | null`, so the lie typechecked.
+   * A param with a narrower type could not be given a transform at all.
+   */
+  otherTransform?: (value: string) => T;
   set?: (value: T) => void;
 };
 
@@ -82,7 +121,7 @@ export function urlParam<T>(
   initialValue: T,
   type: UrlParam<T>['type'],
   otherTokens?: string[],
-  otherTransform?: (value: T) => T
+  otherTransform?: (value: string) => T
 ): UrlParam<T> {
   const writableSignal = signal<T>(initialValue, {
     equal: (a, b) => JSON.stringify(a) === JSON.stringify(b),
@@ -125,9 +164,16 @@ export class UrlStateService implements State {
     flagInteractors: urlParam<boolean>(false, 'boolean', ['FLGINT']),
     overlay: urlParam<string | null>(null, 'string'),
     analysis: urlParam<string | null>(null, 'string', ['ANALYSIS']),
+    // `TOOL=AT` is how the old browser opened the analysis tool, and it is the
+    // "Analysis Tools" link in every release announcement we have ever published,
+    // the current one included. It named no pathway and mapped to nothing here, so
+    // all 45 of them opened an empty pathway browser. Qualitative is the tool's
+    // first tab and its fallback, which is the gene-list upload the old link led to.
     analysisTab: urlParam<'qualitative' | 'quantitative' | 'species' | 'tissue' | null>(
       null,
-      'string'
+      'string',
+      ['TOOL'],
+      (tool) => (tool === 'AT' ? 'qualitative' : null)
     ),
     tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => this.oldToNewTab.get(tab)!),
     significance: urlParam<number>(0.05, 'number'),
@@ -221,6 +267,28 @@ export class UrlStateService implements State {
               .forEach(([key, value]) => {
                 params[key] = value || true;
               });
+          }
+
+          // `DIAGRAM` is the old browser's name for the pathway to open, so it is
+          // the route rather than a setting: `#DIAGRAM=9006934&PATH=162582` in the
+          // v64 announcement means the same as `#9006934&PATH=162582`. It is only
+          // ever a dbId, which the resolution below then swaps for the stable id.
+          if (!id && typeof params['DIAGRAM'] === 'string') {
+            id = params['DIAGRAM'];
+            delete params['DIAGRAM'];
+          }
+
+          // `TOOL=AT` opened the analysis tool. Rewritten into the parameter that
+          // does that now, rather than carried through as a legacy token, because
+          // a legacy token does not survive the trip: the writer replaces the
+          // whole query string as soon as any state settles, so `?tab=info`
+          // arriving first dropped `?TOOL=AT` before the reader saw it. Setting
+          // the signal instead does not work either -- the reader resets every
+          // param the URL does not mention, so it would be undone in the same
+          // turn. The URL is the source of truth, so the URL is where it goes.
+          if (params['TOOL'] === 'AT') {
+            params['analysisTab'] = 'qualitative';
+            delete params['TOOL'];
           }
         }
 
