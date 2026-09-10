@@ -82,3 +82,38 @@ test.describe('Legacy pathway links', () => {
     });
   }
 });
+
+/**
+ * Legacy fragments that carry settings rather than a pathway.
+ *
+ * `#TOOL=AT` opened the analysis tool in the old browser and is the "Analysis
+ * Tools" link in every release announcement we have published, the current one
+ * included -- 45 of them. `#DIAGRAM=<dbId>` names the pathway to open, and there
+ * are two in the v64 announcement. Neither matched the fragment pattern, so all
+ * of them landed on an empty pathway browser.
+ */
+test.describe('Legacy fragments that are only settings', () => {
+  test.describe.configure({ timeout: 4 * 60 * 1000 });
+
+  test('#TOOL=AT opens the analysis tool', async ({ page }) => {
+    await page.goto('/PathwayBrowser/#TOOL=AT', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(9000);
+
+    // The tool is a panel, so the assertion is that it is open -- not merely
+    // rendered, which it always is.
+    await expect(page.locator('.dropdown.open cr-analysis-form')).toHaveCount(1);
+    expect(new URL(page.url()).searchParams.get('analysisTab')).toBe('qualitative');
+  });
+
+  test('#DIAGRAM=<dbId> opens that pathway, on its stable id', async ({ page }) => {
+    await page.goto('/PathwayBrowser/#DIAGRAM=9006934&PATH=162582', {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.waitForTimeout(12000);
+
+    const landed = new URL(page.url());
+    // A dbId is not stable across releases, so the reader must not be left on one.
+    expect(landed.pathname, 'it should have opened a pathway').toMatch(/R-[A-Z]{3}-\d+/);
+    expect(landed.pathname, 'and not left the reader on a dbId').not.toMatch(/\/9006934/);
+  });
+});
