@@ -3,9 +3,15 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * A link out of the news archive takes you somewhere, and lets you come back.
  *
- * The news carries 278 pathway links written the way the old browser addressed
- * one: a bare dbId in the fragment, `/PathwayBrowser/#1280218`, plus 86 more as
- * `#R-HSA-…`. Both are rewritten into proper routes now (#172, #182).
+ * The news used to carry 278 pathway links written the way the old browser
+ * addressed one -- a bare dbId in the fragment, `/PathwayBrowser/#1280218` --
+ * plus 86 more as `#R-HSA-…`. Both are rewritten into proper routes now (#172,
+ * #182), and the content's own links have since been rewritten to stable ids.
+ *
+ * The dbId case stays tested anyway. Those links are a decade of citations,
+ * bookmarks and other people's pages, and none of that can be edited; a dbId is
+ * also not stable across releases, which is why our own content no longer uses
+ * one.
  *
  * Rewriting a URL under the reader is easy to get wrong in a way nothing else
  * catches. Twice it left a history entry that still carried the fragment, and
@@ -47,11 +53,11 @@ async function backOutOf(page: Page, limit = 6) {
 test.describe('Legacy pathway links', () => {
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
-  // Both spellings that appear in the content, and a direct load to compare
+  // Both spellings that reach us from outside, and a direct load to compare
   // against -- if the direct load needs as many Backs, the entries are the
   // browser's own doing rather than the rewrite's.
   for (const [target, label] of [
-    ['#1280218', 'a dbId fragment, as the release announcements write it'],
+    ['#1280218', 'a dbId fragment, as links in the wild still write it'],
     ['#R-HSA-202733', 'a stable id fragment'],
     ['R-HSA-1280218', 'a direct stable id, for comparison'],
   ]) {
