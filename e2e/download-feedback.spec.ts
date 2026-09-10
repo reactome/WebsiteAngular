@@ -213,33 +213,44 @@ test.describe('Download feedback on the detail bar', () => {
     // Gated on the content service, not on the exporter path: the exporters are
     // blocked for non-browser agents on beta, so probing one from the API
     // request context answers 403 and this test would skip for ever while the
-    // browser it actually runs in gets a 200.
+    // browser it actually runs in gets a 200. The detail page below still needs
+    // the content service even though the export no longer does.
     const reachable = await serves(request, `/ContentService/data/query/${DIAGRAM}`);
     test.skip(!reachable, 'the content service is not reachable from here');
 
+    // The export is served here, and held, so that "working" is a state the test
+    // cannot miss. It used to poll the DOM every 150ms against the real service
+    // and assert it had caught a transient label -- which it does not when the
+    // export comes back between two samples. That is how it failed on main on
+    // 2026-09-09: `states seen:` with nothing after it, three attempts running.
+    await page.route('**/ContentService/exporter/**', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/xml',
+        headers: { 'Content-Disposition': `attachment; filename="${DIAGRAM}.sbml"` },
+        body: '<?xml version="1.0" encoding="UTF-8"?>\n<sbml level="3" version="1"></sbml>',
+      });
+    });
+
     await openDetail(page);
 
-    const seen: string[] = [];
-    const watch = setInterval(() => {
-      void page
-        .locator('.dl--busy')
-        .first()
-        .getAttribute('data-download-state', { timeout: 150 })
-        .then((state) => {
-          if (state && !seen.includes(state)) seen.push(state);
-        })
-        .catch(() => undefined);
-    }, 150);
+    const link = sbml(page);
+    const download = page.waitForEvent('download', { timeout: 60_000 });
+    await link.click();
 
-    const [download] = await Promise.all([
-      page.waitForEvent('download', { timeout: 240_000 }),
-      sbml(page).click(),
-    ]);
-    clearInterval(watch);
+    // Asserted while the export is still being held, and on the label the reader
+    // actually sees rather than on a class that merely implies it.
+    await expect(link).toHaveAttribute('data-download-state', 'Preparing…', {
+      timeout: 20_000,
+    });
 
-    expect(download.suggestedFilename()).toBe(`${DIAGRAM}.sbml`);
-    const bytes = readFileSync(await download.path());
+    const saved = await download;
+    expect(saved.suggestedFilename()).toBe(`${DIAGRAM}.sbml`);
+    const bytes = readFileSync(await saved.path());
     expect(bytes.subarray(0, 400).toString('utf8')).toContain('<sbml');
-    expect(seen.join(' '), `states seen: ${seen.join(', ')}`).toMatch(/Preparing|KB|MB|%/);
+
+    // And it stops saying it is working once the file has arrived.
+    await expect(page.locator('.dl--busy')).toHaveCount(0, { timeout: 20_000 });
   });
 });
