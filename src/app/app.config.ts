@@ -8,8 +8,30 @@ import { provideRouter } from '@angular/router';
 import { StoreModule } from '@ngrx/store';
 import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
 import { EffectsModule } from '@ngrx/effects';
+import {
+  provideGoogleAnalytics,
+  provideGoogleAnalyticsRouter,
+} from '@hakimio/ngx-google-analytics';
+import { environment } from '../../projects/pathway-browser/src/environments/environment';
 
 import { routes } from './app.routes';
+
+/**
+ * Analytics, when the deployment has a property to report to.
+ *
+ * The pathway browser has provided these since it was standalone; the site
+ * around it never did, so nothing on reactome.org outside the browser was
+ * counted. Wired here so the whole site reports.
+ *
+ * Conditional on purpose. A profile without a gtagId means "this deployment does
+ * not report" -- the curator site, and any local run -- and the alternative,
+ * passing an empty measurement id, loads gtag and sends to nowhere. Which
+ * property each deployment uses is a profile field, so beta's traffic files
+ * under beta's property rather than the public one.
+ */
+const analytics = environment.gtagId
+  ? [provideGoogleAnalytics(environment.gtagId), provideGoogleAnalyticsRouter()]
+  : [];
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -27,5 +49,6 @@ export const appConfig: ApplicationConfig = {
       StoreRouterConnectingModule.forRoot(),
       EffectsModule.forRoot([])
     ),
+    ...analytics,
   ],
 };

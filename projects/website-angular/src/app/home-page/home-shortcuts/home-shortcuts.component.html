@@ -9,7 +9,7 @@
       ><mat-icon class="large-button-icon">analytics</mat-icon>Analysis Tools
     </app-button></a
   >
-  <a class="shortcut-link" routerLink="/chat"
+  <a class="shortcut-link" href="/chat/"
     ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
       ><mat-icon class="large-button-icon">auto_awesome</mat-icon>AI Chatbot
     </app-button></a
@@ -22,6 +22,11 @@
     "
     ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
       ><mat-icon class="large-button-icon">hub</mat-icon>ReactomeFIViz
+    </app-button></a
+  >
+  <a class="shortcut-link" routerLink="/idg"
+    ><app-button [variant]="dark ? 'dark' : 'light'" size="large"
+      ><mat-icon class="large-button-icon">medication</mat-icon>IDG
     </app-button></a
   >
   <a class="shortcut-link" [routerLink]="navOptions()['documentation']?.link || '/documentation'"

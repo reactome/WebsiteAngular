@@ -363,7 +363,26 @@ export class EhldService {
     ) as SVGGElement;
 
     if (analysisInfoElement) {
-      // Make it visible
+      // The label is the whole point of this box, so find it before revealing
+      // anything.
+      //
+      // Illustrations ship the box as artwork with an "xxx/yyy" placeholder
+      // baked in as vector outlines, and the label this writes into has to be a
+      // <text> element. None of them carry one -- checked across
+      // R-HSA-162582, -1640170, -109581 and -8953897: 28 ANALINFO groups, zero
+      // with a <text>. So this used to make the box visible and then return at
+      // the guard below, putting the placeholder on screen. On Signal
+      // Transduction that was 14 boxes reading "xxx/yyy", which is what curators
+      // reported as "odd shadow boxes on pathway labels in EHLDs".
+      //
+      // Production draws nothing here at all: the same analysis on
+      // reactome.org leaves the illustration undecorated and reports the counts
+      // in the event hierarchy, which this site does too. So a box we cannot
+      // label is a box that should stay hidden -- and if an illustration ever
+      // ships with a label, this fills it as it always meant to.
+      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
+      if (!textInfoElement) return;
+
       analysisInfoElement.classList.add(`${this.analysisInfoContainer}`);
 
       const entities = analysisPathway.entities;
@@ -389,7 +408,6 @@ export class EhldService {
       container.style.fill = `url(#${this.pattern}${analysisPathway.stId}-fdr)`;
       container.style.opacity = entities.fdr <= this.state.significance() ? '1' : '0.5';
 
-      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
       textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
       if (this.analysis.hasPValues())
@@ -446,45 +464,85 @@ export class EhldService {
     });
   }
 
-  downloadImage(format: DownloadFormat) {
-    const container = document.getElementById('ehld');
-    if (!container) return;
-    const svg = container.querySelector('svg') as SVGSVGElement;
+  async downloadImage(format: DownloadFormat) {
+    const svg = document.getElementById('ehld')?.querySelector('svg');
+    if (!svg) return;
+
+    const canvas = await this.rasterise(
+      svg as SVGSVGElement,
+      3,
+      // JPEG has no alpha channel, so a transparent background composites to
+      // black rather than to nothing.
+      format === DownloadFormat.JPEG ? '#ffffff' : undefined
+    );
+    const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
+    this.download.export(
+      canvas.toDataURL(mimeType, 1.0),
+      format,
+      `${this.data.currentPathway()?.stId}`
+    );
+  }
+
+  /**
+   * An illustration drawn onto a canvas at a multiple of its displayed size.
+   *
+   * An EHLD is inline SVG, so anything that wants pixels has to serialise it and
+   * decode it as an image. Two things about that are easy to get wrong and both
+   * were: its styling comes from the page's stylesheets, which do not travel
+   * with the markup, so the styles have to be inlined first; and the drawing has
+   * to be scaled exactly once. Scaling the context and passing scaled
+   * destination dimensions scales it twice, which showed the top-left ninth of
+   * the illustration filling the whole file.
+   *
+   * Shared with the headless render page, which builds animation frames from it.
+   */
+  /**
+   * The illustration as standalone SVG: styles inlined, size made explicit.
+   *
+   * Two things stop a serialised EHLD meaning anything on its own. Its styling
+   * comes from the page's stylesheets, which do not travel with the markup. And
+   * it declares width and height of 100% with no viewBox, so outside the page it
+   * has no intrinsic size at all -- a PDF of one came out as a blank 674 bytes.
+   * Its size is whatever the page gave it, so that is what gets written down.
+   */
+  svgMarkup(svg: SVGSVGElement) {
     this.getInlineStyles(svg, this.select());
-    // serialize the SVG
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
 
-    const viewBoxWidth = svg.getBoundingClientRect().width;
-    const viewBoxHeight = svg.getBoundingClientRect().height;
-    // change to desired output size
-    const scale = 3;
-    const width = viewBoxWidth * scale;
-    const height = viewBoxHeight * scale;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    const { width, height } = svg.getBoundingClientRect();
+    const box = { width: Math.round(width), height: Math.round(height) };
 
-    const ctx = canvas.getContext('2d')!;
-    ctx.scale(scale, scale);
+    // A copy, so the page keeps its own responsive sizing.
+    const copy = svg.cloneNode(true) as SVGSVGElement;
+    copy.setAttribute('width', String(box.width));
+    copy.setAttribute('height', String(box.height));
+    copy.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
 
-    if (format === DownloadFormat.JPEG) {
-      ctx.fillStyle = '#ffffff'; // white background
-      ctx.fillRect(0, 0, width, height);
-    }
+    return { markup: new XMLSerializer().serializeToString(copy), ...box };
+  }
 
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, width, height);
+  async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
+    const { markup, width, height } = this.svgMarkup(svg);
+    const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
+
+    try {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+
+      const context = canvas.getContext('2d')!;
+      if (background) {
+        context.fillStyle = background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    } finally {
       URL.revokeObjectURL(url);
-      const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
-      const dataURL = canvas.toDataURL(mimeType, 1.0);
-      const currentEHLD = this.data.currentPathway()?.stId;
-      this.download.export(dataURL, format, `${currentEHLD}`);
-    };
-
-    img.src = url;
+    }
   }
 
   // Collect computed style for analysis info

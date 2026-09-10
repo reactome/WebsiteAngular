@@ -39,6 +39,55 @@ export type PaletteName = CustomPalette | StandardPalette;
 
 export type PaletteGroup = 'sequential' | 'diverging' | 'continuous';
 
+/**
+ * The palette an analysis type gets when the user has not chosen one.
+ *
+ * Every type in Analysis.TYPES needs an entry. GSA_STATISTICS had none, and
+ * because both lookups in `palette` below carried a `!`, the miss produced an
+ * undefined palette instead of an error. Every consumer calls .scale() on it,
+ * so one missing entry blanked the diagram, the event hierarchy, the Voronoi
+ * view and the results table together -- which is what a PADOG run did.
+ * analysis-palette.spec.ts walks Analysis.TYPES so the next added type fails a
+ * test rather than a render.
+ */
+export const TYPE_DEFAULT_PALETTE = new Map<Analysis.Type, PaletteName>([
+  ['GSA_REGULATION', 'ancient'],
+  // Statistics carry a magnitude with no direction, so a sequential scale, the
+  // same as over-representation. Regulation is the signed one and keeps
+  // 'ancient'.
+  ['GSA_STATISTICS', 'primary'],
+  ['GSVA', 'Viridis'],
+  ['EXPRESSION', 'Viridis'],
+  ['OVERREPRESENTATION', 'primary'],
+  ['SPECIES_COMPARISON', 'primary'],
+]);
+
+/** Used when a type is not in the map at all -- see `palette` below. */
+const FALLBACK_PALETTE: PaletteName = 'primary';
+
+/**
+ * Which resource to show when the user has not picked one.
+ *
+ * Production shows the specific resource, not the pooled TOTAL, and the two do
+ * not merely count differently -- they carry different statistics. For the
+ * human/mouse species comparison, Macroautophagy is 158 entities at FDR 0.109
+ * under TOTAL and 145 at FDR 0.536 under UNIPROT, because TOTAL pools proteins
+ * and chemicals and so compares against a different background. Curators read
+ * the two sites side by side and reported the difference as a defect.
+ *
+ * Only when there is exactly one specific resource: with several, which one
+ * production favours is not established, and picking arbitrarily would trade a
+ * known difference for an unknown one. TOTAL stays the default there.
+ */
+export function defaultResource(
+  summary: readonly { resource: Analysis.Resource }[]
+): Analysis.Resource | null {
+  const specific = summary
+    .map((entry) => entry.resource)
+    .filter((resource) => resource !== 'TOTAL');
+  return specific.length === 1 ? specific[0] : null;
+}
+
 export class PaletteSummary {
   lightColors: Color[];
   darkColors: Color[];
@@ -218,20 +267,21 @@ export class AnalysisService {
       : this.palette()
   );
 
-  typeToDefaultPalette = new Map<Analysis.Type, PaletteName>([
-    ['GSA_REGULATION', 'ancient'],
-    ['GSVA', 'Viridis'],
-    ['EXPRESSION', 'Viridis'],
-    ['OVERREPRESENTATION', 'primary'],
-    ['SPECIES_COMPARISON', 'primary'],
-  ]);
-
   palette: WritableSignal<PaletteSummary> = linkedSignal({
     source: () => ({ palette: this.state.palette(), type: this.type() }),
-    computation: ({ palette, type }) =>
-      this.paletteOptions.get(
-        palette || this.typeToDefaultPalette.get(type || 'OVERREPRESENTATION')!
-      )!,
+    computation: ({ palette, type }) => {
+      // Fall back rather than assert. Callers do `palette().scale(...)`, so an
+      // undefined palette is not a missing colour scheme -- it throws and takes
+      // the whole render with it. A type the backend adds before we know about
+      // it should draw in the default colours instead.
+      const chosen = palette ?? TYPE_DEFAULT_PALETTE.get(type ?? 'OVERREPRESENTATION');
+      // 'primary' is built unconditionally in paletteOptions above, so this last
+      // lookup is the one that genuinely cannot miss.
+      return (
+        this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ??
+        this.paletteOptions.get(FALLBACK_PALETTE)!
+      );
+    },
   });
 
   paletteGroups: { name: PaletteGroup; palettes: PaletteName[]; valid: boolean }[] = [
@@ -338,9 +388,11 @@ export class AnalysisService {
     params: () => {
       const token = this.state.analysis();
       const pathway = this.state.pathwayId();
-      return token && pathway ? { token, pathway } : undefined;
+      const resource = this.state.resourceFilter();
+      return token && pathway ? { token, pathway, resource } : undefined;
     },
-    stream: ({ params }) => this.foundEntities(params.pathway, params.token),
+    stream: ({ params }) =>
+      this.foundEntities(params.pathway, params.token, params.resource ?? undefined),
   });
 
   readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
@@ -407,6 +459,16 @@ export class AnalysisService {
     });
     effect(() => this.resultResource.error() && this.state.analysis.set(null)); // remove token if it is wrong
 
+    // Match what production shows. Setting the filter refetches against that
+    // resource, and the guard makes this run once: on the second pass the
+    // filter is no longer null. A resource the user picks by hand is never
+    // overridden.
+    effect(() => {
+      if (this.state.resourceFilter() !== null) return;
+      const resource = defaultResource(this.resourceOptions());
+      if (resource) this.state.resourceFilter.set(resource);
+    });
+
     effect(() => {
       const result = this.result();
       //console.log('Result updated', result)
@@ -421,7 +483,10 @@ export class AnalysisService {
         // validGroups.add('diverging')
         validGroups.add('sequential');
         validGroups.add('continuous');
-      } else if (result.summary.type === 'OVERREPRESENTATION') {
+      } else if (
+        result.summary.type === 'OVERREPRESENTATION' ||
+        result.summary.type === 'GSA_STATISTICS'
+      ) {
         validGroups.add('sequential');
       } else if (result.summary.type === 'SPECIES_COMPARISON') {
         validGroups.add('sequential');
@@ -553,7 +618,10 @@ export class AnalysisService {
   foundEntities(
     pathway: string,
     token?: string,
-    resource: Analysis.Resource = 'TOTAL'
+    // Follow whatever resource is being displayed. Pinned to TOTAL, this marked
+    // TOTAL entities on the diagram while the results table listed UNIPROT ones,
+    // so the highlighting and the numbers described different sets.
+    resource: Analysis.Resource = this.state.resourceFilter() ?? 'TOTAL'
   ): Observable<Analysis.FoundEntities> {
     return this.http
       .get<Analysis.FoundEntities>(
@@ -580,7 +648,10 @@ export class AnalysisService {
   pathwaysResults(
     pathwayIds: number[] | string[],
     token?: string,
-    resource: Analysis.Resource = 'TOTAL'
+    // Follow whatever resource is being displayed. Pinned to TOTAL, this marked
+    // TOTAL entities on the diagram while the results table listed UNIPROT ones,
+    // so the highlighting and the numbers described different sets.
+    resource: Analysis.Resource = this.state.resourceFilter() ?? 'TOTAL'
   ): Observable<Analysis.Pathway[]> {
     if (pathwayIds.length === 0) return of([]);
     return this.http

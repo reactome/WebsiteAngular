@@ -1,21 +1,30 @@
 #!/usr/bin/env node
 /**
- * Render one pathway to SVG, PNG or PDF from the command line.
+ * Render one pathway from the command line.
  *
  * A thin wrapper over render-core.mjs, which is shared with the service so
  * there is one implementation of the render itself.
  *
  *   node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
- *   node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token <analysis-token>
+ *   node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
  *   node tools/render/render.mjs --format svg --out genome-wide.svg
  *
  *   --pathway   stable id; omit for the genome-wide view
- *   --format    svg | png | pdf        (default svg)
+ *   --format    svg | png | pdf | gif | pptx   (default svg)
  *   --out       output path            (default <pathway>.<format>)
  *   --token     analysis token, to render with the analysis overlay
  *   --base      site to render against (default http://localhost:4200)
- *   --scale     PNG scale factor       (default 2)
+ *   --scale     raster scale factor    (default 2; GIF never exceeds 1)
+ *   --delay     GIF milliseconds per frame (default 1000)
+ *   --max-size  GIF longest side in pixels  (default 0: the diagram's own size)
  *   --no-subpathways  leave out sub-pathway tints and labels
+ *   --dark      render the dark theme (light by default, whatever the host prefers)
+ *   --select    frame the figure on one event, e.g. a reaction's stable id
+ *   --view      reaction, to draw a reaction's own layout rather than a diagram
+ *
+ * GIF animates one frame per sample of an expression analysis, so it wants a
+ * --token; without one it is a single frame. PPTX is drawn as shapes, one per
+ * glyph, and says how many it drew.
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
@@ -26,6 +35,35 @@ const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? fallback : args[i + 1];
 };
+
+/**
+ * Every flag this understands, checked before anything renders.
+ *
+ * Without this a misspelled `--pathway` was simply not there: the run went off
+ * and rendered the genome-wide view instead, and reported a genome-wide
+ * failure. A tool that quietly does something else when asked something it does
+ * not understand costs more than the check.
+ */
+const KNOWN = [
+  'pathway',
+  'format',
+  'out',
+  'base',
+  'token',
+  'scale',
+  'delay',
+  'max-size',
+  'no-subpathways',
+  'dark',
+  'select',
+  'view',
+];
+const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
+if (unknown.length) {
+  console.error(`unknown flag${unknown.length > 1 ? 's' : ''} ${unknown.join(', ')}`);
+  console.error(`known flags: ${KNOWN.map((name) => '--' + name).join(', ')}`);
+  process.exit(2);
+}
 
 const pathway = flag('pathway', '');
 const format = (flag('format', 'svg') || '').toLowerCase();
@@ -50,7 +88,12 @@ try {
     format,
     token: flag('token', ''),
     scale: Number(flag('scale', '2')),
+    delay: Number(flag('delay', '1000')),
+    maxSize: Number(flag('max-size', '0')),
     subpathways: !args.includes('--no-subpathways'),
+    dark: args.includes('--dark'),
+    select: flag('select', ''),
+    view: flag('view', ''),
   });
 
   await writeFile(out, bytes);
@@ -59,6 +102,11 @@ try {
     state.view,
     state.elements && `${state.elements} elements`,
     state.groups && `${state.groups} groups`,
+    state.shapes && `${state.shapes} shapes`,
+    state.picture && `picture: ${state.picture}`,
+    state.frames && `${state.frames} frames`,
+    state.size,
+    state.truncated ? `${state.truncated} samples dropped past the frame limit` : null,
   ]
     .filter(Boolean)
     .join(', ');

@@ -2,14 +2,59 @@
 
 REACTOME is an open-source, open access, manually curated and peer-reviewed pathway database.
 
-## Local Development Server
-
-To setup a local environment
+## Running it from a fresh clone
 
 ```bash
-npm install --legacy-peer-deps
+npm ci
 npm start
 ```
+
+`npm start` builds the workspace libraries and stages content first, so there are
+no manual steps before it. It serves the **development** deployment, which
+resolves its own origin and reaches the backend through the dev-server proxy.
+
+That proxy points at `http://localhost:8080` by default, because on the Reactome
+dev host the whole stack runs there and answering locally is ~2ms against ~17s
+out through Cloudflare and back. **On a machine without that stack — any laptop —
+point it somewhere real instead**, or every API call is refused and you get a
+shell with no data:
+
+```bash
+REACTOME_BACKEND=https://dev.reactome.org npm start
+```
+
+What each deployment needs locally:
+
+| command                       | backend it uses                       | needs anything running?                   |
+| ----------------------------- | ------------------------------------- | ----------------------------------------- |
+| `npm start`                   | the proxy, i.e. `REACTOME_BACKEND`    | a backend at `:8080`, or the variable set |
+| `npm run start:curator`       | newcurator.reactome.org               | no                                        |
+| `npm run start:curator-local` | `localhost:8686` for the graph API    | a local curator-service                   |
+| `npm run start:simple`        | same as `npm start`, skipping TinaCMS | as above                                  |
+
+The curator deployment is the one that needs nothing running locally, so it is
+the quickest way to check a clone works at all.
+
+Use the npm scripts rather than `ng serve` or `ng build` directly. The browser
+reads the CMS content from `projects/website-angular/content-dist`, which is
+**generated**: `npm run stage:content` compiles the authored `.mdx` into it, and
+every `start:*` script above runs that first, as does `npm run build`.
+
+`ng build` on its own does **not**, and it does not complain either -- the asset
+entry is a glob over that directory, so a missing directory copies nothing and
+the build succeeds. What you get is a site whose every content page is empty,
+with nothing in the log to say why. Verified, not guessed: a production build
+with the directory moved aside finished normally.
+
+The same applies the first time you check out a branch where these files are no
+longer tracked -- git deletes them, because they were tracked in the branch you
+came from. Any `npm run start:*` or `npm run build` puts them back.
+
+### Editing content
+
+Content editors want `npm start`, which runs TinaCMS alongside the app. No
+credentials are needed for local editing — the `.env` file is only a UID mapping
+for the Docker workflow below.
 
 ### Running it in Docker
 
@@ -65,7 +110,7 @@ The last three were previously separate npm packages (`reactome-gsa-form`, `reac
 The application configuration is centralized in TypeScript files under `projects/website-angular/src/config/`. Key configurations include:
 
 - `config.ts`: App-level settings like version, base URLs, and feature flags.
-- `environments.ts`: Per-deploy-environment settings (development, production, local, github, remote) — currently only consumed by `projects/pathway-browser/src/environments/environment.*.ts`, since the deployed `reactome` build resolves its host dynamically from `window.location.origin` instead (see below).
+- `environments.ts`: `SITE_PROFILES` — one row per deployment, naming both the backend it talks to and the UI variant it presents. See "Deployments" below.
 - `features.ts`: Feature flags for toggling functionality.
 - `external-links.ts`: External links, including dynamically constructed release notes.
 
@@ -75,28 +120,112 @@ To update configuration values, edit the respective TS files.
 
 The single source of truth for backend URLs (`CONTENT_SERVICE`, `ANALYSIS_SERVICE`, `DOWNLOAD`, etc.) is `projects/pathway-browser/src/environments/environment.ts` — imported by both `pathway-browser` and `website-angular` code. Don't duplicate these constants elsewhere; if a page needs a backend URL, import it from here.
 
-### Site variant: main vs. curator
+### Deployments
 
-This app builds as one of two variants, controlled by `projects/pathway-browser/src/environments/variant.ts` (`variant.curator.ts` is swapped in via the `curator` Angular build configuration's `fileReplacements`):
+One name chooses everything about a deployment: which backend it talks to and
+which UI it presents. The list lives in `projects/website-angular/src/config/environments.ts`
+as `SITE_PROFILES`, one row per deployment, and the `APP_ENV` define in
+`angular.json` picks the row.
 
-- **main** (default) — the public reactome.org/beta.reactome.org site. Host resolves dynamically from `window.location.origin`.
-- **curator** — a scaled-down build for `newcurator.reactome.org`, pointing at the curation graph database (`GraphContentService` instead of `ContentService`) rather than the released production graph. Host is fixed to `https://newcurator.reactome.org` regardless of what domain the frontend bundle is served from, since it's always the same backend. Several UI elements (Analyze/Compare/Overlay/Feedback/the old-browser link) are hidden for this variant, and the homepage renders a different, curator-specific layout (`curator-home-shortcuts` instead of `home-shortcuts`).
+| deployment      | backend                                                 | UI      | analytics |
+| --------------- | ------------------------------------------------------- | ------- | --------- |
+| `production`    | its own origin (falls back to reactome.org off-browser) | main    | reports   |
+| `beta`          | its own origin (falls back to beta.reactome.org)        | main    | none      |
+| `development`   | its own origin (falls back to dev.reactome.org)         | main    | none      |
+| `curator`       | newcurator.reactome.org, `/GraphContentService`         | curator | none      |
+| `curator-local` | graph API on `localhost:8686`, rest from newcurator     | curator | none      |
 
-`environment.ts` exports `IS_CURATOR` (derived from `variant.ts`) for any code that needs to branch on the variant — gate curator-only UI with `@if (!isCurator)` / `@if (isCurator)` (see `viewport.component.ts`/`.html` for the pattern), don't check `SITE_VARIANT` directly outside `environment.ts`.
+Analytics is a profile field, and **only `production` names a property**. Every
+other deployment leaves it unset, which means gtag is never loaded and nothing is
+sent — beta, dev and the curator site report nothing at all. Sending their hits
+to the public property would inflate reactome.org's numbers with traffic it never
+received, and no one reading those numbers later could separate the two.
 
-To build/serve the curator variant locally: `ng build reactome --configuration development,curator` or `ng serve --configuration development,curator`.
+The trade-off worth knowing: nothing outside production exercises the analytics
+path, so the first real run is on reactome.org. To check the wiring before then,
+give a non-production profile a property temporarily, or use GA4's DebugView —
+don't leave one set.
 
-#### Curator variant against a local content service
+The public deployments resolve `window.location.origin` rather than naming a
+host, and that matters: beta.reactome.org reverse-proxies its own
+`/ContentService` to the Tomcat on its box, and that Tomcat serves endpoints the
+public one does not -- the reaction-diagram exporter among them. A build that
+names `reactome.org` instead loads fine and then fails to draw its reaction
+diagrams. A site talks to itself; the fallback applies only where there is no
+window (SSR, unit tests).
 
-`npm run start:curator-local` serves the curator variant with the graph content API pointed at a content service running on your own machine at `http://localhost:8686` (the `curator-local` build configuration in `angular.json`, which pairs `variant.curator.ts` with `environment.curator-local.ts`). Add `-- --port 4300` if 4200 is taken.
+```sh
+npm start                                  # public site, dev backend
+npm run start:curator                      # curator site
+npm run start:curator-local                # curator site, local graph service
+npm run build                              # bundle for beta/reactome.org
+npm run build:curator                      # bundle for the curator host
+```
 
-A locally-run content service is a bare Spring Boot app, so its endpoints sit at the root (`/data/query/...`), not under the `/ContentService` or `/GraphContentService` context path the deployed instances are proxied onto — hence the separate `CONTENT_SERVICE` value rather than a different `host`. Everything a local instance can't serve still comes from newcurator, routed through `proxy.curator-local.conf.json` because `newcurator.reactome.org/download` sends no `Access-Control-Allow-Origin`:
+Adding a deployment -- Plant Reactome, say -- is a row in `SITE_PROFILES` plus
+whatever UI genuinely differs. It is not a new environment file, and it should
+not be a new boolean.
 
-- `/download/current/**` (EHLDs, pre-generated diagram JSON) and `/figures/**` → `newcurator.reactome.org`
-- `/ContentService/**` → the local service on `:8686`, with the context path stripped, so the ContentService Swagger page documents your local API
-- the database-version fallback → `https://reactome.org/ContentService/data/database/version`, since a curation graph has no released version and newcurator serves no `/ContentService`
+Two rules the design exists to enforce:
 
-Expect one console error on startup: `data/database/version` 500s on a curation graph. That's the fallback above kicking in, not a misconfiguration.
+- **No profile may name another deployment's services**, fallbacks included. A
+  fallback that reaches a different deployment renders someone else's data
+  without saying so. `getProfile()` also throws on a name it does not recognise
+  rather than guessing, because guessing is how the curation database came to be
+  served from beta.reactome.org.
+- **`environment.ts` is the single source of backend URLs** (`CONTENT_SERVICE`,
+  `ANALYSIS_SERVICE`, `RENDER_SERVICE`, `DOWNLOAD`, ...). Import them; do not
+  rebuild one from `host` at a call site.
+
+`IS_CURATOR` (from `environment.ts`) is how UI branches on the variant today --
+`@if (!isCurator)` / `@if (isCurator)`, see `viewport.component.ts`. When a third
+variant arrives, switch on the variant itself rather than adding a second
+boolean.
+
+#### The curator variant against a local content service
+
+`npm run start:curator-local` serves the curator UI with the graph content API on
+`http://localhost:8686`. A locally run content service is a bare Spring Boot app,
+so its routes sit at the root (`/data/query/...`) rather than under a
+`/GraphContentService` context path -- which is why `contentService` is a
+separate field from `host`. Everything it cannot serve is proxied through
+`proxy.curator-local.conf.json`, because `newcurator.reactome.org/download` sends
+no `Access-Control-Allow-Origin`.
+
+Expect one console error on startup: `data/database/version` 500s on a curation
+graph, which has no released version. That is the `versionFallback` in the
+profile doing its job, not a misconfiguration.
+
+#### Where each build is published
+
+`deploy.yml` runs after a green Tests run and publishes to S3 under a release
+number it computes at build time — not under a fixed path:
+
+| branch | published to                     | what it is                     |
+| ------ | -------------------------------- | ------------------------------ |
+| `main` | `<current release + 1>/website/` | the next release's artifact    |
+| `prod` | `<current release>/website/`     | the current release's artifact |
+
+The current release comes from `reactome.org/ContentService/data/database/version`
+at build time. So a push to `main` today lands in `/98/website/` while `/97/website/`
+holds whatever `prod` last published — which may be months old, and correctly so.
+
+`npm run deployed` prints both URLs with their timestamps. Use it before checking
+a published artifact: reading the `aws s3 sync` line in the workflow suggests one
+path and the version step above it decides another, and a day of verification was
+once aimed at the stale one as a result.
+
+A published artifact is served from the bucket, which has no backend of its own,
+so it reaches the host named in `SITE_PROFILES.production` rather than its own
+origin. That is why `production` is the one deployment that names a host instead
+of resolving `'origin'`.
+
+#### Deploying
+
+beta serves `dist/reactome/browser` straight from this checkout, so **building is
+deploying**. `~/rebuild-beta.sh` does it with a dirty-tree guard and a smoke
+test; `~/rebuild-beta.sh --check` reports whether what beta serves matches what
+is on disk.
 
 ## Additional Resources
 

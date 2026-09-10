@@ -588,3 +588,25 @@
     text-overflow: ellipsis;
   }
 }
+
+// The container packs its children to content width; the figure's toolbar and
+// caption want the full width so the download links can sit out at the right
+// edge, the way the current site lists them.
+.element-container.reaction-figure {
+  align-items: stretch;
+}
+
+.reaction-figure-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 0.8125rem;
+
+  .note-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}

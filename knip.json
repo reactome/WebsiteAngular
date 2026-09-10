@@ -20,9 +20,11 @@
     "projects/website-angular/src/app/app.config.server.ts",
     "projects/website-angular/tina/config.ts",
     "src/app/app.elements.ts",
-    "projects/*/src/elements.ts"
+    "projects/*/src/elements.ts",
+    "tools/render/{render,service}.mjs",
+    "tools/svg-export-harness/*.mjs"
   ],
-  "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs"],
+  "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs", "tools/**/*.mjs"],
   "ignore": [
     "**/*.d.ts",
     "**/__generated__/**",

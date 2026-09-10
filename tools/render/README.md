@@ -1,22 +1,128 @@
 # Headless render
 
-Renders a pathway to SVG, PNG or PDF from outside the browser, by driving the
-site's own render page.
+Renders a pathway to SVG, PNG, PDF, animated GIF or PowerPoint from outside the
+browser, by driving the site's own render page.
 
 ```bash
 node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
-node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token <analysis-token>
+node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
+node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
 node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 ```
 
-| flag        | meaning                                                  |
-| ----------- | -------------------------------------------------------- |
-| `--pathway` | stable id; omit for the genome-wide view                 |
-| `--format`  | `svg`, `png` or `pdf` (default `svg`)                    |
-| `--token`   | analysis token, to render with the analysis overlay      |
-| `--base`    | site to render against (default `http://localhost:4200`) |
-| `--scale`   | PNG scale factor (default 2)                             |
-| `--out`     | output path                                              |
+| flag               | meaning                                                  |
+| ------------------ | -------------------------------------------------------- |
+| `--pathway`        | stable id; omit for the genome-wide view                 |
+| `--format`         | `svg`, `png`, `pdf`, `gif` or `pptx` (default `svg`)     |
+| `--token`          | analysis token, to render with the analysis overlay      |
+| `--base`           | site to render against (default `http://localhost:4200`) |
+| `--scale`          | raster scale factor (default 2; GIF never exceeds 1)     |
+| `--delay`          | GIF milliseconds per frame (default 1000)                |
+| `--max-size`       | GIF longest side in pixels (default 2000)                |
+| `--no-subpathways` | leave out sub-pathway tints and labels                   |
+| `--out`            | output path                                              |
+
+## The theme is an explicit choice
+
+Light unless `?dark=true`. Not a preference to inherit: `DarkService` defaults
+from `localStorage`, and failing that from the browser's `prefers-color-scheme`,
+so a renderer that took either would produce different figures on different
+machines — and a cache keyed on the request would happily serve one for the
+other.
+
+Dark is plumbed through and cached separately, but it is worth knowing what it
+gives you: the dark palette is designed for the screen, with the app's own dark
+chrome around it. As a standalone figure it reads as muddy — pale mauve
+compartments, and sub-pathway labels whose dark halos exist to sit on a dark
+canvas. Nothing in the download panel offers it, deliberately.
+
+## GIF and PowerPoint
+
+These are the two formats the Java exporter still owned, and they are the two
+that most obviously looked like the old site.
+
+**GIF is the expression animation.** One frame per sample of an expression
+analysis, 1s each, looping; with no token it is a single frame, which is what a
+`.gif` of a plain diagram means. Encoding happens inside the browser: a frame of
+a diagram is tens of megabytes of pixel data and there is one per sample, so
+shipping them out to be assembled costs far more than the finished file. The
+palette is built from every frame, not the first — one frame's palette shifts
+colours on samples whose values land elsewhere on the scale — which is why the
+frames are drawn twice and never accumulated.
+
+It renders at the diagram's own size, because that is where its labels are
+legible: a pathway's coordinate space is around 6000px wide and its font sizes
+are chosen for 1:1, so fitting it into 2000px scaled 8pt type to under 3pt. The
+words were unreadable and the arrows were soft.
+
+That is affordable because **frames are differenced**. 255 palette colours are
+used for the picture and one index is kept back to mean "unchanged"; every pixel
+equal to the previous frame becomes that index, written with disposal 1 so the
+previous frame shows through. Between two samples only the node fills differ —
+compartments, edges and every label are identical — and a long run of one
+repeated index is what LZW compresses best. R-HSA-109606 over four samples:
+**3.1 MB undifferenced at full size, 966 KB differenced**, against 735 KB for the
+unreadable 2000px version. Three times the resolution for 30% more bytes.
+
+Illustrated pathways animate too, through `EhldService.rasterise`. An EHLD is
+inline SVG, and its styling comes from the page's stylesheets rather than the
+markup, so it has to be inlined before a serialised copy means anything.
+
+**PPTX is built out of shapes** — one per compartment, connector, entity and
+sub-pathway tint, editable the moment the file opens. Curators reported that
+"the whole pathway diagram is treated as a single item", which is what a slide
+holding one picture is, however good the picture.
+
+The page decides every position, colour, opacity, dash and font from the live
+style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+a rectangle and nothing more, so it is not a second opinion about what the
+diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
+976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
+The slide is the size of the diagram, as production's is, so labels land at 5–53pt
+rather than the 1.65pt that fitting a 5976px diagram onto a 13.3in slide gives.
+
+Arrowheads are geometry rather than OOXML line ends. The diagram draws four and
+three of them mean something a triangle does not — catalysis is a hollow circle,
+positive regulation a hollow triangle, negative regulation a bar across the line
+— while a line end is always filled and always the line's own colour, and has no
+spelling for a bar at all. Drawn as line ends, inhibition came out as activation.
+
+Glyph bodies come from the images the style draws them with. A complex, a set
+and a gene set `background-opacity: 0` and carry their whole body in a
+`background-image`, so reading `background-color` alone exported 65 of this
+diagram's 203 nodes as empty outlined rectangles. Those images are SVG markup
+rather than rasters, so the path is flattened with the browser's own geometry
+(`getPointAtLength`, which walks arcs exactly), simplified, and handed over as a
+closed filled polygon — a shape the exporter already knew how to write. Each
+image keeps its own position and size, a masked outline is clipped to the pieces
+the mask reveals, and the contents of `defs`, `clipPath` and `mask` are
+definitions rather than content and are not drawn.
+
+One thing a slide of shapes does not carry yet:
+
+- **Rounded corners on connectors.** Edges with weights use `round-segments`;
+  the export draws the same points with square corners.
+
+Views that are not made of shapes fall back to the picture: an illustration is
+artwork, and the genome-wide view draws to a canvas. That view cannot produce a
+PNG at all, so its slide carries the SVG alone.
+
+The genome-wide view has no GIF: it draws to a canvas through FoamTree with no
+per-sample frame capture. It says so rather than producing a still.
+
+## Changing an exporter
+
+Two things are easy to miss, and both leave the site serving the old artefact
+while the code and its tests say otherwise:
+
+- **The service holds the code in memory.** It is a long-running node process,
+  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  from the site is the only check that says whether the running service has your
+  change — the CLI reads the files from disk and will happily agree with you.
+- **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
+  `service.mjs` when the output of a format changes, or every diagram rendered
+  before your change keeps its old file.
 
 ## Why this exists
 
@@ -29,9 +135,10 @@ squared off every rounded node in the SVG export for months.
 Rendering through the site's own page means there is one renderer. Whatever a
 curator sees is what the file contains.
 
-This is deliberately **not a service**: no queue, no cache, no HTTP API. Those
-are worth designing once the cost of a render and the fidelity of an analysis
-overlay are known, which is what this measures.
+The CLI came first deliberately, with no queue, cache or HTTP API, so that the
+cost of a render and the fidelity of an analysis overlay were measured before
+anything was designed around them. `service.mjs`, below, is what those numbers
+argued for.
 
 ## Measured on this host
 
@@ -42,9 +149,16 @@ overlay are known, which is what this measures.
 | R-HSA-73857 → PDF                     | 5.6s     | 344 KB               |
 | R-HSA-109606 + expression token → SVG | 6.7s     | 806 KB, 431 elements |
 | R-HSA-2219528 (illustration) → SVG    | 3.5s     | 246 KB               |
+| R-HSA-109606 + token → GIF, 4 samples | 10–12s   | 735 KB, 2000×1121    |
+| R-HSA-109581 (illustration) → GIF     | 3.1s     | 276 KB, 1600×1000    |
+| R-HSA-109606 → PPTX                   | 4.8s     | 988 KB               |
 
 The analysis overlay renders correctly: not-found nodes grey, hits carrying
-their expression bars in the palette colours.
+their expression bars in the palette colours. Checked per frame rather than by
+file size — PMAIP1 goes from dark purple at 0.2 to bright green at 5.2 across
+the four samples, matching the dataset. Uncapped, that GIF was 3.1 MB at
+5976×3350: a diagram's own coordinate space is large and a GIF pays for it once
+per frame.
 
 ## The render page
 
@@ -89,8 +203,10 @@ proxy for it.
 ```bash
 node tools/render/service.mjs
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
-curl -o out.pdf 'http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=<analysis-token>'
+curl -o out.pdf "http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=$ANALYSIS_TOKEN"
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'
+curl -o out.gif  "http://127.0.0.1:4310/render/R-HSA-109606.gif?token=$ANALYSIS_TOKEN"
+curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
@@ -104,6 +220,10 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                |
 | `RENDER_QUEUE`       | 8                     | pending renders before 503                                          |
 | `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                     |
+
+Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
+(ms per frame) and `maxSize` (longest side). All of them are part of the cache
+key, so two variants of a pathway never masquerade as each other.
 
 ### Measured behaviour
 

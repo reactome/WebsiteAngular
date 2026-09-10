@@ -17,7 +17,11 @@ const fs = require('node:fs');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const ROOT = path.resolve(__dirname, '../../../..');
-const DIST = path.join(ROOT, 'dist/reactome/browser');
+// DIST_DIR exists so this can be tested against a directory a test controls.
+// Unset -- which is every real deployment -- it is the build output as before.
+const DIST = process.env.DIST_DIR
+  ? path.resolve(process.env.DIST_DIR)
+  : path.join(ROOT, 'dist/reactome/browser');
 const PORT = Number(process.env.PORT) || 4200;
 const HOST = process.env.HOST || '0.0.0.0';
 
@@ -87,10 +91,42 @@ app.use(
   })
 );
 
+/**
+ * A page to show while a rebuild is in flight.
+ *
+ * `ng build --watch` empties and rewrites the output directory, so for the ten
+ * to twenty seconds a build takes there is no index.html to send. Requests
+ * landing in that window used to surface Express's ENOENT stack trace, which
+ * reads like the site is broken rather than busy -- and someone reading it has
+ * no way to tell those apart.
+ *
+ * 503 with Retry-After is the honest answer: the server is fine, the build is
+ * not there yet. The page reloads itself so nobody has to sit and refresh.
+ */
+const REBUILDING = `<!doctype html><meta charset="utf-8"><title>Rebuilding…</title>
+<meta http-equiv="refresh" content="4">
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; display: grid; place-items: center;
+         height: 100vh; margin: 0; color: #123; background: #eff9fd; }
+  div { text-align: center; }
+  p { color: #567; }
+</style>
+<div>
+  <h1>Rebuilding</h1>
+  <p>A new build is being written. This page will refresh itself.</p>
+</div>`;
+
 // Client-side routing: anything not matched above is an Angular route.
 app.get(/.*/, (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(DIST, 'index.html'));
+  res.sendFile(path.join(DIST, 'index.html'), (error) => {
+    if (!error || res.headersSent) return;
+    if (error.code === 'ENOENT') {
+      res.setHeader('Retry-After', '5');
+      return res.status(503).type('html').send(REBUILDING);
+    }
+    res.status(500).type('text/plain').send('Could not read the build output');
+  });
 });
 
 waitForBuild().then((ready) => {

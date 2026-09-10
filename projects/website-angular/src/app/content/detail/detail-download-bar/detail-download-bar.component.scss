@@ -2,30 +2,36 @@
   display: block;
 }
 
-.download-bar {
+.figure-tools {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  // Data exports on the left, figure exports on the right: the same split the
+  // current site uses, so a curator reading down the page finds them where
+  // they expect to.
+  justify-content: space-between;
+  gap: 6px 16px;
   padding: 6px 10px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   background: var(--surface-container-low, rgba(0, 0, 0, 0.03));
   border: 1px solid var(--outline-variant);
   border-radius: 6px;
   font-size: 0.875rem;
 }
 
-.download-icon {
+.tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-icon {
   color: var(--primary);
   font-size: 18px;
   width: 18px;
   height: 18px;
-}
-
-.download-label {
-  font-weight: 500;
-  color: var(--on-surface);
-  margin-right: 4px;
+  margin-right: 2px;
 }
 
 .dl-link {
@@ -61,4 +67,58 @@
   color: var(--outline);
   margin: 0 2px;
   user-select: none;
+}
+
+// While a file is being made, and when it could not be.
+//
+// These links are plain text in a dense bar, so the state shows through the
+// attribute the directive sets rather than by rebuilding the markup around
+// them. A pathway's SBML or PDF takes eight seconds and the exporters send no
+// length, so what is shown is how much has arrived rather than a percentage.
+.dl-link {
+  &[data-download-state]::after {
+    content: ' ' attr(data-download-state);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+  }
+
+  &.dl--busy {
+    cursor: progress;
+
+    // A ring rather than a bar: there is nothing to fill when the server has
+    // not said how big the file is.
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 0.6em;
+      height: 0.6em;
+      margin-right: 0.3em;
+      border: 1.5px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: dl-spin 0.7s linear infinite;
+      vertical-align: baseline;
+    }
+  }
+
+  &.dl--failed {
+    color: var(--error, #b3261e);
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+  }
+}
+
+@keyframes dl-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+// Someone who has asked not to see motion still needs to know it is working;
+// the word beside the link says so.
+@media (prefers-reduced-motion: reduce) {
+  .dl-link.dl--busy::before {
+    animation: none;
+  }
 }

@@ -3,7 +3,7 @@ import { MatIcon } from '@angular/material/icon';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { StatsService } from '../../../services/stats.service';
 import { APP_CONFIG } from '../../../config/config'; // NEW import
-import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
+import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 
 interface Stats {
   human_pathways: number;
@@ -23,9 +23,18 @@ interface Stats {
 })
 export class HomeStatsComponent implements OnInit {
   private statsService = inject(StatsService);
-  private generalService = inject(GeneralService);
 
-  version: string = '';
+  // The curation graph is not a release, so the heading names the database
+  // instead of announcing a release date.
+  readonly isCurator = IS_CURATOR;
+
+  /**
+   * The release, straight from the database. A computed rather than a field:
+   * the answer arrives after this component first renders, and a field read once
+   * in ngOnInit would keep whatever was true then -- which, with no build-time
+   * fallback, is nothing at all.
+   */
+  readonly versionLabel = this.statsService.versionLabel;
   releaseDate: Date = new Date();
   stats: Stats = {
     human_pathways: 0,
@@ -41,8 +50,6 @@ export class HomeStatsComponent implements OnInit {
   }
 
   getVersionAndDate() {
-    this.version =
-      'V' + (this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber).toString();
     this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }

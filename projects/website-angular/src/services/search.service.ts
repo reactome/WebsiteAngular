@@ -76,8 +76,6 @@ export interface SearchFilters {
   pageCategories?: string[];
 }
 
-import { APP_CONFIG } from '../config/config';
-
 @Injectable({
   providedIn: 'root',
 })
