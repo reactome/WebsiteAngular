@@ -73,13 +73,60 @@ describe('a legacy pathway link in the fragment', () => {
   });
 
   it('leaves a fragment that is not a pathway alone', () => {
-    // A section to scroll to, and the old analysis-tool fragment. Matching
-    // these would turn them into a route to nowhere and a junk query
-    // parameter; they have to fall through untouched.
-    for (const fragment of ['introduction', 'summation', 'TOOL=AT', 'literature']) {
+    // A section to scroll to. Matching one would turn it into a route to
+    // nowhere; they have to fall through untouched.
+    for (const fragment of ['introduction', 'summation', 'literature', 'figure-3']) {
       expect(route(fragment).id, fragment).toBeUndefined();
       expect(Object.keys(route(fragment).params), fragment).toEqual([]);
     }
+  });
+
+  it('does not match an absent fragment, which is read as an empty string', () => {
+    // Both halves of the pattern are optional, so without the guard for this an
+    // empty fragment matches -- and carriesLegacyPathway() would then answer true
+    // for every URL in the app, stripping fragments nobody asked it to touch.
+    for (const fragment of ['', '/']) {
+      expect(FRAGMENT_PATTERN.test(fragment), JSON.stringify(fragment)).toBe(false);
+    }
+  });
+
+  /**
+   * Fragments that carry only settings, with no pathway.
+   *
+   * `TOOL=AT` is how the old browser opened the analysis tool, and it is the
+   * "Analysis Tools" link in every release announcement we have published -- 45 of
+   * them, the current release included. It named no pathway, so the pattern used
+   * to reject it and all 45 opened an empty pathway browser. This spec asserted
+   * that, on the reasoning that matching it would produce "a route to nowhere and
+   * a junk query parameter". That was true while nothing mapped TOOL; analysisTab
+   * now does.
+   */
+  describe('a legacy fragment that is only settings', () => {
+    it('opens the analysis tool for TOOL=AT, with no pathway', () => {
+      for (const fragment of ['TOOL=AT', '/TOOL=AT']) {
+        expect(route(fragment).id, fragment).toBeUndefined();
+        expect(route(fragment).params, fragment).toEqual({ TOOL: 'AT' });
+      }
+    });
+
+    it('opens the pathway DIAGRAM names, and keeps the rest', () => {
+      // Two of these in the v64 announcement, and DIAGRAM is only ever a dbId.
+      expect(route('DIAGRAM=9006934&PATH=162582')).toEqual({
+        id: undefined,
+        params: { DIAGRAM: '9006934', PATH: '162582' },
+      });
+    });
+
+    it('accepts the other keys the old browser wrote', () => {
+      expect(route('SEL=R-HSA-9').params).toEqual({ SEL: 'R-HSA-9' });
+      expect(route('DTAB=AN').params).toEqual({ DTAB: 'AN' });
+    });
+
+    it('is not fooled by something that merely looks like a setting', () => {
+      for (const fragment of ['WIDGET=1', 'tool=AT', 'x=1']) {
+        expect(FRAGMENT_PATTERN.test(fragment), fragment).toBe(false);
+      }
+    });
   });
 
   it('does not take an identifier out of the middle of something else', () => {
