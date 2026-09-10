@@ -28,12 +28,27 @@ What each deployment needs locally:
 | command                       | backend it uses                       | needs anything running?                   |
 | ----------------------------- | ------------------------------------- | ----------------------------------------- |
 | `npm start`                   | the proxy, i.e. `REACTOME_BACKEND`    | a backend at `:8080`, or the variable set |
-| `ng serve -c curator`         | newcurator.reactome.org               | no                                        |
+| `npm run start:curator`       | newcurator.reactome.org               | no                                        |
 | `npm run start:curator-local` | `localhost:8686` for the graph API    | a local curator-service                   |
 | `npm run start:simple`        | same as `npm start`, skipping TinaCMS | as above                                  |
 
 The curator deployment is the one that needs nothing running locally, so it is
 the quickest way to check a clone works at all.
+
+Use the npm scripts rather than `ng serve` or `ng build` directly. The browser
+reads the CMS content from `projects/website-angular/content-dist`, which is
+**generated**: `npm run stage:content` compiles the authored `.mdx` into it, and
+every `start:*` script above runs that first, as does `npm run build`.
+
+`ng build` on its own does **not**, and it does not complain either -- the asset
+entry is a glob over that directory, so a missing directory copies nothing and
+the build succeeds. What you get is a site whose every content page is empty,
+with nothing in the log to say why. Verified, not guessed: a production build
+with the directory moved aside finished normally.
+
+The same applies the first time you check out a branch where these files are no
+longer tracked -- git deletes them, because they were tracked in the branch you
+came from. Any `npm run start:*` or `npm run build` puts them back.
 
 ### Editing content
 
