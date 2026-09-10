@@ -12,21 +12,27 @@ import { toSignal } from '@angular/core/rxjs-interop';
 /**
  * A legacy pathway link, as the old browser addressed one in the URL fragment.
  *
- * Both spellings are in the wild, because the old site produced both: 770 links
- * in this site's own news archive say `#/R-HSA-1430728` and 86 say
- * `#R-HSA-202733` with no slash. Requiring the slash meant the second kind
- * matched nothing, so every one of them opened the browser with no pathway in
- * it -- a blank page from a link in a release announcement.
+ * Both spellings are in the wild, because the old site produced both: counted in
+ * this site's own news before its links were rewritten, 638 said
+ * `#/R-HSA-1430728` and 70 said `#R-HSA-202733` with no slash. Requiring the
+ * slash meant the second kind matched nothing, so every one of them opened the
+ * browser with no pathway in it -- a blank page from a link in a release
+ * announcement.
  *
  * The id must be there for this to match at all. A fragment that is not a
  * pathway reference -- `#introduction`, naming a section to scroll to -- has to
  * fall through untouched rather than be read as a stale route.
  *
- * A bare number is a **dbId**, which is how every release announcement writes
- * its list of what is new: `#1280218`, not `#R-HSA-1280218`. There are 278 of
- * those in this site's own news, 24 in the current release's announcement, and
- * every one opened the browser with no pathway in it. The browser already
- * resolves a dbId given in the path, so only the fragment form was missing.
+ * A bare number is a **dbId**, which is how every release announcement used to
+ * write its list of what is new: `#1280218`, not `#R-HSA-1280218`. There were
+ * 285 of those in this site's own news -- 278 without the slash and 7 with, 24 of
+ * them in the current release's announcement -- and every one opened the browser
+ * with no pathway in it. The browser already resolves a dbId given in the path,
+ * so only the fragment form was missing.
+ *
+ * Our own content now links by stable id, so the dbId traffic that still arrives
+ * here comes from outside: citations, bookmarks and other people's pages, none of
+ * which can be edited. That is why this stays.
  * Four digits at least, so an ordinary page anchor cannot be mistaken for one --
  * the shortest dbId in the content is five.
  *
