@@ -13,7 +13,7 @@
     "build:reactome-cytoscape-style": "ng build reactome-cytoscape-style",
     "build:libs": "ng build reactome-cytoscape-style && ng build ngx-reactome-style && ng build reactome-table && ng build reactome-gsa-form",
     "start": "npm run generate:indices && npm run stage:content && npm run build:libs && run-p dev:reactome-cytoscape-style dev:serve",
-    "start:local": "npm run generate:indices && run-p dev:reactome-cytoscape-style dev:serve:local",
+    "start:local": "npm run generate:indices && npm run stage:content && run-p dev:reactome-cytoscape-style dev:serve:local",
     "start:simple": "npm run generate:indices && npm run stage:content && ng serve",
     "start:curator-local": "npm run generate:indices && npm run stage:content && npm run build:reactome-cytoscape-style && npm run build:libs && ng serve --configuration curator-local",
     "start:curator": "npm run generate:indices && npm run stage:content && npm run build:reactome-cytoscape-style && npm run build:libs && ng serve --configuration curator",
