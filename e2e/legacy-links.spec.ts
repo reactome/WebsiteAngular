@@ -3,10 +3,16 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * A link out of the news archive takes you somewhere, and lets you come back.
  *
- * The news used to carry 278 pathway links written the way the old browser
- * addressed one -- a bare dbId in the fragment, `/PathwayBrowser/#1280218` --
- * plus 86 more as `#R-HSA-…`. Both are rewritten into proper routes now (#172,
- * #182), and the content's own links have since been rewritten to stable ids.
+ * The news used to carry 285 pathway links written the way the old browser
+ * addressed one -- a bare dbId in the fragment, `/PathwayBrowser/#1280218`, 278
+ * of them without the slash and 7 with -- alongside 708 already spelled
+ * `#R-HSA-…`. Both are rewritten into proper routes now (#172, #182), and the
+ * content's own links have since been rewritten to stable ids.
+ *
+ * Those counts are what the repo actually held before the rewrite, measured per
+ * spelling. An earlier version of this comment said 278 and 86, which was the
+ * count of one dbId spelling against a figure for the stId spellings that does
+ * not reproduce at any scope -- content, repo-wide, or unique links.
  *
  * The dbId case stays tested anyway. Those links are a decade of citations,
  * bookmarks and other people's pages, and none of that can be edited; a dbId is
