@@ -146,7 +146,12 @@ test.describe('Trivial molecules and flagging', () => {
       .poll(
         async () => {
           const opacities = await opacitiesAtZoom(page, 0.14);
-          return opacities ? Math.max(...opacities) : null;
+          // Infinity, not null, for a reading we could not take. `null < 1` is
+          // true in JavaScript, so a null would describe an unmeasured diagram
+          // as a faded one. Playwright's toBeLessThan happens to throw on null
+          // rather than accept it -- checked -- but the test should not depend
+          // on a matcher's handling of a value it was never meant to receive.
+          return opacities ? Math.max(...opacities) : Number.POSITIVE_INFINITY;
         },
         {
           message: 'faint far out',
