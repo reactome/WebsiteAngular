@@ -25,7 +25,14 @@ jobs:
             echo "CMS branch detected — enforcing content rules"
 
             # Get changed files (including renames, deletions, etc.)
-            CHANGED_FILES=$(git diff --name-only origin/$BASE_REF...HEAD)
+            #
+            # --no-renames matters. With rename detection on, --name-only prints
+            # only a rename's destination, so `git mv package.json
+            # projects/website-angular/content/sneaky.mdx` shows one allowed path
+            # and the deletion of package.json is invisible to the check below.
+            # Without detection, the same change prints both paths and the source
+            # is judged on its own.
+            CHANGED_FILES=$(git diff --no-renames --name-only origin/$BASE_REF...HEAD)
 
             echo "Changed files:"
             echo "$CHANGED_FILES"
