@@ -67,6 +67,39 @@ async function zoomTo(page: Page, zoom: number) {
   await page.waitForTimeout(400);
 }
 
+/**
+ * The trivial opacities at a zoom level, read only if the zoom is still that
+ * level -- otherwise `null`, so the caller retries.
+ *
+ * Zooming once and reading once is a race the diagram wins on a slow machine:
+ * it is still settling when the test zooms, its own `fit()` then resets the
+ * zoom and re-runs the fade, and the opacity read belongs to a zoom level
+ * nobody asked for.
+ *
+ * Reproduced exactly rather than inferred. Immediately after `zoomTo(1.5)` the
+ * diagram reads zoom 1.5 and opacity [1]; forcing a `fit()` straight afterwards
+ * drops it to zoom 0.113 and opacity [0] -- which is the `[0]` this spec
+ * reported from CI on 2026-09-09, run 34397628182.
+ *
+ * An opacity is only meaningful alongside the zoom it was measured at, so the
+ * zoom is checked in the same evaluate that reads it.
+ */
+async function opacitiesAtZoom(page: Page, zoom: number): Promise<number[] | null> {
+  await zoomTo(page, zoom);
+  return page.evaluate((level) => {
+    const host = document.querySelector('#cytoscape') as CytoscapeHost | null;
+    const cy = host?._cyreg?.cy;
+    if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+    // The diagram moved under us; this reading describes a different zoom.
+    if (Math.abs(cy.zoom() - level) > 0.001) return null;
+    return [
+      ...new Set(
+        cy.elements('.trivial').map((element) => Number(element.numericStyle('opacity').toFixed(2)))
+      ),
+    ];
+  }, zoom);
+}
+
 /** The flag arrives from its own request, after the diagram has drawn. */
 async function waitForFlag(page: Page) {
   await page.waitForFunction(
@@ -95,14 +128,38 @@ async function openDiagram(page: Page, query = '') {
 test.describe('Trivial molecules and flagging', () => {
   test.describe.configure({ timeout: 3 * 60 * 1000 });
 
+  // The only test here whose expectation depends on the zoom being the one it
+  // asked for. The flagged cases below expect [1] at every zoom, so a stray
+  // re-fit cannot falsify them and they read directly.
   test('fade with zoom when nothing is flagged', async ({ page }) => {
     await openDiagram(page);
 
-    await zoomTo(page, 1.5);
-    expect(await trivialOpacities(page), 'visible close up').toEqual([1]);
+    await expect
+      .poll(() => opacitiesAtZoom(page, 1.5), {
+        message: 'visible close up',
+        timeout: 45_000,
+        intervals: [250, 500, 1000, 2000],
+      })
+      .toEqual([1]);
 
-    await zoomTo(page, 0.14);
-    expect(Math.max(...(await trivialOpacities(page))), 'faint far out').toBeLessThan(1);
+    await expect
+      .poll(
+        async () => {
+          const opacities = await opacitiesAtZoom(page, 0.14);
+          // Infinity, not null, for a reading we could not take. `null < 1` is
+          // true in JavaScript, so a null would describe an unmeasured diagram
+          // as a faded one. Playwright's toBeLessThan happens to throw on null
+          // rather than accept it -- checked -- but the test should not depend
+          // on a matcher's handling of a value it was never meant to receive.
+          return opacities ? Math.max(...opacities) : Number.POSITIVE_INFINITY;
+        },
+        {
+          message: 'faint far out',
+          timeout: 45_000,
+          intervals: [250, 500, 1000, 2000],
+        }
+      )
+      .toBeLessThan(1);
   });
 
   test('stay visible at every zoom once something is flagged', async ({ page }) => {
