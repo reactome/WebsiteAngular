@@ -2,7 +2,11 @@ import { Injectable, ResourceRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import type { TissueExperiment } from './tissue-experiment.model';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../../environments/environment';
+import {
+  DIGESTER_FOR_BACKEND,
+  environment,
+  IS_CURATOR,
+} from '../../../../../environments/environment';
 import { rxResource } from '@angular/core/rxjs-interop';
 
 @Injectable({
@@ -11,8 +15,16 @@ import { rxResource } from '@angular/core/rxjs-interop';
 export class TissueExperimentService {
   private http = inject(HttpClient);
 
+  // The curator host has no /ExperimentDigester, so the curator variant asks for
+  // nothing and the resource stays idle. Every other deployment does have one --
+  // beta and dev answer /ExperimentDigester/experiments/summaries with the tissue
+  // list -- and disabling it for all of them emptied the Available Tissues column
+  // on the public site, where tissue analysis is a real feature.
+  //
+  // A constraint that belongs to one deployment is expressed as one deployment's
+  // constraint. Gate on the variant, not on everyone.
   summaries = rxResource({
-    params: () => ({}),
+    params: () => (IS_CURATOR ? undefined : {}),
     stream: () => this.getExperimentsSummary(),
   });
 
@@ -20,11 +32,21 @@ export class TissueExperimentService {
     return this.http.get<TissueExperiment.Summaries>(`/ExperimentDigester/experiments/summaries`);
   }
 
+  /**
+   * Where the analysis service should fetch this sample from.
+   *
+   * Not a URL for the browser: it is posted to the analysis service, which
+   * downloads it itself. So it has to resolve from inside the backend, and the
+   * hardcoded https://127.0.0.1/... it used to return does not -- the analysis
+   * service answered 422 for every tissue analysis, because nothing terminates
+   * TLS for that name.
+   */
   getSampleURL(
     id: number,
     { omitNulls, columns }: { omitNulls: boolean; columns: number[] }
   ): string {
-    return `https://127.0.0.1/ExperimentDigester/experiments/${id}/sample?omitNulls=${omitNulls}&${columns.map((c) => `included=${c}`).join('&')}`;
+    const included = columns.map((column) => `included=${column}`).join('&');
+    return `${DIGESTER_FOR_BACKEND}/experiments/${id}/sample?omitNulls=${omitNulls}&${included}`;
   }
 
   /**

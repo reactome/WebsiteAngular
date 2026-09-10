@@ -12,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
 import { of } from 'rxjs';
+import { IconService } from '../../services/icon.service';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
@@ -30,10 +31,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
-import {
-  ICON_HOST,
-  CONTENT_SERVICE,
-} from '../../../../pathway-browser/src/environments/environment';
+import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-search',
@@ -52,6 +50,7 @@ import {
   styleUrl: './search.component.scss',
 })
 export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
+  private icons = inject(IconService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchService = inject(SearchService);
@@ -513,7 +512,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return `${ICON_HOST}/icon/${entry.stId}.svg`;
+    return this.icons.iconUrl(entry.stId);
   }
 
   /**

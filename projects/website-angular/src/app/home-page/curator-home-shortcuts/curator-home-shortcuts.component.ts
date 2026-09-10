@@ -16,7 +16,11 @@ export class CuratorHomeShortcutsComponent {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
   @Input() dark: boolean = true;
-  readonly webbenchLink = `${typeof window !== 'undefined' ? window.location.origin : environment.host}/curatortool/home`;
+  // WebBench is a separate app deployed alongside the curator site, so it has
+  // no local equivalent: keying this off window.location.origin pointed it at
+  // the dev server (http://localhost:4200/curatortool/home, a 404). Build it
+  // from environment.host so it always resolves to the deployed WebBench.
+  readonly webbenchLink = `${environment.host}/curatortool/home`;
 
   // The curator build's baseHref is "/curatorgraph/", not "/". A plain
   // absolute href like "/about" would ignore that base and 404; strip the

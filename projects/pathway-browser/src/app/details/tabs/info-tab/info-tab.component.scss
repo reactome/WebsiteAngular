@@ -2,3 +2,18 @@
   padding: 0 20px;
   display: block;
 }
+
+h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// The heading's marker, in the same font the rest of the site draws its icons
+// with: the emoji these replaced fell back to a missing-glyph box.
+.heading-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+}

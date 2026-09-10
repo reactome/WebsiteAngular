@@ -29,7 +29,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment, IS_CURATOR } from '../../environments/environment';
+import { environment, IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
 import { FigureService } from '../details/tabs/description-tab/figure/figure.service';
 // angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
 // shape ({gutterNum, sizes}).
@@ -48,7 +48,6 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
-import { CompareFormComponent } from './compare-form/compare-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
@@ -88,7 +87,6 @@ const DROPDOWN_DURATION = 500;
     ReacfoamComponent,
     DetailsComponent,
     AnalysisFormComponent,
-    CompareFormComponent,
     DeltaSignalPanelComponent,
   ],
 })
@@ -107,8 +105,23 @@ export class ViewportComponent implements AfterViewInit {
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
 
-  loadingPathwayData = this.dataState._currentPathway.isLoading;
+  // Ancestors are part of deciding what to draw (see hasDiagram), so keep the
+  // spinner up until they have settled too - otherwise the "no diagram" notice
+  // flashes for pathways that do have one further up their lineage.
+  loadingPathwayData = computed(
+    () => this.dataState._currentPathway.isLoading() || this.dataState.ancestorsLoading()
+  );
   hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
+  // A pathway without a diagram of its own is still drawable when an ancestor
+  // has one - cr-diagram walks up and renders the parent, e.g. /R-HSA-69541.
+  // An event with neither, such as a newly cloned curation pathway that hangs
+  // off no top-level pathway, has nothing to draw and gets a notice instead.
+  hasDiagram = computed(() => {
+    const pathway = this.dataState.currentPathway();
+    if (!pathway || !isPathway(pathway)) return false;
+    if (pathway.hasDiagram) return true;
+    return (pathway.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
+  });
   title = computed(() => this.dataState.currentPathway()?.displayName);
 
   /**
@@ -154,8 +167,16 @@ export class ViewportComponent implements AfterViewInit {
 
   dropdownDuration = DROPDOWN_DURATION;
   readonly isCurator = IS_CURATOR;
+  /** Whether this deployment offers DeltaSignal at all. */
+  readonly showDeltaSignal = SHOW_DELTASIGNAL;
 
-  dropdown = signal<'analysis' | 'compare' | 'deltasignal' | null>(null);
+  // The analysis form and the DeltaSignal panel open here. There was a 'compare' state too, with a
+  // panel of its own in the template, and nothing anywhere set it -- the form
+  // behind it was the CLI's `<p>compare-form works!</p>` scaffold, shipped in
+  // the initial commit and never written. Comparing against a disease variant
+  // is the Compare button in the toolbar, which navigates rather than opening a
+  // panel.
+  dropdown = signal<'analysis' | 'deltasignal' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');

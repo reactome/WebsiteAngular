@@ -25,7 +25,14 @@ jobs:
             echo "CMS branch detected — enforcing content rules"
 
             # Get changed files (including renames, deletions, etc.)
-            CHANGED_FILES=$(git diff --name-only origin/$BASE_REF...HEAD)
+            #
+            # --no-renames matters. With rename detection on, --name-only prints
+            # only a rename's destination, so `git mv package.json
+            # projects/website-angular/content/sneaky.mdx` shows one allowed path
+            # and the deletion of package.json is invisible to the check below.
+            # Without detection, the same change prints both paths and the source
+            # is judged on its own.
+            CHANGED_FILES=$(git diff --no-renames --name-only origin/$BASE_REF...HEAD)
 
             echo "Changed files:"
             echo "$CHANGED_FILES"
@@ -33,7 +40,18 @@ jobs:
             # Allowed patterns:
             # 1. Content files
             # 2. Upload images
-            ALLOWED_REGEX="^(projects/website-angular/content/.*\.(md|json|yml)|projects/website-angular/public/uploads/.*\.(png|jpg|jpeg|webp|gif|svg))$"
+            #
+            # mdx is the one that matters: every one of the 253 authored content
+            # files is .mdx, because the Tina collections are format "mdx". The
+            # list here said md|json|yml, which matches none of them -- so this
+            # guard rejected every content edit it exists to permit, and no cms/*
+            # branch had ever merged. md and yml are kept for content that may be
+            # authored that way later; json is what the generated index files are.
+            #
+            # content-dist/ is deliberately absent. It is the compiled JSON the
+            # browser reads, and stage:content rebuilds it in both tests.yml and
+            # deploy.yml, so a content PR neither needs nor should carry it.
+            ALLOWED_REGEX="^(projects/website-angular/content/.*\.(mdx|md|json|yml)|projects/website-angular/public/uploads/.*\.(png|jpg|jpeg|webp|gif|svg))$"
 
             # Find invalid files
             INVALID_FILES=$(echo "$CHANGED_FILES" | grep -vE "$ALLOWED_REGEX" || true)
@@ -46,7 +64,7 @@ jobs:
               echo "$INVALID_FILES"
               echo ""
               echo "The following files are allowed:"
-              echo "  - projects/website-angular/content/**/*.md|json|yml"
+              echo "  - projects/website-angular/content/**/*.mdx|md|json|yml"
               echo "  - projects/website-angular/public/uploads/**/*.(png|jpg|jpeg|webp|gif|svg)"
               echo ""
               echo "Tip: CMS branches (cms/*) are only for content editing."

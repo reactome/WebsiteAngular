@@ -48,16 +48,17 @@ jobs:
       # and passed every test. Without this step the only build was the deploy
       # job, so a broken template reached main and was found by a person.
       #
-      # reactome-cytoscape-style is built separately because build:libs does not
-      # cover it and styles.scss @use's it; content-dist is a gitignored asset
-      # input, so stage:content has to run or ng build cannot find it.
+      # content-dist is a gitignored asset input, so stage:content has to run or
+      # ng build cannot find it. The libraries no longer need a step of their
+      # own: `npm run build` builds them, because a build that does not produce
+      # what it links against is a build that can pass here and ship something
+      # else -- a fix to reactome-cytoscape-style reached CI and never reached
+      # the dev server, which builds the app without building the library.
       - name: Compile CMS content
         run: npm run stage:content
 
       - name: Build the app
-        run: |
-          npx ng build reactome-cytoscape-style
-          npm run build
+        run: npm run build
 
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
@@ -81,9 +82,20 @@ jobs:
         run: npm run check:dead
 
   e2e:
-    name: End-to-end
+    # The code suite only: "is the code right?". The release checks -- every
+    # top-level pathway draws, every download link resolves, the version and news
+    # and statistics match what is being served -- depend on generated release
+    # data this runner does not have, and live in release-verification.yml.
+    #
+    # Still sharded: playwright splits by test, so coverage is unchanged and the
+    # wall clock stays a few minutes rather than the 30 that got a job killed.
+    name: End-to-end (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
 
@@ -99,11 +111,7 @@ jobs:
       # pathway-browser build copies reactome-cytoscape-style's assets, so the
       # app cannot be served until they exist.
       - name: Build workspace libraries
-        run: |
-          npx ng build reactome-cytoscape-style
-          npx ng build ngx-reactome-style
-          npx ng build reactome-table
-          npx ng build reactome-gsa-form
+        run: npm run build:libs
 
       # site-search-index.json is generated, not committed, and the search
       # specs depend on it.
@@ -128,12 +136,14 @@ jobs:
       - name: Run e2e
         env:
           REACTOME_BACKEND: https://reactome.org
-        run: npm run e2e
+        run: npm run e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          # One name per shard: artifacts with the same name collide and the
+          # upload fails, losing the report exactly when it is wanted.
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7

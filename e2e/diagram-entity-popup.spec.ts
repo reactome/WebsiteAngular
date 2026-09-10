@@ -213,7 +213,13 @@ test.describe('Popup with an analysis running', () => {
     );
     test.skip(!res.ok(), 'analysis service unavailable on this backend');
     const token: string | undefined = (await res.json())?.summary?.token;
-    test.skip(!token, 'analysis returned no token');
+    if (!token) {
+      test.skip(true, 'analysis returned no token');
+      // Unreachable: test.skip() above aborts the test. The return is what tells
+      // TypeScript so -- skip narrows nothing, which is why this line read as a
+      // possibly-undefined token below.
+      return;
+    }
 
     await page.goto(`/PathwayBrowser/R-HSA-109606?analysis=${encodeURIComponent(token)}`);
     await openPopupOnAnyEntity(page);

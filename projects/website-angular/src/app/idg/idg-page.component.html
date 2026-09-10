@@ -1,0 +1,462 @@
+<app-page-layout [showSidebar]="false" [showBreadcrumb]="true">
+  <article class="idg-page">
+    <header>
+      <h1>Illuminating the Druggable Genome</h1>
+      <p class="lede">
+        Find the Reactome pathways a protein's interactors are enriched in, using predicted functional interactions or
+        curated interaction datasets. Results link into the Pathway Browser.
+      </p>
+    </header>
+
+    <form class="query" (ngSubmit)="search()">
+      <mat-form-field appearance="outline" class="gene">
+        <mat-label>Gene or protein</mat-label>
+        <input matInput name="gene" [(ngModel)]="entered" placeholder="TANC1" autocomplete="off" />
+        <mat-hint>A gene symbol, for example TANC1 or TP53</mat-hint>
+      </mat-form-field>
+
+      <button mat-flat-button type="submit" [disabled]="!entered().trim()">
+        <mat-icon>search</mat-icon>
+        Search
+      </button>
+    </form>
+
+    <mat-button-toggle-group
+      class="mode"
+      name="mode"
+      [(ngModel)]="mode"
+      [ngModelOptions]="{ standalone: true }"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle value="score">Functional interaction score</mat-button-toggle>
+      <mat-button-toggle value="datasets">Interaction datasets</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (mode() === 'score') {
+      <section class="score-filter">
+        @if (scores.isLoading()) {
+          <p class="quiet">Loading interaction scores…</p>
+        } @else if (scoreRange()) {
+          @let range = scoreRange()!;
+          <div class="threshold">
+            <label for="threshold">
+              Minimum score
+              <strong>{{ threshold().toFixed(2) }}</strong>
+            </label>
+            <mat-slider [min]="range.min" [max]="range.max" step="0.01" discrete>
+              <input matSliderThumb id="threshold" [(ngModel)]="threshold" [ngModelOptions]="{ standalone: true }" />
+            </mat-slider>
+            <p class="quiet">
+              {{ kept().genes.length }} of {{ kept().total }} predicted interactors score
+              {{ threshold().toFixed(2) }} or better. This gene's best is {{ range.max.toFixed(2) }}.
+            </p>
+          </div>
+
+          <!-- The distribution, so the threshold is chosen against something
+               rather than guessed. Kept buckets are filled, dropped ones faded. -->
+          <div class="histogram" role="img" aria-label="Distribution of interactor scores">
+            @for (bucket of histogram(); track bucket.from) {
+              <span
+                class="bar"
+                [class.dropped]="!bucket.kept"
+                [style.height.%]="bucket.height"
+                [title]="bucket.count + ' interactors near ' + bucket.from.toFixed(2)"
+              ></span>
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <section class="dataset-filter">
+        <mat-form-field appearance="outline" class="datasets">
+          <mat-label>Interaction datasets</mat-label>
+          <mat-select name="datasets" [(ngModel)]="selected" [ngModelOptions]="{ standalone: true }" multiple>
+            @for (group of bySpecies(); track group[0]) {
+              <mat-optgroup [label]="group[0]">
+                @for (dataset of group[1]; track dataset.digitalKey) {
+                  <mat-option [value]="dataset.digitalKey">{{ label(dataset) }}</mat-option>
+                }
+              </mat-optgroup>
+            }
+          </mat-select>
+          <mat-hint>{{ selected().length }} selected. The score threshold does not apply here.</mat-hint>
+        </mat-form-field>
+      </section>
+    }
+
+    @if (failed()) {
+      <div class="state error">
+        <h2>The IDG service did not answer</h2>
+        <p>
+          This page reads its data from the IDG server, which is separate from the rest of the site, so the service can
+          be down while everything else works.
+        </p>
+        <button mat-button type="button" (click)="retry()">Try again</button>
+      </div>
+    } @else if (results.isLoading() || scores.isLoading()) {
+      <div class="state">
+        <mat-spinner diameter="36" />
+        <p>Looking for pathways associated with {{ term() }}…</p>
+      </div>
+    } @else if (!term()) {
+      <div class="state">
+        <p>Enter a gene or protein to begin.</p>
+      </div>
+    } @else if (!counts().matching) {
+      <div class="state">
+        @if (known.value() === false) {
+          <h2>{{ term() }} is not in the IDG data</h2>
+          <p>No dataset here mentions that name, so it is worth checking the spelling.</p>
+        } @else if (counts().total) {
+          <h2>Nothing passed the filters</h2>
+          <p>
+            {{ counts().total }} pathways came back, but none is both significant and lowest-level. Untick a filter
+            below, or lower the score threshold.
+          </p>
+        } @else {
+          <h2>Nothing found for {{ term() }}</h2>
+          <p>{{ term() }} is known, but no pathway is enriched at this threshold. Try lowering it.</p>
+        }
+      </div>
+    } @else {
+      <div class="results-header">
+        <h2>
+          {{ counts().matching }} pathway{{ counts().matching === 1 ? '' : 's' }} for {{ term() }}
+          @if (counts().matching !== counts().total) {
+            <span class="quiet">of {{ counts().total }} enriched</span>
+          }
+        </h2>
+        <div class="filters">
+          <a
+            class="pharos"
+            [href]="pharos(term())"
+            target="_blank"
+            rel="noopener"
+            [title]="'Open ' + term() + ' in Pharos, the IDG target portal'"
+          >
+            Pharos target
+            <mat-icon>open_in_new</mat-icon>
+          </a>
+          <mat-checkbox [(ngModel)]="significantOnly" [ngModelOptions]="{ standalone: true }" name="significantOnly">
+            FDR ≤ 0.05
+          </mat-checkbox>
+          <mat-checkbox [(ngModel)]="leavesOnly" [ngModelOptions]="{ standalone: true }" name="leavesOnly">
+            Lowest-level only
+          </mat-checkbox>
+        </div>
+      </div>
+
+      @if (mode() === 'score' && kept().genes.length) {
+        <div class="overlay-action">
+          <button mat-stroked-button type="button" (click)="overlay()" [disabled]="analysing()">
+            @if (analysing()) {
+              <mat-spinner diameter="18" />
+            } @else {
+              <mat-icon>bubble_chart</mat-icon>
+            }
+            Show these interactors on the genome-wide map
+          </button>
+          <p class="quiet">
+            Runs the {{ kept().genes.length }} interactors through Reactome's own analysis and opens the genome-wide
+            view coloured by it. That is Reactome's overrepresentation of the interactor list, not the IDG statistics in
+            the table.
+          </p>
+          @if (analysisFailed()) {
+            <p class="failed">The analysis could not be created. Please try again.</p>
+          }
+        </div>
+      }
+
+      @if (pathwayPlot()) {
+        @let plot = pathwayPlot()!;
+        <figure class="chart">
+          <figcaption>Interacting Pathway Plot</figcaption>
+          <div class="plot tall">
+            <span class="axis-label y">−log<sub>10</sub>(p-value)</span>
+            @for (point of plot.points; track point.stId) {
+              <a
+                class="point"
+                [routerLink]="['/PathwayBrowser', point.stId]"
+                [queryParams]="analysisParams()"
+                [style.left.%]="point.x"
+                [style.top.%]="point.y"
+                [style.background]="point.colour"
+                [title]="point.name + ' — ' + point.top + ', p ' + format(point.pVal)"
+              ></a>
+            }
+          </div>
+          <div class="axis-x plain"><span>Pathway</span></div>
+          <ul class="legend">
+            @for (entry of plot.legend; track entry.top) {
+              <li>
+                <span class="dot" [style.background]="entry.colour"></span>
+                {{ entry.top }} <span class="quiet">({{ entry.count }})</span>
+              </li>
+            }
+          </ul>
+        </figure>
+      }
+
+      @if (scatter()) {
+        @let plot = scatter()!;
+        <figure class="scatter">
+          <figcaption>
+            Significance against how well studied — the pathways worth a second look are
+            <strong>high and to the left</strong>: enriched for {{ term() }}'s interactors, and full of proteins nobody
+            has drugged yet.
+          </figcaption>
+          <div class="plot">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <!-- FDR 0.05: everything above this line is significant. -->
+              <line class="cutoff" x1="0" [attr.y1]="plot.cutoff" x2="100" [attr.y2]="plot.cutoff" />
+            </svg>
+            <!-- Points as elements rather than SVG circles, so each can carry a
+                 link and a tooltip without a second lookup. -->
+            @for (point of plot.points; track point.stId) {
+              <a
+                class="point"
+                [routerLink]="['/PathwayBrowser', point.stId]"
+                [queryParams]="analysisParams()"
+                [style.left.%]="point.x"
+                [style.top.%]="point.y"
+                [style.background]="point.colour"
+                [title]="point.name + ' — TDL ' + point.tdl.toFixed(2) + ', FDR ' + format(point.fdr)"
+              ></a>
+            }
+            <span class="axis-y">more significant ↑</span>
+          </div>
+          <div class="axis-x">
+            <span>tDark ({{ plot.range.min.toFixed(2) }})</span>
+            <span class="scale"></span>
+            <span>tClin ({{ plot.range.max.toFixed(2) }})</span>
+          </div>
+        </figure>
+      }
+
+      <details class="interactors">
+        <summary>
+          {{ interactors().length }} interacting gene{{ interactors().length === 1 ? '' : 's' }} above
+          {{ threshold().toFixed(2) }}
+        </summary>
+        <button mat-button type="button" (click)="downloadGenes()">
+          <mat-icon>download</mat-icon>
+          Download genes
+        </button>
+        <ul class="gene-list">
+          @for (interactor of interactors(); track interactor.gene) {
+            <li>
+              <span class="gene">{{ interactor.gene }}</span>
+              <span class="quiet">{{ interactor.score.toFixed(2) }}</span>
+            </li>
+          }
+        </ul>
+      </details>
+
+      <div class="table-scroll">
+        <table class="pathways">
+          <thead>
+            <tr>
+              <th scope="col"><span class="visually-hidden">Expand</span></th>
+              <th scope="col">Pathway</th>
+              <th scope="col" class="numeric">Genes</th>
+              <th scope="col" class="numeric">p-value</th>
+              <th scope="col" class="numeric">FDR</th>
+              <th scope="col" class="numeric">
+                TDL
+                <span
+                  class="hint"
+                  title="Target Development Level: low is under-studied (tDark), high is clinically drugged (tClin)"
+                  >?</span
+                >
+              </th>
+              <th scope="col"><span class="visually-hidden">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pathway of pathways(); track pathway.stId) {
+              <tr [class.open]="expanded() === pathway.stId">
+                <td class="expander">
+                  <button
+                    type="button"
+                    (click)="toggle(pathway.stId)"
+                    [attr.aria-expanded]="expanded() === pathway.stId"
+                    [attr.aria-label]="(expanded() === pathway.stId ? 'Hide' : 'Show') + ' details for ' + pathway.name"
+                  >
+                    <mat-icon>{{ expanded() === pathway.stId ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </td>
+                <th scope="row">
+                  <a [routerLink]="['/PathwayBrowser', pathway.stId]" [queryParams]="analysisParams()">{{
+                    pathway.name
+                  }}</a>
+                  <span class="stid">{{ pathway.stId }}</span>
+                </th>
+                <td class="numeric">{{ pathway.numGenes }}</td>
+                <td class="numeric">{{ format(pathway.pVal) }}</td>
+                <td class="numeric">{{ format(pathway.fdr) }}</td>
+                <td class="numeric tdl">
+                  @if (pathway.tdl) {
+                    <span class="swatch" [style.background]="pathway.tdl.colour"></span>
+                    {{ pathway.tdl.weightedTDL.toFixed(2) }}
+                  } @else {
+                    <span class="quiet">—</span>
+                  }
+                </td>
+                <td class="open">
+                  <a
+                    [routerLink]="['/PathwayBrowser', pathway.stId]"
+                    [queryParams]="analysisParams()"
+                    [attr.aria-label]="'Open ' + pathway.name + ' in the Pathway Browser'"
+                  >
+                    <mat-icon>account_tree</mat-icon>
+                  </a>
+                </td>
+              </tr>
+              @if (expanded() === pathway.stId) {
+                <tr class="detail">
+                  <td [attr.colspan]="6">
+                    @if (detail.isLoading()) {
+                      <p class="quiet">Loading…</p>
+                    } @else if (detail.hasValue()) {
+                      @let open = detail.value();
+                      @if (open.summation) {
+                        <h3>Description</h3>
+                        <p class="summation">{{ open.summation }}</p>
+                      }
+                      @if (open.hierarchy.length) {
+                        <h3>Hierarchy</h3>
+                        <ol class="hierarchy">
+                          @for (step of open.hierarchy; track step.stId; let depth = $index) {
+                            <li [style.--depth]="depth">
+                              <a [routerLink]="['/PathwayBrowser', step.stId]" [queryParams]="analysisParams()">{{
+                                step.name
+                              }}</a>
+                            </li>
+                          }
+                        </ol>
+                      }
+                    } @else {
+                      <p class="quiet">No description available.</p>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button mat-button type="button" (click)="downloadPathways()">
+          <mat-icon>download</mat-icon>
+          Download pathway list
+        </button>
+        <label>
+          Rows per page
+          <select [ngModel]="perPage()" (ngModelChange)="perPage.set($event); page.set(0)" name="perPage">
+            @for (size of pageSizes; track size) {
+              <option [ngValue]="size">{{ size }}</option>
+            }
+          </select>
+        </label>
+        <span class="quiet">{{ range().from }}–{{ range().to }} of {{ range().total }}</span>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="page() === 0"
+          (click)="page.set(page() - 1)"
+          aria-label="Previous page"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="page() >= lastPage()"
+          (click)="page.set(page() + 1)"
+          aria-label="Next page"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="summaries">
+        @if (genesByScore()) {
+          @let curve = genesByScore()!;
+          <figure class="chart">
+            <figcaption>Genes vs Functional Interaction Score for {{ term() }}</figcaption>
+            <div class="plot">
+              <span class="axis-label y">Number of Genes</span>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <polyline class="curve" [attr.points]="curve.polyline" fill="none" />
+              </svg>
+              @for (point of curve.points; track point.score) {
+                <span
+                  class="point small"
+                  [style.left.%]="point.x"
+                  [style.top.%]="point.y"
+                  [title]="point.genes + ' genes score ' + point.score.toFixed(2) + ' or better'"
+                ></span>
+              }
+            </div>
+            <div class="axis-x plain"><span>0</span><span>Functional Interaction Score</span><span>1</span></div>
+            <p class="quiet">Highest count {{ curve.most }} genes.</p>
+          </figure>
+        }
+
+        @if (featurePlot()) {
+          @let features = featurePlot()!;
+          <figure class="chart">
+            <figcaption>Feature Summary for {{ term() }}</figcaption>
+            <div class="plot">
+              <span class="axis-label y">Number of Interactions</span>
+              @for (point of features.points; track point.id) {
+                <span
+                  class="point"
+                  [style.left.%]="point.x"
+                  [style.top.%]="point.y"
+                  [style.background]="point.colour"
+                  [title]="
+                    point.provenance +
+                    ' — ' +
+                    point.dataType.replace('_', ' ') +
+                    ' (' +
+                    point.species.replace('_', ' ') +
+                    '): ' +
+                    point.count +
+                    ' interactions'
+                  "
+                ></span>
+              }
+            </div>
+            <div class="axis-x plain"><span>Feature</span></div>
+            <ul class="legend">
+              @for (entry of features.legend; track entry.dataType) {
+                <li>
+                  <span class="dot" [style.background]="entry.colour"></span>
+                  {{ entry.dataType.replace('_', ' ') }}
+                </li>
+              }
+            </ul>
+          </figure>
+        }
+      </div>
+
+      @if (mode() === 'datasets' && chosen().length) {
+        <footer class="provenance">
+          <h3>Data sources</h3>
+          <ul>
+            @for (dataset of chosen(); track dataset.digitalKey) {
+              <li>
+                {{ dataset.provenance }} — {{ dataset.dataType.replace('_', ' ') }}
+                @if (dataset.bioSource) {
+                  <span class="species">({{ dataset.bioSource.replace('_', ' ') }})</span>
+                }
+              </li>
+            }
+          </ul>
+        </footer>
+      }
+    }
+  </article>
+</app-page-layout>

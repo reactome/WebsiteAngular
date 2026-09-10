@@ -25,10 +25,32 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
   },
+  // Two suites, because they answer different questions.
+  //
+  //   code     is the code right? Runs on every push and while developing. It
+  //            must not depend on freshly generated release data, and anything
+  //            that needs a backend feature the target may not have asks first
+  //            and skips with a reason.
+  //
+  //   release  is the release right? Run after the release process has generated
+  //            the database and published the files: every top-level pathway
+  //            draws, every download link resolves, the version and the news and
+  //            the statistics all say the release we are actually serving.
+  //
+  // The split is the directory: e2e/release/** is the second suite. It exists
+  // because the whole of one day's CI trouble was release checks failing in a
+  // code-verification context -- endpoints the target lacked, data it did not
+  // have, and 29 diagram loads on a two-core runner.
   projects: [
     {
-      name: 'chromium',
+      name: 'code',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: '**/release/**',
+    },
+    {
+      name: 'release',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/release/**',
     },
   ],
   // Only manage a server when we're the ones who started it.

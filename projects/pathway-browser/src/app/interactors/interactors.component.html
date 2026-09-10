@@ -40,15 +40,11 @@
           IntAct
         </button>
 
-        <button
-          class="full-width"
-          mat-button
-          [disabled]="hasEHLD()"
-          (click)="getInteractors(DISEASE_RESOURCE)"
-          [ngClass]="{ 'active-button': currentResource().type === ResourceType.DISGENET }"
-        >
-          DisGeNet
-        </button>
+        <!-- DisGeNet is deliberately not offered. Its overlay service 404s on both
+             dev and production -- DisGeNET moved to a commercial licence -- so the
+             button could only ever fail, and the resource is not being ported to
+             this site. The service-side plumbing is left in place in case that
+             decision is revisited. -->
       </div>
 
       @if (psicquicResources.length > 0 && !isDataFromPsicquicLoading) {

@@ -13,7 +13,6 @@ import {
 
 interface FlatTreeNode {
   className: string;
-  count: number;
   depth: number;
   hasChildren: boolean;
   expanded: boolean;
@@ -42,6 +41,13 @@ export class SchemaComponent implements OnInit, OnDestroy {
   treeSearchQuery = '';
   treeSearchResults = new Set<string>();
   private classSet = new Set<string>();
+
+  // Instance counts by class name, and the single source of truth for every
+  // count the page renders. Seeded from the /schema/model tree, whose counts
+  // are a server-side snapshot that drifts behind the curation database, then
+  // overwritten per class with the authoritative /schema/{class}/count value
+  // as classes are visited. Both are subclass-inclusive, so the two are
+  // interchangeable in meaning -- only in freshness.
   private classCountMap = new Map<string, number>();
 
   // Selected class state
@@ -57,7 +63,6 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   // Entries state
   entries: SimpleDatabaseObject[] = [];
-  entryCount = 0;
   entriesPage = 1;
   entriesPageSize = 50;
   loadingEntries = false;
@@ -91,7 +96,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
           // Listen for route changes. The path can be either
           //   /dataSchema/:className
           // or
-          //   /dataSchema/:className/instance/:dbId
+          //   /dataSchema/:className/:dbId
           // so a single subscription has to keep both selectedClass and
           // selectedInstanceId in sync with the URL.
           this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
@@ -152,7 +157,6 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
     this.flatTree.push({
       className: node.className,
-      count: node.count,
       depth,
       hasChildren,
       expanded,
@@ -232,6 +236,11 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.entriesPage = 1;
     this.selectedInstanceId = null;
     this.loadAttributes(className);
+
+    // Fetch the live count on selection rather than on first Entries-tab
+    // click: the header shows it while the Properties tab is active, and the
+    // stale model-tree count is the only thing available until it lands.
+    this.loadEntryCount(className);
 
     // Respect ?tab=entries in the URL (set by the count-bracket click in
     // the tree sidebar, or pasted directly) so the page lands straight
@@ -318,18 +327,27 @@ export class SchemaComponent implements OnInit, OnDestroy {
   switchToEntries() {
     this.activeTab = 'entries';
     if (this.entries.length === 0 && this.selectedClass) {
-      this.loadEntryCount();
       this.loadEntries();
     }
   }
 
-  loadEntryCount() {
-    this.contentDataService.getSchemaCount(this.selectedClass).subscribe({
-      next: (count) => {
-        this.entryCount = count;
-        this.cdr.markForCheck();
-      },
-    });
+  loadEntryCount(className: string) {
+    this.contentDataService
+      .getSchemaCount(className)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (count) => {
+          // A slow response for a class the user has already navigated away
+          // from must not overwrite the current class's count.
+          if (className !== this.selectedClass) return;
+          this.classCountMap.set(className, count);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          // Keep whatever the model tree gave us; a slightly stale count is
+          // more useful here than a blank or a zero.
+        },
+      });
   }
 
   loadEntries() {
@@ -348,6 +366,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  get entryCount(): number {
+    return this.getNodeCount(this.selectedClass);
   }
 
   get totalPages(): number {
@@ -383,7 +405,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   selectInstance(dbId: number) {
-    void this.router.navigate(['/dataSchema', this.selectedClass, 'instance', dbId], {
+    void this.router.navigate(['/dataSchema', this.selectedClass, dbId], {
       queryParams: { tab: 'entries' },
       queryParamsHandling: 'merge',
     });
@@ -399,7 +421,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     // Followed-from links inside the instance browser may point to objects
     // of a different schema class; we'll fix the className segment after
     // the instance loads and reveals its real class.
-    void this.router.navigate(['/dataSchema', this.selectedClass, 'instance', dbId], {
+    void this.router.navigate(['/dataSchema', this.selectedClass, dbId], {
       queryParams: { tab: 'entries' },
       queryParamsHandling: 'merge',
     });

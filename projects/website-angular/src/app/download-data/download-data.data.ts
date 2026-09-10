@@ -43,12 +43,6 @@ export interface DownloadItem {
   description?: string;
 }
 
-export interface FunctionalInteraction {
-  label: string;
-  file: string;
-  description: string;
-}
-
 // ── URL Builders ────────────────────────────────────────────────────────────
 
 export function buildUrl(base: string, version: string, path: string): string {
@@ -57,10 +51,6 @@ export function buildUrl(base: string, version: string, path: string): string {
 
 export function buildMappingUrl(base: string, version: string, db: string, suffix: string): string {
   return `${base}/${version}/${db}${suffix}`;
-}
-
-export function buildCurrentUrl(base: string, path: string): string {
-  return `${base}/current/${path}`;
 }
 
 // ── Table of Contents ───────────────────────────────────────────────────────
@@ -158,7 +148,7 @@ export const MAPPING_DATABASES: MappingDatabase[] = [
   { name: 'ENSEMBL', prefix: 'Ensembl' },
   { name: 'miRBase', prefix: 'miRBase' },
   { name: 'NCBI', prefix: 'NCBI' },
-  { name: 'GtoP', prefix: 'IUPHAR' },
+  { name: 'GtoP', prefix: 'GtoP' },
 ];
 
 export const MAPPING_CATEGORIES: MappingCategory[] = [
@@ -182,17 +172,17 @@ export const MAPPING_CATEGORIES: MappingCategory[] = [
 export const PE_MAPPING_CATEGORIES: MappingCategory[] = [
   {
     label: 'PE to Lowest Level Pathway',
-    suffix: '2Reactome_PE_Pathway.tsv',
+    suffix: '2Reactome_PE_Pathway.txt',
     info: 'Mapping of Physical Entity (PE) identifiers to the lowest level Reactome pathway diagrams/subsets.',
   },
   {
     label: 'PE to All Levels',
-    suffix: '2Reactome_PE_All_Levels.tsv',
+    suffix: '2Reactome_PE_All_Levels.txt',
     info: 'Mapping of Physical Entity (PE) identifiers to all levels of the Reactome pathway hierarchy.',
   },
   {
     label: 'PE to All Reactions',
-    suffix: '2Reactome_PE_Reactions.tsv',
+    suffix: '2Reactome_PE_Reactions.txt',
     info: 'Mapping of Physical Entity (PE) identifiers to all Reactome reactions.',
   },
 ];
@@ -202,7 +192,7 @@ export const PE_MAPPING_CATEGORIES: MappingCategory[] = [
 export const OTHER_MAPPINGS: OtherMapping[] = [
   {
     label: 'BioModels to Reactome Pathways',
-    file: 'biomodels_to_reactome_pathway.tsv',
+    file: 'models2pathways.tsv',
     infoKey: 'biomodels',
   },
   {
@@ -212,23 +202,33 @@ export const OTHER_MAPPINGS: OtherMapping[] = [
   },
   {
     label: 'Reactome to OMIM',
-    file: 'reactome_to_omim.txt',
+    file: 'Reactome2OMIM.txt',
     infoKey: 'omim',
   },
   {
     label: 'Protein Role Reaction',
-    file: 'protein_role_reaction.tsv',
+    file: 'ProteinRoleReaction.txt',
     infoKey: 'proteinRole',
   },
   {
     label: 'Disease Variant EWAS Mapping',
-    file: 'disease_variant_ewas.tsv',
+    file: 'disease_variant_ewas_mapping.tsv',
     infoKey: 'diseaseVariant',
   },
   {
     label: 'Human Pathways with Entity-level Diagrams',
-    file: 'human_pathways_with_diagrams.txt',
+    file: 'humanPathwaysWithDiagrams.txt',
     infoKey: 'entityDiagrams',
+  },
+  // Published alongside the rest and listed on the current site, but missing
+  // from this page until now.
+  {
+    label: 'Complex to Pathway (human)',
+    file: 'Complex_2_Pathway_human.txt',
+  },
+  {
+    label: 'EWAS to Pathway (human)',
+    file: 'Ewas2Pathway_human.txt',
   },
 ];
 
@@ -252,7 +252,7 @@ export const PATHWAY_DOWNLOADS: DownloadItem[] = [
   },
   {
     label: 'EWAS to Pathways (Human)',
-    file: 'Ensembl2Reactome_PE_Pathway.tsv',
+    file: 'Ensembl2Reactome_PE_Pathway.txt',
     description: 'Entity with Accession Sequence (EWAS) to pathway mapping for Homo sapiens.',
   },
 ];
@@ -262,12 +262,12 @@ export const PATHWAY_DOWNLOADS: DownloadItem[] = [
 export const DIAGRAM_DOWNLOADS: DownloadItem[] = [
   {
     label: 'Human Pathway Diagrams (SVG)',
-    file: 'diagrams/homo_sapiens.svg.tgz',
+    file: 'diagrams.svg.tgz',
     description: 'SVG format pathway diagrams for Homo sapiens.',
   },
   {
     label: 'Human Pathway Diagrams (PNG)',
-    file: 'diagrams/homo_sapiens.png.tgz',
+    file: 'diagrams.png.tgz',
     description: 'PNG format pathway diagrams for Homo sapiens.',
   },
 ];
@@ -282,12 +282,12 @@ export const GENE_ONTOLOGY_DOWNLOADS: DownloadItem[] = [
   },
   {
     label: 'Pathways to GO Terms',
-    file: 'pathways2go_terms.txt',
+    file: 'Pathways2GoTerms_human.txt',
     description: 'Mapping of Reactome pathways to Gene Ontology terms.',
   },
   {
     label: 'Reactions to GO Terms',
-    file: 'reactions2go_terms.txt',
+    file: 'Reactions2GoTerms_human.txt',
     description: 'Mapping of Reactome reactions to Gene Ontology terms.',
   },
 ];
@@ -342,12 +342,12 @@ export const ONTOLOGY_DOWNLOADS: DownloadItem[] = [
 export const PPI_MITAB_DOWNLOADS: DownloadItem[] = [
   {
     label: 'All Species (PSI-MITAB)',
-    file: 'reactome.all_species.interactions.psi-mitab.txt',
+    file: 'interactors/reactome.all_species.interactions.psi-mitab.txt',
     description: 'Protein-protein interactions for all species in PSI-MITAB format.',
   },
   {
     label: 'Human Only (PSI-MITAB)',
-    file: 'reactome.homo_sapiens.interactions.psi-mitab.txt',
+    file: 'interactors/reactome.homo_sapiens.interactions.psi-mitab.txt',
     description: 'Protein-protein interactions for Homo sapiens in PSI-MITAB format.',
   },
 ];
@@ -355,42 +355,59 @@ export const PPI_MITAB_DOWNLOADS: DownloadItem[] = [
 export const PPI_TAB_DOWNLOADS: DownloadItem[] = [
   {
     label: 'All Species (Tab-delimited)',
-    file: 'reactome.all_species.interactions.tab-delimited.txt',
+    file: 'interactors/reactome.all_species.interactions.tab-delimited.txt',
     description: 'Protein-protein interactions for all species in tab-delimited format.',
   },
   {
     label: 'Human Only (Tab-delimited)',
-    file: 'reactome.homo_sapiens.interactions.tab-delimited.txt',
+    file: 'interactors/reactome.homo_sapiens.interactions.tab-delimited.txt',
     description: 'Protein-protein interactions for Homo sapiens in tab-delimited format.',
   },
 ];
 
 // ── Functional Interactions ─────────────────────────────────────────────────
 
-export const FUNCTIONAL_INTERACTIONS: FunctionalInteraction[] = [
+export interface ToolDownload {
+  label: string;
+  url: string;
+  description: string;
+}
+
+/**
+ * The functional-interaction networks.
+ *
+ * Not release artefacts: they are published under reactome.org/download/tools
+ * rather than in the versioned download bucket, and their file names carry the
+ * build date rather than the year in the label. Every one of these used to be
+ * built as `<bucket>/current/FIsInGene_...`, a path that does not exist -- so
+ * the whole section 403'd. Names taken from the published set and checked.
+ */
+const FI_BASE = 'https://reactome.org/download/tools/ReactomeFIs';
+
+export const FUNCTIONAL_INTERACTIONS: ToolDownload[] = [
   {
     label: 'FI Network 2025',
-    file: 'FIsInGene_022725_with_annotations.txt.zip',
+    url: `${FI_BASE}/FIsInGene_04142025_with_annotations.txt.zip`,
     description: 'Functional interaction network (2025 version) with annotations.',
   },
   {
     label: 'FI Network 2024',
-    file: 'FIsInGene_020724_with_annotations.txt.zip',
+    url: `${FI_BASE}/FIsInGene_061424_with_annotations.txt.zip`,
     description: 'Functional interaction network (2024 version, KEGG data removed).',
   },
   {
     label: 'FI Network 2022',
-    file: 'FIsInGene_031516_with_annotations.txt.zip',
+    url: `${FI_BASE}/FIsInGene_070323_with_annotations.txt.zip`,
     description: 'Functional interaction network (2022 version, random forest classifier).',
   },
   {
     label: 'FI Network 2021',
-    file: 'FIsInGene_022121_with_annotations.txt.zip',
+    url: `${FI_BASE}/FIsInGene_122921_with_annotations.txt.zip`,
     description: 'Functional interaction network (2021 version).',
   },
   {
     label: 'FI Network 2020',
-    file: 'FIsInGene_070420_with_annotations.txt.zip',
+    url: `${FI_BASE}/FIsInGene_122220_with_annotations.txt.zip`,
     description: 'Functional interaction network (2020 version).',
   },
 ];
@@ -399,10 +416,20 @@ export const FUNCTIONAL_INTERACTIONS: FunctionalInteraction[] = [
 
 export const CURATOR_TOOL = {
   label: 'Curator Tool',
-  file: 'curator_tool/CuratorTool.jar',
   version: 'v4.0.4, build 119',
   date: 'November 2025',
   description: 'Desktop application for internal Reactome pathway annotation.',
+  // Installers, not a bare jar: what the current site actually distributes.
+  installers: [
+    {
+      label: 'Windows / Linux',
+      url: 'https://reactome.org/download/tools/curatorTool/InstData/win_linux/install.zip',
+    },
+    {
+      label: 'macOS',
+      url: 'https://reactome.org/download/tools/curatorTool/InstData/mac/install.zip',
+    },
+  ],
 };
 
 // ── Textbook ────────────────────────────────────────────────────────────────
