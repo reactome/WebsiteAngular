@@ -1,9 +1,17 @@
+// A floating bar over the foot of the diagram, centred, the way the old browser
+// places it. Not a full-width strip: the diagram is the thing being read, and a
+// control that spans it competes with it.
 :host {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.25rem 1rem;
+  padding: 0.4rem 1rem;
   font-size: 0.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+  pointer-events: auto;
 }
 
 .threshold-label {
@@ -18,7 +26,58 @@
   font-weight: 600;
 }
 
+// The track carries the marks behind the slider, so both share one coordinate
+// space and a mark at 0.6 sits under the thumb at 0.6.
+.threshold-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 12rem;
+  max-width: 22rem;
+  display: flex;
+  align-items: center;
+}
+
+.threshold-marks {
+  position: absolute;
+  // 8px is the slider track's own inset, measured from
+  // `.mdc-slider__track` against its container rather than guessed -- a mark for
+  // 0.6 has to sit under the thumb at 0.6 or the whole point of drawing them is
+  // lost. The first attempt used 1rem and was two pixels out at each end.
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 1.1rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.threshold-mark {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  // Below the cutoff: still there, no longer drawn. Kept visible so the reader
+  // can see how much they have put away and how far back it is.
+  background: var(--outline, rgba(0, 0, 0, 0.35));
+  opacity: 0.35;
+
+  &.kept {
+    background: var(--primary, #1c6ea4);
+    opacity: 0.9;
+  }
+}
+
 .threshold-slider {
   flex: 1 1 auto;
-  max-width: 18rem;
+  width: 100%;
+}
+
+.threshold-tally,
+.threshold-empty {
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.threshold-empty {
+  font-weight: 600;
 }

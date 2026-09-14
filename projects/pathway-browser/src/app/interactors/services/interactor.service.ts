@@ -65,6 +65,27 @@ export class InteractorService {
    * which is a different thing from the entity having none -- and the two look
    * identical on a diagram (FR-012).
    */
+  /**
+   * The scores of the interactions the reader has opened, so the control can show
+   * where they actually lie.
+   *
+   * A slider from 0 to 1 is a guess without them: an entity whose interactions
+   * all sit between 0.48 and 0.98 has nothing below half the track, and dragging
+   * through that range does nothing at all.
+   */
+  readonly openedScores = signal<number[]>([]);
+
+  /**
+   * The interactions currently drawn, for the export.
+   *
+   * Read off the graph rather than rebuilt from the response, so the file and the
+   * diagram cannot disagree: whatever the threshold is hiding is absent from
+   * both.
+   */
+  readonly shownInteractions = signal<
+    { acc?: string; alias?: string; score?: number; evidences?: number; entity?: string }[]
+  >([]);
+
   readonly interactorCounts = signal<{ shown: number; drawn: number; offered: number }>({
     shown: 0,
     drawn: 0,
@@ -244,6 +265,32 @@ export class InteractorService {
       drawn: drawn.length,
       offered,
     });
+
+    this.shownInteractions.set(
+      drawn
+        .filter((node) => node.visible())
+        .map((node) => ({
+          acc: node.data('graph')?.identifier as string | undefined,
+          alias: node.data('displayName') as string | undefined,
+          score: node.data('score') as number | undefined,
+          evidences: node.data('evidences') as number | undefined,
+          entity: node.data('entity')?.data('displayName') as string | undefined,
+        }))
+    );
+
+    this.openedScores.set(
+      cy
+        .nodes('.InteractorOccurrences.opened')
+        .reduce<number[]>((scores, badge) => {
+          const interactions = (badge.data('interactors') ?? []) as { score?: number }[];
+          return scores.concat(
+            interactions
+              .map((interaction) => interaction.score)
+              .filter((score): score is number => typeof score === 'number')
+          );
+        }, [])
+        .sort((a, b) => a - b)
+    );
   }
 
   public addInteractorNodes(occurrenceNode: cytoscape.NodeSingular, cy: cytoscape.Core) {

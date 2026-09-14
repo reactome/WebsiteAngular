@@ -535,10 +535,9 @@ button.error {
 // be covered by the panel below.
 cr-interactor-threshold {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 998; // under .dropdown, which slides over the whole diagram
-  background: var(--surface);
-  border-top: 1px solid var(--outline-variant, rgba(0, 0, 0, 0.12));
+  max-width: calc(100% - 2rem);
 }
