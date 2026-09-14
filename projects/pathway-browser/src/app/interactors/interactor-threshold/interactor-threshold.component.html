@@ -1,0 +1,12 @@
+<label class="threshold-label" for="interactor-threshold">
+  Interaction confidence
+  <span class="threshold-value">{{ label() }}</span>
+</label>
+
+<mat-slider class="threshold-slider" [min]="0" [max]="1" [step]="0.01" [discrete]="true">
+  <input id="interactor-threshold" matSliderThumb [value]="threshold()" (valueChange)="set($event)" />
+</mat-slider>
+
+@if (hiddenByThreshold()) {
+  <span class="threshold-empty"> The threshold is hiding every interactor here. Lower it to bring them back. </span>
+}

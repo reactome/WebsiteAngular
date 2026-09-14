@@ -41,6 +41,7 @@ import {
   tap,
 } from 'rxjs';
 import { UrlStateService } from '../services/url-state.service';
+import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
@@ -143,6 +144,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   constructor() {
     this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
+    // Redraw the interactors whenever the reader moves the confidence control.
+    // Both diagrams, because the comparison view has its own graph and an
+    // interactor hidden in one but not the other would be a difference the
+    // reader did not ask for.
+    effect(() => {
+      const threshold = clampThreshold(this.state.interactorScore());
+      for (const style of [this.reactomeStyle, this.reactomeStyleCompare]) {
+        const cy = style?.cy;
+        if (cy) this.interactorsService.applyInteractorThreshold(cy, threshold);
+      }
+    });
     effect(
       () => {
         const flag = this.data.flagIdentifiers();

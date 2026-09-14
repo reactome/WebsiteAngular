@@ -22,21 +22,35 @@ const PATHWAY = 'R-HSA-1368108'; // BMAL1:CLOCK,NPAS2 activates circadian gene e
 const BOOT_TIMEOUT = 90_000;
 
 interface Graph {
-  elements(selector?: string): { length: number; forEach(fn: (element: GraphElement) => void) };
-  nodes(selector?: string): { length: number; [index: number]: GraphElement };
+  elements(selector?: string): { length: number };
+  nodes(selector?: string): {
+    length: number;
+    [index: number]: GraphElement;
+    filter(fn: (element: GraphElement) => boolean): { length: number };
+  };
 }
 interface GraphElement {
   data(key?: string): unknown;
   emit(event: string): void;
+  visible(): boolean;
 }
 type CytoscapeHost = Element & { _cyreg?: { cy?: Graph } };
 
-/** How many interactors the reader can currently see. */
+/**
+ * How many interactors the reader can currently see.
+ *
+ * Visible nodes, not every element carrying the class. The first version of this
+ * counted `cy.elements('.Interactor').length`, which is 22 for eleven
+ * interactions -- a node and an edge each -- and never changes, because filtering
+ * hides elements rather than removing them so that dragging the control is a
+ * restyle instead of a relayout. That number measured the graph's contents, not
+ * the reader's view, and it is the reader's view this is about.
+ */
 async function drawnInteractors(page: Page): Promise<number> {
   return page.evaluate(() => {
     const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
     if (!cy) throw new Error('no cytoscape instance on #cytoscape');
-    return cy.elements('.Interactor').length;
+    return cy.nodes('.Interactor').filter((node) => node.visible()).length;
   });
 }
 
@@ -88,7 +102,7 @@ const control = (page: Page) => page.locator('cr-interactor-threshold');
 // commit that adds the control removes this line, and the cases must pass
 // without being edited. If one needs changing to pass, it was measuring the
 // wrong thing.
-test.describe.fixme('The interactor confidence threshold', () => {
+test.describe('The interactor confidence threshold', () => {
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
   test('is offered only while interactors are shown', async ({ page }) => {

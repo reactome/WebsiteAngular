@@ -16,6 +16,7 @@ import { DiagramComponent } from '../diagram/diagram.component';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { SpeciesService } from '../services/species.service';
 import { InteractorService } from '../interactors/services/interactor.service';
+import { InteractorThresholdComponent } from '../interactors/interactor-threshold/interactor-threshold.component';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
@@ -86,6 +87,7 @@ const DROPDOWN_DURATION = 500;
     ReacfoamComponent,
     DetailsComponent,
     AnalysisFormComponent,
+    InteractorThresholdComponent,
   ],
 })
 @UntilDestroy()
@@ -203,6 +205,8 @@ export class ViewportComponent implements AfterViewInit {
   darkToggle = viewChild.required<MatSlideToggle>('darkToggle');
 
   currentInteractorResource = this.interactorService.currentResource;
+  /** Whether any interactors are drawn, which is when the threshold matters. */
+  readonly showingInteractors = this.interactorService.showingInteractors;
 
   exampleAnalysis = rxResource({
     params: this.state.example,

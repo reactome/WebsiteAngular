@@ -14,6 +14,7 @@ import {
 
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
+import { passesThreshold } from '../interactor-threshold';
 import { CONTENT_SERVICE, OVERLAYS } from '../../../environments/environment';
 
 @Injectable({
@@ -46,6 +47,25 @@ export class InteractorService {
   cyToSelectedResource = new Map<cytoscape.Core, string>();
 
   currentResource = signal<ResourceAndType>({ type: null, name: null });
+
+  /**
+   * Whether any interactors are currently drawn.
+   *
+   * Not the same question as "is a resource selected": choosing a resource only
+   * adds the count badges, and the interactors themselves appear when one of
+   * those is opened. The confidence control belongs to the second thing, because
+   * until then there is nothing for it to filter.
+   */
+  readonly showingInteractors = signal(false);
+
+  /**
+   * How many interactors are drawn, and how many the resource offered.
+   *
+   * Kept so the control can tell the reader that *the threshold* is hiding them,
+   * which is a different thing from the entity having none -- and the two look
+   * identical on a diagram (FR-012).
+   */
+  readonly interactorCounts = signal<{ shown: number; total: number }>({ shown: 0, total: 0 });
   private getIdentifiers(cy: cytoscape.Core): void {
     this.identifiers = this.getIdentifiersFromGraph(cy);
   }
@@ -163,6 +183,40 @@ export class InteractorService {
       });
   }
 
+  /**
+   * Draw only the interactions at or above the confidence threshold.
+   *
+   * Hidden rather than removed. Removing would mean re-running the layout on
+   * every drag of the control, and the reader is dragging it to look at the
+   * diagram -- so the elements stay and their display changes, which cytoscape
+   * does as a restyle.
+   *
+   * Only the dynamically added interactors are touched. An interaction whose
+   * partner is already a PhysicalEntity on the diagram does not get an
+   * `.Interactor` node, and hiding the real entity because one interaction scored
+   * poorly would remove part of the pathway. Its edge is hidden instead, which is
+   * the part that belongs to the interaction.
+   */
+  public applyInteractorThreshold(cy: cytoscape.Core, threshold: number): void {
+    const show = (element: cytoscape.NodeSingular | cytoscape.EdgeSingular): void => {
+      const score = element.data('score') as number | undefined;
+      element.style('display', passesThreshold({ score }, threshold) ? 'element' : 'none');
+    };
+
+    cy.batch(() => {
+      cy.nodes('.Interactor').forEach(show);
+      // `edgeToTarget` is carried only by interactor edges, so it is what
+      // separates them from the pathway's own.
+      cy.edges('[edgeToTarget]').forEach(show);
+    });
+
+    const drawn = cy.nodes('.Interactor');
+    this.interactorCounts.set({
+      shown: drawn.filter((node) => node.visible()).length,
+      total: drawn.length,
+    });
+  }
+
   public addInteractorNodes(occurrenceNode: cytoscape.NodeSingular, cy: cytoscape.Core) {
     const interactorsData = occurrenceNode.data('interactors');
     const resource = occurrenceNode.data('resource');
@@ -189,6 +243,7 @@ export class InteractorService {
 
       this.displayInteractors(nodes, cy);
     });
+    this.showingInteractors.set(cy.nodes('.Interactor').length > 0);
   }
 
   public getAllInteractors(interactorsData: Interactor[], cy: cytoscape.Core, numberToAdd: number) {
@@ -300,6 +355,11 @@ export class InteractorService {
             target: targetNode.id(),
             edgeToTarget: occurrenceNode.id(),
             evidenceURLs: interactor.evidencesURL,
+            // Explicitly, not from the spread above: for an interactor that is
+            // already a PhysicalEntity on the diagram the target is that entity,
+            // which has no score of its own. Without this the edge could not be
+            // filtered alongside the node it belongs to.
+            score: interactor.score,
             resource: resource,
           },
           classes: resourceClass,
@@ -332,6 +392,7 @@ export class InteractorService {
 
   public clearAllInteractorNodes(cy: cytoscape.Core) {
     this.cyToSelectedResource.clear();
+    this.showingInteractors.set(false);
     const interactorOcc = cy.elements(`.InteractorOccurrences`).remove();
     interactorOcc.forEach((node) => {
       if (node.hasClass('opened')) {
