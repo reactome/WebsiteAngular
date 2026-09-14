@@ -17,7 +17,18 @@
     the thing that looked broken while dragging.
   -->
   <mat-slider class="threshold-slider" [min]="0" [max]="1" [step]="0.01">
-    <input id="interactor-threshold" matSliderThumb [value]="threshold()" (valueChange)="set($event)" />
+    <!--
+      `input`, not `valueChange`. Material commits valueChange when the drag ends,
+      so the diagram only caught up once the reader let go -- and the whole point
+      of the marks on the track is to see the interactors leave as you pass them.
+    -->
+    <input
+      id="interactor-threshold"
+      matSliderThumb
+      [value]="threshold()"
+      (input)="onSlide($event)"
+      (valueChange)="set($event)"
+    />
   </mat-slider>
 </div>
 

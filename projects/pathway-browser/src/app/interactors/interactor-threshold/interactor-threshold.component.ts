@@ -88,6 +88,18 @@ export class InteractorThresholdComponent {
     this.state.interactorScore.set(clampThreshold(value));
   }
 
+  /**
+   * While the thumb is moving, not only when it is let go.
+   *
+   * Material commits `valueChange` at the end of a drag, so the diagram lagged
+   * behind the control and the marks on the track could not be used for what they
+   * are for -- watching interactors leave as the thumb passes them.
+   */
+  onSlide(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    if (input) this.set(Number(input.value));
+  }
+
   /** Nothing drawn, nothing to take away. */
   readonly canDownload = computed(() => this.interactors.shownInteractions().length > 0);
 

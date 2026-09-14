@@ -83,7 +83,11 @@
 .threshold-status {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 2.2em;
+  // Fixed, not a minimum. "The threshold is hiding every interactor here" wraps
+  // to two lines where "18 of 46 shown" is one, so a minimum still let the bar
+  // grow as the reader slid to the right-hand end.
+  height: 2.4em;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
