@@ -261,3 +261,65 @@ test.describe('The interactor count badge', () => {
     expect(closeIn.visible, 'and every one is drawn once it can be').toBe(closeIn.total);
   });
 });
+
+/**
+ * The number beside a resource and the number on a badge are the same unit.
+ *
+ * Reported from beta: Reactome-FIs showed 15 on R-HSA-69306 while the MCM7 badge
+ * showed 17. Both were right and the pair was nonsense -- the panel was counting
+ * entities that have interactors and the badge counts interactions, rendered
+ * identically with nothing to tell them apart. Measured that day: 13 accessions,
+ * 78 interactions, MCM7 alone 17.
+ *
+ * Asserted as an invariant rather than against those figures, because the
+ * underlying data is a third-party resource that changes.
+ */
+test.describe('The count beside a resource', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('is in the same unit as the badges it describes', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await page.waitForFunction(
+      () => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        return (cy?.elements('.InteractorOccurrences').length ?? 0) > 0;
+      },
+      { timeout: BOOT_TIMEOUT }
+    );
+
+    // What the badges say, counted once per protein: a protein drawn twice in a
+    // diagram carries two badges repeating the same interactions.
+    const badges = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const perAccession = new Map<string, number>();
+      cy.nodes('.InteractorOccurrences').filter((badge) => {
+        const key = String(badge.data('acc') ?? '');
+        const size = ((badge.data('interactors') ?? []) as unknown[]).length;
+        perAccession.set(key, Math.max(perAccession.get(key) ?? 0, size));
+        return true;
+      });
+      const counts = [...perAccession.values()];
+      return { total: counts.reduce((a, b) => a + b, 0), biggest: Math.max(0, ...counts) };
+    });
+    expect(badges.biggest, 'this resource drew interactions to compare against').toBeGreaterThan(0);
+
+    const shown = page
+      .locator('cr-interactors button.active-button')
+      .locator('.resource-count')
+      .first();
+    await expect(shown).toHaveCount(1);
+    const panelCount = Number((await shown.textContent())?.trim());
+
+    expect(
+      panelCount,
+      'the panel cannot report fewer than one entity holds'
+    ).toBeGreaterThanOrEqual(badges.biggest);
+    expect(panelCount, 'it is the interactions the resource holds here').toBe(badges.total);
+  });
+});

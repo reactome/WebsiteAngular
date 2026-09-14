@@ -16,6 +16,37 @@ import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
 import { passesThreshold } from '../interactor-threshold';
 import { UrlStateService } from '../../services/url-state.service';
+
+/**
+ * What the drawn badges add up to, counted once per protein.
+ *
+ * Badges are not the unit: a protein drawn twice in a diagram gets two, each
+ * repeating the same interactions. On R-HSA-69306 with Reactome-FIs that is 15
+ * badges over 13 accessions, so adding the badges up gives 84 where the resource
+ * holds 78 -- and the panel, which asks the resource directly before anything is
+ * drawn, would show 78 and then change its mind to 84 on the click.
+ * Measured 2026-09-14.
+ */
+function tallyBadges(badges: cytoscape.NodeCollection): ResourceTally {
+  const byAccession = new Map<string, number>();
+  badges.forEach((badge) => {
+    const accession = (badge.data('acc') as string | undefined) ?? badge.id();
+    const interactions = (badge.data('interactors') as unknown[] | undefined)?.length ?? 0;
+    byAccession.set(accession, Math.max(byAccession.get(accession) ?? 0, interactions));
+  });
+  return {
+    interactions: [...byAccession.values()].reduce((total, count) => total + count, 0),
+    entities: byAccession.size,
+  };
+}
+
+/** What a resource holds for one diagram, in both units the UI shows. */
+export interface ResourceTally {
+  /** Interactions, the unit an entity's badge uses. */
+  interactions: number;
+  /** How many entities have any, which is the coverage of the diagram. */
+  entities: number;
+}
 import { CONTENT_SERVICE, OVERLAYS } from '../../../environments/environment';
 
 @Injectable({
@@ -85,7 +116,7 @@ export class InteractorService {
    *
    * Keyed by pathway, because the answer is a property of the diagram.
    */
-  readonly resourceCounts = signal<Record<string, number>>({});
+  readonly resourceCounts = signal<Record<string, ResourceTally>>({});
   private countsForPathway: string | null = null;
 
   /**
@@ -118,9 +149,22 @@ export class InteractorService {
       this.prefetching.add(resource);
       this.fetchInteractorData(cy, resource)
         .pipe(
-          map((interactors) =>
-            (interactors.entities ?? []).filter((entity) => (entity.interactors ?? []).length > 0)
-          ),
+          map((interactors) => {
+            const covered = (interactors.entities ?? []).filter(
+              (entity) => (entity.interactors ?? []).length > 0
+            );
+            return {
+              // The badge on an entity counts interactions, so this must too --
+              // otherwise the panel says "15" for Reactome-FIs while MCM7's badge
+              // says 17, and the reader is right to call that impossible. It was
+              // counting entities.
+              interactions: covered.reduce(
+                (total, entity) => total + (entity.interactors ?? []).length,
+                0
+              ),
+              entities: covered.length,
+            };
+          }),
           catchError(() => of(null))
         )
         .subscribe((withInteractors) => {
@@ -128,14 +172,13 @@ export class InteractorService {
           // A resource that failed is left unanswered rather than reported as
           // empty: "we could not ask" and "it has none" are different, and only
           // one of them should stop the reader trying.
-          if (withInteractors)
-            this.rememberResourceCount(pathway, resource, withInteractors.length);
+          if (withInteractors) this.rememberResourceCount(pathway, resource, withInteractors);
         });
     }
   }
 
   /** Note what a resource held here, forgetting the tally if the pathway changed. */
-  private rememberResourceCount(pathway: string | null, resource: string, count: number) {
+  private rememberResourceCount(pathway: string | null, resource: string, count: ResourceTally) {
     if (pathway !== this.countsForPathway) {
       this.countsForPathway = pathway;
       this.resourceCounts.set({});
@@ -258,9 +301,9 @@ export class InteractorService {
     cy.emit('zoom');
 
     // Nothing drawn and nothing to draw: the resource has no interactions here.
-    const badges = cy.nodes('.InteractorOccurrences').length;
-    this.resourceFoundNothing.set(badges === 0);
-    this.rememberResourceCount(this.urlState.pathwayId() ?? null, resource, badges);
+    const badges = cy.nodes('.InteractorOccurrences');
+    this.resourceFoundNothing.set(badges.length === 0);
+    this.rememberResourceCount(this.urlState.pathwayId() ?? null, resource, tallyBadges(badges));
   }
 
   public createInteractorOccurrenceNode(

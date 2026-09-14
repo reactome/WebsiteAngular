@@ -37,7 +37,20 @@
           (click)="getInteractors(INTACT_RESOURCE)"
           [ngClass]="{ 'active-button': currentResource().type === ResourceType.STATIC }"
         >
-          IntAct
+          <!--
+            IntAct carries the same count as the others. It is the resource a
+            reader lands on and the one most of them use, so leaving it the only
+            unlabelled button meant the count looked like a PSICQUIC curiosity
+            rather than the answer to "is there anything here".
+          -->
+          <div class="resource-name">
+            <span>IntAct</span>
+            @if (tallyFor(INTACT_RESOURCE); as tally) {
+              <span class="resource-count" [class.none]="tally.interactions === 0" [title]="describeTally(tally)">
+                {{ tally.interactions }}
+              </span>
+            }
+          </div>
         </button>
 
         <!-- DisGeNet is deliberately not offered. Its overlay service 404s on both
@@ -71,18 +84,16 @@
                     What this resource held last time it was asked, for this
                     diagram. Thirteen live resources look identical otherwise, and
                     the only way to tell them apart is to try each one.
+
+                    Interactions, not entities -- the same unit the badge on an
+                    entity counts. Counting entities here made Reactome-FIs read
+                    "15" beside an MCM7 badge reading "17", which is impossible
+                    unless the two numbers mean different things, and nothing on
+                    screen said they did.
                   -->
-                  @if (resourceCounts()[resource.name] !== undefined) {
-                    <span
-                      class="resource-count"
-                      [class.none]="resourceCounts()[resource.name] === 0"
-                      [title]="
-                        resourceCounts()[resource.name] === 0
-                          ? 'No interactors here'
-                          : resourceCounts()[resource.name] + ' entities have interactors here'
-                      "
-                    >
-                      {{ resourceCounts()[resource.name] }}
+                  @if (tallyFor(resource.name); as tally) {
+                    <span class="resource-count" [class.none]="tally.interactions === 0" [title]="describeTally(tally)">
+                      {{ tally.interactions }}
                     </span>
                   }
                   @if (loadingResource === resource.name) {

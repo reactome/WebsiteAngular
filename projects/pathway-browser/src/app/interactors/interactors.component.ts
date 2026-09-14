@@ -17,7 +17,7 @@ import {
 import cytoscape from 'cytoscape';
 import { DiagramService } from '../services/diagram.service';
 import { DarkService } from '../services/dark.service';
-import { InteractorService } from './services/interactor.service';
+import { InteractorService, ResourceTally } from './services/interactor.service';
 import { UrlStateService } from '../services/url-state.service';
 import { MatDialog } from '@angular/material/dialog';
 import { CustomInteractorDialogComponent } from './custom-interactor-dialog/custom-interactor-dialog.component';
@@ -84,6 +84,25 @@ export class InteractorsComponent implements AfterViewInit {
   readonly currentResource = this.interactors.currentResource;
   /** What each resource turned out to hold here, once we have asked it. */
   readonly resourceCounts = this.interactors.resourceCounts;
+
+  /** This resource's tally, or undefined while it has never been asked. */
+  tallyFor(resource: string): ResourceTally | undefined {
+    return this.resourceCounts()[resource];
+  }
+
+  /**
+   * Both units in words, because the number alone is ambiguous.
+   *
+   * The count shown is interactions, matching an entity's badge; how many
+   * entities carry them is the more useful thing when choosing between
+   * resources, so it is said here rather than dropped.
+   */
+  describeTally(tally: ResourceTally): string {
+    if (tally.interactions === 0) return 'No interactors here';
+    const interactions = `${tally.interactions} interaction${tally.interactions === 1 ? '' : 's'}`;
+    const entities = `${tally.entities} entit${tally.entities === 1 ? 'y' : 'ies'}`;
+    return `${interactions} across ${entities} in this diagram`;
+  }
   @Output() initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
 
   ngAfterViewInit(): void {
