@@ -5,6 +5,7 @@ import {
   UrlStateService,
   urlParam,
 } from '../../../../../../pathway-browser/src/app/services/url-state.service';
+import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/app/interactors/interactor-threshold';
 
 @Injectable()
 export class DetailUrlState implements Partial<UrlStateService> {
@@ -27,6 +28,10 @@ export class DetailUrlState implements Partial<UrlStateService> {
   );
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
+  // Mirrors UrlStateService. The content pages do not draw interactors, but
+  // this class declares the same shape, so a param added there has to appear
+  // here or the build fails -- which is how this one was found.
+  interactorScore = urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number');
   palette = urlParam<any>(null, 'string');
   filterViewMode = urlParam<any>(undefined, 'string');
   speciesFilter = urlParam<string[]>([], 'string');
@@ -52,6 +57,7 @@ export class DetailUrlState implements Partial<UrlStateService> {
     tab: this.tab,
     significance: this.significance,
     sample: this.sample,
+    interactorScore: this.interactorScore,
     palette: this.palette,
     filterViewMode: this.filterViewMode,
     speciesFilter: this.speciesFilter,
