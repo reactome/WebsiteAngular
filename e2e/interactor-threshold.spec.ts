@@ -70,7 +70,8 @@ async function showInteractors(page: Page, query = '') {
 
   // Step two: the badges are not the interactors.
   await page.evaluate(() => {
-    const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)!._cyreg!.cy!;
+    const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+    if (!cy) throw new Error('no cytoscape instance on #cytoscape');
     cy.nodes('.InteractorOccurrences')[0].emit('tap');
   });
   await page.waitForTimeout(4000);
