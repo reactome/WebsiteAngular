@@ -13,7 +13,15 @@
  */
 const backend = process.env.REACTOME_BACKEND || 'http://localhost:8080';
 const secure = backend.startsWith('https');
-const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:8080';
+// DeltaSignal's own compose binds 8080, but so does the Tomcat on the Reactome
+// dev host that serves ContentService and AnalysisService. Defaulting to 8080
+// therefore sends /api/pathways, /api/parse and /api/solve to Tomcat, which
+// answers 404 -- a real server denying a real request, which looks like a broken
+// feature rather than an unconfigured one.
+//
+// 8090 is where DeltaSignal is published on the dev host; the container still
+// listens on 8080 inside. Override DELTASIGNAL_BACKEND for anything else.
+const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:8090';
 
 const localService = (context) => [context, { target: backend, secure, changeOrigin: true }];
 
