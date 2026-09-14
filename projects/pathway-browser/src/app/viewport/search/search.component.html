@@ -148,6 +148,7 @@
                   [matTooltip]="'Select ' + selectedResult()?.stId + ' in ' + pathway.name"
                   (click)="selectAndSetPathway(pathway.stId)"
                   [class.selected]="pathway.stId === state.pathwayId()"
+                  [crReveal]="pathway.stId === state.pathwayId()"
                   matTooltipPosition="after"
                 >
                   <mat-icon class="custom-icon" [class.ehld]="pathway.hasEHLD" svgIcon="pathway"></mat-icon>

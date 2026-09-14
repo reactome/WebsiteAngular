@@ -11,6 +11,7 @@ import {
   inject,
 } from '@angular/core';
 import { AnalysisService } from '../../../services/analysis.service';
+import { RevealDirective } from '../../../utils/reveal.directive';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import type { Analysis } from '../../../model/analysis.model';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -43,6 +44,7 @@ import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
   selector: 'cr-result-tab',
   imports: [
     MatTableModule,
+    RevealDirective,
     MatSortModule,
     MatPaginatorModule,
     DecimalPipe,
@@ -331,14 +333,9 @@ export class ResultTabComponent {
           pageSize,
           pageIndex,
         });
-
-        setTimeout(() => {
-          document.getElementById(`pathway-${stId}-row`)?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-            inline: 'start',
-          });
-        });
+        // The row brings itself into view once it is on the page -- see
+        // RevealDirective in the template. This effect only has to get the
+        // paginator to the page the row is on.
       });
     });
 

@@ -133,8 +133,25 @@ export namespace Analysis {
     };
   }
 
-  export type Type =
-    'OVERREPRESENTATION' | 'EXPRESSION' | 'GSA_REGULATION' | 'GSVA' | 'SPECIES_COMPARISON';
+  /**
+   * Every analysis type the backend can return.
+   *
+   * This is the AnalysisService's own enum -- `AnalysisSummary.type` in
+   * /AnalysisService/v3/api-docs -- and it is kept as data rather than only as a
+   * union so a test can walk it. GSA_STATISTICS, which is what PADOG produces,
+   * was missing here and from the palette map, and the result was not a type
+   * error but a blank view: see TYPE_DEFAULT_PALETTE in analysis.service.ts.
+   */
+  export const TYPES = [
+    'OVERREPRESENTATION',
+    'EXPRESSION',
+    'GSA_REGULATION',
+    'GSA_STATISTICS',
+    'GSVA',
+    'SPECIES_COMPARISON',
+  ] as const;
+
+  export type Type = (typeof TYPES)[number];
 
   export interface Result {
     expression: {

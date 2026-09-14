@@ -29,6 +29,19 @@ npx http-server tools/svg-export-harness -p 3334 -s -c -1
 Then open <http://127.0.0.1:3334/index.html>. The page reports how many nodes
 and edges rendered and whether anything threw.
 
+`harness.check.mjs` drives the same page with Playwright and saves the three
+renderings to `test-results/reactome-pathway/` for comparison:
+
+```bash
+npx playwright test --config= tools/svg-export-harness/harness.check.mjs
+```
+
+It is deliberately not part of `npm run e2e`, and deliberately not named
+`*.spec.*`: it needs a built bundle and a static server on port 3334, neither of
+which CI has, and the comparison it exists for is one a person makes by looking.
+It was named `harness.spec.mjs` until a widened test glob picked it up, which is
+what a runner does with a file called a spec.
+
 `harness.bundle.js` is generated and gitignored — it is 1.4 MB, and rebuilding
 it is one command.
 

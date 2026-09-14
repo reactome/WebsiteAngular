@@ -78,36 +78,50 @@
                   "maximumError": "25kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"production\""
+              }
             },
             "development": {
+              "define": {
+                "APP_ENV": "\"development\""
+              },
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
             },
             "curator": {
               "baseHref": "/curatorgraph/",
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/variant.ts",
-                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"curator\""
+              }
             },
             "curator-local": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
-              "fileReplacements": [
+              "define": {
+                "APP_ENV": "\"curator-local\""
+              }
+            },
+            "beta": {
+              "budgets": [
                 {
-                  "replace": "projects/pathway-browser/src/environments/variant.ts",
-                  "with": "projects/pathway-browser/src/environments/variant.curator.ts"
+                  "type": "initial",
+                  "maximumWarning": "450kB",
+                  "maximumError": "550kB"
                 },
                 {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.curator-local.ts"
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "20kB",
+                  "maximumError": "25kB"
                 }
-              ]
+              ],
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"beta\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -130,6 +144,9 @@
             "curator-local": {
               "buildTarget": "reactome:build:curator-local",
               "proxyConfig": "proxy.curator-local.conf.json"
+            },
+            "beta": {
+              "buildTarget": "reactome:build:beta"
             }
           },
           "defaultConfiguration": "development"
@@ -299,13 +316,10 @@
                   "maximumError": "10kb"
                 }
               ],
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.production.ts"
-                }
-              ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "define": {
+                "APP_ENV": "\"production\""
+              }
             },
             "release": {
               "outputHashing": "all",
@@ -321,21 +335,15 @@
                   "maximumError": "10kb"
                 }
               ],
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.release.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "development": {
               "outputHashing": "all",
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.development.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "remote": {
               "optimization": false,
@@ -348,24 +356,18 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true,
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.local.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             },
             "github": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true,
-              "fileReplacements": [
-                {
-                  "replace": "projects/pathway-browser/src/environments/environment.ts",
-                  "with": "projects/pathway-browser/src/environments/environment.github.ts"
-                }
-              ]
+              "define": {
+                "APP_ENV": "\"development\""
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -408,12 +410,6 @@
             "stylePreprocessorOptions": {
               "includePaths": ["node_modules/", "dist/"]
             }
-          }
-        },
-        "deploy": {
-          "builder": "angular-cli-ghpages:deploy",
-          "options": {
-            "remote": "origin"
           }
         }
       }

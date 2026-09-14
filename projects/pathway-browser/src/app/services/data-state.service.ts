@@ -55,7 +55,10 @@ export class DataStateService {
   public currentPathway = computed(() => {
     const currentPathway = this._currentPathway.value();
     if (currentPathway) {
-      currentPathway.ancestors = this._ancestors.value() || [];
+      // Reading value() on a resource in the error state throws, which would
+      // propagate out of this computed and take down every view that depends on
+      // it. Ancestors are supplementary, so fall back to none.
+      currentPathway.ancestors = (this._ancestors.hasValue() && this._ancestors.value()) || [];
     }
     return currentPathway;
   });
@@ -64,6 +67,8 @@ export class DataStateService {
     params: () => ({ id: this.state.pathwayId(), path: this.state.path() }),
     stream: (params) => this.fetchAncestors(params.params.id, params.params.path),
   });
+
+  public ancestorsLoading = this._ancestors.isLoading;
 
   private _selectedElement = rxResource({
     params: () => ({
@@ -223,7 +228,11 @@ export class DataStateService {
       })
       .pipe(
         map((lineages) => this.findBestAncestors(lineages, path).reverse()),
-        map(this.flattenReferences)
+        map(this.flattenReferences),
+        // An event that hangs off no top-level pathway - a freshly cloned
+        // curation pathway, say - makes the backend answer 404 rather than an
+        // empty list. That is not an error for the caller: it has no ancestors.
+        catchError(() => of([] as Pathway[]))
       );
   }
 

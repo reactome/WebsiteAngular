@@ -209,38 +209,74 @@
   opacity: 0.7;
 }
 
+// The marker and the name it belongs to, on one line. The button is a column,
+// so without this the dot sits on a line of its own above the label -- which is
+// how a marker that is present gets reported as missing.
+.row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 // Analysis markers. A dot rather than a colour on the label: the rows already
 // carry type icons and colour, and this has to read at a glance next to them.
 .row-hit {
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  border: 1px solid var(--outline, rgb(0 0 0 / 35%));
+  border: 1px solid var(--outline, rgb(0 0 0 / 45%));
   background: transparent;
 }
 
 .row-hit--found {
   // The same green the diagram uses for a hit, so the popup and the diagram
-  // agree about what "found" looks like.
+  // agree about what "found" looks like. The ring is what separates it from an
+  // empty dot at a glance rather than on inspection.
   background: var(--analysis-hit, #2e7d32);
   border-color: var(--analysis-hit, #2e7d32);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--analysis-hit, #2e7d32) 28%, transparent);
 }
 
 .row-label--missed {
   opacity: 0.55;
 }
 
-.row-expression {
-  margin-left: auto;
-  display: inline-flex;
-  gap: 0.35rem;
-  font-family: 'Roboto Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
+// Said in words. An unfilled dot is the whole signal otherwise, and on a row
+// with no values beside it there is nothing else to read.
+.row-missed {
+  margin-left: 1.3rem;
+  font-size: 0.68rem;
+  font-style: italic;
+  opacity: 0.6;
 }
 
+.row-expression {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.15rem 0 0 1.3rem;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+}
+
+// One chip per sample, carrying its own name: three bare numbers cannot say
+// which tissue is which, and the name was in a tooltip nobody hovers.
 .row-expression__value {
-  opacity: 0.5;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  opacity: 0.75;
+}
+
+.row-expression__name {
+  font-family: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
 }
 
 // The sample the diagram is currently coloured by, so the number you are
@@ -248,4 +284,5 @@
 .row-expression__value--current {
   opacity: 1;
   font-weight: 600;
+  background: color-mix(in srgb, currentColor 16%, transparent);
 }

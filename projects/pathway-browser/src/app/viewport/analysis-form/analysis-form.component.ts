@@ -10,6 +10,7 @@ import { UrlStateService } from '../../services/url-state.service';
 import { QuantitativeAnalysisComponent } from './quantitative-analysis/quantitative-analysis.component';
 import { TissueAnalysisComponent } from './tissue-analysis/tissue-analysis.component';
 import { SpeciesAnalysisComponent } from './species-analysis/species-analysis.component';
+import { IS_CURATOR } from '../../../environments/environment';
 
 @Component({
   selector: 'cr-analysis-form',
@@ -31,6 +32,13 @@ import { SpeciesAnalysisComponent } from './species-analysis/species-analysis.co
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AnalysisFormComponent {
+  // No GSA server sits behind the curator host, so the Quantitative tab is left
+  // out of that build. Gating the tab is what stops the traffic: every
+  // /GSAServer request comes from inside the embedded gsa-form (the methods list
+  // is fetched as soon as it initialises), so never rendering it is the only way
+  // to keep those endpoints untouched.
+  readonly isCurator = IS_CURATOR;
+
   private http: HttpClient = inject(HttpClient);
   private state: UrlStateService = inject(UrlStateService);
   public analysis: AnalysisService = inject(AnalysisService);
@@ -43,13 +51,21 @@ export class AnalysisFormComponent {
   close = output<{ status: 'finished' | 'premature' }>();
   status = input.required<'open' | 'closed'>();
 
-  private static readonly TAB_INDEX = {
-    qualitative: 0,
-    quantitative: 1,
-    species: 2,
-    tissue: 3,
-  } as const;
-  selectedTabIndex = computed(
-    () => AnalysisFormComponent.TAB_INDEX[this.state.analysisTab() ?? 'qualitative']
+  /**
+   * The tab names, in the order the template renders them.
+   *
+   * Derived rather than a fixed index map: Quantitative is absent in the curator
+   * build, which shifts every tab after it, so the ordering here has to mirror
+   * the template exactly.
+   */
+  private readonly tabs: string[] = [
+    'qualitative',
+    ...(this.isCurator ? [] : ['quantitative']),
+    'species',
+    'tissue',
+  ];
+
+  selectedTabIndex = computed(() =>
+    Math.max(0, this.tabs.indexOf(this.state.analysisTab() ?? 'qualitative'))
   );
 }

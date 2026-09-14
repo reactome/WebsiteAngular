@@ -155,9 +155,18 @@ export class BreadcrumbComponent implements OnInit {
     this.breadcrumbs = [];
     let currentPath = '';
     let currentNavLevel: Record<string, NavLink> = this.navOptions();
+    const schemaPath = this.isSchemaPath(segments);
 
     for (const segment of segments) {
       currentPath += '/' + segment;
+
+      // Legacy schema instance URLs (/dataSchema/:className/instance/:dbId)
+      // carry a literal "instance" segment that isn't routable on its own, so
+      // it would render as a dead crumb. Skip it, but keep it in currentPath
+      // so the dbId crumb still links to the URL the user is actually on.
+      if (schemaPath && segment === 'instance') {
+        continue;
+      }
 
       // First, try to look up the nav link directly by segment key
       let matchedLink = currentNavLevel[segment];
@@ -194,6 +203,11 @@ export class BreadcrumbComponent implements OnInit {
       }
     }
     this.cdr.markForCheck();
+  }
+
+  /** True for the schema browser routes, new (/dataSchema) and legacy. */
+  private isSchemaPath(segments: string[]): boolean {
+    return segments[0] === 'dataSchema' || (segments[0] === 'content' && segments[1] === 'schema');
   }
 
   /**
@@ -242,12 +256,23 @@ export class BreadcrumbComponent implements OnInit {
   }
 
   /**
+   * Segments that are acronyms rather than words. Title-casing turns "idg" into
+   * "Idg", which reads as a typo -- and these are the only segments in the site
+   * where capitalising the first letter is the wrong answer.
+   */
+  private static readonly ACRONYMS = new Set(['idg', 'api', 'doi', 'faq', 'orcid', 'toc']);
+
+  /**
    * Format a URL segment into a readable label (e.g., "why-reactome" -> "Why Reactome")
    */
   private formatSegmentLabel(segment: string): string {
     return segment
       .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) =>
+        BreadcrumbComponent.ACRONYMS.has(word.toLowerCase())
+          ? word.toUpperCase()
+          : word.charAt(0).toUpperCase() + word.slice(1)
+      )
       .join(' ');
   }
 }

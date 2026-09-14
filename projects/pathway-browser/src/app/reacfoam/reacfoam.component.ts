@@ -278,10 +278,11 @@ export class ReacfoamComponent implements OnDestroy {
 
             const notFoundColor = this.reacfoam.surfaceColor().hex();
 
-            if (this.flagging() && props.group.flag) {
-              values.groupColor = this.reacfoam.flagColor().hex();
-              values.labelColor = this.reacfoam.surfaceColor().hex();
-            } else if (
+            // Flagging is drawn as an outline rather than a fill, so a flagged
+            // pathway still shows its analysis colour. Replacing the fill meant
+            // choosing between seeing where a gene is and seeing the result --
+            // which is exactly when you want both.
+            if (
               !fdr ||
               fdr > this.state.significance()
               // && this.analysis.type() !== 'GSA_REGULATION' // Skip FDR filtering for GSA as we want to display the non-significant up/down regulation too
@@ -327,17 +328,49 @@ export class ReacfoamComponent implements OnDestroy {
             }
             // values.groupColor =  props.group.depthColor.hex();
             // values.labelColor = 'auto'
-
-            if (this.flagging()) {
-              values.groupColor = props.group.flag
-                ? this.reacfoam.flagColor().hex()
-                : this.reacfoam.surfaceColor().hex();
-              values.labelColor = props.group.flag
-                ? this.reacfoam.surfaceColor().hex()
-                : this.reacfoam.onSurfaceColor().hex();
-            }
           }
         },
+
+        // The flag outline.
+        //
+        // polygonContext is the buffer FoamTree used to trace the group's own
+        // polygon, so replaying it sets exactly that path and the stroke follows
+        // the group's real shape -- no approximation with a rectangle or a
+        // circle, which in a Voronoi treemap would be visibly wrong.
+        //
+        // Two strokes: a dark one underneath so the flag colour reads against a
+        // pale fill as well as a saturated one, and thinner at depth so a
+        // flagged child inside a flagged parent stays legible.
+        groupContentDecorator: (options, props) => {
+          if (!this.flagging() || !props.group.flag) return;
+
+          const context = props.context;
+          const width = 6 * Math.pow(0.75, props.level);
+
+          // The path is replayed once per stroke rather than stroked twice. On
+          // canvas either works, but the SVG export draws through svgcanvas,
+          // which records one path element per path and keeps only the last style
+          // set on it -- so the halo silently vanished from every exported figure
+          // while looking right on screen.
+          const strokes = [
+            { colour: this.reacfoam.onSurfaceColor().hex(), width: width * 1.5 },
+            { colour: this.reacfoam.flagColor().hex(), width },
+          ];
+          for (const stroke of strokes) {
+            context.save();
+            props.polygonContext.replay(context);
+            context.lineJoin = 'round';
+            context.strokeStyle = stroke.colour;
+            context.lineWidth = stroke.width;
+            context.stroke();
+            context.restore();
+          }
+        },
+        // Flagging changes without the layout changing, so the decorator has to
+        // run whenever a group is drawn rather than only when its shape moves.
+        // It returns immediately unless something is flagged, which is what keeps
+        // that affordable on a hierarchy this size.
+        groupContentDecoratorTriggering: 'onSurfaceDirty',
       });
       this.foamTree().redraw();
       this.currentSample = this.state.sample() || undefined;

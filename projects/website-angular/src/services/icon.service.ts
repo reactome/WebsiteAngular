@@ -1,7 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../pathway-browser/src/environments/environment';
+import { GeneralService } from '../../../pathway-browser/src/app/services/general.service';
+import { iconArtworkBase } from '../../../pathway-browser/src/app/services/icon.service';
 
 export interface IconCategory {
   name: string;
@@ -51,6 +53,15 @@ export interface IconResult {
   providedIn: 'root',
 })
 export class IconService {
+  private general = inject(GeneralService);
+
+  private readonly iconBase = computed(() => iconArtworkBase(this.general.version.value()));
+
+  /** The URL of an icon's SVG, wherever icons are being served from. */
+  iconUrl(stId: string) {
+    return `${this.iconBase()}/${stId}.svg`;
+  }
+
   private http = inject(HttpClient);
   private baseUrl = `${CONTENT_SERVICE}/search`;
 

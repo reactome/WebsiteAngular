@@ -90,10 +90,15 @@ export class DetailsComponent {
       // when an analysis finishes, which is the point of running one.
       if (tabCameFromUrl) return;
 
-      if (this.state.section()) this.state.tab.set('details');
-      else if (this.hasResult()) this.state.tab.set('results');
-      else if (this.hasDetail()) this.state.tab.set('details');
-      else this.state.tab.set('info');
+      // A default, not a choice. The URL still has to say what is on screen so a
+      // link is shareable, but being given a tab should not cost the reader a
+      // press of Back the way choosing one does.
+      this.state.settle(() => {
+        if (this.state.section()) this.state.tab.set('details');
+        else if (this.hasResult()) this.state.tab.set('results');
+        else if (this.hasDetail()) this.state.tab.set('details');
+        else this.state.tab.set('info');
+      });
     });
   }
 }

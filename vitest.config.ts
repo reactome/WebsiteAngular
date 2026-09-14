@@ -19,7 +19,10 @@ export default defineConfig({
     // src/test-setup.ts over to Analog's zone setup and BrowserTestingModule.
     // Worth doing when we next add component-level unit tests; today every
     // component is covered through e2e/ instead.
-    include: ['{src,projects}/**/*.spec.ts'],
+    // tools/ too, and .mjs as well as .ts: the render service and its
+    // exporters are plain modules, and tools/svg-export-harness/harness.spec.mjs
+    // sat in the repo without being run by anything at all.
+    include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
     css: false,
     server: {
       deps: {

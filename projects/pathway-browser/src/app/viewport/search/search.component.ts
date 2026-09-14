@@ -41,6 +41,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FlagButtonComponent } from '../../details/common/flag-button/flag-button.component';
 import { ShadowScrollComponent } from '../../shared/shadow-scroll/shadow-scroll.component';
+import { RevealDirective } from '../../utils/reveal.directive';
 import Entry = Search.Entry;
 
 const MIN_SUGGEST_LENGTH = 2;
@@ -62,6 +63,7 @@ type Scope = 'local' | 'global';
     MatCheckbox,
     FlagButtonComponent,
     ShadowScrollComponent,
+    RevealDirective,
   ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
@@ -151,13 +153,11 @@ export class SearchComponent {
     });
 
     effect(() => {
+      // The selected pathway brings itself into view -- see RevealDirective in
+      // the template. This only has to tell the scroller to redraw the shadows
+      // that say there is more above or below.
       this.selectedResultPathwaysStable().length > 1 &&
-        setTimeout(() => {
-          this.resultPathways()
-            ?.elementRef?.nativeElement?.querySelector('.selected')
-            ?.scrollIntoView({ behavior: 'smooth' });
-          setTimeout(() => this.resultPathways()?.updateShadows(), 100);
-        }, 500);
+        setTimeout(() => this.resultPathways()?.updateShadows(), 600);
     });
   }
 

@@ -1,4 +1,6 @@
-@if (pathwayId()) {
+@if (reactionId(); as reaction) {
+  <cr-reaction-diagram [stId]="reaction" />
+} @else if (pathwayId()) {
   @if (loading()) {
     <!-- nothing: the caller waits on data-render-ready, not on markup -->
   } @else if (hasEHLD()) {

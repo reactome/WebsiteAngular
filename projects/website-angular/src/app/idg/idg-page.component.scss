@@ -1,0 +1,523 @@
+.idg-page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.lede {
+  max-width: 46rem;
+  color: var(--mat-sys-on-surface-variant, #555);
+}
+
+.query {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+
+  .gene {
+    flex: 1 1 14rem;
+  }
+
+  .datasets {
+    flex: 2 1 22rem;
+  }
+
+  button {
+    // Line the button up with the inputs rather than their hint text.
+    margin-top: 0.5rem;
+  }
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant, #555);
+
+  &.error {
+    color: inherit;
+  }
+}
+
+.results-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+// The table can be long and, on a narrow screen, wider than the page. Scrolling
+// it inside its own box keeps the page itself from scrolling sideways.
+.table-scroll {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.pathways {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--mat-sys-surface, #fff);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  .numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .stid {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+
+  .open a {
+    display: inline-flex;
+  }
+
+  tbody tr:hover {
+    background: var(--mat-sys-surface-container, #f5f5f5);
+  }
+}
+
+.provenance {
+  margin-top: 2rem;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant, #555);
+
+  h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  .species {
+    font-style: italic;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.mode {
+  margin-bottom: 1rem;
+}
+
+.score-filter,
+.dataset-filter {
+  margin-bottom: 1.5rem;
+}
+
+.threshold {
+  max-width: 34rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  mat-slider {
+    width: 100%;
+  }
+}
+
+.quiet {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant, #667);
+}
+
+.failed {
+  color: var(--mat-sys-error, #b3261e);
+  font-size: 0.875rem;
+}
+
+// The score distribution: bars for kept buckets, faded for dropped ones. Plain
+// elements rather than a charting library -- it is 28 numbers.
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 4rem;
+  max-width: 34rem;
+  margin-top: 0.75rem;
+
+  .bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background: var(--mat-sys-primary, #0f7f8f);
+    border-radius: 1px 1px 0 0;
+
+    &.dropped {
+      background: var(--mat-sys-outline-variant, #cfd8dc);
+    }
+  }
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.overlay-action {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--mat-sys-outline-variant, #e0e0e0);
+  border-radius: 0.5rem;
+
+  mat-spinner {
+    display: inline-block;
+    margin-right: 0.4rem;
+  }
+
+  p {
+    max-width: 46rem;
+  }
+}
+
+.more {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+// Significance against how well studied. Points are positioned elements rather
+// than SVG circles so each can be a link with a tooltip; the SVG behind them
+// carries only the significance line.
+.scatter {
+  margin: 1.25rem 0 0;
+
+  figcaption {
+    max-width: 46rem;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant, #556);
+    margin-bottom: 0.5rem;
+  }
+
+  .plot {
+    position: relative;
+    height: 12rem;
+    border-left: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    background: var(--mat-sys-surface-container-lowest, #fbfdfe);
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cutoff {
+      stroke: var(--mat-sys-outline, #90a4ae);
+      stroke-width: 0.4;
+      stroke-dasharray: 2 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .point {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      opacity: 0.75;
+
+      &:hover {
+        opacity: 1;
+        outline: 2px solid var(--mat-sys-on-surface, #123);
+      }
+    }
+
+    .axis-y {
+      position: absolute;
+      top: 0.25rem;
+      left: 0.4rem;
+      font-size: 0.7rem;
+      color: var(--mat-sys-on-surface-variant, #667);
+    }
+  }
+
+  .axis-x {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant, #667);
+
+    .scale {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      // The portal's own scale: red for under-studied, blue for drugged.
+      background: linear-gradient(to right, #f44336, #ff9800, #9e9e9e, #337ab7);
+    }
+  }
+}
+
+.tdl .swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  margin-right: 0.35rem;
+  vertical-align: baseline;
+}
+
+.pathways th .hint {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  line-height: 1rem;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--mat-sys-outline-variant, #e0e0e0);
+  font-size: 0.7rem;
+  cursor: help;
+}
+
+// The portal's plots. Positioned elements rather than a charting library: each
+// point needs to be a link with a tooltip, the shapes are scatter and one line,
+// and a library for that is a dependency to keep up to date for no gain.
+.chart {
+  margin: 1.25rem 0 0;
+
+  figcaption {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .plot {
+    position: relative;
+    height: 9rem;
+    border-left: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #cfd8dc);
+    background: var(--mat-sys-surface-container-lowest, #fbfdfe);
+
+    &.tall {
+      height: 12rem;
+    }
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .curve {
+      stroke: var(--mat-sys-primary, #0f7f8f);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .point {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      background: var(--mat-sys-primary, #0f7f8f);
+      opacity: 0.8;
+
+      &.small {
+        width: 5px;
+        height: 5px;
+        margin: -2.5px 0 0 -2.5px;
+      }
+
+      &:hover {
+        opacity: 1;
+        outline: 2px solid var(--mat-sys-on-surface, #123);
+      }
+    }
+  }
+
+  .axis-label.y {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--mat-sys-on-surface-variant, #667);
+    z-index: 1;
+  }
+
+  .axis-x.plain {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--mat-sys-on-surface-variant, #667);
+
+    span:only-child {
+      margin: 0 auto;
+    }
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.9rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.75rem;
+
+    .dot {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      margin-right: 0.3rem;
+    }
+  }
+}
+
+// Side by side where there is room, stacked where there is not, like the portal.
+.summaries {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  margin-top: 1.5rem;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+
+  select {
+    font: inherit;
+    padding: 0.15rem 0.25rem;
+  }
+}
+
+.pathways {
+  .expander button {
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--mat-sys-on-surface-variant, #667);
+  }
+
+  tr.open {
+    background: var(--mat-sys-surface-container, #f2f7f9);
+  }
+
+  tr.detail td {
+    padding: 0.75rem 1rem 1rem 2.5rem;
+    background: var(--mat-sys-surface-container-low, #f7fbfc);
+  }
+
+  tr.detail h3 {
+    font-size: 0.9375rem;
+    margin: 0.5rem 0 0.25rem;
+  }
+
+  .summation {
+    max-width: 60rem;
+    margin: 0;
+    font-size: 0.875rem;
+    // The text carries its own paragraph breaks now that the markup is gone.
+    white-space: pre-line;
+  }
+
+  // Indented like a breadcrumb read downwards, which is how the portal shows it.
+  .hierarchy {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+
+    li {
+      padding-left: calc(var(--depth) * 1.25rem);
+    }
+  }
+}
+
+// The genes behind the count in the threshold note. Collapsed by default: it is
+// supporting evidence for the table, not the point of the page.
+.interactors {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+
+  summary {
+    cursor: pointer;
+  }
+
+  .gene-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.15rem 1rem;
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--mat-sys-outline-variant, #eceff1);
+    }
+
+    .gene {
+      font-family: 'Roboto Mono', ui-monospace, monospace;
+    }
+  }
+}
+
+.filters .pharos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8125rem;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}

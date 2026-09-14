@@ -43,7 +43,7 @@ export class IconDetailComponent implements OnInit {
 
   getSvgUrl(): string {
     const stId = this.icon()?.stId;
-    return stId ? `${ICON_BASE}/icon/${stId}.svg` : '';
+    return stId ? this.iconService.iconUrl(stId) : '';
   }
 
   getPngUrl(): string {

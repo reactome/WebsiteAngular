@@ -1,0 +1,8 @@
+# Everything CI checks, before the push rather than after the email.
+#
+# The end-to-end smoke runs against `ng serve` with a public backend and no
+# render service, because that is CI's configuration and it is the one local
+# checks against beta.reactome.org cannot reproduce.
+#
+# `git push --no-verify` skips this.
+npm run preflight

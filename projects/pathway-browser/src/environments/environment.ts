@@ -1,73 +1,152 @@
-import { SITE_VARIANT } from './variant';
+/**
+ * Every backend URL the app uses, derived from the selected deployment.
+ *
+ * There is one of these files now. There used to be eight, each re-exporting the
+ * same eighteen constants with a few values changed, swapped in by
+ * fileReplacements. Five were reachable from no build at all, and the curator
+ * copy had drifted until it was missing three exports, which is why
+ * `npm run build:curator` did not compile. A deployment is a row in
+ * SITE_PROFILES now; this file reads it.
+ *
+ * If a page needs a backend URL, import it from here. Do not rebuild one from
+ * `host` at the call site.
+ */
+import {
+  getProfile,
+  SELECTED_PROFILE_NAME,
+} from '../../../website-angular/src/config/environments';
 
+const profile = getProfile(SELECTED_PROFILE_NAME);
+
+// Which UI to present. Not exported while there are only two variants and every
+// caller asks the same yes/no question below; export it when a third arrives, so
+// callers switch on the variant instead of gaining a second boolean.
+const SITE_VARIANT = profile.variant;
+
+/**
+ * Kept as a named export because 26 files ask this question. New deployments
+ * should compare SITE_VARIANT instead of growing a second boolean beside it.
+ */
 export const IS_CURATOR = SITE_VARIANT === 'curator';
 
-// Resolve the host from the browser's current origin so URLs built from
-// environment.host stay on whatever site the user is on -- beta.reactome.org,
-// release.reactome.org, reactome.org, localhost during dev. The fallback
-// applies when this module is imported in a non-browser context (e.g. unit
-// tests, build-time tooling) where window doesn't exist.
-//
-// The curator variant is the exception: it's a separate deployment
-// (newcurator.reactome.org) with its own backend, so it always points there
-// regardless of what domain the frontend bundle is actually being served
-// from -- e.g. when previewing the curator build under a path on a different
-// host for testing purposes.
-const host: string = IS_CURATOR
-  ? 'https://newcurator.reactome.org'
-  : typeof window !== 'undefined'
-    ? window.location.origin
-    : 'https://dev.reactome.org';
+/**
+ * Whether to offer the DeltaSignal pathway-perturbation UI.
+ *
+ * Per deployment, from the profile, because it needs a DeltaSignal backend that
+ * only some environments can reach. A profile that does not mention it does not
+ * get it, so a new deployment has to ask for it rather than inherit it.
+ *
+ * A feature toggle rather than a variant: the note above about comparing
+ * SITE_VARIANT concerns which UI a deployment presents, not which features it
+ * enables.
+ */
+export const SHOW_DELTASIGNAL = profile.deltaSignal === true;
+
+/**
+ * Where this build's services live.
+ *
+ * `'origin'` means "wherever this bundle is served from", which is what the
+ * public deployments want: beta.reactome.org proxies its own /ContentService to
+ * the Tomcat on its box, and that Tomcat serves endpoints the public one does
+ * not -- the reaction-diagram exporter among them. Naming a host instead broke
+ * reaction pages on beta for exactly that reason. The fallback applies only off
+ * the browser, in SSR and unit tests.
+ */
+const resolvedHost =
+  profile.host === 'origin'
+    ? typeof window !== 'undefined'
+      ? window.location.origin
+      : (profile.originFallback ?? '')
+    : profile.host;
+
+// Normalised so building URLs cannot produce a double slash.
+const host = resolvedHost.replace(/\/+$/, '');
 
 export const environment = {
-  production: false,
+  production: SELECTED_PROFILE_NAME === 'production',
   host,
-  s3: 'https://download.reactome.org',
-  gsaServer: 'dev',
-  gtagId: 'G-96F1EYHQR3',
-  // The curator database isn't released/versioned the way the public site's
-  // is -- data/database/version has nothing meaningful to return there (see
-  // general.service.ts) -- so don't route diagram downloads through the
-  // version-keyed S3 path for curator.
-  preferS3: !IS_CURATOR,
+  s3: profile.s3,
+  gsaServer: profile.gsaServer,
+  gtagId: profile.gtagId,
+  assetsFromHost: profile.assetsFromHost === true,
 };
 
 // Icon image files (.svg/.png under /icon/) are static reference assets served
 // by the Reactome backend, not by the Angular app. Unlike /ContentService they
-// are NOT reverse-proxied on every front-end origin (e.g. beta.reactome.org
-// returns 404), so build their URLs from the dev backend host rather than
-// window.location.origin. The assets send Access-Control-Allow-Origin: *, so
-// cross-origin <img> loads work from any front-end.
-export const ICON_HOST = 'https://dev.reactome.org';
+// are NOT reverse-proxied on every front-end origin (beta.reactome.org returns
+// 404), so the main variant builds their URLs from the dev backend. The assets
+// send Access-Control-Allow-Origin: *, so cross-origin <img> loads work from any
+// front end. The curator host serves its own icon assets and needs no such
+// detour.
+const ICON_HOST = 'https://dev.reactome.org';
+export const ICON_BASE = IS_CURATOR ? host : ICON_HOST;
 
-// The curator host serves icon assets itself (no cross-origin proxying
-// limitation like beta/release/production have), so use it directly instead
-// of falling back to ICON_HOST.
-export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
+// Absolute only where the graph API is not on `host` at all (a locally run
+// curator-service answers at its own root); otherwise a path on this host.
+export const CONTENT_SERVICE = (
+  profile.contentService ?? `${host}${profile.contentServicePath ?? '/ContentService'}`
+).replace(/\/+$/, '');
 
-// The curator variant points at a separate graph database (curation data,
-// not the released production graph), served under a different context path
-// on the same backend.
-export const CONTENT_SERVICE = `${environment.host}/${IS_CURATOR ? 'GraphContentService' : 'ContentService'}`;
-// CORS-enabled public endpoint used only as a fallback to resolve the current
-// database version when the primary CONTENT_SERVICE version call fails. The
-// version is needed to build CORS-enabled S3 diagram URLs. Only relevant to
-// the curator variant, where the primary CONTENT_SERVICE is the curation
-// backend rather than the always-on public one.
-export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
-// CORS-enabled public content service. Used as a fallback for version-static
-// metadata endpoints (e.g. the data-schema model) when the primary curator
-// CONTENT_SERVICE is slow or unavailable, so those pages still render.
-export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
-export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
-export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
-export const DOWNLOAD = `${environment.host}/download/current`;
-export const OVERLAYS = `${environment.host}/overlays`;
-export const CONTENT_DETAIL = `${environment.host}/content/detail`;
-// Path-only form for use with Angular RouterLink (which interprets absolute
-// URLs as relative paths and concatenates them onto the current route).
+// Used only when CONTENT_SERVICE cannot answer for the database version, which
+// in practice means a curation graph -- it has no released version, and one is
+// needed to build S3 diagram URLs. Each profile names its own; none names another
+// deployment's.
+//
+// There was a CONTENT_SERVICE_FALLBACK beside this, pointing at a different
+// deployment's content service for "when the primary is slow or unavailable".
+// Nothing read it, and nothing should: answering from another deployment renders
+// someone else's data without saying so.
+export const VERSION_FALLBACK = profile.versionFallback;
+
+export const ANALYSIS_SERVICE = `${host}/AnalysisService`;
+
+// The headless render service: diagram figures for documents (GIF, PPTX, PDF),
+// drawn by the site's own renderer rather than the Java exporters'
+// reimplementation of it. Served under the site's own origin by a proxy, so a
+// render can only be commissioned through whatever fronts the site.
+export const RENDER_SERVICE = `${host}/RenderService`;
+
+// The IDG pairwise service (reactome-idg/idg-pairwise-ws), relating a gene or
+// protein to Reactome pathways through third-party interaction datasets.
+// Absolute and cross-origin on purpose: it answers with
+// Access-Control-Allow-Origin, and its data lives on the IDG server rather than
+// here. When that data moves, this is the line that changes.
+export const IDG_SERVICE = 'https://idg.reactome.org/idgpairwise';
+
+// The experiment digester, as the *analysis service* must address it -- not as
+// the browser does.
+//
+// Tissue analysis hands the analysis service a URL and that service fetches it
+// server-side, so this has to resolve from inside the backend rather than from
+// the page. It used to read https://127.0.0.1/ExperimentDigester/..., which the
+// analysis service cannot fetch -- it answers 422 -- because nothing there
+// terminates TLS for that name. Plain HTTP to the Tomcat both services share
+// works, and avoids sending the request out through the public hostname and
+// back, which is the hairpin that took Apache down with 522s once already.
+export const DIGESTER_FOR_BACKEND = 'http://localhost:8080/ExperimentDigester';
+
+export const RESTFUL_API = `${host}/ReactomeRESTfulAPI/RESTfulWS`;
+
+// Diagram/EHLD assets are static files at the site root, not under an app base
+// segment. A profile overrides this only where a proxy serves them locally.
+export const DOWNLOAD = profile.downloadBase ?? `${host}/download/current`;
+
+export const OVERLAYS = `${host}/overlays`;
+export const CONTENT_DETAIL = `${host}/content/detail`;
+
+// Path-only form for RouterLink, which treats an absolute URL as a relative
+// path and concatenates it onto the current route.
 export const CONTENT_DETAIL_PATH = '/content/detail';
-export const CONTENT_QUERY = `${environment.host}/content/query`;
-// Curator-only: base for the curation data-schema instance browser, used to
-// build author/person links from the schema pages. Not used by the main site.
-export const CONTENT_SCHEMA = `${environment.host}/curatorgraph/dataSchema`;
+
+// Person and schema links are built from the hosting shell's base URL so they
+// keep working wherever the widget is deployed. document.baseURI resolves the
+// page's <base href> against the current origin, which yields "/" under
+// `ng serve` and "/curatorgraph/" on the deployed curator site -- hardcoding the
+// segment appended a second copy of it in local dev.
+const schemaHost: string =
+  typeof document !== 'undefined' ? document.baseURI.replace(/\/+$/, '') : host;
+export const CONTENT_SCHEMA = IS_CURATOR
+  ? `${host}${profile.schemaPath}`
+  : `${schemaHost}${profile.schemaPath}`;
+
+export const CONTENT_QUERY = `${host}/content/query`;
