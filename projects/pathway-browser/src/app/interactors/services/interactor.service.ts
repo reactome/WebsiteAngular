@@ -15,6 +15,7 @@ import {
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
 import { passesThreshold } from '../interactor-threshold';
+import { UrlStateService } from '../../services/url-state.service';
 import { CONTENT_SERVICE, OVERLAYS } from '../../../environments/environment';
 
 @Injectable({
@@ -23,6 +24,7 @@ import { CONTENT_SERVICE, OVERLAYS } from '../../../environments/environment';
 export class InteractorService {
   private http = inject(HttpClient);
   private diagramService = inject(DiagramService);
+  private urlState = inject(UrlStateService);
 
   private readonly _PREFIX_INTERACTOR = `${CONTENT_SERVICE}/interactors/`;
   private readonly _PREFIX_DISEASE = `${OVERLAYS}/disgenet/`;
@@ -57,6 +59,43 @@ export class InteractorService {
    * until then there is nothing for it to filter.
    */
   readonly showingInteractors = signal(false);
+
+  /**
+   * A resource was chosen and had nothing for this diagram.
+   *
+   * Distinct from "nothing opened yet": BioGrid answers 200 with no interactions
+   * for R-HSA-1368108, so every button looked the same as IntAct and the diagram
+   * did not change. The old browser says so at the foot of the diagram --
+   * `MSG_NO_INTERACTORS_FOUND` in InteractorsControl -- and so should this.
+   */
+  readonly resourceFoundNothing = signal(false);
+
+  /**
+   * What each resource turned out to hold for the diagram in front of us.
+   *
+   * Thirteen live PSICQUIC resources are offered and they look identical, so
+   * finding one with anything to say means clicking them in turn -- and clicking
+   * the same empty ones again on the next visit. The resource list itself cannot
+   * help: it carries name, restURL and active, and no counts, so knowing a count
+   * in advance would mean one request per resource to a third-party server.
+   *
+   * This is the affordable half: whatever a resource turns out to hold is
+   * remembered and shown beside it. It does not spare the first click, and it
+   * spares every one after that.
+   *
+   * Keyed by pathway, because the answer is a property of the diagram.
+   */
+  readonly resourceCounts = signal<Record<string, number>>({});
+  private countsForPathway: string | null = null;
+
+  /** Note what a resource held here, forgetting the tally if the pathway changed. */
+  private rememberResourceCount(pathway: string | null, resource: string, count: number) {
+    if (pathway !== this.countsForPathway) {
+      this.countsForPathway = pathway;
+      this.resourceCounts.set({});
+    }
+    this.resourceCounts.update((counts) => ({ ...counts, [resource]: count }));
+  }
 
   /**
    * How many interactors are drawn, and how many the resource offered.
@@ -171,6 +210,11 @@ export class InteractorService {
     // not in the test, which moved the zoom itself and so never saw the state
     // they are actually created in.
     cy.emit('zoom');
+
+    // Nothing drawn and nothing to draw: the resource has no interactions here.
+    const badges = cy.nodes('.InteractorOccurrences').length;
+    this.resourceFoundNothing.set(badges === 0);
+    this.rememberResourceCount(this.urlState.pathwayId() ?? null, resource, badges);
   }
 
   public createInteractorOccurrenceNode(
@@ -558,6 +602,7 @@ export class InteractorService {
   public clearAllInteractorNodes(cy: cytoscape.Core) {
     this.cyToSelectedResource.clear();
     this.showingInteractors.set(false);
+    this.resourceFoundNothing.set(false);
     const interactorOcc = cy.elements(`.InteractorOccurrences`).remove();
     interactorOcc.forEach((node) => {
       if (node.hasClass('opened')) {

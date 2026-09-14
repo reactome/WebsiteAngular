@@ -60,6 +60,15 @@ export class InteractorsComponent implements AfterViewInit {
   private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   isDataFromPsicquicLoading: boolean = false;
+  /**
+   * Which resource is being fetched, so its own button can say so.
+   *
+   * The grid used to be hidden entirely while a fetch was in flight, so choosing
+   * BioGrid made every resource button disappear and come back -- and the
+   * per-button spinner could never appear, because the thing containing it was
+   * gone whenever it would have been shown.
+   */
+  loadingResource: string | null = null;
   resourceTokens: InteractorToken[] = [];
   clear = false;
   psicquicResources: PsicquicResource[] = [];
@@ -72,6 +81,8 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
+  /** What each resource turned out to hold here, once we have asked it. */
+  readonly resourceCounts = this.interactors.resourceCounts;
   @Output() initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
 
   ngAfterViewInit(): void {
@@ -80,6 +91,17 @@ export class InteractorsComponent implements AfterViewInit {
 
   getInteractors(resource: string | null | InteractorToken) {
     if (!resource) return;
+
+    // Clicking the chosen one puts it away. It is the obvious gesture -- click
+    // the highlighted thing to un-highlight it -- and it did nothing at all, so
+    // the only way out was the separate "Clear overlays" button, which is easy
+    // to miss when the button you just pressed looks like it should work.
+    // A custom resource is identified by its token, a named one by its name.
+    const name = typeof resource === 'string' ? resource : resource.summary?.token;
+    if (name && this.currentResource().name === name) {
+      this.clearInteractors();
+      return;
+    }
 
     this.interactors.getResourceType(resource as string).subscribe({
       next: (resourceType) => {
@@ -125,12 +147,14 @@ export class InteractorsComponent implements AfterViewInit {
 
   getPsicquicResourceInteractors(selectedResource: string) {
     this.isDataFromPsicquicLoading = true;
+    this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
     this.cys()?.forEach((cy) => {
       this.interactors.fetchInteractorData(cy, selectedResource).subscribe((interactors) => {
         this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
         this.isDataFromPsicquicLoading = false;
+        this.loadingResource = null;
         this.state.overlay.set(selectedResource);
       });
     });

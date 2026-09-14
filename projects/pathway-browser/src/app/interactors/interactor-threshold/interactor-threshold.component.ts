@@ -40,6 +40,17 @@ export class InteractorThresholdComponent {
    * A diagram with no interactors on it looks the same either way, and the reader
    * who has just dragged a slider deserves to be told which it is.
    */
+  /**
+   * The chosen resource has nothing for this diagram.
+   *
+   * Worded after the old browser's `MSG_NO_INTERACTORS_FOUND`, which says the
+   * same thing in the same place -- at the foot of the diagram.
+   */
+  readonly foundNothing = computed(() => this.interactors.resourceFoundNothing());
+
+  /** The resource being reported on. */
+  readonly resourceName = computed(() => this.interactors.currentResource().name ?? '');
+
   readonly hiddenByThreshold = computed(() => {
     const { shown, drawn } = this.interactors.interactorCounts();
     return drawn > 0 && shown === 0;

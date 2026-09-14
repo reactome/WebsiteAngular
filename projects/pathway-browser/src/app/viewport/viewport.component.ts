@@ -207,6 +207,8 @@ export class ViewportComponent implements AfterViewInit {
   currentInteractorResource = this.interactorService.currentResource;
   /** Whether any interactors are drawn, which is when the threshold matters. */
   readonly showingInteractors = this.interactorService.showingInteractors;
+  /** A chosen resource that had nothing for this diagram, which is worth saying. */
+  readonly resourceFoundNothing = this.interactorService.resourceFoundNothing;
 
   exampleAnalysis = rxResource({
     params: this.state.example,

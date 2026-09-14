@@ -1,54 +1,58 @@
-<label class="threshold-label" for="interactor-threshold">
-  Interaction confidence
-  <span class="threshold-value">{{ label() }}</span>
-</label>
+@if (foundNothing()) {
+  <span class="threshold-status threshold-empty threshold-nothing"> No interactors found in {{ resourceName() }} </span>
+} @else {
+  <label class="threshold-label" for="interactor-threshold">
+    Interaction confidence
+    <span class="threshold-value">{{ label() }}</span>
+  </label>
 
-<div class="threshold-track">
-  <!-- One mark per interaction, so the track shows what the drag will do. -->
-  <div class="threshold-marks" aria-hidden="true">
-    @for (mark of marks(); track $index) {
-      <span class="threshold-mark" [class.kept]="mark.kept" [style.left]="mark.left"></span>
-    }
-  </div>
+  <div class="threshold-track">
+    <!-- One mark per interaction, so the track shows what the drag will do. -->
+    <div class="threshold-marks" aria-hidden="true">
+      @for (mark of marks(); track $index) {
+        <span class="threshold-mark" [class.kept]="mark.kept" [style.left]="mark.left"></span>
+      }
+    </div>
 
-  <!--
+    <!--
     Not `discrete`. Material's value bubble duplicates the number already shown
     beside the label, and it renders unstyled inside this floating bar -- it was
     the thing that looked broken while dragging.
   -->
-  <mat-slider class="threshold-slider" [min]="0" [max]="1" [step]="0.01">
-    <!--
+    <mat-slider class="threshold-slider" [min]="0" [max]="1" [step]="0.01">
+      <!--
       `input`, not `valueChange`. Material commits valueChange when the drag ends,
       so the diagram only caught up once the reader let go -- and the whole point
       of the marks on the track is to see the interactors leave as you pass them.
     -->
-    <input id="interactor-threshold" matSliderThumb [value]="threshold()" (input)="onSlide($event)" />
-  </mat-slider>
-</div>
+      <input id="interactor-threshold" matSliderThumb [value]="threshold()" (input)="onSlide($event)" />
+    </mat-slider>
+  </div>
 
-<!--
+  <!--
   One slot, always present, so a message appearing cannot resize the bar around
   it. The bar is centred, so any width change moved both edges at once and took
   the download button with it.
 -->
-<div class="threshold-status">
-  @if (hiddenByThreshold()) {
-    <span class="threshold-empty">All hidden by the threshold</span>
-  } @else if (tally(); as tally) {
-    <span title="The best supported are drawn first">{{ tally }} shown</span>
-  }
-</div>
+  <div class="threshold-status">
+    @if (hiddenByThreshold()) {
+      <span class="threshold-empty">All hidden by the threshold</span>
+    } @else if (tally(); as tally) {
+      <span title="The best supported are drawn first">{{ tally }} shown</span>
+    }
+  </div>
 
-<button
-  mat-icon-button
-  class="threshold-download"
-  [disabled]="!canDownload()"
-  (click)="download()"
-  matTooltip="Download the interactors shown, as TSV"
-  aria-label="Download the interactors shown"
->
-  <mat-icon>download</mat-icon>
-</button>
+  <button
+    mat-icon-button
+    class="threshold-download"
+    [disabled]="!canDownload()"
+    (click)="download()"
+    matTooltip="Download the interactors shown, as TSV"
+    aria-label="Download the interactors shown"
+  >
+    <mat-icon>download</mat-icon>
+  </button>
+}
 
 <button
   mat-icon-button

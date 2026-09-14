@@ -47,7 +47,12 @@
              decision is revisited. -->
       </div>
 
-      @if (psicquicResources.length > 0 && !isDataFromPsicquicLoading) {
+      <!--
+        Not gated on the fetch. Hiding the whole grid while one resource loaded
+        made every button disappear and come back, and meant the spinner below
+        could never be seen: it lives inside the thing that was being hidden.
+      -->
+      @if (psicquicResources.length > 0) {
         <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: 'PSICQUIC' }"></ng-container>
 
         <mat-grid-list cols="2" rowHeight="28px" [gutterSize]="'5px'">
@@ -56,13 +61,31 @@
               <button
                 class="full-width psicquic-button"
                 mat-button
-                [disabled]="hasEHLD()"
+                [disabled]="hasEHLD() || (!!loadingResource && loadingResource !== resource.name)"
                 (click)="getInteractors(resource.name)"
                 [ngClass]="{ 'active-button': currentResource().name === resource.name }"
               >
                 <div class="resource-name">
                   <span>{{ resource.name }}</span>
-                  @if (isDataFromPsicquicLoading && currentResource().name === resource.name) {
+                  <!--
+                    What this resource held last time it was asked, for this
+                    diagram. Thirteen live resources look identical otherwise, and
+                    the only way to tell them apart is to try each one.
+                  -->
+                  @if (resourceCounts()[resource.name] !== undefined) {
+                    <span
+                      class="resource-count"
+                      [class.none]="resourceCounts()[resource.name] === 0"
+                      [title]="
+                        resourceCounts()[resource.name] === 0
+                          ? 'No interactors here'
+                          : resourceCounts()[resource.name] + ' entities have interactors here'
+                      "
+                    >
+                      {{ resourceCounts()[resource.name] }}
+                    </span>
+                  }
+                  @if (loadingResource === resource.name) {
                     <mat-spinner class="spinner-color" diameter="20"></mat-spinner>
                   }
                 </div>

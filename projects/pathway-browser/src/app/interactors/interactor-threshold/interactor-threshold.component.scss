@@ -144,3 +144,11 @@
     opacity: 1;
   }
 }
+
+// With nothing to filter there is no track and no tally, so the message takes
+// the width the controls would have had rather than sitting in their slot.
+.threshold-nothing {
+  flex: 1 1 auto;
+  height: auto;
+  white-space: normal;
+}
