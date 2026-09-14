@@ -16,12 +16,10 @@ import { test, expect, type Page } from '@playwright/test';
 const PATHWAY = 'R-HSA-109606';
 const BOOT_TIMEOUT = 90_000;
 
-async function openWithProfile(page: Page, profile?: string) {
-  if (profile) {
-    await page.addInitScript((name) => {
-      (window as Window & { __APP_ENV?: string }).__APP_ENV = name;
-    }, profile);
-  }
+async function openWithProfile(page: Page, profile: string) {
+  await page.addInitScript((name) => {
+    (window as Window & { __APP_ENV?: string }).__APP_ENV = name;
+  }, profile);
   await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
     () => {
@@ -44,8 +42,13 @@ test.describe('The DeltaSignal toggle', () => {
   test.describe.configure({ timeout: 4 * 60 * 1000 });
 
   test('offers nothing on a deployment that does not ask for it', async ({ page }) => {
-    // The default build is the production profile, which leaves it absent.
-    await openWithProfile(page);
+    // Both cases name their profile. Leaving this one to the ambient default was
+    // wrong: locally the suite runs against a production build served by
+    // serve-prod.js, but CI boots `npm run start:simple`, and a dev `ng serve`
+    // selects the development configuration -- the one profile that has the flag
+    // on. So the "off" case passed here and failed there, asserting the default
+    // rather than the flag.
+    await openWithProfile(page, 'production');
     await expect(perturb(page)).toHaveCount(0);
     await expect(page.locator('cr-deltasignal-panel')).toHaveCount(0);
   });
