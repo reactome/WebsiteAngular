@@ -82,7 +82,7 @@ export class InteractorService {
    * diagram cannot disagree: whatever the threshold is hiding is absent from
    * both.
    */
-  readonly shownInteractions = signal<
+  readonly exportableInteractions = signal<
     { acc?: string; alias?: string; score?: number; evidences?: number; entity?: string }[]
   >([]);
 
@@ -266,16 +266,42 @@ export class InteractorService {
       offered,
     });
 
-    this.shownInteractions.set(
-      drawn
-        .filter((node) => node.visible())
-        .map((node) => ({
-          acc: node.data('graph')?.identifier as string | undefined,
-          alias: node.data('displayName') as string | undefined,
-          score: node.data('score') as number | undefined,
-          evidences: node.data('evidences') as number | undefined,
-          entity: node.data('entity')?.data('displayName') as string | undefined,
-        }))
+    // Everything the opened entity has -- read from the badge's own list, not
+    // from what ended up drawn.
+    //
+    // Two reasons, both found by testing. The threshold is a view control: a
+    // spreadsheet can filter further, nothing can recover rows that were never
+    // written, and a file of twelve rows beside a badge reading 73 is a
+    // contradiction the reader has to resolve. And reading the drawn nodes
+    // quietly lost one of BHLHE40's 73 -- an interaction whose partner is already
+    // a PhysicalEntity on the diagram gets an edge but no `.Interactor` node of
+    // its own. The badge counts it; so should the file.
+    //
+    // It also means the cap cannot truncate the file: draw 100 of 150 and the
+    // file still carries 150.
+    this.exportableInteractions.set(
+      cy
+        .nodes('.InteractorOccurrences.opened')
+        .reduce<
+          { acc?: string; alias?: string; score?: number; evidences?: number; entity?: string }[]
+        >((rows, badge) => {
+          const entity = badge.data('entity')?.data('displayName') as string | undefined;
+          const interactions = (badge.data('interactors') ?? []) as {
+            acc?: string;
+            alias?: string;
+            score?: number;
+            evidences?: number;
+          }[];
+          return rows.concat(
+            interactions.map((interaction) => ({
+              acc: interaction.acc,
+              alias: interaction.alias,
+              score: interaction.score,
+              evidences: interaction.evidences,
+              entity,
+            }))
+          );
+        }, [])
     );
 
     this.openedScores.set(

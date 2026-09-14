@@ -100,8 +100,14 @@ export class InteractorThresholdComponent {
     if (input) this.set(Number(input.value));
   }
 
-  /** Nothing drawn, nothing to take away. */
-  readonly canDownload = computed(() => this.interactors.shownInteractions().length > 0);
+  /**
+   * Available whenever an entity is open, threshold or no threshold.
+   *
+   * The file carries everything that entity has, so a threshold that has emptied
+   * the diagram does not empty the download -- which is the moment a reader is
+   * most likely to want the data in a spreadsheet instead.
+   */
+  readonly canDownload = computed(() => this.interactors.exportableInteractions().length > 0);
 
   /**
    * A resource is chosen but no entity has been opened yet.
@@ -125,7 +131,7 @@ export class InteractorThresholdComponent {
    * and leaks one per download for the life of the page.
    */
   download() {
-    const rows = this.interactors.shownInteractions();
+    const rows = this.interactors.exportableInteractions();
     if (rows.length === 0) return;
 
     const blob = new Blob([interactorsToTsv(rows)], { type: 'text/tab-separated-values' });

@@ -4,8 +4,8 @@
 :host {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.4rem 1rem;
+  gap: 1.25rem;
+  padding: 0.4rem 1.25rem;
   // A fixed width, because the bar is centred: any change to its contents moved
   // both edges at once, so writing "the threshold is hiding every interactor
   // here" made the whole control jump and take the download button with it. The
@@ -36,6 +36,10 @@
 .threshold-track {
   position: relative;
   flex: 1 1 auto;
+  // The thumb's travel is the track plus its own radius at each end, so at 0 and
+  // 1 it sits proud of the drawn track. With only 12px to the status text it
+  // read as though the slider ran into the words.
+  margin-inline: 0.5rem;
   min-width: 12rem;
   max-width: 22rem;
   display: flex;
