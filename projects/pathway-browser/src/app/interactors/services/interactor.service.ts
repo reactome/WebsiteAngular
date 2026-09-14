@@ -88,6 +88,52 @@ export class InteractorService {
   readonly resourceCounts = signal<Record<string, number>>({});
   private countsForPathway: string | null = null;
 
+  /**
+   * Ask every live resource what it holds for this diagram, in the background.
+   *
+   * Measured on R-HSA-1368108: the thirteen live resources take 6s to 17s each
+   * and 17s for all of them in parallel, because they are third-party PSICQUIC
+   * servers. Far too slow to make the reader wait for -- so nothing waits. The
+   * panel is usable immediately and the counts arrive as they land, which is
+   * before all but the first click.
+   *
+   * Five of those thirteen had nothing at all for that pathway, which is the
+   * whole reason this is worth doing: without it the only way to find that out
+   * is to click each one and wait.
+   *
+   * Only resources we have not already asked about, so re-opening the panel
+   * costs nothing. `resourceCounts` is cleared when the pathway changes.
+   */
+  private prefetching = new Set<string>();
+
+  public prefetchResourceCounts(cy: cytoscape.Core, resources: string[]): void {
+    const pathway = this.urlState.pathwayId() ?? null;
+    for (const resource of resources) {
+      // Answered, or already being asked. Without the second test this ran
+      // twice -- the resource list and the graph each start it, and neither
+      // had an answer yet when the other began -- turning thirteen requests
+      // to third-party servers into twenty-six.
+      if (this.resourceCounts()[resource] !== undefined) continue;
+      if (this.prefetching.has(resource)) continue;
+      this.prefetching.add(resource);
+      this.fetchInteractorData(cy, resource)
+        .pipe(
+          map((interactors) =>
+            (interactors.entities ?? []).filter((entity) => (entity.interactors ?? []).length > 0)
+          ),
+          catchError(() => of(null))
+        )
+        .subscribe((withInteractors) => {
+          this.prefetching.delete(resource);
+          // A resource that failed is left unanswered rather than reported as
+          // empty: "we could not ask" and "it has none" are different, and only
+          // one of them should stop the reader trying.
+          if (withInteractors)
+            this.rememberResourceCount(pathway, resource, withInteractors.length);
+        });
+    }
+  }
+
   /** Note what a resource held here, forgetting the tally if the pathway changed. */
   private rememberResourceCount(pathway: string | null, resource: string, count: number) {
     if (pathway !== this.countsForPathway) {

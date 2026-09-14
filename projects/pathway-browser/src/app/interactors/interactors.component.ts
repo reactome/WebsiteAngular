@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  effect,
   EventEmitter,
   inject,
   input,
@@ -87,6 +88,51 @@ export class InteractorsComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.getPsicquicResources();
+  }
+
+  constructor() {
+    // The prefetch needs two things that arrive in either order: the resource
+    // list, and a graph to ask about. ngAfterViewInit runs when this panel is
+    // created, which is before the diagram exists -- so hanging the prefetch off
+    // the resource list alone meant `cys()` was empty at the one moment it was
+    // tried, and it silently never ran: no requests, no counts, no error.
+    //
+    // An effect on the graphs covers the other order, and maybePrefetchCounts is
+    // idempotent, so whichever arrives second starts it.
+    effect(() => {
+      this.cys();
+      this.maybePrefetchCounts();
+    });
+  }
+
+  /**
+   * Ask every live resource what it holds here, if we can and have not already.
+   *
+   * Cheap to call repeatedly: the service skips resources it has already
+   * answered for this pathway.
+   */
+  private maybePrefetchCounts(attempt = 0): void {
+    const graph = this.cys()?.[0];
+    if (this.psicquicResources.length === 0) return;
+
+    // The graph may not be there yet. This panel is created before the diagram
+    // is, so the resource list routinely arrives first -- and hanging the
+    // prefetch on that moment alone meant it ran once, found nothing to ask
+    // about, and never tried again: no requests, no counts, and no error to
+    // notice. An effect on `cys()` did not rescue it either.
+    //
+    // So it waits, briefly and a bounded number of times. Ten seconds is longer
+    // than a diagram takes to draw, and if it is not there by then the reader
+    // is looking at something else anyway.
+    if (!graph) {
+      if (attempt < 10) setTimeout(() => this.maybePrefetchCounts(attempt + 1), 1000);
+      return;
+    }
+
+    this.interactors.prefetchResourceCounts(graph, [
+      this.INTACT_RESOURCE,
+      ...this.psicquicResources.map((resource) => resource.name),
+    ]);
   }
 
   getInteractors(resource: string | null | InteractorToken) {
@@ -237,6 +283,11 @@ export class InteractorsComponent implements AfterViewInit {
   getPsicquicResources() {
     this.interactors.getPsicquicResources().subscribe((resources) => {
       this.psicquicResources = resources;
+
+      // Ask them all what they hold here, without waiting for any of them. The
+      // panel is usable straight away; the counts appear beside each resource as
+      // its answer arrives.
+      this.maybePrefetchCounts();
     });
   }
 }
