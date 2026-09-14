@@ -6,6 +6,11 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.4rem 1rem;
+  // A fixed width, because the bar is centred: any change to its contents moved
+  // both edges at once, so writing "the threshold is hiding every interactor
+  // here" made the whole control jump and take the download button with it. The
+  // messages change; the frame does not.
+  width: min(44rem, calc(100vw - 4rem));
   font-size: 0.85rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -72,12 +77,25 @@
   width: 100%;
 }
 
-.threshold-tally,
-.threshold-empty {
-  white-space: nowrap;
+// One slot for whatever the control has to say, so a message appearing cannot
+// resize anything around it. Two lines' worth of room is reserved: the longest
+// message wraps to two at the narrow end of the range.
+.threshold-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.2em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1.1;
   opacity: 0.85;
 }
 
 .threshold-empty {
   font-weight: 600;
+}
+
+.threshold-download {
+  flex: 0 0 auto;
 }

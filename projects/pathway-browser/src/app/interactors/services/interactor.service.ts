@@ -294,6 +294,20 @@ export class InteractorService {
   }
 
   public addInteractorNodes(occurrenceNode: cytoscape.NodeSingular, cy: cytoscape.Core) {
+    // One entity's interactors at a time.
+    //
+    // They used to accumulate, which the old browser also allows -- but the
+    // confidence control below the diagram describes *the* shown set, and with
+    // two entities open "18 of 46" is answering a question nobody asked. Either
+    // the control had to become per-entity or the diagram had to show one
+    // entity's partners at a time; the second is simpler to read and simpler to
+    // explain.
+    cy.nodes('.InteractorOccurrences.opened').forEach((other) => {
+      if (other.id() === occurrenceNode.id()) return;
+      this.removeInteractorNodes(other);
+      other.removeClass('opened');
+    });
+
     const interactorsData = occurrenceNode.data('interactors');
     const resource = occurrenceNode.data('resource');
     InteractorsLayout.BOX_WIDTH =

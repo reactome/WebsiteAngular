@@ -21,19 +21,20 @@
   </mat-slider>
 </div>
 
-@if (waitingForAnEntity()) {
-  <span class="threshold-empty">Applies when you open an interactor count.</span>
-}
-
-@if (tally(); as tally) {
-  <span class="threshold-tally" title="The diagram draws the best supported first, and has room for 18">
-    {{ tally }} shown
-  </span>
-}
-
-@if (hiddenByThreshold()) {
-  <span class="threshold-empty"> The threshold is hiding every interactor here. Lower it to bring them back. </span>
-}
+<!--
+  One slot, always present, so a message appearing cannot resize the bar around
+  it. The bar is centred, so any width change moved both edges at once and took
+  the download button with it.
+-->
+<div class="threshold-status">
+  @if (waitingForAnEntity()) {
+    <span>Applies when you open an interactor count.</span>
+  } @else if (hiddenByThreshold()) {
+    <span class="threshold-empty">The threshold is hiding every interactor here.</span>
+  } @else if (tally(); as tally) {
+    <span title="The best supported are drawn first">{{ tally }} shown</span>
+  }
+</div>
 
 <button
   mat-icon-button
