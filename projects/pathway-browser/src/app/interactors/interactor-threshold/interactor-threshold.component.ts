@@ -92,6 +92,17 @@ export class InteractorThresholdComponent {
   readonly canDownload = computed(() => this.interactors.shownInteractions().length > 0);
 
   /**
+   * A resource is chosen but no entity has been opened yet.
+   *
+   * The control is deliberately offered at this point -- it is how a threshold
+   * can be set before opening anything, and the badge that would otherwise be the
+   * only route to it is not drawn when zoomed out. But with no marks, no tally
+   * and a disabled download it reads as broken rather than as ready, so it says
+   * which it is.
+   */
+  readonly waitingForAnEntity = computed(() => this.interactors.interactorCounts().drawn === 0);
+
+  /**
    * Save what is on the diagram.
    *
    * Assembled here from data already held, so there is no request, no progress to

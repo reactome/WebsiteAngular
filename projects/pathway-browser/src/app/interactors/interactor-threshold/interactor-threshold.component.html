@@ -21,6 +21,10 @@
   </mat-slider>
 </div>
 
+@if (waitingForAnEntity()) {
+  <span class="threshold-empty">Applies when you open an interactor count.</span>
+}
+
 @if (tally(); as tally) {
   <span class="threshold-tally" title="The diagram draws the best supported first, and has room for 18">
     {{ tally }} shown
