@@ -38,8 +38,22 @@ export class InteractorThresholdComponent {
    * who has just dragged a slider deserves to be told which it is.
    */
   readonly hiddenByThreshold = computed(() => {
-    const { shown, total } = this.interactors.interactorCounts();
-    return total > 0 && shown === 0;
+    const { shown, drawn } = this.interactors.interactorCounts();
+    return drawn > 0 && shown === 0;
+  });
+
+  /**
+   * What is on the diagram against what exists, when they differ.
+   *
+   * A badge reading 47 beside a dozen drawn interactors is a contradiction the
+   * reader cannot resolve on their own: the diagram has room for 18
+   * (MAX_INTERACTORS) and the threshold may hide more. Saying so is cheaper than
+   * making them count.
+   */
+  readonly tally = computed(() => {
+    const { shown, offered } = this.interactors.interactorCounts();
+    if (offered === 0 || shown === offered) return null;
+    return `${shown} of ${offered}`;
   });
 
   readonly threshold = computed(() => clampThreshold(this.state.interactorScore()));

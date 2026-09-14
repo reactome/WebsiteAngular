@@ -222,6 +222,25 @@ test.describe('The interactor count badge', () => {
       return counts;
     };
 
+    // The state they arrive in, before the zoom is touched at all. This is the
+    // case that matters and the one the first version of this test missed: it
+    // moved the zoom before looking, which ran the handler and hid the badges, so
+    // it passed while beta showed all nine at the zoom a pathway opens at.
+    const onArrival = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const badges = cy.elements('.InteractorOccurrences');
+      return {
+        zoom: cy.zoom(),
+        total: badges.length,
+        visible: badges.filter((badge) => badge.visible()).length,
+      };
+    });
+    expect(onArrival.total, 'the badges are on the graph').toBeGreaterThan(0);
+    if (onArrival.zoom < 0.6) {
+      expect(onArrival.visible, 'and none is drawn at the zoom the pathway opened at').toBe(0);
+    }
+
     const wideOut = await visibleBadgesAt(0.3);
     expect(wideOut.total, 'the badges are on the graph').toBeGreaterThan(0);
     expect(wideOut.visible, 'but none is drawn at a zoom where it cannot be read').toBe(0);

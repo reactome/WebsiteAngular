@@ -65,7 +65,11 @@ export class InteractorService {
    * which is a different thing from the entity having none -- and the two look
    * identical on a diagram (FR-012).
    */
-  readonly interactorCounts = signal<{ shown: number; total: number }>({ shown: 0, total: 0 });
+  readonly interactorCounts = signal<{ shown: number; drawn: number; offered: number }>({
+    shown: 0,
+    drawn: 0,
+    offered: 0,
+  });
   private getIdentifiers(cy: cytoscape.Core): void {
     this.identifiers = this.getIdentifiersFromGraph(cy);
   }
@@ -135,6 +139,17 @@ export class InteractorService {
       this.createInteractorOccurrenceNode(interactors, cy, resource);
       this.cyToSelectedResource.set(cy, resource);
     }
+
+    // The badges are new elements, and whether a badge is drawn at all depends
+    // on the zoom -- below 0.6 it is too small to read, so the style library
+    // does not draw it. That decision lives in the zoom handler, which has no
+    // reason to run just because elements were added, so it is asked to.
+    //
+    // Without this the badges arrive drawn whatever the zoom, and only correct
+    // themselves the first time the reader touches the zoom. Caught on beta,
+    // not in the test, which moved the zoom itself and so never saw the state
+    // they are actually created in.
+    cy.emit('zoom');
   }
 
   public createInteractorOccurrenceNode(
@@ -210,10 +225,24 @@ export class InteractorService {
       cy.edges('[edgeToTarget]').forEach(show);
     });
 
+    // Three different numbers, and the reader is entitled to know when they
+    // disagree: what the resource offered (the number on the badge), how many
+    // the diagram has room to draw, and how many the threshold leaves visible.
     const drawn = cy.nodes('.Interactor');
+    // Only the badges the reader has actually opened. Summing every badge on
+    // the diagram answered "18 of 193", comparing what one entity is showing
+    // against what the whole pathway offers -- a true number and a useless one.
+    const offered = cy
+      .nodes('.InteractorOccurrences.opened')
+      .reduce(
+        (total, badge) =>
+          total + ((badge.data('interactors') as unknown[] | undefined)?.length ?? 0),
+        0
+      );
     this.interactorCounts.set({
       shown: drawn.filter((node) => node.visible()).length,
-      total: drawn.length,
+      drawn: drawn.length,
+      offered,
     });
   }
 
@@ -249,6 +278,17 @@ export class InteractorService {
   public getAllInteractors(interactorsData: Interactor[], cy: cytoscape.Core, numberToAdd: number) {
     const dynamicInteractors = [];
     const existingInteractors = [];
+    // Best supported first, so that the cap keeps the interactions worth keeping.
+    //
+    // Only 18 of an entity's interactors are drawn (MAX_INTERACTORS), and KLF15
+    // on R-HSA-1368108 has 46 -- so 28 are dropped, and until now which 28 was
+    // whatever order the service happened to return. The old browser has always
+    // sorted by score and then by accession (InteractorsContent.getRawInteractors),
+    // which is what makes a cap defensible: the ones you lose are the ones with
+    // the least evidence behind them.
+    interactorsData = [...interactorsData].sort(
+      (a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.acc ?? '').localeCompare(b.acc ?? '')
+    );
     // get interactors to draw with a provided a number, collect existing interactors for creating edge
     for (const interactor of interactorsData) {
       const diagramNodes = cy?.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
@@ -261,7 +301,14 @@ export class InteractorService {
       }
     }
 
-    return [dynamicInteractors.slice(0, numberToAdd), existingInteractors];
+    // Chosen by score, but *placed* alphabetically. Position round the entity is
+    // how a reader looks for a particular gene, and score order makes that a
+    // hunt; the selection is already made by the time we get here, so ordering it
+    // by name costs nothing and the two decisions stop fighting each other.
+    const drawn = dynamicInteractors
+      .slice(0, numberToAdd)
+      .sort((a, b) => (a.alias ?? a.acc ?? '').localeCompare(b.alias ?? b.acc ?? ''));
+    return [drawn, existingInteractors];
   }
 
   public createInteractorNodes(

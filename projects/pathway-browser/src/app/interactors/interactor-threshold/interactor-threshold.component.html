@@ -7,6 +7,12 @@
   <input id="interactor-threshold" matSliderThumb [value]="threshold()" (valueChange)="set($event)" />
 </mat-slider>
 
+@if (tally(); as tally) {
+  <span class="threshold-tally" title="The diagram draws the best supported first, and has room for 18">
+    {{ tally }} shown
+  </span>
+}
+
 @if (hiddenByThreshold()) {
   <span class="threshold-empty"> The threshold is hiding every interactor here. Lower it to bring them back. </span>
 }
