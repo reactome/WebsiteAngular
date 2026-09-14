@@ -94,6 +94,12 @@ export class InteractorThresholdComponent {
    * Material commits `valueChange` at the end of a drag, so the diagram lagged
    * behind the control and the marks on the track could not be used for what they
    * are for -- watching interactors leave as the thumb passes them.
+   *
+   * `input` alone, not both. Bound together they raced on release: `valueChange`
+   * fires afterwards with Material's own value, which can be the one before the
+   * last `input`, so letting go sometimes put the threshold back a step and left
+   * the message describing a state the diagram was no longer in. `input` fires on
+   * the release too, so nothing is lost by dropping it.
    */
   /**
    * Put the interactors away, and this bar with them.

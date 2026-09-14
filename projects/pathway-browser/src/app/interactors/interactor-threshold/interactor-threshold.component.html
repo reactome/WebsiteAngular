@@ -22,13 +22,7 @@
       so the diagram only caught up once the reader let go -- and the whole point
       of the marks on the track is to see the interactors leave as you pass them.
     -->
-    <input
-      id="interactor-threshold"
-      matSliderThumb
-      [value]="threshold()"
-      (input)="onSlide($event)"
-      (valueChange)="set($event)"
-    />
+    <input id="interactor-threshold" matSliderThumb [value]="threshold()" (input)="onSlide($event)" />
   </mat-slider>
 </div>
 
