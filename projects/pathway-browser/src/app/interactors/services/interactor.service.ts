@@ -515,6 +515,7 @@ export class InteractorService {
   public removeInteractorNodes(occurrenceNode: cytoscape.NodeSingular) {
     const entityNode = occurrenceNode.data('entity');
     const interactors = entityNode.closedNeighborhood('node.Interactor');
+    const cy = occurrenceNode.cy();
 
     entityNode.connectedEdges('.Interactor').remove();
     interactors.forEach((interactor: cytoscape.NodeSingular) => {
@@ -522,6 +523,36 @@ export class InteractorService {
         interactor.remove();
       }
     });
+
+    // The confidence control follows this, so it has to be true after a close as
+    // well as after an open. It was only ever set when interactors were added,
+    // which left the control on screen describing a diagram with nothing on it.
+    this.showingInteractors.set(cy.nodes('.Interactor').length > 0);
+    if (!this.showingInteractors()) {
+      this.interactorCounts.set({ shown: 0, drawn: 0, offered: 0 });
+      this.openedScores.set([]);
+      this.exportableInteractions.set([]);
+    }
+  }
+
+  /**
+   * Put every open entity's interactors away.
+   *
+   * What the control's dismiss does, and what closing the last one does anyway.
+   * The overlay itself stays: the reader chose a resource, and taking that away
+   * too would be answering a question they did not ask.
+   */
+  public closeAllInteractors(cy?: cytoscape.Core) {
+    // Every diagram that has a resource on it, when none is named. The compare
+    // view has its own graph, and a control that dismissed only one of them would
+    // leave the other showing interactors with nothing to filter them by.
+    const graphs = cy ? [cy] : [...this.cyToSelectedResource.keys()];
+    for (const graph of graphs) {
+      graph.nodes('.InteractorOccurrences.opened').forEach((badge) => {
+        this.removeInteractorNodes(badge);
+        badge.removeClass('opened');
+      });
+    }
   }
 
   public clearAllInteractorNodes(cy: cytoscape.Core) {

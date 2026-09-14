@@ -248,7 +248,7 @@
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
                 <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
               </div>
-              @if (currentInteractorResource().name) {
+              @if (showingInteractors()) {
                 <cr-interactor-threshold />
               }
             </as-split-area>

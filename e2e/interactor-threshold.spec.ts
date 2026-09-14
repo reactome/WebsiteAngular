@@ -110,9 +110,7 @@ const control = (page: Page) => page.locator('cr-interactor-threshold');
 test.describe('The interactor confidence threshold', () => {
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
-  test('is offered as soon as a resource is chosen, not only once one is opened', async ({
-    page,
-  }) => {
+  test('is offered only while interactors are drawn', async ({ page }) => {
     await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
     await page.waitForTimeout(4000);
@@ -120,17 +118,31 @@ test.describe('The interactor confidence threshold', () => {
     // No overlay, so nothing to filter and nothing to filter with (FR-002).
     await expect(control(page)).toHaveCount(0);
 
-    // The threshold belongs to the overlay rather than to one entity's
-    // expansion. It used to appear only once interactors were drawn, which meant
-    // the only route to it was clicking a badge -- and at the zoom a pathway
-    // opens at, that badge is a handful of pixels.
+    // Choosing a resource is not enough: that draws the count badges, and there
+    // is still nothing to filter.
+    //
+    // This requirement has moved twice, and both moves were the badge's doing.
+    // It was first tied to drawn interactors, then to the chosen resource --
+    // because a badge was the only route to the control and a badge is six
+    // pixels at the zoom a pathway opens at. Now that badges are not drawn below
+    // 0.6 at all, a reader who can click one can see one, so the control can
+    // belong to the interactors again, and the bar can be dismissed with them.
     await page.locator('.species-interactor-container .interactor').click();
     await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
-    await expect(control(page)).toHaveCount(1, { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(6000);
+    await expect(control(page)).toHaveCount(0);
 
-    // And it is still there once interactors are actually drawn.
     await showInteractors(page);
     await expect(control(page)).toHaveCount(1);
+  });
+
+  test('goes away with the interactors it describes', async ({ page }) => {
+    await showInteractors(page);
+    await expect(control(page)).toHaveCount(1);
+
+    await control(page).locator('.threshold-close').click();
+    await expect(control(page)).toHaveCount(0);
+    expect(await drawnInteractors(page), 'and takes them with it').toBe(0);
   });
 
   test('raising it removes exactly the interactions below it', async ({ page }) => {

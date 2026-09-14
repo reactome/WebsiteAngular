@@ -95,6 +95,19 @@ export class InteractorThresholdComponent {
    * behind the control and the marks on the track could not be used for what they
    * are for -- watching interactors leave as the thumb passes them.
    */
+  /**
+   * Put the interactors away, and this bar with them.
+   *
+   * The bar describes a set of interactors, so dismissing it and clearing them
+   * are one act: a bar left behind describing nothing is the confusing half.
+   *
+   * The overlay resource is left alone -- the reader chose it, and clearing that
+   * too would answer a question they did not ask.
+   */
+  dismiss() {
+    this.interactors.closeAllInteractors();
+  }
+
   onSlide(event: Event) {
     const input = event.target as HTMLInputElement | null;
     if (input) this.set(Number(input.value));

@@ -4,13 +4,17 @@
 :host {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 0.4rem 1.25rem;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
   // A fixed width, because the bar is centred: any change to its contents moved
   // both edges at once, so writing "the threshold is hiding every interactor
   // here" made the whole control jump and take the download button with it. The
   // messages change; the frame does not.
-  width: min(44rem, calc(100vw - 4rem));
+  // Wide enough for its contents at their minimums, which 44rem was not: label
+  // 173 + track (192 min, plus 48 of margin) + status 176 + two buttons 64 +
+  // gaps 80 + padding 40 comes to ~793px against 704, so the close button was
+  // pushed past the rounded edge and clipped.
+  width: min(52rem, calc(100vw - 4rem));
   font-size: 0.85rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -42,7 +46,7 @@
   // 1 it sits proud of the drawn track. Measured at the extreme: 0.5rem left it
   // 15px from the status text, which still reads as crowded. 1.5rem clears it.
   margin-inline: 1.5rem;
-  min-width: 12rem;
+  min-width: 10rem;
   max-width: 22rem;
   display: flex;
   align-items: center;
@@ -111,6 +115,32 @@
   font-weight: 600;
 }
 
-.threshold-download {
+// Material's icon buttons are 40px with a 48px touch target, which is taller
+// than this bar and pushed the icons out of line with the label and the track.
+.threshold-download,
+.threshold-close {
   flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 2rem;
+
+  .mat-icon,
+  .mat-mdc-button-touch-target {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1.25rem;
+    line-height: 1.25rem;
+  }
+}
+
+.threshold-close {
+  // A dismiss sits apart from the thing it acts on, not beside the download as
+  // though it were another action on the file.
+  margin-left: 0.25rem;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
 }
