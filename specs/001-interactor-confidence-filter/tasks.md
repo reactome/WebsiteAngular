@@ -48,7 +48,7 @@ lowering it brings them back.
 **Independent test**: open a pathway, show interactors for Q13158's entity, count
 interactor nodes on the graph, raise the threshold, count again.
 
-- [ ] T008 [US1] Write `e2e/interactor-threshold.spec.ts` with the US1 cases from [quickstart.md](./quickstart.md) Scenario 1, asserting on `cy.elements('.interactor').length` — **not** on the control. Run it against `main` first and record the failure text in the commit
+- [ ] T008 [US1] Write `e2e/interactor-threshold.spec.ts` with the US1 cases from [quickstart.md](./quickstart.md) Scenario 1, asserting on `cy.elements('.Interactor').length` — **not** on the control, and performing both steps (choose a resource, then click an occurrence node) because the first alone draws only badges. Run it against `main` first and record the failure text in the commit
 - [ ] T009 [US1] In `projects/pathway-browser/src/app/interactors/services/interactor.service.ts`, apply `passesThreshold` when drawing interactor nodes, reading the threshold from `UrlStateService.interactorScore`
 - [ ] T010 [US1] Make a threshold change restyle rather than refetch or re-layout — toggle visibility on elements already on the graph, per plan.md's performance goal (SC-005)
 - [ ] T011 [P] [US1] Create `interactor-threshold.component.ts/.html/.scss` in the directory from T001: a Material slider `min=0 max=1`, a `[data-threshold]` attribute carrying the value in force, and the empty state FR-012 requires
