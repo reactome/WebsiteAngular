@@ -1530,9 +1530,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
 
-          if (e.type === ReactomeEventTypes.open)
-            this.interactorsService.addInteractorNodes(occurrenceNode, style.cy!);
-          else this.interactorsService.removeInteractorNodes(occurrenceNode);
+          const cy = style.cy;
+          if (e.type === ReactomeEventTypes.open && cy) {
+            this.interactorsService.addInteractorNodes(occurrenceNode, cy);
+            // The reader may have moved the control before opening this one, and
+            // newly drawn interactors know nothing about it.
+            this.interactorsService.applyInteractorThreshold(
+              cy,
+              clampThreshold(this.state.interactorScore())
+            );
+          } else this.interactorsService.removeInteractorNodes(occurrenceNode);
 
           style.interactivity.updateProteins();
           style.interactivity.triggerZoom();

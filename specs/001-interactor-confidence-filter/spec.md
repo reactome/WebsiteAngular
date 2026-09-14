@@ -83,8 +83,11 @@ Beside the confidence control, the curator downloads the interactors currently s
 
 ### Functional Requirements
 
-- **FR-001**: While interactors are shown on the diagram, the system MUST offer a confidence control beneath the diagram, positioned so it reads as belonging to the diagram rather than to the details panel.
-- **FR-002**: The system MUST hide it whenever no interactors are shown.
+- **FR-001**: While an interaction resource is selected, the system MUST offer a confidence control beneath the diagram, positioned so it reads as belonging to the diagram rather than to the details panel.
+- **FR-002**: The system MUST hide it whenever no resource is selected.
+
+  _Revised during implementation._ Both requirements first said "while interactors are shown", meaning after an entity's badge had been opened. That made the badge the only route to the control — and production hides that badge entirely below zoom 0.5 (`RendererManager.setFactor`, where `ProteinRenderer000` makes no call to `drawSummaryItems` while `ProteinRenderer050` makes two). At the zoom a pathway opens at there was therefore no way to reach the threshold at all. The threshold belongs to the overlay, not to one entity's expansion, and a reader may reasonably want to set it before opening anything.
+
 - **FR-003**: Changing the threshold MUST add and remove interactors from the diagram to match, without the curator taking any further action.
 - **FR-004**: An interactor MUST be shown when its confidence score is at or above the threshold, and hidden when it is below.
 - **FR-004a**: The threshold MUST be held per interaction resource, as the old browser holds it. Switching resource MUST apply that resource's own threshold rather than carrying the previous one across, because a score from one resource does not mean the same as a score from another.

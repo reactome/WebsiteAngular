@@ -105,14 +105,25 @@ const control = (page: Page) => page.locator('cr-interactor-threshold');
 test.describe('The interactor confidence threshold', () => {
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
-  test('is offered only while interactors are shown', async ({ page }) => {
+  test('is offered as soon as a resource is chosen, not only once one is opened', async ({
+    page,
+  }) => {
     await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
     await page.waitForTimeout(4000);
 
-    // Nothing to filter, so nothing to filter with (FR-002).
+    // No overlay, so nothing to filter and nothing to filter with (FR-002).
     await expect(control(page)).toHaveCount(0);
 
+    // The threshold belongs to the overlay rather than to one entity's
+    // expansion. It used to appear only once interactors were drawn, which meant
+    // the only route to it was clicking a badge -- and at the zoom a pathway
+    // opens at, that badge is a handful of pixels.
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await expect(control(page)).toHaveCount(1, { timeout: BOOT_TIMEOUT });
+
+    // And it is still there once interactors are actually drawn.
     await showInteractors(page);
     await expect(control(page)).toHaveCount(1);
   });
