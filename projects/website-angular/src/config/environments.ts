@@ -21,6 +21,20 @@ export interface SiteProfile {
   /** Which UI this deployment presents. */
   variant: SiteVariant;
   /**
+   * Whether the DeltaSignal pathway-perturbation UI is offered here.
+   *
+   * A feature, not a variant: it is per deployment because it depends on a
+   * DeltaSignal backend that only some environments can reach, and because it
+   * is a research tool rather than something every audience should be shown.
+   * The note on SITE_VARIANT below -- that new deployments should compare the
+   * variant rather than grow a second boolean -- is about which UI a
+   * deployment presents, which is a different question from which features it
+   * turns on.
+   *
+   * Absent means off, so a new profile has to opt in rather than inherit it.
+   */
+  deltaSignal?: boolean;
+  /**
    * Where the services are, or `'origin'` for "wherever this bundle is served
    * from".
    *
@@ -128,6 +142,11 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
 
   development: {
     variant: 'main',
+    // The only deployment that can reach a DeltaSignal backend: proxy.conf.js
+    // routes /api to DELTASIGNAL_BACKEND, which is a dev-server proxy and does
+    // not exist in a built artifact. Turning this on elsewhere would offer a
+    // button whose every call fails, so the other profiles leave it absent.
+    deltaSignal: true,
     host: 'origin',
     originFallback: 'https://dev.reactome.org',
     s3: S3,
