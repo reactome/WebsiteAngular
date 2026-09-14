@@ -22,7 +22,12 @@ const PATHWAY = 'R-HSA-1368108'; // BMAL1:CLOCK,NPAS2 activates circadian gene e
 const BOOT_TIMEOUT = 90_000;
 
 interface Graph {
-  elements(selector?: string): { length: number };
+  elements(selector?: string): {
+    length: number;
+    filter(fn: (element: GraphElement) => boolean): { length: number };
+  };
+  zoom(level?: number): number;
+  emit(event: string): void;
   nodes(selector?: string): {
     length: number;
     [index: number]: GraphElement;
@@ -172,3 +177,56 @@ async function setThreshold(page: Page, value: number) {
   );
   await page.waitForTimeout(1200);
 }
+
+/**
+ * The count badge is not drawn when it cannot be read.
+ *
+ * It is 30 model units wide, so at the 0.203 a pathway opens at it is six screen
+ * pixels holding a two-digit number. The old browser does not draw it either
+ * below its own threshold -- `RendererManager.setFactor` swaps renderer tiers at
+ * 0.5, and `ProteinRenderer000` never calls `drawSummaryItems`.
+ *
+ * Asserted on what is visible rather than on the zoom, because the zoom is the
+ * input and the reader's view is the thing in question.
+ */
+test.describe('The interactor count badge', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('appears only once it is big enough to read', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await page.waitForFunction(
+      () => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        return (cy?.elements('.InteractorOccurrences').length ?? 0) > 0;
+      },
+      { timeout: BOOT_TIMEOUT }
+    );
+
+    const visibleBadgesAt = async (zoom: number) => {
+      const counts = await page.evaluate((level) => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+        cy.zoom(level);
+        cy.emit('zoom');
+        const badges = cy.elements('.InteractorOccurrences');
+        return {
+          total: badges.length,
+          visible: badges.filter((badge) => badge.visible()).length,
+        };
+      }, zoom);
+      await page.waitForTimeout(700);
+      return counts;
+    };
+
+    const wideOut = await visibleBadgesAt(0.3);
+    expect(wideOut.total, 'the badges are on the graph').toBeGreaterThan(0);
+    expect(wideOut.visible, 'but none is drawn at a zoom where it cannot be read').toBe(0);
+
+    const closeIn = await visibleBadgesAt(0.8);
+    expect(closeIn.visible, 'and every one is drawn once it can be').toBe(closeIn.total);
+  });
+});

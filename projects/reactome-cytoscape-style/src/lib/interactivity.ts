@@ -11,6 +11,15 @@ type RenderableHTMLElement = HTMLElement & {
   render: _.DebouncedFunc<() => void>;
 };
 
+/**
+ * Below this zoom the interactor count badge is not drawn at all.
+ *
+ * Measured rather than chosen: the badge is 30 model units wide, so 0.6 puts it
+ * at 18 screen pixels. Below that its two digits are a smudge -- 6 pixels at the
+ * 0.203 that R-HSA-1368108 opens at.
+ */
+const INTERACTOR_BADGE_MIN_ZOOM = 0.6;
+
 export class Interactivity {
   isMobile = 'ontouchstart' in document || navigator.maxTouchPoints > 0;
 
@@ -567,6 +576,23 @@ export class Interactivity {
           opacity: trivialOpacity,
           'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
         });
+
+      // The interactor count badge is not worth drawing when it cannot be read.
+      //
+      // It is 30 model units across, so at the zoom a pathway opens at -- 0.203
+      // for R-HSA-1368108 -- it is **6 pixels**, holding a two-digit number. Two
+      // readers in a row failed to find it while looking straight at it.
+      //
+      // The old browser does not draw it either: RendererManager.setFactor swaps
+      // renderer tiers at 0.5, and ProteinRenderer000 makes no call to
+      // drawSummaryItems while ProteinRenderer050 makes two. This threshold is
+      // close to theirs but chosen here rather than copied, because a cytoscape
+      // zoom and a GWT factor are not the same quantity: 0.6 puts the badge at 18
+      // screen pixels, which is where its digits stop being a smudge.
+      cy.elements('.InteractorOccurrences').style(
+        'display',
+        zoomLevel < INTERACTOR_BADGE_MIN_ZOOM ? 'none' : 'element'
+      );
     };
     const updateDecorationPosition = (node: cytoscape.NodeSingular) => {
       if (!this.structureContainers.has(node)) return;
