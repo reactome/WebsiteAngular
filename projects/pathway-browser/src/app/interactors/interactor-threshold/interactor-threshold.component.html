@@ -41,7 +41,7 @@
   @if (waitingForAnEntity()) {
     <span>Applies when you open an interactor count.</span>
   } @else if (hiddenByThreshold()) {
-    <span class="threshold-empty">The threshold is hiding every interactor here.</span>
+    <span class="threshold-empty">All hidden by the threshold</span>
   } @else if (tally(); as tally) {
     <span title="The best supported are drawn first">{{ tally }} shown</span>
   }

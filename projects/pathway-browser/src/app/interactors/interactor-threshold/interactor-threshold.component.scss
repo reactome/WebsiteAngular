@@ -35,11 +35,13 @@
 // space and a mark at 0.6 sits under the thumb at 0.6.
 .threshold-track {
   position: relative;
+  // The track takes whatever is left, so it is the only part that changes size
+  // and it changes only with the window.
   flex: 1 1 auto;
   // The thumb's travel is the track plus its own radius at each end, so at 0 and
-  // 1 it sits proud of the drawn track. With only 12px to the status text it
-  // read as though the slider ran into the words.
-  margin-inline: 0.5rem;
+  // 1 it sits proud of the drawn track. Measured at the extreme: 0.5rem left it
+  // 15px from the status text, which still reads as crowded. 1.5rem clears it.
+  margin-inline: 1.5rem;
   min-width: 12rem;
   max-width: 22rem;
   display: flex;
@@ -85,7 +87,12 @@
 // resize anything around it. Two lines' worth of room is reserved: the longest
 // message wraps to two at the narrow end of the range.
 .threshold-status {
-  flex: 1 1 auto;
+  // A fixed share, never a growing one. As `flex: 1 1 auto` this claimed more
+  // width for a longer message and took it from the track: at 0.7 the status
+  // began at x=1070 and at 1.00 it began at 1031, so the slider shrank by 39px
+  // exactly when the long message appeared. The thumb then sat right against the
+  // words, which is what "the words start in the middle of the slider" was.
+  flex: 0 0 11rem;
   min-width: 0;
   // Fixed, not a minimum. "The threshold is hiding every interactor here" wraps
   // to two lines where "18 of 46 shown" is one, so a minimum still let the bar
