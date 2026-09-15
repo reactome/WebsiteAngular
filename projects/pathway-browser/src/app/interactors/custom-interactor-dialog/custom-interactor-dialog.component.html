@@ -1,11 +1,24 @@
-<h2 mat-dialog-title>Add a new resource</h2>
+<h2 mat-dialog-title class="dialog-title">
+  Add a new resource
+  <span class="dialog-title-spacer"></span>
+  <button mat-icon-button mat-dialog-close aria-label="Close without adding anything" matTooltip="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
 <mat-dialog-content>
   <form [formGroup]="resourceForm">
     <div>
       <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput [formControl]="name" (blur)="updateErrorMessage()" required />
-        @if (resourceForm.get('name')?.invalid) {
+        <mat-hint>Letters, digits and underscores. This is what the button will say.</mat-hint>
+        <!--
+          `name` is its own FormControl and is not a member of `resourceForm`, so
+          the guard here used to be `resourceForm.get('name')?.invalid`, which is
+          null?.invalid -- undefined, always. The message existed and could never
+          be shown.
+        -->
+        @if (name.invalid && name.touched) {
           <mat-error>{{ errorMessage }}</mat-error>
         }
       </mat-form-field>
@@ -67,18 +80,120 @@
         </mat-form-field>
       </mat-tab>
     </mat-tab-group>
+    <!--
+      Where the data goes, as a choice rather than a silent default. Unchecked,
+      a file or a paste is read in this page and no request is made at all.
+      Checked, it goes to the service, which is the only way the resulting
+      overlay survives a reload or opens for someone else -- the token it
+      returns is what the address carries.
+    -->
+    @if (canParseHere()) {
+      <mat-checkbox class="share-choice" [checked]="shareByLink()" (change)="shareByLink.set($event.checked)">
+        Upload to Reactome so this overlay can be shared by link
+        <span class="share-choice-note"> Otherwise your data is read here and never leaves this browser. </span>
+      </mat-checkbox>
+    }
+
+    <!--
+      What to put in. The service refuses freely and its refusals are precise,
+      but only if you already know the shape it wants -- and nothing here said.
+      Every claim below was measured against beta's ContentService on
+      2026-09-15 rather than inferred from the endpoint's name.
+    -->
+    <div class="format-help">
+      <button
+        mat-button
+        type="button"
+        class="format-help-toggle"
+        (click)="showHelp.set(!showHelp())"
+        [attr.aria-expanded]="showHelp()"
+      >
+        <mat-icon>info_outline</mat-icon>
+        {{ showHelp() ? 'Hide' : 'What can I add here?' }}
+      </button>
+
+      @if (showHelp()) {
+        @if (tabId === 'psicquic') {
+          <div class="format-help-body">
+            <p>
+              The address of a PSICQUIC service. It is queried for the proteins in this diagram, the same way the listed
+              services are, and appears under Custom once it answers.
+            </p>
+          </div>
+        } @else {
+          <div class="format-help-body">
+            <p>
+              A list of pairs that interact: two identifiers per line, separated by a tab, under a header line. UniProt
+              accessions match what the diagram draws.
+            </p>
+            <pre class="format-example">
+#ID_A&#9;ID_B
+P49736&#9;Q99741
+P25205&#9;P33993</pre>
+            <p>
+              The first line must start with <code>#</code>. Without it the service still accepts the file, but reads
+              your first pair as the header and leaves it out — which is worth knowing, because it says so in a warning
+              rather than an error.
+            </p>
+            <p>Two columns only: a third is refused, so confidence scores cannot be supplied here.</p>
+            <!--
+              Said because nothing said it, and it is not what the wording
+              ("Upload a file stored locally on your computer") leads you to
+              expect. Traced 2026-09-15: the content is POSTed to
+              /ContentService/interactors/upload/tuple/, parsed and stored on the
+              server, and addressed by a token that then appears in this page's
+              address. Anyone with that token can read the interactions back --
+              verified with a plain request carrying no session. The store holds
+              323 uploads going back to 2019, so nothing expires.
+            -->
+            @if (shareByLink()) {
+              <p class="format-help-note">
+                With sharing on, your data is sent to the Reactome server, kept there, and identified by a token that
+                becomes part of this page's address — so sharing the link shares the data.
+              </p>
+            } @else {
+              <p class="format-help-note">
+                Your data is read in this browser. Nothing is sent anywhere, and the overlay lasts as long as this page
+                is open.
+              </p>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    @if (warnings().length > 0) {
+      <div class="upload-warning" role="status">
+        @for (warning of warnings(); track warning) {
+          <span>{{ warning }}</span>
+        }
+      </div>
+    }
+
+    <!--
+      The reason it was refused, in the service's words. Before this the spinner
+      simply spun and the dialog sat there, which is indistinguishable from the
+      dialog being stuck -- and is how it was reported.
+    -->
+    @if (uploadError()) {
+      <div class="upload-error" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ uploadError() }}</span>
+      </div>
+    }
+
     <mat-dialog-actions align="end">
       <button mat-flat-button color="primary" mat-dialog-close>Close</button>
       <button
         mat-flat-button
         color="primary"
-        [disabled]="resourceForm.invalid && !resourceForm.get('name')?.invalid"
+        [disabled]="resourceForm.invalid || name.invalid || isDataLoading()"
         type="submit"
         (click)="submit()"
       >
         <div class="button-row">
           Submit
-          @if (isDataLoading) {
+          @if (isDataLoading()) {
             <mat-spinner class="spinner-color" diameter="20"></mat-spinner>
           }
         </div>

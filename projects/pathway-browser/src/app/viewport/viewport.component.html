@@ -51,6 +51,7 @@
             #interactors
             [cy]="diagram()?.cy"
             [cys]="diagram()?.cys"
+            [panelOpen]="visibility.interactor"
             [hasEHLD]="hasEHLD()"
             (initialiseReplaceElements)="diagram()?.initialiseReplaceElements()"
           ></cr-interactors>
@@ -264,6 +265,9 @@
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
                 <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
               </div>
+              @if (showingInteractors() || resourceFoundNothing() || badgesHiddenByZoom()) {
+                <cr-interactor-threshold />
+              }
               @if (showDeltaSignal) {
                 @let deltaSignalStatus = dropdown() === 'deltasignal' ? 'open' : 'closed';
                 <div class="dropdown deltasignal-dropdown" [class.open]="dropdown() === 'deltasignal'">

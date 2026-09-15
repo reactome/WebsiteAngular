@@ -19,9 +19,21 @@ bare serve produces a site with empty content pages and no warning.
 ## A worked entity
 
 **Q13158 (FADD)** returns 33 interactions scoring **0.482 – 0.98**, measured
-against the local ContentService. That spread straddles the 0.45 default and has
-values on both sides of 0.6, which makes it a good subject: raising the threshold
-to 0.6 must visibly remove some and keep others.
+against the local ContentService on 2026-09-14:
+
+| threshold          | shown |
+| ------------------ | ----- |
+| 0.0                | 33    |
+| 0.45 — the default | 33    |
+| 0.6                | 13    |
+| 0.8                | 7     |
+| 0.99               | 0     |
+
+Note what that says: the 0.45 default hides **nothing** here, because the lowest
+score is 0.482. An earlier draft of this guide claimed the spread "straddles the
+0.45 default", which was never measured and is wrong. **0.6 is the threshold to
+test with** — it removes 20 of 33 — and 0.99 is the one that empties the diagram
+for FR-012.
 
 ```bash
 curl -s "http://localhost:8080/ContentService/interactors/static/molecule/Q13158/details" \

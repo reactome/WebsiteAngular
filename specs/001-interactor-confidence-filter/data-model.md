@@ -5,22 +5,45 @@ in the browser, plus one value in the URL.
 
 ## Interaction
 
-What the interactor service already fetches and draws. Held on the cytoscape node
+What the interactor service fetches and stores on the cytoscape occurrence node
 that owns it, as `occurrenceNode.data('interactors')`.
 
-| Field                            | Type     | Notes                                                                                                                  |
-| -------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `score`                          | number   | 0–1. Measured 0.482–0.98 across the 33 interactions of Q13158. The only field this feature reads to decide visibility. |
-| `identifier`                     | string   | With `databaseName`, forms the `DB:ID` shown in the table.                                                             |
-| `geneName`                       | string[] | First entry, falling back to `variantIdentifier`, is what the table shows.                                             |
-| `speciesName`                    | string   | Exported.                                                                                                              |
-| `entitiesCount`, `evidenceCount` | number   | Exported.                                                                                                              |
+**These are the fields the graph actually carries**, read off a running diagram on
+2026-09-14 (R-HSA-1368108, IntAct, first occurrence node, 11 interactions):
+
+| Field                    | Type   | Notes                                                        |
+| ------------------------ | ------ | ------------------------------------------------------------ |
+| `score`                  | number | 0–1. The only field this feature reads to decide visibility. |
+| `acc`                    | string | The accession. Identifies the interactor in the export.      |
+| `alias`                  | string | The readable name, where there is one.                       |
+| `id`                     | string | The interaction's own id.                                    |
+| `evidences`              | number | How much support there is.                                   |
+| `accURL`, `evidencesURL` | string | Links out; not exported.                                     |
+
+An earlier draft of this document listed `identifier`, `geneName`, `speciesName`,
+`entitiesCount` and `evidenceCount`. Those are the **details-panel table's**
+fields, from a differently shaped response, and none of them is on the graph. The
+export reads the graph, so it uses the list above.
 
 **Validation**: an interaction with no `score` was not seen in the measured data.
 If one arrives it is treated as **below every threshold** — hidden rather than
 shown — because a claim with no confidence behind it is the one a curator raising
-the threshold is trying to remove. This rule is asserted in
-`interactor-threshold.spec.ts` rather than left to chance.
+the threshold is trying to remove. Asserted in `interactor-threshold.spec.ts`.
+
+## How interactors reach the diagram
+
+Two steps, which matters because a test has to perform both before there is
+anything to filter:
+
+1. Choosing a resource adds **occurrence** nodes — class `InteractorOccurrences`,
+   the badges carrying a count. Measured: 9 of them, taking the graph from 112 to
+   121 elements.
+2. Clicking one draws **that entity's** interactors — class `Interactor`.
+   Measured: the first occurrence's 11 interactions took the graph from 121 to 143.
+
+So `cy.elements('.Interactor')` is the count an assertion reads, and it is zero
+until step 2. An earlier draft of the plan said `.interactor`, lower case, which
+matches nothing.
 
 ## Confidence threshold
 

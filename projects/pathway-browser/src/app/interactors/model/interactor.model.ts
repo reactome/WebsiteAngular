@@ -50,7 +50,17 @@ export interface PsicquicResource {
 
 export interface InteractorToken {
   summary: Summary;
-  warningMessage: string;
+  /**
+   * What the parser wants the reader to know, when it accepted the data anyway.
+   *
+   * Plural, and it is an array: the service returns
+   * `{"warningMessages":["Missing header. Using a default one."]}`, measured
+   * against beta's ContentService on 2026-09-15. It was declared here as a
+   * singular string, which is why nothing ever displayed it -- and that
+   * particular warning matters, because "using a default one" means the reader's
+   * first line was taken as data rather than as a header.
+   */
+  warningMessages?: string[];
 }
 
 interface Summary {

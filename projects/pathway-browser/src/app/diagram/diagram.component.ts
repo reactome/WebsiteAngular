@@ -41,6 +41,7 @@ import {
   tap,
 } from 'rxjs';
 import { UrlStateService } from '../services/url-state.service';
+import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
@@ -145,6 +146,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   constructor() {
     this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
+    // Redraw the interactors whenever the reader moves the confidence control.
+    // Both diagrams, because the comparison view has its own graph and an
+    // interactor hidden in one but not the other would be a difference the
+    // reader did not ask for.
+    effect(() => {
+      const threshold = clampThreshold(this.state.interactorScore());
+      for (const style of [this.reactomeStyle, this.reactomeStyleCompare]) {
+        const cy = style?.cy;
+        if (cy) this.interactorsService.applyInteractorThreshold(cy, threshold);
+      }
+    });
     effect(
       () => {
         const flag = this.data.flagIdentifiers();
@@ -1562,9 +1574,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
 
-          if (e.type === ReactomeEventTypes.open)
-            this.interactorsService.addInteractorNodes(occurrenceNode, style.cy!);
-          else this.interactorsService.removeInteractorNodes(occurrenceNode);
+          const cy = style.cy;
+          if (e.type === ReactomeEventTypes.open && cy) {
+            this.interactorsService.addInteractorNodes(occurrenceNode, cy);
+            // The reader may have moved the control before opening this one, and
+            // newly drawn interactors know nothing about it.
+            this.interactorsService.applyInteractorThreshold(
+              cy,
+              clampThreshold(this.state.interactorScore())
+            );
+          } else this.interactorsService.removeInteractorNodes(occurrenceNode);
 
           style.interactivity.updateProteins();
           style.interactivity.triggerZoom();
