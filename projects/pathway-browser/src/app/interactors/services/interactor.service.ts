@@ -255,12 +255,17 @@ export class InteractorService {
   /** One zoom listener per graph, however many times a resource is chosen. */
   private watchingBadgeVisibility = new WeakSet<cytoscape.Core>();
 
+  /** Set when the reader put the bar away, cleared when they choose a resource. */
+  private badgeHintDismissed = false;
+
   /** Keep `badgesHiddenByZoom` true only while there is something to reveal. */
   private watchBadgeVisibility(cy: cytoscape.Core): void {
     const update = () => {
       const badges = cy.nodes('.InteractorOccurrences');
       this.badgesHiddenByZoom.set(
-        badges.length > 0 && badges.filter((badge) => badge.visible()).length === 0
+        !this.badgeHintDismissed &&
+          badges.length > 0 &&
+          badges.filter((badge) => badge.visible()).length === 0
       );
     };
     if (!this.watchingBadgeVisibility.has(cy)) {
@@ -271,6 +276,9 @@ export class InteractorService {
     // and the comparison view has a second one with none, which was overwriting
     // the real answer.
     if (cy.nodes('.InteractorOccurrences').length > 0) this.badgeGraph = cy;
+    // A new choice is a new question, so a previous dismissal does not silence
+    // the answer to it.
+    this.badgeHintDismissed = false;
     update();
   }
 
@@ -852,6 +860,14 @@ export class InteractorService {
         badge.removeClass('opened');
       });
     }
+
+    // Dismissing the bar means dismissing the bar. The badges are still there
+    // and still too small to draw, so without this the "there are interactors
+    // here" state simply put it straight back -- the close button looked broken
+    // at exactly the zoom a pathway opens at. Caught by CI, which opens smaller
+    // than the browser this was checked in.
+    this.badgeHintDismissed = true;
+    this.badgesHiddenByZoom.set(false);
   }
 
   public clearAllInteractorNodes(cy: cytoscape.Core) {

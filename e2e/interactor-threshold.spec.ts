@@ -121,19 +121,25 @@ test.describe('The interactor confidence threshold', () => {
     // Choosing a resource is not enough: that draws the count badges, and there
     // is still nothing to filter.
     //
-    // This requirement has moved twice, and both moves were the badge's doing.
-    // It was first tied to drawn interactors, then to the chosen resource --
-    // because a badge was the only route to the control and a badge is six
-    // pixels at the zoom a pathway opens at. Now that badges are not drawn below
-    // 0.6 at all, a reader who can click one can see one, so the control can
-    // belong to the interactors again, and the bar can be dismissed with them.
+    // This requirement has moved three times, each move the badge's doing. It was
+    // first tied to drawn interactors, then to the chosen resource -- because a
+    // badge was the only route to the control and a badge is six pixels at the
+    // zoom a pathway opens at. Then badges stopped being drawn below 0.6 at all,
+    // so a reader who can click one can see one.
+    //
+    // The bar itself can now appear without any interactors, carrying the notice
+    // that there are badges too small to draw. So what is asserted is the
+    // *slider*: the thing that filters is offered only when there is something to
+    // filter. Asserting on the element again would be asserting that a reader is
+    // told nothing.
     await page.locator('.species-interactor-container .interactor').click();
     await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
     await page.waitForTimeout(6000);
-    await expect(control(page)).toHaveCount(0);
+    await expect(control(page).locator('.threshold-slider')).toHaveCount(0);
 
     await showInteractors(page);
     await expect(control(page)).toHaveCount(1);
+    await expect(control(page).locator('.threshold-slider')).toHaveCount(1);
   });
 
   test('goes away with the interactors it describes', async ({ page }) => {
