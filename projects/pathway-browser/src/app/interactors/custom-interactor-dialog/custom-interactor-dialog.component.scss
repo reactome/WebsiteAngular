@@ -19,3 +19,64 @@
 .file {
   color: var(--on-surface);
 }
+
+/* A way out that does not depend on finding the button below the fold. */
+.dialog-title {
+  display: flex;
+  align-items: center;
+}
+
+.dialog-title-spacer {
+  flex: 1 1 auto;
+}
+
+/*
+  The format note. Collapsed by default: a reader who knows the format should not
+  have to scroll past an explanation of it, and one who does not had nothing at
+  all before this.
+*/
+.format-help-toggle {
+  padding-left: 0;
+}
+
+.format-help-body {
+  font-size: 0.85rem;
+  line-height: 1.45;
+
+  p {
+    margin: 0 0 0.5rem;
+  }
+}
+
+.format-example {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: var(--mat-sys-surface-variant, rgb(0 0 0 / 6%));
+  font-family: monospace;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  /* Tabs are the separator being described, so they have to be visible as tabs. */
+  tab-size: 8;
+  white-space: pre;
+}
+
+.upload-warning,
+.upload-error {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.upload-error {
+  color: var(--mat-sys-error, #b3261e);
+}
+
+/* Where the data goes. Distinct from the format, because it is a different kind
+   of thing to know and the wording above it suggests otherwise. */
+.format-help-note {
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--mat-sys-outline-variant, rgb(0 0 0 / 20%));
+}
