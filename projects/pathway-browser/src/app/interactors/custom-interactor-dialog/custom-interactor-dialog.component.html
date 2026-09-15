@@ -81,6 +81,20 @@
       </mat-tab>
     </mat-tab-group>
     <!--
+      Where the data goes, as a choice rather than a silent default. Unchecked,
+      a file or a paste is read in this page and no request is made at all.
+      Checked, it goes to the service, which is the only way the resulting
+      overlay survives a reload or opens for someone else -- the token it
+      returns is what the address carries.
+    -->
+    @if (canParseHere()) {
+      <mat-checkbox class="share-choice" [checked]="shareByLink()" (change)="shareByLink.set($event.checked)">
+        Upload to Reactome so this overlay can be shared by link
+        <span class="share-choice-note"> Otherwise your data is read here and never leaves this browser. </span>
+      </mat-checkbox>
+    }
+
+    <!--
       What to put in. The service refuses freely and its refusals are precise,
       but only if you already know the shape it wants -- and nothing here said.
       Every claim below was measured against beta's ContentService on
@@ -132,10 +146,17 @@ P25205&#9;P33993</pre>
               verified with a plain request carrying no session. The store holds
               323 uploads going back to 2019, so nothing expires.
             -->
-            <p class="format-help-note">
-              Your data is sent to the Reactome server, kept there, and identified by a token that becomes part of this
-              page's address — so sharing the link shares the data. It is not held only in your browser.
-            </p>
+            @if (shareByLink()) {
+              <p class="format-help-note">
+                With sharing on, your data is sent to the Reactome server, kept there, and identified by a token that
+                becomes part of this page's address — so sharing the link shares the data.
+              </p>
+            } @else {
+              <p class="format-help-note">
+                Your data is read in this browser. Nothing is sent anywhere, and the overlay lasts as long as this page
+                is open.
+              </p>
+            }
           </div>
         }
       }

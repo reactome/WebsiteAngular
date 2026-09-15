@@ -264,7 +264,10 @@ export class InteractorsComponent implements AfterViewInit {
           this.resourceTokens!.push(resource);
           this.clear = false;
           this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
-          this.state.overlay.set(resource.summary.token);
+          // Only when there is something a link can resolve. A locally parsed
+          // resource has an empty token, and putting that in the address gives
+          // `?overlay=` -- an address that opens to nothing and looks like a bug.
+          if (resource.summary.token) this.state.overlay.set(resource.summary.token);
         }
         this.cdr.detectChanges();
       });
@@ -277,6 +280,21 @@ export class InteractorsComponent implements AfterViewInit {
 
   getCustomResourceInteractors(resource: InteractorToken) {
     if (!resource.summary) return;
+
+    // A resource parsed in this page has no token, because there is nothing on a
+    // server to point at. Asking for one would be a request for `token/` with an
+    // empty id -- so it redraws from what is already held, and the address is
+    // left alone: a link cannot carry data that only exists here, and pretending
+    // otherwise would hand someone a URL that opens to nothing.
+    const held = this.interactors.localResource(resource.summary.name);
+    if (held) {
+      this.cys()?.forEach((cy) =>
+        this.interactors.addInteractorOccurrenceNode(held, cy, held.resource)
+      );
+      this.clear = false;
+      this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
+      return;
+    }
 
     this.cys()?.forEach((cy) => {
       this.interactors.fetchCustomInteractors(resource, cy).subscribe((result) => {

@@ -28,6 +28,7 @@ import {
   MatDialogClose,
 } from '@angular/material/dialog';
 import { InputCategory, InteractorToken } from '../model/interactor.model';
+import { parseCustomInteractions } from '../custom-interactor-parse';
 import { MatFormField, MatLabel, MatError, MatHint } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -61,6 +62,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
     MatRadioGroup,
     MatRadioButton,
     MatButton,
+    MatCheckbox,
     MatIconButton,
     MatDialogClose,
     MatTooltip,
@@ -175,6 +177,22 @@ export class CustomInteractorDialogComponent implements OnInit {
     // }
   }
 
+  /**
+   * Whether a file or a paste is read here or sent to the service.
+   *
+   * Off by default, so a reader's own data stays on their machine. It is offered
+   * at all because the token the service returns is what makes a custom overlay
+   * survive a reload and open for a colleague: parse locally and the link is
+   * yours alone. That is a real thing to give up, so it is a choice rather than
+   * a decision made for them.
+   */
+  readonly shareByLink = signal(false);
+
+  /** Local reading applies to a file or a paste; the others need the service. */
+  canParseHere(): boolean {
+    return this.tabId === 'data' && this.selectedValue !== 'url';
+  }
+
   submit() {
     if (this.name.invalid) {
       this.name.markAsTouched();
@@ -182,10 +200,15 @@ export class CustomInteractorDialogComponent implements OnInit {
       return;
     }
 
-    this.isDataLoading.set(true);
     this.uploadError.set('');
     this.warnings.set([]);
 
+    if (this.canParseHere() && !this.shareByLink()) {
+      void this.submitHere();
+      return;
+    }
+
+    this.isDataLoading.set(true);
     const userInput = this.getInputs();
     if (!userInput) {
       this.isDataLoading.set(false);
@@ -215,6 +238,61 @@ export class CustomInteractorDialogComponent implements OnInit {
           this.uploadError.set(describeUploadFailure(error));
         },
       });
+  }
+
+  /**
+   * Draw it without asking anyone.
+   *
+   * No request is made, so there is nothing to fail on the network and nothing
+   * stored anywhere. The resource is held in memory for as long as the page is
+   * open, which is exactly as long as it can be drawn.
+   */
+  private async submitHere(): Promise<void> {
+    this.isDataLoading.set(true);
+    try {
+      const text = await this.readInput();
+      const name = this.name.value!;
+      const parsed = parseCustomInteractions(text, name);
+
+      if (parsed.error) {
+        this.uploadError.set(parsed.error);
+        return;
+      }
+
+      this.warnings.set(parsed.warnings);
+      this.interactorService.rememberLocalResource(name, parsed.interactors);
+      this.interactorService.addInteractorOccurrenceNode(parsed.interactors, this.cy, name);
+      this.token = {
+        summary: {
+          // No token: there is nothing on a server to point at. The resource is
+          // named by the reader and lives in this page.
+          token: '',
+          name,
+          fileName: name,
+          interactors: parsed.interactors.entities.length,
+          interactions: parsed.interactors.entities.reduce(
+            (total, entity) => total + (entity.interactors?.length ?? 0),
+            0
+          ),
+        },
+        warningMessages: parsed.warnings,
+      };
+      this.dialogRef.close();
+    } catch {
+      this.uploadError.set('That file could not be read.');
+    } finally {
+      this.isDataLoading.set(false);
+    }
+  }
+
+  /** The text to read, whether it was typed or chosen from disk. */
+  private async readInput(): Promise<string> {
+    const value = this.resourceForm.value[this.selectedValue];
+    if (typeof value === 'string') return value;
+    // ngx-mat-file-input hands over a FileInput holding the chosen files.
+    const file = (value as { files?: File[] } | null)?.files?.[0];
+    if (file) return file.text();
+    return '';
   }
 
   private getInputs(): InputCategory {

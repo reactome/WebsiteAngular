@@ -325,6 +325,23 @@ export class InteractorService {
     }
   }
 
+  /**
+   * Resources parsed in the page rather than uploaded.
+   *
+   * Held for the life of the page, which is as long as they can be drawn: there
+   * is no token, because there is nothing on a server to point at. Choosing one
+   * again redraws from here instead of asking for a token that does not exist.
+   */
+  private localResources = new Map<string, Interactors>();
+
+  public rememberLocalResource(name: string, interactors: Interactors): void {
+    this.localResources.set(name, interactors);
+  }
+
+  public localResource(name: string | null | undefined): Interactors | undefined {
+    return name ? this.localResources.get(name) : undefined;
+  }
+
   /** Note what a resource held here, forgetting the tally if the pathway changed. */
   private rememberResourceCount(pathway: string | null, resource: string, count: ResourceTally) {
     if (pathway !== this.countsForPathway) {
