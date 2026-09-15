@@ -380,3 +380,39 @@ test.describe('The threshold a resource was left at', () => {
     await expect(page).toHaveURL((url) => url.searchParams.get('interactorScore') === null);
   });
 });
+
+/**
+ * A threshold in the address survives arriving at it.
+ *
+ * The overlay in a shared address is replayed through the same call a reader's
+ * click goes through: `stateToDiagram` reads `state.overlay()` and hands it to
+ * `getInteractors`. So per-resource memory, added for FR-004a, treated the
+ * replay as a switch and reset the threshold the address had asked for --
+ * measured on beta, `?overlay=Reactome-FIs&interactorScore=0.8` settled at no
+ * threshold at all, while the same address *without* the overlay kept it.
+ *
+ * Both halves are asserted, because it was the difference between them that
+ * identified the cause.
+ */
+test.describe('A threshold someone shared', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  const opensAt = async (page: Page, query: string) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}${query}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(8000);
+    return new URL(page.url()).searchParams.get('interactorScore');
+  };
+
+  test('survives an address that also names an overlay', async ({ page }) => {
+    expect(await opensAt(page, '?interactorScore=0.8'), 'without an overlay').toBe('0.8');
+    expect(await opensAt(page, '?overlay=IntAct&interactorScore=0.8'), 'with one').toBe('0.8');
+  });
+
+  test('including zero, which means show everything', async ({ page }) => {
+    // Not folded into the default by a falsy test on the way through: 0 is a
+    // threshold a reader sets deliberately, and it is what the reported URL
+    // carried.
+    expect(await opensAt(page, '?overlay=IntAct&interactorScore=0')).toBe('0');
+  });
+});

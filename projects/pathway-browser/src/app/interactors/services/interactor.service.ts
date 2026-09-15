@@ -14,7 +14,7 @@ import {
 
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
-import { DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
+import { clampThreshold, DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
 import { UrlStateService } from '../../services/url-state.service';
 
 /**
@@ -201,13 +201,35 @@ export class InteractorService {
   }
 
   /**
+   * Whether a threshold in the address is still waiting to be claimed.
+   *
+   * The overlay in a shared address is replayed through the same call a reader's
+   * click goes through -- `stateToDiagram` reads `state.overlay()` and calls
+   * `getInteractors` with it -- so the first activation after a load is not a
+   * switch, it is the address being honoured. Without this distinction the
+   * restore below overwrote the threshold the address asked for: measured on
+   * beta, `?overlay=Reactome-FIs&interactorScore=0.8` arrived and settled at no
+   * threshold at all, while the same address without the overlay kept 0.8.
+   */
+  private addressThresholdUnclaimed = true;
+
+  /**
    * Put the threshold this resource was last left at back into force.
    *
    * A resource never seen before opens at the default rather than inheriting
    * whatever the previous one was set to -- inheriting is how a reader ends up
    * with an empty diagram and no idea why.
+   *
+   * Except the first time, when what is in force came from the address rather
+   * than from a previous resource, so it belongs to this resource and is kept.
    */
   public restoreThreshold(resource: string | null | undefined): void {
+    if (this.addressThresholdUnclaimed) {
+      this.addressThresholdUnclaimed = false;
+      this.rememberThreshold(resource, clampThreshold(this.urlState.interactorScore()));
+      return;
+    }
+
     const remembered = resource ? this.thresholdByResource.get(resource) : undefined;
     this.urlState.interactorScore.set(remembered ?? DEFAULT_INTERACTOR_SCORE);
   }

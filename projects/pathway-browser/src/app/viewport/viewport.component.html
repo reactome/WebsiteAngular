@@ -51,6 +51,7 @@
             #interactors
             [cy]="diagram()?.cy"
             [cys]="diagram()?.cys"
+            [panelOpen]="visibility.interactor"
             [hasEHLD]="hasEHLD()"
             (initialiseReplaceElements)="diagram()?.initialiseReplaceElements()"
           ></cr-interactors>

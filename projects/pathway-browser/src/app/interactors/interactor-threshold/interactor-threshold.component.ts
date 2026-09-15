@@ -144,7 +144,7 @@ export class InteractorThresholdComponent {
   readonly canDownload = computed(() => this.interactors.exportableInteractions().length > 0);
 
   /**
-   * Save what is on the diagram.
+   * Save everything the opened entities hold, not the filtered view.
    *
    * Assembled here from data already held, so there is no request, no progress to
    * report and nothing to fail -- which is why this does not use

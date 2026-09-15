@@ -110,18 +110,34 @@ export class InteractorsComponent implements AfterViewInit {
     this.getPsicquicResources();
   }
 
+  /**
+   * Whether the reader has this panel open.
+   *
+   * This component is never destroyed -- the viewport hides it with
+   * `[style.display]` -- so without this the prefetch below ran on every
+   * pathway anyone opened, sending thirteen requests to third-party PSICQUIC
+   * servers for a panel most readers never open. Found by reading the
+   * viewport's template rather than from any failure, because there is no
+   * failure to see: the requests just happen.
+   *
+   * Opening the panel is the moment the counts are wanted, so nothing is lost
+   * by waiting for it.
+   */
+  readonly panelOpen = input(false);
+
   constructor() {
-    // The prefetch needs two things that arrive in either order: the resource
-    // list, and a graph to ask about. ngAfterViewInit runs when this panel is
-    // created, which is before the diagram exists -- so hanging the prefetch off
-    // the resource list alone meant `cys()` was empty at the one moment it was
-    // tried, and it silently never ran: no requests, no counts, no error.
+    // The prefetch needs three things that arrive in any order: the reader
+    // opening the panel, the resource list, and a graph to ask about.
+    // ngAfterViewInit runs when this panel is created, which is before the
+    // diagram exists -- so hanging the prefetch off the resource list alone
+    // meant `cys()` was empty at the one moment it was tried, and it silently
+    // never ran: no requests, no counts, no error.
     //
-    // An effect on the graphs covers the other order, and maybePrefetchCounts is
-    // idempotent, so whichever arrives second starts it.
+    // An effect covers every order, and maybePrefetchCounts is idempotent, so
+    // whichever arrives last starts it.
     effect(() => {
       this.cys();
-      this.maybePrefetchCounts();
+      if (this.panelOpen()) this.maybePrefetchCounts();
     });
   }
 
@@ -133,6 +149,7 @@ export class InteractorsComponent implements AfterViewInit {
    */
   private maybePrefetchCounts(attempt = 0): void {
     const graph = this.cys()?.[0];
+    if (!this.panelOpen()) return;
     if (this.psicquicResources.length === 0) return;
 
     // The graph may not be there yet. This panel is created before the diagram
