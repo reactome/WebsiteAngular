@@ -449,6 +449,26 @@
   }
 }
 
+.deltasignal-dropdown {
+  left: max(300px, 42%);
+  border-left: 1px solid var(--outline-variant);
+  box-shadow: -10px 0 28px color-mix(in srgb, var(--shadow) 12%, transparent);
+}
+
+@media (max-width: 900px) {
+  .deltasignal-dropdown {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+
+    &.open {
+      bottom: 0;
+    }
+  }
+}
+
 .history {
   border-radius: 100%;
   display: flex;
