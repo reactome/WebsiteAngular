@@ -29,7 +29,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment, IS_CURATOR } from '../../environments/environment';
+import { environment, IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
 import { FigureService } from '../details/tabs/description-tab/figure/figure.service';
 // angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
 // shape ({gutterNum, sizes}).
@@ -50,6 +50,7 @@ import { NgClass } from '@angular/common';
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
+import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
 
 const DETAIL_MIN_HEIGHT = 0;
 
@@ -86,6 +87,7 @@ const DROPDOWN_DURATION = 500;
     ReacfoamComponent,
     DetailsComponent,
     AnalysisFormComponent,
+    DeltaSignalPanelComponent,
   ],
 })
 @UntilDestroy()
@@ -165,18 +167,24 @@ export class ViewportComponent implements AfterViewInit {
 
   dropdownDuration = DROPDOWN_DURATION;
   readonly isCurator = IS_CURATOR;
+  /** Whether this deployment offers DeltaSignal at all. */
+  readonly showDeltaSignal = SHOW_DELTASIGNAL;
 
-  // Only the analysis form opens here. There was a 'compare' state too, with a
+  // The analysis form and the DeltaSignal panel open here. There was a 'compare' state too, with a
   // panel of its own in the template, and nothing anywhere set it -- the form
   // behind it was the CLI's `<p>compare-form works!</p>` scaffold, shipped in
   // the initial commit and never written. Comparing against a disease variant
   // is the Compare button in the toolbar, which navigates rather than opening a
   // panel.
-  dropdown = signal<'analysis' | null>(null);
+  dropdown = signal<'analysis' | 'deltasignal' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');
     if (this.dropdown() !== 'analysis') this.closeAnalysis();
+  }
+
+  toggleDeltaSignal() {
+    this.dropdown.update((open) => (open === 'deltasignal' ? null : 'deltasignal'));
   }
 
   closeAnalysis() {

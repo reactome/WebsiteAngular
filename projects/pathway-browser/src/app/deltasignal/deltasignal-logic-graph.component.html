@@ -1,0 +1,72 @@
+<div class="logic-toolbar">
+  <div>
+    <strong>Largest logic-node responses</strong>
+    <span>{{ subgraph().nodes.length }} nodes · {{ subgraph().edges.length }} visible edges</span>
+  </div>
+  <button mat-icon-button (click)="fit()" matTooltip="Fit graph to view" aria-label="Fit graph to view">
+    <mat-icon>center_focus_strong</mat-icon>
+  </button>
+</div>
+
+<div class="logic-legend" aria-label="Logic graph legend">
+  <span><i class="swatch lower"></i>Lower activity</span>
+  <span><i class="swatch neutral"></i>Near baseline</span>
+  <span><i class="swatch higher"></i>Higher activity</span>
+  <span><i class="line positive"></i>Positive edge</span>
+  <span><i class="line negative"></i>Negative edge</span>
+</div>
+
+<div class="graph-layout">
+  <div
+    #graphContainer
+    class="logic-graph"
+    role="img"
+    aria-label="DeltaSignal logic nodes and edges; select a node to inspect its values"
+  ></div>
+
+  @if (selected(); as node) {
+    <aside class="node-details" aria-live="polite">
+      <span class="detail-label">Selected logic node</span>
+      <strong>{{ node.name }}</strong>
+      <dl>
+        <div>
+          <dt>Reactome ID</dt>
+          <dd>{{ node.reactomeId }}</dd>
+        </div>
+        <div>
+          <dt>Logic UUID</dt>
+          <dd class="uuid">{{ node.uuid }}</dd>
+        </div>
+        <div>
+          <dt>Kind</dt>
+          <dd>{{ node.entityType }}</dd>
+        </div>
+        <div>
+          <dt>Baseline</dt>
+          <dd>{{ node.baseline | number: '1.1-1' }}×</dd>
+        </div>
+        <div>
+          <dt>Predicted</dt>
+          <dd>{{ node.activity | number: '1.1-1' }}×</dd>
+        </div>
+        <div>
+          <dt>Change</dt>
+          <dd>{{ node.change > 0 ? '+' : '' }}{{ node.change | number: '1.1-1' }}</dd>
+        </div>
+        <div>
+          <dt>Influence</dt>
+          <dd>{{ node.influence | number: '1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Mapping</dt>
+          <dd>{{ node.mappingMultiplicity }} UUID{{ node.mappingMultiplicity === 1 ? '' : 's' }} for this entity</dd>
+        </div>
+      </dl>
+    </aside>
+  }
+</div>
+
+<p class="graph-note">
+  Each shape is one LNG UUID. The view keeps the 40 largest absolute changes plus any perturbed inputs; an edge is drawn
+  only when both of its endpoints are visible.
+</p>
