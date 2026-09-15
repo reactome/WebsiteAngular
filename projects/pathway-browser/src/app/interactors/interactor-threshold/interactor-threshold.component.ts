@@ -96,7 +96,11 @@ export class InteractorThresholdComponent {
   readonly label = computed(() => this.threshold().toFixed(2));
 
   set(value: number) {
-    this.state.interactorScore.set(clampThreshold(value));
+    const threshold = clampThreshold(value);
+    this.state.interactorScore.set(threshold);
+    // Against the resource it describes, so switching away and back returns
+    // here rather than to the default (FR-004a).
+    this.interactors.rememberThreshold(this.interactors.currentResource().name, threshold);
   }
 
   /**

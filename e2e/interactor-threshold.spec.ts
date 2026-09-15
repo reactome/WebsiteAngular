@@ -323,3 +323,60 @@ test.describe('The count beside a resource', () => {
     expect(panelCount, 'it is the interactions the resource holds here').toBe(badges.total);
   });
 });
+
+/**
+ * The threshold belongs to the resource, not to the session.
+ *
+ * Resources do not score alike, so a floor that is useful for one buries
+ * another. The old browser holds one threshold per resource --
+ * `Map<String, Double> interactorsThreshold` in pwp-diagram's
+ * `InteractorsContent.java` -- and a curator comparing the two sites should not
+ * have to reset the control on every switch (FR-004a).
+ *
+ * The second resource is chosen from the counts the panel has already
+ * prefetched, rather than named here: the PSICQUIC servers are third-party, take
+ * six to seventeen seconds each, and several return nothing for any given
+ * pathway. Naming one would be a test that fails for reasons that are not this
+ * repo's.
+ */
+test.describe('The threshold a resource was left at', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('comes back when that resource does', async ({ page }) => {
+    await showInteractors(page);
+    await setThreshold(page, 0.8);
+
+    // A different resource that actually holds something here, per the panel.
+    const other = await page
+      .locator('cr-interactors button.psicquic-button')
+      .filter({ has: page.locator('.resource-count:not(.none)') })
+      .first();
+    test.skip((await other.count()) === 0, 'no second resource has interactors on this pathway');
+
+    const otherName = (await other.locator('.resource-name span').first().textContent())?.trim();
+    await other.click();
+    await page.waitForTimeout(8000);
+
+    // Unseen before, so it opens at the default rather than inheriting 0.8 --
+    // inheriting is how a reader ends up with an empty diagram and no idea why.
+    await expect(page).toHaveURL((url) => {
+      const asked = url.searchParams.get('interactorScore');
+      return asked === null || asked === '0.45';
+    });
+
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await page.waitForTimeout(8000);
+    await expect(page, `back from ${otherName}`).toHaveURL(/interactorScore=0\.8/);
+  });
+
+  test('leaves the address when the overlay is cleared', async ({ page }) => {
+    await showInteractors(page);
+    await setThreshold(page, 0.8);
+    await expect(page).toHaveURL(/interactorScore=0\.8/);
+
+    // FR-013: the threshold described interactors that are gone.
+    await page.locator('cr-interactors').getByRole('button', { name: 'Clear overlays' }).click();
+    await page.waitForTimeout(3000);
+    await expect(page).toHaveURL((url) => url.searchParams.get('interactorScore') === null);
+  });
+});

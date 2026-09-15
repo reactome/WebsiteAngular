@@ -14,7 +14,7 @@ import {
 
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
-import { passesThreshold } from '../interactor-threshold';
+import { DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
 import { UrlStateService } from '../../services/url-state.service';
 
 /**
@@ -175,6 +175,46 @@ export class InteractorService {
           if (withInteractors) this.rememberResourceCount(pathway, resource, withInteractors);
         });
     }
+  }
+
+  /**
+   * The threshold each resource was last left at.
+   *
+   * Resources do not score alike, so one number across all of them is the wrong
+   * shape: measured 2026-09-14 on R-HSA-69306, Reactome-FIs returns scores a
+   * curator reads differently from IntAct's, and a threshold that is a useful
+   * floor for one buries the other. The old browser holds one per resource --
+   * `Map<String, Double> interactorsThreshold` in pwp-diagram's
+   * `InteractorsContent.java` -- and a curator comparing the two sites should
+   * not have to reset the control every time they switch (FR-004a).
+   *
+   * Deliberately not in the URL. The URL carries the threshold in force, which is
+   * what a shared address needs; remembering the other resources' is a
+   * convenience for the reader who is switching, and putting all thirteen in the
+   * address would make it unreadable for no one's benefit.
+   */
+  private thresholdByResource = new Map<string, number>();
+
+  /** Note where the reader left this resource, so returning to it comes back here. */
+  public rememberThreshold(resource: string | null | undefined, threshold: number): void {
+    if (resource) this.thresholdByResource.set(resource, threshold);
+  }
+
+  /**
+   * Put the threshold this resource was last left at back into force.
+   *
+   * A resource never seen before opens at the default rather than inheriting
+   * whatever the previous one was set to -- inheriting is how a reader ends up
+   * with an empty diagram and no idea why.
+   */
+  public restoreThreshold(resource: string | null | undefined): void {
+    const remembered = resource ? this.thresholdByResource.get(resource) : undefined;
+    this.urlState.interactorScore.set(remembered ?? DEFAULT_INTERACTOR_SCORE);
+  }
+
+  /** Forget them all, because they described a diagram we have left. */
+  public forgetThresholds(): void {
+    this.thresholdByResource.clear();
   }
 
   /** Note what a resource held here, forgetting the tally if the pathway changed. */

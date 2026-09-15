@@ -30,6 +30,7 @@ import { MatDivider } from '@angular/material/divider';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSelectionList, MatListOption } from '@angular/material/list';
+import { DEFAULT_INTERACTOR_SCORE } from './interactor-threshold';
 
 @Component({
   selector: 'cr-interactors',
@@ -168,6 +169,10 @@ export class InteractorsComponent implements AfterViewInit {
       return;
     }
 
+    // A resource opens at what it was last left at, not at whatever the
+    // previous resource happened to be showing (FR-004a).
+    this.interactors.restoreThreshold(name);
+
     this.interactors.getResourceType(resource as string).subscribe({
       next: (resourceType) => {
         switch (resourceType) {
@@ -288,6 +293,12 @@ export class InteractorsComponent implements AfterViewInit {
       this.updateCurrentResource(null, null);
       this.state.overlay.set(null);
     });
+    // The threshold described interactors that are gone, so it leaves the
+    // address with them (FR-013). Set to the default rather than removed,
+    // because `currentQueryParams()` drops a value equal to its initial -- which
+    // is the same thing, said in the one way the URL service understands.
+    this.state.interactorScore.set(DEFAULT_INTERACTOR_SCORE);
+    this.interactors.forgetThresholds();
   }
 
   updateCurrentResource(name: string | null, type: ResourceType | null) {

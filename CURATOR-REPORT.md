@@ -218,18 +218,22 @@ we did not want to decide it for you.
 
 ## In the old browser, not in this one
 
-Found while turning the release checklist into tests. Neither is a regression from
-a working state here -- they were never built -- but the old browser has both, so
-curators will look for them:
+Found while turning the release checklist into tests, and **both are now built**
+(`specs/001-interactor-confidence-filter`). The confidence slider opens at 0.45,
+the value the old browser opens at, and is remembered per resource the way the old
+browser remembers it. The download beside it carries every interaction the
+resource holds for that entity, deliberately not the filtered view: a file named
+for what you can see is a file you cannot check anything against.
 
-- **No confidence threshold for interactors.** The old browser has a sliding scale
-  where raising the confidence score shows fewer interactors; there is no such
-  control here, and no threshold concept in the interactor services or the URL
-  state. The overlay is all-or-nothing per resource.
-- **No interactor download.** The old browser offers one beside that slider.
+Two things about them are worth a curator's eye, because they are judgements
+rather than parity:
 
-Both are small next to what they enable, and neither is on the critical path for
-the release. Say if they matter to you and they go on the list.
+- The count beside each resource is **interactions**, the same unit as the badge
+  on an entity, with the number of entities carrying them in the tooltip. It was
+  briefly entities, which made one resource read "15" beside a badge reading
+  "17".
+- The badge is not drawn below 0.6 zoom, where it is six pixels holding a
+  two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
 
 ## Known and deliberately not fixed
 
