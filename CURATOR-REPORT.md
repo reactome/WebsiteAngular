@@ -235,6 +235,23 @@ rather than parity:
 - The badge is not drawn below 0.6 zoom, where it is six pixels holding a
   two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
 
+**"Add overlay resource" now works, and keeps your data.** The button labelled
+Close did nothing at all -- a Material directive was missing, so the attribute
+sat inert and only Escape or a click outside would close the dialog. A rejected
+upload said nothing either: the spinner ran on and the dialog sat there, which is
+hard to tell from being stuck.
+
+Both are fixed, and with them the thing worth a curator's attention: a file or a
+paste is now read **in your browser**. Nothing is sent anywhere. Before, it was
+posted to the server, parsed there, stored on disk indefinitely -- the store
+holds uploads going back to 2019 -- and given a token that appeared in the page's
+address, so the link carried the data to anyone who had it.
+
+Uploading is still offered, as a tick-box, because that token is what lets an
+overlay survive a reload or open for a colleague. It is now a choice you make
+rather than one made for you, and the dialog says which you are getting. There is
+also a note explaining the format it expects, which nothing said before.
+
 ## Known and deliberately not fixed
 
 - [#136](https://github.com/reactome/WebsiteAngular/issues/136) node spacing / text size — already labelled `wontfix` upstream of us.
