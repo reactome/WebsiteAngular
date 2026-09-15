@@ -15,6 +15,7 @@ import {
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
 import { clampThreshold, DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
+import { INTERACTOR_BADGE_MIN_ZOOM } from 'reactome-cytoscape-style';
 import { UrlStateService } from '../../services/url-state.service';
 
 /**
@@ -239,6 +240,91 @@ export class InteractorService {
     this.thresholdByResource.clear();
   }
 
+  /**
+   * Badges are on the diagram, but the reader cannot see any of them.
+   *
+   * They are not drawn below 0.6 zoom, where two digits are a smudge. That is
+   * right, and it left a hole: choosing a resource at the zoom a pathway opens at
+   * changed nothing on screen and said nothing either. Measured on
+   * R-HSA-1368108, which opens at 0.283: nine badges on the graph, none visible,
+   * no message anywhere. The overlay looked broken, which is the complaint this
+   * whole feature started from.
+   */
+  readonly badgesHiddenByZoom = signal(false);
+
+  /** One zoom listener per graph, however many times a resource is chosen. */
+  private watchingBadgeVisibility = new WeakSet<cytoscape.Core>();
+
+  /** Keep `badgesHiddenByZoom` true only while there is something to reveal. */
+  private watchBadgeVisibility(cy: cytoscape.Core): void {
+    const update = () => {
+      const badges = cy.nodes('.InteractorOccurrences');
+      this.badgesHiddenByZoom.set(
+        badges.length > 0 && badges.filter((badge) => badge.visible()).length === 0
+      );
+    };
+    if (!this.watchingBadgeVisibility.has(cy)) {
+      this.watchingBadgeVisibility.add(cy);
+      cy.on('zoom', update);
+    }
+    // Only a graph that actually carries them: this is called for every graph,
+    // and the comparison view has a second one with none, which was overwriting
+    // the real answer.
+    if (cy.nodes('.InteractorOccurrences').length > 0) this.badgeGraph = cy;
+    update();
+  }
+
+  /** The graph the badges were last drawn on. */
+  private badgeGraph: cytoscape.Core | null = null;
+
+  /**
+   * The graph a resource is currently drawn on.
+   *
+   * The one the badges were drawn on, which is the one this is asked about.
+   * `cyToSelectedResource` was the obvious source and was the wrong one -- it
+   * came back empty here, so the reveal button did nothing at all while the same
+   * fit run by hand in the page moved the zoom from 0.283 to 0.65.
+   *
+   * Falls back to the first selected graph: when the comparison view has two,
+   * the reader is looking at one of them, and zooming the other would answer a
+   * question nobody asked.
+   */
+  public currentGraph(): cytoscape.Core | null {
+    return this.badgeGraph ?? [...this.cyToSelectedResource.keys()][0] ?? null;
+  }
+
+  /**
+   * Bring the badges up to a size their digits can be read at.
+   *
+   * Centred on the badges rather than on the whole diagram, because the reason
+   * the reader cannot see them is that the diagram is what is being fitted.
+   */
+  public revealBadges(cy: cytoscape.Core): void {
+    const badges = cy.nodes('.InteractorOccurrences');
+    if (badges.length === 0) return;
+
+    // The entities, not the badges. `fit` ignores elements it cannot see, and
+    // the badges are hidden -- which is the whole reason this button exists --
+    // so fitting to them moved nothing at all: nine badges, zoom 0.283 before
+    // and 0.283 after. Their entities are on the diagram and visible.
+    const entities = badges.reduce((collection, badge) => {
+      const entity = badge.data('entity') as NodeSingular | undefined;
+      return entity ? collection.union(entity) : collection;
+    }, cy.collection() as cytoscape.Collection);
+    if (entities.length > 0) cy.fit(entities, 80);
+
+    // Fitting a scattered handful can still land below the zoom the badge is
+    // drawn at -- measured 0.308 for these nine -- which would leave the reader
+    // exactly where they started. A little past it, so the digits are legible
+    // rather than borderline.
+    if (cy.zoom() < INTERACTOR_BADGE_MIN_ZOOM) {
+      cy.zoom({
+        level: INTERACTOR_BADGE_MIN_ZOOM + 0.05,
+        renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
+      });
+    }
+  }
+
   /** Note what a resource held here, forgetting the tally if the pathway changed. */
   private rememberResourceCount(pathway: string | null, resource: string, count: ResourceTally) {
     if (pathway !== this.countsForPathway) {
@@ -366,6 +452,7 @@ export class InteractorService {
     const badges = cy.nodes('.InteractorOccurrences');
     this.resourceFoundNothing.set(badges.length === 0);
     this.rememberResourceCount(this.urlState.pathwayId() ?? null, resource, tallyBadges(badges));
+    this.watchBadgeVisibility(cy);
   }
 
   public createInteractorOccurrenceNode(
@@ -754,6 +841,8 @@ export class InteractorService {
     this.cyToSelectedResource.clear();
     this.showingInteractors.set(false);
     this.resourceFoundNothing.set(false);
+    this.badgesHiddenByZoom.set(false);
+    this.badgeGraph = null;
     const interactorOcc = cy.elements(`.InteractorOccurrences`).remove();
     interactorOcc.forEach((node) => {
       if (node.hasClass('opened')) {

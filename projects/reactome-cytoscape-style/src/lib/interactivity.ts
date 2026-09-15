@@ -18,7 +18,7 @@ type RenderableHTMLElement = HTMLElement & {
  * at 18 screen pixels. Below that its two digits are a smudge -- 6 pixels at the
  * 0.203 that R-HSA-1368108 opens at.
  */
-const INTERACTOR_BADGE_MIN_ZOOM = 0.6;
+export const INTERACTOR_BADGE_MIN_ZOOM = 0.6;
 
 export class Interactivity {
   isMobile = 'ontouchstart' in document || navigator.maxTouchPoints > 0;

@@ -90,6 +90,17 @@ export class InteractorThresholdComponent {
     return `${shown} of ${offered}`;
   });
 
+  /** Badges exist but none can be drawn at this zoom. */
+  readonly hiddenByZoom = computed(
+    () => this.interactors.badgesHiddenByZoom() && !this.interactors.showingInteractors()
+  );
+
+  /** Take the reader to them, since the diagram's own fit is what hid them. */
+  reveal() {
+    const cy = this.interactors.currentGraph();
+    if (cy) this.interactors.revealBadges(cy);
+  }
+
   readonly threshold = computed(() => clampThreshold(this.state.interactorScore()));
 
   /** Shown to two places, which is the precision the scores themselves carry. */

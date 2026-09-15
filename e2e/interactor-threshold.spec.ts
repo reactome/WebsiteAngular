@@ -416,3 +416,54 @@ test.describe('A threshold someone shared', () => {
     expect(await opensAt(page, '?overlay=IntAct&interactorScore=0')).toBe('0');
   });
 });
+
+/**
+ * Choosing a resource never silently does nothing.
+ *
+ * The badge is not drawn below 0.6 zoom, which is right and left a hole: at the
+ * 0.283 R-HSA-1368108 opens at, choosing IntAct put nine badges on the graph,
+ * none of them visible, and said nothing anywhere on screen. The overlay looked
+ * broken -- the complaint this whole feature started from.
+ */
+test.describe('An overlay that cannot be seen yet', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('says so, and offers the way to it', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await page.waitForFunction(
+      () => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        return (cy?.elements('.InteractorOccurrences').length ?? 0) > 0;
+      },
+      { timeout: BOOT_TIMEOUT }
+    );
+
+    const hidden = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const badges = cy.elements('.InteractorOccurrences');
+      return { zoom: cy.zoom(), visible: badges.filter((badge) => badge.visible()).length };
+    });
+    test.skip(hidden.zoom >= 0.6, 'this pathway opens close enough in to draw them');
+    expect(hidden.visible, 'nothing is drawn at this zoom').toBe(0);
+
+    const reveal = page.getByRole('button', { name: /zoom to them/i });
+    await expect(reveal, 'the reader is told, rather than left guessing').toHaveCount(1);
+
+    await reveal.click();
+    await page.waitForTimeout(2000);
+
+    const after = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const badges = cy.elements('.InteractorOccurrences');
+      return { total: badges.length, visible: badges.filter((badge) => badge.visible()).length };
+    });
+    expect(after.visible, 'and taken to them').toBe(after.total);
+  });
+});

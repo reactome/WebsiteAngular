@@ -216,6 +216,7 @@ export class ViewportComponent implements AfterViewInit {
   /** Whether any interactors are drawn, which is when the threshold matters. */
   readonly showingInteractors = this.interactorService.showingInteractors;
   /** A chosen resource that had nothing for this diagram, which is worth saying. */
+  readonly badgesHiddenByZoom = this.interactorService.badgesHiddenByZoom;
   readonly resourceFoundNothing = this.interactorService.resourceFoundNothing;
 
   exampleAnalysis = rxResource({

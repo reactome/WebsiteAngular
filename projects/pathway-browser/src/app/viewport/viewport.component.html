@@ -265,7 +265,7 @@
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
                 <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
               </div>
-              @if (showingInteractors() || resourceFoundNothing()) {
+              @if (showingInteractors() || resourceFoundNothing() || badgesHiddenByZoom()) {
                 <cr-interactor-threshold />
               }
               @if (showDeltaSignal) {

@@ -1,5 +1,16 @@
 @if (foundNothing()) {
   <span class="threshold-status threshold-empty threshold-nothing"> No interactors found in {{ resourceName() }} </span>
+} @else if (hiddenByZoom()) {
+  <!--
+    There are badges, and the reader cannot see any of them: they are not drawn
+    below 0.6 zoom, where two digits are a smudge. Without this the overlay
+    simply appeared to do nothing, which is the complaint the feature started
+    from.
+  -->
+  <span class="threshold-status threshold-nothing">
+    {{ resourceName() }} has interactors here, too small to draw at this zoom
+  </span>
+  <button mat-stroked-button class="threshold-reveal" (click)="reveal()">Zoom to them</button>
 } @else {
   <label class="threshold-label" for="interactor-threshold">
     Interaction confidence
@@ -47,8 +58,8 @@
     class="threshold-download"
     [disabled]="!canDownload()"
     (click)="download()"
-    matTooltip="Download the interactors shown, as TSV"
-    aria-label="Download the interactors shown"
+    matTooltip="Download every interactor of the opened entities, as TSV"
+    aria-label="Download every interactor of the opened entities"
   >
     <mat-icon>download</mat-icon>
   </button>
