@@ -449,6 +449,26 @@
   }
 }
 
+.deltasignal-dropdown {
+  left: max(300px, 42%);
+  border-left: 1px solid var(--outline-variant);
+  box-shadow: -10px 0 28px color-mix(in srgb, var(--shadow) 12%, transparent);
+}
+
+@media (max-width: 900px) {
+  .deltasignal-dropdown {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+
+    &.open {
+      bottom: 0;
+    }
+  }
+}
+
 .history {
   border-radius: 100%;
   display: flex;
@@ -522,4 +542,22 @@ button.error {
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+// The interactor confidence control sits over the foot of the diagram.
+//
+// It was laid out in normal flow after the diagram, which put it past the bottom
+// of its split area: `isVisible()` reported true, its box was 1277x56, and the
+// details panel was drawn straight over the top of it. Nobody could see it, and
+// the check that said they could was only asking whether the element had a box.
+//
+// Positioned like the dropdowns above it, so it belongs to the diagram and cannot
+// be covered by the panel below.
+cr-interactor-threshold {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 998; // under .dropdown, which slides over the whole diagram
+  max-width: calc(100% - 2rem);
 }

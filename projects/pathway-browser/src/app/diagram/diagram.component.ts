@@ -41,6 +41,7 @@ import {
   tap,
 } from 'rxjs';
 import { UrlStateService } from '../services/url-state.service';
+import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
@@ -67,6 +68,7 @@ import {
 } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
+import { DeltaSignalService } from '../deltasignal/deltasignal.service';
 
 const INIT_RX = 2;
 
@@ -107,6 +109,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private download = inject(DownloadService);
   private data = inject(DataStateService);
+  private deltaSignal = inject(DeltaSignalService);
 
   title = 'pathway-browser';
   @ViewChild('cytoscape') cytoscapeContainer?: ElementRef<HTMLDivElement>;
@@ -143,6 +146,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   constructor() {
     this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
+    // Redraw the interactors whenever the reader moves the confidence control.
+    // Both diagrams, because the comparison view has its own graph and an
+    // interactor hidden in one but not the other would be a difference the
+    // reader did not ask for.
+    effect(() => {
+      const threshold = clampThreshold(this.state.interactorScore());
+      for (const style of [this.reactomeStyle, this.reactomeStyleCompare]) {
+        const cy = style?.cy;
+        if (cy) this.interactorsService.applyInteractorThreshold(cy, threshold);
+      }
+    });
     effect(
       () => {
         const flag = this.data.flagIdentifiers();
@@ -183,6 +197,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // Update style upon dark change
       this.dark.isDark();
       this.updateStyle();
+    });
+    effect(() => {
+      const overlay = this.deltaSignal.overlay();
+      const palette = this.deltaSignal.palette();
+      this.avoidSideEffect(() => this.applyDeltaSignalOverlay(overlay, palette));
     });
 
     effect(() => {
@@ -1274,7 +1293,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (!overrideIgnore) this.syncing = false;
   };
 
-  private loadAnalysis(token: string | null) {
+  private loadAnalysis(token: string | null, force = false) {
+    if (!force && this.deltaSignal.hasOverlay()) return;
     const diagramId = this.pathwayId();
     if (!token || !diagramId) {
       this._loadAnalysisFn = undefined;
@@ -1309,6 +1329,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
     }).subscribe(({ entities, pathways, result }) => {
       this._loadAnalysisFn = (analysisIndex) => {
+        if (this.deltaSignal.hasOverlay()) return;
         const analysisEntityMap = new Map<string, number>(
           entities.entities.flatMap((entity) =>
             entity.mapsTo
@@ -1381,6 +1402,38 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   private _loadAnalysisFn: ((analysisIndex: number) => void) | undefined;
+
+  private applyDeltaSignalOverlay(
+    overlay: Map<string, number[]>,
+    palette: ReturnType<DeltaSignalService['palette']>
+  ) {
+    if (!this.cy) return;
+    if (!overlay.size) {
+      this.loadAnalysis(this.state.analysis(), true);
+      return;
+    }
+
+    this.cys.filter(Boolean).forEach((cy) => {
+      cy.batch(() => {
+        cy.nodes('.PhysicalEntity').forEach((node) => {
+          const graph = node.data('graph') as Graph.Node | undefined;
+          const leaves: Graph.Node[] = node.data('graph.leaves') || (graph ? [graph] : []);
+          const stableIds = new Set([
+            node.data('graph.stId') as string,
+            ...leaves.flatMap((leaf) => [leaf.stId, leaf.identifier, leaf.standardIdentifier]),
+          ]);
+          const values = [...stableIds]
+            .filter(isDefined)
+            .flatMap((stableId) => overlay.get(stableId) ?? []);
+          node.data('exp', values.length ? values : [undefined]);
+        });
+        cy.nodes('.Pathway, .InteractorOccurrences').data('exp', [undefined]);
+        const style: Style = cy.data('reactome');
+        style.loadAnalysis(cy, palette);
+      });
+    });
+    setTimeout(() => this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 })), 5);
+  }
 
   updateStyle() {
     this.cy
@@ -1470,11 +1523,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const resource = this.state.overlay();
     if (resource) {
-      //console.log('Resource not null', resource)
-      this.interactorsComponent()?.getInteractors(resource);
+      // Not chosen by the reader: this is the address being honoured. Passing
+      // that on matters, because the same call with a resource already current
+      // means "put it away" when a reader makes it.
+      this.interactorsComponent()?.getInteractors(resource, false);
     }
 
     this.loadAnalysis(this.state.analysis());
+    if (this.deltaSignal.hasOverlay()) {
+      this.applyDeltaSignalOverlay(this.deltaSignal.overlay(), this.deltaSignal.palette());
+    }
   }
 
   compareBackgroundSync = this.reactomeEvents$
@@ -1518,9 +1576,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
 
-          if (e.type === ReactomeEventTypes.open)
-            this.interactorsService.addInteractorNodes(occurrenceNode, style.cy!);
-          else this.interactorsService.removeInteractorNodes(occurrenceNode);
+          const cy = style.cy;
+          if (e.type === ReactomeEventTypes.open && cy) {
+            this.interactorsService.addInteractorNodes(occurrenceNode, cy);
+            // The reader may have moved the control before opening this one, and
+            // newly drawn interactors know nothing about it.
+            this.interactorsService.applyInteractorThreshold(
+              cy,
+              clampThreshold(this.state.interactorScore())
+            );
+          } else this.interactorsService.removeInteractorNodes(occurrenceNode);
 
           style.interactivity.updateProteins();
           style.interactivity.triggerZoom();
