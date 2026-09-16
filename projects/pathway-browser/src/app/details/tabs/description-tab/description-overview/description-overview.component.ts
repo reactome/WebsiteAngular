@@ -10,12 +10,16 @@ import { CellType } from '../../../../model/graph/external-ontology/cell-type.mo
 import { TitleCasePipe } from '@angular/common';
 import { OntologyTermComponent } from '../../../common/ontology-term/ontology-term.component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
+import { doReleaseFlag } from '../../../common/do-release';
+import { IS_CURATOR } from '../../../../../environments/environment';
 type HasCompartment = Relationship.HasCompartment;
 
 @Component({
   selector: 'cr-description-overview',
   templateUrl: './description-overview.component.html',
-  imports: [TitleCasePipe, OntologyTermComponent, MatProgressSpinner],
+  imports: [TitleCasePipe, OntologyTermComponent, MatProgressSpinner, MatIcon, MatTooltip],
   styleUrl: './description-overview.component.scss',
 })
 export class DescriptionOverviewComponent {
@@ -45,6 +49,8 @@ export class DescriptionOverviewComponent {
   readonly tissueLayer: Signal<Anatomy> = computed(() =>
     getProperty(this.obj(), DataKeys.TISSUE_LAYER)
   );
+  /** Curation-only release flag; undefined (so no row renders) on the public site. */
+  readonly doRelease = computed(() => doReleaseFlag(this.obj(), IS_CURATOR));
 
   // Keys are ReviewStatus displayName values exactly as the graph database
   // spells them -- note "one star" is singular there, which this map used to get

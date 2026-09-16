@@ -27,6 +27,17 @@
           }
         </div>
       </div>
+      @if (doRelease(); as release) {
+        <div class="row">
+          <div class="label">Release</div>
+          <div class="value release-value" [class.marked]="release.doRelease">
+            <mat-icon fontSet="symbols" class="release-icon" [matTooltip]="release.tooltip">
+              {{ release.icon }}
+            </mat-icon>
+            <span>{{ release.label }}</span>
+          </div>
+        </div>
+      }
       @if (cellType()) {
         <div class="row">
           <div class="label">Cell Type</div>

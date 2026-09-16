@@ -73,6 +73,25 @@
       color: var(--on-surface);
       text-overflow: ellipsis;
       padding-right: 2px;
+
+      // Curator site only: an event a curator has marked for the next release.
+      &.marked-for-release {
+        color: var(--positive);
+      }
+    }
+
+    // The doRelease badge beside the title. Never shrinks: the title ellipsizes
+    // instead, so the flag stays readable however long the name is.
+    .release-flag {
+      flex-shrink: 0;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      color: var(--negative);
+
+      &.marked {
+        color: var(--positive);
+      }
     }
   }
 

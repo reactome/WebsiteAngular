@@ -16,7 +16,7 @@
     <div class="header">
       <div class="label">
         <mat-icon class="custom-icon" [matTooltip]="symbol().tooltip" [svgIcon]="symbol().name"> </mat-icon>
-        <span class="name">
+        <span class="name" [class.marked-for-release]="doRelease()?.doRelease">
           {{ name() }}
           @if (isReferenceSummary()) {
             · <i>summary</i>
@@ -25,6 +25,16 @@
             </mat-slide-toggle>
           }
         </span>
+        @if (doRelease(); as release) {
+          <mat-icon
+            fontSet="symbols"
+            class="release-flag"
+            [class.marked]="release.doRelease"
+            [matTooltip]="release.tooltip"
+            [attr.aria-label]="release.label"
+            >{{ release.icon }}</mat-icon
+          >
+        }
       </div>
       <div class="details-button">
         <a mat-button [href]="`${CONTENT_DETAIL_PATH}/${obj().stId}`" target="_blank">

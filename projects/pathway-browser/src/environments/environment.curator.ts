@@ -47,7 +47,25 @@ export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/
 // CONTENT_SERVICE is slow or unavailable, so those pages still render.
 export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
+// The headless render service: diagram figures for documents (GIF, PPTX, PDF),
+// rendered by the site's own renderer rather than by the Java exporters'
+// reimplementation of it. Served under the site's own origin by a proxy, so a
+// render can only be commissioned through whatever fronts the site.
+export const RENDER_SERVICE = `${environment.host}/RenderService`;
+
+// The IDG pairwise service (reactome-idg/idg-pairwise-ws), which relates a gene
+// or protein to Reactome pathways through third-party interaction datasets.
+// Absolute and cross-origin on purpose: the service answers with
+// Access-Control-Allow-Origin, and its data lives on the IDG server rather than
+// here -- there is no curator-side copy of it.
+export const IDG_SERVICE = 'https://idg.reactome.org/idgpairwise';
 export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
+
+// The experiment digester, as the *analysis service* must address it -- not as
+// the browser does. Tissue analysis hands the analysis service a URL and that
+// service fetches it server-side, so this has to resolve from inside the
+// backend rather than from the page.
+export const DIGESTER_FOR_BACKEND = 'http://localhost:8080/ExperimentDigester';
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 // Diagram/EHLD assets are static files served at the site root, not under the
 // /curatorgraph app base. `host` is already a bare origin (no app path segment),

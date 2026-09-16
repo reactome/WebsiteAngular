@@ -24,11 +24,24 @@ interface AttributeRow {
 }
 
 interface AttributeValue {
-  type: 'text' | 'link';
+  type: 'text' | 'link' | 'figure';
   text: string;
   dbId?: number;
   schemaClass?: string;
 }
+
+/**
+ * What a Figure's url (and its displayName, which repeats it) looks like:
+ * "/figures/12_GlcNAc2Man9PPDol.png". Figures are static image files under the
+ * site's document root, and the database stores that root-relative path
+ * verbatim.
+ *
+ * The path is used as the link target unchanged, rather than joined to
+ * environment.host, so the image is fetched from whichever origin is serving
+ * the page: the dev server proxies /figures, so it resolves to localhost, and
+ * the deployed site serves the files itself.
+ */
+const FIGURE_PATH = /^\/figures\/[^/]/;
 
 @Component({
   selector: 'app-instance-browser',
@@ -187,6 +200,17 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
           type: 'link',
           text: `${val}`,
           dbId: val,
+        },
+      ];
+    }
+
+    // A figure's image file, which the browser can render on its own. The path
+    // is both what is shown and where the link goes.
+    if (typeof val === 'string' && FIGURE_PATH.test(val)) {
+      return [
+        {
+          type: 'figure',
+          text: val,
         },
       ];
     }

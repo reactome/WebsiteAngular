@@ -126,6 +126,25 @@
   }
 }
 
+/* doRelease (curator site only) */
+.release-value {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  color: var(--negative);
+
+  &.marked {
+    color: var(--positive);
+  }
+
+  .release-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+}
+
 .compartment-row {
   flex-direction: row;
 

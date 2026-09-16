@@ -33,6 +33,10 @@
                 @for (val of row.values; track $index) {
                   @if (val.type === 'link') {
                     <a class="instance-link" href="#" (click)="onLinkClick(val.dbId!, $event)">{{ val.text }}</a>
+                  } @else if (val.type === 'figure') {
+                    <!-- A plain href, not a routerLink: the target is an image
+                         file served next to the app, not an application route. -->
+                    <a class="figure-link" [href]="val.text">{{ val.text }}</a>
                   } @else {
                     <span class="text-value">{{ val.text }}</span>
                   }

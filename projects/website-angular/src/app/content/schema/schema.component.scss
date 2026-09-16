@@ -509,6 +509,7 @@ $sidebar-width: 320px;
 
   a {
     color: var(--primary);
+    cursor: pointer;
     text-decoration: none;
 
     &:hover {
@@ -519,6 +520,19 @@ $sidebar-width: 320px;
 
 .entry-name {
   color: var(--on-surface);
+
+  // The name reads as plain text until hovered, so it doesn't compete with the
+  // identifier link, but it still opens the same instance.
+  a {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+  }
 }
 
 // --- Pagination ---

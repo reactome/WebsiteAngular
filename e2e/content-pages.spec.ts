@@ -44,6 +44,21 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
+  test('an entry opens from its display name, not just its identifier', async ({ page }) => {
+    // The identifier is the only part of a row that used to be clickable, but
+    // the display name is the part a curator recognises and aims at.
+    await page.goto('/dataSchema/TopLevelPathway?tab=entries');
+
+    const nameCell = page.locator('.entries-table tbody .entry-name a').first();
+    await expect(nameCell).toBeVisible({ timeout: LOAD });
+    const name = (await nameCell.innerText()).trim();
+
+    await nameCell.click();
+    // The instance browser replaces the listing and echoes the class it loaded.
+    await expect(page.locator('app-instance-browser')).toContainText(name, { timeout: LOAD });
+    await expect(page).toHaveURL(/\/dataSchema\/[^/]+\/\d+/);
+  });
+
   // ToC, DOI and Contributors read /data/content/* on the content service.
   // Those endpoints exist only on the dev host, from an unmerged backend branch
   // -- production still 404s them. Skip rather than fail where they are absent,

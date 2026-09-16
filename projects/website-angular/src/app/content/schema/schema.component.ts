@@ -42,13 +42,20 @@ export class SchemaComponent implements OnInit, OnDestroy {
   treeSearchResults = new Set<string>();
   private classSet = new Set<string>();
 
-  // Instance counts by class name, and the single source of truth for every
-  // count the page renders. Seeded from the /schema/model tree, whose counts
-  // are a server-side snapshot that drifts behind the curation database, then
-  // overwritten per class with the authoritative /schema/{class}/count value
-  // as classes are visited. Both are subclass-inclusive, so the two are
-  // interchangeable in meaning -- only in freshness.
+  // Instance counts by class name, seeded from the /schema/model tree. That is
+  // one server-side snapshot taken at a single instant, so the values start
+  // out mutually consistent: counts are subclass-inclusive, and a parent's
+  // count is its own direct instances plus every descendant's.
+  //
+  // Against the curation database, which is written all day, the snapshot goes
+  // stale within the session -- so the bracket the sidebar shows for a class
+  // would disagree with the live `/schema/{class}/count` printed beside it in
+  // the header. See `applyLiveCount` for how the fresher figure is folded back
+  // in without breaking the invariant above.
   private classCountMap = new Map<string, number>();
+
+  // Child class -> parent class, for walking a count correction up the tree.
+  private classParentMap = new Map<string, string>();
 
   // Selected class state
   selectedClass = '';
@@ -63,6 +70,11 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   // Entries state
   entries: SimpleDatabaseObject[] = [];
+  // Live /schema/{class}/count for `selectedClass`, authoritative and the
+  // basis for paging. null means "not known yet" and renders as nothing
+  // rather than as a stale number or a 0, so the figure appears once and
+  // then holds still instead of visibly correcting itself.
+  liveEntryCount: number | null = null;
   entriesPage = 1;
   entriesPageSize = 50;
   loadingEntries = false;
@@ -135,8 +147,44 @@ export class SchemaComponent implements OnInit, OnDestroy {
     this.classCountMap.set(node.className, node.count);
     if (node.children) {
       for (const child of node.children) {
+        this.classParentMap.set(child.className, node.className);
         this.buildClassIndex(child);
       }
+    }
+  }
+
+  // Fold the authoritative /schema/{class}/count for one class back into the
+  // tree, so its bracket and the header beside it show the same number.
+  //
+  // Writing just that one entry is what made this a patchwork before: a
+  // visited class jumped to a fresher figure while its unvisited ancestors
+  // kept the old one, and on classes whose parent barely exceeds them (the
+  // model has parents equal to a single child, e.g. TranscriptionalModification
+  // and ModifiedNucleotide) the child could end up out-counting its own parent.
+  //
+  // Counts are subclass-inclusive, so the correction is well defined: if this
+  // class has gained `delta` instances since the snapshot, every ancestor has
+  // gained exactly the same `delta` and no other class has changed. Applying
+  // it up the chain keeps `parent >= own + children` intact, which is the
+  // property that stops the tree reading as nonsense. Descendants are left
+  // alone -- the growth is attributed to this class's direct instances, which
+  // is the only assumption that cannot invert a parent and a child. Each class
+  // the user visits pulls its own branch forward, and the tree stays coherent
+  // throughout rather than converging on one.
+  private applyLiveCount(className: string, live: number) {
+    const snapshot = this.classCountMap.get(className);
+    // Not a class the tree knows about, so there is no bracket to reconcile.
+    if (snapshot === undefined) return;
+    const delta = live - snapshot;
+    if (delta === 0) return;
+
+    this.classCountMap.set(className, live);
+    for (
+      let ancestor = this.classParentMap.get(className);
+      ancestor !== undefined;
+      ancestor = this.classParentMap.get(ancestor)
+    ) {
+      this.classCountMap.set(ancestor, (this.classCountMap.get(ancestor) ?? 0) + delta);
     }
   }
 
@@ -233,6 +281,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
   selectClass(className: string) {
     this.selectedClass = className;
     this.entries = [];
+    // Drop the previous class's total rather than letting it stand while the
+    // new one is in flight, which would briefly attribute one class's count
+    // to another.
+    this.liveEntryCount = null;
     this.entriesPage = 1;
     this.selectedInstanceId = null;
     this.loadAttributes(className);
@@ -340,12 +392,20 @@ export class SchemaComponent implements OnInit, OnDestroy {
           // A slow response for a class the user has already navigated away
           // from must not overwrite the current class's count.
           if (className !== this.selectedClass) return;
-          this.classCountMap.set(className, count);
+          this.liveEntryCount = count;
+          // No rebuildFlatTree: the flattened rows carry no count of their
+          // own, the template reads each bracket through getNodeCount().
+          this.applyLiveCount(className, count);
           this.cdr.markForCheck();
         },
         error: () => {
-          // Keep whatever the model tree gave us; a slightly stale count is
-          // more useful here than a blank or a zero.
+          // Fall back to the model snapshot. It is the same quantity measured
+          // a little earlier, which beats showing nothing at all -- and it is
+          // what the sidebar is already displaying for this class, so the two
+          // agree rather than contradicting each other.
+          if (className !== this.selectedClass) return;
+          this.liveEntryCount = this.getNodeCount(className);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -368,12 +428,12 @@ export class SchemaComponent implements OnInit, OnDestroy {
       });
   }
 
-  get entryCount(): number {
-    return this.getNodeCount(this.selectedClass);
-  }
-
   get totalPages(): number {
-    return Math.ceil(this.entryCount / this.entriesPageSize);
+    // Unknown count means no pager: better to show the first page's rows on
+    // their own than to invent a page range from a snapshot that may not
+    // match what /min will actually hand back.
+    if (this.liveEntryCount === null) return 0;
+    return Math.ceil(this.liveEntryCount / this.entriesPageSize);
   }
 
   goToPage(page: number) {
@@ -402,13 +462,6 @@ export class SchemaComponent implements OnInit, OnDestroy {
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
-  }
-
-  selectInstance(dbId: number) {
-    void this.router.navigate(['/dataSchema', this.selectedClass, dbId], {
-      queryParams: { tab: 'entries' },
-      queryParamsHandling: 'merge',
-    });
   }
 
   clearSelectedInstance() {

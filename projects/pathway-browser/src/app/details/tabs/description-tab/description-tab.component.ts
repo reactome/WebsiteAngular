@@ -49,6 +49,7 @@ import {
   CONTENT_DETAIL_PATH,
   CONTENT_SCHEMA,
   environment,
+  IS_CURATOR,
 } from '../../../../environments/environment';
 import { SpeciesService } from '../../../services/species.service';
 import { Summation } from '../../../model/graph/summation.model';
@@ -79,6 +80,7 @@ import { InteractorsTableComponent } from '../../common/interactors-table/intera
 import { LocationsTreeComponent } from '../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component';
 import { ReactionDiagramComponent } from '../../common/reaction-diagram/reaction-diagram.component';
 import { Pathway } from '../../../model/graph/event/pathway.model';
+import { doReleaseFlag } from '../../common/do-release';
 
 @Component({
   selector: 'cr-description-tab',
@@ -222,6 +224,8 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly symbol = computed(() => this.getSymbol(this.obj()));
+  /** Curation-only release flag; undefined (so nothing renders) on the public site. */
+  readonly doRelease = computed(() => doReleaseFlag(this.obj(), IS_CURATOR));
   readonly literatureRefs: Signal<LiteratureReference[]> = computed(() =>
     getProperty(this.obj(), DataKeys.LITERATURE_REFERENCE)
   );

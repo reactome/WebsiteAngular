@@ -17,6 +17,9 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   literatureReference?: LiteratureReference[];
   isInferred: boolean;
   releaseStatus: string;
+  // Curation-only: whether a curator has marked this event to go out in the next release. Sent
+  // only by the curation graph, and omitted there too when unset -- see doReleaseFlag().
+  doRelease?: boolean;
   isInDisease: boolean;
   summation: Summation[];
   reviewStatus: ReviewStatus;

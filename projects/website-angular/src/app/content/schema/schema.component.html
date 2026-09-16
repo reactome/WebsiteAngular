@@ -69,7 +69,9 @@
           @if (selectedClass) {
             <div class="class-header">
               <h1>{{ selectedClass }}</h1>
-              <span class="instance-count">{{ entryCount }} instances</span>
+              @if (liveEntryCount !== null) {
+                <span class="instance-count">{{ liveEntryCount }} instances</span>
+              }
             </div>
 
             <div class="tab-bar">
@@ -271,7 +273,9 @@
                 } @else {
                   <div class="entries-header">
                     <span class="entries-count">
-                      {{ entryCount }} entries
+                      @if (liveEntryCount !== null) {
+                        {{ liveEntryCount }} entries
+                      }
                       @if (totalPages > 1) {
                         &mdash; Page {{ entriesPage }} of {{ totalPages }}
                       }
@@ -289,13 +293,27 @@
                         </thead>
                         <tbody>
                           @for (entry of entries; track entry.dbId) {
+                            <!-- Both cells link to the same instance, so the whole
+                                 row is a target without swallowing text selection. -->
                             <tr>
                               <td class="entry-id">
-                                <a (click)="selectInstance(entry.dbId)">
+                                <a
+                                  [routerLink]="['/dataSchema', selectedClass, entry.dbId]"
+                                  [queryParams]="{ tab: 'entries' }"
+                                  queryParamsHandling="merge"
+                                >
                                   {{ entry.stId || entry.dbId }}
                                 </a>
                               </td>
-                              <td class="entry-name">{{ entry.displayName }}</td>
+                              <td class="entry-name">
+                                <a
+                                  [routerLink]="['/dataSchema', selectedClass, entry.dbId]"
+                                  [queryParams]="{ tab: 'entries' }"
+                                  queryParamsHandling="merge"
+                                >
+                                  {{ entry.displayName }}
+                                </a>
+                              </td>
                             </tr>
                           }
                         </tbody>

@@ -57,15 +57,22 @@ export class StatsService {
   );
 
   /**
-   * Display text for the current database version, already prefixed.
+   * Display text for the current database version, already prefixed, or '' when
+   * there is nothing to say yet.
    *
-   * The curation graph is not a release and has no release number to show, so
-   * it is named instead of numbered.
+   * The curation graph is not a release and has no release number to show, so it
+   * is named instead of numbered -- and named immediately, since that answer does
+   * not depend on the database.
+   *
+   * A signal rather than a method so templates re-render when the release lands.
+   * There is deliberately no build-time fallback here, for the reason versionNow
+   * gives above.
    */
-  getVersionLabel(): string {
+  readonly versionLabel = computed(() => {
     if (IS_CURATOR) return 'curator';
-    return `V${this.generalService.version.value() ?? APP_CONFIG.version.releaseNumber}`;
-  }
+    const version = this.versionNow();
+    return version ? `V${version}` : '';
+  });
 
   /**
    * Get the download base URL from APP_CONFIG

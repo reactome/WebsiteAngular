@@ -11,12 +11,12 @@
         >
         license.
       </p>
-      @if (versionLabel) {
-        @if (isCurator) {
-          <span class="version-badge">{{ versionLabel }}</span>
-        } @else {
-          <span class="version-badge">Current Release: {{ versionLabel }}</span>
-        }
+      @if (isCurator) {
+        <!-- The curation graph is not a release, so the badge names it instead
+             of claiming a release number it does not have. -->
+        <span class="version-badge">{{ versionLabel() }}</span>
+      } @else if (version()) {
+        <span class="version-badge">Current Release: V{{ version() }}</span>
       }
     </header>
 
