@@ -111,12 +111,38 @@ earlier draft of these files did exactly that — described the pooling and
 configured none of it — and it was caught by reviewing the configuration against
 its own comments.
 
+## Certificates: only the servers have them
+
+`local.conf` is plain HTTP on port 80 and touches no certificate at all —
+verified, it starts with nothing mounted at `/etc/letsencrypt`. Running the site
+on your own machine should not require obtaining a certificate for a hostname you
+do not own.
+
+Deployed environments present certificates the server already holds. This box
+needs exactly two:
+
+|                     |                                                 |
+| ------------------- | ----------------------------------------------- |
+| `beta.reactome.org` | the site                                        |
+| `dev.reactome.org`  | the retired host, so its 503 is not a TLS error |
+
+and eventually only one, when the Angular site is the one going forward. The
+wikis live on the release machine; `login.dev` is gone. The `reactome.org`
+certificate here is presented only because the retired vhost lists that name as
+an alias — production serves it.
+
 ## Before any of this serves traffic
 
-**Certbot first, and proved.** On the dev box, `beta.reactome.org` and
-`reactome.org` renew with `authenticator = apache`; stop Apache without migrating
-them and renewal fails silently, with the certificate expiring 60-odd days later
-and nothing to warn anyone.
+**Certbot first, and proved.** Renewal is already automated — `certbot.timer`
+twice daily and a `/etc/cron.d/certbot` besides, both running `certbot -q renew`.
+That is the risk rather than the reassurance: `renew` uses each certificate's
+_stored_ authenticator, and `beta.reactome.org` still stores
+`authenticator = apache`. The day Apache stops, that renewal begins failing, and
+`-q` means it fails without saying anything. The certificate expires 60-odd days
+later.
+
+Only beta needs moving: `dev.reactome.org` already renews via `dns-cloudflare`,
+which is the same path, already working on this machine.
 
 The safe path is already proven on that box: `dev.reactome.org` renews via
 `dns-cloudflare`, and `python3-certbot-dns-cloudflare` is installed.
