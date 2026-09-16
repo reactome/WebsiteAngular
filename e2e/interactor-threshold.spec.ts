@@ -473,3 +473,61 @@ test.describe('An overlay that cannot be seen yet', () => {
     expect(after.visible, 'and taken to them').toBe(after.total);
   });
 });
+
+/**
+ * An overlay survives going away and coming back.
+ *
+ * Issue #201. Forward navigation already carried `?overlay=…`; Back did not, and
+ * returning to the pathway where it was chosen lost it — the sharp case in that
+ * report.
+ *
+ * The cause was the toggle-to-unselect gesture, not the URL. `stateToDiagram`
+ * replays the address through the same call a reader's click goes through, and
+ * `currentResource()` still held the resource from before the navigation, so the
+ * replay was read as "the reader clicked the active resource" and put it away.
+ * Measured on beta: Back restored `?overlay=IntAct&tab=details` and the app
+ * immediately pushed `?tab=details` over it.
+ *
+ * Asserted on badges drawn, not on the address: a URL that keeps the parameter
+ * while the diagram shows nothing is the same failure to a reader.
+ */
+test.describe('An overlay the reader chose', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('comes back with the Back button', async ({ page }) => {
+    const badges = () =>
+      page.evaluate(() => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        return cy?.elements('.InteractorOccurrences').length ?? 0;
+      });
+
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.locator('cr-interactors').getByRole('button', { name: 'IntAct' }).click();
+    await expect.poll(badges, { timeout: BOOT_TIMEOUT }).toBeGreaterThan(0);
+    const drawn = await badges();
+    const before = new URL(page.url()).pathname;
+
+    // Within the app, not a fresh load: a reload was never the broken case, and
+    // measuring one said the overlay was lost when it was simply never asked for.
+    const tree = page.locator(
+      'cr-event-hierarchy .mat-tree-node, cr-event-hierarchy [role="treeitem"]'
+    );
+    await expect(tree.first()).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await tree.nth(1).click();
+    await page.waitForTimeout(8000);
+    test.skip(
+      new URL(page.url()).pathname === before,
+      'that tree item did not lead anywhere else today'
+    );
+
+    await page.goBack();
+    await page.waitForTimeout(8000);
+
+    expect(new URL(page.url()).pathname, 'back where we started').toBe(before);
+    expect(await badges(), 'with the overlay still drawn').toBe(drawn);
+  });
+});

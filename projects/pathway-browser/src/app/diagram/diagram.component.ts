@@ -1523,8 +1523,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const resource = this.state.overlay();
     if (resource) {
-      //console.log('Resource not null', resource)
-      this.interactorsComponent()?.getInteractors(resource);
+      // Not chosen by the reader: this is the address being honoured. Passing
+      // that on matters, because the same call with a resource already current
+      // means "put it away" when a reader makes it.
+      this.interactorsComponent()?.getInteractors(resource, false);
     }
 
     this.loadAnalysis(this.state.analysis());
