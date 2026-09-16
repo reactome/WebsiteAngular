@@ -281,10 +281,12 @@ notice:
   does not match the source word for word. It does not write prose.
 - **Figures**: `~/publish-figures.sh add` on the dev host publishes new figures to
   the bucket. Needs sudo; the credentials belong to `s3bot`.
-- **Verifying a release**: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`
+- **Verifying a release**: `E2E_BASE_URL=https://<site> npm run e2e:release`
   runs the checks that only a finished release can answer — every top-level pathway
   draws, every download link resolves, the version and news and statistics match
-  what is being served. It also runs nightly against beta, so a data problem is
-  usually found by a machine before anyone reads this document.
+  what is being served. Run it against a site a release has just been published to;
+  there is a **Release verification** workflow that takes the site as an input. It
+  ran nightly against beta until 2026-09-15, which was a poor proxy for a
+  quarterly event and had quietly stopped reporting.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.
