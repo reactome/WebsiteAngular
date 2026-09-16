@@ -279,3 +279,53 @@ test.describe('Deleting a resource you added', () => {
     expect(thrown, 'without throwing on the way out').toEqual([]);
   });
 });
+
+/**
+ * Nothing in the dialog is printed over anything else.
+ *
+ * Reported from beta: the name field's hint ran to three lines and printed
+ * straight over the tab labels. Material reserves a single line of subscript for
+ * a hint, and that field was half the dialog's width, so a sentence that read
+ * fine in the markup did not fit on screen.
+ *
+ * Asserted by comparing the boxes the text actually occupies rather than by
+ * looking at a picture, so it holds at any width and says which two collided.
+ */
+test.describe('The dialog layout', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  for (const width of [1600, 1280]) {
+    test(`has no overlapping text at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openDialog(page);
+      await page.getByRole('button', { name: /what can i add here/i }).click();
+      await page.waitForTimeout(500);
+
+      const clashes = await page.evaluate(() => {
+        const blocks = [
+          ...document.querySelectorAll(
+            '.mat-mdc-dialog-container mat-hint, .mat-mdc-dialog-container .mdc-tab__text-label, .mat-mdc-dialog-container .share-choice, .mat-mdc-dialog-container .format-help-body, .mat-mdc-dialog-container mat-dialog-actions'
+          ),
+        ];
+        const boxes = blocks.map((block) => ({
+          text: (block.textContent ?? '').trim().slice(0, 30),
+          box: block.getBoundingClientRect(),
+        }));
+        const found: string[] = [];
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i].box;
+            const b = boxes[j].box;
+            if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+              found.push(`"${boxes[i].text}" over "${boxes[j].text}"`);
+            }
+          }
+        }
+        return { checked: boxes.length, found };
+      });
+
+      expect(clashes.checked, 'the blocks being compared are present').toBeGreaterThan(3);
+      expect(clashes.found, 'text printed over other text').toEqual([]);
+    });
+  }
+});

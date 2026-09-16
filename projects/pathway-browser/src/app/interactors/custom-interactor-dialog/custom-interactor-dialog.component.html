@@ -8,10 +8,16 @@
 <mat-dialog-content>
   <form [formGroup]="resourceForm">
     <div>
-      <mat-form-field>
+      <!--
+        Full width, and the hint kept to one line. Material reserves a single
+        line of subscript for a hint; this field was half the dialog's width, so
+        a longer sentence wrapped to three lines and printed straight over the
+        tab labels beneath it.
+      -->
+      <mat-form-field class="full-width">
         <mat-label>Name</mat-label>
         <input matInput [formControl]="name" (blur)="updateErrorMessage()" required />
-        <mat-hint>Letters, digits and underscores. This is what the button will say.</mat-hint>
+        <mat-hint>Letters, digits and underscores</mat-hint>
         <!--
           `name` is its own FormControl and is not a member of `resourceForm`, so
           the guard here used to be `resourceForm.get('name')?.invalid`, which is
@@ -130,12 +136,21 @@
 #ID_A&#9;ID_B
 P49736&#9;Q99741
 P25205&#9;P33993</pre>
+            @if (shareByLink()) {
+              <p>
+                The first line must start with <code>#</code>. Without it the service reads your first pair as the
+                header and leaves it out — a warning rather than an error, so it is easy to miss.
+              </p>
+            } @else {
+              <p>
+                The first line should start with <code>#</code>. Without it that line is still read as data and you will
+                be told, which is the one thing reading here does differently from uploading.
+              </p>
+            }
             <p>
-              The first line must start with <code>#</code>. Without it the service still accepts the file, but reads
-              your first pair as the header and leaves it out — which is worth knowing, because it says so in a warning
-              rather than an error.
+              Two columns only: a third is refused, so confidence scores cannot be supplied here. A pair given twice, or
+              given both ways round, counts once.
             </p>
-            <p>Two columns only: a third is refused, so confidence scores cannot be supplied here.</p>
             <!--
               Said because nothing said it, and it is not what the wording
               ("Upload a file stored locally on your computer") leads you to
