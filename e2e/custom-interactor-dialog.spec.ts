@@ -400,5 +400,17 @@ test.describe('An overlay shared by link', () => {
     // facing an overlay with no control for it.
     await page.locator('.species-interactor-container .interactor').click();
     await expect(page.locator('cr-interactors mat-list-option')).toContainText(/Shared \(/);
+
+    // Deleting it takes it off the diagram. A shared resource is drawn under the
+    // token the service names, not under the resource's name, so removing by
+    // name alone left the badges behind -- the same fault #206 fixed for a
+    // locally read resource, still live on this half of the path.
+    await page.locator('cr-interactors mat-list-option button').first().click();
+    await expect
+      .poll(() => badges(page), {
+        message: 'deleting a shared resource clears it',
+        timeout: 30_000,
+      })
+      .toBe(0);
   });
 });

@@ -383,9 +383,19 @@ export class InteractorsComponent implements AfterViewInit {
     const name = resource.summary?.name;
     if (!name) return;
 
+    // By name *and* by token. A resource read in this page is drawn under its
+    // name, and one fetched from the service under the token the response names
+    // -- so removing by name alone left a shared resource's badges on the
+    // diagram, which is the same fault this method was just fixed for, still
+    // live on the other half of the path. Measured: one badge before deleting,
+    // one after.
+    const identifiers = [name, resource.summary?.token].filter(
+      (identifier): identifier is string => !!identifier
+    );
+
     const drawn = this.currentResource().name === name;
     this.cys()?.forEach((cy) => {
-      cy.elements(`[resource = '${name}']`).remove();
+      identifiers.forEach((identifier) => cy.elements(`[resource = '${identifier}']`).remove());
     });
 
     // Held in memory only for resources parsed in the page; harmless otherwise.
