@@ -35,6 +35,10 @@ purpose is to be believed later.
 - [x] Open decisions are recorded as open (D10: the control's position, and the
       badge colour) rather than omitted
 - [x] Where a measurement contradicted an assumption, that is said
+- [x] Figures that describe a third-party list say so, and are not written as if
+      they were constants. Reviewing this document against its own standard
+      caught one: "five of the thirteen PSICQUIC servers" had no date, and on
+      re-measuring there were twelve, not thirteen. The five was right.
 
 ## Notes
 

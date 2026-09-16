@@ -25,11 +25,16 @@ decisions below exist _because_ a measurement contradicted an assumption.
 ### User Story 1 - Find out whether a resource has anything here (Priority: P1)
 
 A curator opens a pathway and wants to know which interaction resource is worth
-choosing, out of fourteen.
+choosing, out of a dozen or more.
 
-**Why this priority**: Without it, choosing between resources is fourteen clicks
-and six to seventeen seconds each, and five of the thirteen PSICQUIC servers had
-nothing at all for the pathway measured.
+**Why this priority**: Without it, choosing between resources is a click and six
+to seventeen seconds each, and many hold nothing. Measured 2026-09-16 on
+R-HSA-1368108: **12 PSICQUIC resources offered, 5 of them empty**, the rest
+ranging from 2 to 192 interactions.
+
+The resource list is served by third parties and changes — it was 13 the previous
+day. That is why the requirement is "the reader can tell which is worth choosing"
+rather than a number.
 
 **Acceptance Scenarios**
 
@@ -152,8 +157,8 @@ Held by: `e2e/custom-interactor-dialog.spec.ts`,
 
 ### Measurable Outcomes
 
-- **SC-001**: A reader can tell which of fourteen resources is worth choosing
-  without choosing any of them.
+- **SC-001**: A reader can tell which resource is worth choosing without
+  choosing any of them.
 - **SC-002**: Choosing a resource never leaves the screen unchanged and silent.
 - **SC-003**: A reader who has never opened the interactors panel causes no
   interaction lookups at all.

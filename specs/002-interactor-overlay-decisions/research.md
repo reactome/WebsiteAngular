@@ -102,8 +102,8 @@ wrong shape. The old browser holds the same map —
 `Map<String, Double> interactorsThreshold` in `InteractorsContent.java`.
 
 **Deliberately not in the URL**: the address carries the threshold _in force_,
-which is what sharing needs. Putting all fourteen in it would make the address
-unreadable for no one's benefit.
+which is what sharing needs. Putting every resource's threshold in it would make
+the address unreadable for no one's benefit.
 
 **A resource never seen does not inherit.** Inheriting is how a reader ends up
 with an empty diagram and no idea why.
@@ -159,9 +159,12 @@ arbitrary origin.
 when a pathway loads.
 
 **Why**: The panel is hidden with `display`, never destroyed, so an ungated
-prefetch fired **thirteen requests to third-party PSICQUIC servers on every
-pathway anyone opened**. Measured on R-HSA-1368108: a reader who never opens the
-panel made **14** interactor requests; now **1**.
+prefetch fired **a request to every third-party PSICQUIC server on every pathway
+anyone opened** — thirteen of them on 2026-09-15, twelve on 2026-09-16, because
+the list is served by third parties and changes.
+
+Measured on R-HSA-1368108: a reader who never opens the panel made **14**
+interactor requests; now **1**.
 
 It also starved the same-origin connection pool — browsers allow about six
 connections per host — and broke an unrelated test, the Molecules tab, which
