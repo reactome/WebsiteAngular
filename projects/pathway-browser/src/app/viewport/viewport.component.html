@@ -31,7 +31,13 @@
             >
               <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
               <div class="overlay-content">
-                <span>Overlay</span>
+                <!--
+                  "Interactors", not "Overlay". Overlay is the category this
+                  control belongs to; interactors are the thing it turns on, and
+                  a reader looking for them had no word to look for. Two readers
+                  in a row failed to find a feature that was working (#200).
+                -->
+                <span>Interactors</span>
                 <!--todo: fix the space for long name-->
                 @if (currentInteractorResource().name) {
                   <span>{{ currentInteractorResource().name }}</span>
