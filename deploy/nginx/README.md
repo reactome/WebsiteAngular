@@ -121,15 +121,26 @@ do not own.
 Deployed environments present certificates the server already holds. This box
 needs exactly two:
 
-|                     |                                                 |
-| ------------------- | ----------------------------------------------- |
-| `beta.reactome.org` | the site                                        |
-| `dev.reactome.org`  | the retired host, so its 503 is not a TLS error |
+|                     |                                                             |
+| ------------------- | ----------------------------------------------------------- |
+| `beta.reactome.org` | the site                                                    |
+| `dev.reactome.org`  | the retired host, so its 503 is not a TLS error             |
+| `reactome.org`      | the same, for the two aliases the retired vhost answers for |
 
-and eventually only one, when the Angular site is the one going forward. The
-wikis live on the release machine; `login.dev` is gone. The `reactome.org`
-certificate here is presented only because the retired vhost lists that name as
-an alias — production serves it.
+The wikis lived here as leftovers and were deleted on 2026-09-16, along with the
+long-expired `login.dev`.
+
+The third is easy to talk yourself out of. Production serves `reactome.org`, so
+it is tempting to drop the certificate — but this box still _answers_ for that
+name and for `www`, because the retired vhost lists them as aliases. Drop the
+certificate and those names get beta's instead: a name mismatch, so a browser
+security warning where there is currently a clean 503. A worse retirement than
+the one being replaced.
+
+So all three certificates must renew without Apache before the cutover, not two.
+`reactome.org` was still on the apache authenticator after the first migration
+pass — worth checking rather than assuming, since the script only moves what it
+is told to.
 
 ## Before any of this serves traffic
 
