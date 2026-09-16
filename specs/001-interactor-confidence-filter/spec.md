@@ -83,8 +83,15 @@ Beside the confidence control, the curator downloads the interactors currently s
 
 ### Functional Requirements
 
-- **FR-001**: While interactors are shown on the diagram, the system MUST offer a confidence control beneath the diagram, positioned so it reads as belonging to the diagram rather than to the details panel.
-- **FR-002**: The system MUST hide it whenever no interactors are shown.
+- **FR-001**: While interactors are drawn on the diagram, the system MUST offer a confidence control beneath the diagram, positioned so it reads as belonging to the diagram rather than to the details panel.
+- **FR-002**: The system MUST hide it whenever no interactors are drawn, and MUST let the reader dismiss it — which puts the interactors away with it.
+
+  _Revised twice during implementation, and both moves were the badge's doing._
+
+  These first said "while interactors are shown", meaning after a badge had been opened. That made the badge the only route to the control — and it is six pixels at the zoom a pathway opens at, so they were changed to follow the chosen _resource_ instead.
+
+  Once the badge stopped being drawn below zoom 0.6 at all — matching production, whose `RendererManager.setFactor` swaps renderer tiers at 0.5 where `ProteinRenderer000` makes no call to `drawSummaryItems` — the objection disappeared: a reader who can click a badge can see one. So they follow the interactors again, which is what lets the control be dismissed _with_ them. A bar left on screen describing a diagram with nothing on it was the confusing half of the two.
+
 - **FR-003**: Changing the threshold MUST add and remove interactors from the diagram to match, without the curator taking any further action.
 - **FR-004**: An interactor MUST be shown when its confidence score is at or above the threshold, and hidden when it is below.
 - **FR-004a**: The threshold MUST be held per interaction resource, as the old browser holds it. Switching resource MUST apply that resource's own threshold rather than carrying the previous one across, because a score from one resource does not mean the same as a score from another.

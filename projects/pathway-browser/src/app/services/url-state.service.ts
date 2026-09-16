@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { PaletteName } from './analysis.service';
 import type { Analysis } from '../model/analysis.model';
+import { DEFAULT_INTERACTOR_SCORE } from '../interactors/interactor-threshold';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -178,6 +179,20 @@ export class UrlStateService implements State {
     tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => this.oldToNewTab.get(tab)!),
     significance: urlParam<number>(0.05, 'number'),
     sample: urlParam<string | null>(null, 'string'),
+    /**
+     * The lowest interaction confidence the reader wants drawn.
+     *
+     * 0.45 is the old browser's default -- DEFAULT_SCORE in pwp-diagram's
+     * InteractorsContent.java -- so a curator comparing the two sites on one
+     * entity sees the same first view.
+     *
+     * Declaring it with that initial value is also what keeps it out of an
+     * address nobody edited: currentQueryParams() skips any value equal to its
+     * initialValue, so a reader who never touched the control shares a link with
+     * no threshold in it. That is a requirement met by the existing mechanism
+     * rather than by a special case.
+     */
+    interactorScore: urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number'),
     palette: urlParam<PaletteName | null>(null, 'string'),
     filterViewMode: urlParam<'focus' | 'overview' | undefined>(undefined, 'string'),
     speciesFilter: urlParam<string[]>([], 'string'),
@@ -204,6 +219,7 @@ export class UrlStateService implements State {
   public readonly tab = this.values.tab;
   public readonly significance = this.values.significance;
   public readonly sample = this.values.sample;
+  public readonly interactorScore = this.values.interactorScore;
   public readonly palette = this.values.palette;
   public readonly filterViewMode = this.values.filterViewMode;
   public readonly speciesFilter = this.values.speciesFilter;

@@ -96,6 +96,25 @@ describe('site profiles', () => {
     expect(configurations).toEqual(Object.keys(SITE_PROFILES).sort());
   });
 
+  it('offers DeltaSignal only where a DeltaSignal backend can be reached', () => {
+    // /api is routed by proxy.conf.js, which is the dev server's proxy: it does
+    // not exist in a built artifact, and nothing in deploy.yml or the Apache
+    // config provides it. A deployment that turned this on would offer a button
+    // whose every call fails, so only `development` may have it until there is a
+    // deployed backend to point at.
+    for (const [name, profile] of Object.entries(SITE_PROFILES)) {
+      expect(profile.deltaSignal === true, `${name}.deltaSignal`).toBe(name === 'development');
+    }
+  });
+
+  it('leaves DeltaSignal off for a profile that does not mention it', () => {
+    // Absent means off, so adding a deployment cannot switch a research feature
+    // on by inheriting it.
+    const silent = Object.values(SITE_PROFILES).filter((p) => p.deltaSignal === undefined);
+    expect(silent.length, 'profiles that say nothing about it').toBeGreaterThan(0);
+    for (const profile of silent) expect(profile.deltaSignal === true).toBe(false);
+  });
+
   it('reports to Google only from the public site', () => {
     // Every other deployment names no property, so gtag is never loaded there and
     // nothing is sent. Pointing beta, dev or curation traffic at the public
