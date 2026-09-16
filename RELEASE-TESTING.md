@@ -19,8 +19,12 @@ Two suites, because they answer different questions:
   reason.
 - **`npm run e2e:release`** — _is the release right?_ Run after the release
   process has generated the database and published the files, against the site
-  being released: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`.
-  Also runs nightly against beta (`release-verification.yml`).
+  being released: `E2E_BASE_URL=https://<site> npm run e2e:release`, or the
+  **Release verification** workflow, which takes the site as an input.
+
+  It ran nightly against beta until 2026-09-15. A release is a quarterly event,
+  so a daily schedule was a poor proxy for one — and that job had not reported
+  since 10 September, killed at its own timeout every night.
 
 Everything else: `npm test && npm run check:dead && npm run check:lint`.
 
@@ -109,13 +113,14 @@ rows, the rows are right: this line has drifted twice from being edited by hand.
 
 ## Context menus and interactors
 
-| Item                                                           | Status                                                                                                                                                 |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Right-click an entity offers Molecule, Pathways, Interactors   | **auto** — `diagram-entity-popup.spec.ts`                                                                                                              |
-| Pathways list navigates to a different diagram                 | **auto** — `diagram-entity-popup.spec.ts`                                                                                                              |
-| Interactor overlay draws, and clearing removes it              | **auto** — `interactors.spec.ts`, asserted by looking at the diagram rather than at the button                                                         |
-| Raising the confidence threshold reduces the interactors shown | **missing** — there is no confidence control in this UI, and no threshold concept in the interactor services or the URL state. The old browser has one |
-| Interactor download                                            | **missing** — no such control exists here                                                                                                              |
+| Item                                                           | Status                                                                                                                                          |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Right-click an entity offers Molecule, Pathways, Interactors   | **auto** — `diagram-entity-popup.spec.ts`                                                                                                       |
+| Pathways list navigates to a different diagram                 | **auto** — `diagram-entity-popup.spec.ts`                                                                                                       |
+| Interactor overlay draws, and clearing removes it              | **auto** — `interactors.spec.ts`, asserted by looking at the diagram rather than at the button                                                  |
+| Raising the confidence threshold reduces the interactors shown | **auto** — `interactor-threshold.spec.ts`, counting interactors visible on the diagram rather than the control's position                       |
+| Interactor download                                            | **auto** — `interactor-threshold.spec.ts`; the file carries every interaction the resource holds for the entity, not the filtered view          |
+| Adding your own interaction resource                           | **auto** — `custom-interactor-dialog.spec.ts`; a file or a paste is read in the browser and never uploaded unless a shareable link is asked for |
 
 ## Analysis tools
 
