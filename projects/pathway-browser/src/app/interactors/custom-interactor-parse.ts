@@ -91,6 +91,8 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     { acc: string; id: number; score: number; accURL: string }[]
   >();
   const malformed: number[] = [];
+  const seen = new Set<string>();
+  let duplicates = 0;
   let id = 0;
 
   lines.slice(hasHeader ? 1 : 0).forEach((line, index) => {
@@ -100,18 +102,47 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
       malformed.push(index + (hasHeader ? 2 : 1));
       return;
     }
-    // Both directions, so an interaction is found whichever partner the diagram
-    // happens to draw. The service does the same: a two-line file comes back as
-    // four interactors.
-    for (const [from, to] of [
-      [a, b],
-      [b, a],
-    ]) {
-      const partners = byAccession.get(from) ?? [];
-      partners.push({ acc: to, id: ++id, score: ASSUMED_SCORE, accURL: UNIPROT + to });
-      byAccession.set(from, partners);
+
+    // Accessions are matched against the diagram exactly, and UniProt writes
+    // them upper case. A file of lower-case accessions parsed cleanly and drew
+    // nothing at all, with nothing said -- the worst of the outcomes, because it
+    // looks like the data is simply absent.
+    const from = a.toUpperCase();
+    const to = b.toUpperCase();
+
+    // The same pair twice is one interaction, and A-A is one interaction with
+    // itself rather than two. Both inflated the badge: a file listing a pair
+    // twice gave each partner a count of 2.
+    const pair = from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
+    if (seen.has(pair)) {
+      duplicates += 1;
+      return;
+    }
+    seen.add(pair);
+
+    // Held from both ends, so an interaction is found whichever partner the
+    // diagram happens to draw -- except a self-interaction, which has one end.
+    // The service does the same otherwise: a two-line file comes back as four
+    // interactors.
+    const directions =
+      from === to
+        ? [[from, to]]
+        : [
+            [from, to],
+            [to, from],
+          ];
+    for (const [owner, partner] of directions) {
+      const partners = byAccession.get(owner) ?? [];
+      partners.push({ acc: partner, id: ++id, score: ASSUMED_SCORE, accURL: UNIPROT + partner });
+      byAccession.set(owner, partners);
     }
   });
+
+  if (duplicates > 0) {
+    warnings.push(
+      `Ignored ${duplicates} repeated pair${duplicates === 1 ? '' : 's'}, counted once each.`
+    );
+  }
 
   if (malformed.length > 0) {
     const shown = malformed.slice(0, 5).join(', ');

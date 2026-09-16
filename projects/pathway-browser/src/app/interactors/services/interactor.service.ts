@@ -350,6 +350,11 @@ export class InteractorService {
     return name ? this.localResources.get(name) : undefined;
   }
 
+  /** Drop one the reader deleted, so its name is free and its data is gone. */
+  public forgetLocalResource(name: string): void {
+    this.localResources.delete(name);
+  }
+
   /** Note what a resource held here, forgetting the tally if the pathway changed. */
   private rememberResourceCount(pathway: string | null, resource: string, count: ResourceTally) {
     if (pathway !== this.countsForPathway) {
