@@ -172,7 +172,25 @@ export class InteractorsComponent implements AfterViewInit {
     ]);
   }
 
-  getInteractors(resource: string | null | InteractorToken) {
+  /**
+   * Draw a resource's interactors.
+   *
+   * `chosenByReader` is false when the address is being replayed rather than
+   * clicked. The two arrive at this same method -- `stateToDiagram` reads
+   * `state.overlay()` and hands it here -- and without the distinction the
+   * replay was read as "the reader clicked the resource that is already active"
+   * and put it away again.
+   *
+   * That is what made an overlay vanish on Back. Measured on beta: going back to
+   * a pathway restored `?overlay=IntAct`, and the app immediately pushed
+   * `?tab=details` over it, because `currentResource()` still held IntAct from
+   * before the navigation while the rebuilt diagram held no badges. Issue #201.
+   *
+   * The same shape of fault as the confidence threshold being reset by a shared
+   * address: a reader's gesture and the address being honoured are different
+   * things, and this method is reached by both.
+   */
+  getInteractors(resource: string | null | InteractorToken, chosenByReader = true) {
     if (!resource) return;
 
     // Clicking the chosen one puts it away. It is the obvious gesture -- click
@@ -181,7 +199,7 @@ export class InteractorsComponent implements AfterViewInit {
     // to miss when the button you just pressed looks like it should work.
     // A custom resource is identified by its token, a named one by its name.
     const name = typeof resource === 'string' ? resource : resource.summary?.token;
-    if (name && this.currentResource().name === name) {
+    if (chosenByReader && name && this.currentResource().name === name) {
       this.clearInteractors();
       return;
     }
