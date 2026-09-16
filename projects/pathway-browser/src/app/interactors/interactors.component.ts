@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  effect,
   EventEmitter,
   inject,
   input,
@@ -16,7 +17,7 @@ import {
 import cytoscape from 'cytoscape';
 import { DiagramService } from '../services/diagram.service';
 import { DarkService } from '../services/dark.service';
-import { InteractorService } from './services/interactor.service';
+import { InteractorService, ResourceTally } from './services/interactor.service';
 import { UrlStateService } from '../services/url-state.service';
 import { MatDialog } from '@angular/material/dialog';
 import { CustomInteractorDialogComponent } from './custom-interactor-dialog/custom-interactor-dialog.component';
@@ -29,6 +30,7 @@ import { MatDivider } from '@angular/material/divider';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSelectionList, MatListOption } from '@angular/material/list';
+import { DEFAULT_INTERACTOR_SCORE } from './interactor-threshold';
 
 @Component({
   selector: 'cr-interactors',
@@ -60,6 +62,15 @@ export class InteractorsComponent implements AfterViewInit {
   private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   isDataFromPsicquicLoading: boolean = false;
+  /**
+   * Which resource is being fetched, so its own button can say so.
+   *
+   * The grid used to be hidden entirely while a fetch was in flight, so choosing
+   * BioGrid made every resource button disappear and come back -- and the
+   * per-button spinner could never appear, because the thing containing it was
+   * gone whenever it would have been shown.
+   */
+  loadingResource: string | null = null;
   resourceTokens: InteractorToken[] = [];
   clear = false;
   psicquicResources: PsicquicResource[] = [];
@@ -72,14 +83,130 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
+  /** What each resource turned out to hold here, once we have asked it. */
+  readonly resourceCounts = this.interactors.resourceCounts;
+
+  /** This resource's tally, or undefined while it has never been asked. */
+  tallyFor(resource: string): ResourceTally | undefined {
+    return this.resourceCounts()[resource];
+  }
+
+  /**
+   * Both units in words, because the number alone is ambiguous.
+   *
+   * The count shown is interactions, matching an entity's badge; how many
+   * entities carry them is the more useful thing when choosing between
+   * resources, so it is said here rather than dropped.
+   */
+  describeTally(tally: ResourceTally): string {
+    if (tally.interactions === 0) return 'No interactors here';
+    const interactions = `${tally.interactions} interaction${tally.interactions === 1 ? '' : 's'}`;
+    const entities = `${tally.entities} entit${tally.entities === 1 ? 'y' : 'ies'}`;
+    return `${interactions} across ${entities} in this diagram`;
+  }
   @Output() initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
 
   ngAfterViewInit(): void {
     this.getPsicquicResources();
   }
 
-  getInteractors(resource: string | null | InteractorToken) {
+  /**
+   * Whether the reader has this panel open.
+   *
+   * This component is never destroyed -- the viewport hides it with
+   * `[style.display]` -- so without this the prefetch below ran on every
+   * pathway anyone opened, sending thirteen requests to third-party PSICQUIC
+   * servers for a panel most readers never open. Found by reading the
+   * viewport's template rather than from any failure, because there is no
+   * failure to see: the requests just happen.
+   *
+   * Opening the panel is the moment the counts are wanted, so nothing is lost
+   * by waiting for it.
+   */
+  readonly panelOpen = input(false);
+
+  constructor() {
+    // The prefetch needs three things that arrive in any order: the reader
+    // opening the panel, the resource list, and a graph to ask about.
+    // ngAfterViewInit runs when this panel is created, which is before the
+    // diagram exists -- so hanging the prefetch off the resource list alone
+    // meant `cys()` was empty at the one moment it was tried, and it silently
+    // never ran: no requests, no counts, no error.
+    //
+    // An effect covers every order, and maybePrefetchCounts is idempotent, so
+    // whichever arrives last starts it.
+    effect(() => {
+      this.cys();
+      if (this.panelOpen()) this.maybePrefetchCounts();
+    });
+  }
+
+  /**
+   * Ask every live resource what it holds here, if we can and have not already.
+   *
+   * Cheap to call repeatedly: the service skips resources it has already
+   * answered for this pathway.
+   */
+  private maybePrefetchCounts(attempt = 0): void {
+    const graph = this.cys()?.[0];
+    if (!this.panelOpen()) return;
+    if (this.psicquicResources.length === 0) return;
+
+    // The graph may not be there yet. This panel is created before the diagram
+    // is, so the resource list routinely arrives first -- and hanging the
+    // prefetch on that moment alone meant it ran once, found nothing to ask
+    // about, and never tried again: no requests, no counts, and no error to
+    // notice. An effect on `cys()` did not rescue it either.
+    //
+    // So it waits, briefly and a bounded number of times. Ten seconds is longer
+    // than a diagram takes to draw, and if it is not there by then the reader
+    // is looking at something else anyway.
+    if (!graph) {
+      if (attempt < 10) setTimeout(() => this.maybePrefetchCounts(attempt + 1), 1000);
+      return;
+    }
+
+    this.interactors.prefetchResourceCounts(graph, [
+      this.INTACT_RESOURCE,
+      ...this.psicquicResources.map((resource) => resource.name),
+    ]);
+  }
+
+  /**
+   * Draw a resource's interactors.
+   *
+   * `chosenByReader` is false when the address is being replayed rather than
+   * clicked. The two arrive at this same method -- `stateToDiagram` reads
+   * `state.overlay()` and hands it here -- and without the distinction the
+   * replay was read as "the reader clicked the resource that is already active"
+   * and put it away again.
+   *
+   * That is what made an overlay vanish on Back. Measured on beta: going back to
+   * a pathway restored `?overlay=IntAct`, and the app immediately pushed
+   * `?tab=details` over it, because `currentResource()` still held IntAct from
+   * before the navigation while the rebuilt diagram held no badges. Issue #201.
+   *
+   * The same shape of fault as the confidence threshold being reset by a shared
+   * address: a reader's gesture and the address being honoured are different
+   * things, and this method is reached by both.
+   */
+  getInteractors(resource: string | null | InteractorToken, chosenByReader = true) {
     if (!resource) return;
+
+    // Clicking the chosen one puts it away. It is the obvious gesture -- click
+    // the highlighted thing to un-highlight it -- and it did nothing at all, so
+    // the only way out was the separate "Clear overlays" button, which is easy
+    // to miss when the button you just pressed looks like it should work.
+    // A custom resource is identified by its token, a named one by its name.
+    const name = typeof resource === 'string' ? resource : resource.summary?.token;
+    if (chosenByReader && name && this.currentResource().name === name) {
+      this.clearInteractors();
+      return;
+    }
+
+    // A resource opens at what it was last left at, not at whatever the
+    // previous resource happened to be showing (FR-004a).
+    this.interactors.restoreThreshold(name);
 
     this.interactors.getResourceType(resource as string).subscribe({
       next: (resourceType) => {
@@ -125,12 +252,14 @@ export class InteractorsComponent implements AfterViewInit {
 
   getPsicquicResourceInteractors(selectedResource: string) {
     this.isDataFromPsicquicLoading = true;
+    this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
     this.cys()?.forEach((cy) => {
       this.interactors.fetchInteractorData(cy, selectedResource).subscribe((interactors) => {
         this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
         this.isDataFromPsicquicLoading = false;
+        this.loadingResource = null;
         this.state.overlay.set(selectedResource);
       });
     });
@@ -153,7 +282,10 @@ export class InteractorsComponent implements AfterViewInit {
           this.resourceTokens!.push(resource);
           this.clear = false;
           this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
-          this.state.overlay.set(resource.summary.token);
+          // Only when there is something a link can resolve. A locally parsed
+          // resource has an empty token, and putting that in the address gives
+          // `?overlay=` -- an address that opens to nothing and looks like a bug.
+          if (resource.summary.token) this.state.overlay.set(resource.summary.token);
         }
         this.cdr.detectChanges();
       });
@@ -166,6 +298,21 @@ export class InteractorsComponent implements AfterViewInit {
 
   getCustomResourceInteractors(resource: InteractorToken) {
     if (!resource.summary) return;
+
+    // A resource parsed in this page has no token, because there is nothing on a
+    // server to point at. Asking for one would be a request for `token/` with an
+    // empty id -- so it redraws from what is already held, and the address is
+    // left alone: a link cannot carry data that only exists here, and pretending
+    // otherwise would hand someone a URL that opens to nothing.
+    const held = this.interactors.localResource(resource.summary.name);
+    if (held) {
+      this.cys()?.forEach((cy) =>
+        this.interactors.addInteractorOccurrenceNode(held, cy, held.resource)
+      );
+      this.clear = false;
+      this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
+      return;
+    }
 
     this.cys()?.forEach((cy) => {
       this.interactors.fetchCustomInteractors(resource, cy).subscribe((result) => {
@@ -183,12 +330,33 @@ export class InteractorsComponent implements AfterViewInit {
 
   deleteCustomResource(resource: InteractorToken) {
     const index = this.resourceTokens!.indexOf(resource);
-    if (index !== -1) {
-      this.resourceTokens!.splice(index, 1);
-      this.cys()?.forEach((cy) => {
-        cy.elements(`[resource = '${resource}']`).remove();
-        this.state.overlay.set(null);
-      });
+    if (index === -1) return;
+
+    this.resourceTokens!.splice(index, 1);
+
+    // The name, not the token object. This read `[resource = '${resource}']`,
+    // which interpolates an InteractorToken to the string "[object Object]" --
+    // a selector matching nothing, so deleting removed the button and left the
+    // interactors drawn. Measured on beta: one badge before, one badge after,
+    // and the list empty.
+    const name = resource.summary?.name;
+    if (!name) return;
+
+    const drawn = this.currentResource().name === name;
+    this.cys()?.forEach((cy) => {
+      cy.elements(`[resource = '${name}']`).remove();
+    });
+
+    // Held in memory only for resources parsed in the page; harmless otherwise.
+    this.interactors.forgetLocalResource(name);
+
+    // Only if the resource being deleted is the one on screen. Clearing the
+    // overlay for a resource nobody was looking at would take away someone
+    // else's view.
+    if (drawn) {
+      this.clear = true;
+      this.updateCurrentResource(null, null);
+      this.state.overlay.set(null);
     }
   }
 
@@ -199,6 +367,12 @@ export class InteractorsComponent implements AfterViewInit {
       this.updateCurrentResource(null, null);
       this.state.overlay.set(null);
     });
+    // The threshold described interactors that are gone, so it leaves the
+    // address with them (FR-013). Set to the default rather than removed,
+    // because `currentQueryParams()` drops a value equal to its initial -- which
+    // is the same thing, said in the one way the URL service understands.
+    this.state.interactorScore.set(DEFAULT_INTERACTOR_SCORE);
+    this.interactors.forgetThresholds();
   }
 
   updateCurrentResource(name: string | null, type: ResourceType | null) {
@@ -213,6 +387,11 @@ export class InteractorsComponent implements AfterViewInit {
   getPsicquicResources() {
     this.interactors.getPsicquicResources().subscribe((resources) => {
       this.psicquicResources = resources;
+
+      // Ask them all what they hold here, without waiting for any of them. The
+      // panel is usable straight away; the counts appear beside each resource as
+      // its answer arrives.
+      this.maybePrefetchCounts();
     });
   }
 }

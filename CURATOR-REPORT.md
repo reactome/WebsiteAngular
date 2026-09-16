@@ -218,18 +218,39 @@ we did not want to decide it for you.
 
 ## In the old browser, not in this one
 
-Found while turning the release checklist into tests. Neither is a regression from
-a working state here -- they were never built -- but the old browser has both, so
-curators will look for them:
+Found while turning the release checklist into tests, and **both are now built**
+(`specs/001-interactor-confidence-filter`). The confidence slider opens at 0.45,
+the value the old browser opens at, and is remembered per resource the way the old
+browser remembers it. The download beside it carries every interaction the
+resource holds for that entity, deliberately not the filtered view: a file named
+for what you can see is a file you cannot check anything against.
 
-- **No confidence threshold for interactors.** The old browser has a sliding scale
-  where raising the confidence score shows fewer interactors; there is no such
-  control here, and no threshold concept in the interactor services or the URL
-  state. The overlay is all-or-nothing per resource.
-- **No interactor download.** The old browser offers one beside that slider.
+Two things about them are worth a curator's eye, because they are judgements
+rather than parity:
 
-Both are small next to what they enable, and neither is on the critical path for
-the release. Say if they matter to you and they go on the list.
+- The count beside each resource is **interactions**, the same unit as the badge
+  on an entity, with the number of entities carrying them in the tooltip. It was
+  briefly entities, which made one resource read "15" beside a badge reading
+  "17".
+- The badge is not drawn below 0.6 zoom, where it is six pixels holding a
+  two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
+
+**"Add overlay resource" now works, and keeps your data.** The button labelled
+Close did nothing at all -- a Material directive was missing, so the attribute
+sat inert and only Escape or a click outside would close the dialog. A rejected
+upload said nothing either: the spinner ran on and the dialog sat there, which is
+hard to tell from being stuck.
+
+Both are fixed, and with them the thing worth a curator's attention: a file or a
+paste is now read **in your browser**. Nothing is sent anywhere. Before, it was
+posted to the server, parsed there, stored on disk indefinitely -- the store
+holds uploads going back to 2019 -- and given a token that appeared in the page's
+address, so the link carried the data to anyone who had it.
+
+Uploading is still offered, as a tick-box, because that token is what lets an
+overlay survive a reload or open for a colleague. It is now a choice you make
+rather than one made for you, and the dialog says which you are getting. There is
+also a note explaining the format it expects, which nothing said before.
 
 ## Known and deliberately not fixed
 
@@ -260,10 +281,12 @@ notice:
   does not match the source word for word. It does not write prose.
 - **Figures**: `~/publish-figures.sh add` on the dev host publishes new figures to
   the bucket. Needs sudo; the credentials belong to `s3bot`.
-- **Verifying a release**: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`
+- **Verifying a release**: `E2E_BASE_URL=https://<site> npm run e2e:release`
   runs the checks that only a finished release can answer — every top-level pathway
   draws, every download link resolves, the version and news and statistics match
-  what is being served. It also runs nightly against beta, so a data problem is
-  usually found by a machine before anyone reads this document.
+  what is being served. Run it against a site a release has just been published to;
+  there is a **Release verification** workflow that takes the site as an input. It
+  ran nightly against beta until 2026-09-15, which was a poor proxy for a
+  quarterly event and had quietly stopped reporting.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.

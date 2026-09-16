@@ -30,6 +30,19 @@ const SITE_VARIANT = profile.variant;
 export const IS_CURATOR = SITE_VARIANT === 'curator';
 
 /**
+ * Whether to offer the DeltaSignal pathway-perturbation UI.
+ *
+ * Per deployment, from the profile, because it needs a DeltaSignal backend that
+ * only some environments can reach. A profile that does not mention it does not
+ * get it, so a new deployment has to ask for it rather than inherit it.
+ *
+ * A feature toggle rather than a variant: the note above about comparing
+ * SITE_VARIANT concerns which UI a deployment presents, not which features it
+ * enables.
+ */
+export const SHOW_DELTASIGNAL = profile.deltaSignal === true;
+
+/**
  * Where this build's services live.
  *
  * `'origin'` means "wherever this bundle is served from", which is what the

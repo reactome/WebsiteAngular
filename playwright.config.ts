@@ -51,6 +51,12 @@ export default defineConfig({
       name: 'release',
       use: { ...devices['Desktop Chrome'] },
       testMatch: '**/release/**',
+      // One retry, not the suite's two. These are sweeps against a published
+      // site -- twenty-one diagram loads in one case -- so a second attempt is
+      // worth having for a dropped connection, and a third only costs another
+      // twelve minutes to reach the same answer. Retrying was a large part of
+      // why the release job never finished inside its budget.
+      retries: process.env['CI'] ? 1 : 0,
     },
   ],
   // Only manage a server when we're the ones who started it.
