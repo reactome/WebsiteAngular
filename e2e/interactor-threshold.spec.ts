@@ -449,20 +449,39 @@ test.describe('An overlay that cannot be seen yet', () => {
       { timeout: BOOT_TIMEOUT }
     );
 
-    const hidden = await page.evaluate(() => {
+    const visibleBadges = () =>
+      page.evaluate(() => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+        const badges = cy.elements('.InteractorOccurrences');
+        return badges.filter((badge) => badge.visible()).length;
+      });
+
+    const zoom = await page.evaluate(() => {
       const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
       if (!cy) throw new Error('no cytoscape instance on #cytoscape');
-      const badges = cy.elements('.InteractorOccurrences');
-      return { zoom: cy.zoom(), visible: badges.filter((badge) => badge.visible()).length };
+      return cy.zoom();
     });
-    test.skip(hidden.zoom >= 0.6, 'this pathway opens close enough in to draw them');
-    expect(hidden.visible, 'nothing is drawn at this zoom').toBe(0);
+    test.skip(zoom >= 0.6, 'this pathway opens close enough in to draw them');
+
+    // Polled, not read once. The badges are added and the handler that hides
+    // them at this zoom runs afterwards, so a single read raced it -- the test
+    // failed on the first attempt and passed on a retry, which CI was
+    // configured to allow and therefore never reported as anything.
+    await expect
+      .poll(visibleBadges, { message: 'nothing is drawn at this zoom', timeout: 20_000 })
+      .toBe(0);
 
     const reveal = page.getByRole('button', { name: /zoom to them/i });
     await expect(reveal, 'the reader is told, rather than left guessing').toHaveCount(1);
 
     await reveal.click();
-    await page.waitForTimeout(2000);
+
+    // Polled for the same reason: the fit and the restyle it triggers are not
+    // finished when the click returns.
+    await expect
+      .poll(visibleBadges, { message: 'and taken to them', timeout: 20_000 })
+      .toBeGreaterThan(0);
 
     const after = await page.evaluate(() => {
       const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
