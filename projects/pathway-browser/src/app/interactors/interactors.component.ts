@@ -197,8 +197,11 @@ export class InteractorsComponent implements AfterViewInit {
     // the highlighted thing to un-highlight it -- and it did nothing at all, so
     // the only way out was the separate "Clear overlays" button, which is easy
     // to miss when the button you just pressed looks like it should work.
-    // A custom resource is identified by its token, a named one by its name.
-    const name = typeof resource === 'string' ? resource : resource.summary?.token;
+    // By name, for all three kinds. This read `resource.summary?.token` for a
+    // custom resource while `currentResource()` holds its *name*, so the two
+    // could never match and clicking an active custom resource never put it
+    // away -- the one gesture this branch exists for.
+    const name = typeof resource === 'string' ? resource : resource.summary?.name;
     if (chosenByReader && name && this.currentResource().name === name) {
       this.clearInteractors();
       return;
@@ -219,7 +222,13 @@ export class InteractorsComponent implements AfterViewInit {
             this.getPsicquicResourceInteractors(resource as string);
             break;
           case ResourceType.CUSTOM:
-            this.getCustomResourceInteractors(resource as InteractorToken);
+            // A string here is a token out of the address, not a token object.
+            // It used to be cast straight to InteractorToken, so `summary` was
+            // undefined and `getCustomResourceInteractors` returned at its first
+            // line -- silently. That is why a link carrying a shared overlay
+            // opened with nothing drawn, which is the whole of what the "share
+            // by link" choice promises.
+            this.getCustomResourceInteractors(this.asToken(resource));
             break;
           default:
             throw new Error('Unknown resource type encountered: ' + resourceType);
@@ -231,6 +240,38 @@ export class InteractorsComponent implements AfterViewInit {
         throw new Error('Error determining resource type: ' + error);
       },
     });
+  }
+
+  /**
+   * A token object for something that may only be a token string.
+   *
+   * A shared address carries `?overlay=<token>` and nothing else, so on a fresh
+   * load there is no entry in `resourceTokens` to find -- those live only for as
+   * long as the page does. One is made, and listed, so the reader can see and
+   * clear what the link turned on rather than facing an overlay with no control
+   * for it.
+   *
+   * The service has no endpoint that names a token -- `token/<id>/summary` is a
+   * 404, measured -- so it is labelled by its first characters. Honest about
+   * being someone else's resource, and identifiable against the address.
+   */
+  private asToken(resource: string | InteractorToken): InteractorToken {
+    if (typeof resource !== 'string') return resource;
+
+    const known = this.resourceTokens?.find((token) => token.summary?.token === resource);
+    if (known) return known;
+
+    const made: InteractorToken = {
+      summary: {
+        token: resource,
+        name: `Shared (${resource.slice(0, 8)})`,
+        fileName: resource,
+        interactors: 0,
+        interactions: 0,
+      },
+    };
+    this.resourceTokens?.push(made);
+    return made;
   }
 
   getStaticInteractors(resource: string | null) {
@@ -342,9 +383,19 @@ export class InteractorsComponent implements AfterViewInit {
     const name = resource.summary?.name;
     if (!name) return;
 
+    // By name *and* by token. A resource read in this page is drawn under its
+    // name, and one fetched from the service under the token the response names
+    // -- so removing by name alone left a shared resource's badges on the
+    // diagram, which is the same fault this method was just fixed for, still
+    // live on the other half of the path. Measured: one badge before deleting,
+    // one after.
+    const identifiers = [name, resource.summary?.token].filter(
+      (identifier): identifier is string => !!identifier
+    );
+
     const drawn = this.currentResource().name === name;
     this.cys()?.forEach((cy) => {
-      cy.elements(`[resource = '${name}']`).remove();
+      identifiers.forEach((identifier) => cy.elements(`[resource = '${identifier}']`).remove());
     });
 
     // Held in memory only for resources parsed in the page; harmless otherwise.
