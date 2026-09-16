@@ -37,7 +37,20 @@
           (click)="getInteractors(INTACT_RESOURCE)"
           [ngClass]="{ 'active-button': currentResource().type === ResourceType.STATIC }"
         >
-          IntAct
+          <!--
+            IntAct carries the same count as the others. It is the resource a
+            reader lands on and the one most of them use, so leaving it the only
+            unlabelled button meant the count looked like a PSICQUIC curiosity
+            rather than the answer to "is there anything here".
+          -->
+          <div class="resource-name">
+            <span>IntAct</span>
+            @if (tallyFor(INTACT_RESOURCE); as tally) {
+              <span class="resource-count" [class.none]="tally.interactions === 0" [title]="describeTally(tally)">
+                {{ tally.interactions }}
+              </span>
+            }
+          </div>
         </button>
 
         <!-- DisGeNet is deliberately not offered. Its overlay service 404s on both
@@ -47,7 +60,12 @@
              decision is revisited. -->
       </div>
 
-      @if (psicquicResources.length > 0 && !isDataFromPsicquicLoading) {
+      <!--
+        Not gated on the fetch. Hiding the whole grid while one resource loaded
+        made every button disappear and come back, and meant the spinner below
+        could never be seen: it lives inside the thing that was being hidden.
+      -->
+      @if (psicquicResources.length > 0) {
         <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: 'PSICQUIC' }"></ng-container>
 
         <mat-grid-list cols="2" rowHeight="28px" [gutterSize]="'5px'">
@@ -56,13 +74,29 @@
               <button
                 class="full-width psicquic-button"
                 mat-button
-                [disabled]="hasEHLD()"
+                [disabled]="hasEHLD() || (!!loadingResource && loadingResource !== resource.name)"
                 (click)="getInteractors(resource.name)"
                 [ngClass]="{ 'active-button': currentResource().name === resource.name }"
               >
                 <div class="resource-name">
                   <span>{{ resource.name }}</span>
-                  @if (isDataFromPsicquicLoading && currentResource().name === resource.name) {
+                  <!--
+                    What this resource held last time it was asked, for this
+                    diagram. Thirteen live resources look identical otherwise, and
+                    the only way to tell them apart is to try each one.
+
+                    Interactions, not entities -- the same unit the badge on an
+                    entity counts. Counting entities here made Reactome-FIs read
+                    "15" beside an MCM7 badge reading "17", which is impossible
+                    unless the two numbers mean different things, and nothing on
+                    screen said they did.
+                  -->
+                  @if (tallyFor(resource.name); as tally) {
+                    <span class="resource-count" [class.none]="tally.interactions === 0" [title]="describeTally(tally)">
+                      {{ tally.interactions }}
+                    </span>
+                  }
+                  @if (loadingResource === resource.name) {
                     <mat-spinner class="spinner-color" diameter="20"></mat-spinner>
                   }
                 </div>
@@ -86,7 +120,17 @@
             >
               <div class="resource-name surface-variant">
                 <div>{{ resourceToken.summary.name }}</div>
-                <button mat-icon-button [disabled]="hasEHLD()" (click)="deleteCustomResource(resourceToken)">
+                <!--
+                  The click stops here. This button is inside the list option,
+                  whose own (click) chooses the resource -- so deleting one also
+                  asked the app to draw it, immediately after it had been
+                  removed. That threw on the page every time.
+                -->
+                <button
+                  mat-icon-button
+                  [disabled]="hasEHLD()"
+                  (click)="deleteCustomResource(resourceToken); $event.stopPropagation()"
+                >
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
