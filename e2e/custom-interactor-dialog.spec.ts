@@ -329,3 +329,88 @@ test.describe('The dialog layout', () => {
     });
   }
 });
+
+/**
+ * What the "share by link" choice actually promises.
+ *
+ * Ticking it uploads the data so the overlay can be opened by someone else. It
+ * could not: the address carries `?overlay=<token>`, and on a fresh load that
+ * string was cast straight to an InteractorToken, so `summary` was undefined and
+ * the fetch returned at its first line. Silently. Measured before the fix: the
+ * link opened with 0 badges where the session that made it had 1.
+ *
+ * Also here because the same block identifies a custom resource by token while
+ * `currentResource()` holds its name, so clicking an active one never put it
+ * away -- the one gesture that branch exists for.
+ */
+test.describe('An overlay shared by link', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  const badges = (page: Page) =>
+    page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      return cy?.nodes('.InteractorOccurrences').length ?? 0;
+    });
+
+  test('opens for whoever follows it, and can be put away again', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    const accessions = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      return [...new Set(cy.nodes('[acc]').map((node) => node.data('acc') as string))].filter(
+        Boolean
+      );
+    });
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Add overlay resource' }).click();
+    await expect(dialog(page)).toHaveCount(1);
+    await page.getByLabel('Name').fill('SharedByLink');
+    await page.getByRole('radio', { name: /copy & paste/i }).click();
+    await page.locator('textarea').fill(`#ID_A\t${'ID_B'}\n${accessions[0]}\tQ99741\n`);
+    // The opt-in, which is what makes a token at all.
+    await page.locator('.share-choice input').check();
+    await page.getByRole('button', { name: /submit/i }).click();
+    await expect(dialog(page)).toHaveCount(0, { timeout: 60_000 });
+
+    await expect.poll(() => badges(page), { timeout: 30_000 }).toBeGreaterThan(0);
+    const drawn = await badges(page);
+
+    const shared = page.url();
+    expect(shared, 'the address carries a token').toMatch(/overlay=[0-9a-f]{8,}/);
+
+    // Clicking the active custom resource puts it away.
+    await page.locator('cr-interactors mat-list-option').first().click();
+    await expect
+      .poll(() => badges(page), { message: 'clicking it again puts it away', timeout: 30_000 })
+      .toBe(0);
+
+    // A fresh load of the link someone was given.
+    await page.goto(shared, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await expect
+      .poll(() => badges(page), { message: 'the shared link draws it', timeout: BOOT_TIMEOUT })
+      .toBe(drawn);
+
+    // And it is listed, so whoever followed the link can clear it rather than
+    // facing an overlay with no control for it.
+    await page.locator('.species-interactor-container .interactor').click();
+    await expect(page.locator('cr-interactors mat-list-option')).toContainText(/Shared \(/);
+
+    // Deleting it takes it off the diagram. A shared resource is drawn under the
+    // token the service names, not under the resource's name, so removing by
+    // name alone left the badges behind -- the same fault #206 fixed for a
+    // locally read resource, still live on this half of the path.
+    await page.locator('cr-interactors mat-list-option button').first().click();
+    await expect
+      .poll(() => badges(page), {
+        message: 'deleting a shared resource clears it',
+        timeout: 30_000,
+      })
+      .toBe(0);
+  });
+});
