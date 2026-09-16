@@ -222,3 +222,60 @@ test.describe("A reader's own data", () => {
     await expect(page).toHaveURL((url) => (url.searchParams.get('overlay') ?? '').length > 0);
   });
 });
+
+/**
+ * Deleting a resource takes it off the diagram.
+ *
+ * It did not. `deleteCustomResource` selected elements with
+ * `[resource = '${resource}']`, interpolating an InteractorToken object into the
+ * string "[object Object]" -- a selector matching nothing. Measured on beta
+ * before the fix: one badge before, one badge after, and the list empty. The
+ * button looked like it worked because the button is what disappeared.
+ *
+ * Its click also bubbled to the list option it sits inside, whose own handler
+ * chooses the resource, so deleting one immediately asked the app to draw it
+ * again and threw on the page.
+ */
+test.describe('Deleting a resource you added', () => {
+  test.describe.configure({ timeout: 5 * 60 * 1000 });
+
+  test('removes it from the diagram, not just from the list', async ({ page }) => {
+    const thrown: string[] = [];
+    page.on('pageerror', (error) => thrown.push(String(error)));
+
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    const accessions = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      return [...new Set(cy.nodes('[acc]').map((node) => node.data('acc') as string))].filter(
+        Boolean
+      );
+    });
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Add overlay resource' }).click();
+    await expect(dialog(page)).toHaveCount(1);
+    await page.getByLabel('Name').fill('ToDelete');
+    await page.getByRole('radio', { name: /copy & paste/i }).click();
+    await page.locator('textarea').fill(`#ID_A\tID_B\n${accessions[0]}\tQ99741\n`);
+    await page.getByRole('button', { name: /submit/i }).click();
+    await expect(dialog(page)).toHaveCount(0, { timeout: 60_000 });
+
+    const badges = () =>
+      page.evaluate(() => {
+        const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+        return cy?.nodes('.InteractorOccurrences').length ?? 0;
+      });
+    await expect.poll(badges, { timeout: 30_000 }).toBeGreaterThan(0);
+
+    await page.locator('cr-interactors mat-list-option button').first().click();
+
+    await expect(page.locator('cr-interactors mat-list-option')).toHaveCount(0);
+    await expect.poll(badges, { message: 'and off the diagram', timeout: 30_000 }).toBe(0);
+    expect(thrown, 'without throwing on the way out').toEqual([]);
+  });
+});

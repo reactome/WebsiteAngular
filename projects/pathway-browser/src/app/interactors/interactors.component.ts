@@ -312,12 +312,33 @@ export class InteractorsComponent implements AfterViewInit {
 
   deleteCustomResource(resource: InteractorToken) {
     const index = this.resourceTokens!.indexOf(resource);
-    if (index !== -1) {
-      this.resourceTokens!.splice(index, 1);
-      this.cys()?.forEach((cy) => {
-        cy.elements(`[resource = '${resource}']`).remove();
-        this.state.overlay.set(null);
-      });
+    if (index === -1) return;
+
+    this.resourceTokens!.splice(index, 1);
+
+    // The name, not the token object. This read `[resource = '${resource}']`,
+    // which interpolates an InteractorToken to the string "[object Object]" --
+    // a selector matching nothing, so deleting removed the button and left the
+    // interactors drawn. Measured on beta: one badge before, one badge after,
+    // and the list empty.
+    const name = resource.summary?.name;
+    if (!name) return;
+
+    const drawn = this.currentResource().name === name;
+    this.cys()?.forEach((cy) => {
+      cy.elements(`[resource = '${name}']`).remove();
+    });
+
+    // Held in memory only for resources parsed in the page; harmless otherwise.
+    this.interactors.forgetLocalResource(name);
+
+    // Only if the resource being deleted is the one on screen. Clearing the
+    // overlay for a resource nobody was looking at would take away someone
+    // else's view.
+    if (drawn) {
+      this.clear = true;
+      this.updateCurrentResource(null, null);
+      this.state.overlay.set(null);
     }
   }
 

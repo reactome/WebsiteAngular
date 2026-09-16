@@ -120,7 +120,17 @@
             >
               <div class="resource-name surface-variant">
                 <div>{{ resourceToken.summary.name }}</div>
-                <button mat-icon-button [disabled]="hasEHLD()" (click)="deleteCustomResource(resourceToken)">
+                <!--
+                  The click stops here. This button is inside the list option,
+                  whose own (click) chooses the resource -- so deleting one also
+                  asked the app to draw it, immediately after it had been
+                  removed. That threw on the page every time.
+                -->
+                <button
+                  mat-icon-button
+                  [disabled]="hasEHLD()"
+                  (click)="deleteCustomResource(resourceToken); $event.stopPropagation()"
+                >
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>

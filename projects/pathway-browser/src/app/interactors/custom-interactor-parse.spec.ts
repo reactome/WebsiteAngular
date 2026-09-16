@@ -83,3 +83,51 @@ describe('reading a pasted list of interactions', () => {
     expect(parseCustomInteractions('   \n\n', 'mine').error).toBeTruthy();
   });
 });
+
+describe('counting what the reader actually gave', () => {
+  // Three faults found by probing this module rather than by any failure. Each
+  // produced a badge that overstated the data, and the last produced no badge
+  // at all while looking like a clean parse.
+
+  it('counts a pair listed twice once', () => {
+    // Was A:2 and B:2 for a single interaction stated twice.
+    const parsed = parseCustomInteractions('#ID_A\tID_B\nP49736\tQ99741\nP49736\tQ99741\n', 'mine');
+    expect(parsed.interactors.entities.map((entity) => (entity.interactors ?? []).length)).toEqual([
+      1, 1,
+    ]);
+    expect(parsed.warnings.join(' '), 'and says it did').toMatch(/repeated pair/i);
+  });
+
+  it('counts a pair listed the other way round once', () => {
+    // A-B and B-A are the same interaction; the file may state either.
+    const parsed = parseCustomInteractions('#ID_A\tID_B\nP49736\tQ99741\nQ99741\tP49736\n', 'mine');
+    expect(parsed.interactors.entities.map((entity) => (entity.interactors ?? []).length)).toEqual([
+      1, 1,
+    ]);
+  });
+
+  it('counts a self-interaction once, not twice', () => {
+    // Was A:2, because the pair is held from both ends and both ends are A.
+    const parsed = parseCustomInteractions('#ID_A\tID_B\nP49736\tP49736\n', 'mine');
+    expect(parsed.interactors.entities.length).toBe(1);
+    expect((parsed.interactors.entities[0].interactors ?? []).length).toBe(1);
+  });
+
+  it('matches the diagram whatever case the file is written in', () => {
+    // The diagram carries UniProt accessions upper case and they are matched
+    // exactly, so a lower-case file parsed cleanly and then drew nothing, with
+    // nothing said. That is worse than a refusal: it reads as absent data.
+    const parsed = parseCustomInteractions('#ID_A\tID_B\np49736\tq99741\n', 'mine');
+    expect(parsed.interactors.entities.map((entity) => entity.acc).sort()).toEqual([
+      'P49736',
+      'Q99741',
+    ]);
+  });
+
+  it('still reaches the count the service reported for a two-line file', () => {
+    // The service answered {"interactors":4,"interactions":2}. Deduplicating
+    // must not change that: these are two distinct pairs.
+    const parsed = parseCustomInteractions('P49736\tQ99741\nP25205\tP33993\n', 'mine');
+    expect(parsed.interactors.entities.length).toBe(4);
+  });
+});
