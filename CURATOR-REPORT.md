@@ -235,6 +235,16 @@ rather than parity:
 - The badge is not drawn below 0.6 zoom, where it is six pixels holding a
   two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
 
+**The interactor overlay now survives you moving around.** Choosing a resource
+and then opening another pathway used to lose it, including coming back to the
+pathway you chose it on — so the three clicks had to be repeated every time. It
+persists now, and a link carrying it opens with it drawn.
+
+**The whole overlay is reachable from the keyboard.** The Species and Interactors
+controls could not be focused or activated without a mouse, and were announced to
+a screen reader as nothing at all. Both are operable now — Tab to them, Enter or
+Space to open, Escape to close — and closing returns you to where you were.
+
 **"Add overlay resource" now works, and keeps your data.** The button labelled
 Close did nothing at all -- a Material directive was missing, so the attribute
 sat inert and only Escape or a click outside would close the dialog. A rejected
