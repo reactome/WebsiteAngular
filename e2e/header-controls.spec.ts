@@ -72,4 +72,40 @@ test.describe('The header controls', () => {
     expect(semantics.speciesRole).toBe('button');
     expect(semantics.speciesTabindex).toBe('0');
   });
+
+  test('close on Escape, and give focus back', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+
+    await page.locator('.species-interactor-container .interactor').focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => panelOpen(page), { timeout: 15_000 }).toBe(true);
+
+    // Into the panel, which is where a reader will be when they want out of it.
+    await page.keyboard.press('Tab');
+    expect(
+      await page.evaluate(() => !!document.activeElement?.closest('cr-interactors')),
+      'tab moves into the panel'
+    ).toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect.poll(() => panelOpen(page), { timeout: 15_000 }).toBe(false);
+
+    // And the reader still has their place. Without this focus falls to <body>,
+    // so closing the panel costs them the whole page.
+    expect(
+      await page.evaluate(() => document.activeElement?.classList.contains('interactor')),
+      'focus returns to the control that opened it'
+    ).toBe(true);
+
+    // It says what it controls, not just that it is expanded.
+    expect(
+      await page.evaluate(() =>
+        document
+          .querySelector('.species-interactor-container .interactor')
+          ?.getAttribute('aria-controls')
+      )
+    ).toBeTruthy();
+  });
 });
