@@ -227,6 +227,10 @@ export class ViewportComponent implements AfterViewInit {
 
   analysisLoading = computed(() => this.exampleAnalysis.isLoading() || this.analysis.isLoading());
 
+  /** The two header controls, so focus can be put back where it came from. */
+  readonly speciesControl = viewChild<ElementRef<HTMLElement>>('speciesControl');
+  readonly interactorControl = viewChild<ElementRef<HTMLElement>>('interactorControl');
+
   visibility = {
     species: false,
     interactor: false,
@@ -278,6 +282,31 @@ export class ViewportComponent implements AfterViewInit {
         ?.querySelector('path')
         ?.setAttribute('d', this.sun);
     }, 200);
+  }
+
+  /**
+   * Put both panels away.
+   *
+   * Escape, from the control or from inside the panel. One that opens with a key
+   * and closes only by shift-tabbing back to the control is a trap of a mild
+   * kind: every other disclosure on the page closes this way, so a reader will
+   * try it and be surprised when nothing happens.
+   */
+  closePanels() {
+    // Which one was open, before it is not.
+    const control = this.visibility.species
+      ? this.speciesControl()
+      : this.visibility.interactor
+        ? this.interactorControl()
+        : undefined;
+
+    this.visibility.species = false;
+    this.visibility.interactor = false;
+
+    // Focus goes back to the control that opened it. Without this it falls to
+    // <body> -- measured -- and a reader who closed the panel from inside has
+    // lost their place entirely and must tab from the top of the page.
+    control?.nativeElement.focus();
   }
 
   toggleVisibility(type: string) {
