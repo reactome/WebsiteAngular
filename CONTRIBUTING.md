@@ -63,6 +63,19 @@ error anywhere.
 breaks: anything read after the first `await` is not tracked as a dependency, so
 the effect never re-runs for it. Read signals up front, then do the async work.
 
+**Do not add `--legacy-peer-deps`.** It was on every install here until
+2026-09-16, left over from the first CI pipeline, and the tree had long since
+stopped needing it -- `npm ci` resolves strictly today, 2109 packages, measured.
+
+What it cost while it stayed: a dependency bump that could not resolve at all
+passed every check, because the flag accepts an inconsistent tree. Angular's
+packages peer-depend on one another at exact versions, a group bump moved eleven
+of them and left two behind, and nothing said so until a pre-push hook ran
+`npm ci` without the flag.
+
+If an install fails on peer dependencies, the tree is wrong. Fix the versions
+rather than telling npm to stop checking.
+
 **The backend is local.** `proxy.conf.js` points at `http://localhost:8080`,
 where ContentService, AnalysisService and ExperimentDigester all run. Pointing it
 at `dev.reactome.org` instead sends every API call out through Cloudflare and
