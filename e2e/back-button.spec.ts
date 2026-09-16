@@ -46,11 +46,24 @@ test.describe('The back button', () => {
     expect(new URL(page.url()).search).toContain('tab=');
 
     let steps = 0;
-    let where = '';
+    let where = new URL(page.url()).pathname;
     while (steps < 4) {
+      const from = where;
       await page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => undefined);
-      await page.waitForTimeout(2500);
       steps++;
+
+      // Wait for the address to actually change, rather than for 2500ms and a
+      // hope. This test was reported flaky in CI, where the machine is slower
+      // than the wait assumed: a press that had not landed yet read as a press
+      // that went nowhere, so the loop spent another one and the count came out
+      // above the limit. Reported as flaky and retried into green, which is how
+      // it stayed hidden.
+      await page
+        .waitForFunction((was) => new URL(location.href).pathname !== was, from, {
+          timeout: 15_000,
+        })
+        .catch(() => undefined);
+
       where = new URL(page.url()).pathname;
       if (where === NEWS) break;
     }
