@@ -1,67 +1,70 @@
 <div class="publication-container">
   <div class="left">
-
     <div class="title">
       <div class="ribbon"></div>
-      <span class="publication-name" [innerHTML]="title() | safe"></span>
+      <span class="publication-name" [innerHTML]="heading() | safe"></span>
     </div>
 
-    @if (authors()[0]; as firstAuthor) {
+    @if (hasByline()) {
       <div class="authors-container">
         <div class="authors">
-          <!-- First author -->
-          <!--        <a [href]="environment + '/content/detail/person/'+ firstAuthor.dbId" target="_blank"> -->
-          <span>{{ firstAuthor.name }}</span>
-        <!--        </a>-->
-        <!-- Show the rest of the authors when expanded -->
-        @if (isExpanded) {
-          <ng-container class="additional-authors">
-            @for (author of authors().slice(1); track $index) {
+          @if (firstAuthor(); as firstAuthor) {
+            <!-- First author. Linked with an absolute href rather than
+                 routerLink: the person page is a website-angular route, and the
+                 pathway browser also builds standalone, where that route is on
+                 another host. -->
+            <a [href]="contentDetail + '/person/' + firstAuthor.dbId">
+              <span>{{ firstAuthor.name }}</span>
+            </a>
+            <!-- The rest of the authors. additionalAuthors() is empty while
+                 collapsed, so it carries the expand/collapse state itself. -->
+            <ng-container class="additional-authors">
+              @for (author of additionalAuthors(); track $index) {
+                <span
+                  >, <a [href]="contentDetail + '/person/' + author.dbId">{{ author.name }}</a></span
+                >
+              }
+            </ng-container>
+            <!-- ORCID-->
+            @if (orcidUrl(); as orcidUrl) {
               <span>
-                <!--          <a [href]="environment + '/content/detail/person/'+ author.dbId" target="_blank">-->
-                ; {{ author.name }}
-              <!--          </a>-->
+                <a [href]="orcidUrl" target="_blank">
+                  <mat-icon class="ref-icon" [svgIcon]="'orcid'"></mat-icon>
+                </a>
+              </span>
+            }
+            <!--et al.-->
+            @if (showEtAl()) {
+              <span>&nbsp;et al.</span>
+            }
+          } @else {
+            <!-- No structured authors, fall back to the authorName string -->
+            <span>{{ authorName() }}</span>
+          }
+          <!--year-->
+          @if (year(); as year) {
+            <span>&nbsp;{{ year }}</span>
+          }
+          <!--icon-->
+          @if (canToggle()) {
+            <span>
+              <mat-icon class="ref-icon" [svgIcon]="toggleIcon()" (click)="toggleAuthors()"></mat-icon>
             </span>
           }
-        </ng-container>
-      }
-      <!-- ORCID-->
-      @if (firstAuthor.orcidId) {
-        <span>
-          <a [href]="'https://orcid.org/' + firstAuthor.orcidId" target="_blank">
-            <mat-icon class="ref-icon" [svgIcon]="'orcid'"></mat-icon>
-          </a>
-        </span>
-      }
-      <!--et al.-->
-      @if (authors().length > 1 && !isExpanded) {
-        <span>&nbsp;et al.</span>
-      }
-      <!--year-->
-      @if (showYear()) {
-        <span>&nbsp;{{ ref().year }}</span>
-      }
-      <!--icon-->
-      @if (authors().length > 1) {
-        <span>
-          <mat-icon class="ref-icon" [svgIcon]="isExpanded ? 'collapse' : 'expand' " (click)="toggleAuthors()"></mat-icon>
-        </span>
-      }
-    </div>
+        </div>
+      </div>
+    }
   </div>
-}
-
-</div>
-<div class="right">
-  <div class="journal">
-    <span class="journal-name"> {{ ref().journal }}</span>
-  </div>
-  @if (ref().url) {
-    <div class="quote-container">
-      <a [href]="ref().url" target="_blank">
-        <mat-icon class='quote-icon' [svgIcon]="'format-quote'"></mat-icon>
-      </a>
+  <div class="right">
+    <div class="journal">
+      <span class="journal-name"> {{ journal() }}</span>
     </div>
-  }
-</div>
+    @if (citationUrl(); as citationUrl) {
+      <div class="quote-container">
+        <a [href]="citationUrl" target="_blank">
+          <mat-icon class="quote-icon" [svgIcon]="'format-quote'"></mat-icon>
+        </a>
+      </div>
+    }
+  </div>
 </div>
