@@ -59,6 +59,22 @@ www.reactome.org → 301 to reactome.org
 /admin` is a prefix match, while Apache's `LocationMatch "^/admin(/|$)"` is not.
 Found by asking the running config rather than by reading it.
 
+## Local is not runnable yet, and says so
+
+`local.conf` expects compose services named `app`, `content-service`,
+`deltasignal` and `chatbot`. **Only `app` exists** in `docker-compose.yml` today.
+So this file is the shape of the answer, not the answer: starting the site
+locally still needs those services defined.
+
+DeltaSignal and the chatbot are resolved _per request_ rather than at startup,
+through a variable and a resolver, so their absence gives a 502 on those two
+routes instead of stopping nginx entirely. Named in an upstream block they would
+be resolved at startup, and one missing service would refuse to start the whole
+site — which is a poor welcome for someone who only wanted to look at a pathway.
+
+`content-service` is deliberately **not** treated that way: a site with no content
+service is not worth starting, and failing loudly is the right answer.
+
 ## Upstreams move; that is expected
 
 `common/routes.conf` names `site`, `content`, `analysis`, `deltasignal` and
@@ -82,9 +98,18 @@ Measured on the dev box, sockets to Tomcat's 8080:
 
 Four in five connections leaked. Whether Apache or Tomcat is at fault is not
 settled and does not need to be — the pairing produces it, and it goes when
-Tomcat does. What this configuration changes is that connection handling becomes
-a deliberate choice: see the note in `common/upstream-proxy.conf`, including why
-the pool's keepalive must be shorter than the backend's.
+Tomcat does.
+
+What this configuration changes is that connection handling is chosen rather than
+inherited: every upstream sets `keepalive`, with `keepalive_timeout 10s` — shorter
+than Tomcat's 20s default, so the backend never closes a pooled socket first.
+
+That pairing is not optional. `proxy_http_version 1.1` with `Connection ""` and
+**no** `keepalive` tells the backend to hold the socket open while nginx has no
+pool to keep it in, which is a way of causing this pile rather than curing it. An
+earlier draft of these files did exactly that — described the pooling and
+configured none of it — and it was caught by reviewing the configuration against
+its own comments.
 
 ## Before any of this serves traffic
 
