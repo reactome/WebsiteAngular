@@ -15,7 +15,28 @@
         <!--        <div class="sidebar">-->
 
         <div class="species-interactor-container">
-          <div class="species" (click)="toggleVisibility('species')" [ngClass]="{ selected: visibility.species }">
+          <!--
+            A div with a click handler was unreachable without a mouse: no role,
+            no tabindex, nothing announced. Given the two attributes and the key
+            handler that make it behave as the button it already looks like,
+            rather than being rewritten as one -- these carry layout the
+            surrounding flex rules depend on, and a <button> would bring its own
+            (#211).
+          -->
+          <div
+            #speciesControl
+            class="species"
+            role="button"
+            tabindex="0"
+            [attr.aria-expanded]="visibility.species"
+            aria-controls="species-panel"
+            aria-label="Choose a species"
+            (click)="toggleVisibility('species')"
+            (keydown.enter)="toggleVisibility('species')"
+            (keydown.space)="toggleVisibility('species'); $event.preventDefault()"
+            (keydown.escape)="closePanels()"
+            [ngClass]="{ selected: visibility.species }"
+          >
             <mat-icon class="custom-icon" svgIcon="species"></mat-icon>
             <div class="species-content">
               <span>Species</span>
@@ -25,8 +46,17 @@
           </div>
           @if (!isCurator) {
             <div
+              #interactorControl
               class="interactor"
+              role="button"
+              tabindex="0"
+              [attr.aria-expanded]="visibility.interactor"
+              aria-controls="interactor-panel"
+              aria-label="Choose an interactor overlay"
               (click)="toggleVisibility('interactor')"
+              (keydown.enter)="toggleVisibility('interactor')"
+              (keydown.space)="toggleVisibility('interactor'); $event.preventDefault()"
+              (keydown.escape)="closePanels()"
               [ngClass]="{ selected: visibility.interactor }"
             >
               <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
@@ -48,11 +78,25 @@
           }
         </div>
 
-        <div [style.display]="visibility.species ? 'block' : 'none'">
+        <!--
+          Escape closes it, from anywhere inside. A panel that opens with a key
+          and can only be closed by shift-tabbing back to the control and
+          pressing it again is a trap of a mild kind -- every other disclosure on
+          the page closes this way, and a reader will try it.
+        -->
+        <div
+          id="species-panel"
+          [style.display]="visibility.species ? 'block' : 'none'"
+          (keydown.escape)="closePanels()"
+        >
           <cr-species [(pathwayId)]="pathwayId" [visibility]="visibility"></cr-species>
         </div>
 
-        <div [style.display]="visibility.interactor ? 'block' : 'none'">
+        <div
+          id="interactor-panel"
+          [style.display]="visibility.interactor ? 'block' : 'none'"
+          (keydown.escape)="closePanels()"
+        >
           <cr-interactors
             #interactors
             [cy]="diagram()?.cy"
