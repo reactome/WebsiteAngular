@@ -168,7 +168,38 @@ test.describe('Details panel deep links', () => {
   });
 });
 
-test('the Expression tab renders the Expression Atlas heatmap', async ({ page }) => {
+/**
+ * Whether EBI's Expression Atlas is answering at all.
+ *
+ * Deliberately not `serves()`: that helper treats a timeout as a failure,
+ * because for *our* backend a slow response is a broken service and must not
+ * read as a missing feature. This is somebody else's service on the public
+ * internet, where unreachable is an ordinary Tuesday and not evidence about this
+ * repository.
+ *
+ * The test below was reported flaky in CI and retried into green. A third party
+ * being down should stand the test down with a reason, not spend three attempts
+ * and pass on the one that got through.
+ */
+async function expressionAtlasAnswers(
+  request: import('@playwright/test').APIRequestContext
+): Promise<boolean> {
+  try {
+    const response = await request.get('https://www.ebi.ac.uk/gxa/json/suggestions?query=BRCA2', {
+      timeout: 20_000,
+    });
+    return response.status() < 500;
+  } catch {
+    return false;
+  }
+}
+
+test('the Expression tab renders the Expression Atlas heatmap', async ({ page, request }) => {
+  test.skip(
+    !(await expressionAtlasAnswers(request)),
+    'EBI Expression Atlas is not answering from here'
+  );
+
   // It rendered an empty box because the EBI widget's bundles live in the
   // standalone pathway-browser index.html, and the deployed app has its own,
   // which never loaded them. They are fetched when the tab opens now, so the
