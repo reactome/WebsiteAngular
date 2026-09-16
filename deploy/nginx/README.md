@@ -118,29 +118,36 @@ verified, it starts with nothing mounted at `/etc/letsencrypt`. Running the site
 on your own machine should not require obtaining a certificate for a hostname you
 do not own.
 
-Deployed environments present certificates the server already holds. This box
-needs exactly two:
+On the dev box, what is _presented_ and what _exists_ are different things, and
+the difference cost a detour worth recording:
 
-|                     |                                                             |
-| ------------------- | ----------------------------------------------------------- |
-| `beta.reactome.org` | the site                                                    |
-| `dev.reactome.org`  | the retired host, so its 503 is not a TLS error             |
-| `reactome.org`      | the same, for the two aliases the retired vhost answers for |
+| Name                  | Presents                          | Renewed by                          |
+| --------------------- | --------------------------------- | ----------------------------------- |
+| `beta.reactome.org`   | its Let's Encrypt certificate     | certbot, dns-cloudflare             |
+| `dev.reactome.org`    | **Cloudflare Origin certificate** | Cloudflare; long-lived, not certbot |
+| `reactome.org`, `www` | **Cloudflare Origin certificate** | as above                            |
 
-The wikis lived here as leftovers and were deleted on 2026-09-16, along with the
-long-expired `login.dev`.
+Established by asking the running server what it serves for each name, not by
+listing what is on disk. `001-reactome.conf` sets
+`SSLCertificateFile /etc/ssl/cloudflare/reactome-origin.crt` with the Let's
+Encrypt line commented out beneath it, so **only beta's Let's Encrypt certificate
+is actually in use**.
 
-The third is easy to talk yourself out of. Production serves `reactome.org`, so
-it is tempting to drop the certificate — but this box still _answers_ for that
-name and for `www`, because the retired vhost lists them as aliases. Drop the
-certificate and those names get beta's instead: a name mismatch, so a browser
-security warning where there is currently a clean 503. A worse retirement than
-the one being replaced.
+`reactome.org`'s Let's Encrypt certificate was deleted on 2026-09-16: nothing
+presented it, and it shared `dev.reactome.org` as a name with the certificate
+below, which made combined renewals fight over the same
+`_acme-challenge.dev.reactome.org` record and fail unpredictably.
 
-So all three certificates must renew without Apache before the cutover, not two.
-`reactome.org` was still on the apache authenticator after the first migration
-pass — worth checking rather than assuming, since the script only moves what it
-is told to.
+**`dev.reactome.org`'s Let's Encrypt certificate is kept deliberately**, even
+though nothing presents it today. The Angular site is expected to move from
+`beta.reactome.org` to `dev.reactome.org` when it is ready, and the certificate
+is there for that. It renews via `dns-cloudflare`; that renewal was silently
+broken until the token was replaced on 2026-09-16.
+
+When that move happens, the `dev.reactome.org` server block below stops being a
+503 and becomes the site — at which point it needs a certificate a browser will
+accept if anything reaches it other than through Cloudflare, which is what the
+Let's Encrypt one is for.
 
 ## Before any of this serves traffic
 
