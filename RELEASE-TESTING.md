@@ -19,8 +19,12 @@ Two suites, because they answer different questions:
   reason.
 - **`npm run e2e:release`** — _is the release right?_ Run after the release
   process has generated the database and published the files, against the site
-  being released: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`.
-  Also runs nightly against beta (`release-verification.yml`).
+  being released: `E2E_BASE_URL=https://<site> npm run e2e:release`, or the
+  **Release verification** workflow, which takes the site as an input.
+
+  It ran nightly against beta until 2026-09-15. A release is a quarterly event,
+  so a daily schedule was a poor proxy for one — and that job had not reported
+  since 10 September, killed at its own timeout every night.
 
 Everything else: `npm test && npm run check:dead && npm run check:lint`.
 
