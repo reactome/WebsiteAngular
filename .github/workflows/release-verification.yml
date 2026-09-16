@@ -55,6 +55,19 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      # An empty site is not a harmless mistake here. playwright.config.ts falls
+      # back to http://localhost:4200 and starts its own server when
+      # E2E_BASE_URL is unset, so these checks would run against a build from
+      # this checkout -- which has none of the release's data, and would fail for
+      # want of it. That is exactly the confusion the suite was split in two to
+      # end, so it stops here instead.
+      - name: Refuse to run against nothing
+        run: |
+          if [ -z "${{ inputs.base_url }}" ]; then
+            echo "::error::No site given. These checks verify a deployed release; there is nothing to check without one."
+            exit 1
+          fi
+
       # No build and no server: this runs against a deployed site, which serves
       # its own assets and routes its own API calls. That is the point -- it
       # verifies what was published, not what this checkout would produce.
