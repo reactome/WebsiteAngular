@@ -33,6 +33,25 @@ interface GraphNode {
 
 const dialog = (page: Page) => page.locator('.mat-mdc-dialog-container');
 
+/**
+ * Uploading writes to a real server, so CI must not do it casually.
+ *
+ * CI runs with `REACTOME_BACKEND: https://reactome.org`, so an upload from a test
+ * lands in **production's** custom-interactor store — which keeps what it is
+ * given indefinitely: 323 files on the dev box when it was counted, the oldest
+ * from 2019. Every CI run was adding one.
+ *
+ * It was also the reason main went red: the round trip to a production service
+ * is slower than the dialog's close assertion allows, so the test failed on
+ * timing while quietly polluting the thing it was timing.
+ *
+ * The parts that upload are therefore opt-in. Set E2E_ALLOW_UPLOADS=1 to run them
+ * against a backend you are willing to write to. Everything that does *not*
+ * upload still runs everywhere, including the case that matters most — that
+ * reading a file locally sends nothing at all.
+ */
+const uploadsAllowed = !!process.env['E2E_ALLOW_UPLOADS'];
+
 /** Open the diagram, the interactors panel, and the dialog. */
 async function openDialog(page: Page) {
   await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
@@ -212,6 +231,10 @@ test.describe("A reader's own data", () => {
   });
 
   test('is uploaded only when a shareable link is asked for', async ({ page }) => {
+    test.skip(
+      !uploadsAllowed,
+      'writes to a real interactor store; set E2E_ALLOW_UPLOADS=1 to run it'
+    );
     const sent = await addPasted(page, 'SharedOne', true);
 
     expect(
@@ -353,6 +376,10 @@ test.describe('An overlay shared by link', () => {
     });
 
   test('opens for whoever follows it, and can be put away again', async ({ page }) => {
+    test.skip(
+      !uploadsAllowed,
+      'writes to a real interactor store; set E2E_ALLOW_UPLOADS=1 to run it'
+    );
     await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
     await page.waitForTimeout(4000);
