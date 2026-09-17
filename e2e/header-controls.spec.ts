@@ -1,5 +1,5 @@
 /**
- * The Species and Interactors controls can be used without a mouse.
+ * The Species and Overlay controls can be used without a mouse.
  *
  * Both were plain `<div>`s with a click handler — measured on beta 2026-09-16:
  * `{ role: null, tabindex: null, focusable: false }`. So neither could be

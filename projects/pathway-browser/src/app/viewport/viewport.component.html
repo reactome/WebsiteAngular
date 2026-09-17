@@ -62,12 +62,14 @@
               <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
               <div class="overlay-content">
                 <!--
-                  "Interactors", not "Overlay". Overlay is the category this
-                  control belongs to; interactors are the thing it turns on, and
-                  a reader looking for them had no word to look for. Two readers
-                  in a row failed to find a feature that was working (#200).
+                  "Overlay" is deliberate: the name and this position were both
+                  decided at EBI, and production uses them. It was briefly renamed
+                  to "Interactors" (#208) on the argument that readers could not
+                  find the feature under a category name -- reverted once the
+                  provenance was known. #200 has the reasoning and why it was
+                  dropped; do not rename this without EBI.
                 -->
-                <span>Interactors</span>
+                <span>Overlay</span>
                 <!--todo: fix the space for long name-->
                 @if (currentInteractorResource().name) {
                   <span>{{ currentInteractorResource().name }}</span>
