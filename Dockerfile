@@ -13,7 +13,7 @@ COPY package*.json ./
 RUN sed -i 's/ng serve/ng serve --host 0.0.0.0 --poll 2000/g' package.json
 
 # 4. Install Dependencies
-RUN npm install --legacy-peer-deps --ignore-scripts
+RUN npm install --ignore-scripts
 
 # The dev server runs against a bind-mounted working copy, so everything it
 # writes -- .angular/cache, generated content, dist -- lands in the developer's
