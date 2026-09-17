@@ -24,15 +24,15 @@ export default defineConfig({
     // sat in the repo without being run by anything at all.
     include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
     css: false,
-    server: {
-      deps: {
-        // reactome-cytoscape-style resolves to its built output in dist/, whose
-        // ESM does `import { isArray } from 'lodash'`. lodash is CommonJS-only,
-        // so vite's interop rejects the named import ("Named export 'isArray'
-        // not found") before the test can run. Inlining the library makes vite
-        // transform it and resolve the interop.
-        inline: [/reactome-cytoscape-style/],
-      },
-    },
+    // There was a `server.deps.inline` here for reactome-cytoscape-style, whose
+    // published ESM does `import { isArray } from 'lodash'` -- CommonJS-only, and
+    // vite's interop used to reject the named import before any test could run.
+    // vite no longer needs the help: the full suite passes identically with and
+    // without it, checked on vitest 4. Removed rather than left in place, because
+    // config that does nothing is config nobody dares touch.
+    //
+    // What replaced it is a test: diagram/cytoscape-style-interop.spec.ts imports
+    // the library for real, so if an upgrade brings the problem back it fails as
+    // a broken import rather than as a mystery in whichever spec touches it first.
   },
 });
