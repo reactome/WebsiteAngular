@@ -55,11 +55,11 @@ echo "Preflight"
 # `npm ci` is the only thing that compares the lockfile against package.json; a
 # desynced lock is invisible to `npm ls` and fatal in CI.
 #
-# `--legacy-peer-deps` because that is what every workflow installs with, and a
-# gate whose job is to reproduce CI has to run CI's command. Without it this step
-# fails on a peer conflict the real build never sees -- a false alarm that trains
-# you to push with --no-verify. Issue #215 tracks removing the flag.
-step "lockfile in sync (npm ci)" npm ci --dry-run --legacy-peer-deps --no-audit --no-fund
+# No `--legacy-peer-deps` any more, here or in the workflows. It was covering one
+# conflict: this repo pinned vitest 3.2.7 while `@angular/build` wants `^4.0.8`.
+# vitest is on 4 now and the tree resolves honestly, so a peer error here is a
+# real one.
+step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
 step "format" npm run format:check
 step "types" npm run check:types
 step "lint" npm run check:lint

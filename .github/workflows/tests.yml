@@ -25,7 +25,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # No build step needed: no remaining spec imports the workspace libraries
       # from dist/, so this passes on a clean checkout.
@@ -105,7 +105,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # src/styles.scss @use's all three of these from dist/, and the
       # pathway-browser build copies reactome-cytoscape-style's assets, so the
