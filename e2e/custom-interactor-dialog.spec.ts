@@ -33,6 +33,30 @@ interface GraphNode {
 
 const dialog = (page: Page) => page.locator('.mat-mdc-dialog-container');
 
+/**
+ * Uploading writes to a real server, so CI must not do it casually.
+ *
+ * CI points at the production backend, so an upload from a test lands in
+ * **production's** custom-interactor store rather than anywhere disposable, and
+ * every CI run was adding to it.
+ *
+ * It was also the reason main went red: the round trip to a production service
+ * is slower than the dialog's close assertion allows, so the test failed on
+ * timing while quietly polluting the thing it was timing.
+ *
+ * The parts that upload are therefore opt-in. Set E2E_ALLOW_UPLOADS=1 to run them
+ * against a backend you are willing to write to. Everything that does *not*
+ * upload still runs everywhere, including the case that matters most — that
+ * reading a file locally sends nothing at all.
+ *
+ * Read as an explicit allow-list rather than for truthiness: every non-empty
+ * string is truthy in JavaScript, so a plain `!!` turned uploads *on* for
+ * E2E_ALLOW_UPLOADS=0 — the one value someone would type to mean no.
+ */
+const uploadsAllowed = ['1', 'true', 'yes'].includes(
+  (process.env['E2E_ALLOW_UPLOADS'] ?? '').trim().toLowerCase()
+);
+
 /** Open the diagram, the interactors panel, and the dialog. */
 async function openDialog(page: Page) {
   await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
@@ -145,11 +169,9 @@ test.describe('Adding your own interaction resource', () => {
 /**
  * Where a reader's own data goes.
  *
- * It used to go to the server always, with nothing saying so: parsed into
- * `ContentService/custom/<token>.bin` and addressed by a token that then appears
- * in the page's address. Traced 2026-09-15 -- a fresh upload read back by a
- * request carrying no session, a store of 323 files whose oldest is from 2019,
- * and no expiry.
+ * It used to go to the server always, with nothing saying so: uploaded, then
+ * addressed by a token that appears in the page's address. Traced 2026-09-15.
+ * A reader pasting their own data had no way to tell it had left the browser.
  *
  * A file or a paste is now read in the page instead, unless the reader asks for
  * a link they can share. Asserted on the requests rather than on the checkbox,
@@ -212,6 +234,10 @@ test.describe("A reader's own data", () => {
   });
 
   test('is uploaded only when a shareable link is asked for', async ({ page }) => {
+    test.skip(
+      !uploadsAllowed,
+      'writes to a real interactor store; set E2E_ALLOW_UPLOADS=1 to run it'
+    );
     const sent = await addPasted(page, 'SharedOne', true);
 
     expect(
@@ -353,6 +379,10 @@ test.describe('An overlay shared by link', () => {
     });
 
   test('opens for whoever follows it, and can be put away again', async ({ page }) => {
+    test.skip(
+      !uploadsAllowed,
+      'writes to a real interactor store; set E2E_ALLOW_UPLOADS=1 to run it'
+    );
     await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
     await page.waitForTimeout(4000);
