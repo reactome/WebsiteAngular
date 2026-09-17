@@ -41,8 +41,8 @@ shields a namespace's init from its own signals; and signalling the process from
 the host needs root. Take the policy on docker's terms, or confirm it the next
 time the box reboots.
 
-The image is `node:22` plus Chromium, not a Playwright image. The Playwright
-images carry three browsers and land around 3 GB; this needs one, and node:22 is
+The image is `node:24` plus Chromium, not a Playwright image. The Playwright
+images carry three browsers and land around 3 GB; this needs one, and node:24 is
 already here as the app image's base, so the layers are shared. It installs four
 packages rather than the site's whole tree, and reads their versions out of the
 root `package.json` at build time rather than restating them: dependabot only

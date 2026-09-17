@@ -13,9 +13,14 @@
 #   * a probe treating a refused connection as
 #     a failure rather than an absent service     (this machine runs a render service)
 #
-# So this reproduces CI's conditions: a dry `npm ci`, the full gate sequence, and
-# an end-to-end smoke against `ng serve` with a public backend and the render
-# service pointed at a dead port.
+# So this reproduces CI's conditions: a dry `npm ci` with CI's own flags, the full
+# gate sequence, and an end-to-end smoke against `ng serve` with a public backend
+# and the render service pointed at a dead port.
+#
+# Run it on the Node in `.nvmrc`. The lockfile check is the one step sensitive to
+# the npm version -- npm 11 records optional platform packages that npm 10 leaves
+# out -- so on a different Node it reports a desync CI will not see, and misses
+# one CI would. `nvm use` first.
 #
 #   npm run preflight          # everything (a few minutes)
 #   npm run preflight -- fast  # skip the end-to-end smoke
@@ -49,7 +54,12 @@ echo "Preflight"
 
 # `npm ci` is the only thing that compares the lockfile against package.json; a
 # desynced lock is invisible to `npm ls` and fatal in CI.
-step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
+#
+# `--legacy-peer-deps` because that is what every workflow installs with, and a
+# gate whose job is to reproduce CI has to run CI's command. Without it this step
+# fails on a peer conflict the real build never sees -- a false alarm that trains
+# you to push with --no-verify. Issue #215 tracks removing the flag.
+step "lockfile in sync (npm ci)" npm ci --dry-run --legacy-peer-deps --no-audit --no-fund
 step "format" npm run format:check
 step "types" npm run check:types
 step "lint" npm run check:lint
