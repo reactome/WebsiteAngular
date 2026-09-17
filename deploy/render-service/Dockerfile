@@ -1,11 +1,11 @@
 # The headless render service: diagram figures for documents, drawn by the site's
 # own renderer.
 #
-# Built from node:22 plus Chromium rather than from a Playwright image. The
+# Built from node:24 plus Chromium rather than from a Playwright image. The
 # Playwright images carry three browsers and land around 3 GB; this needs one
-# browser, and node:22 is already on the box as the app image's base, so its
+# browser, and node:24 is already on the box as the app image's base, so its
 # layers are shared rather than downloaded again.
-FROM node:22
+FROM node:24
 
 # Where the browser goes.
 #

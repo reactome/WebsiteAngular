@@ -132,8 +132,8 @@
     "wait-on": "^8.0.1"
   },
   "engines": {
-    "node": "22.x",
-    "npm": ">=10 <11"
+    "node": ">=24.0.0",
+    "npm": ">=11"
   },
   "lint-staged": {
     "*.{ts,js,mjs,html,scss,css,json,md,yml,yaml}": [
