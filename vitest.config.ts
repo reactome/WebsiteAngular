@@ -24,15 +24,31 @@ export default defineConfig({
     // sat in the repo without being run by anything at all.
     include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
     css: false,
-    // There was a `server.deps.inline` here for reactome-cytoscape-style, whose
-    // published ESM does `import { isArray } from 'lodash'` -- CommonJS-only, and
-    // vite's interop used to reject the named import before any test could run.
-    // vite no longer needs the help: the full suite passes identically with and
-    // without it, checked on vitest 4. Removed rather than left in place, because
-    // config that does nothing is config nobody dares touch.
+    // reactome-cytoscape-style's published ESM does `import { isArray } from
+    // 'lodash'`, and lodash is CommonJS only, so vite's interop rejects the named
+    // import before any test touching the library can run. Inlining it makes vite
+    // transform the library and resolve the interop.
     //
-    // What replaced it is a test: diagram/cytoscape-style-interop.spec.ts imports
-    // the library for real, so if an upgrade brings the problem back it fails as
-    // a broken import rather than as a mystery in whichever spec touches it first.
+    // **A local run can pass without this.** `tsconfig.json` maps the package to
+    // `dist/reactome-cytoscape-style`, so on a machine that has built the
+    // libraries the import resolves to that build, which does not need the help.
+    // CI runs `npm ci` and `npm test` with no `dist/`, resolves to the
+    // node_modules copy, and fails with `Named export 'isArray' not found`. I
+    // removed this option on the strength of a local run and it failed CI on four
+    // spec files -- two of which had nothing to do with the change.
+    //
+    // diagram/cytoscape-style-interop.spec.ts imports the library directly, so
+    // this is now covered by a test rather than only by whichever spec happens to
+    // pull the library in first.
+    server: {
+      deps: {
+        // reactome-cytoscape-style resolves to its built output in dist/, whose
+        // ESM does `import { isArray } from 'lodash'`. lodash is CommonJS-only,
+        // so vite's interop rejects the named import ("Named export 'isArray'
+        // not found") before the test can run. Inlining the library makes vite
+        // transform it and resolve the interop.
+        inline: [/reactome-cytoscape-style/],
+      },
+    },
   },
 });
