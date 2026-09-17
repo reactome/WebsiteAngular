@@ -10,7 +10,8 @@
  * key — rather than by checking the attributes are present. The attributes are
  * the mechanism; reaching the panel is the thing.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 const PATHWAY = 'R-HSA-1368108';
 const BOOT_TIMEOUT = 90_000;

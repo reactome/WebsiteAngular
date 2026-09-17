@@ -1,5 +1,6 @@
 import { serves } from './fixtures/serves';
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Contents of the panels curators read, rather than the presence of the panels.
 // `release-checklist.spec.ts` already asserts the six tabs exist; these assert

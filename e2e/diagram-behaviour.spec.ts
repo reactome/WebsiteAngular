@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Diagram behaviours from the release checklist that are not about a single
 // pathway drawing: the key being on screen, and the species switch still drawing

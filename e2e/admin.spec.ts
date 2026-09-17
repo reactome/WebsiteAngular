@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Smoke test for the TinaCMS admin shell at /admin/index.html.
 //

@@ -15,7 +15,8 @@
  * identifiers per line. Three columns are refused; without the header the first
  * pair is read as the header and silently dropped.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 const PATHWAY = 'R-HSA-1368108';
 const BOOT_TIMEOUT = 90_000;

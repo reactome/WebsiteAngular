@@ -140,6 +140,22 @@ export class InteractorService {
 
   public prefetchResourceCounts(cy: cytoscape.Core, resources: string[]): void {
     const pathway = this.urlState.pathwayId() ?? null;
+
+    // Forget the previous pathway's tally *here*, before deciding what to ask
+    // for. `rememberResourceCount` used to own this and it never ran: the loop
+    // below skips any resource it already has an answer for, so with a full cache
+    // nothing was fetched, so nothing was stored, so the clear it owned never
+    // happened. The counts stayed on the first pathway's numbers for the rest of
+    // the session -- reported as "the number of interactors for each overlay does
+    // not update" when changing pathways.
+    if (pathway !== this.countsForPathway) {
+      this.countsForPathway = pathway;
+      this.resourceCounts.set({});
+      // In-flight requests belong to the pathway being left. Their answers must
+      // not be filed against this one, and their resources must be askable again.
+      this.prefetching.clear();
+    }
+
     for (const resource of resources) {
       // Answered, or already being asked. Without the second test this ran
       // twice -- the resource list and the graph each start it, and neither
@@ -355,7 +371,13 @@ export class InteractorService {
     this.localResources.delete(name);
   }
 
-  /** Note what a resource held here, forgetting the tally if the pathway changed. */
+  /**
+   * Note what a resource held here.
+   *
+   * The pathway guard below is a backstop, not the mechanism: prefetching does
+   * the clearing, because it is the only thing that runs on every pathway change
+   * whether or not a count is subsequently stored.
+   */
   private rememberResourceCount(pathway: string | null, resource: string, count: ResourceTally) {
     if (pathway !== this.countsForPathway) {
       this.countsForPathway = pathway;

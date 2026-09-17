@@ -16,7 +16,8 @@
  * Measured on R-HSA-1368108 with IntAct: 112 elements, then 121 after the
  * resource, then 143 after one occurrence was opened.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 const PATHWAY = 'R-HSA-1368108'; // BMAL1:CLOCK,NPAS2 activates circadian gene expression
 const BOOT_TIMEOUT = 90_000;

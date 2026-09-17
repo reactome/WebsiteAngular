@@ -69,7 +69,13 @@ step "unit tests" npm test
 if [ "$mode" != "fast" ]; then
   echo
   echo "  End-to-end, in CI's configuration"
-  echo "    ng serve + REACTOME_BACKEND=https://reactome.org + no render service"
+  echo "    ng serve + recorded fixtures + no render service"
+  # REACTOME_BACKEND is a closed port on purpose. Backend data comes from the
+  # recordings in e2e/har, so nothing here talks to a server -- and if a request
+  # ever escapes them it fails at once instead of quietly reaching production.
+  # This step used to name https://reactome.org, which meant the pre-push hook
+  # called the public site on every push by every developer, not just CI.
+  #
   # RENDER_TARGET at a closed port is what makes CI's condition reproducible here:
   # this host runs a render service and CI does not, so the "absent service" path
   # is never otherwise exercised locally.
@@ -78,7 +84,7 @@ if [ "$mode" != "fast" ]; then
   # is what the probe change broke. Chosen because each caught a real failure --
   # pathway-browser.spec.ts was in here first and caught neither.
   step "diagram + download smoke" env \
-    REACTOME_BACKEND=https://reactome.org \
+    REACTOME_BACKEND=http://127.0.0.1:9 \
     RENDER_TARGET=http://127.0.0.1:1 \
     npx playwright test e2e/diagram-behaviour.spec.ts e2e/downloads.spec.ts --project=code --reporter=line
 fi

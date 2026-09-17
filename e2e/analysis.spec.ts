@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // GSAServer is a shared production service, and this suite runs often. Exactly
 // one test below calls it for real -- that is the integration check worth

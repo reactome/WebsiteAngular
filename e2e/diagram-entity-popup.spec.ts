@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Right-click inspector on diagram entities (issue #122).
 //
