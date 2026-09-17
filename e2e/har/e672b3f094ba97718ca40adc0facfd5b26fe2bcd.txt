@@ -1,1 +1,0 @@
-http://localhost:8080/ExperimentDigester/experiments/1/sample?omitNulls=true&included=9&included=2&included=3&included=4&included=5&included=6&included=7

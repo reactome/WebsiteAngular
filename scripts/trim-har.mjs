@@ -53,6 +53,11 @@ for (const name of readdirSync(HAR_DIR).filter((f) => f.endsWith('.har'))) {
 let freed = 0;
 let dropped = 0;
 for (const name of readdirSync(HAR_DIR).filter((f) => f.endsWith('.json'))) {
+  // `<test>.api.json` is a probe recording written by e2e/support/backend.ts, not
+  // a response body, and no HAR references it. Without this it looked exactly
+  // like an orphan and was deleted on every record -- silently removing the thing
+  // that stops fourteen tests skipping themselves.
+  if (name.endsWith('.api.json')) continue;
   if (referenced.has(name)) continue;
   const file = path.join(HAR_DIR, name);
   freed += statSync(file).size;

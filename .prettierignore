@@ -31,3 +31,8 @@ projects/website-angular/content
 # Without this, anyone who has run the CMS locally fails format:check on a file
 # they never wrote.
 projects/website-angular/public/admin/index.html
+
+# Recorded backend responses (e2e/support/backend.ts). Machine-written, read only
+# by the replayer, and reformatting them would put thousands of lines of churn in
+# every re-record's diff.
+e2e/har/

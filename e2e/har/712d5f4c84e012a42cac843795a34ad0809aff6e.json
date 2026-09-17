@@ -1,1 +1,0 @@
-{"code":404,"reason":"NOT_FOUND","url":"http://localhost:8080/ContentService/exporter/diagram/R-HSA-109581.jpeg","messages":["Could not read diagram json for pathway /usr/local/reactomes/Reactome/production/Website/static/download/current/diagram/R-HSA-109581.json"],"targets":null}

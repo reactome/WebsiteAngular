@@ -53,6 +53,25 @@ npx ng serve --port 4253 --host 127.0.0.1
 E2E_RECORD=1 E2E_BASE_URL=http://127.0.0.1:4253 npx playwright test --project=code
 ```
 
+## Running less than all of it
+
+The full suite is 154 tests and several of them open a pathway diagram and wait
+for it to draw, so a whole run is minutes. Most of the time you do not want one:
+
+```bash
+npm run e2e:changed       # only specs changed against the base branch
+npm run e2e:failed        # only what failed last time
+npm run e2e -- e2e/interactors.spec.ts          # one file
+npm run e2e -- --grep "pathway on screen"       # one test, by name
+```
+
+`e2e:changed` is the usual one while developing: it picks the spec files git says
+you touched. `e2e:failed` is the usual one while fixing.
+
+Run the whole suite when you are about to open a pull request, not while you are
+still working — and note that the pre-push hook (`scripts/preflight.sh`) already
+runs a deliberately small smoke rather than everything, for the same reason.
+
 ## Two suites, on purpose
 
 **`e2e/*.spec.ts` — the code suite.** Runs on every push and pull request, and is
