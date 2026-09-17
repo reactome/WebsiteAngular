@@ -1,5 +1,5 @@
 import { serves } from './fixtures/serves';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Coverage for the content pages and shared navigation chrome.
 //

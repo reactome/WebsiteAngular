@@ -11,7 +11,8 @@
  * reads. Asserting on the button in the DOM rather than on the flag, because the
  * flag being right is not the thing that matters.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 const PATHWAY = 'R-HSA-109606';
 const BOOT_TIMEOUT = 90_000;

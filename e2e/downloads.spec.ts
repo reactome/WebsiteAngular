@@ -1,5 +1,6 @@
 import { serves } from './fixtures/serves';
-import { test, expect, type Page, type Download } from '@playwright/test';
+import { type Page, type Download } from '@playwright/test';
+import { test, expect } from './support/backend';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 

@@ -19,7 +19,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
-  workers: process.env['CI'] ? 1 : undefined,
+  // One worker while recording, whatever the caller asked for. Fixtures are one
+  // HAR per spec file and `fullyParallel` spreads a single file's tests across
+  // workers, so parallel recording has several contexts writing the same path and
+  // the last one to close wins -- silently dropping entries, which then surface
+  // as aborted requests on replay. Enforced here rather than in the npm script so
+  // it also holds for `E2E_RECORD=1 npx playwright test` run by hand.
+  workers: process.env['E2E_RECORD'] === '1' ? 1 : process.env['CI'] ? 1 : undefined,
   reporter: 'html',
   use: {
     baseURL,

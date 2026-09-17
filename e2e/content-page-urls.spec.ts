@@ -12,7 +12,7 @@
  * Both halves are covered here: the content pages still stand down, and the
  * pathway browser still writes its URL when a parameter happens to say "content".
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/backend';
 
 test.describe.configure({ timeout: 4 * 60 * 1000 });
 

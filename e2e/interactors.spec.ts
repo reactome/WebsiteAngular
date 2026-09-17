@@ -21,7 +21,8 @@
 // `interactor-threshold.spec.ts` uses, and one that does not depend on where the
 // diagram happens to be panned. That the reader is *told* when they are too small
 // to see is asserted there too, under "An overlay that cannot be seen yet".
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 const PATHWAY = 'R-HSA-1368108'; // BMAL1:CLOCK,NPAS2 activates circadian gene expression
 

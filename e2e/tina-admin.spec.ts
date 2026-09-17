@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // The content editor, and the one thing about it that matters more than the
 // editing: it must not be reachable from the public internet. Authors reach it
