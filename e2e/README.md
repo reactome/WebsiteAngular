@@ -53,11 +53,29 @@ npx ng serve --port 4253 --host 127.0.0.1
 E2E_RECORD=1 E2E_BASE_URL=http://127.0.0.1:4253 npx playwright test --project=code
 ```
 
-## What is not recorded
+## Two suites, on purpose
 
-- **`e2e/release/**`** — the release checklist. Its whole job is to check a
-  running deployment, so it takes `E2E_BASE_URL` and hits a real host. It is a
-  separate Playwright project and is not part of `npm run e2e`.
+**`e2e/*.spec.ts` — the code suite.** Runs on every push and pull request, and is
+a **spot check**: does the thing the change touched still work for a reader. It
+should not sweep the API. Every page it opens costs recorded data, and a test
+that opens a diagram to assert something about a button has paid for the whole
+pathway payload to do it. Prefer the lightest page that can show the behaviour.
+
+**`e2e/release/` — the release checklist.** Run once per release cycle, after
+the release process has generated the data and **before the new database moves to
+production**. This one is allowed to be comprehensive, because it is answering a
+different question: is _this release_ right, on a real deployment.
+
+It is **never recorded**. Its whole job is to check a running host, so fixtures
+would make it prove nothing. It takes `E2E_BASE_URL`, is a separate Playwright
+project, and is not part of `npm run e2e`:
+
+```bash
+E2E_BASE_URL=https://<the host under test> npm run e2e:release
+```
+
+## What else is not recorded
+
 - **Hosts other than the three above.** Downloads, the GSA server and the
   third-party PSICQUIC resources still go out over the network. Worth closing
   later; the backend was the large share.

@@ -20,10 +20,20 @@
  *
  * So entries are matched on **method, path and query**, and the origin is
  * ignored. Record wherever it is convenient; replay wherever CI happens to serve.
+ *
+ * One recording per **test**, not per spec file. Playwright writes the HAR when a
+ * browser context closes, and every test gets its own context -- so tests sharing
+ * a file overwrite each other rather than merging, and the last one wins. A spec
+ * whose final test skips would close having requested nothing and leave an empty
+ * file: `custom-interactor-dialog` recorded 0 entries for 9 tests that way, and
+ * `content-pages` 5 for 18. Every recording lives in one directory even so,
+ * because Playwright names response bodies by their content hash -- identical
+ * payloads across tests collapse to a single file only while they are siblings.
  */
 import { test as base, expect } from '@playwright/test';
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -71,13 +81,26 @@ function load(har: string): Map<string, HarEntry> {
   return index;
 }
 
+/**
+ * `<spec>--<test title>`, readable so a diff says which test changed, and slugged
+ * so it is a filename. The short digest keeps two tests whose titles slug to the
+ * same thing from sharing a recording.
+ */
+function recordingName(testInfo: { file: string; titlePath: string[] }): string {
+  const spec = path.basename(testInfo.file).replace(/\.spec\.ts$/, '');
+  const title = testInfo.titlePath.slice(1).join(' ');
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
+  const digest = createHash('sha1').update(title).digest('hex').slice(0, 6);
+  return `${spec}--${slug}-${digest}`;
+}
+
 export const test = base.extend({
   context: async ({ context }, use, testInfo) => {
-    // One recording per spec file rather than per test: the specs share most of
-    // their requests, and per-test files multiply the same pathway payload by
-    // every case that opens it.
-    const spec = path.basename(testInfo.file).replace(/\.spec\.ts$/, '');
-    const har = path.join(testInfo.project.testDir, 'har', `${spec}.har`);
+    const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });

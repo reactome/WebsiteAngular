@@ -28,7 +28,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test --project=code",
-    "e2e:record": "E2E_RECORD=1 playwright test --project=code",
+    "e2e:record": "node scripts/record-e2e.mjs",
     "e2e:ui": "playwright test --ui",
     "serve:ssr:website": "node dist/website-angular/server/server.mjs",
     "serve:prod": "node projects/website-angular/src/scripts/serve-prod.js",
