@@ -65,12 +65,12 @@ test.describe('Interactor overlay', () => {
 
     expect(await drawnBadges(page), 'nothing before a resource is chosen').toBe(0);
 
-    // The control says what it turns on. It said "Overlay" -- the category it
-    // belongs to, not the thing -- and two readers in a row failed to find a
-    // feature that was working (#200). Asserted here because a rename is exactly
-    // the kind of change that gets undone by accident.
+    // "Overlay" is the name EBI chose, and production uses it. Asserted because
+    // it was renamed once already (#208, reverted): the argument that a reader
+    // cannot find interactors under a category name is a real one, but it is not
+    // ours to settle. Changing this means talking to EBI first (#200).
     const control = page.locator('.species-interactor-container .interactor');
-    await expect(control).toContainText('Interactors');
+    await expect(control).toContainText('Overlay');
 
     await control.click();
     const panel = page.locator('cr-interactors');
