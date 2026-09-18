@@ -1,0 +1,143 @@
+.search-answer {
+  margin: 0 0 1.25rem;
+}
+
+.search-answer__ask {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  background: var(--favth-color-bg-alt, #f5f7f9);
+  border: 1px solid var(--favth-color-border, #d8dee4);
+  border-radius: 4px;
+  color: inherit;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--favth-color-bg-hover, #eceff2);
+  }
+}
+
+.search-answer__ask-label {
+  font-weight: 600;
+}
+
+.search-answer__ask-note,
+.search-answer__caveat {
+  font-size: 0.82rem;
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+.search-answer__waiting {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  background: var(--favth-color-bg-alt, #f5f7f9);
+  border-radius: 4px;
+}
+
+.search-answer__panel {
+  padding: 0.9rem 1rem 0.75rem;
+  border: 1px solid var(--favth-color-border, #d8dee4);
+  border-left: 3px solid var(--favth-color-primary, #0b6ba8);
+  border-radius: 4px;
+  background: var(--favth-color-bg, #fff);
+}
+
+.search-answer__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.search-answer__prose {
+  // The prose is Markdown the model wrote, so its shape is not ours to predict.
+  // Keep block spacing tight and let headings sit below the panel's own.
+  font-size: 0.95rem;
+  line-height: 1.5;
+
+  :first-child {
+    margin-top: 0;
+  }
+
+  :last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0.75rem 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  p,
+  ul,
+  ol {
+    margin: 0 0 0.6rem;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.25rem;
+  }
+
+  code {
+    padding: 0.05rem 0.25rem;
+    font-size: 0.88em;
+    background: var(--favth-color-bg-alt, #f5f7f9);
+    border-radius: 3px;
+  }
+
+  pre {
+    padding: 0.5rem 0.65rem;
+    overflow-x: auto;
+    background: var(--favth-color-bg-alt, #f5f7f9);
+    border-radius: 3px;
+  }
+}
+
+.search-answer__sources {
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--favth-color-border, #d8dee4);
+}
+
+.search-answer__sources-heading {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.search-answer__sources-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+
+  li {
+    margin-bottom: 0.15rem;
+  }
+}
+
+.search-answer__incomplete {
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  background: var(--favth-color-bg-alt, #f5f7f9);
+  border-left: 2px solid var(--favth-color-warning, #b8860b);
+  border-radius: 2px;
+}
