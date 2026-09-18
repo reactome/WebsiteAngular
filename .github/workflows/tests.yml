@@ -138,6 +138,15 @@ jobs:
           REACTOME_BACKEND: http://127.0.0.1:9
         run: npm run e2e -- --shard=${{ matrix.shard }}/4
 
+      # A test that fails and then passes is reported flaky and the build goes
+      # green, with the fact only in the log. This puts it in the job summary
+      # and ratchets the count, the same way check:lint and check:dead work.
+      # Runs even when the suite failed, because a failing run still has
+      # flakiness worth seeing.
+      - name: Report flaky tests
+        if: ${{ !cancelled() }}
+        run: node scripts/check-flaky.mjs playwright-report/report.json
+
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
