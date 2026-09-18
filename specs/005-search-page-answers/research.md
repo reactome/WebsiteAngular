@@ -103,8 +103,24 @@ about one question in seven returns `nothing_found` in ~4.5s. An error for an
 ordinary outcome would train readers to distrust the feature. A reader who asked
 an off-topic question and got a quiet nothing has been served correctly.
 
-**Rejected**: "no answer found" text. It reads as a fault for what is a normal
-and frequent outcome, and it is noise on a page whose actual results are fine.
+**Rejected**: "no answer found" text _before_ the reader asks. It reads as a
+fault for what is a normal and frequent outcome, and it is noise on a page whose
+actual results are fine.
+
+**Amended 18 Sep 2026, after review.** "Render nothing" is right for a reader
+who never asked, and wrong once they have clicked. Taken literally it produced
+an unresponsive control: the invitation returned when nothing was on screen, a
+second click hit the cache _before_ `asking` was ever set, and so absolutely
+nothing changed -- no status line, no panel, no button change. A dead button is
+worse than the quiet nothing the decision was protecting.
+
+So a settled non-answer now gets one neutral line -- "No AI answer for this
+search. The results below are unaffected." -- and no invitation to re-ask
+something already settled. Only `nothing_found` and `refused` count as settled;
+`failed` is a fault, keeps the button, and is not cached, so asking again really
+re-asks rather than replaying a truncation.
+
+This is feedback that the click worked, not an error about the question.
 
 ## D5. The panel is opt-in per query, behind a click
 
@@ -151,6 +167,29 @@ Calling a capped list "Sources" would overstate it.
 
 **Rejected**: passing the text through as HTML. The contract does not promise
 HTML, so accepting it would be accepting whatever arrives.
+
+**Citations arrive before any prose, and there may be none.** Both are
+structural, confirmed by the chatbot team from their code and then measured.
+
+Citations come only from `on_retriever_end`, and token events are gated on the
+flag that same event sets -- retrieval completing is how they tell the answer's
+tokens from the query-expander's, which run at the same node with identical
+metadata. So the source list is _complete_ by the time the first token lands:
+across five questions, the last citation was event 11 and the first token event
+12, with no interleaving.
+
+Zero citations is an ordinary good answer, not a failure. Only the Reactome and
+disease-variant collections carry stable identifiers; the userguide collection
+indexes documentation pages whose metadata is a URL, which cannot become an
+`{st_id, display_name}` citation. Measured: "How do I use the pathway browser?"
+returned **0 citations and 452 tokens**.
+
+It also correlates with the _fastest_ answers -- that same question reached
+first token in 3.3s against a 10.0s median. So the no-sources case is common
+rather than exotic, and it is precisely the case that the handful of questions
+one would naturally test with does not produce. Hence a test for it on both
+levels, and the sources block rendering nothing at all rather than an empty
+heading.
 
 ---
 

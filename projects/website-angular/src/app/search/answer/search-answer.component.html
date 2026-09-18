@@ -9,6 +9,15 @@
         <span class="search-answer__ask-label">Ask Reactome AI about "{{ query() }}"</span>
         <span class="search-answer__ask-note">Takes around ten seconds. Results below are ready now.</span>
       </button>
+    } @else if (noAnswer()) {
+      <!--
+        Feedback that the ask completed, not an error. D4 says an outcome with
+        no answer renders nothing, and that holds for a reader who never asked
+        -- but once they have clicked, showing nothing leaves the click looking
+        broken, and a second click hits the cache and changes nothing at all.
+        One neutral line, and no invitation to re-ask something settled.
+      -->
+      <p class="search-answer__none" role="status">No AI answer for this search. The results below are unaffected.</p>
     } @else if (asking()) {
       <!--
         A status line rather than a spinner: the contract is explicit that a
@@ -34,7 +43,7 @@
             what arrived wrong.
           -->
           <p class="search-answer__incomplete" role="status">
-            This answer stopped before it finished. What is shown is complete as far as it goes.
+            This answer stopped early, which is unusual. What is above is worth reading; you can ask again for the rest.
           </p>
         }
 

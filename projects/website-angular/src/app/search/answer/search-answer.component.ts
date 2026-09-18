@@ -12,7 +12,7 @@
  * No spinner that implies an imminent answer -- the contract is explicit that
  * ten seconds is the wrong latency for one.
  */
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { marked } from 'marked';
 import { AnswerService } from './answer.service';
 
@@ -39,25 +39,37 @@ export class SearchAnswerComponent {
   readonly citations = this.answers.citations;
 
   /**
-   * True once the reader has asked about *this* query.
+   * Asked, and there is genuinely no answer -- as distinct from not yet asked.
    *
-   * Comparing the asked question with the current one is what makes a new
-   * search put the panel away: the answer to the previous query must not sit
-   * above results for a different one.
+   * Only `nothing_found` and `refused` count, because those are settled
+   * properties of the question and are cached. `failed` is a fault, so it is
+   * left to the button below, where asking again really re-asks.
    */
-  readonly askedThisQuery = computed(
-    () => this.answers.question() !== '' && this.answers.question() === this.query().trim()
-  );
+  readonly noAnswer = computed(() => {
+    const state = this.answers.state();
+    return !this.visible() && (state === 'nothing_found' || state === 'refused');
+  });
 
   /**
-   * The invitation comes back whenever there is nothing on screen.
+   * The invitation, shown when asking again could achieve something.
    *
-   * Hiding it on `askedThisQuery` alone was wrong: an outcome with no prose --
-   * `nothing_found`, a refusal -- left the button gone and no panel in its
-   * place, so the reader's click visibly did nothing at all and could not be
-   * retried. A repeat click is free anyway, since every outcome is cached.
+   * Three mistakes this has had to fix in turn. Hiding it once this query had
+   * been asked left an outcome with no prose with neither button nor panel, so
+   * the click visibly did nothing. Showing it whenever nothing was on screen
+   * then made it a *dead* button: a second click on a cached `nothing_found`
+   * returns from the cache before `asking` is ever set, so absolutely nothing
+   * changes on screen -- an unresponsive control, which is worse than the quiet
+   * nothing it was trying to preserve. And an answer that stopped early is the
+   * one case where re-asking is most clearly worth it, yet `visible()` is true
+   * then, so the button would have stayed hidden over a half answer.
+   *
+   * So: not while asking, not when the question has a settled non-answer, and
+   * otherwise whenever there is nothing to show or what is shown stopped early.
    */
-  readonly showButton = computed(() => this.available && !this.visible() && !this.asking());
+  readonly showButton = computed(
+    () =>
+      this.available && !this.asking() && !this.noAnswer() && (!this.visible() || this.incomplete())
+  );
 
   /**
    * The prose, as Markdown.
@@ -81,18 +93,6 @@ export class SearchAnswerComponent {
     const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     return marked.parse(escaped, { async: false }) as string;
   });
-
-  constructor() {
-    // A new search abandons an answer in flight. Closing the connection is the
-    // cancellation, so this also stops the server working on something nobody
-    // is waiting for.
-    effect(() => {
-      const query = this.query().trim();
-      if (query && this.answers.question() && this.answers.question() !== query) {
-        this.answers.reset();
-      }
-    });
-  }
 
   ask(): void {
     void this.answers.ask(this.query());
