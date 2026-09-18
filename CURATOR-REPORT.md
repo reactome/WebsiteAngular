@@ -26,7 +26,7 @@ Last updated: 2026-08-22
 | [#143](https://github.com/reactome/WebsiteAngular/issues/143) | Same as above, specifically while navigating between pathways with a flag active                                                                                                                     | As above                                                                                                                                                                                                                                                      |
 | [#154](https://github.com/reactome/WebsiteAngular/issues/154) | Right-click a complex or set after running an analysis: components are listed and the ones in your data are marked                                                                                   | Closed on the basis that the right-click panel delivers this. **Reopen if "within a diagram" meant drawing components as nodes inside the canvas** — that is a much larger piece, and the old GWT browser does not do it either                               |
 | [#81](https://github.com/reactome/WebsiteAngular/issues/81)   | Community → Events: confirm every attachment you expect is present                                                                                                                                   | All 5 "Poster" links on the page resolve, but if a specific event is missing an attachment we have not spotted it                                                                                                                                             |
-| **PowerPoint**                                                | Download a diagram as **PPTX** and open it in real PowerPoint. Every compartment, connector, entity and sub-pathway tint should be its own shape you can select and move, with no conversion step    | **We cannot test the opening — there is no PowerPoint on the build machine.** The package is checked structurally, its element order matches production's own file, and 635 shapes come out of R-HSA-109606; "opens in PowerPoint" is still a different claim |
+| **PowerPoint**                                                | Download a diagram as **PPTX** and open it in real PowerPoint. Every compartment, connector, entity and sub-pathway tint should be its own shape you can select and move, with no conversion step    | **We cannot test the opening — there is no PowerPoint on the build machine.** The package is checked structurally, its element order matches production's own file, and 974 shapes come out of R-HSA-109606; "opens in PowerPoint" is still a different claim |
 | **GIF**                                                       | Download a diagram as **GIF** with an expression analysis active. It should animate one frame per sample and look like the current site                                                              | New: it used to come from the old Java exporter, which is why it looked like the old diagrams. Also tell us whether ~1 MB for four samples is acceptable, and whether 1 second per sample is the right pace                                                   |
 | [#141](https://github.com/reactome/WebsiteAngular/issues/141) | **Animated SVG**: open the downloaded file in a browser or Inkscape, then click the play/pause button, click any segment of the timeline to jump to that sample, and hover a segment to see its name | New controls. They need the file **opened as a document** — inside an `<img>`, or in a viewer that blocks scripts, the buttons are inert by design and hovering the button still pauses                                                                       |
 | [#140](https://github.com/reactome/WebsiteAngular/issues/140) | Flag a gene in the **genome-wide view**, with and without an analysis running                                                                                                                        | Flagging is now an outline instead of a fill, so the analysis colours survive underneath. Previously a flagged pathway lost its result colour, and without an analysis everything else was washed out                                                         |
@@ -235,12 +235,37 @@ rather than parity:
 - The badge is not drawn below 0.6 zoom, where it is six pixels holding a
   two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
 
+**The count beside each resource now follows the pathway on screen.** It did not:
+the tally was cleared only when a new count was stored, and nothing was ever
+stored while the cache was full, so the second pathway you opened kept the first
+one's numbers for the rest of the session. Reported from the browser and fixed —
+worth one look, because the numbers were plausible rather than obviously wrong.
+
+**Your selection survives opening a pathway from inside the diagram.** Searching
+for an entity and then double-clicking a pathway box replaced your selection with
+the pathway you had just left, so a searched entity came back unselected. It is
+kept now. The flag was never the problem — that always survived.
+
+**Downloading an illustration as SVG, PNG or JPEG works again on beta.** It had
+been returning nothing at all: the exporter reads those from a directory on the
+dev box that had been cleared to reclaim space, so the request 404'd while
+ordinary diagram downloads carried on working (those are drawn in your browser,
+not on the server). Restored for the pathways we test with. **If you hit an
+illustration that still fails, that is why** — it is a gap in what is cached on
+this machine, not a fault in the site. Issue #230 carries the proper fix.
+
+**One thing to know before asking for analysis reports by email.** If you leave
+the address box empty, the analysis still runs and the reports are still made —
+but no mail is sent and nothing says so. We do not enforce the address on our
+side (#238), and the sending happens on a server we do not control (#168). So if
+you want the email, check the box has your address in it before submitting.
+
 **The interactor overlay now survives you moving around.** Choosing a resource
 and then opening another pathway used to lose it, including coming back to the
 pathway you chose it on — so the three clicks had to be repeated every time. It
 persists now, and a link carrying it opens with it drawn.
 
-**The whole overlay is reachable from the keyboard.** The Species and Interactors
+**The whole overlay is reachable from the keyboard.** The Species and Overlay
 controls could not be focused or activated without a mouse, and were announced to
 a screen reader as nothing at all. Both are operable now — Tab to them, Enter or
 Space to open, Escape to close — and closing returns you to where you were.
