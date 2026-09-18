@@ -36,24 +36,29 @@
         <p class="search-answer__challenge-note">One quick check that you are a person, then the answer.</p>
         <div #turnstile class="search-answer__widget"></div>
       </div>
-    } @else if (asking()) {
-      <!--
-        A status line rather than a spinner: the contract is explicit that a
-        spinner implying an imminent answer is wrong at this latency. Polite so
-        a screen reader announces it without interrupting.
-      -->
+    } @else if (asking() && !visible()) {
       <!--
         Progress, not a spinner. The message changes when something real has
         happened -- citations arrive before any prose, so a source count is a
         milestone rather than reassurance -- and the elapsed count is measured
         rather than guessed, because the spread by question type is too wide to
         fake a percentage honestly.
+
+        `&& !visible()` because the stream is still open while prose arrives:
+        the answer begins at ~10s and `done` lands at ~16s, so without this a
+        progress bar would sit above text the reader is already reading for
+        several seconds. Once there is prose, the prose is the progress.
       -->
       <div class="search-answer__waiting">
         <div class="search-answer__progress" aria-hidden="true"><span></span></div>
         <p class="search-answer__waiting-text" role="status" aria-live="polite">
           {{ waitingMessage() }}
-          <span class="search-answer__elapsed">
+          <!--
+            Outside the announcement. The count changes every second, and a live
+            region containing it would have a screen reader read the whole line
+            once a second for ten seconds.
+          -->
+          <span class="search-answer__elapsed" aria-hidden="true">
             @if (elapsed() > 0) {
               {{ elapsed() }}s — usually about ten
             } @else {
