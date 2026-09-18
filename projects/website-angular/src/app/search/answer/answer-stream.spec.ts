@@ -4,8 +4,8 @@
  * These are the cases a live endpoint will not reliably produce on demand: a
  * frame split across two network reads, an event type we do not know, a `state`
  * that is not in the contract, and a stream that stops without a `done`. The
- * endpoint is not deployed yet, so this is also the only thing currently
- * holding the parser honest.
+ * endpoint is live, but it produces none of these to order -- and reaching it
+ * now costs a solved challenge -- so this is what holds the parser honest.
  */
 import { describe, expect, it } from 'vitest';
 import {

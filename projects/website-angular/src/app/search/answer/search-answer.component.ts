@@ -9,8 +9,10 @@
  * search URL costs no model call. `specs/005-search-page-answers/research.md`,
  * D5.
  *
- * No spinner that implies an imminent answer -- the contract is explicit that
- * ten seconds is the wrong latency for one.
+ * No spinner implying an imminent answer -- the contract is explicit that ten
+ * seconds is the wrong latency for one. What it shows instead is progress that
+ * is actually true: an elapsed count, and a source count once retrieval has
+ * finished, which is a milestone that provably precedes any prose.
  */
 import {
   ChangeDetectionStrategy,
@@ -26,11 +28,12 @@ import {
 import { marked } from 'marked';
 import { citationHref, citationKey, stripTrailingSources } from './answer-stream';
 
+import { AnswerService } from './answer.service';
+
 /** Cloudflare's widget, loaded only when a challenge is actually asked for. */
 interface Turnstile {
   render(el: HTMLElement, options: { sitekey: string; callback: (token: string) => void }): string;
 }
-import { AnswerService } from './answer.service';
 
 @Component({
   selector: 'app-search-answer',
@@ -51,6 +54,45 @@ export class SearchAnswerComponent {
   readonly available = this.answers.available;
   readonly challenge = this.answers.challenge;
   readonly asking = this.answers.asking;
+
+  /**
+   * Seconds since the question was asked, while waiting.
+   *
+   * A real elapsed count rather than a bar that fills at a guessed rate: the
+   * spread by question type is wide -- 3.3s for a userguide question against a
+   * ~10s median -- so anything pretending to know how far along it is would be
+   * inventing it, and would stall visibly on the slow ones.
+   */
+  private readonly _elapsed = signal(0);
+  readonly elapsed = this._elapsed.asReadonly();
+
+  private readonly tick = effect((onCleanup) => {
+    if (!this.asking()) {
+      this._elapsed.set(0);
+      return;
+    }
+    const started = Date.now();
+    const handle = setInterval(() => {
+      this._elapsed.set(Math.round((Date.now() - started) / 1000));
+    }, 1000);
+    onCleanup(() => clearInterval(handle));
+  });
+
+  /**
+   * What the wait says, driven by what has actually arrived.
+   *
+   * Citations always precede prose -- that is structural on their side, not a
+   * coincidence: token events are gated on the flag the retrieval-complete event
+   * sets. So a citation count is a genuine milestone reached before any text,
+   * and saying "found N sources" is reporting progress rather than implying it.
+   */
+  readonly waitingMessage = computed(() => {
+    const found = this.citations().length;
+    if (found === 0) return 'Reading Reactome for an answer.';
+    return found === 1
+      ? 'Found 1 source. Writing the answer…'
+      : `Found ${found} sources. Writing the answer…`;
+  });
   readonly visible = this.answers.visible;
   readonly incomplete = this.answers.incomplete;
   readonly citations = this.answers.citations;

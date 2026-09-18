@@ -8,11 +8,12 @@
  * here, for three reasons. The outcomes worth asserting are `nothing_found`, a
  * `state` outside the contract, and a dropped connection, and a live endpoint
  * produces none of them on demand. A real call costs a model call and about ten
- * seconds. And until a keypair is exchanged every real call answers
- * `{"state": "refused"}` in 0.0s, so it would assert nothing about the panel.
+ * seconds. And a real call now requires a solved Turnstile challenge, so it
+ * would assert nothing about the panel without driving Cloudflare's widget.
  *
  * The panel is only offered by deployments whose profile carries
- * `searchAnswerEndpoint`, which today is `development` alone. `__APP_ENV` is the
+ * `searchAnswerEndpoint` -- `development` and `beta` today, not the public
+ * site. `__APP_ENV` is the
  * documented runtime override for choosing a deployment without rebuilding, so
  * these tests select it rather than depending on which configuration the server
  * was built with.
@@ -153,11 +154,12 @@ test.describe('Search page React-to-Me answer', () => {
 
   test('shows no sources heading when an answer has no citations', async ({ page }) => {
     await asDevelopmentProfile(page);
-    // Zero citations is an ordinary good answer, not a failure: only the
-    // Reactome and disease-variant collections carry stable ids, so a
-    // documentation question has none. It also correlates with the fastest
-    // answers, which makes it common -- and an empty "Most relevant sources"
-    // heading over nothing would be the obvious way to get this wrong.
+    // Zero citations is an ordinary good answer, not a failure, and an empty
+    // "Sources" heading over nothing is the obvious way to get it wrong.
+    // Userguide questions returned none at all until the chatbot began sending
+    // `url` citations on 18 Sep; they now cite their pages, so this is rarer
+    // than it was -- which is exactly why it wants a test rather than a
+    // question someone remembers to try.
     await stubAnswer(
       page,
       stream([
@@ -174,6 +176,34 @@ test.describe('Search page React-to-Me answer', () => {
     await expect(panel(page)).toContainText('Open the pathway browser');
     await expect(panel(page).locator('.search-answer__sources')).toHaveCount(0);
     await expect(page.getByText(/most relevant sources/i)).toHaveCount(0);
+  });
+
+  test('shows progress while waiting, not a blank pause', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    // Held open, so the waiting state is observable. Ten seconds of nothing is
+    // the thing this exists to avoid.
+    await page.route(ENDPOINT, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3500));
+      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: ANSWERED });
+    });
+    await openSearch(page);
+
+    await askButton(page).click();
+
+    const waiting = page.locator('.search-answer__waiting');
+    await expect(waiting).toBeVisible({ timeout: 10_000 });
+    await expect(waiting).toContainText('Reading Reactome');
+    // A moving bar, so the reader can see work is happening. It deliberately
+    // does not claim a percentage: the spread by question type is 3.3s to 20s+,
+    // so a filling bar would stall visibly on the slow ones.
+    await expect(waiting.locator('.search-answer__progress')).toBeVisible();
+    // The elapsed count is measured rather than estimated, and is what makes a
+    // long wait legible.
+    await expect(waiting).toContainText(/\ds —/, { timeout: 6_000 });
+
+    // And it gives way to the answer rather than lingering.
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+    await expect(waiting).toHaveCount(0);
   });
 
   test('renders nothing at all when the answer is nothing_found', async ({ page }) => {
