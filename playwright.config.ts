@@ -12,7 +12,23 @@ import { defineConfig, devices } from '@playwright/test';
 // /AnalysisService and /GSAServer entries in proxy.conf.json to reach a real
 // backend. A deployed environment already routes those itself.
 const externalBaseURL = process.env['E2E_BASE_URL'];
-const baseURL = externalBaseURL || 'http://localhost:4200';
+
+// E2E_PORT asks for a server of our own on a port nothing else is using, and is
+// what the pre-push gate sets.
+//
+// The default of 4200 reuses whatever is already serving there, which is what
+// you want while developing -- one `ng serve` with hot reload, many test runs.
+// It is emphatically not what a gate wants. On a host that keeps a deployed
+// build on 4200, reuse means the suite tests that build and not the working
+// tree: `diagram-behaviour.spec.ts` failed for eight hours against a `dist/`
+// that predated the fix it asserts, while CI was green (#243). The dangerous
+// direction is the other one -- passing on a tree that is broken.
+//
+// A distinct port rather than `reuseExistingServer: false` on 4200, because the
+// latter makes playwright abort on "port already in use", which on this host
+// would mean stopping beta before every push.
+const ownPort = process.env['E2E_PORT'];
+const baseURL = externalBaseURL || `http://localhost:${ownPort || '4200'}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -64,11 +80,17 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: 'npm run start:simple',
+          // npm appends extra args to the end of the script string, so this
+          // becomes `... && ng serve --port <n>` and still runs the content
+          // staging that the search specs need.
+          command: ownPort ? `npm run start:simple -- --port ${ownPort}` : 'npm run start:simple',
           url: baseURL,
-          reuseExistingServer: !process.env['CI'],
-          // A cold Angular build well exceeds playwright's 60s default.
-          timeout: 180_000,
+          // Never reuse when we asked for our own port: the point is to serve
+          // the tree under test.
+          reuseExistingServer: !process.env['CI'] && !ownPort,
+          // A cold Angular build well exceeds playwright's 60s default, and the
+          // gate always pays for one because it never reuses.
+          timeout: ownPort ? 300_000 : 180_000,
         },
       }),
 });
