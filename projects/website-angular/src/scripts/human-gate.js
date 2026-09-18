@@ -30,17 +30,36 @@
  */
 const crypto = require('node:crypto');
 
-/** hCaptcha's verification endpoint. */
-const SITEVERIFY = process.env.HCAPTCHA_VERIFY_URL || 'https://api.hcaptcha.com/siteverify';
+/**
+ * Cloudflare Turnstile rather than hCaptcha.
+ *
+ * Cloudflare already fronts this site, the chatbot deployment already holds a
+ * keypair for it, and -- the part that mattered most here -- Turnstile publishes
+ * **test keys** with documented behaviour, so the whole exchange can be tested
+ * without a production secret. Verified against the live endpoint:
+ *
+ *     secret 1x0000000000000000000000000000000AA -> {"success": true}
+ *     secret 2x0000000000000000000000000000000AA -> {"success": false,
+ *                                    "error-codes":["invalid-input-response"]}
+ *
+ * The hCaptcha version of this could not be tested at all without a secret this
+ * repository has no access to, which is why it was written and left switched
+ * off.
+ */
+const SITEVERIFY =
+  process.env.TURNSTILE_VERIFY_URL || 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+/** The secret half. From the environment, or the gate does not run. */
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
 
 /**
- * The secret that pairs with the sitekey the search page renders.
+ * The public half, handed to the browser when a challenge is required.
  *
- * Not in this repository, and not derivable from anything in it: the public
- * site's contact form posts its response to ContentService, so Tomcat holds
- * this today. It comes from the environment or the gate does not run.
+ * Served from here rather than baked into the bundle, so a deployment can
+ * change it without a rebuild and so the widget is only ever rendered when the
+ * server actually wants one.
  */
-const HCAPTCHA_SECRET = process.env.HCAPTCHA_SECRET || '';
+const TURNSTILE_SITEKEY = process.env.TURNSTILE_SITEKEY || '';
 
 /**
  * Whether a verified human is required.
@@ -117,12 +136,12 @@ function identityFromRequest(req, now = Date.now()) {
  * become an accidental pass.
  */
 async function verifyCaptcha(token, fetchImpl = fetch) {
-  if (!HCAPTCHA_SECRET || typeof token !== 'string' || token === '') return false;
+  if (!TURNSTILE_SECRET || typeof token !== 'string' || token === '') return false;
   try {
     const response = await fetchImpl(SITEVERIFY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ secret: HCAPTCHA_SECRET, response: token }).toString(),
+      body: new URLSearchParams({ secret: TURNSTILE_SECRET, response: token }).toString(),
     });
     if (!response.ok) return false;
     const body = await response.json();
@@ -134,7 +153,7 @@ async function verifyCaptcha(token, fetchImpl = fetch) {
 
 /** True when the gate is on but cannot possibly work. */
 function misconfigured() {
-  return REQUIRE_HUMAN && (!HCAPTCHA_SECRET || !IDENTITY_SECRET);
+  return REQUIRE_HUMAN && (!TURNSTILE_SECRET || !IDENTITY_SECRET || !TURNSTILE_SITEKEY);
 }
 
 function setIdentityCookie(res, value) {
@@ -146,6 +165,8 @@ function setIdentityCookie(res, value) {
 
 module.exports = {
   COOKIE,
+  SITEVERIFY,
+  TURNSTILE_SITEKEY,
   IDENTITY_TTL_MS,
   REQUIRE_HUMAN,
   identityFromRequest,

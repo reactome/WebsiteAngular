@@ -14,11 +14,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 process.env.ANSWER_IDENTITY_SECRET = 'test-identity-secret';
-process.env.HCAPTCHA_SECRET = 'test-hcaptcha-secret';
+// Cloudflare's documented always-passes test secret. Real, and safe to commit:
+// it is published for exactly this, and verifying with it returns
+// `metadata.result_with_testing_key: true`.
+process.env.TURNSTILE_SECRET = '1x0000000000000000000000000000000AA';
+process.env.TURNSTILE_SITEKEY = '1x00000000000000000000AA';
 const gate = await import('./human-gate.js');
 
-const { mintIdentity, readIdentity, identityFromRequest, verifyCaptcha, sign, IDENTITY_TTL_MS } =
-  gate.default ?? gate;
+const {
+  mintIdentity,
+  readIdentity,
+  identityFromRequest,
+  verifyCaptcha,
+  sign,
+  IDENTITY_TTL_MS,
+  SITEVERIFY,
+} = gate.default ?? gate;
 
 describe('the signed identity', () => {
   it('round-trips a minted identity', () => {
@@ -84,15 +95,15 @@ describe('the signed identity', () => {
 describe('verifying the challenge', () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it('accepts hCaptcha saying success', async () => {
+  it('accepts Turnstile saying success', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ success: true }) }));
     expect(await verifyCaptcha('a-token', fetchImpl)).toBe(true);
     const body = fetchImpl.mock.calls[0][1].body;
     expect(body).toContain('response=a-token');
-    expect(body).toContain('secret=test-hcaptcha-secret');
+    expect(body).toContain('secret=1x0000000000000000000000000000000AA');
   });
 
-  it('refuses when hCaptcha says it failed', async () => {
+  it('refuses when Turnstile says it failed', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ success: false }) }));
     expect(await verifyCaptcha('a-token', fetchImpl)).toBe(false);
   });
@@ -106,7 +117,7 @@ describe('verifying the challenge', () => {
     expect(await verifyCaptcha('a-token', fetchImpl)).toBe(false);
   });
 
-  it('refuses a non-200 from hCaptcha', async () => {
+  it('refuses a non-200 from Turnstile', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: false, json: async () => ({ success: true }) }));
     expect(await verifyCaptcha('a-token', fetchImpl)).toBe(false);
   });
@@ -115,5 +126,21 @@ describe('verifying the challenge', () => {
     const fetchImpl = vi.fn();
     expect(await verifyCaptcha('', fetchImpl)).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('which service is asked', () => {
+  it('asks Cloudflare Turnstile, not hCaptcha', () => {
+    // The site is already behind Cloudflare and the chatbot deployment already
+    // holds a Turnstile keypair, so this reuses what exists rather than adding
+    // a second provider. It also has published test keys, which is what makes
+    // the exchange testable at all.
+    expect(SITEVERIFY).toBe('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+  });
+
+  it('refuses a malformed cookie rather than throwing', () => {
+    // `decodeURIComponent('%')` raises a URIError, which was outside any
+    // handler and would have turned into a 500 on the answer route.
+    expect(identityFromRequest({ headers: { cookie: 'ra_human=%' } })).toBeNull();
   });
 });
