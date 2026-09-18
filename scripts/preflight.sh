@@ -68,6 +68,9 @@ echo "Preflight"
 # vitest is on 4 now and the tree resolves honestly, so a peer error here is a
 # real one.
 step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
+# ...and that it did not quietly re-resolve the tree, which the step above
+# cannot see: a wholesale regeneration satisfies package.json perfectly.
+step "lockfile drift" npm run check:lockfile
 step "format" npm run format:check
 step "types" npm run check:types
 step "lint" npm run check:lint

@@ -60,6 +60,82 @@ const RECORD = process.env['E2E_RECORD'] === '1';
  */
 const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/|idg\.reactome\.org/;
 
+/**
+ * Hosts outside this site that the suite is allowed to reach, and why.
+ *
+ * The fixture above stops the suite calling ContentService, AnalysisService,
+ * ExperimentDigester and IDG. Nothing stopped it calling the *next* service
+ * somebody wired in. IDG is the worked example: `IDG_SERVICE` is an absolute URL
+ * and is not in `proxy.conf.js`, so pointing REACTOME_BACKEND at a closed port
+ * never affected it, and every CI run reached that server until a person -- not
+ * a check -- noticed.
+ *
+ * Measured across the suite rather than guessed, which is the only reason this
+ * list is right: 89 tests reach Google Fonts, 89 reach jsDelivr for the
+ * pdbe-molstar viewer that `pathway-browser/src/index.html` loads, 49 reach
+ * download.reactome.org and 40 reach EBI. The issue that asked for this named
+ * one exception; there were nine.
+ */
+const ALLOWED = new Map<string, string>([
+  ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
+  ['fonts.gstatic.com', 'the font files those stylesheets point at'],
+  ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by pathway-browser/src/index.html'],
+  ['download.reactome.org', "Reactome's own download host, linked from the download pages"],
+  ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
+  ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],
+  ['rest.uniprot.org', 'protein records the detail pages resolve'],
+  ['docs.google.com', 'documents the content pages link to'],
+]);
+
+/**
+ * Hosts the suite must **not** reach, blocked on purpose and without failing.
+ *
+ * Analytics is the one that matters. `config/environments.ts` gives a `gtagId`
+ * to reactome.org alone, and says why: "Sending beta, dev or curation traffic to
+ * the public property would inflate the public site's numbers with hits it never
+ * received". Nothing enforced that at test time, and `deltasignal-toggle.spec.ts`
+ * -- which loads a production profile to prove the toggle is absent there --
+ * loaded gtag and reported a page view on every run, in CI and locally.
+ *
+ * These are not failures: no test asserts on them, and the right answer is to
+ * drop the request rather than to make somebody re-record it.
+ */
+const BLOCKED = new Map<string, string>([
+  ['www.googletagmanager.com', 'test runs must not appear in the public property'],
+  ['www.google-analytics.com', 'test runs must not appear in the public property'],
+  [
+    'js.hcaptcha.com',
+    'the widget is never solved by a test; loading it only tells hCaptcha we ran',
+  ],
+  ['newassets.hcaptcha.com', 'assets for that widget'],
+  ['www.youtube.com', 'see below: the player is a doorway to ten more hosts'],
+  ['static.hsappstatic.net', 'the HubSpot meetings widget, same reason'],
+]);
+
+/**
+ * Why the two embeds above are blocked rather than allowed.
+ *
+ * They were allowed first, and the suite then reached ten further hosts that
+ * nobody had asked for:
+ *
+ *   googleads.g.doubleclick.net, static.doubleclick.net   Google's ad infrastructure
+ *   play.google.com/log, csp.withgoogle.com               logging
+ *   i.ytimg.com, yt3.ggpht.com, www.gstatic.com,
+ *   ssl.gstatic.com, www.google.com                       player assets
+ *   meetings.hubspot.com                                  with `parentHubspotUtk`
+ *                                                         and the page URL
+ *
+ * Allowing a host means allowing whatever it decides to load next, and a test
+ * run has no business handing a tracking token to anybody. The pages themselves
+ * are unaffected: `/documentation/userguide/reactome-fiviz` has no iframe at all,
+ * and the embeds live on pages whose tests assert text, not video.
+ */ /**
+ * Local services are not third parties: Tina runs on 4001, the render service on
+ * its own port, and a recording taken at `127.0.0.1` replays at `localhost`.
+ * Any port on these hostnames is this machine talking to itself.
+ */
+const LOCAL = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
 /** Every request method that could reach the backend. */
 const VERBS = ['get', 'post', 'head', 'put', 'patch', 'delete', 'fetch'] as const;
 type Verb = (typeof VERBS)[number];
@@ -174,7 +250,7 @@ function pool(harDir: string): Map<string, HarEntry> {
 }
 
 export const test = base.extend({
-  context: async ({ context }, use, testInfo) => {
+  context: async ({ context, baseURL }, use, testInfo) => {
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
@@ -186,40 +262,85 @@ export const test = base.extend({
     const harDir = path.dirname(har);
     const entries = existsSync(har) ? load(har) : new Map<string, HarEntry>();
 
-    await context.route(BACKEND, async (route) => {
-      const method = route.request().method();
-      const asked = key(method, route.request().url());
-      // The pool is consulted for idempotent reads only. A POST's answer depends
-      // on its body, which the key does not carry and the trimmed recordings do
-      // not keep: eleven tests POST to
-      // `/ContentService/interactors/static/molecules/details` with a different
-      // list of accessions each, so borrowing another test's reply would hand one
-      // pathway's interactors to another -- rendering plausible, wrong numbers.
-      // A miss on a write is an abort, and an abort is visible.
-      const shareable = method === 'GET' || method === 'HEAD';
-      const entry = entries.get(asked) ?? (shareable ? pool(harDir).get(asked) : undefined);
-      if (!entry) {
-        // Aborted, never passed through. Falling back to the network would
-        // quietly restore the thing this removes, and the first sign would be an
-        // outage rather than a failing test.
-        await route.abort();
-        return;
-      }
-      const headers: Record<string, string> = {};
-      for (const h of entry.response.headers) {
-        // Recorded framing does not describe the body we are about to send.
-        if (!/^(content-encoding|content-length|transfer-encoding)$/i.test(h.name)) {
-          headers[h.name] = h.value;
+    const ownOrigin = new URL(baseURL ?? 'http://localhost:4200').origin;
+    // host -> the first URL that asked for it, so the message can show one.
+    const undeclared = new Map<string, string>();
+
+    // The backend wherever it lives, plus anything foreign that is not already
+    // declared. Same-origin assets, local services and ALLOWED hosts are left
+    // out of the predicate entirely rather than matched and waved through:
+    // interception is not free, and `route.continue()` on a font delays it.
+    //
+    // That is not hypothetical. Waving Google Fonts through the handler cost
+    // enough to reflow a page after its smooth scroll had finished, and
+    // `content-pages.spec.ts:128` -- which measures where a heading comes to
+    // rest -- failed on 160.875px against a 150px bound, twice, while passing
+    // four times out of four on its own. Nothing here should change how fast the
+    // page under test loads.
+    await context.route(
+      (url) =>
+        (url.protocol === 'http:' || url.protocol === 'https:') &&
+        (BACKEND.test(url.href) ||
+          (url.origin !== ownOrigin && !LOCAL.has(url.hostname) && !ALLOWED.has(url.host))),
+      async (route) => {
+        const asked_url = route.request().url();
+        if (!BACKEND.test(asked_url)) {
+          // Only blocked or undeclared hosts reach here; the predicate filtered
+          // out everything this suite is content to let through.
+          const { host } = new URL(asked_url);
+          if (!BLOCKED.has(host) && !undeclared.has(host)) undeclared.set(host, asked_url);
+          await route.abort();
+          return;
         }
+        const method = route.request().method();
+        const asked = key(method, route.request().url());
+        // The pool is consulted for idempotent reads only. A POST's answer depends
+        // on its body, which the key does not carry and the trimmed recordings do
+        // not keep: eleven tests POST to
+        // `/ContentService/interactors/static/molecules/details` with a different
+        // list of accessions each, so borrowing another test's reply would hand one
+        // pathway's interactors to another -- rendering plausible, wrong numbers.
+        // A miss on a write is an abort, and an abort is visible.
+        const shareable = method === 'GET' || method === 'HEAD';
+        const entry = entries.get(asked) ?? (shareable ? pool(harDir).get(asked) : undefined);
+        if (!entry) {
+          // Aborted, never passed through. Falling back to the network would
+          // quietly restore the thing this removes, and the first sign would be an
+          // outage rather than a failing test.
+          await route.abort();
+          return;
+        }
+        const headers: Record<string, string> = {};
+        for (const h of entry.response.headers) {
+          // Recorded framing does not describe the body we are about to send.
+          if (!/^(content-encoding|content-length|transfer-encoding)$/i.test(h.name)) {
+            headers[h.name] = h.value;
+          }
+        }
+        await route.fulfill({
+          status: entry.response.status,
+          headers,
+          body: bodyOf(entry, harDir),
+        });
       }
-      await route.fulfill({
-        status: entry.response.status,
-        headers,
-        body: bodyOf(entry, harDir),
-      });
-    });
+    );
 
     await use(context);
+
+    // Thrown from the fixture rather than inside the handler, because a route
+    // handler cannot fail a test -- it can only abort a request, which surfaces
+    // as whatever the page does when an asset is missing. That is how IDG stayed
+    // invisible. Naming the host and what to do about it is the whole point.
+    if (undeclared.size) {
+      const lines = [...undeclared].map(([host, url]) => `  ${host}  (first asked for ${url})`);
+      throw new Error(
+        `This test reached ${undeclared.size} host${undeclared.size === 1 ? '' : 's'} with no recordings:\n\n` +
+          `${lines.join('\n')}\n\n` +
+          'The request was aborted rather than sent. Either add the host to BACKEND in\n' +
+          'e2e/support/backend.ts and re-record, or declare it in ALLOWED (reachable, with\n' +
+          'a reason) or BLOCKED (never wanted) in the same file.'
+      );
+    }
   },
 
   // The `request` fixture is a separate API context: `context.route()` above does
@@ -248,7 +369,24 @@ export const test = base.extend({
 
     const wrap = (method: Verb) => async (url: string, options?: Options) => {
       const full = absolute(url);
-      if (!BACKEND.test(full)) return request[method](url, options);
+      if (!BACKEND.test(full)) {
+        // The same classification as the browser route, because a probe written
+        // in a spec can reach a third party just as quietly as the app can. The
+        // site's own origin is always fine: it is what `absolute()` resolves a
+        // relative path against, and it is not localhost when the suite is
+        // pointed at a deployed site.
+        const { host, hostname, origin } = new URL(full);
+        const site = new URL(baseURL ?? 'http://localhost:4200').origin;
+        if (origin === site || LOCAL.has(hostname) || ALLOWED.has(host)) {
+          return request[method](url, options);
+        }
+        throw new Error(
+          `This test probed ${host}, which has no recordings and is not declared.\n` +
+            `  ${full}\n` +
+            'Add it to BACKEND in e2e/support/backend.ts and re-record, or declare it in\n' +
+            'ALLOWED or BLOCKED in the same file.'
+        );
+      }
 
       const k = key(method, full);
       if (!RECORD) {

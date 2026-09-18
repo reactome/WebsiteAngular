@@ -39,6 +39,7 @@
     "lint:fix": "eslint . --fix",
     "check:lint": "node scripts/check-lint.mjs",
     "check:dead": "node scripts/check-dead-code.mjs",
+    "check:lockfile": "node scripts/check-lockfile.mjs",
     "dead": "knip",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
