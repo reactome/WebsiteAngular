@@ -176,6 +176,50 @@ HTML, so accepting it would be accepting whatever arrives.
 - **D5 is a UX change to the search page** and wants Adam's sign-off before it
   is built, not after.
 
+## For the proxy, which is not built yet
+
+**Set an explicit `User-Agent`.** nginx blocks some clients at the edge before
+they reach the chatbot, and the block is on the user-agent:
+
+    python-httpx/0.27          -> 403 (nginx, HTML body)
+    curl/8.5.0                 -> 200
+    Mozilla/5.0 ... Chrome     -> 200
+    no user-agent at all       -> 200
+
+That is the site's own automation blocking, not their endpoint. A server-side
+proxy sending a default library user-agent gets a 403 with an HTML body that
+looks nothing like the contract -- no `done` event, no JSON -- so it would read
+as a token or key fault and cost an afternoon. Measured and warned by the
+chatbot team, 18 Sep 2026. Either name our service in the header or call them on
+an internal address that does not pass the edge.
+
+**Nothing buffers the stream.** Tokens arrive incrementally through Cloudflare
+and nginx all the way to the browser-facing edge, verified through the public
+URL rather than over loopback. So a buffering proxy is not silently turning the
+panel into a blank twenty seconds followed by everything at once -- and if it
+ever starts to, that is our layer.
+
+## Known possible, not yet done: progressive rendering
+
+The panel currently renders nothing until `done`, so a reader waits for the
+complete answer -- p50 16.1s on beta rather than the 10.0s to first token.
+
+It could render as tokens arrive, because the `start` event carries
+`answered: true` and refusals land at 0.0s, before any token. So a stream that
+has begun emitting prose has effectively already committed to answering, and
+showing it early risks very little.
+
+Not done in the first cut deliberately: showing a partial answer and then
+withdrawing it is worse than showing it six seconds later, and this is a
+scientific resource. Worth revisiting with the numbers in hand, and it is a
+small change -- the parser already reads `start`, it just ignores that field.
+
+One thing to expect either way: latency is genuinely inconsistent across
+question types. A userguide-style question reached first token in 3.3s because
+it routes to a smaller collection, against a 10.0s median. That is real and not
+noise. The first request after a restart is also slower -- 16.6s measured once,
+then 10s steady -- so one slow outlier after a deploy is not a regression.
+
 ## Settled by measurement, so we do not have to build for it
 
 **Closing the connection is the cancellation.** A reader who navigates away mid
