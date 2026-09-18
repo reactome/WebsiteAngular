@@ -147,6 +147,11 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // in its own right and not "production served elsewhere" -- most visibly in
     // analytics, where its traffic must not land in the public property.
     variant: 'main',
+    // Beta is where the AI answer is reviewed before it goes any further. The
+    // route is served by serve-prod.js, which holds the signing key; a
+    // deployment without that key answers 503 and the panel renders nothing, so
+    // this is safe to name even if the key is ever absent.
+    searchAnswerEndpoint: '/search-answer',
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,

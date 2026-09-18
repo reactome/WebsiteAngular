@@ -49,8 +49,15 @@ async function waitForBuild(timeoutMs = 15 * 60 * 1000) {
   return false;
 }
 
+const { mountSearchAnswerProxy } = require('./search-answer-proxy');
+
 const app = express();
 app.disable('x-powered-by');
+
+// Before the proxy table and the static handler: this is our own route, not a
+// pass-through, because it has to mint a caller token with a key the browser
+// must never see.
+mountSearchAnswerProxy(app);
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
