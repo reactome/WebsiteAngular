@@ -58,6 +58,23 @@ rows, the rows are right: this line has drifted twice from being edited by hand.
 | Search `p53` returns >1700 results, confined to Homo sapiens or species-less entities | **auto** — `e2e/release/release-checklist.spec.ts`                                                                                                                                                                                                                                                                                                                      |
 | A newly added pathway, reaction and complex render; and an old one                    | **auto** — `e2e/release/new-in-this-release.spec.ts`. The announcement we publish names the new and updated pathways, so the suite reads that list from the newest release note in the repo and opens each one exactly as written — 21 of them for v97. It also asserts each lands on a stable id: the announcements link by dbId, which is not stable across releases. |
 
+## Search page AI answer
+
+New in this release, and off unless a deployment opts in — `searchAnswerEndpoint`
+in the site profile. Currently `development` and `beta`; the public site does not
+offer it.
+
+| Item                                                             | Status                                                                                                                                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nothing is fetched until the reader clicks "Ask Reactome AI"     | **auto** — `search-answer.spec.ts` asserts the endpoint is called zero times before the click. A crawled search URL must not cost a model call                                                                     |
+| The answer streams in, with its sources as links                 | **auto** — `search-answer.spec.ts`                                                                                                                                                                                 |
+| An answer with no sources renders no sources heading             | **auto** — `search-answer.spec.ts`. Documentation questions legitimately have none, and those are also the _fastest_ answers, so it is the common case rather than the exotic one                                  |
+| No answer found renders no panel and no error                    | **auto** — `search-answer.spec.ts`. About one question in seven, in ~4.5s. It is an ordinary outcome, not a failure                                                                                                |
+| Searching again clears the previous answer                       | **auto** — `search-answer.spec.ts`. It used to leave one query's answer above another query's results                                                                                                              |
+| The panel follows the dark theme                                 | **auto** — `search-answer.spec.ts` asserts the colours change under `body.dark`                                                                                                                                    |
+| A human check is required before an answer is given              | **manual** — the Turnstile widget's first render is the one path no test exercises. Ask a question and confirm a challenge appears, then an answer. A second question in the same visit should not challenge again |
+| With no keys configured, the route refuses rather than answering | **manual** — expect `503` and no panel. Answering ungated must never be the silent outcome                                                                                                                         |
+
 ## Navigation bar
 
 | Item                                                                   | Status                                                                                                                                                                                                                 |

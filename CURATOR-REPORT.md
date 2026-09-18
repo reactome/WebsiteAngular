@@ -254,6 +254,23 @@ not on the server). Restored for the pathways we test with. **If you hit an
 illustration that still fails, that is why** — it is a gap in what is cached on
 this machine, not a fault in the site. Issue #230 carries the proper fix.
 
+**The search page can now answer a question, and it asks first.** Above the
+results there is an invitation — "Ask Reactome AI about …". Nothing happens
+until you click it: the answer takes about ten seconds, and the results below
+are ready immediately, so it never delays them. Clicking asks you to confirm you
+are a person, once per visit, and then the answer streams in with its sources as
+links you can follow.
+
+Three things worth knowing before you judge it. Long answers start collapsed, so
+they cannot bury the results — "Show more" opens them. Documentation questions
+often come back with **no sources at all**, and that is correct rather than
+broken: only pathway content carries the stable identifiers a citation needs.
+And the panel answers once; "Continue this in the chat" carries you to the
+chatbot, though it does not yet carry your question with it.
+
+If it says nothing after you ask, that is a real answer too — it means nothing
+in Reactome matched, and the search results are unaffected.
+
 **A mistyped address in the analysis options is now caught.** `adam@` used to be
 accepted: the form knew it was malformed — the box turned red — but no message
 said why, and the analysis was submitted with it anyway, so no mail ever
