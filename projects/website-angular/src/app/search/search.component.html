@@ -8,7 +8,12 @@
     }
     <!-- Search bar + filters above the two-column layout -->
     <div class="search-top">
-      <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [filters]="!(query && searchSubmitted)" />
+      <app-search-bar
+        [query]="query"
+        [activeFilters]="filters"
+        (queryChange)="onQueryInput($event)"
+        [filters]="!(query && searchSubmitted)"
+      />
     </div>
 
     <!-- Active filter chips -->

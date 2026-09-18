@@ -78,6 +78,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.query = newQuery;
     this.getSuggestions(newQuery);
     this.searchSubmitted = false;
+    // This component keeps its state in plain fields, and the app is zoneless,
+    // so a write here tells Angular nothing on its own -- see the note at the
+    // top of the class. Without this, `searchSubmitted = false` does not close
+    // the `@if` that depends on it, and whatever is inside keeps whatever state
+    // it had. That is how one query's answer came to sit above another query's
+    // results.
+    this.cdr.markForCheck();
   }
   suggestedTerms: string[] = [];
   results: SearchResult | null = null;

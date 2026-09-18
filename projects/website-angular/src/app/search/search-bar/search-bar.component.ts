@@ -23,6 +23,15 @@ import {
 } from 'projects/website-angular/src/services/search.service';
 import { DropdownToggleComponent } from '../../reactome-components/dropdown-toggle/dropdown-toggle.component';
 
+/**
+ * Every filter the search page understands.
+ *
+ * `pageCategories` was missing from the two copies of this list, so selecting a
+ * Pages facet and then searching again from the bar dropped it without saying
+ * so. Named once because two copies is how it went missing.
+ */
+const FILTER_KEYS = ['species', 'types', 'compartments', 'keywords', 'pageCategories'] as const;
+
 @Component({
   selector: 'app-search-bar',
   standalone: true,
@@ -36,6 +45,20 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   private cdr = inject(ChangeDetectorRef);
   @Input() query: string = '';
   @Input() filters = false;
+
+  /**
+   * The filters currently applied, read from the URL by the page.
+   *
+   * This used to be the bar's own state and nothing else's: `advancedFilters`
+   * started empty and was only ever changed by the bar's own controls. Since
+   * submitting *replaces* the query string, a reader who narrowed by species in
+   * the sidebar and then searched again from here had that narrowing written
+   * over with the bar's empty copy, silently.
+   *
+   * The URL is the one place both halves of the page agree on, so it is the
+   * source of truth and this is how it reaches the bar.
+   */
+  @Input() activeFilters: SearchFilters = {};
   @Output() queryChange = new EventEmitter<string>();
 
   @ViewChild('queryInput') queryInput?: ElementRef<HTMLTextAreaElement>;
@@ -91,6 +114,11 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     if (changes['suggestions']) {
       this.suggestions = this.suggestions ? [...this.suggestions] : [];
     }
+    if (changes['activeFilters']) {
+      // A copy, so the bar's own controls can edit it without writing back
+      // through an input.
+      this.advancedFilters = { ...(this.activeFilters || {}) };
+    }
     if (changes['query']) {
       this.query = this.query || '';
       // Defer to next tick so the textarea has the bound value before measuring.
@@ -112,7 +140,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of FILTER_KEYS) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
@@ -148,7 +176,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of FILTER_KEYS) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }

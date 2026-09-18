@@ -34,6 +34,37 @@ test.describe('Search flow', () => {
     await expect(page.locator('.filter-chip')).toBeVisible({ timeout: 10000 });
   });
 
+  test('a facet survives searching again from the bar', async ({ page }) => {
+    // The bar kept its own copy of the filter state, starting empty and never
+    // synced with the URL. Submitting *replaces* the query string, so a reader
+    // who narrowed in the sidebar and then searched again had that narrowing
+    // written over with the bar's empty copy -- silently, and only visible as
+    // "the page looks slightly different".
+    await page.goto('/content/query?q=apoptosis');
+    await expect(page.locator('.result-count')).toBeVisible({ timeout: 15000 });
+
+    await page.locator('.facet-option').first().click();
+    await expect(page.locator('.filter-chip')).toBeVisible({ timeout: 10000 });
+
+    const applied = new URL(page.url()).searchParams;
+    const narrowed = ['species', 'types', 'compartments', 'keywords', 'pageCategories'].filter(
+      (k) => applied.get(k)
+    );
+    expect(narrowed.length, 'a facet click should have narrowed something').toBeGreaterThan(0);
+
+    const box = page.locator('textarea.search-input');
+    await box.fill('apoptosis signalling');
+    await box.press('Enter');
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('q'), { timeout: 20000 })
+      .toBe('apoptosis signalling');
+
+    const after = new URL(page.url()).searchParams;
+    for (const key of narrowed) {
+      expect(after.get(key), `${key} should survive the next search`).toBe(applied.get(key));
+    }
+  });
+
   test('the sidebar offers Pages above Keywords', async ({ page }) => {
     // Site Search used to be one of four top-level search modes. Unifying the
     // page into a single bar turned it into a sidebar facet, and it was
