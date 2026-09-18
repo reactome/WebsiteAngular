@@ -254,11 +254,16 @@ not on the server). Restored for the pathways we test with. **If you hit an
 illustration that still fails, that is why** — it is a gap in what is cached on
 this machine, not a fault in the site. Issue #230 carries the proper fix.
 
-**One thing to know before asking for analysis reports by email.** If you leave
-the address box empty, the analysis still runs and the reports are still made —
-but no mail is sent and nothing says so. We do not enforce the address on our
-side (#238), and the sending happens on a server we do not control (#168). So if
-you want the email, check the box has your address in it before submitting.
+**A mistyped address in the analysis options is now caught.** `adam@` used to be
+accepted: the form knew it was malformed — the box turned red — but no message
+said why, and the analysis was submitted with it anyway, so no mail ever
+arrived. The box now explains itself and Continue waits until the address is
+either valid or empty.
+
+**Leaving the address empty is fine and always was.** The analysis runs, results
+appear as usual, and no mail is sent because none was asked for. The address is
+optional by design. What the GSA server does about a report it cannot mail is on
+a machine we do not control, and that remains #168.
 
 **The interactor overlay now survives you moving around.** Choosing a resource
 and then opening another pathway used to lose it, including coming back to the
