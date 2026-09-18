@@ -97,7 +97,17 @@ function readIdentity(value, now = Date.now()) {
 
 function identityFromRequest(req, now = Date.now()) {
   const match = new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`).exec(req.headers?.cookie || '');
-  return match ? readIdentity(decodeURIComponent(match[1]), now) : null;
+  if (!match) return null;
+  let value;
+  try {
+    value = decodeURIComponent(match[1]);
+  } catch {
+    // `decodeURIComponent('%')` throws a URIError, so a cookie of `ra_human=%`
+    // would have thrown out of here and turned into a 500 on the answer route.
+    // A malformed cookie is simply not an identity.
+    return null;
+  }
+  return readIdentity(value, now);
 }
 
 /**

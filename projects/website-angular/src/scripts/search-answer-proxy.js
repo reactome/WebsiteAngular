@@ -210,6 +210,56 @@ function retryAfter(key, now = Date.now()) {
   return 0;
 }
 
+/**
+ * A separate budget for verification attempts.
+ *
+ * The answer route's limits do not cover this one, and without it the exchange
+ * is free to hammer: every attempt costs us an outbound call to hCaptcha, so an
+ * attacker could exhaust our verification quota or get us blocked there while
+ * spending nothing. Found reviewing this before it shipped.
+ *
+ * Kept apart from the answer budget on purpose. Sharing it would let failed
+ * verification attempts consume the allowance for answering, which turns a
+ * cheap nuisance into a denial of the actual feature.
+ */
+const VERIFY_LIMITS = [
+  { windowMs: 60_000, max: 10 },
+  { windowMs: 3_600_000, max: 60 },
+];
+const VERIFY_GLOBAL = { windowMs: 3_600_000, max: 600 };
+
+const verifySeen = new Map();
+let verifyGlobal = [];
+
+function verifyRetryAfter(key, now = Date.now()) {
+  verifyGlobal = verifyGlobal.filter((at) => now - at < VERIFY_GLOBAL.windowMs);
+  if (verifyGlobal.length >= VERIFY_GLOBAL.max) {
+    return Math.ceil((VERIFY_GLOBAL.windowMs - (now - verifyGlobal[0])) / 1000);
+  }
+
+  const times = (verifySeen.get(key) ?? []).filter(
+    (at) => now - at < VERIFY_LIMITS[VERIFY_LIMITS.length - 1].windowMs
+  );
+  for (const { windowMs, max } of VERIFY_LIMITS) {
+    const inWindow = times.filter((at) => now - at < windowMs);
+    if (inWindow.length >= max) {
+      verifySeen.set(key, times);
+      return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
+    }
+  }
+
+  times.push(now);
+  verifySeen.set(key, times);
+  verifyGlobal.push(now);
+  if (verifySeen.size > 5000) {
+    const cutoff = now - VERIFY_LIMITS[VERIFY_LIMITS.length - 1].windowMs;
+    for (const [at, stamps] of verifySeen) {
+      if (stamps.every((stamp) => stamp < cutoff)) verifySeen.delete(at);
+    }
+  }
+  return 0;
+}
+
 /** Mounts POST <route> on an Express app. */
 function mountSearchAnswerProxy(app, route = '/search-answer') {
   // Exchanges a solved captcha for a signed identity. This is the only way to
@@ -220,6 +270,13 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
       res.status(503).json({ detail: 'Verification is not configured on this deployment' });
       return;
     }
+    const verifyWait = verifyRetryAfter(clientKey(req));
+    if (verifyWait > 0) {
+      res.setHeader('Retry-After', String(verifyWait));
+      res.status(429).json({ detail: 'Too many verification attempts. Try again shortly.' });
+      return;
+    }
+
     const ok = await gate.verifyCaptcha(req.body?.captchaToken);
     if (!ok) {
       res.status(400).json({ detail: 'Verification failed' });
@@ -327,13 +384,18 @@ module.exports = {
   mountSearchAnswerProxy,
   mintCallerToken,
   retryAfter,
+  verifyRetryAfter,
   clientKey,
   LIMITS,
   GLOBAL_LIMIT,
   // Test-only: the counters are process-wide, so a spec needs to start clean.
+  VERIFY_LIMITS,
+  VERIFY_GLOBAL,
   __resetLimits: () => {
     seen.clear();
     globalCalls = [];
+    verifySeen.clear();
+    verifyGlobal = [];
   },
   KEY_PATH,
   UPSTREAM,
