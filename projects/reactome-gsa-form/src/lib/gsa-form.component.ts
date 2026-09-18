@@ -28,6 +28,7 @@ import { AnalysisResult } from './model/analysis-result.model';
 import { MatIconRegistry } from '@angular/material/icon';
 import { ActivatedRoute } from '@angular/router';
 import { TourComponent } from './tour/tour.component';
+import { OptionsComponent } from './options/options.component';
 
 @Component({
   selector: 'gsa-form',
@@ -50,6 +51,12 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   readonly addDataStep = viewChild.required<CdkStep>('addDataStep');
   readonly optionStep = viewChild.required<CdkStep>('optionStep');
   readonly analysisStep = viewChild.required<CdkStep>('analysisStep');
+
+  /**
+   * Resolves only while the options step is the selected one, which is the
+   * only time its validity gates anything.
+   */
+  readonly options = viewChild(OptionsComponent);
 
   selectedMethod$ = this.store.select(methodFeature.selectSelectedMethod);
   methodSelected$ = this.selectedMethod$.pipe(map((method) => method !== null));
