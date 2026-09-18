@@ -14,8 +14,16 @@
  * The panel is only offered by deployments whose profile carries
  * `searchAnswerEndpoint`, which today is `development` alone. `__APP_ENV` is the
  * documented runtime override for choosing a deployment without rebuilding, so
- * these tests select it rather than depending on which configuration `ng serve`
- * happened to use.
+ * these tests select it rather than depending on which configuration the server
+ * was built with.
+ *
+ * **Run these with `E2E_PORT` set**, as `scripts/preflight.sh` does. Without it
+ * playwright reuses whatever is already serving on :4200, and on this host that
+ * is a deployed build (#243). While this spec was being written, that meant the
+ * suite tested a deployed artifact rather than the working tree: it passed
+ * against a build that happened to contain this panel, then reported six
+ * failures the moment that build was replaced by one without it. Neither result
+ * said anything about the code under test.
  */
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
@@ -139,32 +147,64 @@ test.describe('Search page AI answer', () => {
 
     await expect(panel(page)).toBeVisible({ timeout: 20_000 });
     await expect(panel(page)).toContainText('CDK5 bound to p25');
-    await expect(panel(page)).toContainText('stopped before it finished');
+    // Anchored on the element rather than the sentence: the copy has already
+    // been reworded once, and a test that pins prose fails for a wording change
+    // while saying nothing about behaviour.
+    await expect(panel(page).locator('.search-answer__incomplete')).toBeVisible();
+    await expect(panel(page)).toContainText('stopped early');
   });
 
-  test('offers the invitation again when an outcome shows nothing', async ({ page }) => {
+  test('says the ask completed when there is no answer, rather than leaving a dead button', async ({
+    page,
+  }) => {
+    let calls = 0;
     await asDevelopmentProfile(page);
-    await stubAnswer(page, NOTHING_FOUND);
+    await page.route(ENDPOINT, (route) => {
+      calls += 1;
+      return route.fulfill({ status: 200, contentType: 'text/event-stream', body: NOTHING_FOUND });
+    });
     await openSearch(page);
 
     await askButton(page).click();
-    await expect(panel(page)).toHaveCount(0);
 
-    // Hiding the button on "already asked" left the reader's click with no
-    // visible effect at all and no way to retry. A repeat is free: every
-    // outcome is cached, including this one.
+    // No panel -- that part of D4 holds. But the click has to have visibly done
+    // something, and the invitation must not come back for a question whose
+    // answer is settled: a second click would hit the cache before `asking` is
+    // set and change nothing at all on screen.
+    await expect(page.locator('.search-answer__none')).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toHaveCount(0);
+    await expect(askButton(page)).toHaveCount(0);
+    expect(calls, 'asked exactly once').toBe(1);
+  });
+
+  test('keeps the invitation after a failure, which is a fault rather than an answer', async ({
+    page,
+  }) => {
+    await asDevelopmentProfile(page);
+    // A proxy or network fault: not the contract's 200-with-a-state, so not a
+    // settled property of the question. Asking again is worth offering, and
+    // `failed` is deliberately not cached so that it really re-asks.
+    await page.route(ENDPOINT, (route) => route.fulfill({ status: 502, body: 'bad gateway' }));
+    await openSearch(page);
+
+    await askButton(page).click();
+
     await expect(askButton(page)).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('.search-answer__none')).toHaveCount(0);
   });
 
   test('is absent entirely on a deployment that does not offer answers', async ({ page }) => {
-    // Names `beta` rather than leaving the profile alone. `ng serve` defaults to
-    // the development configuration, so an un-overridden run *does* offer the
-    // panel -- this test passed vacuously against the wrong profile until that
-    // showed up as a failure here.
+    // Names `beta` explicitly rather than leaving the profile alone, because a
+    // run with no override proves nothing: it would pass whenever the panel is
+    // missing for *any* reason, including the code not being present at all.
+    // That is not hypothetical -- it is what happened here, and the reason is
+    // recorded in the file header.
     //
     // beta is the profile this matters for: it is the curator-facing deployment,
-    // it has no `searchAnswerEndpoint`, and until a keypair is exchanged every
-    // real call there would answer `refused`. Absence is what it must show.
+    // it has no `searchAnswerEndpoint`, and until the real exchange lands every
+    // call there would answer `refused`. Absence is what it must show, and it
+    // must show it because of the profile rather than by accident.
     await page.addInitScript(() => {
       (window as Window & { __APP_ENV?: string }).__APP_ENV = 'beta';
     });

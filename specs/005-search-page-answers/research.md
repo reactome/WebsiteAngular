@@ -103,8 +103,24 @@ about one question in seven returns `nothing_found` in ~4.5s. An error for an
 ordinary outcome would train readers to distrust the feature. A reader who asked
 an off-topic question and got a quiet nothing has been served correctly.
 
-**Rejected**: "no answer found" text. It reads as a fault for what is a normal
-and frequent outcome, and it is noise on a page whose actual results are fine.
+**Rejected**: "no answer found" text _before_ the reader asks. It reads as a
+fault for what is a normal and frequent outcome, and it is noise on a page whose
+actual results are fine.
+
+**Amended 18 Sep 2026, after review.** "Render nothing" is right for a reader
+who never asked, and wrong once they have clicked. Taken literally it produced
+an unresponsive control: the invitation returned when nothing was on screen, a
+second click hit the cache _before_ `asking` was ever set, and so absolutely
+nothing changed -- no status line, no panel, no button change. A dead button is
+worse than the quiet nothing the decision was protecting.
+
+So a settled non-answer now gets one neutral line -- "No AI answer for this
+search. The results below are unaffected." -- and no invitation to re-ask
+something already settled. Only `nothing_found` and `refused` count as settled;
+`failed` is a fault, keeps the button, and is not cached, so asking again really
+re-asks rather than replaying a truncation.
+
+This is feedback that the click worked, not an error about the question.
 
 ## D5. The panel is opt-in per query, behind a click
 

@@ -208,15 +208,22 @@ export class AnswerService {
   }
 
   /**
-   * Caches whatever the outcome was, not only a good one.
+   * Caches outcomes worth repeating, and only those.
    *
-   * A reader who asks an off-topic question, sees nothing, and clicks again
-   * should not pay for a second model call to be told the same nothing. An
-   * incomplete answer is cached for the same reason.
+   * `answered` is the answer itself. `nothing_found` and `refused` are stable
+   * properties of the question -- a reader who asks something off-topic, sees
+   * nothing, and clicks again should not pay for a second model call to be told
+   * the same nothing.
+   *
+   * `failed` is never cached, with or without prose. It is a fault rather than
+   * an outcome: the 120s ceiling, a mid-generation exception, a dropped
+   * connection. Caching it would turn "ask again" into "replay the truncation",
+   * which is the one thing a reader looking at a half answer actually needs not
+   * to happen.
    */
   private remember(question: string): void {
     const state = this._state();
-    if (state === null) return;
+    if (state === null || state === 'failed') return;
     const entry: CachedAnswer = {
       text: this._text(),
       citations: this._citations(),
