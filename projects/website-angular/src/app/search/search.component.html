@@ -192,6 +192,15 @@
 
       <!-- Results area -->
       <div class="results-area">
+        <!--
+          Above the results and outside every loading branch, so it can never
+          delay them: the answer takes about ten seconds and the results are
+          already here. Renders nothing at all unless the reader asks and the
+          answer comes back usable.
+        -->
+        @if (query && searchSubmitted && !hasNoResults) {
+          <app-search-answer [query]="query" />
+        }
         @if (loading) {
           <div class="loading">Searching...</div>
         }

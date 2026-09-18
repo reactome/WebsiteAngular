@@ -1,0 +1,56 @@
+@if (available) {
+  <section class="search-answer" aria-labelledby="search-answer-heading">
+    @if (showButton()) {
+      <!--
+        The invitation, not an answer. Says what it will do and roughly how long
+        it takes, because ten seconds with no warning reads as a broken page.
+      -->
+      <button type="button" class="search-answer__ask" (click)="ask()">
+        <span class="search-answer__ask-label">Ask Reactome AI about "{{ query() }}"</span>
+        <span class="search-answer__ask-note">Takes around ten seconds. Results below are ready now.</span>
+      </button>
+    } @else if (asking()) {
+      <!--
+        A status line rather than a spinner: the contract is explicit that a
+        spinner implying an imminent answer is wrong at this latency. Polite so
+        a screen reader announces it without interrupting.
+      -->
+      <p class="search-answer__waiting" role="status">
+        Reading Reactome for an answer. This usually takes about ten seconds.
+      </p>
+    }
+
+    @if (visible()) {
+      <article class="search-answer__panel">
+        <h2 id="search-answer-heading" class="search-answer__heading">
+          AI answer
+          <span class="search-answer__caveat">generated from Reactome pathways — check the sources</span>
+        </h2>
+
+        <!--
+          A plain string, so Angular's sanitiser runs on it. See the note on
+          `html` in the component: bypassing it here would defeat the point.
+        -->
+        <div class="search-answer__prose" [innerHTML]="html()"></div>
+
+        @if (citations().length) {
+          <footer class="search-answer__sources">
+            <!--
+              "Most relevant", never "all": the server caps at twelve and says
+              the cap binds on ordinary questions, so calling this a complete
+              source list would overstate it.
+            -->
+            <h3 class="search-answer__sources-heading">Most relevant sources</h3>
+            <ul class="search-answer__sources-list">
+              @for (citation of citations(); track citation.stId) {
+                <li>
+                  <a [href]="'/content/detail/' + citation.stId">{{ citation.displayName }}</a>
+                </li>
+              }
+            </ul>
+          </footer>
+        }
+      </article>
+    }
+  </section>
+}

@@ -32,6 +32,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
 import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import { SearchAnswerComponent } from './answer/search-answer.component';
 
 @Component({
   selector: 'app-search',
@@ -45,6 +46,7 @@ import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/en
     DatePipe,
     MatIcon,
     MatTooltip,
+    SearchAnswerComponent,
   ],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',

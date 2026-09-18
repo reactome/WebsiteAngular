@@ -35,6 +35,21 @@ export interface SiteProfile {
    */
   deltaSignal?: boolean;
   /**
+   * Where the search page sends a question for an AI answer, or absent for
+   * "this deployment does not offer one".
+   *
+   * A path, and it must name **our** proxy rather than the chatbot: the proxy is
+   * what holds the signing key for the caller token, so a browser able to reach
+   * the chatbot directly would need that key shipped to it. See
+   * `specs/005-search-page-answers/research.md`, D1 and D3.
+   *
+   * Absent means off, like `deltaSignal`, so a deployment opts in rather than
+   * inherits. Only `development` has it today: the endpoint is not deployed on
+   * beta yet, and no keypair has been exchanged, so every other profile would
+   * offer a button whose calls fail.
+   */
+  searchAnswerEndpoint?: string;
+  /**
    * Where the services are, or `'origin'` for "wherever this bundle is served
    * from".
    *
@@ -147,6 +162,9 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // not exist in a built artifact. Turning this on elsewhere would offer a
     // button whose every call fails, so the other profiles leave it absent.
     deltaSignal: true,
+    // Same reasoning, and note the path: `/api` above already belongs to the
+    // DeltaSignal backend, so the answer proxy cannot live under it.
+    searchAnswerEndpoint: '/search-answer',
     host: 'origin',
     originFallback: 'https://dev.reactome.org',
     s3: S3,
