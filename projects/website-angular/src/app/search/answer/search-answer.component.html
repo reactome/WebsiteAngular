@@ -17,7 +17,15 @@
         broken, and a second click hits the cache and changes nothing at all.
         One neutral line, and no invitation to re-ask something settled.
       -->
-      <p class="search-answer__none" role="status">No AI answer for this search. The results below are unaffected.</p>
+      <p class="search-answer__none" role="status">
+        No AI answer for this search. The results below are unaffected.
+        <!--
+          The one dead end worth turning into a door: the reader asked, got
+          nothing, and the chat can take a differently-worded question where
+          this panel cannot.
+        -->
+        <a class="search-answer__continue" [href]="chatUrl">Try asking in the chat</a>
+      </p>
     } @else if (asking()) {
       <!--
         A status line rather than a spinner: the contract is explicit that a
@@ -31,10 +39,7 @@
 
     @if (visible()) {
       <article class="search-answer__panel">
-        <h2 id="search-answer-heading" class="search-answer__heading">
-          AI answer
-          <span class="search-answer__caveat">generated from Reactome pathways — check the sources</span>
-        </h2>
+        <h2 id="search-answer-heading" class="search-answer__heading">AI answer</h2>
 
         @if (incomplete()) {
           <!--
@@ -50,26 +55,68 @@
         <!--
           A plain string, so Angular's sanitiser runs on it. See the note on
           `html` in the component: bypassing it here would defeat the point.
+
+          Clamped when long, with a fade rather than a hard cut, so it is
+          obvious there is more instead of looking as though the answer simply
+          ends mid-thought.
         -->
-        <div class="search-answer__prose" [innerHTML]="html()"></div>
+        <div class="search-answer__prose" [class.is-clamped]="clamped()" [innerHTML]="html()"></div>
+
+        @if (collapsible()) {
+          <button type="button" class="search-answer__more" (click)="toggle()">
+            {{ expanded() ? 'Show less' : 'Show more' }}
+          </button>
+        }
 
         @if (citations().length) {
           <footer class="search-answer__sources">
+            <h3 class="search-answer__sources-heading">Sources</h3>
             <!--
-              "Most relevant", never "all": the server caps at twelve and says
-              the cap binds on ordinary questions, so calling this a complete
-              source list would overstate it.
+              Chips rather than a bulleted list. Twelve names in a list ran
+              longer than the answer's own closing paragraph and made the panel
+              look mostly bibliographic. The count does the work the old "most
+              relevant" wording did: it says this is a selection.
             -->
-            <h3 class="search-answer__sources-heading">Most relevant sources</h3>
-            <ul class="search-answer__sources-list">
-              @for (citation of citations(); track citation.stId) {
+            <ul class="search-answer__chips">
+              @for (citation of visibleCitations(); track key(citation)) {
                 <li>
-                  <a [href]="'/content/detail/' + citation.stId">{{ citation.displayName }}</a>
+                  <a class="search-answer__chip" [href]="href(citation)">{{ citation.displayName }}</a>
+                </li>
+              }
+              @if (hiddenSourceCount() > 0) {
+                <li>
+                  <button
+                    type="button"
+                    class="search-answer__chip search-answer__chip--more"
+                    (click)="showAllSources()"
+                  >
+                    +{{ hiddenSourceCount() }} more
+                  </button>
                 </li>
               }
             </ul>
           </footer>
         }
+
+        <!--
+          The disclaimer and the way onward, together and last. A reader who has
+          finished the answer is the one most likely to want to keep asking, and
+          this panel cannot take a follow-up -- the chat can.
+        -->
+        <p class="search-answer__footnote">
+          <span class="search-answer__disclaimer"
+            >AI-generated from Reactome pathways and can be wrong — check the sources.</span
+          >
+          <!--
+            An affordance rather than small print. This is the only route from a
+            one-shot answer to a conversation, and a reader who has read to the
+            end is the one most likely to want it.
+          -->
+          <a class="search-answer__continue" [href]="chatUrl">
+            Continue this in the chat
+            <span aria-hidden="true">→</span>
+          </a>
+        </p>
       </article>
     }
   </section>
