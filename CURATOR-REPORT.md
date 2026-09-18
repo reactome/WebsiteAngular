@@ -267,8 +267,8 @@ you asked: a pathway question cites entries you can open in Reactome, while a
 question about using the site cites userguide pages. An answer can also arrive
 with **no sources at all**, and that is correct rather than broken — the panel
 then shows no sources heading rather than an empty one. And the panel answers
-once; "Continue this in the chat" carries you to the chatbot, though it does not
-yet carry your question with it.
+once; "Continue in React-to-Me" carries you into a conversation, though it does
+not yet carry your question with it.
 
 If it says nothing after you ask, that is a real answer too — it means nothing
 in Reactome matched, and the search results are unaffected.
