@@ -115,9 +115,15 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       this.suggestions = this.suggestions ? [...this.suggestions] : [];
     }
     if (changes['activeFilters']) {
-      // A copy, so the bar's own controls can edit it without writing back
-      // through an input.
-      this.advancedFilters = { ...(this.activeFilters || {}) };
+      // Each array is copied, not just the object. `toggleAdvancedFacet` edits
+      // in place with splice/push, so a shallow copy would share the arrays
+      // with the page's own `filters` -- and ticking a box here would silently
+      // rewrite what the page believes is applied, with no navigation and no
+      // change to the URL.
+      const applied = this.activeFilters || {};
+      this.advancedFilters = Object.fromEntries(
+        Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
+      ) as SearchFilters;
     }
     if (changes['query']) {
       this.query = this.query || '';

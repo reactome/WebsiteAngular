@@ -26,17 +26,28 @@
 import { readFileSync, appendFileSync, existsSync } from 'node:fs';
 
 /**
- * The most flaky tests a run may report.
+ * The most flaky tests **one shard** may report.
  *
- * Three were known when this was written (`download-feedback` "says it is
+ * Read that carefully, because it is not the number in #217. CI runs the suite
+ * sharded four ways and this script runs per shard, so a baseline of N means a
+ * ceiling of 4N across the suite. Setting it to the three known today would
+ * have allowed twelve, which is a ratchet that does not ratchet.
+ *
+ * Two per shard, so the effective ceiling is eight rather than twelve. Still
+ * looser than the three known, and the honest fix is to aggregate the four
+ * shards' reports in a job that runs after them and cap the total once. That is
+ * more CI machinery than this is worth today, and is left undone deliberately
+ * rather than by oversight.
+ *
+ * The three known when this was written: `download-feedback` "says it is
  * working during the wait", `back-button` "leaves the pathway browser without
  * stepping through tabs first", `pathway-browser` "the Expression tab renders
- * the Expression Atlas heatmap"). A fourth was fixed in #216 rather than
+ * the Expression Atlas heatmap". A fourth was fixed in #216 rather than
  * accepted, which is the direction this is meant to encourage.
  *
  * Lower it when one is fixed. Raising it should take an argument.
  */
-const BASELINE = Number(process.env.FLAKY_BASELINE ?? 3);
+const BASELINE = Number(process.env.FLAKY_BASELINE ?? 2);
 
 /** Walks the report's nested suites and yields every test. */
 function* tests(node) {
@@ -72,7 +83,7 @@ for (const path of reports) {
 const lines = [
   flaky.length === 0
     ? '### No flaky tests'
-    : `### ${flaky.length} flaky test${flaky.length === 1 ? '' : 's'} (baseline ${BASELINE})`,
+    : `### ${flaky.length} flaky test${flaky.length === 1 ? '' : 's'} in this shard (per-shard baseline ${BASELINE})`,
   '',
   ...flaky.map((name) => `- \`${name}\``),
   '',
@@ -88,7 +99,7 @@ if (process.env.GITHUB_STEP_SUMMARY) {
 
 if (flaky.length > BASELINE) {
   console.error(
-    `\n  Flaky tests went up: ${flaky.length}, baseline is ${BASELINE}.` +
+    `\n  Flaky tests in this shard: ${flaky.length}, per-shard baseline is ${BASELINE}.` +
       `\n  Fix the new one, or raise FLAKY_BASELINE deliberately and say why.`
   );
   process.exit(1);
