@@ -27,6 +27,17 @@
           <span class="search-answer__caveat">generated from Reactome pathways — check the sources</span>
         </h2>
 
+        @if (incomplete()) {
+          <!--
+            Says it stopped; does not take it back. The reader has been reading
+            real retrieved text, and generation stopping early does not make
+            what arrived wrong.
+          -->
+          <p class="search-answer__incomplete" role="status">
+            This answer stopped before it finished. What is shown is complete as far as it goes.
+          </p>
+        }
+
         <!--
           A plain string, so Angular's sanitiser runs on it. See the note on
           `html` in the component: bypassing it here would defeat the point.

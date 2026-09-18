@@ -13,13 +13,14 @@
  *   * call the chatbot directly -- the endpoint is our own proxy, which is what
  *     holds the signing key for the caller token
  */
-import { Injectable, computed, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { getProfile, SELECTED_PROFILE_NAME } from '../../../config/environments';
 import {
   cacheKey,
   drainFrames,
+  isIncomplete,
   MAX_CITATIONS,
-  shouldRender,
+  showsProse,
   type AnswerState,
   type Citation,
 } from './answer-stream';
@@ -40,7 +41,18 @@ interface CachedAnswer {
  */
 const OVERALL_TIMEOUT_MS = 130_000;
 
-@Injectable({ providedIn: 'root' })
+/**
+ * Deliberately **not** `providedIn: 'root'`.
+ *
+ * The panel is provided by `SearchAnswerComponent`, so this dies with it. Root
+ * scope was a bug: the panel unmounts the moment the reader types into the
+ * search box -- `onQueryInput` sets `searchSubmitted = false`, which closes the
+ * `@if` around it -- and a root-scoped service kept streaming after that. The
+ * reader would have left a model call running by starting to type, which is
+ * exactly what closing the connection is supposed to prevent. It also carried
+ * one page's answer to the next.
+ */
+@Injectable()
 export class AnswerService {
   private readonly endpoint = getProfile(SELECTED_PROFILE_NAME).searchAnswerEndpoint;
 
@@ -61,8 +73,11 @@ export class AnswerService {
   /** Capped and de-duplicated: the server's cap binds on ordinary questions. */
   readonly citations = computed(() => this._citations().slice(0, MAX_CITATIONS));
 
-  /** The one thing the template should ask. */
-  readonly visible = computed(() => shouldRender(this._state(), this._text()));
+  /** Whether there is anything to show -- including mid-stream. */
+  readonly visible = computed(() => showsProse(this._text()));
+
+  /** Whether what is shown stopped early, and should say so. */
+  readonly incomplete = computed(() => isIncomplete(this._state(), this._text()));
 
   /**
    * The release the last `start` event named, used to key the cache.
@@ -73,6 +88,11 @@ export class AnswerService {
   private release: number | null = null;
   private readonly cache = new Map<string, CachedAnswer>();
   private inFlight: AbortController | null = null;
+
+  constructor() {
+    // Leaving the component is a cancellation, the same as a new search is.
+    inject(DestroyRef).onDestroy(() => this.cancel());
+  }
 
   /**
    * Abandons whatever is in flight.
@@ -180,18 +200,27 @@ export class AnswerService {
       }
     }
 
-    // A stream that ends without `done` is a dropped connection. Nothing
-    // renders, and the half sentence already collected is discarded rather than
-    // shown as though it were finished.
+    // A stream that ends without `done` is a dropped connection: `failed`, and
+    // whatever prose arrived stays on screen marked incomplete rather than being
+    // taken back from a reader who was reading it.
     if (this._state() === null) this._state.set('failed');
-    if (this._state() === 'answered') this.remember(question);
+    this.remember(question);
   }
 
+  /**
+   * Caches whatever the outcome was, not only a good one.
+   *
+   * A reader who asks an off-topic question, sees nothing, and clicks again
+   * should not pay for a second model call to be told the same nothing. An
+   * incomplete answer is cached for the same reason.
+   */
   private remember(question: string): void {
+    const state = this._state();
+    if (state === null) return;
     const entry: CachedAnswer = {
       text: this._text(),
       citations: this._citations(),
-      state: 'answered',
+      state,
     };
     this.cache.set(cacheKey(question, this.release), entry);
     // Also under the unknown-release key, for a session where no `start` event

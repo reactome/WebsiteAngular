@@ -8,7 +8,14 @@
  * holding the parser honest.
  */
 import { describe, expect, it } from 'vitest';
-import { cacheKey, drainFrames, parseFrame, shouldRender, type AnswerEvent } from './answer-stream';
+import {
+  cacheKey,
+  drainFrames,
+  isIncomplete,
+  parseFrame,
+  showsProse,
+  type AnswerEvent,
+} from './answer-stream';
 
 const START = 'event: start\ndata: {"release": 97, "answered": true}';
 const TOKEN = 'event: token\ndata: {"text": "CDK5, when bound to p25, "}';
@@ -113,22 +120,36 @@ describe('draining a stream that arrives in chunks', () => {
 });
 
 describe('what the reader sees', () => {
-  it('renders only an answered state with text', () => {
-    expect(shouldRender('answered', 'something')).toBe(true);
+  it('shows prose while it is still arriving', () => {
+    // Progressive, so the reader gets text at ~10s rather than waiting to ~16s.
+    expect(showsProse('partial text')).toBe(true);
+    expect(isIncomplete(null, 'partial text')).toBe(false);
   });
 
-  it.each(['nothing_found', 'refused', 'failed'] as const)('renders nothing for %s', (state) => {
-    // About one question in seven is nothing_found, in ~4.5s. It is an ordinary
-    // outcome, so there is no panel and no error either.
-    expect(shouldRender(state, 'something')).toBe(false);
+  it.each(['nothing_found', 'refused', 'failed'] as const)(
+    'shows nothing at all for %s with no prose',
+    (state) => {
+      // About one question in seven is nothing_found, in ~4.5s. An ordinary
+      // outcome, so no panel and no error either.
+      expect(showsProse('')).toBe(false);
+      expect(isIncomplete(state, '')).toBe(false);
+    }
+  );
+
+  it('shows nothing when answered arrives with only whitespace', () => {
+    expect(showsProse('   ')).toBe(false);
   });
 
-  it('renders nothing when answered arrives with no prose', () => {
-    expect(shouldRender('answered', '   ')).toBe(false);
+  it('keeps prose that stopped early, and marks it incomplete', () => {
+    // The two routes to tokens-then-not-answered are the 120s ceiling and an
+    // exception mid-generation -- both faults. Withdrawing text a reader is
+    // already reading is the worse failure, so it stays and says so.
+    expect(showsProse('half an answer')).toBe(true);
+    expect(isIncomplete('failed', 'half an answer')).toBe(true);
   });
 
-  it('renders nothing before a done event arrives', () => {
-    expect(shouldRender(null, 'partial text')).toBe(false);
+  it('does not mark a completed answer incomplete', () => {
+    expect(isIncomplete('answered', 'a whole answer')).toBe(false);
   });
 });
 

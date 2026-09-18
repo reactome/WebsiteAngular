@@ -139,13 +139,38 @@ export function cacheKey(question: string, release: number | null): string {
 }
 
 /**
- * Whether a state should put anything on screen.
+ * Whether there is prose to show.
  *
- * The contract's whole design is that the panel is safe to ignore, and roughly
- * one question in seven returns `nothing_found` in about 4.5 seconds. Treating
- * that as an error would train readers to distrust a feature that behaved
- * correctly.
+ * Prose is shown as it arrives rather than withheld until `done`, which gets
+ * the reader text at about 10s instead of a wait to about 16s. That is safe
+ * because of a guarantee in the endpoint's own code, not because it usually
+ * works out: `answered` flips true the moment the first non-empty token is
+ * emitted, and the terminal state is `answered if answered else nothing_found`.
+ * So `nothing_found` after a token is impossible by construction, and `refused`
+ * happens before the graph is touched at all -- which is why it lands at 0.0s.
+ *
+ * An outcome with no prose shows nothing whatsoever. Roughly one question in
+ * seven is `nothing_found` in about 4.5s, and treating an ordinary outcome as
+ * an error would train readers to distrust a feature that behaved correctly.
  */
-export function shouldRender(state: AnswerState | null, text: string): boolean {
-  return state === 'answered' && text.trim().length > 0;
+export function showsProse(text: string): boolean {
+  return text.trim().length > 0;
+}
+
+/**
+ * Whether prose on screen stopped early.
+ *
+ * The two ways to get tokens and then a non-`answered` state are both faults
+ * rather than outcomes: the 120s ceiling, and an exception mid-generation. The
+ * chatbot team has never observed either across everything measured, but "never
+ * by construction" applies only to `nothing_found` and `refused`, so this is
+ * designed for rather than assumed away.
+ *
+ * What it must *not* do is withdraw the text. The reader has been reading real,
+ * retrieved text, and nothing about generation stopping makes what arrived
+ * wrong. Taking it back mid-read is the worse failure for a scientific
+ * resource, so the panel stays and says it is incomplete.
+ */
+export function isIncomplete(state: AnswerState | null, text: string): boolean {
+  return showsProse(text) && state !== null && state !== 'answered';
 }

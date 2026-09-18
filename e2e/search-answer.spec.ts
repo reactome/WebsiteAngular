@@ -118,10 +118,14 @@ test.describe('Search page AI answer', () => {
     await expect(page.getByText(/no answer/i)).toHaveCount(0);
   });
 
-  test('renders nothing when the stream stops without a done event', async ({ page }) => {
+  test('keeps prose that stopped early, and says it stopped', async ({ page }) => {
     await asDevelopmentProfile(page);
-    // Tokens, then silence: what a dropped connection looks like. The half
-    // sentence must not be shown as though it were a finished answer.
+    // Tokens, then silence: what a dropped connection looks like.
+    //
+    // The text stays. The reader has been reading real retrieved prose, and
+    // generation stopping does not make what arrived wrong -- withdrawing it
+    // mid-read is the worse failure for a scientific resource. The panel says
+    // so instead.
     await stubAnswer(
       page,
       stream([
@@ -133,8 +137,23 @@ test.describe('Search page AI answer', () => {
 
     await askButton(page).click();
 
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toContainText('CDK5 bound to p25');
+    await expect(panel(page)).toContainText('stopped before it finished');
+  });
+
+  test('offers the invitation again when an outcome shows nothing', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, NOTHING_FOUND);
+    await openSearch(page);
+
+    await askButton(page).click();
     await expect(panel(page)).toHaveCount(0);
-    await expect(page.getByText('CDK5 bound to p25')).toHaveCount(0);
+
+    // Hiding the button on "already asked" left the reader's click with no
+    // visible effect at all and no way to retry. A repeat is free: every
+    // outcome is cached, including this one.
+    await expect(askButton(page)).toBeVisible({ timeout: 20_000 });
   });
 
   test('is absent entirely on a deployment that does not offer answers', async ({ page }) => {

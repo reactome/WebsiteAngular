@@ -21,6 +21,10 @@ import { AnswerService } from './answer.service';
   templateUrl: './search-answer.component.html',
   styleUrls: ['./search-answer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Scoped here rather than to the root injector, so an answer in flight is
+  // abandoned when this component goes -- which happens as soon as the reader
+  // types into the search box.
+  providers: [AnswerService],
 })
 export class SearchAnswerComponent {
   private readonly answers = inject(AnswerService);
@@ -31,6 +35,7 @@ export class SearchAnswerComponent {
   readonly available = this.answers.available;
   readonly asking = this.answers.asking;
   readonly visible = this.answers.visible;
+  readonly incomplete = this.answers.incomplete;
   readonly citations = this.answers.citations;
 
   /**
@@ -44,7 +49,15 @@ export class SearchAnswerComponent {
     () => this.answers.question() !== '' && this.answers.question() === this.query().trim()
   );
 
-  readonly showButton = computed(() => this.available && !this.askedThisQuery());
+  /**
+   * The invitation comes back whenever there is nothing on screen.
+   *
+   * Hiding it on `askedThisQuery` alone was wrong: an outcome with no prose --
+   * `nothing_found`, a refusal -- left the button gone and no panel in its
+   * place, so the reader's click visibly did nothing at all and could not be
+   * retried. A repeat click is free anyway, since every outcome is cached.
+   */
+  readonly showButton = computed(() => this.available && !this.visible() && !this.asking());
 
   /**
    * The prose, as Markdown.
