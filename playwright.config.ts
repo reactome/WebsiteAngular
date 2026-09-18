@@ -36,7 +36,15 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
   workers: process.env['CI'] ? 1 : undefined,
-  reporter: 'html',
+  // html for a person, json for `scripts/check-flaky.mjs`. Flakiness is
+  // otherwise only in the log, where nobody reads it -- see #217.
+  reporter: [
+    ['html'],
+    [
+      'json',
+      { outputFile: process.env['PLAYWRIGHT_JSON_REPORT'] || 'playwright-report/report.json' },
+    ],
+  ],
   use: {
     baseURL,
     trace: 'on-first-retry',
