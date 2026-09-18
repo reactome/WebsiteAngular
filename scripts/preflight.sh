@@ -83,7 +83,15 @@ if [ "$mode" != "fast" ]; then
   # what the asset regression broke; downloads exercises the render service, which
   # is what the probe change broke. Chosen because each caught a real failure --
   # pathway-browser.spec.ts was in here first and caught neither.
+  #
+  # E2E_PORT is what makes this check the working tree rather than whatever is
+  # already serving on 4200. Without it, playwright reuses an existing server --
+  # and on a host that keeps a deployed build there, this step silently tested
+  # that build instead of the commit about to be pushed (#243). It cost a
+  # `--no-verify` push on a branch that was in fact fine, and it could as easily
+  # have waved through one that was not.
   step "diagram + download smoke" env \
+    E2E_PORT=4201 \
     REACTOME_BACKEND=http://127.0.0.1:9 \
     RENDER_TARGET=http://127.0.0.1:1 \
     npx playwright test e2e/diagram-behaviour.spec.ts e2e/downloads.spec.ts --project=code --reporter=line
