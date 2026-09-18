@@ -1,5 +1,5 @@
 /**
- * The AI answer panel on the search page.
+ * The React-to-Me answer panel on the search page.
  *
  * Opt-in behind a click, and never automatic. First token is p50 9.6s and
  * complete is p90 18.1s (measured by the chatbot team, fifteen questions, two

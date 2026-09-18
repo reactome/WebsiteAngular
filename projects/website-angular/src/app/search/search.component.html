@@ -138,6 +138,31 @@
         }
 
         <!-- Keywords facet -->
+        @if (pageCategoryCounts.length) {
+          <div class="facet-section">
+            <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
+              <span>Pages</span>
+              <span class="facet-toggle">{{ collapsedFacets['pageCategories'] ? '+' : '−' }}</span>
+            </button>
+            @if (!collapsedFacets['pageCategories']) {
+              <div class="facet-options">
+                @for (item of pageCategoryCounts; track item.name) {
+                  <label class="facet-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isFacetSelected('pageCategories', item.name)"
+                      (change)="toggleFacet('pageCategories', item.name)"
+                    />
+                    <span class="facet-name">{{ item.name }}</span>
+                    <span class="facet-count">({{ item.count }})</span>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Pages facet: page-category counts from merged site-search hits -->
         @if (getFacetItems(facets?.keywordFacet); as items) {
           @if (items.length) {
             <div class="facet-section">
@@ -162,31 +187,6 @@
               }
             </div>
           }
-        }
-
-        <!-- Pages facet: page-category counts from merged site-search hits -->
-        @if (pageCategoryCounts.length) {
-          <div class="facet-section">
-            <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
-              <span>Pages</span>
-              <span class="facet-toggle">{{ collapsedFacets['pageCategories'] ? '+' : '−' }}</span>
-            </button>
-            @if (!collapsedFacets['pageCategories']) {
-              <div class="facet-options">
-                @for (item of pageCategoryCounts; track item.name) {
-                  <label class="facet-option">
-                    <input
-                      type="checkbox"
-                      [checked]="isFacetSelected('pageCategories', item.name)"
-                      (change)="toggleFacet('pageCategories', item.name)"
-                    />
-                    <span class="facet-name">{{ item.name }}</span>
-                    <span class="facet-count">({{ item.count }})</span>
-                  </label>
-                }
-              </div>
-            }
-          </div>
         }
       </aside>
 

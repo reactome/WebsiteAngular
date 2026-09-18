@@ -12,10 +12,10 @@ import { test, expect } from './support/backend';
 const SHORTCUTS = [
   { name: 'Pathway Browser', href: '/PathwayBrowser' },
   { name: 'Analysis Tools', href: '/PathwayBrowser?analysisTab=qualitative' },
-  // Trailing slash: Apache proxies /chat/ to the chatbot container and
+  // Trailing slash: nginx proxies /chat/ to the React-to-Me container and
   // redirects bare /chat to it, so this link leaves the Angular app on
   // purpose rather than resolving as a route.
-  { name: 'AI Chatbot', href: '/chat/' },
+  { name: 'React-to-Me', href: '/chat/' },
   { name: 'ReactomeFIViz', href: '/documentation/userguide/reactome-fiviz' },
   { name: 'IDG', href: '/idg' },
   { name: 'Documentation', href: '/documentation' },
