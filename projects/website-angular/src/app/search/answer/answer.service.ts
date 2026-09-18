@@ -17,6 +17,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { getProfile, SELECTED_PROFILE_NAME } from '../../../config/environments';
 import {
   cacheKey,
+  citationKey,
   drainFrames,
   isIncomplete,
   MAX_CITATIONS,
@@ -190,7 +191,9 @@ export class AnswerService {
             break;
           case 'citation':
             this._citations.update((list) =>
-              list.some((c) => c.stId === event.citation.stId) ? list : [...list, event.citation]
+              list.some((c) => citationKey(c) === citationKey(event.citation))
+                ? list
+                : [...list, event.citation]
             );
             break;
           case 'done':

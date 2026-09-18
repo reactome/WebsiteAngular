@@ -12,8 +12,17 @@
  * No spinner that implies an imminent answer -- the contract is explicit that
  * ten seconds is the wrong latency for one.
  */
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { marked } from 'marked';
+import { citationHref, citationKey, stripTrailingSources } from './answer-stream';
 import { AnswerService } from './answer.service';
 
 @Component({
@@ -88,13 +97,115 @@ export class SearchAnswerComponent {
    * and links all remain.
    */
   readonly html = computed(() => {
-    const raw = this.answers.text();
+    const raw = stripTrailingSources(this.answers.text());
     if (!raw) return '';
     const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     return marked.parse(escaped, { async: false }) as string;
   });
 
+  /**
+   * Long answers start collapsed, so they cannot bury the search results.
+   *
+   * Reported from use: the panel sits above the results and a full answer runs
+   * to a few thousand characters, which is enough that a reader may not notice
+   * the results are there at all. The results are the page; this is an aside.
+   */
+  private readonly _expanded = signal(false);
+  readonly expanded = this._expanded.asReadonly();
+
+  /**
+   * Whether there is enough text for collapsing to be worth doing.
+   *
+   * Measured against a real answer: "What happens in the Golgi during N-glycan
+   * maturation?" produced 2821 characters. A short answer collapsing would add
+   * a control for no reason.
+   */
+  readonly collapsible = computed(() => stripTrailingSources(this.answers.text()).length > 900);
+
+  readonly clamped = computed(() => this.collapsible() && !this._expanded());
+
+  toggle(): void {
+    this._expanded.update((open) => !open);
+  }
+
+  /**
+   * Sources are shown as a few compact chips rather than a full list.
+   *
+   * Twelve names in a bulleted list is longer than the answer's own closing
+   * paragraph, which made the panel look like it was mostly bibliography. A
+   * handful of chips plus a count reads as "here are the main ones, there are
+   * more" without spending the vertical space -- and the count is what
+   * communicates that the list is a selection rather than everything.
+   */
+  private static readonly CHIPS_SHOWN = 4;
+  private readonly _allSources = signal(false);
+  readonly allSources = this._allSources.asReadonly();
+
+  readonly visibleCitations = computed(() =>
+    this._allSources()
+      ? this.citations()
+      : this.citations().slice(0, SearchAnswerComponent.CHIPS_SHOWN)
+  );
+
+  readonly hiddenSourceCount = computed(
+    () => this.citations().length - this.visibleCitations().length
+  );
+
+  showAllSources(): void {
+    this._allSources.set(true);
+  }
+
+  /** A stable id resolves to its detail page; a documentation page is its url. */
+  readonly href = citationHref;
+  readonly key = citationKey;
+
+  /**
+   * Where to carry the question on to a conversation.
+   *
+   * `/chat/guest/`, not `/chat/`. The latter is a chooser page offering guest
+   * and personal, so it lands the reader a step short of a conversation; guest
+   * is the one a public search page should open, and it is the same app the
+   * answer endpoint belongs to.
+   *
+   * The question is **not** in the URL, and that is a limitation rather than a
+   * choice. The chat cannot receive it: the only `searchParams` handling in the
+   * shipped bundle tests filenames for `.pdf`, so a `?q=` would be silently
+   * ignored -- a link that looks as though it carries the question and does
+   * not. Raised with the chatbot team; if they add a way to accept one, this
+   * becomes the place to pass it.
+   */
+  readonly chatUrl = '/chat/guest/';
+
+  constructor() {
+    // Clears an answer when the reader searches for something else.
+    //
+    // This is **not** redundant with the component being destroyed, which was
+    // my reasoning for deleting it in #247 and was wrong. The search page reuses
+    // this component across searches: `onQueryInput` sets
+    // `searchSubmitted = false`, which would close the `@if` around us -- but it
+    // sets a plain field and never calls `markForCheck`, and the page is
+    // zoneless, so no change detection runs and the `@if` is never
+    // re-evaluated. The component survives the whole way through.
+    //
+    // Reproduced before fixing: search apoptosis, ask, then search TP53 from
+    // the bar. The panel kept showing the apoptosis answer above 3435 results
+    // for TP53, with no button to ask about the new query. A reader could read
+    // an answer about one thing believing it was about another, which is worse
+    // than the panel simply being absent.
+    effect(() => {
+      const current = this.query().trim();
+      const answered = this.answers.question();
+      if (current && answered && answered !== current) {
+        this.answers.reset();
+        this._expanded.set(false);
+        this._allSources.set(false);
+      }
+    });
+  }
+
   ask(): void {
+    this._expanded.set(false);
+    this._allSources.set(false);
     void this.answers.ask(this.query());
   }
 }

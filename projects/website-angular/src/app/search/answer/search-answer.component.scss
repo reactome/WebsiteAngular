@@ -1,5 +1,19 @@
+// Colours come from the site's Material 3 system tokens, which is what makes
+// this follow the dark theme: `src/styles.scss` redefines --surface, --primary
+// and the rest under `.dark`, and `ngx-reactome-style/_variables.scss` maps the
+// --surfaceN tints off them.
+//
+// The first version of this file invented its own names (--favth-color-bg and
+// friends) with hardcoded light fallbacks. Nothing defined them, so every value
+// was the fallback: a white panel with inherited light text, unreadable in
+// inverted colours. Reported from actually using it.
+//
+// So: no fallbacks here. These tokens are defined globally, and a fallback
+// would only hide it if one were ever renamed.
+
 .search-answer {
   margin: 0 0 1.25rem;
+  color: var(--on-surface);
 }
 
 .search-answer__ask {
@@ -10,14 +24,14 @@
   padding: 0.7rem 0.9rem;
   text-align: left;
   cursor: pointer;
-  background: var(--favth-color-bg-alt, #f5f7f9);
-  border: 1px solid var(--favth-color-border, #d8dee4);
+  color: var(--on-surface);
+  background: var(--surface2);
+  border: 1px solid var(--outline-variant);
   border-radius: 4px;
-  color: inherit;
 
   &:hover,
   &:focus-visible {
-    background: var(--favth-color-bg-hover, #eceff2);
+    background: var(--surface3);
   }
 }
 
@@ -28,25 +42,27 @@
 .search-answer__ask-note,
 .search-answer__caveat {
   font-size: 0.82rem;
-  opacity: 0.75;
   font-weight: 400;
+  color: var(--on-surface-variant);
 }
 
-.search-answer__waiting {
+.search-answer__waiting,
+.search-answer__none {
   margin: 0;
-  padding: 0.7rem 0.9rem;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  background: var(--favth-color-bg-alt, #f5f7f9);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  color: var(--on-surface-variant);
+  background: var(--surface1);
   border-radius: 4px;
 }
 
 .search-answer__panel {
   padding: 0.9rem 1rem 0.75rem;
-  border: 1px solid var(--favth-color-border, #d8dee4);
-  border-left: 3px solid var(--favth-color-primary, #0b6ba8);
+  color: var(--on-surface);
+  background: var(--surface1);
+  border: 1px solid var(--outline-variant);
+  border-left: 3px solid var(--primary);
   border-radius: 4px;
-  background: var(--favth-color-bg, #fff);
 }
 
 .search-answer__heading {
@@ -59,11 +75,31 @@
   font-weight: 700;
 }
 
+.search-answer__incomplete {
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--on-surface);
+  background: var(--surface2);
+  // --warn is declared with light-dark(), so it already answers to the theme.
+  border-left: 2px solid var(--warn);
+  border-radius: 2px;
+}
+
 .search-answer__prose {
   // The prose is Markdown the model wrote, so its shape is not ours to predict.
   // Keep block spacing tight and let headings sit below the panel's own.
   font-size: 0.95rem;
   line-height: 1.5;
+
+  // Collapsed by default when long. A fade rather than a hard cut: a clean
+  // edge reads as "the answer ends here", which is worse than obviously
+  // truncated -- the reader cannot tell a short answer from a hidden one.
+  &.is-clamped {
+    max-height: 9.5rem;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 6.5rem, transparent 9.5rem);
+  }
 
   :first-child {
     margin-top: 0;
@@ -95,32 +131,58 @@
     padding-left: 1.25rem;
   }
 
+  a {
+    color: var(--primary);
+  }
+
   code {
     padding: 0.05rem 0.25rem;
     font-size: 0.88em;
-    background: var(--favth-color-bg-alt, #f5f7f9);
+    background: var(--surface3);
     border-radius: 3px;
   }
 
   pre {
     padding: 0.5rem 0.65rem;
     overflow-x: auto;
-    background: var(--favth-color-bg-alt, #f5f7f9);
+    background: var(--surface3);
     border-radius: 3px;
+
+    code {
+      background: none;
+    }
+  }
+
+  blockquote {
+    margin: 0 0 0.6rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--outline-variant);
+    color: var(--on-surface-variant);
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0 0 0.6rem;
+
+    th,
+    td {
+      padding: 0.2rem 0.45rem;
+      border: 1px solid var(--outline-variant);
+    }
   }
 }
 
 .search-answer__sources {
   margin-top: 0.6rem;
   padding-top: 0.55rem;
-  border-top: 1px solid var(--favth-color-border, #d8dee4);
+  border-top: 1px solid var(--outline-variant);
 }
 
 .search-answer__sources-heading {
   margin: 0 0 0.3rem;
   font-size: 0.85rem;
   font-weight: 700;
-  opacity: 0.85;
+  color: var(--on-surface-variant);
 }
 
 .search-answer__sources-list {
@@ -131,22 +193,106 @@
   li {
     margin-bottom: 0.15rem;
   }
+
+  a {
+    color: var(--primary);
+  }
 }
 
-.search-answer__incomplete {
-  margin: 0 0 0.5rem;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.85rem;
-  background: var(--favth-color-bg-alt, #f5f7f9);
-  border-left: 2px solid var(--favth-color-warning, #b8860b);
-  border-radius: 2px;
-}
-
-.search-answer__none {
-  margin: 0;
-  padding: 0.55rem 0.9rem;
+.search-answer__more {
+  margin-top: 0.15rem;
+  padding: 0.15rem 0;
+  font: inherit;
   font-size: 0.88rem;
-  opacity: 0.75;
-  background: var(--favth-color-bg-alt, #f5f7f9);
-  border-radius: 4px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+// Sources as chips: a row that wraps, rather than a column that grows.
+.search-answer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-answer__chip {
+  display: inline-block;
+  max-width: 22rem;
+  padding: 0.2rem 0.55rem;
+  overflow: hidden;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  color: var(--on-surface);
+  background: var(--surface3);
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--primary);
+    text-decoration: underline;
+  }
+}
+
+.search-answer__chip--more {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+
+.search-answer__footnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.7rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.search-answer__disclaimer {
+  font-size: 0.78rem;
+  color: var(--on-surface-variant);
+}
+
+// Reads as an action rather than small print: it is the only route from a
+// one-shot answer to a conversation.
+.search-answer__continue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--on-primary);
+    background: var(--primary);
+  }
+}
+
+.search-answer__none .search-answer__continue {
+  margin-left: 0.4rem;
 }

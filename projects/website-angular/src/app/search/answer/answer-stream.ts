@@ -17,9 +17,52 @@
 /** The outcomes the endpoint reports. Only `answered` renders anything. */
 export type AnswerState = 'answered' | 'nothing_found' | 'refused' | 'failed';
 
+/**
+ * One source behind an answer.
+ *
+ * Exactly one of `stId` and `url` is present. A Reactome entity has a stable
+ * identifier; a documentation page has neither an identifier nor any honest way
+ * to be given one, so it carries its address instead. The chatbot team added
+ * the second form after finding that userguide answers had no sources at all --
+ * and refused, correctly, to fabricate a stable id to make them fit.
+ */
 export interface Citation {
-  stId: string;
+  stId?: string;
+  url?: string;
   displayName: string;
+}
+
+/**
+ * Where a citation points.
+ *
+ * A stable identifier is resolved to a detail page rather than used raw: a
+ * reader should never be left on an identifier they have to look up.
+ */
+export function citationHref(citation: Citation): string {
+  return citation.stId ? `/content/detail/${citation.stId}` : (citation.url ?? '');
+}
+
+/** What distinguishes one citation from another, for de-duplication. */
+export function citationKey(citation: Citation): string {
+  return citation.stId ?? citation.url ?? citation.displayName;
+}
+
+/**
+ * Only http(s) addresses are accepted.
+ *
+ * The prose is model output and so are these, so a citation is not a promise
+ * about its own address. Angular sanitises `[href]`, which makes this the
+ * second layer rather than the only one -- but a `javascript:` source has no
+ * legitimate reading, and dropping it here means it never reaches a template.
+ */
+function usableUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value === '') return undefined;
+  try {
+    const parsed = new URL(value, 'https://reactome.org');
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? value : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export type AnswerEvent =
@@ -84,12 +127,20 @@ export function parseFrame(frame: string): AnswerEvent | null {
     case 'token':
       return typeof data['text'] === 'string' ? { kind: 'token', text: data['text'] } : null;
     case 'citation': {
-      const stId = data['st_id'];
-      if (typeof stId !== 'string' || !stId) return null;
+      // Either form, and never both: a Reactome entity carries `st_id`, a
+      // documentation page carries `url`. A citation with neither points
+      // nowhere, so it is dropped rather than rendered as dead text.
+      const stId = typeof data['st_id'] === 'string' && data['st_id'] ? data['st_id'] : undefined;
+      const url = stId ? undefined : usableUrl(data['url']);
+      if (!stId && !url) return null;
       const displayName = data['display_name'];
       return {
         kind: 'citation',
-        citation: { stId, displayName: typeof displayName === 'string' ? displayName : stId },
+        citation: {
+          stId,
+          url,
+          displayName: typeof displayName === 'string' ? displayName : (stId ?? url ?? ''),
+        },
       };
     }
     case 'done':
@@ -155,6 +206,41 @@ export function cacheKey(question: string, release: number | null): string {
  */
 export function showsProse(text: string): boolean {
   return text.trim().length > 0;
+}
+
+/**
+ * Removes a trailing "Sources" section the model wrote itself.
+ *
+ * The prose frequently ends with its own list, and it is the useless copy of
+ * the one we already render: the contract strips anchors from the prose, so the
+ * model's version is plain text with no links, while the `citation` events give
+ * us the same names with resolvable stable identifiers. Leaving both makes the
+ * panel noticeably longer and shows the reader two source lists, one of which
+ * cannot be clicked.
+ *
+ * Deliberately conservative. It strips only from the last heading whose text is
+ * some form of "sources", "references" or "citations", and only when everything
+ * after it is list items -- so a section that continues into real prose is left
+ * alone rather than swallowed.
+ */
+export function stripTrailingSources(text: string): string {
+  const headings = [
+    ...text.matchAll(/^#{1,6}[ \t]*(sources?|references?|citations?)[ \t]*:?[ \t]*$/gim),
+  ];
+  const last = headings.at(-1);
+  // `last.index === undefined` rather than `!last.index`: a heading at index 0
+  // is a real match, and the falsy check treated it as none -- so an answer
+  // that *began* with its sources section was never stripped.
+  if (last?.index === undefined) return text;
+
+  const after = text.slice(last.index + last[0].length);
+  const lines = after.split('\n').filter((line) => line.trim() !== '');
+  if (lines.length === 0) return text.slice(0, last.index).trimEnd();
+  // Every remaining line must look like a list item, or this is prose we have
+  // no business removing.
+  if (!lines.every((line) => /^\s*(?:[-*+]|\d+[.)])\s+/.test(line))) return text;
+
+  return text.slice(0, last.index).trimEnd();
 }
 
 /**
