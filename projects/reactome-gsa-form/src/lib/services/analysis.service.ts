@@ -11,6 +11,22 @@ import { Parameter } from '../model/parameter.model';
 import { extractErrorMessage } from '../utilities/utils';
 import { ConfigProvider, REACTOME_GSA_CONFIG } from '../config/gsa-config';
 
+/**
+ * A parameter the reader never filled in has no value, and `value + ''` turns
+ * that into the **string** `"undefined"`. For the email parameter that means
+ * asking the analysis service to deliver a report to an address that cannot
+ * exist, rather than telling it there is no address -- reports arrive, no mail
+ * does, and nothing anywhere says why (#168).
+ *
+ * So unset parameters are left out. `false` and `0` are values and are kept;
+ * only `undefined`, `null` and the empty string are absent.
+ */
+export function submittedParameters(parameters: Parameter[] | undefined) {
+  return (parameters ?? [])
+    .filter((param) => param.value !== undefined && param.value !== null && param.value !== '')
+    .map((param) => ({ name: param.name, value: String(param.value) }));
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -27,21 +43,14 @@ export class AnalysisService {
   submitQuery(method: Method, parameters: Parameter[], datasets: Dataset[]): Observable<string> {
     const query: Request.Query = {
       methodName: method.name || 'Method name',
-      parameters:
-        parameters.map((param) => ({
-          name: param.name,
-          value: param.value + '',
-        })) || [],
+      parameters: submittedParameters(parameters),
       datasets: datasets.map((dataset: Dataset) => ({
         data: dataset.summary!.id,
         name: dataset.summary!.title,
         type: dataset.summary!.type,
-        parameters: dataset
-          .summary!.parameters?.filter((para) => para.scope !== 'common')
-          .map((param) => ({
-            name: param.name,
-            value: param.value + '',
-          })),
+        parameters: submittedParameters(
+          dataset.summary!.parameters?.filter((para) => para.scope !== 'common')
+        ),
         design: {
           analysisGroup: dataset.annotationColumns.get(dataset.statisticalDesign.analysisGroup!)!,
           samples: dataset.annotationColumns.get('sample_ids')!,
