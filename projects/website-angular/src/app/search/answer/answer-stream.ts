@@ -228,7 +228,10 @@ export function stripTrailingSources(text: string): string {
     ...text.matchAll(/^#{1,6}[ \t]*(sources?|references?|citations?)[ \t]*:?[ \t]*$/gim),
   ];
   const last = headings.at(-1);
-  if (!last?.index) return text;
+  // `last.index === undefined` rather than `!last.index`: a heading at index 0
+  // is a real match, and the falsy check treated it as none -- so an answer
+  // that *began* with its sources section was never stripped.
+  if (last?.index === undefined) return text;
 
   const after = text.slice(last.index + last[0].length);
   const lines = after.split('\n').filter((line) => line.trim() !== '');

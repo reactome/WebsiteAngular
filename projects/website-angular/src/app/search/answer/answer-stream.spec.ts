@@ -224,6 +224,12 @@ describe('the sources the model writes itself', () => {
     expect(stripTrailingSources(text)).toBe(text);
   });
 
+  it('strips a section that starts at the very beginning', () => {
+    // Found reviewing this: the guard was `!last?.index`, and index 0 is falsy,
+    // so a heading at the start of the text was treated as no match at all.
+    expect(stripTrailingSources('### Sources\n- One\n- Two')).toBe('');
+  });
+
   it('keeps a numbered list section out too', () => {
     expect(stripTrailingSources('Body.\n\n## Sources\n1. One\n2. Two')).toBe('Body.');
   });
