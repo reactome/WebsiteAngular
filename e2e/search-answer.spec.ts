@@ -1,5 +1,5 @@
 /**
- * The AI answer panel on the search page.
+ * The React-to-Me answer panel on the search page.
  *
  * The stream is stubbed from the documented event format rather than fetched.
  *
@@ -78,9 +78,9 @@ async function openSearch(page: Page) {
 }
 
 const panel = (page: Page) => page.locator('.search-answer__panel');
-const askButton = (page: Page) => page.getByRole('button', { name: /Ask Reactome AI/ });
+const askButton = (page: Page) => page.getByRole('button', { name: /Ask React-to-Me/ });
 
-test.describe('Search page AI answer', () => {
+test.describe('Search page React-to-Me answer', () => {
   test('offers an answer but does not fetch one until asked', async ({ page }) => {
     let calls = 0;
     await page.route(ENDPOINT, (route) => {
@@ -146,7 +146,7 @@ test.describe('Search page AI answer', () => {
     await expect(panel(page)).toBeVisible({ timeout: 20_000 });
 
     // The panel answers once and cannot take a follow-up; the chat can.
-    const onward = panel(page).getByRole('link', { name: /continue this in the chat/i });
+    const onward = panel(page).getByRole('link', { name: /continue in react-to-me/i });
     // `/chat/guest/`, not `/chat/`: the latter is a chooser page, so it lands
     // the reader a step short of an actual conversation.
     await expect(onward).toHaveAttribute('href', '/chat/guest/');
