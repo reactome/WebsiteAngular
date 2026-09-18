@@ -33,4 +33,25 @@ test.describe('Search flow', () => {
 
     await expect(page.locator('.filter-chip')).toBeVisible({ timeout: 10000 });
   });
+
+  test('the sidebar offers Pages above Keywords', async ({ page }) => {
+    // Site Search used to be one of four top-level search modes. Unifying the
+    // page into a single bar turned it into a sidebar facet, and it was
+    // appended after the four biology ones -- last, under a long list of
+    // auto-extracted keywords, and only rendered when the query happens to hit
+    // site pages. It read as missing, and was reported as such.
+    //
+    // The order is the point of that change, so it is asserted rather than left
+    // to whoever edits this template next.
+    await page.goto('/content/query?q=apoptosis');
+    await expect(page.locator('.result-count')).toBeVisible({ timeout: 15000 });
+
+    const titles = await page.locator('.facet-title').allTextContents();
+    const order = titles.map((t) => t.replace(/[−+]/g, '').trim());
+
+    expect(order, 'Pages is missing; it only renders when the query hits site pages').toContain(
+      'Pages'
+    );
+    expect(order.indexOf('Pages')).toBeLessThan(order.indexOf('Keywords'));
+  });
 });
