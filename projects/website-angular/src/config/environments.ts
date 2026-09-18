@@ -35,7 +35,7 @@ export interface SiteProfile {
    */
   deltaSignal?: boolean;
   /**
-   * Where the search page sends a question for an AI answer, or absent for
+   * Where the search page sends a question for a React-to-Me answer, or absent
    * "this deployment does not offer one".
    *
    * A path, and it must name **our** proxy rather than the chatbot: the proxy is
@@ -147,7 +147,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // in its own right and not "production served elsewhere" -- most visibly in
     // analytics, where its traffic must not land in the public property.
     variant: 'main',
-    // Beta is where the AI answer is reviewed before it goes any further. The
+    // Beta is where React-to-Me is reviewed before it goes any further. The
     // route is served by serve-prod.js, which holds the signing key; a
     // deployment without that key answers 503 and the panel renders nothing, so
     // this is safe to name even if the key is ever absent.

@@ -255,7 +255,7 @@ illustration that still fails, that is why** — it is a gap in what is cached o
 this machine, not a fault in the site. Issue #230 carries the proper fix.
 
 **The search page can now answer a question, and it asks first.** Above the
-results there is an invitation — "Ask Reactome AI about …". Nothing happens
+results there is an invitation — "Ask React-to-Me about …". Nothing happens
 until you click it: the answer takes about ten seconds, and the results below
 are ready immediately, so it never delays them. Clicking asks you to confirm you
 are a person, once per visit, and then the answer streams in with its sources as
