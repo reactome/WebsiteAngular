@@ -159,10 +159,20 @@ HTML, so accepting it would be accepting whatever arrives.
 - **The verifying key has to reach them, and the signing key has to be
   provisioned on our side.** Neither half belongs in this repository, or in
   theirs. Until the exchange happens there is nothing to build against.
-- **Their container will not start without the verifying key**, and beta still
-  runs a pre-endpoint image, so `POST /chat/.../api/answer` is absent on beta
-  today. Two of their PRs land first. They will say when it is live on beta
-  rather than when it merges, which is the confirmation worth waiting for.
+- **The endpoint is live on beta**, confirmed 18 Sep 2026 by calling it rather
+  than by being told. That morning it was `405 allow: GET` -- Chainlit's SPA
+  catch-all. Now:
+
+      POST /chat/guest/api/answer   ->  HTTP 200
+      event: done
+      data: {"state": "refused", "seconds": 0.0}
+
+  Which is the contract behaving correctly: always 200, the outcome in `state`.
+  It refuses because the caller token was not a real one. So the endpoint is no
+  longer the blocker -- the key is, and every call answers `refused` in 0.0s
+  until one is exchanged. That is also why the e2e stubs the stream instead of
+  calling it.
+
 - **D5 is a UX change to the search page** and wants Adam's sign-off before it
   is built, not after.
 
