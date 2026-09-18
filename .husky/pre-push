@@ -5,4 +5,9 @@
 # checks against beta.reactome.org cannot reproduce.
 #
 # `git push --no-verify` skips this.
+
+# See `scripts/select-node.sh`: without this the hook runs on the system Node,
+# and preflight reports four failures that are all the Node version.
+. scripts/select-node.sh || exit 1
+
 npm run preflight

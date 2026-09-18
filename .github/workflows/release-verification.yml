@@ -46,7 +46,9 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          # `.nvmrc`, not a second copy of the number: git hooks and preflight
+          # read that file too, so a bump reaches CI and local checks together.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies

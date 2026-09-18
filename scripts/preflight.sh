@@ -17,10 +17,11 @@
 # gate sequence, and an end-to-end smoke against `ng serve` with a public backend
 # and the render service pointed at a dead port.
 #
-# Run it on the Node in `.nvmrc`. The lockfile check is the one step sensitive to
-# the npm version -- npm 11 records optional platform packages that npm 10 leaves
-# out -- so on a different Node it reports a desync CI will not see, and misses
-# one CI would. `nvm use` first.
+# It runs on the Node in `.nvmrc`, selecting it itself -- see
+# `scripts/select-node.sh`, and note that you do not need to `nvm use` first. The
+# lockfile check is the step that makes this matter: npm 11 records optional
+# platform packages that npm 10 leaves out, so on an older Node it reports a
+# desync CI will not see and misses one CI would.
 #
 #   npm run preflight          # everything (a few minutes)
 #   npm run preflight -- fast  # skip the end-to-end smoke
@@ -34,6 +35,13 @@
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
+
+# The Node this runs on is not necessarily the one you chose in your terminal:
+# hooks, editors and agent harnesses all use non-interactive shells, which do
+# not load nvm. Resolve it first, because every step below is version-sensitive
+# and none of them fails in a way that names the version.
+. scripts/select-node.sh || exit 1
+
 mode=${1:-full}
 failed=()
 
