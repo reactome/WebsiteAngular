@@ -10,10 +10,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   cacheKey,
+  citationHref,
   drainFrames,
   isIncomplete,
   parseFrame,
   showsProse,
+  stripTrailingSources,
   type AnswerEvent,
 } from './answer-stream';
 
@@ -172,5 +174,115 @@ describe('the cache key', () => {
 
   it('keeps an unknown release distinct from a known one', () => {
     expect(cacheKey('what is CDK5', null)).not.toBe(cacheKey('what is CDK5', 97));
+  });
+});
+
+describe('the sources the model writes itself', () => {
+  // Taken from a real answer: "What happens in the Golgi during N-glycan
+  // maturation?" ended with its own `### Sources` list. The contract strips
+  // anchors from the prose, so that copy has no links -- while the citation
+  // events give the same names with resolvable stable ids. Rendering both
+  // showed two source lists, one unclickable, and made the panel noticeably
+  // longer.
+  const answer = [
+    'The Golgi matures N-glycans through ordered enzymatic steps.',
+    '',
+    '### Sources',
+    '- N-glycan trimming and elongation in the cis-Golgi',
+    '- N-glycan antennae elongation in the medial/trans-Golgi',
+  ].join('\n');
+
+  it('removes a trailing Sources heading and its list', () => {
+    expect(stripTrailingSources(answer)).toBe(
+      'The Golgi matures N-glycans through ordered enzymatic steps.'
+    );
+  });
+
+  it.each(['## References', '#### Citations', '### sources:', '## Source'])(
+    'removes %s too',
+    (heading) => {
+      const text = `Body text.\n\n${heading}\n- One\n- Two`;
+      expect(stripTrailingSources(text)).toBe('Body text.');
+    }
+  );
+
+  it('leaves prose alone when the section is not a list', () => {
+    // A heading called "Sources" followed by real prose is content, not a
+    // bibliography, and swallowing it would delete part of the answer.
+    const text = 'Body.\n\n### Sources\nThese pathways were drawn from the literature.';
+    expect(stripTrailingSources(text)).toBe(text);
+  });
+
+  it('leaves an answer with no such section untouched', () => {
+    expect(stripTrailingSources('Just an answer.')).toBe('Just an answer.');
+  });
+
+  it('does not touch a heading of the same name mid-answer', () => {
+    // Only a *trailing* section is removed, and only when nothing but list
+    // items follows it.
+    const text = '### Sources\n- One\n\nThen more explanation follows here.';
+    expect(stripTrailingSources(text)).toBe(text);
+  });
+
+  it('keeps a numbered list section out too', () => {
+    expect(stripTrailingSources('Body.\n\n## Sources\n1. One\n2. Two')).toBe('Body.');
+  });
+});
+
+describe('citations that are documentation pages rather than entities', () => {
+  // The chatbot team added this form after finding userguide answers had no
+  // sources at all: a citation needs a stable identifier and a documentation
+  // page has none, and they refused to fabricate one to make it fit. Exactly
+  // one of `st_id` and `url` is present.
+  //
+  // Written before their change is deployed, because the old parser *required*
+  // `st_id` and returned null otherwise -- so these citations would have been
+  // dropped in silence, and userguide answers would have shown no sources with
+  // nothing to indicate why.
+  const urlFrame =
+    'event: citation\ndata: {"url": "https://reactome.org/userguide/pathway-browser", "display_name": "The Pathway Browser"}';
+
+  it('accepts a citation carrying a url', () => {
+    expect(parseFrame(urlFrame)).toEqual({
+      kind: 'citation',
+      citation: {
+        stId: undefined,
+        url: 'https://reactome.org/userguide/pathway-browser',
+        displayName: 'The Pathway Browser',
+      },
+    });
+  });
+
+  it('links a url citation to that url, and a stable id to its detail page', () => {
+    // A reader is never left on a bare identifier.
+    expect(citationHref({ url: 'https://reactome.org/userguide/x', displayName: 'x' })).toBe(
+      'https://reactome.org/userguide/x'
+    );
+    expect(citationHref({ stId: 'R-HSA-70171', displayName: 'Glycolysis' })).toBe(
+      '/content/detail/R-HSA-70171'
+    );
+  });
+
+  it('prefers the stable id if both somehow arrive', () => {
+    const frame =
+      'event: citation\ndata: {"st_id": "R-HSA-1", "url": "https://example.org/x", "display_name": "Both"}';
+    const event = parseFrame(frame);
+    expect(event).toMatchObject({ citation: { stId: 'R-HSA-1', url: undefined } });
+  });
+
+  it('drops a citation whose url is not http', () => {
+    // These addresses are model output, so a citation is not a promise about
+    // its own href. Angular sanitises `[href]` as well; this keeps it from ever
+    // reaching a template.
+    expect(
+      parseFrame('event: citation\ndata: {"url": "javascript:alert(1)", "display_name": "x"}')
+    ).toBeNull();
+    expect(
+      parseFrame('event: citation\ndata: {"url": "data:text/html,x", "display_name": "x"}')
+    ).toBeNull();
+  });
+
+  it('drops a citation that points nowhere at all', () => {
+    expect(parseFrame('event: citation\ndata: {"display_name": "Nowhere"}')).toBeNull();
   });
 });

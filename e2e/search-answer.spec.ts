@@ -44,6 +44,9 @@ const ANSWERED = stream([
   'event: start\ndata: {"release": 97, "answered": true}',
   'event: token\ndata: {"text": "## CDK5\\n\\nCDK5 bound to p25 "}',
   'event: token\ndata: {"text": "phosphorylates tau."}',
+  // Real answers end with their own plain-text Sources list. We render the
+  // citation events instead, with links, so this copy must not also appear.
+  'event: token\ndata: {"text": "\\n\\n### Sources\\n- Deregulated CDK5 triggers tau hyperphosphorylation"}',
   'event: citation\ndata: {"st_id": "R-HSA-8862803", "display_name": "Deregulated CDK5 triggers tau hyperphosphorylation"}',
   'event: done\ndata: {"state": "answered", "seconds": 8.4}',
 ]);
@@ -110,6 +113,42 @@ test.describe('Search page AI answer', () => {
 
     const source = panel(page).getByRole('link', { name: /Deregulated CDK5/ });
     await expect(source).toHaveAttribute('href', '/content/detail/R-HSA-8862803');
+  });
+
+  test("shows one source list, linked, not the model's plain-text copy as well", async ({
+    page,
+  }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, ANSWERED);
+    await openSearch(page);
+    await askButton(page).click();
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+
+    // Reported from use: the panel showed the model's "### Sources" list and
+    // ours underneath, so two lists, one of them unclickable, and a visibly
+    // longer panel. Exactly one heading, and its entries are links.
+    await expect(panel(page).getByRole('heading', { name: /sources/i })).toHaveCount(1);
+    await expect(panel(page).locator('.search-answer__chip')).not.toHaveCount(0);
+    // The stripped copy is gone: the name now appears only inside a link.
+    const plainMentions = await panel(page)
+      .locator('.search-answer__prose')
+      .getByText(/Deregulated CDK5/)
+      .count();
+    expect(plainMentions, 'the prose no longer carries its own source list').toBe(0);
+  });
+
+  test('offers a way to carry the question into the chat', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, ANSWERED);
+    await openSearch(page);
+    await askButton(page).click();
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+
+    // The panel answers once and cannot take a follow-up; the chat can.
+    const onward = panel(page).getByRole('link', { name: /continue this in the chat/i });
+    // `/chat/guest/`, not `/chat/`: the latter is a chooser page, so it lands
+    // the reader a step short of an actual conversation.
+    await expect(onward).toHaveAttribute('href', '/chat/guest/');
   });
 
   test('shows no sources heading when an answer has no citations', async ({ page }) => {
@@ -219,19 +258,77 @@ test.describe('Search page AI answer', () => {
     await expect(page.locator('.search-answer__none')).toHaveCount(0);
   });
 
+  test('follows the dark theme rather than staying light', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, ANSWERED);
+    await openSearch(page);
+    await askButton(page).click();
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+
+    // Reported from actually using it: in inverted colours the panel stayed a
+    // light box with light text. The cause was invented CSS variable names --
+    // nothing defined `--favth-color-bg`, so every value was its hardcoded
+    // light fallback. Asserting the colours *change* pins that the panel reads
+    // the site's tokens, without pinning what the theme's colours are.
+    const read = () =>
+      panel(page).evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { background: style.backgroundColor, text: style.color };
+      });
+
+    const light = await read();
+    await page.evaluate(() => document.body.classList.add('dark'));
+    const dark = await read();
+
+    expect(dark.background, 'panel background follows the theme').not.toBe(light.background);
+    expect(dark.text, 'panel text follows the theme').not.toBe(light.text);
+  });
+
+  test("does not leave one query's answer above another query's results", async ({ page }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, ANSWERED);
+    await openSearch(page);
+    await askButton(page).click();
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+
+    // Searching again from the bar, as a reader would. The page reuses this
+    // component across searches -- `onQueryInput` clears `searchSubmitted`
+    // without a `markForCheck`, and the page is zoneless, so the `@if` around
+    // the panel is never re-evaluated and the component is never destroyed.
+    //
+    // Before the fix this left the first query's answer sitting above the
+    // second query's results, with no button to ask about the new one. A reader
+    // could read an answer about apoptosis believing it was about TP53.
+    const box = page.locator('textarea.search-input');
+    await box.fill('TP53');
+    await box.press('Enter');
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('q'), { timeout: 20_000 })
+      .toBe('TP53');
+    await expect(page.locator('.result-count')).toContainText('TP53', { timeout: BOOT });
+
+    // The stale answer is gone, and the invitation is back for the new query.
+    await expect(panel(page)).toHaveCount(0);
+    await expect(askButton(page)).toBeVisible({ timeout: 20_000 });
+    await expect(askButton(page)).toContainText('TP53');
+  });
+
   test('is absent entirely on a deployment that does not offer answers', async ({ page }) => {
-    // Names `beta` explicitly rather than leaving the profile alone, because a
-    // run with no override proves nothing: it would pass whenever the panel is
+    // Names a profile explicitly rather than leaving it alone, because a run
+    // with no override proves nothing: it would pass whenever the panel is
     // missing for *any* reason, including the code not being present at all.
     // That is not hypothetical -- it is what happened here, and the reason is
     // recorded in the file header.
     //
-    // beta is the profile this matters for: it is the curator-facing deployment,
-    // it has no `searchAnswerEndpoint`, and until the real exchange lands every
-    // call there would answer `refused`. Absence is what it must show, and it
-    // must show it because of the profile rather than by accident.
+    // `production` rather than `beta`: beta now carries the endpoint, because
+    // beta is where this is reviewed. This test named beta until that changed,
+    // at which point it failed -- correctly, and it is why the assertion has to
+    // name a deployment that genuinely does not offer answers. Production is
+    // that deployment, and it is the one where a panel appearing by accident
+    // would matter most.
     await page.addInitScript(() => {
-      (window as Window & { __APP_ENV?: string }).__APP_ENV = 'beta';
+      (window as Window & { __APP_ENV?: string }).__APP_ENV = 'production';
     });
     await stubAnswer(page, ANSWERED);
     await openSearch(page);
