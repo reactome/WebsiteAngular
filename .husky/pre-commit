@@ -1,4 +1,10 @@
 # Formatting and lint on staged files only: fast enough to run every commit,
 # and it keeps CI from failing on things a second of local work would have
 # caught. The full check still runs in CI.
+
+# Hooks run under `sh`, which never loads nvm, so the Node here is the system's
+# and not the one `.nvmrc` asks for. Under Node 18 lint-staged dies with
+# "TypeError: util.styleText is not a function" and the commit looks broken.
+. scripts/select-node.sh || exit 1
+
 npx lint-staged
