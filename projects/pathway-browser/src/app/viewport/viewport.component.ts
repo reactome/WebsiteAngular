@@ -1,5 +1,5 @@
 import {
-  AfterViewInit,
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -93,7 +93,7 @@ const DROPDOWN_DURATION = 500;
   ],
 })
 @UntilDestroy()
-export class ViewportComponent implements AfterViewInit {
+export class ViewportComponent {
   public speciesService: SpeciesService = inject(SpeciesService);
   private interactorService: InteractorService = inject(InteractorService);
   private figure: FigureService = inject(FigureService);
@@ -271,18 +271,34 @@ export class ViewportComponent implements AfterViewInit {
     // effect(() => this.dropdown() === null && this.detailVisible.set(true));
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.darkToggle()
-        ._switchElement.nativeElement?.querySelector('.mdc-switch__icon--on')
-        ?.querySelector('path')
-        ?.setAttribute('d', this.moon);
-      this.darkToggle()
-        ._switchElement.nativeElement?.querySelector('.mdc-switch__icon--off')
-        ?.querySelector('path')
-        ?.setAttribute('d', this.sun);
-    }, 200);
-  }
+  /**
+   * Swap Material's switch glyphs for a moon and a sun.
+   *
+   * Deferred because the switch renders its own SVG after this hook, and run
+   * through `afterNextRender` rather than `setTimeout(..., 200)`.
+   *
+   * The timeout outlived the view. `darkToggle` is a **required** query, so a
+   * timer that fired after this component was torn down read a query with no
+   * value and threw `NG0951: Child query result is required but no value is
+   * available` -- intermittently, because it needs a teardown inside a 200ms
+   * window. It surfaced in an e2e test that asserts nothing threw, on a run under
+   * load, and would not reproduce in isolation: five runs of that test, the whole
+   * spec, and 37 tests across four workers were all clean (#231).
+   *
+   * `afterNextRender` is tied to the injector, so it does not run after
+   * destruction, and it waits for a render rather than guessing at 200ms.
+   */
+  private readonly glyphs = afterNextRender(() => {
+    const element = this.darkToggle()._switchElement.nativeElement;
+    element
+      ?.querySelector('.mdc-switch__icon--on')
+      ?.querySelector('path')
+      ?.setAttribute('d', this.moon);
+    element
+      ?.querySelector('.mdc-switch__icon--off')
+      ?.querySelector('path')
+      ?.setAttribute('d', this.sun);
+  });
 
   /**
    * Put both panels away.
