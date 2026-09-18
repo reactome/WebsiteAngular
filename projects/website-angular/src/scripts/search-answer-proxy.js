@@ -307,7 +307,14 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
     if (gate.REQUIRE_HUMAN && !verified) {
       // The panel shows the challenge on this, then retries. 401 rather than
       // 403: the reader may become authorised by answering it.
-      res.status(401).json({ detail: 'Verification required', verify: `${route}/verify` });
+      // The sitekey travels with the refusal, so the panel renders a widget only
+      // when the server actually wants one and a deployment can change it
+      // without a rebuild.
+      res.status(401).json({
+        detail: 'Verification required',
+        verify: `${route}/verify`,
+        sitekey: gate.TURNSTILE_SITEKEY,
+      });
       return;
     }
 

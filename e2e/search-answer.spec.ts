@@ -314,6 +314,60 @@ test.describe('Search page AI answer', () => {
     await expect(askButton(page)).toContainText('TP53');
   });
 
+  test('asks the reader to prove they are human, then answers', async ({ page }) => {
+    await asDevelopmentProfile(page);
+
+    // Cloudflare's widget is stubbed rather than loaded: the point here is our
+    // own loop -- refusal, challenge, exchange, retry -- not Cloudflare's
+    // rendering, and an e2e that reached out to them would be testing their
+    // uptime.
+    await page.addInitScript(() => {
+      (window as unknown as { turnstile: unknown }).turnstile = {
+        render: (el: HTMLElement, options: { callback: (token: string) => void }) => {
+          el.textContent = 'stub widget';
+          setTimeout(() => options.callback('solved-token'), 50);
+          return 'stub';
+        },
+      };
+    });
+
+    let verified = false;
+    let answerCalls = 0;
+    await page.route('**/search-answer/verify', async (route) => {
+      const body = route.request().postDataJSON();
+      verified = body?.captchaToken === 'solved-token';
+      await route.fulfill({ status: verified ? 204 : 400, body: '' });
+    });
+    await page.route('**/search-answer', (route) => {
+      answerCalls += 1;
+      // Refused until verified, exactly as the proxy behaves with the gate on.
+      return verified
+        ? route.fulfill({ status: 200, contentType: 'text/event-stream', body: ANSWERED })
+        : route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              detail: 'Verification required',
+              verify: '/search-answer/verify',
+              sitekey: '1x00000000000000000000AA',
+            }),
+          });
+    });
+
+    await openSearch(page);
+    await askButton(page).click();
+
+    // The challenge appears instead of an answer, and no answer has been given.
+    await expect(page.locator('.search-answer__challenge')).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toHaveCount(0);
+
+    // The widget solves, the exchange happens, and the question is asked again.
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toContainText('CDK5 bound to p25');
+    await expect(page.locator('.search-answer__challenge')).toHaveCount(0);
+    expect(answerCalls, 'asked once before the challenge and once after').toBe(2);
+  });
+
   test('is absent entirely on a deployment that does not offer answers', async ({ page }) => {
     // Names a profile explicitly rather than leaving it alone, because a run
     // with no override proves nothing: it would pass whenever the panel is

@@ -66,10 +66,21 @@ export class AnswerService {
   private readonly _state = signal<AnswerState | null>(null);
   private readonly _question = signal('');
 
+  /**
+   * Set when the server will not answer until it knows a human is asking.
+   *
+   * Carries the sitekey rather than the panel holding one: the server decides
+   * whether a challenge is needed and which key to render, so a deployment can
+   * change either without a rebuild, and the widget is never rendered when it
+   * is not wanted.
+   */
+  private readonly _challenge = signal<{ sitekey: string; verify: string } | null>(null);
+
   readonly asking = this._asking.asReadonly();
   readonly text = this._text.asReadonly();
   readonly state = this._state.asReadonly();
   readonly question = this._question.asReadonly();
+  readonly challenge = this._challenge.asReadonly();
 
   /** Capped and de-duplicated: the server's cap binds on ordinary questions. */
   readonly citations = computed(() => this._citations().slice(0, MAX_CITATIONS));
@@ -110,6 +121,7 @@ export class AnswerService {
 
   reset(): void {
     this.cancel();
+    this._challenge.set(null);
     this._text.set('');
     this._citations.set([]);
     this._state.set(null);
@@ -123,6 +135,7 @@ export class AnswerService {
     this.cancel();
     this._question.set(asked);
     this._citations.set([]);
+    this._challenge.set(null);
 
     const cached = this.cache.get(cacheKey(asked, this.release));
     if (cached) {
@@ -155,6 +168,31 @@ export class AnswerService {
     }
   }
 
+  /**
+   * Exchanges a solved challenge for an identity, then asks again.
+   *
+   * Returns false when the exchange is refused, so the panel can render a fresh
+   * widget rather than leaving the reader looking at a spent one.
+   */
+  async solve(token: string): Promise<boolean> {
+    const challenge = this._challenge();
+    if (!challenge || !token) return false;
+    try {
+      const response = await fetch(challenge.verify, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ captchaToken: token }),
+      });
+      if (!response.ok) return false;
+    } catch {
+      return false;
+    }
+    const question = this._question();
+    this._challenge.set(null);
+    await this.ask(question);
+    return true;
+  }
+
   private async stream(endpoint: string, question: string, signal: AbortSignal): Promise<void> {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -166,6 +204,18 @@ export class AnswerService {
 
     // The endpoint answers 200 for every outcome, so a non-200 is the proxy or
     // the network, not an answer. Either way: no panel.
+    // A challenge is not a failure: the server is willing to answer once it
+    // knows a human is asking. The panel renders the widget and asks again.
+    if (response.status === 401) {
+      const body = await response.json().catch(() => null);
+      if (typeof body?.sitekey === 'string' && typeof body?.verify === 'string') {
+        this._challenge.set({ sitekey: body.sitekey, verify: body.verify });
+      } else {
+        this._state.set('failed');
+      }
+      return;
+    }
+
     if (!response.ok || !response.body) {
       this._state.set('failed');
       return;
