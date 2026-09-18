@@ -254,11 +254,6 @@ not on the server). Restored for the pathways we test with. **If you hit an
 illustration that still fails, that is why** — it is a gap in what is cached on
 this machine, not a fault in the site. Issue #230 carries the proper fix.
 
-**Perturb now offers something.** The DeltaSignal panel had no pathways at all —
-its catalogue was never wired up on this box, so the button appeared and did
-nothing. Eleven pathways are generated now. The panel activates on those and
-stays absent elsewhere, which is expected rather than broken.
-
 **One thing to know before asking for analysis reports by email.** If you leave
 the address box empty, the analysis still runs and the reports are still made —
 but no mail is sent and nothing says so. We do not enforce the address on our
