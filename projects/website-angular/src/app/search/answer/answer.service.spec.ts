@@ -106,6 +106,23 @@ describe('asking a question', () => {
     expect(answers.citations().map((c) => c.stId)).toEqual(['R-HSA-1', 'R-HSA-2']);
   });
 
+  it('answers with no sources at all, which is an ordinary result', async () => {
+    // Only the Reactome and disease-variant collections carry stable ids. A
+    // userguide question indexes documentation pages, whose metadata is a URL,
+    // so a good answer there has zero citations -- measured at 0 citations and
+    // 452 tokens by the chatbot team. It also correlates with the *fastest*
+    // answers, so it is common rather than exotic, and it is the case none of
+    // the questions one would naturally test with produces.
+    serve(streaming([START, token('Open the pathway browser from the toolbar.'), DONE_OK]));
+    const answers = service();
+
+    await answers.ask('how do I use the pathway browser');
+
+    expect(answers.citations()).toEqual([]);
+    expect(answers.state()).toBe('answered');
+    expect(answers.visible()).toBe(true);
+  });
+
   it('sends no question at all when the box is empty', async () => {
     serve();
     await service().ask('   ');

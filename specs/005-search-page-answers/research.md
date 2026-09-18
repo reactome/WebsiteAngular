@@ -168,6 +168,29 @@ Calling a capped list "Sources" would overstate it.
 **Rejected**: passing the text through as HTML. The contract does not promise
 HTML, so accepting it would be accepting whatever arrives.
 
+**Citations arrive before any prose, and there may be none.** Both are
+structural, confirmed by the chatbot team from their code and then measured.
+
+Citations come only from `on_retriever_end`, and token events are gated on the
+flag that same event sets -- retrieval completing is how they tell the answer's
+tokens from the query-expander's, which run at the same node with identical
+metadata. So the source list is _complete_ by the time the first token lands:
+across five questions, the last citation was event 11 and the first token event
+12, with no interleaving.
+
+Zero citations is an ordinary good answer, not a failure. Only the Reactome and
+disease-variant collections carry stable identifiers; the userguide collection
+indexes documentation pages whose metadata is a URL, which cannot become an
+`{st_id, display_name}` citation. Measured: "How do I use the pathway browser?"
+returned **0 citations and 452 tokens**.
+
+It also correlates with the _fastest_ answers -- that same question reached
+first token in 3.3s against a 10.0s median. So the no-sources case is common
+rather than exotic, and it is precisely the case that the handful of questions
+one would naturally test with does not produce. Hence a test for it on both
+levels, and the sources block rendering nothing at all rather than an empty
+heading.
+
 ---
 
 ## Open, and not ours to close

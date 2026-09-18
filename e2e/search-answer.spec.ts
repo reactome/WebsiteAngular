@@ -112,6 +112,31 @@ test.describe('Search page AI answer', () => {
     await expect(source).toHaveAttribute('href', '/content/detail/R-HSA-8862803');
   });
 
+  test('shows no sources heading when an answer has no citations', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    // Zero citations is an ordinary good answer, not a failure: only the
+    // Reactome and disease-variant collections carry stable ids, so a
+    // documentation question has none. It also correlates with the fastest
+    // answers, which makes it common -- and an empty "Most relevant sources"
+    // heading over nothing would be the obvious way to get this wrong.
+    await stubAnswer(
+      page,
+      stream([
+        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: token\ndata: {"text": "Open the pathway browser from the toolbar."}',
+        'event: done\ndata: {"state": "answered", "seconds": 3.3}',
+      ])
+    );
+    await openSearch(page);
+
+    await askButton(page).click();
+
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+    await expect(panel(page)).toContainText('Open the pathway browser');
+    await expect(panel(page).locator('.search-answer__sources')).toHaveCount(0);
+    await expect(page.getByText(/most relevant sources/i)).toHaveCount(0);
+  });
+
   test('renders nothing at all when the answer is nothing_found', async ({ page }) => {
     await asDevelopmentProfile(page);
     await stubAnswer(page, NOTHING_FOUND);
