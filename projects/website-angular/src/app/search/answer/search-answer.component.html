@@ -42,9 +42,26 @@
         spinner implying an imminent answer is wrong at this latency. Polite so
         a screen reader announces it without interrupting.
       -->
-      <p class="search-answer__waiting" role="status">
-        Reading Reactome for an answer. This usually takes about ten seconds.
-      </p>
+      <!--
+        Progress, not a spinner. The message changes when something real has
+        happened -- citations arrive before any prose, so a source count is a
+        milestone rather than reassurance -- and the elapsed count is measured
+        rather than guessed, because the spread by question type is too wide to
+        fake a percentage honestly.
+      -->
+      <div class="search-answer__waiting">
+        <div class="search-answer__progress" aria-hidden="true"><span></span></div>
+        <p class="search-answer__waiting-text" role="status" aria-live="polite">
+          {{ waitingMessage() }}
+          <span class="search-answer__elapsed">
+            @if (elapsed() > 0) {
+              {{ elapsed() }}s — usually about ten
+            } @else {
+              Usually about ten seconds
+            }
+          </span>
+        </p>
+      </div>
     }
 
     @if (visible()) {
