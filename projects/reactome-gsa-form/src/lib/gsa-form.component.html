@@ -126,7 +126,7 @@
               tourAnchor="options.done"
               clickable
             >
-              <button class="primary-color" mat-fab matStepperNext>
+              <button class="primary-color" mat-fab matStepperNext [disabled]="options()?.allOptionsValid() === false">
                 <mat-icon fontSet="gsa">keyboard_arrow_right</mat-icon>
               </button>
             </div>
