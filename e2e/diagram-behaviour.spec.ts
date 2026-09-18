@@ -7,6 +7,11 @@ import { test, expect } from './support/backend';
 //
 // A sub-pathway is used deliberately: a top-level pathway renders an EHLD
 // illustration rather than the interactive diagram.
+/** The cytoscape instance the diagram hangs on the host element. */
+interface CytoscapeHost extends HTMLElement {
+  _cyreg?: { cy?: import('cytoscape').Core };
+}
+
 const PATHWAY = '/PathwayBrowser/R-HSA-109606?tab=info';
 const BOOT = 90_000;
 
@@ -29,6 +34,55 @@ async function drawnDiagram(page: Page) {
 }
 
 test.describe('Diagram behaviour', () => {
+  /**
+   * Navigating into a pathway box keeps what the reader had selected.
+   *
+   * It used to replace it with the pathway being left, to orient the reader in
+   * the diagram they arrived in. A curator searched for an entity, double-clicked
+   * a pathway box and found it unselected (#168) -- and the sibling handler for
+   * `.SUB.Pathway` did not do this, so the two ways out of a diagram disagreed.
+   *
+   * Asserted on the address rather than on the handler, because `select` in the
+   * URL is what survives a reload and what the reader can share.
+   */
+  test('keeps the selection when you open a pathway from inside the diagram', async ({ page }) => {
+    test.setTimeout(6 * 60 * 1000);
+
+    await page.goto('/PathwayBrowser/R-HSA-70171?FLG=PKM', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
+    await page.waitForTimeout(6000);
+
+    // R-HSA-70171 has no diagram of its own, so the browser opens its parent and
+    // selects it -- which is exactly the state a search leaves behind.
+    const selected = new URL(page.url()).searchParams.get('select');
+    expect(selected, 'something is selected to begin with').toBeTruthy();
+
+    const target = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      const node = cy?.nodes('.Interacting.Pathway').first();
+      return node && node.length ? (node.data('graph.stId') as string) : null;
+    });
+    // Asserted, not skipped. The recordings make this deterministic, so a diagram
+    // with no pathway box means the fixture changed under us -- and a test that
+    // skips itself there would report green while checking nothing, which is the
+    // failure this suite keeps finding elsewhere.
+    expect(target, 'the diagram offers a pathway box to open').toBeTruthy();
+    if (!target) return;
+
+    await page.evaluate((stId) => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      cy?.nodes('.Interacting.Pathway')
+        .filter((n) => n.data('graph.stId') === stId)
+        .emit('dblclick');
+    }, target);
+
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 60_000 }).toContain(target);
+
+    const after = new URL(page.url());
+    expect(after.searchParams.get('select'), 'the reader keeps what they selected').toBe(selected);
+    expect(after.searchParams.get('flag'), 'and the flag they set').toBe('PKM');
+  });
+
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
   test('the diagram key is on screen', async ({ page }) => {

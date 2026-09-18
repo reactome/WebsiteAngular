@@ -840,10 +840,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (e.target === this.cy) this.popupTarget.set(null);
         });
 
+        // Keeps what the reader selected, like the `.SUB.Pathway` handler above.
+        //
+        // This used to set `select` to the pathway being left, to orient the
+        // reader in the diagram they arrived in. It also discarded their own
+        // selection: a curator searched for an entity, double-clicked a pathway
+        // box, and found it unselected (#168). The two ways out of a diagram
+        // disagreed about this, and only one of them told you.
+        //
+        // Where you came from is still one Back away; what you were looking at
+        // was not recoverable at all.
         this.cy.on('dblclick', '.Interacting.Pathway', (e) => {
           void this.state.navigateTo(e.target.data('graph.stId'), {
-            queryParams: { select: this.pathwayId() },
-            queryParamsHandling: 'merge',
+            queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
         });
