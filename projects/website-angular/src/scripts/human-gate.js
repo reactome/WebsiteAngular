@@ -49,8 +49,14 @@ const crypto = require('node:crypto');
 const SITEVERIFY =
   process.env.TURNSTILE_VERIFY_URL || 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
-/** The secret half. From the environment, or the gate does not run. */
-const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
+/**
+ * The secret half. From the environment, or the gate does not run.
+ *
+ * Named to match the chatbot deployment, which already carries this exact value
+ * in a deployed secrets list. `TURNSTILE_SECRET` is the better name for the
+ * thing, but one convention for one shared secret beats a better name and two.
+ */
+const TURNSTILE_SECRET = process.env.CLOUDFLARE_SECRET_KEY || process.env.TURNSTILE_SECRET || '';
 
 /**
  * The public half, handed to the browser when a challenge is required.
@@ -59,16 +65,27 @@ const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
  * change it without a rebuild and so the widget is only ever rendered when the
  * server actually wants one.
  */
-const TURNSTILE_SITEKEY = process.env.TURNSTILE_SITEKEY || '';
+const TURNSTILE_SITEKEY = process.env.CLOUDFLARE_SITE_KEY || process.env.TURNSTILE_SITEKEY || '';
 
 /**
- * Whether a verified human is required.
+ * Whether a verified human is required. **On unless deliberately switched off.**
  *
- * Explicit rather than inferred from the secret being present. Inferring it
- * would mean a deployment that lost its secret silently stopped requiring
- * humans, which is exactly the failure this file exists to avoid.
+ * This was an opt-in flag, and that was the wrong default. The chatbot team hit
+ * precisely this: their captcha middleware treats "no secret configured" as "no
+ * captcha to enforce", so a misconfiguration does not fail loudly -- it
+ * silently disables the check. They also had a deployment where the secret WAS
+ * present but arrived by a route the code did not read, and the gate stood open
+ * with nothing anywhere saying so.
+ *
+ * An opt-in flag has the same shape: forget to set it and there is no check and
+ * no complaint. So the default is now "required", and a deployment that does
+ * not want it says so out loud with `ANSWER_REQUIRE_HUMAN=0`.
+ *
+ * The consequence is deliberate: a deployment that requires a human and has no
+ * keys answers 503 and offers no AI answers at all. Losing the feature is the
+ * correct failure. Silently answering without a check is not.
  */
-const REQUIRE_HUMAN = process.env.ANSWER_REQUIRE_HUMAN === '1';
+const REQUIRE_HUMAN = process.env.ANSWER_REQUIRE_HUMAN !== '0';
 
 /** How long one verification lasts before the reader is asked again. */
 const IDENTITY_TTL_MS = 12 * 60 * 60 * 1000;

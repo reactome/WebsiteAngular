@@ -15,14 +15,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { marked } from 'marked';
 import { citationHref, citationKey, stripTrailingSources } from './answer-stream';
+
+/** Cloudflare's widget, loaded only when a challenge is actually asked for. */
+interface Turnstile {
+  render(el: HTMLElement, options: { sitekey: string; callback: (token: string) => void }): string;
+}
 import { AnswerService } from './answer.service';
 
 @Component({
@@ -42,6 +49,7 @@ export class SearchAnswerComponent {
   readonly query = input.required<string>();
 
   readonly available = this.answers.available;
+  readonly challenge = this.answers.challenge;
   readonly asking = this.answers.asking;
   readonly visible = this.answers.visible;
   readonly incomplete = this.answers.incomplete;
@@ -77,7 +85,16 @@ export class SearchAnswerComponent {
    */
   readonly showButton = computed(
     () =>
-      this.available && !this.asking() && !this.noAnswer() && (!this.visible() || this.incomplete())
+      this.available &&
+      !this.asking() &&
+      !this.noAnswer() &&
+      // A pending challenge is not an invitation to ask again: the question has
+      // been asked, and the server wants proof of a human before answering it.
+      // Without this the 401 put the button back -- `asking` had gone false and
+      // no prose had arrived -- so the invitation won the branch chain, the
+      // widget was never reached, and clicking again just earned another 401.
+      !this.challenge() &&
+      (!this.visible() || this.incomplete())
   );
 
   /**
@@ -155,6 +172,43 @@ export class SearchAnswerComponent {
     this._allSources.set(true);
   }
 
+  /** The widget's container, present only while a challenge is being shown. */
+  private readonly widget = viewChild<ElementRef<HTMLElement>>('turnstile');
+
+  /**
+   * Renders the challenge when the server asks for one, and never before.
+   *
+   * The script is fetched on demand rather than on page load: most readers
+   * never ask for an answer, and none of them should pay for Cloudflare's
+   * widget just in case. `render=explicit` so it does not hunt the page for
+   * containers of its own accord.
+   */
+  private readonly showChallenge = effect(() => {
+    const challenge = this.challenge();
+    const host = this.widget()?.nativeElement;
+    if (!challenge || !host || host.childElementCount > 0) return;
+    void this.renderWidget(host, challenge.sitekey);
+  });
+
+  private async renderWidget(host: HTMLElement, sitekey: string): Promise<void> {
+    try {
+      await loadTurnstile();
+    } catch {
+      // No widget means no way to prove anything, so the panel simply stays as
+      // it is. Nothing here is worth an error message to a reader who only
+      // wanted a search.
+      return;
+    }
+    const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
+    if (!turnstile) return;
+    turnstile.render(host, {
+      sitekey,
+      callback: (token: string) => {
+        void this.answers.solve(token);
+      },
+    });
+  }
+
   /** A stable id resolves to its detail page; a documentation page is its url. */
   readonly href = citationHref;
   readonly key = citationKey;
@@ -208,4 +262,33 @@ export class SearchAnswerComponent {
     this._allSources.set(false);
     void this.answers.ask(this.query());
   }
+}
+
+/**
+ * Loads Cloudflare's widget script once, on demand.
+ *
+ * Module-level rather than per-instance so two panels on a page cannot race to
+ * insert the same script twice.
+ */
+let turnstileScript: Promise<void> | null = null;
+
+function loadTurnstile(): Promise<void> {
+  if (turnstileScript) return turnstileScript;
+  turnstileScript = new Promise<void>((resolve, reject) => {
+    if ((window as unknown as { turnstile?: unknown }).turnstile) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      // Allow a later attempt rather than caching the failure forever.
+      turnstileScript = null;
+      reject(new Error('turnstile failed to load'));
+    };
+    document.head.appendChild(script);
+  });
+  return turnstileScript;
 }

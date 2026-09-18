@@ -26,6 +26,16 @@
         -->
         <a class="search-answer__continue" [href]="chatUrl">Try asking in the chat</a>
       </p>
+    } @else if (challenge()) {
+      <!--
+        The server will not answer until it knows a human is asking. The widget
+        appears only here, and the script is only fetched at this point -- most
+        readers never ask for an answer and should not pay for it.
+      -->
+      <div class="search-answer__challenge">
+        <p class="search-answer__challenge-note">One quick check that you are a person, then the answer.</p>
+        <div #turnstile class="search-answer__widget"></div>
+      </div>
     } @else if (asking()) {
       <!--
         A status line rather than a spinner: the contract is explicit that a
