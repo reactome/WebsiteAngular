@@ -262,11 +262,13 @@ are a person, once per visit, and then the answer streams in with its sources as
 links you can follow.
 
 Three things worth knowing before you judge it. Long answers start collapsed, so
-they cannot bury the results — "Show more" opens them. Documentation questions
-often come back with **no sources at all**, and that is correct rather than
-broken: only pathway content carries the stable identifiers a citation needs.
-And the panel answers once; "Continue this in the chat" carries you to the
-chatbot, though it does not yet carry your question with it.
+they cannot bury the results — "Show more" opens them. Sources differ by what
+you asked: a pathway question cites entries you can open in Reactome, while a
+question about using the site cites userguide pages. An answer can also arrive
+with **no sources at all**, and that is correct rather than broken — the panel
+then shows no sources heading rather than an empty one. And the panel answers
+once; "Continue this in the chat" carries you to the chatbot, though it does not
+yet carry your question with it.
 
 If it says nothing after you ask, that is a real answer too — it means nothing
 in Reactome matched, and the search results are unaffected.
