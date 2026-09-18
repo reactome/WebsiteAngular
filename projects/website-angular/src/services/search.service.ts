@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 export interface SearchEntry {
@@ -109,7 +109,9 @@ export class SearchService {
   }
 
   getSpellCheckTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
+    return this.http
+      .get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`)
+      .pipe(map((terms) => usableSpellCheckTerms(query, terms)));
   }
 
   private buildParams(
@@ -148,4 +150,36 @@ export class SearchService {
 
     return params;
   }
+}
+
+/**
+ * Drops the tokeniser artefacts Solr offers as spelling corrections.
+ *
+ * `spellcheck` answers a single mistyped word with the word *and* with the word
+ * chopped up, offered as equals. Measured against beta:
+ *
+ *     apoptsis -> ["apoptosis", "ap opt sis", "apo pt sis"]
+ *
+ * The pieces are not words, and the reason nobody noticed is that clicking one
+ * does not fail. The terms are split and OR'd, so it returns a *bigger* result
+ * set than the correct spelling and looks like it worked:
+ *
+ *     "apoptosis"   1058 matches      <- the right answer
+ *     "ap opt sis"  2793 matches      <- nonsense, and more of it
+ *
+ * The rule is token count rather than "contains a space": a genuine multi-word
+ * correction for a multi-word query is legitimate and must survive. Only a
+ * suggestion split into a different number of pieces than was asked for is an
+ * artefact.
+ *
+ * This does **not** address the other complaint about this endpoint -- `Tello`
+ * suggests `ttll3`, `ttll8`, `ttlls` -- because those are single tokens and
+ * legitimate by edit distance. Nothing here can tell that a person's surname
+ * should not be corrected to a gene symbol; that needs vocabulary rather than
+ * string distance.
+ */
+export function usableSpellCheckTerms(query: string, terms: string[] | null): string[] {
+  const asked = (query ?? '').trim().split(/\s+/).filter(Boolean).length;
+  if (!terms || asked === 0) return terms ?? [];
+  return terms.filter((term) => term.trim().split(/\s+/).filter(Boolean).length === asked);
 }
