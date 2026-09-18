@@ -62,10 +62,12 @@ test.describe('Diagram behaviour', () => {
       const node = cy?.nodes('.Interacting.Pathway').first();
       return node && node.length ? (node.data('graph.stId') as string) : null;
     });
-    if (!target) {
-      test.skip(true, 'this diagram shows no pathway box to open');
-      return;
-    }
+    // Asserted, not skipped. The recordings make this deterministic, so a diagram
+    // with no pathway box means the fixture changed under us -- and a test that
+    // skips itself there would report green while checking nothing, which is the
+    // failure this suite keeps finding elsewhere.
+    expect(target, 'the diagram offers a pathway box to open').toBeTruthy();
+    if (!target) return;
 
     await page.evaluate((stId) => {
       const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
