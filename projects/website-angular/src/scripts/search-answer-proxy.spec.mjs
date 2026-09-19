@@ -118,10 +118,36 @@ describe('the presence claim', () => {
     // origin and they are reached from this server -- so the claim rides on the
     // token they already verify.
     const { payload } = parts(
-      mintCallerToken(keypair().privateKey, 'abc', { solvedAt }, solvedAt + 60_000)
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 'the-cookie-subject' },
+        solvedAt + 60_000
+      )
     );
     expect(payload.human).toBe(true);
     expect(payload.human_iat).toBe(Math.floor(solvedAt / 1000));
+    expect(payload.human_sub).toBe('the-cookie-subject');
+  });
+
+  it('keeps the cookie subject out of `sub`, which means something else', () => {
+    // `sub` is whatever callerSubject decided; their answer endpoint's limiter
+    // keys on it. `human_sub` is specifically the identity cookie's subject, so
+    // their summary limiter can key on the durable one without either
+    // endpoint's meaning depending on which branch callerSubject took.
+    //
+    // Not asserted: that the two are equal. They are today, and pinning that
+    // would make the separation stop being real.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'per-visit-id',
+        { solvedAt, subject: 'the-cookie-subject' },
+        solvedAt + 60_000
+      )
+    );
+    expect(payload.sub).toBe('per-visit-id');
+    expect(payload.human_sub).toBe('the-cookie-subject');
   });
 
   it('leaves the claim off once the challenge is older than the bound', () => {

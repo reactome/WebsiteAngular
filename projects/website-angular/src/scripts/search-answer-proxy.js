@@ -106,8 +106,24 @@ function mintCallerToken(key, subject, presence = null, now = Date.now()) {
   // and a `false` invites a check that treats "absent" as "not stated" and
   // lets it through.
   const fresh = presence && now - presence.solvedAt <= HUMAN_CLAIM_MAX_AGE_MS;
+  // `human_sub` rather than reusing `sub`, even though both currently hold the
+  // same value. `sub` is whatever `callerSubject` decided -- the verified
+  // identity when there is one, a per-visit cookie when there is not -- and
+  // their answer endpoint's limiter keys on it. `human_sub` is specifically the
+  // identity cookie's subject, so their summary limiter can key on the durable
+  // one without either endpoint's meaning depending on which branch
+  // `callerSubject` happened to take.
+  //
+  // They will be equal while `callerSubject` prefers the verified identity, and
+  // nothing should test that they are: agreement between two claims that mean
+  // different things is a coincidence, and pinning it would make the separation
+  // stop being real.
   const claims = fresh
-    ? { human: true, human_iat: Math.floor(presence.solvedAt / 1000) }
+    ? {
+        human: true,
+        human_iat: Math.floor(presence.solvedAt / 1000),
+        human_sub: presence.subject,
+      }
     : undefined;
 
   const payload = base64url(
