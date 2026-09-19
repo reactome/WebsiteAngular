@@ -115,7 +115,12 @@ function mintCallerToken(key, subject, presence = null, now = Date.now()) {
   // and a `false` invites a check that treats "absent" as "not stated" and
   // lets it through.
   const solvedAtSeconds = presence ? Math.floor(presence.solvedAt / 1000) : 0;
-  const fresh = presence && seconds - solvedAtSeconds <= HUMAN_CLAIM_MAX_AGE_SECONDS;
+  const age = seconds - solvedAtSeconds;
+  // `age >= 0` as well as the upper bound. A challenge solved in the future is
+  // a clock that moved, not a person: nobody can forge it -- the cookie is
+  // signed here -- but a backwards step on this host would otherwise make every
+  // stale cookie read as fresh, which is the one direction that matters.
+  const fresh = presence && age >= 0 && age <= HUMAN_CLAIM_MAX_AGE_SECONDS;
   // `human_sub` rather than reusing `sub`, even though both currently hold the
   // same value. `sub` is whatever `callerSubject` decided -- the verified
   // identity when there is one, a per-visit cookie when there is not -- and

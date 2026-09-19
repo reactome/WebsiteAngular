@@ -194,11 +194,32 @@ describe('the presence claim', () => {
     expect(payload.human).toBe(true);
   });
 
+  it('refuses a challenge solved in the future, which is a clock and not a person', () => {
+    // Unforgeable -- we sign the cookie -- so this only happens if this host's
+    // clock steps backwards. Without the guard the age goes negative, which is
+    // below the bound, and every stale cookie on the machine reads as fresh.
+    const { payload } = parts(
+      mintCallerToken(keypair().privateKey, 'abc', { solvedAt, subject: 's' }, solvedAt - 1000)
+    );
+    expect('human' in payload).toBe(false);
+  });
+
   it('omits the claim rather than saying false when there is no identity', () => {
     // Absent and false are not the same to a verifier. `false` invites a check
     // that reads it as "not stated" and lets the call through; absent cannot be
     // read that way.
-    const { payload } = parts(mintCallerToken(keypair().privateKey, 'abc'));
+    //
+    // The present case is asserted first, on purpose. An absence test proves
+    // nothing until the same test has shown the thing can be there: a missing
+    // `human` is also what deleting the feature produces, so without the first
+    // half this would survive exactly the refactor it exists to catch.
+    const key = keypair().privateKey;
+    const present = parts(
+      mintCallerToken(key, 'abc', { solvedAt, subject: 's' }, solvedAt + 1000)
+    ).payload;
+    expect(present.human).toBe(true);
+
+    const { payload } = parts(mintCallerToken(key, 'abc'));
     expect('human' in payload).toBe(false);
     expect(payload.sub).toBe('abc');
   });
