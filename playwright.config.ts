@@ -45,6 +45,23 @@ export default defineConfig({
       { outputFile: process.env['PLAYWRIGHT_JSON_REPORT'] || 'playwright-report/report.json' },
     ],
   ],
+  /**
+   * Longer than playwright's 30s default, because two specs wait up to 45s for
+   * a page and could never reach it.
+   *
+   * `content-pages.spec.ts` and `interactive-state.spec.ts` both define
+   * `LOAD = 45_000` and pass it to assertions. Under a 30s per-test ceiling
+   * that budget was unreachable: the test was killed first, and what the report
+   * said was `TIMEDOUT` rather than which assertion failed and what it saw. A
+   * stated timeout that cannot be used is worse than a short one, because it
+   * reads as deliberate.
+   *
+   * 60s leaves room for the slowest of those plus the page load they share it
+   * with. The cost is that a genuinely hung test takes a minute rather than
+   * thirty seconds to say so, which is paid only by runs that were going to be
+   * red anyway.
+   */
+  timeout: 60_000,
   use: {
     baseURL,
     trace: 'on-first-retry',

@@ -71,16 +71,15 @@ test.describe('Content pages render backend data', () => {
 
   test('a subpathway shows its DOI, which its parent does not carry', async ({ page }) => {
     test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
-    // This page now asks for two lists, and under replay they are ~1 MB of
-    // recorded JSON together (250 kB of contents, 796 kB of DOIs). Alone it
-    // takes about 35 seconds; beside three other workers it went over and was
-    // reported as a timeout rather than as a failed assertion.
+    // This page asks for two lists, and under replay they are ~1 MB of recorded
+    // JSON together (250 kB of contents, 796 kB of DOIs). Alone it takes about
+    // 35 seconds, which used to exceed playwright's 30s default and report as a
+    // timeout rather than as a failed assertion.
     //
-    // Note for whoever tidies this spec: `LOAD` is 45s while the per-test
-    // timeout is playwright's default 30s, so *no* assertion in this file can
-    // actually use its stated budget -- a slow load always ends the test first.
-    // That is worth fixing globally rather than per test.
-    test.slow();
+    // No `test.slow()` any more: the per-test timeout is 60s in
+    // playwright.config.ts, set there because `LOAD` in this file is 45s and
+    // could never be reached under the old default. Fixed where the mismatch
+    // was rather than here.
 
     // `/data/content/toc` sends three fields for a child -- stId, displayName,
     // speciesName -- and no `doi`, so the DOI link the template renders behind

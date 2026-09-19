@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // The proxy is CommonJS because the server that loads it is.
 const require = createRequire(import.meta.url);
 const {
+  HUMAN_CLAIM_MAX_AGE_SECONDS,
   mintCallerToken,
   AUDIENCE,
   ISSUER,
@@ -105,6 +106,122 @@ describe('the caller token', () => {
     const { payload } = parts(mintCallerToken(keypair().privateKey, 'deadbeef'));
     expect(payload.sub).toBe('deadbeef');
     expect(payload.iss).toBe(ISSUER);
+  });
+});
+
+describe('the presence claim', () => {
+  const solvedAt = 1_700_000_000_000;
+
+  it('says a person is present, and when they proved it', () => {
+    // The chatbot refuses to summarise someone's uploaded identifiers without
+    // this. It cannot read our identity cookie -- that is same-site to this
+    // origin and they are reached from this server -- so the claim rides on the
+    // token they already verify.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 'the-cookie-subject' },
+        solvedAt + 60_000
+      )
+    );
+    expect(payload.human).toBe(true);
+    expect(payload.human_iat).toBe(Math.floor(solvedAt / 1000));
+    expect(payload.human_sub).toBe('the-cookie-subject');
+  });
+
+  it('keeps the cookie subject out of `sub`, which means something else', () => {
+    // `sub` is whatever callerSubject decided; their answer endpoint's limiter
+    // keys on it. `human_sub` is specifically the identity cookie's subject, so
+    // their summary limiter can key on the durable one without either
+    // endpoint's meaning depending on which branch callerSubject took.
+    //
+    // Not asserted: that the two are equal. They are today, and pinning that
+    // would make the separation stop being real.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'per-visit-id',
+        { solvedAt, subject: 'the-cookie-subject' },
+        solvedAt + 60_000
+      )
+    );
+    expect(payload.sub).toBe('per-visit-id');
+    expect(payload.human_sub).toBe('the-cookie-subject');
+  });
+
+  it('leaves the claim off at 1801 seconds', () => {
+    // Thirty minutes, the same bound the other side enforces as
+    // `now - human_iat <= 1800`. The cookie is still perfectly valid for twelve
+    // hours; it is just no longer evidence that somebody is at the keyboard.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 's' },
+        solvedAt + (HUMAN_CLAIM_MAX_AGE_SECONDS + 1) * 1000
+      )
+    );
+    expect('human' in payload).toBe(false);
+    expect('human_iat' in payload).toBe(false);
+  });
+
+  it('keeps it at exactly 1800 seconds', () => {
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 's' },
+        solvedAt + HUMAN_CLAIM_MAX_AGE_SECONDS * 1000
+      )
+    );
+    expect(payload.human).toBe(true);
+  });
+
+  it('accepts 1800.4 seconds, because the claim only carries whole ones', () => {
+    // The agreed precision rather than a discovered one. `human_iat` is epoch
+    // seconds, so a sub-second difference cannot be expressed in the claim and
+    // the other end cannot see it either. An earlier version of this test
+    // pinned 1800.000 against 1800.001 and was measuring the harness.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 's' },
+        solvedAt + HUMAN_CLAIM_MAX_AGE_SECONDS * 1000 + 400
+      )
+    );
+    expect(payload.human).toBe(true);
+  });
+
+  it('refuses a challenge solved in the future, which is a clock and not a person', () => {
+    // Unforgeable -- we sign the cookie -- so this only happens if this host's
+    // clock steps backwards. Without the guard the age goes negative, which is
+    // below the bound, and every stale cookie on the machine reads as fresh.
+    const { payload } = parts(
+      mintCallerToken(keypair().privateKey, 'abc', { solvedAt, subject: 's' }, solvedAt - 1000)
+    );
+    expect('human' in payload).toBe(false);
+  });
+
+  it('omits the claim rather than saying false when there is no identity', () => {
+    // Absent and false are not the same to a verifier. `false` invites a check
+    // that reads it as "not stated" and lets the call through; absent cannot be
+    // read that way.
+    //
+    // The present case is asserted first, on purpose. An absence test proves
+    // nothing until the same test has shown the thing can be there: a missing
+    // `human` is also what deleting the feature produces, so without the first
+    // half this would survive exactly the refactor it exists to catch.
+    const key = keypair().privateKey;
+    const present = parts(
+      mintCallerToken(key, 'abc', { solvedAt, subject: 's' }, solvedAt + 1000)
+    ).payload;
+    expect(present.human).toBe(true);
+
+    const { payload } = parts(mintCallerToken(key, 'abc'));
+    expect('human' in payload).toBe(false);
+    expect(payload.sub).toBe('abc');
   });
 });
 
