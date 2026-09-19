@@ -48,7 +48,9 @@
     "e2e:release": "playwright test --project=release",
     "preflight": "bash scripts/preflight.sh",
     "deployed": "bash scripts/deployed.sh",
-    "check:types": "node scripts/check-types.mjs"
+    "check:types": "node scripts/check-types.mjs",
+    "content:node": "node tools/content-node/service.mjs",
+    "content:diff": "node tools/content-node/diff.mjs"
   },
   "private": true,
   "dependencies": {
@@ -88,6 +90,7 @@
     "immer": "^10.2.0",
     "marked": "^17.0.6",
     "minisearch": "^7.2.0",
+    "neo4j-driver": "^6.2.0",
     "ng-table-virtual-scroll": "^1.6.1",
     "ngrx-wieder": "^16.0.0",
     "ngx-custom-material-file-input": "^21.0.3",
