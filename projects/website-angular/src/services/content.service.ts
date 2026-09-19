@@ -130,6 +130,7 @@ export class ContentService {
             body: body || '',
             excerpt: truncateHtml(body || '', 50),
             slug: slug,
+            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
           };
           return returnArticle;
         }),
@@ -214,6 +215,7 @@ export class ContentService {
             body: body || '',
             excerpt: truncateHtml(body || '', 50),
             slug: slug,
+            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
           };
           return returnArticle;
         }),
