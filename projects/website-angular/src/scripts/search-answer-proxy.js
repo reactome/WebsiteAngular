@@ -61,8 +61,17 @@ const TOKEN_TTL_SECONDS = 120;
  * the same bound. It fails at both ends on purpose: neither of us is the only
  * thing standing between a stolen cookie and a model call. If it is ever
  * raised, raise it in both places in one change.
+ *
+ * Compared in **whole seconds**, because that is the precision the claim has.
+ * `human_iat` is epoch seconds, so a bound enforced in milliseconds here would
+ * be finer than anything the other end can see: they check
+ * `now - human_iat <= 1800` against a value already rounded down. A challenge
+ * solved 1800.4s ago presents as 1800 and is accepted at both ends. That is the
+ * agreed behaviour rather than a discovered one -- an earlier test pinned
+ * 1800.000 against 1800.001 and was measuring the test harness, since no claim
+ * can express the difference.
  */
-const HUMAN_CLAIM_MAX_AGE_MS = 30 * 60 * 1000;
+const HUMAN_CLAIM_MAX_AGE_SECONDS = 30 * 60;
 
 /**
  * Our own ceiling, above their stated 120s.
@@ -105,7 +114,8 @@ function mintCallerToken(key, subject, presence = null, now = Date.now()) {
   // and a caller that never met it are the same thing to whoever reads this,
   // and a `false` invites a check that treats "absent" as "not stated" and
   // lets it through.
-  const fresh = presence && now - presence.solvedAt <= HUMAN_CLAIM_MAX_AGE_MS;
+  const solvedAtSeconds = presence ? Math.floor(presence.solvedAt / 1000) : 0;
+  const fresh = presence && seconds - solvedAtSeconds <= HUMAN_CLAIM_MAX_AGE_SECONDS;
   // `human_sub` rather than reusing `sub`, even though both currently hold the
   // same value. `sub` is whatever `callerSubject` decided -- the verified
   // identity when there is one, a per-visit cookie when there is not -- and
@@ -121,7 +131,7 @@ function mintCallerToken(key, subject, presence = null, now = Date.now()) {
   const claims = fresh
     ? {
         human: true,
-        human_iat: Math.floor(presence.solvedAt / 1000),
+        human_iat: solvedAtSeconds,
         human_sub: presence.subject,
       }
     : undefined;
@@ -441,7 +451,7 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
 
 module.exports = {
   mountSearchAnswerProxy,
-  HUMAN_CLAIM_MAX_AGE_MS,
+  HUMAN_CLAIM_MAX_AGE_SECONDS,
   mintCallerToken,
   retryAfter,
   verifyRetryAfter,

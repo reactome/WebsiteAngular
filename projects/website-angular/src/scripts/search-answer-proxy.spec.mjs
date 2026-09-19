@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // The proxy is CommonJS because the server that loads it is.
 const require = createRequire(import.meta.url);
 const {
-  HUMAN_CLAIM_MAX_AGE_MS,
+  HUMAN_CLAIM_MAX_AGE_SECONDS,
   mintCallerToken,
   AUDIENCE,
   ISSUER,
@@ -150,25 +150,46 @@ describe('the presence claim', () => {
     expect(payload.human_sub).toBe('the-cookie-subject');
   });
 
-  it('leaves the claim off once the challenge is older than the bound', () => {
-    // Thirty minutes, the same bound the other side enforces. The cookie is
-    // still perfectly valid for twelve hours -- it is just no longer evidence
-    // that somebody is at the keyboard.
+  it('leaves the claim off at 1801 seconds', () => {
+    // Thirty minutes, the same bound the other side enforces as
+    // `now - human_iat <= 1800`. The cookie is still perfectly valid for twelve
+    // hours; it is just no longer evidence that somebody is at the keyboard.
     const { payload } = parts(
       mintCallerToken(
         keypair().privateKey,
         'abc',
-        { solvedAt },
-        solvedAt + HUMAN_CLAIM_MAX_AGE_MS + 1
+        { solvedAt, subject: 's' },
+        solvedAt + (HUMAN_CLAIM_MAX_AGE_SECONDS + 1) * 1000
       )
     );
     expect('human' in payload).toBe(false);
     expect('human_iat' in payload).toBe(false);
   });
 
-  it('keeps it at the boundary rather than one second inside it', () => {
+  it('keeps it at exactly 1800 seconds', () => {
     const { payload } = parts(
-      mintCallerToken(keypair().privateKey, 'abc', { solvedAt }, solvedAt + HUMAN_CLAIM_MAX_AGE_MS)
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 's' },
+        solvedAt + HUMAN_CLAIM_MAX_AGE_SECONDS * 1000
+      )
+    );
+    expect(payload.human).toBe(true);
+  });
+
+  it('accepts 1800.4 seconds, because the claim only carries whole ones', () => {
+    // The agreed precision rather than a discovered one. `human_iat` is epoch
+    // seconds, so a sub-second difference cannot be expressed in the claim and
+    // the other end cannot see it either. An earlier version of this test
+    // pinned 1800.000 against 1800.001 and was measuring the harness.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt, subject: 's' },
+        solvedAt + HUMAN_CLAIM_MAX_AGE_SECONDS * 1000 + 400
+      )
     );
     expect(payload.human).toBe(true);
   });
