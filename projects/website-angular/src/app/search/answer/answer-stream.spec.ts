@@ -15,7 +15,6 @@ import {
   isIncomplete,
   parseFrame,
   showsProse,
-  stripTrailingSources,
   type AnswerEvent,
 } from './answer-stream';
 
@@ -174,88 +173,6 @@ describe('the cache key', () => {
 
   it('keeps an unknown release distinct from a known one', () => {
     expect(cacheKey('what is CDK5', null)).not.toBe(cacheKey('what is CDK5', 97));
-  });
-});
-
-describe('the sources the model writes itself', () => {
-  // Taken from a real answer: "What happens in the Golgi during N-glycan
-  // maturation?" ended with its own `### Sources` list. The contract strips
-  // anchors from the prose, so that copy has no links -- while the citation
-  // events give the same names with resolvable stable ids. Rendering both
-  // showed two source lists, one unclickable, and made the panel noticeably
-  // longer.
-  const answer = [
-    'The Golgi matures N-glycans through ordered enzymatic steps.',
-    '',
-    '### Sources',
-    '- N-glycan trimming and elongation in the cis-Golgi',
-    '- N-glycan antennae elongation in the medial/trans-Golgi',
-  ].join('\n');
-
-  it('removes a trailing Sources heading and its list', () => {
-    expect(stripTrailingSources(answer)).toBe(
-      'The Golgi matures N-glycans through ordered enzymatic steps.'
-    );
-  });
-
-  it.each(['## References', '#### Citations', '### sources:', '## Source'])(
-    'removes %s too',
-    (heading) => {
-      const text = `Body text.\n\n${heading}\n- One\n- Two`;
-      expect(stripTrailingSources(text)).toBe('Body text.');
-    }
-  );
-
-  it('leaves prose alone when the section is not a list', () => {
-    // A heading called "Sources" followed by real prose is content, not a
-    // bibliography, and swallowing it would delete part of the answer.
-    const text = 'Body.\n\n### Sources\nThese pathways were drawn from the literature.';
-    expect(stripTrailingSources(text)).toBe(text);
-  });
-
-  it('leaves an answer with no such section untouched', () => {
-    expect(stripTrailingSources('Just an answer.')).toBe('Just an answer.');
-  });
-
-  it('does not touch a heading of the same name mid-answer', () => {
-    // Only a *trailing* section is removed, and only when nothing but list
-    // items follows it.
-    const text = '### Sources\n- One\n\nThen more explanation follows here.';
-    expect(stripTrailingSources(text)).toBe(text);
-  });
-
-  it('strips a section that starts at the very beginning', () => {
-    // Found reviewing this: the guard was `!last?.index`, and index 0 is falsy,
-    // so a heading at the start of the text was treated as no match at all.
-    expect(stripTrailingSources('### Sources\n- One\n- Two')).toBe('');
-  });
-
-  it.each([
-    '## Most relevant sources',
-    '## Most Relevant Sources',
-    '### relevant references:',
-    '## Key sources',
-    '## Top citations',
-  ])('removes a qualified heading: %s', (heading) => {
-    // The chatbot heads its citation list "most relevant sources", which the
-    // plain pattern did not match -- so the raw list rendered underneath the
-    // panel's own source chips, which is the duplicate a reader reported.
-    expect(stripTrailingSources(`Body text.\n\n${heading}\n- One\n- Two`)).toBe('Body text.');
-  });
-
-  it.each(['## Data sources', '## Sources of error'])(
-    'leaves %s alone, qualifier list or not',
-    (heading) => {
-      // Why the qualifiers are enumerated rather than "any words before the
-      // keyword": these are sections of an answer, and a loose pattern that ate
-      // them would delete content to fix a formatting nuisance.
-      const text = `Body text.\n\n${heading}\n- One\n- Two`;
-      expect(stripTrailingSources(text)).toBe(text);
-    }
-  );
-
-  it('keeps a numbered list section out too', () => {
-    expect(stripTrailingSources('Body.\n\n## Sources\n1. One\n2. Two')).toBe('Body.');
   });
 });
 

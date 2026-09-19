@@ -209,47 +209,6 @@ export function showsProse(text: string): boolean {
 }
 
 /**
- * Removes a trailing "Sources" section the model wrote itself.
- *
- * The prose frequently ends with its own list, and it is the useless copy of
- * the one we already render: the contract strips anchors from the prose, so the
- * model's version is plain text with no links, while the `citation` events give
- * us the same names with resolvable stable identifiers. Leaving both makes the
- * panel noticeably longer and shows the reader two source lists, one of which
- * cannot be clicked.
- *
- * Deliberately conservative. It strips only from the last heading whose text is
- * some form of "sources", "references" or "citations", and only when everything
- * after it is list items -- so a section that continues into real prose is left
- * alone rather than swallowed.
- */
-export function stripTrailingSources(text: string): string {
-  const headings = [
-    ...text.matchAll(
-      // The qualifier is explicit rather than "any words before the keyword".
-      // The chatbot's own contract describes citations as "the most relevant
-      // few", and it heads the section that way -- but "Data sources" followed
-      // by a list is a section of the answer, and a loose pattern would eat it.
-      /^#{1,6}[ \t]*(?:(?:most[ \t]+)?relevant[ \t]+|key[ \t]+|main[ \t]+|primary[ \t]+|top[ \t]+)?(?:sources?|references?|citations?)[ \t]*:?[ \t]*$/gim
-    ),
-  ];
-  const last = headings.at(-1);
-  // `last.index === undefined` rather than `!last.index`: a heading at index 0
-  // is a real match, and the falsy check treated it as none -- so an answer
-  // that *began* with its sources section was never stripped.
-  if (last?.index === undefined) return text;
-
-  const after = text.slice(last.index + last[0].length);
-  const lines = after.split('\n').filter((line) => line.trim() !== '');
-  if (lines.length === 0) return text.slice(0, last.index).trimEnd();
-  // Every remaining line must look like a list item, or this is prose we have
-  // no business removing.
-  if (!lines.every((line) => /^\s*(?:[-*+]|\d+[.)])\s+/.test(line))) return text;
-
-  return text.slice(0, last.index).trimEnd();
-}
-
-/**
  * Whether prose on screen stopped early.
  *
  * The two ways to get tokens and then a non-`answered` state are both faults
