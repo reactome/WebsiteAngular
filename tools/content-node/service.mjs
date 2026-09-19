@@ -279,6 +279,13 @@ function cached(name, build) {
     const answer = await ready;
     const spent = Date.now() - started;
     if (spent > 100) console.log(`[content-node] built ${name} in ${spent}ms`);
+
+    // Serialised once, not per request. The body cannot change while the
+    // process lives, and `res.json` would stringify a quarter of a megabyte
+    // every time somebody asked. Measured over 20 requests: 5.4ms before,
+    // against Java's 3.1ms, and the gap was this.
+    answer.serialised ??=
+      typeof answer.body === 'string' ? answer.body : JSON.stringify(answer.body);
     return answer;
   };
   // Marks this one for warming at startup; a handler that reads its request
@@ -392,6 +399,9 @@ export function app() {
         // Objects go out as JSON; strings as they are, so a text/plain endpoint
         // is not quoted into JSON.
         if (typeof result.body === 'string') response.send(result.body);
+        // A cached endpoint carries its own serialised body; anything else is
+        // small enough that stringifying per request costs nothing.
+        else if (result.serialised) response.type('application/json').send(result.serialised);
         else response.json(result.body);
       } catch (failure) {
         // The message, not a stack: this stands in for a service whose errors
