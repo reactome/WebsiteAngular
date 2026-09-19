@@ -151,6 +151,92 @@ to start early comes from the work being obviously worthwhile.
 
 ---
 
+## D9. An endpoint Java caches must be ported with its caching
+
+**Decision**: before porting an endpoint, find out whether the Java service
+precomputes it. If it does, the node version builds the same thing at startup,
+warms it, and serves from memory.
+
+**Why**: a port without it is a regression that no functional diff can see.
+Every byte of every response is identical; it is merely a thousand times slower,
+and the harness in D4 compares content rather than time.
+
+**Measured** on `/content/toc` and `/content/doi`, mean of twenty requests on a
+250kB payload:
+
+    naive port, querying per request     4,500ms / 5,600ms
+    java                                     3ms /     6ms
+    with the same startup cache               5ms
+    with the body serialised once too       3.8ms  (java 4.1ms)
+
+Java is not faster. `ContentPageManager` has a `@PostConstruct` that runs both
+queries once and keeps the lists in memory. Both gaps were ours: no cache, then
+re-serialising an unchanged 250kB body on every request. For this kind of work
+-- read the graph, shape JSON, serve it -- node matches the WAR once it is doing
+the same thing. **Speed is not a reason to port, and slowness is not a reason
+not to.**
+
+**Rejected**: trusting that a runtime comparison is a language comparison. The
+first numbers said node was a thousand times slower and they were about our
+code, not about node.
+
+## D10. One deliberate difference from Java's caching: a failed build is not kept
+
+**Decision**: cache the built list, but not a failure. The next request rebuilds.
+
+**Why**: Java's `init()` catches `Exception`, logs it, and leaves the list
+**empty**. A database that is slow or unreachable at startup therefore leaves
+the contents page blank until somebody redeploys -- a transient fault made
+permanent, and nobody connects an empty page to a restart hours earlier. A slow
+start should cost one slow request.
+
+## D11. Parity means matching the behaviour, not the bugs -- and saying which is which
+
+**Decision**: a ported endpoint may differ from Java deliberately, and each
+difference is declared on the endpoint as `differs`. The harness reports a
+declared difference as intended, and reports its **disappearance** as news.
+
+**Why**: two bad options otherwise. Byte-for-byte parity means porting the bug
+and losing the reason to have ported at all; an undeclared improvement means the
+diff is permanently red and stops being read.
+
+**Measured**: `/content/toc` carries one declared difference and is otherwise
+identical; `/content/doi` is identical outright.
+
+## D12. What the first two endpoints found, which is the argument for the rest
+
+Three defects, none visible from the TypeScript side:
+
+- **`ContentPageManager:91` discards every subpathway's DOI.**
+  `new TocSubpathway(stId, displayName, null, speciesName)` -- the third
+  argument is the DOI, hardcoded `null`, and Jackson drops nulls. The query
+  already returns each child as a full `Pathway` node. Production's own contents
+  page carries 44 DOIs of which **41 are subpathways**, so all but three were
+  missing on beta, with nothing logged. It forced a client-side join against
+  `/content/doi` -- a 796kB request -- which the port makes unnecessary.
+- **The TOC query can drop a whole pathway.** It ends `UNWIND allAuthors AS
+totalAtrs` with no guard, and `UNWIND []` yields no rows, so a top-level
+  pathway with no authors anywhere in its subtree would vanish from the contents
+  page silently. The sibling DOI query guards exactly that with
+  `CASE allAuthors WHEN [] THEN [null]`. Measured: 34 pathways, 34 returned, 0
+  without authors -- a trap waiting for the first pathway curated without one.
+- **Nobody reads the curated order.** `hasEvent` carries an `order` property --
+  for Autophagy: Macroautophagy 0, Chaperone Mediated Autophagy 1, Late endosomal
+  microautophagy 2 -- and both implementations emit children in internal node id
+  order instead. The contents page has never shown children in the sequence a
+  curator chose. Left alone on purpose, per D3.
+
+And three shape details the harness caught that reading would not have: the DOI
+query reads `authored|revised` for a pathway but `authored` alone for its
+descendants while the contents query reads both at both levels;
+`spring.jackson.default-property-inclusion=non_empty` omits an empty array
+rather than sending `[]`; and children arrive in internal id order.
+
+**Why this is recorded here**: the case for the port in D1 was that hand-mirrored
+types drift silently. These are the same fault a layer down -- a mapping that
+discards a field, a query that can drop a row -- and neither is visible from the
+consuming side at all.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
