@@ -225,7 +225,13 @@ export function showsProse(text: string): boolean {
  */
 export function stripTrailingSources(text: string): string {
   const headings = [
-    ...text.matchAll(/^#{1,6}[ \t]*(sources?|references?|citations?)[ \t]*:?[ \t]*$/gim),
+    ...text.matchAll(
+      // The qualifier is explicit rather than "any words before the keyword".
+      // The chatbot's own contract describes citations as "the most relevant
+      // few", and it heads the section that way -- but "Data sources" followed
+      // by a list is a section of the answer, and a loose pattern would eat it.
+      /^#{1,6}[ \t]*(?:(?:most[ \t]+)?relevant[ \t]+|key[ \t]+|main[ \t]+|primary[ \t]+|top[ \t]+)?(?:sources?|references?|citations?)[ \t]*:?[ \t]*$/gim
+    ),
   ];
   const last = headings.at(-1);
   // `last.index === undefined` rather than `!last.index`: a heading at index 0
