@@ -230,6 +230,30 @@ describe('the sources the model writes itself', () => {
     expect(stripTrailingSources('### Sources\n- One\n- Two')).toBe('');
   });
 
+  it.each([
+    '## Most relevant sources',
+    '## Most Relevant Sources',
+    '### relevant references:',
+    '## Key sources',
+    '## Top citations',
+  ])('removes a qualified heading: %s', (heading) => {
+    // The chatbot heads its citation list "most relevant sources", which the
+    // plain pattern did not match -- so the raw list rendered underneath the
+    // panel's own source chips, which is the duplicate a reader reported.
+    expect(stripTrailingSources(`Body text.\n\n${heading}\n- One\n- Two`)).toBe('Body text.');
+  });
+
+  it.each(['## Data sources', '## Sources of error'])(
+    'leaves %s alone, qualifier list or not',
+    (heading) => {
+      // Why the qualifiers are enumerated rather than "any words before the
+      // keyword": these are sections of an answer, and a loose pattern that ate
+      // them would delete content to fix a formatting nuisance.
+      const text = `Body text.\n\n${heading}\n- One\n- Two`;
+      expect(stripTrailingSources(text)).toBe(text);
+    }
+  );
+
   it('keeps a numbered list section out too', () => {
     expect(stripTrailingSources('Body.\n\n## Sources\n1. One\n2. Two')).toBe('Body.');
   });

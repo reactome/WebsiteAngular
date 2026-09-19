@@ -81,11 +81,16 @@ const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/|idg\.re
  * BLOCKED below: fourteen.
  */
 const ALLOWED = new Map<string, string>([
-  // A leading dot means "this domain and anything under it". Needed because
+  // A leading `*` means "any prefix, then exactly this". Needed because
   // `docs.google.com` redirects a published sheet to a shard-numbered host --
   // `doc-0c-5k-sheets.googleusercontent.com` one run, `doc-0c-4c-...` another --
-  // so the host that actually serves the data cannot be written down in advance.
-  ['.googleusercontent.com', 'where docs.google.com redirects a published sheet to'],
+  // so the host that serves the data cannot be written down in advance.
+  //
+  // Deliberately not `.googleusercontent.com`. That is Google's whole
+  // user-content CDN, and it would have quietly allowed `lh3.googleusercontent.com`
+  // and everything else under it -- a wildcard hole in a check whose only job is
+  // to notice new third parties.
+  ['*-sheets.googleusercontent.com', 'where docs.google.com redirects a published sheet to'],
   ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
   ['fonts.gstatic.com', 'the font files those stylesheets point at'],
   ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by pathway-browser/src/index.html'],
@@ -167,12 +172,25 @@ const BLOCKED = new Map<string, string>([
  */
 const LOCAL = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
-/** Exact host, or a `.suffix` entry covering a domain and everything under it. */
+/**
+ * An exact host, or `*` followed by the literal a host must end with.
+ *
+ * One wildcard form, not two. A `.domain.com` form covering a domain and
+ * everything under it was written first and then removed: nothing declared one,
+ * and `e2e/` is outside vitest's `{src,projects,tools}` include, so a matching
+ * mode nobody uses is also a mode nothing can test. The `*` form is exercised
+ * for real -- `/about/release-calendar` renders only if the shard-numbered
+ * sheet host is allowed.
+ */
 function declared(list: Map<string, string>, host: string): string | undefined {
   const exact = list.get(host);
   if (exact !== undefined) return exact;
   for (const [key, why] of list) {
-    if (key.startsWith('.') && (host === key.slice(1) || host.endsWith(key))) return why;
+    if (!key.startsWith('*')) continue;
+    const suffix = key.slice(1);
+    // `>` and not `>=`: something has to stand where the `*` is, so the bare
+    // suffix on its own is not a match.
+    if (host.endsWith(suffix) && host.length > suffix.length) return why;
   }
   return undefined;
 }
@@ -325,14 +343,11 @@ export const test = base.extend({
     // own, and everything else is watched passively through the `request` event,
     // which pauses nothing.
     // Exact hosts stay exact -- `[^/]*` in front of one would match
-    // `evilwww.youtube.com` too -- while a `.suffix` entry becomes an optional
-    // label prefix, matching the domain and anything under it.
+    // `evilwww.youtube.com` too -- while a `*` entry becomes a required prefix.
     const blockedPattern = new RegExp(
       `^https?://(${[...BLOCKED.keys()]
         .map((h) =>
-          h.startsWith('.')
-            ? `([^/]+\\.)?${h.slice(1).replace(/\./g, '\\.')}`
-            : h.replace(/\./g, '\\.')
+          h.startsWith('*') ? `[^/]+${h.slice(1).replace(/\./g, '\\.')}` : h.replace(/\./g, '\\.')
         )
         .join('|')})/`
     );
