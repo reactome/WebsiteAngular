@@ -48,6 +48,32 @@ const ISSUER = 'reactome-website';
 const TOKEN_TTL_SECONDS = 120;
 
 /**
+ * How recently a challenge must have been solved for the token to say a person
+ * is present.
+ *
+ * Not the same as the identity cookie's own life, which is twelve hours. The
+ * cookie answers "has this browser proved itself", which is what a rate limiter
+ * wants. A presence claim answers "is somebody there now", and twelve hours
+ * after a challenge nobody can say that. An HMAC cookie is a bearer credential,
+ * so a long-lived presence claim is a durable bot pass with extra steps.
+ *
+ * Thirty minutes, agreed with the chatbot side, which refuses the claim past
+ * the same bound. It fails at both ends on purpose: neither of us is the only
+ * thing standing between a stolen cookie and a model call. If it is ever
+ * raised, raise it in both places in one change.
+ *
+ * Compared in **whole seconds**, because that is the precision the claim has.
+ * `human_iat` is epoch seconds, so a bound enforced in milliseconds here would
+ * be finer than anything the other end can see: they check
+ * `now - human_iat <= 1800` against a value already rounded down. A challenge
+ * solved 1800.4s ago presents as 1800 and is accepted at both ends. That is the
+ * agreed behaviour rather than a discovered one -- an earlier test pinned
+ * 1800.000 against 1800.001 and was measuring the test harness, since no claim
+ * can express the difference.
+ */
+const HUMAN_CLAIM_MAX_AGE_SECONDS = 30 * 60;
+
+/**
  * Our own ceiling, above their stated 120s.
  *
  * They give up at 120s and say so in a `done` event. A dropped connection says
@@ -80,16 +106,49 @@ function signingKey() {
  * signature, so a dependency would be carrying a parser we never use -- and
  * this file is loaded by the process that serves the site.
  */
-function mintCallerToken(key, subject) {
-  const now = Math.floor(Date.now() / 1000);
+function mintCallerToken(key, subject, presence = null, now = Date.now()) {
+  const seconds = Math.floor(now / 1000);
   const header = base64url(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' }));
+
+  // `human` is present or absent, never false. A caller that failed the gate
+  // and a caller that never met it are the same thing to whoever reads this,
+  // and a `false` invites a check that treats "absent" as "not stated" and
+  // lets it through.
+  const solvedAtSeconds = presence ? Math.floor(presence.solvedAt / 1000) : 0;
+  const age = seconds - solvedAtSeconds;
+  // `age >= 0` as well as the upper bound. A challenge solved in the future is
+  // a clock that moved, not a person: nobody can forge it -- the cookie is
+  // signed here -- but a backwards step on this host would otherwise make every
+  // stale cookie read as fresh, which is the one direction that matters.
+  const fresh = presence && age >= 0 && age <= HUMAN_CLAIM_MAX_AGE_SECONDS;
+  // `human_sub` rather than reusing `sub`, even though both currently hold the
+  // same value. `sub` is whatever `callerSubject` decided -- the verified
+  // identity when there is one, a per-visit cookie when there is not -- and
+  // their answer endpoint's limiter keys on it. `human_sub` is specifically the
+  // identity cookie's subject, so their summary limiter can key on the durable
+  // one without either endpoint's meaning depending on which branch
+  // `callerSubject` happened to take.
+  //
+  // They will be equal while `callerSubject` prefers the verified identity, and
+  // nothing should test that they are: agreement between two claims that mean
+  // different things is a coincidence, and pinning it would make the separation
+  // stop being real.
+  const claims = fresh
+    ? {
+        human: true,
+        human_iat: solvedAtSeconds,
+        human_sub: presence.subject,
+      }
+    : undefined;
+
   const payload = base64url(
     JSON.stringify({
       iss: ISSUER,
       aud: AUDIENCE,
-      iat: now,
-      exp: now + TOKEN_TTL_SECONDS,
+      iat: seconds,
+      exp: seconds + TOKEN_TTL_SECONDS,
       sub: subject,
+      ...claims,
     })
   );
   const signature = crypto
@@ -350,7 +409,15 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
         },
         body: JSON.stringify({
           question,
-          caller_token: mintCallerToken(key, callerSubject(req, res)),
+          // The presence claim rides on the token because the identity cookie
+          // cannot: it is same-site to this origin, and the chatbot is reached
+          // from this server rather than from the browser. So what they can
+          // verify is what we sign.
+          caller_token: mintCallerToken(
+            key,
+            callerSubject(req, res),
+            gate.identityDetailsFromRequest(req)
+          ),
         }),
         signal: controller.signal,
       });
@@ -389,6 +456,7 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
 
 module.exports = {
   mountSearchAnswerProxy,
+  HUMAN_CLAIM_MAX_AGE_SECONDS,
   mintCallerToken,
   retryAfter,
   verifyRetryAfter,
