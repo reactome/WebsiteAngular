@@ -99,8 +99,18 @@
                             class="row-expression__value"
                             [class.row-expression__value--current]="$index === selectedSample()"
                           >
+                            <!--
+                              `||` rather than `??`, for two reasons. A name that
+                              is the empty string should fall back too: a blank
+                              label is not a label. And the compiler reports `??`
+                              here as unnecessary, because `string[]` indexed by a
+                              number is typed `string` whether or not the index is
+                              in range -- without `noUncheckedIndexedAccess` the
+                              type says this cannot be undefined and the runtime
+                              disagrees. The fallback is load-bearing, so it stays.
+                            -->
                             <span class="row-expression__name">{{
-                              sampleNames()[$index] ?? 'Sample ' + ($index + 1)
+                              sampleNames()[$index] || 'Sample ' + ($index + 1)
                             }}</span>
                             {{ value | number: '1.0-2' }}
                           </span>
