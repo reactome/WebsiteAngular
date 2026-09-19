@@ -8,6 +8,7 @@ import stripFirstH from '../../utils/stripFirstH';
 import addAnchorIds from '../../utils/addAnchorIds';
 import addJumpCards from '../../utils/addJumpCards';
 import wrapCodeBlocks from '../../utils/wrapCodeBlocks';
+import addImageSizes from '../../utils/addImageSizes';
 import sanitize from '../../utils/sanitize';
 import { StatsService } from '../../services/stats.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -150,8 +151,16 @@ export class PageComponent implements OnInit {
             // including the table of contents at the top of the long userguide
             // pages -- need to jump to (#89). Dropping the calls but keeping the
             // imports is exactly how those regressed once already.
+            // `addImageSizes` last of the html steps, so it sees every `<img>`
+            // the others produced. Without it a content image reserves no space
+            // until it loads, and a reader who clicks a heading in the table of
+            // contents is carried away from it as the images above arrive --
+            // measured at 2,793px off on the FIViz page, which has 116.
             this.renderedContent = sanitize(
-              stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+              addImageSizes(
+                stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+                this.page?.imageSizes
+              ),
               this.sanitizer
             );
             this.loading = false;

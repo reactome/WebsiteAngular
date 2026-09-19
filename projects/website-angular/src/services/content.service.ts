@@ -24,6 +24,16 @@ export interface PageContent {
   category?: string;
   image?: string;
   body: string;
+
+  /**
+   * Every image this page shows, and the space it needs, measured when the
+   * content was staged.
+   *
+   * Optional because a page without images has none, and because a
+   * `content-dist` built before this existed simply will not carry it -- the
+   * renderer leaves images alone rather than failing.
+   */
+  imageSizes?: Record<string, [number, number]>;
 }
 
 export interface TeamMember {
@@ -69,6 +79,12 @@ export class ContentService {
             category: frontmatter['category'] as string,
             image: frontmatter['image'] as string,
             body: (frontmatter['body'] as string) || '',
+            // Named explicitly, like everything else here. This mapping lists
+            // the fields it wants, so a field added to the staged JSON reaches
+            // nothing until it is named -- which is how the image sizes came to
+            // be measured, shipped, and then silently dropped one layer before
+            // the renderer that needed them.
+            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
           };
         }),
         catchError((error: unknown) => {
@@ -114,6 +130,7 @@ export class ContentService {
             body: body || '',
             excerpt: truncateHtml(body || '', 50),
             slug: slug,
+            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
           };
           return returnArticle;
         }),
@@ -198,6 +215,7 @@ export class ContentService {
             body: body || '',
             excerpt: truncateHtml(body || '', 50),
             slug: slug,
+            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
           };
           return returnArticle;
         }),

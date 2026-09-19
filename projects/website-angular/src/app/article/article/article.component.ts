@@ -9,6 +9,7 @@ import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import addAnchorIds from '../../../utils/addAnchorIds';
 import addJumpCards from '../../../utils/addJumpCards';
+import addImageSizes from '../../../utils/addImageSizes';
 import wrapCodeBlocks from '../../../utils/wrapCodeBlocks';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -61,7 +62,14 @@ export class ArticleComponent implements OnInit {
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
           const html = await marked((article?.body as string) || '');
-          const renderedContent = stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html))));
+          // Same reservation as the content pages. An article carries at most
+          // four images where a userguide page carries 114, so nobody is thrown
+          // thousands of pixels off here -- but the text still moves under a
+          // reader while the images arrive, and the sizes are already staged.
+          const renderedContent = addImageSizes(
+            stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+            article?.imageSizes
+          );
           this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
           this.article = {
