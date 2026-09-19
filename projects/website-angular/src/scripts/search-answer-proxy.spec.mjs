@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // The proxy is CommonJS because the server that loads it is.
 const require = createRequire(import.meta.url);
 const {
+  HUMAN_CLAIM_MAX_AGE_MS,
   mintCallerToken,
   AUDIENCE,
   ISSUER,
@@ -105,6 +106,54 @@ describe('the caller token', () => {
     const { payload } = parts(mintCallerToken(keypair().privateKey, 'deadbeef'));
     expect(payload.sub).toBe('deadbeef');
     expect(payload.iss).toBe(ISSUER);
+  });
+});
+
+describe('the presence claim', () => {
+  const solvedAt = 1_700_000_000_000;
+
+  it('says a person is present, and when they proved it', () => {
+    // The chatbot refuses to summarise someone's uploaded identifiers without
+    // this. It cannot read our identity cookie -- that is same-site to this
+    // origin and they are reached from this server -- so the claim rides on the
+    // token they already verify.
+    const { payload } = parts(
+      mintCallerToken(keypair().privateKey, 'abc', { solvedAt }, solvedAt + 60_000)
+    );
+    expect(payload.human).toBe(true);
+    expect(payload.human_iat).toBe(Math.floor(solvedAt / 1000));
+  });
+
+  it('leaves the claim off once the challenge is older than the bound', () => {
+    // Thirty minutes, the same bound the other side enforces. The cookie is
+    // still perfectly valid for twelve hours -- it is just no longer evidence
+    // that somebody is at the keyboard.
+    const { payload } = parts(
+      mintCallerToken(
+        keypair().privateKey,
+        'abc',
+        { solvedAt },
+        solvedAt + HUMAN_CLAIM_MAX_AGE_MS + 1
+      )
+    );
+    expect('human' in payload).toBe(false);
+    expect('human_iat' in payload).toBe(false);
+  });
+
+  it('keeps it at the boundary rather than one second inside it', () => {
+    const { payload } = parts(
+      mintCallerToken(keypair().privateKey, 'abc', { solvedAt }, solvedAt + HUMAN_CLAIM_MAX_AGE_MS)
+    );
+    expect(payload.human).toBe(true);
+  });
+
+  it('omits the claim rather than saying false when there is no identity', () => {
+    // Absent and false are not the same to a verifier. `false` invites a check
+    // that reads it as "not stated" and lets the call through; absent cannot be
+    // read that way.
+    const { payload } = parts(mintCallerToken(keypair().privateKey, 'abc'));
+    expect('human' in payload).toBe(false);
+    expect(payload.sub).toBe('abc');
   });
 });
 

@@ -147,6 +147,38 @@ function identityFromRequest(req, now = Date.now()) {
 }
 
 /**
+ * The identity **and when its challenge was solved**, or null.
+ *
+ * `identityFromRequest` answers "is this a verified reader", which is all the
+ * rate limiter needs. A presence claim needs more than that: a cookie is good
+ * for twelve hours, and twelve hours after a challenge nobody can say a person
+ * is still at the keyboard. The consumer decides how fresh is fresh enough, so
+ * this reports the fact and holds no policy.
+ *
+ * The cookie carries an expiry rather than an issue time, so the issue time is
+ * derived -- expiry minus the TTL that minted it. That is exact while
+ * `IDENTITY_TTL_MS` is a constant, and it would drift the moment someone made
+ * the TTL variable. If that ever happens, put the issue time in the cookie
+ * instead of computing it here.
+ */
+function identityDetailsFromRequest(req, now = Date.now()) {
+  const subject = identityFromRequest(req, now);
+  if (!subject) return null;
+
+  const match = new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`).exec(req.headers?.cookie || '');
+  let value;
+  try {
+    value = decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+  const expiry = Number(value.split('.')[1]);
+  if (!Number.isFinite(expiry)) return null;
+
+  return { subject, solvedAt: expiry - IDENTITY_TTL_MS };
+}
+
+/**
  * Asks hCaptcha whether a response token is genuine.
  *
  * Failure of any kind is a failed verification. A network error here must not
@@ -186,6 +218,7 @@ module.exports = {
   TURNSTILE_SITEKEY,
   IDENTITY_TTL_MS,
   REQUIRE_HUMAN,
+  identityDetailsFromRequest,
   identityFromRequest,
   mintIdentity,
   misconfigured,
