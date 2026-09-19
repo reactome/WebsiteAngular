@@ -45,9 +45,10 @@ const ANSWERED = stream([
   'event: start\ndata: {"release": 97, "answered": true}',
   'event: token\ndata: {"text": "## CDK5\\n\\nCDK5 bound to p25 "}',
   'event: token\ndata: {"text": "phosphorylates tau."}',
-  // Real answers end with their own plain-text Sources list. We render the
-  // citation events instead, with links, so this copy must not also appear.
-  'event: token\ndata: {"text": "\\n\\n### Sources\\n- Deregulated CDK5 triggers tau hyperphosphorylation"}',
+  // No trailing Sources list here, because the answer endpoint no longer sends
+  // one: it strips that section before the first token leaves. The panel used
+  // to remove it client-side and no longer does -- see the test below, which
+  // pins that we render what we are given rather than editing it.
   'event: citation\ndata: {"st_id": "R-HSA-8862803", "display_name": "Deregulated CDK5 triggers tau hyperphosphorylation"}',
   'event: done\ndata: {"state": "answered", "seconds": 8.4}',
 ]);
@@ -127,7 +128,9 @@ test.describe('Search page React-to-Me answer', () => {
 
     // Reported from use: the panel showed the model's "### Sources" list and
     // ours underneath, so two lists, one of them unclickable, and a visibly
-    // longer panel. Exactly one heading, and its entries are links.
+    // longer panel. Fixed at the endpoint now rather than here, so this asserts
+    // the panel's own heading stands alone against a stream that carries no
+    // second copy.
     await expect(panel(page).getByRole('heading', { name: /sources/i })).toHaveCount(1);
     await expect(panel(page).locator('.search-answer__chip')).not.toHaveCount(0);
     // The stripped copy is gone: the name now appears only inside a link.
@@ -150,6 +153,46 @@ test.describe('Search page React-to-Me answer', () => {
     // `/chat/guest/`, not `/chat/`: the latter is a chooser page, so it lands
     // the reader a step short of an actual conversation.
     await expect(onward).toHaveAttribute('href', '/chat/guest/');
+  });
+
+  test('renders a stray source list rather than editing it out', async ({ page }) => {
+    // The panel used to strip a trailing sources section itself. It does not any
+    // more, and this pins that, because the obvious repair when somebody sees a
+    // duplicate list is to add a pattern back here.
+    //
+    // Why that repair is worse than it looks: this component sees **partial**
+    // text on every token event, so a pattern decides on a prefix. Measured
+    // against the implementation that was removed, a heading matched at
+    // `## Source` -- before ` of reactive oxygen species` had arrived. It
+    // recovered when the line completed, so it showed as a flicker; a stalled
+    // stream would have left a reader looking at a truncated answer.
+    //
+    // The endpoint strips the section once, on complete text, which is the only
+    // place that is safe. A duplicate here is a report to the chatbot
+    // repository, not a regex.
+    await asDevelopmentProfile(page);
+    await stubAnswer(
+      page,
+      stream([
+        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: token\ndata: {"text": "CDK5 phosphorylates tau."}',
+        'event: token\ndata: {"text": "\\n\\n### Sources\\n- Something"}',
+        'event: done\ndata: {"state": "answered", "seconds": 1.0}',
+      ])
+    );
+
+    await openSearch(page);
+    await askButton(page).click();
+    await expect(panel(page)).toBeVisible({ timeout: 20_000 });
+
+    // One heading, and it is the model's, rendered as prose. The panel's own
+    // sources footer stays away because this stream carries no citations -- so
+    // what a reader would see on an endpoint regression is the raw list, which
+    // is the symptom worth having rather than one quietly repaired here.
+    await expect(panel(page).getByRole('heading', { name: /sources/i })).toHaveCount(1);
+    await expect(panel(page).locator('.search-answer__prose').getByText('Something')).toHaveCount(
+      1
+    );
   });
 
   test('shows no sources heading when an answer has no citations', async ({ page }) => {

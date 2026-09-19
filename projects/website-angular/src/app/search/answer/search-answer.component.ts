@@ -26,7 +26,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { marked } from 'marked';
-import { citationHref, citationKey, stripTrailingSources } from './answer-stream';
+import { citationHref, citationKey } from './answer-stream';
 
 import { AnswerService } from './answer.service';
 
@@ -156,7 +156,20 @@ export class SearchAnswerComponent {
    * and links all remain.
    */
   readonly html = computed(() => {
-    const raw = stripTrailingSources(this.answers.text());
+    // No trailing source list to remove here any more: the answer endpoint
+    // strips that section before the first token leaves it, verified in the
+    // running container against real model output rather than stubs.
+    //
+    // If a stray list ever shows up under the chips again, report it to the
+    // chatbot repository rather than adding a pattern here. A pattern in this
+    // component runs against **partial** text on every token event, so it
+    // decides on a prefix: measured against the previous implementation, a
+    // heading was matched at `## Source`, before ` of reactive oxygen species`
+    // had arrived. That version recovered when the line completed, so it showed
+    // as a flicker; a stalled stream would have left a reader looking at a
+    // truncated answer. Matching once, on the far end, on complete text, is
+    // what makes it safe -- and that end already does it.
+    const raw = this.answers.text();
     if (!raw) return '';
     const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     return marked.parse(escaped, { async: false }) as string;
@@ -179,7 +192,7 @@ export class SearchAnswerComponent {
    * maturation?" produced 2821 characters. A short answer collapsing would add
    * a control for no reason.
    */
-  readonly collapsible = computed(() => stripTrailingSources(this.answers.text()).length > 900);
+  readonly collapsible = computed(() => this.answers.text().length > 900);
 
   readonly clamped = computed(() => this.collapsible() && !this._expanded());
 
