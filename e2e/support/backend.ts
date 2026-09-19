@@ -81,6 +81,11 @@ const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/|idg\.re
  * BLOCKED below: fourteen.
  */
 const ALLOWED = new Map<string, string>([
+  // A leading dot means "this domain and anything under it". Needed because
+  // `docs.google.com` redirects a published sheet to a shard-numbered host --
+  // `doc-0c-5k-sheets.googleusercontent.com` one run, `doc-0c-4c-...` another --
+  // so the host that actually serves the data cannot be written down in advance.
+  ['.googleusercontent.com', 'where docs.google.com redirects a published sheet to'],
   ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
   ['fonts.gstatic.com', 'the font files those stylesheets point at'],
   ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by pathway-browser/src/index.html'],
@@ -88,6 +93,15 @@ const ALLOWED = new Map<string, string>([
   ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
   ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],
   ['rest.uniprot.org', 'protein records the detail pages resolve'],
+  [
+    'docs.google.com',
+    'a data source, not an embed: release-calendar, editorial-calendar, collaboration and resources all read published Sheets from it',
+  ],
+  ['ssl.gstatic.com', "images for Google's published-sheet viewer"],
+  [
+    'dev.reactome.org',
+    "the deployment's own asset host: `assetsHost` points icons and diagram JSON at it rather than the release bucket, so /icon/R-ICO-*.svg is fetched directly",
+  ],
 ]);
 
 /**
@@ -113,18 +127,25 @@ const BLOCKED = new Map<string, string>([
   ['newassets.hcaptcha.com', 'assets for that widget'],
   ['www.youtube.com', 'see below: the player is a doorway to ten more hosts'],
   ['static.hsappstatic.net', 'the HubSpot meetings widget, same reason'],
-  [
-    'docs.google.com',
-    'its Slides viewer pulls csp.withgoogle.com, ssl.gstatic.com and play.google.com/log',
-  ],
+  ['csp.withgoogle.com', 'CSP violation reporting for the sheet viewer; telemetry, like analytics'],
+  ['play.google.com', 'its /log endpoint, reached by the same viewer'],
 ]);
 
 /**
- * Why the three embeds above are blocked rather than allowed.
+ * Why the embeds above are blocked while docs.google.com is allowed.
  *
- * Each was allowed first, and the suite then reached further hosts nobody had
- * asked for -- ten from YouTube and HubSpot, three more from the Google Slides
- * viewer:
+ * The line is what the site *needs* rather than what it merely displays.
+ * `docs.google.com` serves published Sheets that four pages read as data --
+ * `release-calendar.component.ts:65` fetches one as CSV -- so blocking it left
+ * `/about/release-calendar` with no cards at all and failed
+ * `content-pages.spec.ts:291` here and in CI. That was a wrong call made from a
+ * symptom: the host was first seen serving a Slides viewer, and I did not check
+ * what else asked for it. The viewer's telemetry is blocked instead, which is
+ * the part nobody needs.
+ *
+ * The video and booking widgets are the other case: nothing reads them, and
+ *
+ * allowing them pulled in ten further hosts nobody had asked for:
  *
  *   googleads.g.doubleclick.net, static.doubleclick.net   Google's ad infrastructure
  *   play.google.com/log, csp.withgoogle.com               logging
@@ -145,6 +166,16 @@ const BLOCKED = new Map<string, string>([
  * Any port on these hostnames is this machine talking to itself.
  */
 const LOCAL = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+/** Exact host, or a `.suffix` entry covering a domain and everything under it. */
+function declared(list: Map<string, string>, host: string): string | undefined {
+  const exact = list.get(host);
+  if (exact !== undefined) return exact;
+  for (const [key, why] of list) {
+    if (key.startsWith('.') && (host === key.slice(1) || host.endsWith(key))) return why;
+  }
+  return undefined;
+}
 
 /** Every request method that could reach the backend. */
 const VERBS = ['get', 'post', 'head', 'put', 'patch', 'delete', 'fetch'] as const;
@@ -293,8 +324,17 @@ export const test = base.extend({
     // So: BACKEND keeps its narrow pattern, BLOCKED hosts get a pattern of their
     // own, and everything else is watched passively through the `request` event,
     // which pauses nothing.
+    // Exact hosts stay exact -- `[^/]*` in front of one would match
+    // `evilwww.youtube.com` too -- while a `.suffix` entry becomes an optional
+    // label prefix, matching the domain and anything under it.
     const blockedPattern = new RegExp(
-      `^https?://(${[...BLOCKED.keys()].map((h) => h.replace(/\./g, '\\.')).join('|')})/`
+      `^https?://(${[...BLOCKED.keys()]
+        .map((h) =>
+          h.startsWith('.')
+            ? `([^/]+\\.)?${h.slice(1).replace(/\./g, '\\.')}`
+            : h.replace(/\./g, '\\.')
+        )
+        .join('|')})/`
     );
     await context.route(blockedPattern, (route) => route.abort());
 
@@ -311,7 +351,7 @@ export const test = base.extend({
       }
       if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
       if (url.origin === ownOrigin || LOCAL.has(url.hostname)) return;
-      if (ALLOWED.has(url.host) || BLOCKED.has(url.host)) return;
+      if (declared(ALLOWED, url.host) || declared(BLOCKED, url.host)) return;
       if (BACKEND.test(request.url())) return;
       if (!undeclared.has(url.host)) undeclared.set(url.host, request.url());
     });
@@ -402,10 +442,10 @@ export const test = base.extend({
         // pointed at a deployed site.
         const { host, hostname, origin } = new URL(full);
         const site = new URL(baseURL ?? 'http://localhost:4200').origin;
-        if (origin === site || LOCAL.has(hostname) || ALLOWED.has(host)) {
+        if (origin === site || LOCAL.has(hostname) || declared(ALLOWED, host)) {
           return request[method](url, options);
         }
-        const blocked = BLOCKED.get(host);
+        const blocked = declared(BLOCKED, host);
         throw new Error(
           blocked
             ? `This test probed ${host}, which is blocked on purpose: ${blocked}.\n` +
