@@ -451,7 +451,7 @@ NOTE: This is an automatically generated message.
                                 }
                                 @if (entry.compartmentNames?.length) {
                                   <div class="entry-compartments">
-                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                    Compartments: {{ entry.compartmentNames?.join(', ') }}
                                   </div>
                                 }
                                 @if (entry.iconCuratorName) {
@@ -511,7 +511,9 @@ NOTE: This is an automatically generated message.
                                           ></a>
                                           <span class="form-id">{{ form.id || form.stId }}</span>
                                           @if (form.compartmentNames?.length) {
-                                            <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                            <span class="form-compartment">{{
+                                              form.compartmentNames?.join(', ')
+                                            }}</span>
                                           }
                                         </div>
                                       }
@@ -633,7 +635,7 @@ NOTE: This is an automatically generated message.
                                 }
                                 @if (entry.compartmentNames?.length) {
                                   <div class="entry-compartments">
-                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                    Compartments: {{ entry.compartmentNames?.join(', ') }}
                                   </div>
                                 }
                                 @if (entry.iconCuratorName) {
@@ -708,7 +710,7 @@ NOTE: This is an automatically generated message.
                         </div>
                       }
                       @if (entry.compartmentNames?.length) {
-                        <div class="entry-compartments">Compartments: {{ entry.compartmentNames.join(', ') }}</div>
+                        <div class="entry-compartments">Compartments: {{ entry.compartmentNames?.join(', ') }}</div>
                       }
                       @if (entry.summation) {
                         <p class="entry-summation" [innerHTML]="entry.summation"></p>
@@ -742,7 +744,7 @@ NOTE: This is an automatically generated message.
                                 <a class="form-name" [routerLink]="getDetailLink(form)" [innerHTML]="form.name"></a>
                                 <span class="form-id">{{ form.id || form.stId }}</span>
                                 @if (form.compartmentNames?.length) {
-                                  <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                  <span class="form-compartment">{{ form.compartmentNames?.join(', ') }}</span>
                                 }
                               </div>
                             }

@@ -173,48 +173,31 @@ Not bugs, so as not to waste your time:
   diagram.json conversion** touches the shared diagram library, so it needs
   beaversd and guanmingwu before anyone starts.
 
-- **ORCID "Claim Your Work" ([#114](https://github.com/reactome/WebsiteAngular/issues/114))** — blocked on a backend deploy, not on frontend work. The person-page endpoints return real data, but `/ContentService/orcid/authenticated`, `/orcid/login` and `/orcid/claim/*` all 404: the `org.reactome.server.orcid.*` package is not in the deployed WAR. Needs that build deployed plus ORCID credentials in `service.properties`. Deferred by agreement, 2026-08-19.
+- **ORCID "Claim Your Work" ([#114](https://github.com/reactome/WebsiteAngular/issues/114))** — blocked on a backend deploy, not on frontend work. The person-page endpoints return real data, but `/ContentService/orcid/authenticated`, `/orcid/login` and `/orcid/claim/*` all 404: the `org.reactome.server.orcid.*` package is not in the deployed WAR. Needs that build deployed plus ORCID credentials in `service.properties`, and a **new ORCID key**, which is what it is waiting on as of 19 Sep 2026. Deferred by agreement, 2026-08-19.
 
 ## Also waiting on you
 
-**Ten figures the database points at do not exist, and an eleventh is misnamed.** Ten are on no host we can
-reach; the eleventh is a naming mismatch. They render as broken images on
-reactome.org today, so this is not new with the redesign.
+**The eleven missing figures are fixed, and will appear at v98.** They were
+corrected upstream; release 97 — which is what beta serves — simply does not
+carry them yet. So the broken images on those pages are a release artefact
+rather than a website fault or an outstanding curation decision, and nothing
+here needs doing.
 
-| Figure dbId | File the database asks for                      |
-| ----------- | ----------------------------------------------- |
-| 387434      | `/figures/Dunn2005-ProinsulinZnCaComplex.jpg`   |
-| 387452      | `/figures/Kaufman2002-ATF6.jpg`                 |
-| 387454      | `/figures/Kaufman2002-IRE1.jpg`                 |
-| 387457      | `/figures/Kaufman2002-PERK.jpg`                 |
-| 387436      | `/figures/Rutter2006-KinesinVesicleComplex.jpg` |
-| 111218      | `/figures/linoleoylcoa.jpg`                     |
-| 396956      | `/figures/striatedmuscle1.jpg`                  |
-| 396954      | `/figures/striatedmuscle2.jpg`                  |
-| 396953      | `/figures/striatedmuscle3.jpg`                  |
-| 396952      | `/figures/striatedmuscle4.jpg`                  |
-| 1028823     | `/figures/man7a.png`                            |
+Recorded because the previous version of this report asked whether the five
+named after papers (Dunn2005, Kaufman2002 ×3, Rutter2006) had been withdrawn for
+licensing, and whether `man7a.png` should be renamed. Both questions are closed:
+the fix happened elsewhere.
 
-Two questions:
+**A protein page shows the experimental structure whenever there is one.**
+Decided on a sitewide call, 19 Sep 2026, and implemented: if the entity carries a
+PDB cross-reference the viewer opens on it, and AlphaFold's predicted model is
+shown only when no experimental structure exists.
 
-- **The five named after papers** (Dunn2005, Kaufman2002 ×3, Rutter2006) look like
-  figures reproduced from publications. If they were withdrawn for licensing, the
-  fix is to clear the Figure reference rather than restore the file — otherwise
-  every release keeps pointing at an image that cannot be republished.
-- **`man7a.png` is almost certainly a typo.** The file on disk is `man7aa.png`
-  (one extra "a", dated 2018, referenced by nothing), and the rest of that series
-  — `man8a`, `man8b`, `man8c` — is present and referenced. Rename the file, or
-  correct the reference: either fixes it.
-
-The other six were searched for across the whole dev host, following symlinks,
-and are not on it. An old external drive is the remaining hope.
-
-**Which structure should a protein page show?** The viewer can show an
-experimental PDB entry (from the entity's cross-references) or AlphaFold's
-predicted model (from AlphaFold's own endpoint), and today it shows whichever has
-resolved first — BCL2 has been seen with both `5JSN` and `AF-P10415-F1`. If an
-experimental structure should always win when one exists, that is a small change;
-we did not want to decide it for you.
+This was not the race the earlier version of this report described. The code
+preferred AlphaFold outright whenever AlphaFold had a model, so BCL2 — which has
+an experimental `5JSN` — opened on `AF-P10415-F1` every time rather than
+sometimes. Worth re-checking BCL2 on beta: it should now open on `5JSN`, and the
+source list should offer the experimental entry first.
 
 ## In the old browser, not in this one
 

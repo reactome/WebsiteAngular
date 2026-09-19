@@ -153,11 +153,13 @@ export class StructureViewerComponent {
     if (!this.isProtein()) return null;
     const result = [];
 
-    const afId = this.alphaFoldEntryId();
-    if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
-
+    // Experimental first, so the list a reader sees is ordered the same way the
+    // default is chosen rather than contradicting it.
     const pdbIdentifiers = this.pdbIdentifiers();
     if (pdbIdentifiers.length > 0) result.push({ source: Source.PDB, identifiers: pdbIdentifiers });
+
+    const afId = this.alphaFoldEntryId();
+    if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
 
     return result;
   });
@@ -250,14 +252,36 @@ export class StructureViewerComponent {
         return;
       }
 
-      const afId = this.alphaFoldEntryId();
+      // An experimental structure always wins when the entity has one, and
+      // AlphaFold's prediction is what you get when it does not. Decided on a
+      // sitewide call, 19 Sep 2026.
+      //
+      // This used to prefer AlphaFold whenever AlphaFold had a model, so a
+      // protein with both showed the prediction -- BCL2 has an experimental
+      // 5JSN and was showing AF-P10415-F1. It also means the choice no longer
+      // waits on AlphaFold's summary request: a PDB cross-reference is already
+      // in hand from the entity, so there is nothing to wait for.
+      // `pdbIdentifiers()` is re-sorted when EBI's best_structures ranking
+      // arrives, so this can pick one entry and then move to a better one a
+      // moment later -- a second viewer load, visible as a flicker on proteins
+      // with several structures. That happened before this change too, on
+      // proteins with no AlphaFold model; it is simply reached more often now.
+      //
+      // Not waited on deliberately: both candidates are experimental structures,
+      // so the decision this implements is satisfied either way, and waiting
+      // would make the first render depend on a third-party request that has no
+      // timeout. Showing the right kind of structure promptly beats showing the
+      // best-ranked one eventually.
+      const pdbId = this.pdbIdentifiers()?.[0];
+      if (pdbId) {
+        this.selected.set(pdbId);
+        return;
+      }
+
       if (!this.isAlphafoldSummaryLoading()) {
-        if (afId) {
-          this.selected.set(afId);
-        } else {
-          // finished loading but no data → fallback to PDB
-          this.selected.set(this.pdbIdentifiers()?.[0] ?? null);
-        }
+        // No experimental structure. AlphaFold's model if it has one, and
+        // nothing if it does not.
+        this.selected.set(this.alphaFoldEntryId() ?? null);
       }
     });
   }

@@ -15,18 +15,37 @@ export interface SimplePerson {
 export interface TocSubpathway {
   stId: string;
   displayName: string;
-  doi: string | null;
+  /**
+   * Never sent, as far as anything here can tell.
+   *
+   * `/data/content/toc` returns `stId`, `displayName` and `speciesName` for a
+   * child and nothing else -- measured over 215 nested subpathways, none of
+   * which carried a `doi`. `toc.component.html:161` renders a DOI link behind
+   * `@if (sub.doi)`, so that markup cannot fire today.
+   *
+   * Left optional rather than deleted because it is not clear which side is
+   * wrong: the endpoint's child projection may be missing a field it should
+   * send, or the link may be markup for a case that never existed. Deleting the
+   * field would settle that question by forgetting it.
+   */
+  doi?: string | null;
   speciesName: string;
 }
 
 export interface TocPathway {
   stId: string;
   displayName: string;
-  doi: string | null;
+  /**
+   * Omitted rather than sent null when there is none. Measured over the 34
+   * top-level pathways `/data/content/toc` returns: `doi` absent in 29,
+   * `reviseDate` in 30, `releaseStatus` in 19. Declaring them required let
+   * `pathway.doi !== null` read as true for a field that is not there.
+   */
+  doi?: string | null;
   species: string;
   releaseDate: string;
-  reviseDate: string;
-  releaseStatus: string | null;
+  reviseDate?: string;
+  releaseStatus?: string | null;
   authors: SimplePerson[];
   reviewers: SimplePerson[];
   editors: SimplePerson[];

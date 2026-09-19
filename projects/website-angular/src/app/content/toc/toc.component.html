@@ -92,7 +92,7 @@
               @for (pathway of filteredPathways; track pathway.stId) {
                 <tr class="pathway-row" [class.expanded]="isExpanded(pathway.stId)">
                   <td class="col-expand">
-                    @if (pathway.subpathways?.length) {
+                    @if (pathway.subpathways.length) {
                       <button
                         class="expand-btn"
                         (click)="toggleExpand(pathway.stId)"
@@ -149,7 +149,7 @@
                 </tr>
 
                 <!-- Sub-pathways -->
-                @if (isExpanded(pathway.stId) && pathway.subpathways?.length) {
+                @if (isExpanded(pathway.stId) && pathway.subpathways.length) {
                   @for (sub of pathway.subpathways; track sub.stId) {
                     <tr class="sub-pathway-row">
                       <td class="col-expand"></td>
