@@ -114,9 +114,9 @@
                         <span class="status-badge updated">UPDATED</span>
                       }
                       <span class="species-name">{{ pathway.species }}</span>
-                      @if (pathway.doi) {
-                        <a class="doi-link" [href]="doiUrl(pathway.doi)" target="_blank" rel="noopener">
-                          {{ pathway.doi }}
+                      @if (doiFor(pathway); as doi) {
+                        <a class="doi-link" [href]="doiUrl(doi)" target="_blank" rel="noopener">
+                          {{ doi }}
                         </a>
                       }
                     </div>
@@ -158,9 +158,9 @@
                           <span class="sub-indicator">&#8627;</span>
                           <span class="pathway-name">{{ sub.displayName }}</span>
                           <span class="species-name">{{ sub.speciesName }}</span>
-                          @if (sub.doi) {
-                            <a class="doi-link" [href]="doiUrl(sub.doi)" target="_blank" rel="noopener">
-                              {{ sub.doi }}
+                          @if (doiFor(sub); as doi) {
+                            <a class="doi-link" [href]="doiUrl(doi)" target="_blank" rel="noopener">
+                              {{ doi }}
                             </a>
                           }
                         </div>

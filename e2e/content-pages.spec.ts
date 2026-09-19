@@ -69,6 +69,40 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
+  test('a subpathway shows its DOI, which its parent does not carry', async ({ page }) => {
+    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+    // This page now asks for two lists, and under replay they are ~1 MB of
+    // recorded JSON together (250 kB of contents, 796 kB of DOIs). Alone it
+    // takes about 35 seconds; beside three other workers it went over and was
+    // reported as a timeout rather than as a failed assertion.
+    //
+    // Note for whoever tidies this spec: `LOAD` is 45s while the per-test
+    // timeout is playwright's default 30s, so *no* assertion in this file can
+    // actually use its stated budget -- a slow load always ends the test first.
+    // That is worth fixing globally rather than per test.
+    test.slow();
+
+    // `/data/content/toc` sends three fields for a child -- stId, displayName,
+    // speciesName -- and no `doi`, so the DOI link the template renders behind
+    // `@if (sub.doi)` could never appear. That is not markup for a case that
+    // never existed: production's own /content/toc carries 44 DOIs, and 41 of
+    // them are subpathways. All but three were missing here.
+    //
+    // Autophagy is the case that shows it clearly. It has no DOI of its own,
+    // and three of its children do, so a DOI appearing under it can only have
+    // come from the join against /data/content/doi.
+    await page.goto('/content/toc');
+    const autophagy = page.locator('tr.pathway-row', { hasText: 'Autophagy' }).first();
+    await expect(autophagy).toBeVisible({ timeout: LOAD });
+    await autophagy.locator('button.expand-btn').click();
+
+    const child = page.locator('tr', { hasText: 'Chaperone Mediated Autophagy' }).first();
+    await expect(child).toBeVisible({ timeout: LOAD });
+    await expect(child.locator('a.doi-link')).toHaveText(/10\.3180\/R-HSA-9613829/, {
+      timeout: LOAD,
+    });
+  });
+
   test('DOI page lists pathways', async ({ page }) => {
     test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
     await page.goto('/content/doi');
