@@ -1,0 +1,434 @@
+/**
+ * The content service, in node.
+ *
+ * A gradual replacement for the Java ContentService's read surface. It exposes
+ * the same paths under the same shapes, one endpoint at a time, and every one is
+ * proven against the Java implementation by `diff.mjs` before it is switched on
+ * in `proxy.conf.js`.
+ *
+ * Deliberately not a rewrite in one go, and deliberately not the exporters:
+ * SBML, SBGN and the PDF document come from Java libraries that carry those
+ * specifications, and reimplementing them is a research project rather than a
+ * port. Diagram figures already come from our own renderer.
+ *
+ *   NEO4J_USER=... NEO4J_PASSWORD=... npm run content:node
+ *
+ * Nothing points at it until a path is listed in proxy.conf.js, so running it
+ * cannot affect the site.
+ */
+import express from 'express';
+import { read, configured, close } from './graph.mjs';
+
+const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
+const HOST = process.env.CONTENT_NODE_HOST || '127.0.0.1';
+
+/**
+ * The endpoints implemented so far, in the order they were ported.
+ *
+ * Each entry is the path the Java service uses, so the diff harness and the
+ * proxy table can both address them by that one string.
+ */
+export const endpoints = [
+  {
+    path: '/ContentService/data/database/version',
+    // The release the database holds. One row, one value: the smallest possible
+    // first port, chosen to prove the plumbing rather than the mapping -- and it
+    // still caught a wrong guess. The property is `releaseNumber`; `version` does
+    // not exist on DBInfo and returned null, which the diff reported against
+    // Java's 97 before anything could be switched on.
+    handler: async () => {
+      const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
+      if (!row) return { status: 404, body: 'no DBInfo node' };
+      return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
+    },
+  },
+  {
+    path: '/ContentService/data/database/name',
+    handler: async () => {
+      const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
+      if (!row) return { status: 404, body: 'no DBInfo node' };
+      return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
+    },
+  },
+  {
+    path: '/ContentService/data/pathways/top/{id}',
+    /**
+     * The top-level pathways for a species, which is the pathway browser's first
+     * request and the release checklist's "29 clicks".
+     *
+     * Three details the shape depends on, each learned from the Java response
+     * rather than assumed:
+     *  - fields whose property is absent are *omitted*, not null (doi and
+     *    releaseStatus are on a minority of pathways, lastUpdatedDate on 28 of
+     *    29). Jackson drops nulls, so emitting them would differ on every item.
+     *  - `className` repeats `schemaClass`; the graph stores only the latter.
+     *  - `species` is an array of one object, and it carries a different field
+     *    set from the pathway: no stId, no dates.
+     */
+    handler: async (request) => {
+      const taxId = String(request.params.id);
+      const rows = await read(
+        `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
+         WHERE s.taxId = $taxId
+         RETURN properties(p) AS pathway, properties(s) AS species
+         ORDER BY p.displayName`,
+        { taxId }
+      );
+      const body = rows.map(({ pathway, species }) => ({
+        ...only(pathway, [
+          'dbId',
+          'displayName',
+          'stId',
+          'stIdVersion',
+          'isInDisease',
+          'isInferred',
+          'maxDepth',
+          'name',
+          'releaseDate',
+          'speciesName',
+          'doi',
+          'releaseStatus',
+        ]),
+        species: [
+          {
+            ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
+            className: species.schemaClass,
+            schemaClass: species.schemaClass,
+          },
+        ],
+        ...only(pathway, ['hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
+        schemaClass: pathway.schemaClass,
+        className: pathway.schemaClass,
+      }));
+      return { status: 200, body, type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/data/content/toc',
+    /**
+     * The one difference from Java, declared so the harness reports it as
+     * intended rather than as a fault -- and so that its disappearance would be
+     * reported too.
+     */
+    differs: [/subpathways\[\d+\]\.doi: extra/],
+    /**
+     * The contents page: every top-level pathway, its people, and its children.
+     *
+     * Java runs one query and pays for it. Its `RETURN` is preceded by
+     *
+     *     UNWIND allAuthors AS totalAtrs
+     *     UNWIND allReviewers AS totalRvwd
+     *     UNWIND allEditors AS totalEdtd
+     *
+     * which is a cartesian product of three lists before the COLLECT(DISTINCT)
+     * that puts them back: a pathway with 1 author, 10 reviewers and 1 editor
+     * produces ten rows to build three lists. It also means a pathway with no
+     * authors at all produces **no rows**, because `UNWIND []` yields none --
+     * so it would disappear from the contents page entirely. The sibling DOI
+     * query guards that exact case with `CASE allAuthors WHEN [] THEN [null]`;
+     * this one does not. Measured against the current graph: 34 top-level
+     * pathways, 34 returned, 0 with no authors, so it does not bite today. It
+     * is a trap waiting for the first pathway curated without one.
+     *
+     * Here the roles are gathered separately and assembled in JS, which keeps
+     * the empty case an empty list rather than a vanished pathway.
+     *
+     * One more thing the port surfaced and deliberately does not fix: the
+     * `hasEvent` relationship carries a curated `order` -- for Autophagy,
+     * Macroautophagy 0, Chaperone Mediated Autophagy 1, Late endosomal
+     * microautophagy 2 -- and neither implementation reads it. Both emit
+     * children in internal node id order, so the contents page has never shown
+     * them in the sequence a curator chose. Parity first: that is a change to
+     * announce rather than to smuggle in with a port.
+     */
+    handler: cached('content/toc', async () => {
+      const pathways = await read(
+        `MATCH (p:TopLevelPathway {isInferred: false})
+         OPTIONAL MATCH (p)-[:hasEvent]->(child:Pathway)
+         // By internal id, because that is the order Java emits: its planner
+         // expands in id order and nothing sorts afterwards. Measured on
+         // Autophagy -- ids 1, 4985, 16885 -- against Java's own output.
+         // See the note above this query about the curated order nobody uses.
+         WITH p, child ORDER BY id(child)
+         WITH p, COLLECT(child) AS children
+         OPTIONAL MATCH (p)<-[:revised]-(re:InstanceEdit)
+         RETURN p.stId AS stId, p.displayName AS displayName, p.doi AS doi,
+                p.speciesName AS species, p.releaseDate AS releaseDate,
+                p.releaseStatus AS releaseStatus, MAX(re.dateTime) AS reviseDate,
+                children
+         ORDER BY toLower(p.displayName)`
+      );
+
+      const people = await peopleByPathway('(p:TopLevelPathway {isInferred: false})', {
+        authors: { own: ':authored|revised', descendants: ':authored|revised' },
+      });
+
+      const body = pathways.map((row) =>
+        compact({
+          stId: row.stId,
+          displayName: row.displayName,
+          doi: row.doi,
+          species: row.species,
+          releaseDate: row.releaseDate,
+          reviseDate: row.reviseDate,
+          releaseStatus: row.releaseStatus,
+          authors: simplePeople(people.authors.get(row.stId)),
+          reviewers: simplePeople(people.reviewers.get(row.stId)),
+          editors: simplePeople(people.editors.get(row.stId)),
+          subpathways: (row.children ?? []).map((child) =>
+            compact({
+              stId: child.stId,
+              displayName: child.displayName,
+              // Java passes `null` here -- `new TocSubpathway(stId, displayName,
+              // null, speciesName)` in ContentPageManager -- and Jackson drops it,
+              // which is why 41 of the 44 DOIs this page should show never reached
+              // a browser. The query already returns the child as a full Pathway
+              // node, so the value was in hand the whole time.
+              //
+              // A deliberate difference from Java, not a parity failure. The diff
+              // harness is told to expect it.
+              doi: child.doi,
+              speciesName: child.speciesName,
+            })
+          ),
+        })
+      );
+      return { status: 200, body, type: 'application/json' };
+    }),
+  },
+  {
+    path: '/ContentService/data/content/doi',
+    /**
+     * Every pathway that carries a DOI, with the same people as the contents
+     * page and no children.
+     *
+     * The Java query is the one that gets the empty case right, via
+     * `CASE allAuthors WHEN [] THEN [null] ELSE allAuthors END` -- which keeps
+     * the row but puts a literal null in the list, and `toSimplePerson(null)`
+     * returns null, so a pathway with no authors would serialise `[null]`
+     * rather than `[]`. No pathway in the current graph does, so nothing has
+     * ever seen it. An empty list is what this returns.
+     */
+    handler: cached('content/doi', async () => {
+      const pathways = await read(
+        `MATCH (p:Pathway) WHERE p.doi IS NOT NULL
+         OPTIONAL MATCH (p)<-[:revised]-(re:InstanceEdit)
+         RETURN p.stId AS stId, p.displayName AS displayName, p.doi AS doi,
+                p.speciesName AS species, p.releaseDate AS releaseDate,
+                p.releaseStatus AS releaseStatus, MAX(re.dateTime) AS reviseDate
+         ORDER BY toLower(p.displayName)`
+      );
+
+      const people = await peopleByPathway('(p:Pathway) WHERE p.doi IS NOT NULL', {
+        // Not a copy of the contents query. Java's DOI query reads
+        // `authored|revised` for the pathway itself and **`authored` alone**
+        // for its descendants; the contents query reads both at both levels.
+        // The diff caught it: this endpoint listed three authors where Java
+        // listed two.
+        authors: { own: ':authored|revised', descendants: ':authored' },
+      });
+
+      const body = pathways.map((row) =>
+        compact({
+          stId: row.stId,
+          displayName: row.displayName,
+          doi: row.doi,
+          species: row.species,
+          releaseDate: row.releaseDate,
+          reviseDate: row.reviseDate,
+          releaseStatus: row.releaseStatus,
+          authors: simplePeople(people.authors.get(row.stId)),
+          reviewers: simplePeople(people.reviewers.get(row.stId)),
+          editors: simplePeople(people.editors.get(row.stId)),
+        })
+      );
+      return { status: 200, body, type: 'application/json' };
+    }),
+  },
+];
+
+/**
+ * Build once, serve from memory, and heal from a bad start.
+ *
+ * Measured, which is the only reason this exists: Java answers both of these in
+ * 3-7ms and this port answered in 4.5-6.2s, a thousand times worse. Java is not
+ * faster -- `ContentPageManager` has a `@PostConstruct` that runs both queries
+ * at startup and keeps the lists in memory, so the traversal is paid once per
+ * deploy rather than once per reader. A port that skips that is a regression no
+ * functional diff would catch, because every response is byte-identical and
+ * merely slow.
+ *
+ * One deliberate difference. Java's init catches Exception, logs it and leaves
+ * the list **empty**, so a database that is slow or unreachable at startup
+ * leaves the contents page blank until somebody redeploys -- a transient fault
+ * made permanent. Here a failed build is not cached: the next request tries
+ * again. A slow start costs one slow request instead of an empty page nobody
+ * connects to a restart hours earlier.
+ *
+ * Nothing refreshes it while the process lives, which matches Java: a release
+ * restarts the service, and these lists only change with the graph.
+ */
+function cached(name, build) {
+  let ready;
+  const handler = async (request) => {
+    ready ??= build(request).catch((error) => {
+      ready = undefined;
+      throw error;
+    });
+    const started = Date.now();
+    const answer = await ready;
+    const spent = Date.now() - started;
+    if (spent > 100) console.log(`[content-node] built ${name} in ${spent}ms`);
+    return answer;
+  };
+  // Marks this one for warming at startup; a handler that reads its request
+  // cannot be warmed, and saying so here keeps that decision beside the cache.
+  handler.warms = true;
+  return handler;
+}
+
+/**
+ * Authors, reviewers and editors for a set of pathways, keyed by stId.
+ *
+ * A pathway's people are its own plus every one of its descendants', in that
+ * order and deduplicated -- which is what Java's `COLLECT(DISTINCT own) +
+ * COLLECT(DISTINCT descendants)` produces, and the order matters because these
+ * come back as JSON arrays and a diff compares them element by element.
+ *
+ * Authors come from `authored` **or** `revised`. That looks like a mistake and
+ * is not: Java reads both into the author list, and parity is the contract.
+ *
+ * `pattern` is spliced into the query, so it is written here and never taken
+ * from a request. Both callers pass a literal.
+ */
+async function peopleByPathway(pattern, overrides = {}) {
+  const roles = {
+    authors: { own: ':authored|revised', descendants: ':authored|revised' },
+    reviewers: { own: ':reviewed', descendants: ':reviewed' },
+    editors: { own: ':edited', descendants: ':edited' },
+    ...overrides,
+  };
+  const out = { authors: new Map(), reviewers: new Map(), editors: new Map() };
+
+  for (const [role, relationship] of Object.entries(roles)) {
+    const rows = await read(
+      `MATCH ${pattern}
+       OPTIONAL MATCH (p)<-[${relationship.own}]-(:InstanceEdit)<-[:author]-(own:Person)
+       WITH p, COLLECT(DISTINCT own) AS own
+       OPTIONAL MATCH (p)-[:hasEvent*]->(:Event)<-[${relationship.descendants}]-(:InstanceEdit)<-[:author]-(sub:Person)
+       RETURN p.stId AS stId, own, COLLECT(DISTINCT sub) AS sub`
+    );
+    for (const row of rows) {
+      const seen = new Map();
+      for (const person of [...(row.own ?? []), ...(row.sub ?? [])]) {
+        if (person && !seen.has(person.dbId)) seen.set(person.dbId, person);
+      }
+      out[role].set(row.stId, [...seen.values()]);
+    }
+  }
+  return out;
+}
+
+/** The five fields Java's SimplePerson carries, in its order. */
+function simplePeople(persons) {
+  return (persons ?? []).map((person) => ({
+    dbId: person.dbId,
+    displayName: person.displayName,
+    surname: person.surname,
+    firstname: person.firstname,
+    orcidId: person.orcidId,
+  }));
+}
+
+/**
+ * What Jackson would actually serialise.
+ *
+ * `spring.jackson.default-property-inclusion=non_empty` in the Java service's
+ * application.properties, so a field is omitted when it is null, an empty
+ * string **or** an empty collection -- not just when it is null. The diff found
+ * this the slow way: entries with no reviewers came back from Java without the
+ * key at all while this returned `[]`, on fifteen pathways.
+ *
+ * Numbers and booleans are left alone: NON_EMPTY has no notion of an empty
+ * number, so `0` and `false` are serialised.
+ */
+function compact(fields) {
+  const out = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null) continue;
+    if (value === '') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/** The named properties that are actually present. Absent means omitted, not null. */
+function only(source, keys) {
+  const out = {};
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) out[key] = source[key];
+  }
+  return out;
+}
+
+export function app() {
+  const server = express();
+  server.disable('x-powered-by');
+
+  server.get('/health', (_request, response) => {
+    response.json({ ok: true, graph: configured(), endpoints: endpoints.map((e) => e.path) });
+  });
+
+  for (const endpoint of endpoints) {
+    // The table stores the Java path with {id}; express wants :id. Keeping one
+    // string means the diff harness and proxy.conf.js can address an endpoint by
+    // exactly what the Java service calls it.
+    server.get(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), async (request, response) => {
+      try {
+        const result = await endpoint.handler(request);
+        response.status(result.status);
+        if (result.type) response.type(result.type);
+        // Objects go out as JSON; strings as they are, so a text/plain endpoint
+        // is not quoted into JSON.
+        if (typeof result.body === 'string') response.send(result.body);
+        else response.json(result.body);
+      } catch (failure) {
+        // The message, not a stack: this stands in for a service whose errors
+        // reach real clients.
+        console.error(`${endpoint.path}: ${failure.message}`);
+        response.status(500).type('text/plain').send('content service error');
+      }
+    });
+  }
+
+  return server;
+}
+
+// Started directly rather than imported by a test.
+if (process.argv[1] && process.argv[1].endsWith('service.mjs')) {
+  const server = app().listen(PORT, HOST, () => {
+    console.log(`content-node listening on http://${HOST}:${PORT}`);
+    // Warm the cached endpoints the way Java's @PostConstruct does, so the
+    // first reader does not pay the four seconds. Failures are left to the
+    // request path, which retries: warming must not be the thing that decides
+    // whether the service can answer.
+    for (const endpoint of endpoints) {
+      if (!endpoint.handler.warms) continue;
+      endpoint
+        .handler({ params: {} })
+        .catch((error) => console.error(`warming ${endpoint.path}: ${error.message}`));
+    }
+    console.log(
+      `  graph credentials: ${configured() ? 'present' : 'MISSING (set NEO4J_USER/PASSWORD)'}`
+    );
+    console.log(`  endpoints: ${endpoints.length}`);
+  });
+  const stop = async () => {
+    server.close();
+    await close();
+    process.exit(0);
+  };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+}
