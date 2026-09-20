@@ -55,6 +55,13 @@ a check can only be made by eye.
   is drawn before the illustration arrives, so the heavier the illustration the
   likelier it lost. It now waits for the illustration. Re-scanned after the fix:
   1 of 218 left, and that one is the artwork question below.
+- **Downloading a pathway as SBGN failed for almost every pathway.** 9,548 of
+  the 9,559 pathways with a diagram returned a server error; the 11 that worked
+  were the ones our own tests use, so it looked healthy from the inside. The
+  export is built from each pathway's stored diagram, and those files had been
+  removed from the machine; they are back, and a test now checks a pathway that
+  is deliberately not one of our fixtures. **Worth downloading SBGN from any
+  pathway you like**, including non-human ones.
 - **Diagrams for every species other than human were blank.** One node without
   graph data threw for the whole diagram build, so switching species left an
   empty canvas with the rest of the page updated around it.
