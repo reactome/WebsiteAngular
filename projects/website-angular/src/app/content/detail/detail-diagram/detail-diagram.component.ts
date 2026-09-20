@@ -43,10 +43,17 @@ export class DetailDiagramComponent {
   /**
    * Where the picture comes from when the renderer cannot answer.
    *
-   * A cold render takes seconds and a service can be down; the old exporter is
-   * still there and still draws something for every pathway. Falling back keeps
-   * the page useful rather than blank -- and once, not repeatedly, because the
-   * fallback failing would fire error again.
+   * A cold render takes seconds and a service can be down, so falling back
+   * keeps the page useful rather than blank -- and once, not repeatedly,
+   * because the fallback failing would fire error again.
+   *
+   * How much it is worth depends on the machine. The Java exporter reads its
+   * pictures from `download/current/` on disk rather than drawing them, so it
+   * answers for exactly the pathways whose files are there: all of them on
+   * production, and on a dev box with a pruned download directory, close to
+   * none. Worth knowing before treating a green page here as proof the fallback
+   * works -- 11 of 9,559 diagram files and no illustrations at all, on the box
+   * this was written on.
    */
   fallback(event: Event) {
     const image = event.target as HTMLImageElement;

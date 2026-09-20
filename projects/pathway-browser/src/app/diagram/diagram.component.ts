@@ -210,7 +210,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
         void this.export(request.format).catch((error) =>
-          console.error('Diagram export failed', request.format, error)
+          this.download.failed(error, `Diagram ${request.format} export failed`)
         );
         this.download.resetDownload();
       }

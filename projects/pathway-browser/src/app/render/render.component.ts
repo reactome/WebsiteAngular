@@ -46,6 +46,18 @@ import type {
  * interactor overlays and its fonts, and how long that takes is not knowable
  * from outside.
  */
+
+/**
+ * The illustration itself, as opposed to anything else drawn by `cr-ehld`.
+ *
+ * `#ehld` is the div `ehld.component.html` injects the fetched SVG into. The
+ * component also renders a 70x70 zoom control, which is an `svg` too and is
+ * present from the first frame -- so a looser selector finds the control while
+ * the illustration is still in flight, and both the readiness probe and the
+ * exporters must agree on which one they mean.
+ */
+const EHLD_SVG = 'cr-ehld #ehld svg';
+
 @Component({
   selector: 'cr-render',
   standalone: true,
@@ -269,7 +281,18 @@ export class RenderComponent {
       return null;
     }
 
-    const svg = host.querySelector('cr-ehld svg');
+    // `#ehld` is the div the illustration is injected into, and the selector
+    // has to say so. `cr-ehld svg` matched the component's 70x70 zoom control
+    // as well, which is in the DOM from the first frame while the illustration
+    // is still being fetched -- so this reported ready, `exportPng` rasterised
+    // the control, and the service cached a 140x140 picture of four arrows as
+    // the pathway. It cleared the 5000-byte floor at 8091 bytes and answered
+    // 200, so nothing downstream had any reason to doubt it.
+    //
+    // Exactly the fault the comment above this describes for the diagram's
+    // legend, in the branch immediately below it. Gate on the thing the
+    // exporter reads, not on something near it.
+    const svg = host.querySelector(EHLD_SVG);
     if (svg) return { view: 'ehld', nodes: svg.querySelectorAll('*').length };
 
     const reacfoam = this.reacfoam();
@@ -395,7 +418,7 @@ export class RenderComponent {
     // rasterised. That belongs to the illustration's own service, which knows
     // that its styling comes from the page's stylesheets and has to be inlined
     // before the markup means anything on its own.
-    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
     if (svg) {
       return await this.ehldService.rasterise(svg, scale, this.wantsDark ? '#0d1617' : '#ffffff');
     }
@@ -1366,7 +1389,7 @@ export class RenderComponent {
 
     // Through the illustration's own service, which knows that its styling has
     // to be inlined and its size written down before the markup stands alone.
-    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
     if (svg) return this.ehldService.svgMarkup(svg).markup;
 
     // The genome-wide view draws to a canvas via FoamTree, so it has its own
@@ -1417,7 +1440,7 @@ export class RenderComponent {
     // same rasteriser the animation frames use. Without this a .png of any
     // illustrated pathway was a 500 -- and illustrations are the top-level
     // pathways, so it was the ones a report is most likely to want.
-    const svg = document.querySelector<SVGSVGElement>('cr-render cr-ehld svg');
+    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
     if (svg) {
       // No background: a PNG has an alpha channel, and a figure that can sit on
       // any page is more useful than one with a colour baked in.
