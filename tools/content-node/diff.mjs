@@ -82,13 +82,39 @@ function differences(path, java, node, endpoint) {
   if (javaJson !== undefined && nodeJson !== undefined) {
     if (endpoint?.unordered && Array.isArray(javaJson) && Array.isArray(nodeJson)) {
       const by = endpoint.unordered;
-      const order = (list) => list.map((item) => JSON.stringify(by(item)));
-      if (String(order(javaJson)) !== String(order(nodeJson))) {
+      const keyed = (list) => list.map((item) => [JSON.stringify(by(item)), item]);
+      const javaKeyed = keyed(javaJson);
+      const nodeKeyed = keyed(nodeJson);
+
+      if (String(javaKeyed.map(([k]) => k)) !== String(nodeKeyed.map(([k]) => k))) {
         problems.push(`order differs from java's`);
       }
-      const sorted = (list) =>
-        [...list].sort((a, b) => (JSON.stringify(by(a)) < JSON.stringify(by(b)) ? -1 : 1));
-      problems.push(...compare(sorted(javaJson), sorted(nodeJson), ''));
+
+      // A key that repeats cannot line the two sides up: everything with the
+      // same key falls back to the order it arrived in, which is the one thing
+      // being ignored here. Sorting anyway would report differences between
+      // entries that were simply paired off wrongly -- invented failures from
+      // the tool that exists to catch real ones. So it says the key is wrong
+      // instead of quietly producing a diff nobody can trust.
+      const repeated = javaKeyed.length - new Set(javaKeyed.map(([k]) => k)).size;
+      if (repeated) {
+        problems.push(
+          `unordered key is not unique: ${repeated} of ${javaKeyed.length} entries share one, ` +
+            `so the two sides cannot be paired up by it`
+        );
+      } else {
+        // `localeCompare` is wrong for this and `<` alone is worse: a comparator
+        // that never returns 0 is inconsistent, and V8 is entitled to order
+        // equal elements however it likes -- differently on each side.
+        const byKey = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
+        problems.push(
+          ...compare(
+            [...javaKeyed].sort(byKey).map(([, item]) => item),
+            [...nodeKeyed].sort(byKey).map(([, item]) => item),
+            ''
+          )
+        );
+      }
     } else {
       problems.push(...compare(javaJson, nodeJson, ''));
     }
