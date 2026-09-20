@@ -2,7 +2,11 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angula
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import { ContentDataService, Contributor } from '../../../services/content-data.service';
+import {
+  ContentDataService,
+  Contributor,
+  SimplePerson,
+} from '../../../services/content-data.service';
 
 type SortKey =
   | 'displayName'
@@ -180,9 +184,7 @@ export class ContributorsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // orcidId is nullable on SimplePerson, and the `||` below already treats
-  // null and undefined alike.
-  personUrl(person: { dbId: number; orcidId?: string | null }): string {
+  personUrl(person: SimplePerson): string {
     // Prefer the ORCID in the URL (matches production reactome.org's
     // /content/detail/person/<orcid> format); fall back to dbId when a
     // person has no ORCID recorded. The /content/detail/person/:id

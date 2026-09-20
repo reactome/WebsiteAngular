@@ -303,6 +303,60 @@ container reporting `Up`, a `/health` that answered, and a service that could
 not do its job. "Up and useless" is the state monitoring notices least, which is
 why `/health` reports `graph: true|false` rather than just `ok`.
 
+## D15. An unordered array is declared by sorting, not by a wildcard
+
+`/content/contributors` matches Java exactly, 999 entries, every field, with one
+exception: the order of the array. Java's order is not by name, dbId, any of the
+four counts, their total, or a Java `HashMap`'s iteration order over the dbIds --
+all five checked against the live response, none matched. It is whatever the
+aggregation happened to emit.
+
+Nothing reads it. `contributors.component.ts` sorts by `displayName` before
+rendering, so the order this endpoint returns is never the order anyone sees.
+
+**The first attempt was wrong in an instructive way.** Declaring the difference
+the obvious way -- a `differs` pattern matching `[47].reviewedReactions: ...` --
+made the endpoint report green. It also would have reported green for a wrong
+count, a wrong name, or a missing person, because every per-element difference
+matches that shape. The declaration mechanism of D11 is for differences we
+_chose_; a pattern broad enough to cover an arbitrary reordering covers
+everything else too, and the safety net stops being one.
+
+**What it does instead**: the endpoint gives the diff harness an `unordered` key
+(`entry.person.dbId`). Both sides are sorted by it before comparing, and the
+fact that the orders differ is reported as one declared problem. All 999 entries
+are still compared field by field. Proved rather than asserted: with one
+`reviewedReactions` changed from 2104 to 2105, the diff reports
+`[47].reviewedReactions: 2105, java says 2104` and fails.
+
+**A second hole, found on the way.** `compare()` stopped after twelve
+differences to avoid printing a novel. `/content/toc` declares 107 intended
+differences -- one per subpathway DOI Java drops -- so comparison stopped at the
+thirteenth and **everything past it was never compared at all**. A real
+difference at the five hundredth pathway could not have been reported. The
+ceiling is now 2000 and only the first twelve _undeclared_ differences are
+printed. Declared differences must not be able to crowd out undeclared ones.
+
+## D16. Porting an endpoint is how the types get audited
+
+The port's stated value was speed and control. The recurring value is turning
+out to be that reimplementing an endpoint forces someone to look at what it
+actually returns.
+
+`SimplePerson` in `content-data.service.ts` declared `surname: string;
+firstname: string; orcidId: string | null`. Measured across all 9,503 person
+entries the three content endpoints return: `firstname` is absent on 619 and
+`orcidId` on 3,961, and **neither is ever null** -- the service sets
+`spring.jackson.default-property-inclusion=non_empty`, so an empty value is
+omitted rather than sent as null.
+
+Three call sites had already worked around it independently, writing
+`p.firstname?.toLowerCase()` where the type said `string` -- `?.` on a required
+field is dead syntax that says the author trusted the data over the declaration.
+The type is now honest and those guards are load-bearing. Nothing was broken by
+the old declaration, which is the point: it was wrong for as long as it took
+somebody to reimplement the endpoint and look.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
