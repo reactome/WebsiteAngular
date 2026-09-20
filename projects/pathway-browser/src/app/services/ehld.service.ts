@@ -522,6 +522,24 @@ export class EhldService {
 
   async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
     const { markup, width, height } = this.svgMarkup(svg);
+
+    // Chromium marks a canvas tainted once an SVG carrying a `foreignObject` is
+    // drawn onto it, because that element renders arbitrary HTML. `toDataURL`
+    // then throws a SecurityError, several frames away from the cause, and the
+    // render service answered a bare "Tainted canvases may not be exported".
+    //
+    // One illustration does this: Circadian clock (R-HSA-9909396) carries six,
+    // each a div with a conic-gradient, which is how a drawing tool exports a
+    // gradient SVG has no primitive for. The other 217 have none. There is no
+    // way to rasterise it in a browser -- so this says which file and why,
+    // rather than leaving a stack trace to be traced back.
+    if (markup.includes('<foreignObject')) {
+      throw new Error(
+        'this illustration embeds HTML in a <foreignObject>, which a browser refuses to ' +
+          'rasterise; download it as SVG, and ask for the artwork to be re-exported without one'
+      );
+    }
+
     const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
 
     try {

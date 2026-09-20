@@ -12,7 +12,7 @@ open an issue on the WebsiteAngular repository — either reaches us. A screensh
 and the URL is usually enough; if a diagram is involved, the pathway's stable id
 saves us guessing.
 
-Last updated: 2026-08-22
+Last updated: 2026-09-20
 
 ## Please check on beta.reactome.org
 
@@ -39,6 +39,22 @@ Each of these was broken when curators last looked, and each is now covered by a
 test — `RELEASE-TESTING.md` names the spec for every row, and says plainly where
 a check can only be made by eye.
 
+- **Downloading an illustrated pathway produced nothing at all.** All 218
+  illustrated pathways sent their SVG, PNG and JPEG downloads to the content
+  service's exporter, which draws nothing and reads pre-made files from disk —
+  and the files are not on this machine. The page draws the illustration itself,
+  so it now makes the file from what is already on screen, at a higher
+  resolution than the server was offering. **Worth a click on any illustrated
+  pathway other than Apoptosis**, which is the one the tests happened to use and
+  the one that kept passing.
+- **96 of the 218 illustrations rendered as a picture of the zoom control.** A
+  140×140 image of four arrows where the pathway should be, on downloads and on
+  the picture a content detail page shows — Signal Transduction, Developmental
+  Biology and Cytokine Signaling in Immune System among them. The renderer
+  decided it was finished as soon as any drawing existed, and the zoom control
+  is drawn before the illustration arrives, so the heavier the illustration the
+  likelier it lost. It now waits for the illustration. Re-scanned after the fix:
+  1 of 218 left, and that one is the artwork question below.
 - **Diagrams for every species other than human were blank.** One node without
   graph data threw for the whole diagram build, so switching species left an
   empty canvas with the rest of the page updated around it.
@@ -187,6 +203,20 @@ Recorded because the previous version of this report asked whether the five
 named after papers (Dunn2005, Kaufman2002 ×3, Rutter2006) had been withdrawn for
 licensing, and whether `man7a.png` should be renamed. Both questions are closed:
 the fix happened elsewhere.
+
+**Circadian clock's illustration cannot be saved as PNG or JPEG, and this one
+needs an artwork change rather than a code change.**
+`R-HSA-9909396.svg` builds six of its shapes out of `<foreignObject>` — an
+element that embeds an HTML box inside the drawing, which is how a design tool
+exports a conic gradient, since SVG has no such gradient of its own. A browser
+refuses to turn any drawing containing one into a picture file; it is a security
+rule, not a bug we can work around. SVG downloads fine, and the page displays
+normally.
+
+It is the only one of the 218 that does this. If the file is re-exported with
+those six shapes flattened — or the gradient redrawn with the radial gradients
+SVG does have — every format works again. Until then the download says exactly
+that rather than failing with a browser error.
 
 **A protein page shows the experimental structure whenever there is one.**
 Decided on a sitewide call, 19 Sep 2026, and implemented: if the entity carries a

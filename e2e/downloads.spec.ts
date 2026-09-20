@@ -19,6 +19,24 @@ import { unzipSync, strFromU8 } from 'fflate';
 const DIAGRAM = 'R-HSA-109606'; // Intrinsic Pathway for Apoptosis: a cytoscape diagram
 const ILLUSTRATION = 'R-HSA-109581'; // Apoptosis: an EHLD
 
+/**
+ * A heavy illustration, which is the one that catches the bug this file missed.
+ *
+ * Apoptosis' illustration is 502 SVG elements and arrives quickly. Signal
+ * Transduction's is 2,490 and is one of the 96 illustrations out of 218 that the
+ * render service drew as a 140x140 picture of the zoom control instead of the
+ * pathway: the readiness probe accepted any `svg` inside `cr-ehld`, the control
+ * is in the DOM from the first frame, and a heavy illustration is still loading
+ * when the light one has arrived. Every existing test here used the light one
+ * and stayed green throughout.
+ */
+const HEAVY_ILLUSTRATION = 'R-HSA-162582'; // Signal Transduction: a large EHLD
+
+/** A PNG's own idea of its size, from the IHDR chunk. */
+function pngSize(bytes: Buffer) {
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
+
 /** What each format's bytes have to start with, and a floor for "not empty". */
 const SIGNATURES: Record<string, { magic: (bytes: Buffer) => boolean; floor: number }> = {
   SVG: {
@@ -70,7 +88,10 @@ function slideOf(bytes: Buffer) {
 
 async function openDownloadTab(page: Page, pathway: string) {
   await page.goto(`/PathwayBrowser/${pathway}`);
-  await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: 90_000 });
+  // `#ehld` specifically: `cr-ehld svg` also matches the component's 70x70 zoom
+  // control, which is there from the first frame, so waiting on it returns
+  // before the illustration exists.
+  await page.waitForSelector('#cytoscape canvas, cr-ehld #ehld svg', { timeout: 90_000 });
   await page
     .locator('[role="tab"]')
     .filter({ hasText: /Download/i })
@@ -120,6 +141,24 @@ test.describe('Diagram downloads', () => {
     });
   }
 
+  test('a heavy illustration downloads the illustration, not the zoom control', async ({
+    page,
+  }) => {
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const bytes = await grab(page, 'PNG');
+    assertLooksLike('PNG', bytes);
+
+    // The failure had a shape: the control is 70x70 CSS pixels, so it came out
+    // at 140x140 and 8,091 bytes -- comfortably over the 5,000-byte floor this
+    // file already applied, which is why a size check alone never caught it.
+    // An illustration is 1600x1000 before scaling.
+    const { width, height } = pngSize(bytes);
+    expect(
+      Math.min(width, height),
+      `the PNG is ${width}x${height}, which is the zoom control rather than the illustration`
+    ).toBeGreaterThan(500);
+  });
+
   test('leaving out sub-pathway highlighting changes the figure', async ({ page }) => {
     await openDownloadTab(page, DIAGRAM);
     const withTints = await grab(page, 'SVG');
@@ -161,6 +200,26 @@ test.describe('Server-rendered figures', () => {
       }
     });
   }
+
+  test('a heavy illustration renders as the illustration', async ({ request }) => {
+    const renderServiceUp = await serves(request, '/RenderService/health');
+    test.skip(!renderServiceUp, 'the render service is not running');
+
+    // Not only the download tab: a content detail page takes its picture from
+    // this service too, so 96 of 218 illustrated pathways showed a 140x140
+    // zoom control where the pathway should be. Asked here rather than through
+    // the page because the service caches by URL, and a wrong render was kept
+    // and served for as long as the cache lived.
+    const response = await request.get(`/RenderService/render/${HEAVY_ILLUSTRATION}.png`);
+    expect(response.ok(), 'the render service answers for a heavy illustration').toBe(true);
+
+    const bytes = Buffer.from(await response.body());
+    const { width, height } = pngSize(bytes);
+    expect(
+      Math.min(width, height),
+      `rendered ${width}x${height}, which is the zoom control rather than the illustration`
+    ).toBeGreaterThan(500);
+  });
 });
 
 // The reaction page's own downloads.

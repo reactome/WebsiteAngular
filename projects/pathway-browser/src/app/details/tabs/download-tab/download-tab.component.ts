@@ -144,20 +144,27 @@ export class DownloadTabComponent {
     const formats = isEHLD ? this.reacfoamFormats : this.formats;
 
     return formats.map((format) => {
-      const hasAnalysis = isEHLD && !this.hasResult() ? format : false;
-      const isExportable = isEHLD
-        ? hasAnalysis
-        : [DownloadFormat.PPTX, DownloadFormat.GIF].includes(format);
+      // An illustration is drawn in the page as inline SVG, so the browser can
+      // always produce the file itself and does it better: `downloadImage`
+      // rasterises at scale 3 against the render service's 2, and handles
+      // JPEG's lack of an alpha channel. That path was already taken whenever
+      // an analysis was running; the other branch sent an illustration with no
+      // analysis to the content service instead.
+      //
+      // Which was a 404 for all 218 illustrated pathways on a box where
+      // `download/current/ehld/` is empty -- the exporter reads those files
+      // from disk and cannot draw anything without them. Asking the page, which
+      // already has the illustration on screen, depends on nothing being
+      // present anywhere.
+      const isExportable = !isEHLD && [DownloadFormat.PPTX, DownloadFormat.GIF].includes(format);
       // server side
       if (isExportable) {
         return {
           format,
-          // A diagram's GIF and PowerPoint come from the render service, which
-          // drives the site's own renderer; an illustration's still go through
-          // the content service, which serves the same illustration file either
-          // way. That is why a downloaded GIF used to look like the old site
-          // and no longer does.
-          url: signal(isEHLD ? this.getExportUrl(format) : this.getRenderUrl(format)),
+          // GIF and PowerPoint come from the render service, which drives the
+          // site's own renderer. That is why a downloaded GIF used to look like
+          // the old site and no longer does.
+          url: signal(this.getRenderUrl(format)),
           icon: { id: 'image' },
           download: true,
         };
@@ -300,12 +307,6 @@ export class DownloadTabComponent {
     // and the service's cache is not split by a parameter that says nothing.
     if (!includeSubpathways()) url.searchParams.set('subpathways', 'false');
     return url.toString();
-  }
-
-  getExportUrl(format: string) {
-    const analysisUrl = `${CONTENT_SERVICE}/exporter/diagram/${this.pathwayId()}.${format}?token=${this.token()}`;
-    const url = `${CONTENT_SERVICE}/exporter/diagram/${this.pathwayId()}.${format}`;
-    return this.hasResult() ? analysisUrl : url;
   }
 
   onReacfoamDownload(format: DownloadFormat) {
