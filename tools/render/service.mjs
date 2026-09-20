@@ -40,6 +40,7 @@
  * maxSize for GIF.
  */
 import express from 'express';
+import { ACCEPTED, BOUNDS, canonicalUrl, inBounds } from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import {
@@ -385,6 +386,34 @@ app.get('/render/:name.:ext', async (req, res) => {
   const format = ext.toLowerCase();
   if (!FORMATS.includes(format)) {
     return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
+  }
+
+  const unknown = Object.keys(req.query).filter((key) => !ACCEPTED.includes(key));
+  if (unknown.length) {
+    return res.status(400).json({
+      error: `unknown parameter${unknown.length > 1 ? 's' : ''} ${unknown.map((u) => `"${u}"`).join(', ')}`,
+      // Said rather than implied: a caller that has just been refused is the one
+      // most likely to act on being told what to send instead.
+      accepted: ACCEPTED,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  const outOfRange = Object.keys(BOUNDS).filter(
+    (key) => key in req.query && !inBounds(key, req.query[key])
+  );
+  if (outOfRange.length) {
+    return res.status(400).json({
+      error: outOfRange
+        .map((key) => `"${key}" must be a number between ${BOUNDS[key][0]} and ${BOUNDS[key][1]}`)
+        .join('; '),
+      // These used to be clamped silently, so `scale=4` returned a smaller image
+      // than asked for with a 200. The ceiling is real -- a diagram's coordinate
+      // space is around 6000px, so scale 4 asks for a 320-megapixel canvas, which
+      // renders rather than failing and costs the box a gigabyte -- but a caller
+      // who wants more detail deserves to hear that they cannot have it.
+      canonical: canonicalUrl(name, format, req.query),
+    });
   }
 
   const params = {
