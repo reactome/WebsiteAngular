@@ -136,18 +136,42 @@ behind a harness diffing p-values on real submissions.
 
 GSA is R-based and not a candidate at all.
 
-## D8. Not while the curators are signing off
+## D8. Superseded: ported endpoints ship as they are ready
 
-**Decision**: none of this starts until the curator round on beta is finished.
+**Originally**: none of this starts until the curator round on beta is finished,
+because a service migration doubles the risk surface inside exactly the window
+where a regression would look to a curator like a regression in the site they
+are reviewing, with no way for them to tell the difference.
 
-**Why**: the goal for this window is no known issues before going back to the
-curators. A service migration doubles the risk surface inside exactly that
-window, and a regression in ContentService would look to a curator like a
-regression in the site they are reviewing — with no way for them to tell the
-difference.
+**Now**: endpoints are ported, proven against Java by the harness, and routed as
+they are ready. Decided 20 Sep 2026.
 
-This is the same conclusion reached in Aug, recorded again because the pressure
-to start early comes from the work being obviously worthwhile.
+**What changed, in order of how much it matters:**
+
+- **A node outage degrades to Java rather than failing.** The `content_node`
+  upstream lists Tomcat as a `backup`, and the paths are identical on both, so
+  if the node container is down, stopped for a rebuild, or still warming its
+  caches, nginx retries Java and the reader gets an answer. Tested by stopping
+  the container against the live site: 200 either way, and the only difference
+  in the response is the subpathway DOIs Java drops. That removes most of what
+  D8 was protecting against -- the failure mode it feared was a curator meeting
+  a broken page and reporting it as a website fault.
+- **The curator round is no longer a single gate.** The blocking issues are
+  fixed; what comes back now is smaller and rarer, and fixing it and rolling it
+  out as we go is a better fit than batching behind a freeze.
+- **Each route is one line, and reversible in one line.** D5's per-endpoint
+  switch turned out to be the thing that made this safe: `/content/toc` and
+  `/content/doi` went live without touching anything else, and
+  `/content/contributors` kept being served by Java throughout.
+
+**What has not changed**: parity is still proven before a route is added (D4),
+improvements are still declared rather than smuggled in (D11), and the exporters
+and the analysis maths are still not candidates (D1, D7).
+
+**Kept rather than deleted** because the argument was sound when it was made and
+the conditions changed underneath it. A superseded decision with its reasoning
+intact is how the next person tells "we thought about this" from "nobody
+considered it".
 
 ---
 
@@ -236,6 +260,48 @@ rather than sending `[]`; and children arrive in internal id order.
 types drift silently. These are the same fault a layer down -- a mapping that
 discards a field, a query that can drop a row -- and neither is visible from the
 consuming side at all.
+
+## D13. Host networking is temporary, and named as such
+
+**Decision**: the content-node container shares the host's network namespace
+today, and stops doing so when the graph database becomes a container.
+
+**Why now**: Neo4j binds to `127.0.0.1:7687`. A bridged container cannot reach
+it, and the usual fix -- binding Neo4j to the docker bridge -- widens who can
+reach the database in order to fit a container in. Sharing the namespace changes
+nothing about the database's reachability.
+
+**Why it ends**: the plan is a Neo4j image built per release. Once the graph is
+a container, this one joins the compose network, `NEO4J_URI` names that service
+rather than loopback, and the port is published on 127.0.0.1 the way `render`
+does. `graph.mjs` already takes `NEO4J_URI` from the environment, so the switch
+is configuration.
+
+**Recorded because it will look arbitrary later.** `network_mode: host` in a
+compose file is the kind of line someone deletes to tidy up, discovers the
+service can still reach the database in their environment, and leaves deleted --
+until it reaches one where it cannot.
+
+## D14. Three ways a containerised service can be up and useless
+
+Found while containerising, each of which left the service running and every
+request answering 500:
+
+- **compose's `env_file` parser ate the password.** `NEO4J_DATABASE=graph.db`
+  came through; `NEO4J_PASSWORD` arrived empty. That is the same fault
+  `graph.mjs` carries a comment about -- a generated secret contains characters
+  a parser treats as syntax -- reintroduced by the layer underneath it. The file
+  is now **mounted, not parsed**.
+- **The container ran as the image's `node` user, uid 1000**, and the
+  credentials file is `0600` owned by the operator. Readable by nobody in the
+  container. It now runs as that owner rather than the file being loosened.
+- **Neo4j unreachable at startup** is not fatal: the warm-up fails, logs, and the
+  first request rebuilds (D10).
+
+**Why this is worth a decision rather than a comment**: all three produced a
+container reporting `Up`, a `/health` that answered, and a service that could
+not do its job. "Up and useless" is the state monitoring notices least, which is
+why `/health` reports `graph: true|false` rather than just `ok`.
 
 ## What exists already
 

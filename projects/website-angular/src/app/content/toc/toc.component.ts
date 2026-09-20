@@ -86,6 +86,14 @@ export class TocComponent implements OnInit, OnDestroy {
         this.filteredPathways = data;
         this.loading = false;
         this.cdr.markForCheck();
+        // Only ask for the DOI list if this response did not already carry the
+        // children's DOIs. The node port of the endpoint does; Java does not,
+        // because ContentPageManager passes null where a subpathway's DOI
+        // belongs. Deployments are mid-migration, so which one answered is not
+        // knowable from here -- but it is visible in the answer.
+        if (!data.some((pathway) => (pathway.subpathways ?? []).some((sub) => sub.doi))) {
+          this.loadDoisForSubpathways();
+        }
       },
       error: () => {
         this.error = true;
@@ -93,10 +101,23 @@ export class TocComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
 
-    // Separately, and deliberately not blocking the table: the DOI list is the
-    // larger request of the two, and a reader wants the contents before they
-    // want a citation link. A failure here costs the links and nothing else.
+  /**
+   * Fill in subpathway DOIs the contents endpoint did not send.
+   *
+   * 796kB, which is why it is conditional now: a deployment served by the node
+   * port never requests it, and one served by Java still gets the 107 links
+   * that would otherwise be missing.
+   *
+   * Kept rather than deleted for that second case. Removing it would take the
+   * links away wherever Java still answers, and nothing would say so -- which
+   * is precisely how they came to be missing in the first place.
+   */
+  private loadDoisForSubpathways() {
+    // Deliberately not blocking the table: the DOI list is the larger request
+    // of the two, and a reader wants the contents before they want a citation
+    // link. A failure here costs the links and nothing else.
     this.contentDataService
       .getDoiPathways()
       .pipe(takeUntil(this.destroy$))

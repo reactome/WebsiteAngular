@@ -83,3 +83,9 @@ tools/svg-export-harness/harness.bundle.js
 
 # Render service output cache.
 .render-cache/
+
+# Credentials for the node content service. compose's default names this path,
+# so it is the file somebody creates by following the instructions -- and this
+# repository is public. Mounted into the container and read literally; never
+# parsed, never committed. See docker-compose.yml.
+.content-node.env
