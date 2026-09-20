@@ -40,7 +40,7 @@
  * maxSize for GIF.
  */
 import express from 'express';
-import { ACCEPTED, BOUNDS, canonicalUrl, inBounds } from './params.mjs';
+import { ACCEPTED, BOUNDS, REACTION_CLASSES, badEnums, canonicalUrl, inBounds } from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import {
@@ -292,18 +292,24 @@ const inFlight = new Map();
  * a typo occupies a render slot until it times out -- and ids arrive from URLs,
  * so typos are the normal case rather than the exceptional one.
  */
-async function exists(pathway) {
-  if (!pathway) return true; // the genome-wide view takes no id
+async function describe(pathway) {
+  if (!pathway) return { known: true, schemaClass: '' }; // the genome-wide view takes no id
   try {
     const response = await fetch(`${BASE}/ContentService/data/query/${pathway}`, {
       method: 'GET',
       signal: AbortSignal.timeout(10_000),
     });
-    return response.ok;
+    if (!response.ok) return { known: false, schemaClass: '' };
+    // The class comes free: this request was already being made to find out
+    // whether the id resolves, and it is what says whether `view=reaction` can
+    // mean anything for it.
+    const body = await response.json().catch(() => ({}));
+    return { known: true, schemaClass: String(body.schemaClass ?? '') };
   } catch {
     // If the check itself cannot run, let the render decide rather than
-    // refusing work over a transient failure of something incidental.
-    return true;
+    // refusing work over a transient failure of something incidental. The class
+    // is unknown rather than wrong, so a view check cannot be made either.
+    return { known: true, schemaClass: '' };
   }
 }
 
@@ -320,9 +326,21 @@ async function renderCached(params) {
     return { ...(await inFlight.get(key)), coalesced: true };
   }
 
-  if (!(await exists(params.pathway))) {
+  const { known, schemaClass } = await describe(params.pathway);
+  if (!known) {
     const error = new Error(`no such pathway: ${params.pathway}`);
     error.status = 404;
+    throw error;
+  }
+  // Checked here rather than at the edge of the handler because it is the same
+  // request that establishes the id exists, and paying for it twice to refuse
+  // slightly earlier would be a poor trade.
+  if (params.view === 'reaction' && schemaClass && !REACTION_CLASSES.has(schemaClass)) {
+    const error = new Error(
+      `view=reaction needs a reaction; ${params.pathway} is a ${schemaClass}. ` +
+        'Ask for it without view=reaction to draw the diagram it contains.'
+    );
+    error.status = 400;
     throw error;
   }
 
@@ -395,6 +413,14 @@ app.get('/render/:name.:ext', async (req, res) => {
       // Said rather than implied: a caller that has just been refused is the one
       // most likely to act on being told what to send instead.
       accepted: ACCEPTED,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  const badValues = badEnums(req.query);
+  if (badValues.length) {
+    return res.status(400).json({
+      error: badValues.join('; '),
       canonical: canonicalUrl(name, format, req.query),
     });
   }

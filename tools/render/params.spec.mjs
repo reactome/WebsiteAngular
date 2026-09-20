@@ -10,7 +10,15 @@
 // picture -- `.png` is cached by extension on our zone, so only the response
 // header currently keeps junk out of Cloudflare.
 import { describe, expect, it } from 'vitest';
-import { ACCEPTED, BOUNDS, canonicalUrl, inBounds } from './params.mjs';
+import {
+  ACCEPTED,
+  BOUNDS,
+  ENUMS,
+  REACTION_CLASSES,
+  badEnums,
+  canonicalUrl,
+  inBounds,
+} from './params.mjs';
 
 describe('what the render endpoint accepts', () => {
   it('names every parameter the handler reads', () => {
@@ -85,5 +93,52 @@ describe('the canonical url offered back to a refused caller', () => {
     expect(canonicalUrl('R-HSA-1', 'png', { token: 'a b&c=d' })).toBe(
       '/render/R-HSA-1.png?token=a%20b%26c%3Dd'
     );
+  });
+});
+
+describe('values from a closed set', () => {
+  it('accepts the values it names', () => {
+    expect(badEnums({ view: 'reaction', subpathways: 'false', dark: 'true' })).toEqual([]);
+  });
+
+  it('refuses a boolean that is not true or false, rather than guessing', () => {
+    // `subpathways` was `!== 'false'`, so this meant *true* -- the opposite of
+    // what was asked, with a 200.
+    expect(badEnums({ subpathways: 'no' })).toEqual(['"subpathways" must be "true" or "false"']);
+    // `dark` was `=== 'true'`, so this meant *false*.
+    expect(badEnums({ dark: 'yes' })).toEqual(['"dark" must be "true" or "false"']);
+  });
+
+  it('refuses a view it does not draw', () => {
+    expect(badEnums({ view: 'banana' })).toEqual(['"view" must be "reaction"']);
+  });
+
+  it('says every problem at once, not the first', () => {
+    expect(badEnums({ dark: 'yes', view: 'banana' })).toHaveLength(2);
+  });
+
+  it('ignores parameters it has no closed set for', () => {
+    // `select` and `token` are deliberately unchecked: one is handed to the
+    // diagram's own lookup, the other is opaque.
+    expect(badEnums({ select: 'anything at all', token: 'x' })).toEqual([]);
+  });
+});
+
+describe('the classes view=reaction can mean something for', () => {
+  it('holds the six the graph reports, including the two easily forgotten', () => {
+    expect([...REACTION_CLASSES].sort()).toEqual([
+      'BlackBoxEvent',
+      'CellDevelopmentStep',
+      'Depolymerisation',
+      'FailedReaction',
+      'Polymerisation',
+      'Reaction',
+    ]);
+  });
+
+  it('excludes the pathway classes, which is the case that used to hang', () => {
+    for (const c of ['Pathway', 'TopLevelPathway', 'CellLineagePath']) {
+      expect(REACTION_CLASSES.has(c)).toBe(false);
+    }
   });
 });

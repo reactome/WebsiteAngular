@@ -62,3 +62,48 @@ export function inBounds(key, value) {
   const [low, high] = BOUNDS[key];
   return Number.isFinite(number) && number >= low && number <= high;
 }
+
+/**
+ * Parameters whose values are a closed set, so a value outside it is refused.
+ *
+ * These were the quiet ones. `subpathways` was `!== 'false'`, so `?subpathways=no`
+ * meant *true*; `dark` was `=== 'true'`, so `?dark=yes` meant *false*; and
+ * `view` fell back to the default for anything but the one word. Each is a
+ * caller asking for something and being given the opposite, with a 200.
+ */
+export const ENUMS = {
+  view: ['reaction'],
+  subpathways: ['true', 'false'],
+  dark: ['true', 'false'],
+};
+
+/**
+ * `view=reaction` draws a reaction's own layout, so it needs a reaction.
+ *
+ * Asked of a pathway the render page never becomes ready, the wait runs its
+ * full 45 seconds and the caller gets a Playwright timeout as a 500 — holding
+ * one of only two render slots while it does. Read from the graph rather than
+ * recalled: `CellDevelopmentStep` and `CellLineagePath` are both easy to miss.
+ */
+export const REACTION_CLASSES = new Set([
+  'BlackBoxEvent',
+  'CellDevelopmentStep',
+  'Depolymerisation',
+  'FailedReaction',
+  'Polymerisation',
+  'Reaction',
+]);
+
+/**
+ * `select` and `token` are deliberately not shape-checked.
+ *
+ * `select` is handed to the diagram's own lookup, which resolves more than
+ * stable ids, and a token is opaque to us. Inventing a pattern for either would
+ * refuse callers over a rule we made up — the guessing this whole change exists
+ * to stop, pointed the other way.
+ */
+export function badEnums(query) {
+  return Object.keys(ENUMS)
+    .filter((key) => key in query && !ENUMS[key].includes(String(query[key])))
+    .map((key) => `"${key}" must be ${ENUMS[key].map((v) => `"${v}"`).join(' or ')}`);
+}
