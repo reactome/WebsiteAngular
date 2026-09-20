@@ -74,6 +74,58 @@ services:
     # renderer that fails only on large diagrams is the usual symptom.
     shm_size: '1gb'
 
+  content-node:
+    build:
+      context: .
+      dockerfile: deploy/content-node/Dockerfile
+    # It holds two lists in memory and nothing else, so a restart costs one
+    # rebuild of the caches -- about four seconds -- and never any data. Left
+    # unsupervised it runs only because somebody started it by hand, and the
+    # contents page goes blank the first time this box reboots, with nothing to
+    # connect the outage to a restart hours earlier.
+    restart: unless-stopped
+    # Host networking, for as long as the graph is on the host.
+    #
+    # Neo4j listens on 127.0.0.1:7687 and should keep doing so. A bridged
+    # container cannot reach that, and the usual workaround -- binding Neo4j to
+    # the docker bridge -- widens who can reach the database to fit a container
+    # in. Sharing the host's namespace keeps the database exactly as reachable
+    # as it is today and the service on loopback where nginx expects it.
+    #
+    # **This is the line to delete when the graph becomes a container**, which
+    # is the plan: a Neo4j image built per release. Then this joins the compose
+    # network, `NEO4J_URI` names that service instead of loopback, and it
+    # publishes 127.0.0.1:4400 like `render` does. `graph.mjs` already reads
+    # NEO4J_URI from the environment, so that is configuration rather than a
+    # change here. Recorded in specs/006 D13 so the reason is findable when the
+    # line looks arbitrary.
+    network_mode: host
+    # The credentials file is **mounted, not parsed**. graph.mjs reads it
+    # literally for a documented reason: a generated secret contains characters
+    # a shell eats, and sourcing one silently produced an empty password once.
+    #
+    # compose's own `env_file` parser does the same thing. Tried first, and it
+    # read `NEO4J_DATABASE=graph.db` correctly while handing the service
+    # `NEO4J_PASSWORD=""` -- the service then reported "graph credentials:
+    # MISSING" and every request 500'd. Exactly the fault the literal reader was
+    # written to avoid, reintroduced by the layer underneath it.
+    volumes:
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+    environment:
+      - CONTENT_NODE_ENV_FILE=/run/secrets/content-node.env
+    # Runs as the owner of that file, which is 0600 and should stay that way.
+    # The image's own `node` user is uid 1000 and cannot read it, so the service
+    # started, reported "graph credentials: MISSING", and answered 500 -- a
+    # container that is up and useless, which is the state monitoring is worst
+    # at noticing.
+    #
+    # Defaults to this host's operator; override where the file has a different
+    # owner. `id -u`, `id -g`.
+    user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
+    # No depends_on: Neo4j is not in this compose file. If it is down the
+    # service starts, fails to build its lists, and rebuilds on the next
+    # request -- which is the behaviour specs/006 D10 asks for.
+
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.

@@ -237,6 +237,48 @@ types drift silently. These are the same fault a layer down -- a mapping that
 discards a field, a query that can drop a row -- and neither is visible from the
 consuming side at all.
 
+## D13. Host networking is temporary, and named as such
+
+**Decision**: the content-node container shares the host's network namespace
+today, and stops doing so when the graph database becomes a container.
+
+**Why now**: Neo4j binds to `127.0.0.1:7687`. A bridged container cannot reach
+it, and the usual fix -- binding Neo4j to the docker bridge -- widens who can
+reach the database in order to fit a container in. Sharing the namespace changes
+nothing about the database's reachability.
+
+**Why it ends**: the plan is a Neo4j image built per release. Once the graph is
+a container, this one joins the compose network, `NEO4J_URI` names that service
+rather than loopback, and the port is published on 127.0.0.1 the way `render`
+does. `graph.mjs` already takes `NEO4J_URI` from the environment, so the switch
+is configuration.
+
+**Recorded because it will look arbitrary later.** `network_mode: host` in a
+compose file is the kind of line someone deletes to tidy up, discovers the
+service can still reach the database in their environment, and leaves deleted --
+until it reaches one where it cannot.
+
+## D14. Three ways a containerised service can be up and useless
+
+Found while containerising, each of which left the service running and every
+request answering 500:
+
+- **compose's `env_file` parser ate the password.** `NEO4J_DATABASE=graph.db`
+  came through; `NEO4J_PASSWORD` arrived empty. That is the same fault
+  `graph.mjs` carries a comment about -- a generated secret contains characters
+  a parser treats as syntax -- reintroduced by the layer underneath it. The file
+  is now **mounted, not parsed**.
+- **The container ran as the image's `node` user, uid 1000**, and the
+  credentials file is `0600` owned by the operator. Readable by nobody in the
+  container. It now runs as that owner rather than the file being loosened.
+- **Neo4j unreachable at startup** is not fatal: the warm-up fails, logs, and the
+  first request rebuilds (D10).
+
+**Why this is worth a decision rather than a comment**: all three produced a
+container reporting `Up`, a `/health` that answered, and a service that could
+not do its job. "Up and useless" is the state monitoring notices least, which is
+why `/health` reports `graph: true|false` rather than just `ok`.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

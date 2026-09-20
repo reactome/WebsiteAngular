@@ -37,6 +37,29 @@ module.exports = {
     changeOrigin: true,
     pathRewrite: { '^/reactome': '' },
   },
+  // The two content endpoints served by the node port (tools/content-node),
+  // listed **before** the general /ContentService rule because the first match
+  // wins and the general one would swallow them.
+  //
+  // Byte-identical to Java except one declared difference: a subpathway's DOI,
+  // which ContentPageManager discards by passing null into TocSubpathway. That
+  // is why the contents page had 3 of production's 44 DOIs, and why this repo
+  // carries a client-side join against /content/doi to work around it. The join
+  // comes out once this is serving everywhere, not before -- it is what keeps
+  // those links visible today.
+  //
+  // Reversible by deleting these two entries. The node service holds both lists
+  // in memory and answers in ~4ms, the same as Java; see specs/006 D9.
+  ...Object.fromEntries(
+    ['/ContentService/data/content/toc', '/ContentService/data/content/doi'].map((context) => [
+      context,
+      {
+        target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
+        secure: false,
+        changeOrigin: true,
+      },
+    ])
+  ),
   ...Object.fromEntries(
     ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
   ),
