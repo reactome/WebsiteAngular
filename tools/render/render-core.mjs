@@ -9,7 +9,7 @@ import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.mjs';
 import { pptx } from './pptx.mjs';
 
 /** Formats the render page can produce. */
-export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
+export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'];
 
 /**
  * Longest side of the raster PowerPoint falls back to when it cannot draw SVG.
@@ -23,7 +23,7 @@ export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
 const FALLBACK_MAX_SIZE = 2000;
 
 /** Anything smaller than this is not a real render; see the Reacfoam notes. */
-const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
+const MIN_BYTES = { svg: 2000, png: 5000, jpeg: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
 
 /**
  * The floor for a PowerPoint built out of shapes.
@@ -132,8 +132,8 @@ export async function render(
         await page.evaluate(async () => await window.__renderExport.svg()),
         'utf8'
       );
-    } else if (format === 'png') {
-      bytes = await pngBytes(page, scale);
+    } else if (format === 'png' || format === 'jpeg') {
+      bytes = await rasterBytes(page, scale, format);
     } else if (format === 'pdf') {
       bytes = await pdfFromSvg(page, timeout);
     } else if (format === 'gif') {
@@ -172,9 +172,12 @@ export async function render(
   }
 }
 
-/** The diagram as PNG bytes, decoded from the data URL the page hands back. */
-async function pngBytes(page, scale) {
-  const dataUrl = await page.evaluate(async (s) => await window.__renderExport.png(s), scale);
+/** The diagram as raster bytes, decoded from the data URL the page hands back. */
+async function rasterBytes(page, scale, format = 'png') {
+  const dataUrl = await page.evaluate(
+    async ([s, f]) => await window.__renderExport[f](s),
+    [scale, format]
+  );
   return Buffer.from(dataUrl.split(',')[1], 'base64');
 }
 
@@ -218,7 +221,7 @@ async function pptxFromPage(page, { scale, title }) {
   // older than PowerPoint 2016, and is better than losing the export.
   let png = null;
   try {
-    png = await pngBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
+    png = await rasterBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
   } catch (error) {
     if (!/cannot export PNG/i.test(String(error))) throw error;
   }

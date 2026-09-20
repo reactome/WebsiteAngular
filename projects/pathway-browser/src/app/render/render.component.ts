@@ -333,7 +333,12 @@ export class RenderComponent {
       // illustration, the genome-wide view) and the caller embeds the picture.
       shapes: () => this.exportShapes(),
       // Reacfoam's exporter is async, so callers await whatever they get back.
-      png: (scale = 1) => this.exportPng(scale),
+      png: (scale = 1) => this.exportRaster(scale, 'png'),
+      // JPEG exists because the endpoint this service is being prepared to take
+      // over offers it -- Java's enum is png, jpg, jpeg, svg, gif -- and a
+      // format that silently disappeared on the switch would be a regression
+      // nobody asked for.
+      jpeg: (scale = 1) => this.exportRaster(scale, 'jpeg'),
       // Animation primitives rather than an animation. What an animated format
       // needs is a way to choose a sample and a way to grab what is on screen;
       // deciding frame order, palette and timing is the caller's business, and
@@ -1425,15 +1430,42 @@ export class RenderComponent {
     return background && !background.startsWith('rgba(0, 0, 0, 0') ? background : '#ffffff';
   }
 
-  /** The drawn view as a PNG data URL. */
-  private async exportPng(scale: number): Promise<string> {
-    const reaction = this.reaction()?.core();
-    if (reaction) return reaction.png({ full: true, scale, bg: 'transparent' });
+  /**
+   * The drawn view as a raster data URL.
+   *
+   * PNG keeps a transparent background, so a figure can sit on any page. JPEG
+   * has no alpha channel at all, and a transparent background composites to
+   * **black** rather than to nothing -- so it gets white, the same choice
+   * `EhldService.downloadImage` already makes for the in-page download.
+   */
+  private async exportRaster(scale: number, type: 'png' | 'jpeg'): Promise<string> {
+    const jpeg = type === 'jpeg';
+    const bg = jpeg ? '#ffffff' : 'transparent';
 
-    const { instances } = this.exportableInstances();
+    // Never `cy.jpg()`. cytoscape-layers replaces png/jpg/jpeg on an instance
+    // that has a custom layer -- which every diagram here does -- and its jpg()
+    // ends with `output(o, this.toCanvas(o), 'image/png')`. The file came out
+    // named .jpeg and containing PNG bytes. `diagram.component.ts` found this
+    // and works around it the same way: take the canvas the layers compose, so
+    // nothing is lost from the picture, and encode that.
+    const asJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL('image/jpeg', 0.9);
+
+    const reaction = this.reaction()?.core();
+    if (reaction) {
+      const { diagram } = this.exportableInstances();
+      if (jpeg && diagram) {
+        return asJpeg(diagram.exportCanvas(reaction, { full: true, scale, bg }));
+      }
+      return reaction.png({ full: true, scale, bg });
+    }
+
+    const { diagram, instances } = this.exportableInstances();
     if (instances.length) {
       const framed = this.frameSelection(instances[0]);
-      return instances[0].png({ full: !framed, scale, bg: 'transparent' });
+      if (jpeg && diagram) {
+        return asJpeg(diagram.exportCanvas(instances[0], { full: !framed, scale, bg }));
+      }
+      return instances[0].png({ full: !framed, scale, bg });
     }
 
     // An illustration has no cytoscape instance to ask, so it goes through the
@@ -1442,12 +1474,10 @@ export class RenderComponent {
     // pathways, so it was the ones a report is most likely to want.
     const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
     if (svg) {
-      // No background: a PNG has an alpha channel, and a figure that can sit on
-      // any page is more useful than one with a colour baked in.
-      const canvas = await this.ehldService.rasterise(svg, scale);
-      return canvas.toDataURL('image/png');
+      const canvas = await this.ehldService.rasterise(svg, scale, jpeg ? '#ffffff' : undefined);
+      return canvas.toDataURL(jpeg ? 'image/jpeg' : 'image/png', 1.0);
     }
 
-    throw new Error('this view cannot export PNG yet');
+    throw new Error(`this view cannot export ${type.toUpperCase()} yet`);
   }
 }

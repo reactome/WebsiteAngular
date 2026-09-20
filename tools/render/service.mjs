@@ -96,6 +96,7 @@ const MAX_CACHE = Number(process.env.RENDER_CACHE_MAX ?? 2 * 1024 ** 3);
 const CONTENT_TYPE = {
   svg: 'image/svg+xml; charset=utf-8',
   png: 'image/png',
+  jpeg: 'image/jpeg',
   pdf: 'application/pdf',
   gif: 'image/gif',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -401,7 +402,9 @@ app.get('/health', (_req, res) => {
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
 app.get('/render/:name.:ext', async (req, res) => {
   const { name, ext } = req.params;
-  const format = ext.toLowerCase();
+  // `jpg` is the same picture under the name Java's enum also accepts, so a
+  // caller moved from that endpoint keeps whichever spelling they already use.
+  const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
   if (!FORMATS.includes(format)) {
     return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
   }

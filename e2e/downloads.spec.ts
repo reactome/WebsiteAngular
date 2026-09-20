@@ -218,6 +218,33 @@ test.describe('Server-rendered figures', () => {
     });
   }
 
+  for (const ext of ['jpeg', 'jpg']) {
+    test(`a server-rendered .${ext} contains JPEG, not PNG under another name`, async ({
+      request,
+    }) => {
+      const renderServiceUp = await serves(request, '/RenderService/health');
+      test.skip(!renderServiceUp, 'the render service is not running');
+
+      // The specific trap this guards, already once shipped from the in-page
+      // exporter: cytoscape-layers replaces png/jpg/jpeg on any instance with a
+      // custom layer -- every diagram here -- and its jpg() ends with
+      // `output(o, this.toCanvas(o), 'image/png')`. The response is the right
+      // size, the right status and the wrong format, so only the bytes say so.
+      const response = await request.get(`/RenderService/render/${DIAGRAM}.${ext}`);
+      expect(response.status(), `.${ext} is served`).toBe(200);
+      expect(response.headers()['content-type']).toContain('image/jpeg');
+
+      const bytes = Buffer.from(await response.body());
+      assertLooksLike('JPEG', bytes);
+      // Said twice deliberately: the magic-byte check above is what would have
+      // caught it, and naming PNG here is what a reader of a failure needs.
+      expect(
+        bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])),
+        `.${ext} contains PNG bytes`
+      ).toBe(false);
+    });
+  }
+
   test('a heavy illustration renders as the illustration', async ({ request }) => {
     const renderServiceUp = await serves(request, '/RenderService/health');
     test.skip(!renderServiceUp, 'the render service is not running');
