@@ -4,12 +4,28 @@ import { Observable, timer } from 'rxjs';
 import { retry, timeout } from 'rxjs/operators';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
+/**
+ * The five fields Java's SimplePerson carries -- three of which are not always
+ * there.
+ *
+ * `spring.jackson.default-property-inclusion=non_empty` in the content service
+ * means a null or empty field is omitted from the JSON rather than sent as
+ * null, so an absent value arrives as `undefined` and never as `null`. Measured
+ * over all 9,503 person entries the three content endpoints return: `dbId`,
+ * `displayName` and `surname` are always present; `firstname` is missing on 619
+ * of them and `orcidId` on 3,961, and neither is ever null.
+ *
+ * The declaration used to say otherwise, and three separate call sites had
+ * already worked around it -- `p.firstname?.toLowerCase()` in the contributors,
+ * contents and DOI searches, where `?.` on a required `string` is dead syntax
+ * that quietly says the author knew better than the type.
+ */
 export interface SimplePerson {
   dbId: number;
   displayName: string;
   surname: string;
-  firstname: string;
-  orcidId: string | null;
+  firstname?: string;
+  orcidId?: string;
 }
 
 export interface TocSubpathway {

@@ -245,6 +245,74 @@ export const endpoints = [
       return { status: 200, body, type: 'application/json' };
     }),
   },
+  {
+    path: '/ContentService/data/content/contributors',
+    /**
+     * Everyone who has authored or reviewed an event, and how much.
+     *
+     * The query is derived from the endpoint's answers rather than from Java's
+     * source: graph-core's snapshot jar in the local repository does not carry
+     * the class that holds it. So the semantics were pinned by measurement --
+     * `Pathway` and `ReactionLikeEvent` reached through the person's
+     * InstanceEdits -- and checked against a contributor with large numbers
+     * before a line was written:
+     *
+     *     computed   154 authored pathways, 922 reactions, 375 reviewed, 2104
+     *     java says  154                    922           375            2104
+     *
+     * 999 people, which is every person who authored or reviewed an Event. It
+     * looked like a cap at first -- 1,028 people have an InstanceEdit -- and it
+     * is not: the other 29 have edits that are not authorship or review of an
+     * event. Worth checking rather than assuming, because a silent cap on a
+     * contributors page would be an unpleasant thing to ship.
+     */
+    handler: cached('content/contributors', async () => {
+      const rows = await read(
+        `MATCH (person:Person)-[:author]->(:InstanceEdit)-[:authored|reviewed]->(:Event)
+         WITH DISTINCT person
+         OPTIONAL MATCH (person)-[:author]->(:InstanceEdit)-[:authored]->(ap:Pathway)
+         WITH person, count(DISTINCT ap) AS authoredPathways
+         OPTIONAL MATCH (person)-[:author]->(:InstanceEdit)-[:authored]->(ar:ReactionLikeEvent)
+         WITH person, authoredPathways, count(DISTINCT ar) AS authoredReactions
+         OPTIONAL MATCH (person)-[:author]->(:InstanceEdit)-[:reviewed]->(rp:Pathway)
+         WITH person, authoredPathways, authoredReactions, count(DISTINCT rp) AS reviewedPathways
+         OPTIONAL MATCH (person)-[:author]->(:InstanceEdit)-[:reviewed]->(rr:ReactionLikeEvent)
+         RETURN properties(person) AS person, authoredPathways, authoredReactions,
+                reviewedPathways, count(DISTINCT rr) AS reviewedReactions`
+      );
+
+      const body = rows.map((row) =>
+        compact({
+          person: simplePeople([row.person])[0],
+          // Counts, not lists: `non_empty` has no notion of an empty number, so
+          // a zero is serialised rather than omitted.
+          authoredPathways: row.authoredPathways,
+          reviewedPathways: row.reviewedPathways,
+          authoredReactions: row.authoredReactions,
+          reviewedReactions: row.reviewedReactions,
+        })
+      );
+      return { status: 200, body, type: 'application/json' };
+    }),
+    /**
+     * Order is the one thing here that is not reproduced, and nothing reads it.
+     *
+     * Java's order is not by name, dbId, any of the four counts, their total, or
+     * a Java HashMap's iteration order -- all five checked against the live
+     * response, none matched -- so it is whatever its aggregation happened to
+     * emit. The contributors page sorts client-side before rendering
+     * (`contributors.component.ts`, `sortKey: SortKey = 'displayName'`), so no
+     * reader ever sees the order this endpoint returns.
+     *
+     * `unordered` tells the diff to sort both sides by dbId before comparing, so
+     * all 999 entries are still checked field by field -- 999 of 999 identical --
+     * and only the ordering is declared. Declaring it the other way, as a
+     * pattern matching element-level differences, would have hidden a wrong
+     * count just as happily as a shuffled list.
+     */
+    unordered: (entry) => entry.person.dbId,
+    differs: [/^\/ContentService\/data\/content\/contributors: order differs from java's$/],
+  },
 ];
 
 /**

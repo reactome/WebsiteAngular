@@ -50,8 +50,17 @@ async function fetchBoth(path) {
  * of patterns. Parity is the default and a deliberate improvement has to be
  * written down next to the code that makes it, so that "the diff is green"
  * keeps meaning "nothing changed that nobody chose".
+ *
+ * An endpoint whose response is a JSON array in no particular order may also
+ * give `unordered`, a key for each element. Both sides are then sorted by that
+ * key before comparing, and the fact that the order differs is reported as a
+ * single problem the endpoint can declare. Without this, declaring "order is
+ * not part of the contract" means writing a pattern that matches every
+ * element-level difference -- which would hide a wrong count as readily as a
+ * shuffled one, and turn the safety net into a green light. Sorting instead
+ * keeps all 999 entries compared field by field.
  */
-function differences(path, java, node) {
+function differences(path, java, node, endpoint) {
   const problems = [];
   if (java.status !== node.status) {
     problems.push(`status ${node.status}, java says ${java.status}`);
@@ -71,7 +80,18 @@ function differences(path, java, node) {
   const nodeJson = asJson(node);
 
   if (javaJson !== undefined && nodeJson !== undefined) {
-    problems.push(...compare(javaJson, nodeJson, ''));
+    if (endpoint?.unordered && Array.isArray(javaJson) && Array.isArray(nodeJson)) {
+      const by = endpoint.unordered;
+      const order = (list) => list.map((item) => JSON.stringify(by(item)));
+      if (String(order(javaJson)) !== String(order(nodeJson))) {
+        problems.push(`order differs from java's`);
+      }
+      const sorted = (list) =>
+        [...list].sort((a, b) => (JSON.stringify(by(a)) < JSON.stringify(by(b)) ? -1 : 1));
+      problems.push(...compare(sorted(javaJson), sorted(nodeJson), ''));
+    } else {
+      problems.push(...compare(javaJson, nodeJson, ''));
+    }
   } else if (java.body.trim() !== node.body.trim()) {
     problems.push(`body "${node.body.slice(0, 60)}", java says "${java.body.slice(0, 60)}"`);
   }
@@ -79,9 +99,19 @@ function differences(path, java, node) {
   return problems.map((p) => `${path}: ${p}`);
 }
 
-/** Deep comparison that names the field rather than dumping both documents. */
+/**
+ * Deep comparison that names the field rather than dumping both documents.
+ *
+ * It stops at a ceiling so a wholly different response does not print a novel,
+ * but the ceiling is well above the handful shown. It used to be twelve, and
+ * that was a hole: `/content/toc` declares thirteen intended differences, so
+ * comparison stopped before reaching them and a real difference at the five
+ * hundredth pathway could never have been reported. Declared differences must
+ * not be able to crowd out undeclared ones.
+ */
+const CEILING = 2000;
 function compare(expected, actual, at, found = []) {
-  if (found.length > 12) return found;
+  if (found.length > CEILING) return found;
   const where = at || '(root)';
 
   if (Array.isArray(expected) || Array.isArray(actual)) {
@@ -146,13 +176,17 @@ async function main() {
   for (const path of list) {
     try {
       const { java, node } = await fetchBoth(path);
-      const found = differences(path, java, node);
-      const declared = endpoints.find((e) => path.startsWith(e.path.split('{')[0]))?.differs ?? [];
+      const endpoint = endpoints.find((e) => path.startsWith(e.path.split('{')[0]));
+      const found = differences(path, java, node, endpoint);
+      const declared = endpoint?.differs ?? [];
       const expected = found.filter((problem) => declared.some((rule) => rule.test(problem)));
       const unexpected = found.filter((problem) => !expected.includes(problem));
       problems.push(...unexpected);
       console.log(`  ${unexpected.length ? '✗' : '✓'} ${path}`);
-      for (const problem of unexpected) console.log(`      ${problem}`);
+      for (const problem of unexpected.slice(0, 12)) console.log(`      ${problem}`);
+      if (unexpected.length > 12) {
+        console.log(`      ... and ${unexpected.length - 12} more`);
+      }
       if (expected.length) {
         // Said out loud rather than hidden. A declared difference that stops
         // appearing is news too -- it means the improvement was lost.
