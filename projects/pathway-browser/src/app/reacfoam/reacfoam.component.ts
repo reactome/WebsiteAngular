@@ -240,7 +240,7 @@ export class ReacfoamComponent implements OnDestroy {
             this.select.set(flaggingResult.matches[0]);
           }
         }
-      })().catch((error) => console.error('Reacfoam update failed', error));
+      })().catch((error) => console.error('Reacfoam selection update failed', error));
     });
     effect(
       () =>
@@ -406,7 +406,7 @@ export class ReacfoamComponent implements OnDestroy {
           this.download.resetDownload();
         }
         loader.close();
-      })().catch((error) => console.error('Reacfoam update failed', error));
+      })().catch((error) => this.download.failed(error, 'Genome-wide view export failed'));
     });
   }
 

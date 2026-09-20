@@ -124,7 +124,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         void this.ehldService
           .downloadImage(request.format)
           .then(() => this.download.resetDownload())
-          .catch((error) => console.error('EHLD image export failed', error));
+          .catch((error) => this.download.failed(error, 'EHLD image export failed'));
       } else if (request?.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)
@@ -132,7 +132,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
             this.download.export(svg, request.format, pathwayId);
             this.download.resetDownload();
           })
-          .catch((error) => console.error('EHLD SVG export failed', error));
+          .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
       }
     });
   }

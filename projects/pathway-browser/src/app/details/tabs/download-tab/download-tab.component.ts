@@ -78,6 +78,15 @@ export class DownloadTabComponent {
   private dataState: DataStateService = inject(DataStateService);
   public analysis: AnalysisService = inject(AnalysisService);
   private download: DownloadService = inject(DownloadService);
+
+  /**
+   * Why the last figure did not download, if it did not.
+   *
+   * A figure made in the browser can fail for a reason worth reading -- one
+   * illustration cannot be rasterised at all -- and until this was here the
+   * button simply did nothing and said so only to the console.
+   */
+  readonly downloadFailure = this.download.failure;
   protected readonly includeSubpathways = includeSubpathways;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);

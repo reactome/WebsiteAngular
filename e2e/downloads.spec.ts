@@ -159,6 +159,23 @@ test.describe('Diagram downloads', () => {
     ).toBeGreaterThan(500);
   });
 
+  test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
+    // Circadian clock builds six of its shapes out of <foreignObject>, which is
+    // how a design tool exports a conic gradient. Chromium taints a canvas the
+    // moment one is drawn onto it and refuses toDataURL, so this illustration
+    // cannot be turned into a picture in any browser.
+    //
+    // That part is not fixable here. What was fixable: the click produced no
+    // file, no message and no sign it had registered, because every client-side
+    // exporter reported failure with console.error and nothing else.
+    await openDownloadTab(page, 'R-HSA-9909396');
+    await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
+
+    const reason = page.locator('.download-failure');
+    await expect(reason, 'the reader is told why no file arrived').toBeVisible({ timeout: 30_000 });
+    await expect(reason).toContainText('foreignObject');
+  });
+
   test('leaving out sub-pathway highlighting changes the figure', async ({ page }) => {
     await openDownloadTab(page, DIAGRAM);
     const withTints = await grab(page, 'SVG');
