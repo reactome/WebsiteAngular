@@ -76,10 +76,25 @@ function differences(path, java, node, endpoint) {
       return undefined;
     }
   };
-  const javaJson = asJson(java);
+  let javaJson = asJson(java);
   const nodeJson = asJson(node);
 
   if (javaJson !== undefined && nodeJson !== undefined) {
+    // An endpoint may declare that its answer is Java's put through some
+    // transformation -- deduplicated, say. Applying it to Java's side and then
+    // comparing exactly is the honest way to say that: everything else still
+    // has to match element for element.
+    //
+    // The alternative is a `differs` pattern broad enough to cover the
+    // consequences, and the consequences cascade. Removing one item from a
+    // 3,310-element list shifts every row after it, so the comparison reports
+    // two thousand differences for one intended change -- and a pattern that
+    // swallows those swallows a genuinely wrong row just as easily.
+    if (endpoint?.normalise) {
+      javaJson = endpoint.normalise(javaJson);
+      problems.push(`java normalised by the endpoint's own rule before comparing`);
+    }
+
     if (endpoint?.unordered && Array.isArray(javaJson) && Array.isArray(nodeJson)) {
       const by = endpoint.unordered;
       const keyed = (list) => list.map((item) => [JSON.stringify(by(item)), item]);
