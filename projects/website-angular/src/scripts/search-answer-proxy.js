@@ -454,8 +454,160 @@ function mountSearchAnswerProxy(app, route = '/search-answer') {
   });
 }
 
+/** Where the analysis summary lives. Same host and gate as the answer. */
+const SUMMARY_UPSTREAM =
+  process.env.SUMMARY_UPSTREAM || 'https://beta.reactome.org/chat/guest/api/analysis-summary';
+
+/**
+ * The tiers the summary service will build. `identifiers` names the unmatched
+ * identifiers; `aggregate` describes the result without them.
+ *
+ * Checked here as well as there because a value outside the set is a 422 with a
+ * JSON body rather than an SSE stream -- a different shape from every other
+ * outcome, and one the panel would try to parse as events.
+ */
+const DISCLOSURES = ['aggregate', 'identifiers'];
+
+/**
+ * Server side of the analysis summary.
+ *
+ * The same shape as the answer above and for the same reason: the browser never
+ * holds a key and never reaches the chatbot. What differs is the payload -- an
+ * analysis token and a disclosure tier rather than a question -- and what the
+ * stream can end with.
+ *
+ * **This proxy does not interpret the outcome.** Every terminal state arrives in
+ * the `done` event with HTTP 200, and which one it is changes what the reader
+ * should be offered rather than whether the request worked:
+ *
+ *   answered     a summary was produced
+ *   gone         the result predates the current release -- **re-run it**, which
+ *                is an action, and the only state where the reader can do
+ *                something. Not the same as not_found, which is a dead end
+ *   not_found    no such analysis
+ *   unsupported  a ReactomeGSA result (GSA_REGULATION, GSA_STATISTICS, GSVA) --
+ *                three of the six analysis types, so not rare
+ *   refused      with a reason: no_caller, no_human, stale_human, rate_limited,
+ *                unsupported_tier
+ *
+ * Collapsing any of those into "no summary" throws away the only useful thing
+ * the service said, so they travel through untouched and the panel decides.
+ */
+function mountAnalysisSummaryProxy(app, route = '/analysis-summary') {
+  app.post(route, express.json({ limit: '4kb' }), async (req, res) => {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const disclosure =
+      typeof req.body?.disclosure === 'string' ? req.body.disclosure.trim() : 'aggregate';
+
+    if (!token) {
+      res.status(400).json({ detail: 'An analysis token is required' });
+      return;
+    }
+    if (!DISCLOSURES.includes(disclosure)) {
+      res.status(400).json({ detail: `disclosure must be one of: ${DISCLOSURES.join(', ')}` });
+      return;
+    }
+
+    if (gate.misconfigured()) {
+      console.error('[summary] ANSWER_REQUIRE_HUMAN is set but the gate is not configured');
+      res.status(503).json({ detail: 'Summaries are not configured on this deployment' });
+      return;
+    }
+
+    const verified = gate.identityFromRequest(req);
+    if (gate.REQUIRE_HUMAN && !verified) {
+      res.status(401).json({
+        detail: 'Verification required',
+        verify: '/search-answer/verify',
+        sitekey: gate.TURNSTILE_SITEKEY,
+      });
+      return;
+    }
+
+    // One budget for both routes, keyed the same way. A summary and an answer
+    // cost the same upstream, and separate budgets would let a caller spend
+    // twice by alternating.
+    const wait = retryAfter(verified || clientKey(req));
+    if (wait > 0) {
+      res.setHeader('Retry-After', String(wait));
+      res.status(429).json({ detail: 'Too many summary requests. Try again shortly.' });
+      return;
+    }
+
+    const key = signingKey();
+    if (!key) {
+      res.status(503).json({ detail: 'Summaries are not configured on this deployment' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+    res.on('close', () => controller.abort());
+
+    try {
+      const upstream = await fetch(SUMMARY_UPSTREAM, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          'User-Agent': USER_AGENT,
+        },
+        body: JSON.stringify({
+          token,
+          disclosure,
+          caller_token: mintCallerToken(
+            key,
+            callerSubject(req, res),
+            gate.identityDetailsFromRequest(req)
+          ),
+        }),
+        signal: controller.signal,
+      });
+
+      // 422 is the one outcome that is not a stream: a malformed disclosure is
+      // rejected by validation before anything runs, so it has a JSON body and
+      // no events. Passed through as itself rather than turned into a 502,
+      // which would say "upstream is down" about a request we got wrong.
+      if (upstream.status === 422) {
+        const detail = await upstream.text();
+        console.error(`[summary] upstream rejected the request: ${detail.slice(0, 200)}`);
+        res.status(422).type('application/json').send(detail);
+        return;
+      }
+
+      if (!upstream.ok || !upstream.body) {
+        console.error(`[summary] upstream ${upstream.status}`);
+        res.status(502).json({ detail: 'Upstream unavailable' });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      for await (const chunk of upstream.body) {
+        res.write(chunk);
+      }
+      res.end();
+    } catch (error) {
+      if (controller.signal.aborted) {
+        res.end();
+        return;
+      }
+      console.error(`[summary] ${error.message}`);
+      if (!res.headersSent) res.status(502).json({ detail: 'Upstream unavailable' });
+      else res.end();
+    } finally {
+      clearTimeout(timer);
+    }
+  });
+}
+
 module.exports = {
   mountSearchAnswerProxy,
+  mountAnalysisSummaryProxy,
   HUMAN_CLAIM_MAX_AGE_SECONDS,
   mintCallerToken,
   retryAfter,
