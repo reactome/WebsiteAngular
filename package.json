@@ -21,6 +21,7 @@
     "start:website": "cd projects/website-angular && npm run start",
     "start:pathway": "cd projects/pathway-browser && npm run start-with-deps",
     "build": "npm run build:libs && npm run generate:indices && npm run stage:content && ng build --configuration production",
+    "build:beta": "npm run build:libs && npm run generate:indices && npm run stage:content && ng build --configuration production,beta",
     "build:curator": "npm run build:libs && npm run generate:indices && npm run stage:content && ng build --configuration production,curator",
     "build:website": "npm run build:curator && cd dist/reactome/browser/ && tar czvf browser.tar * && scp browser.tgz curator:~/browser.tgz && rm browser.tar",
     "build:pathway": "cd projects/pathway-browser && npm run build",

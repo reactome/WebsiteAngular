@@ -98,6 +98,8 @@ export class SummaryService {
   private release: number | null = null;
   private readonly cache = new Map<string, Cached>();
   private inFlight: AbortController | null = null;
+  /** What to ask again for once a challenge is solved. */
+  private _lastToken = '';
 
   /** Cancels whatever is in flight, so a second request cannot interleave. */
   cancel(): void {
@@ -108,6 +110,9 @@ export class SummaryService {
 
   clear(): void {
     this.cancel();
+    // Nothing left to retry: a challenge solved after switching analyses must
+    // not summarise the one the reader has left.
+    this._lastToken = '';
     this._text.set('');
     this._citations.set([]);
     this._state.set(null);
@@ -122,6 +127,7 @@ export class SummaryService {
     if (!this.endpoint || !analysis) return;
 
     this.cancel();
+    this._lastToken = analysis;
     this._requested.set(disclosure);
     this._challenge.set(null);
 
@@ -187,6 +193,31 @@ export class SummaryService {
         this._asking.set(false);
       }
     }
+  }
+
+  /**
+   * Exchanges a solved challenge for an identity, then asks again.
+   *
+   * Returns false when the exchange is refused, so the panel can render a fresh
+   * widget rather than leave the reader looking at a spent one.
+   */
+  async solve(captchaToken: string): Promise<boolean> {
+    const challenge = this._challenge();
+    const token = this._lastToken;
+    if (!challenge || !captchaToken || !token) return false;
+    try {
+      const response = await fetch(challenge.verify, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ captchaToken }),
+      });
+      if (!response.ok) return false;
+    } catch {
+      return false;
+    }
+    this._challenge.set(null);
+    await this.summarise(token, this._requested());
+    return true;
   }
 
   private async stream(

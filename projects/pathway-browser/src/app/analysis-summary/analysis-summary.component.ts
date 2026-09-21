@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  viewChild,
+} from '@angular/core';
+import { renderChallenge } from '../../../../website-angular/src/app/search/answer/turnstile';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -119,6 +129,24 @@ export class AnalysisSummaryComponent {
       previous = token;
     });
   }
+
+  /** The widget's container, present only while a challenge is being shown. */
+  private readonly widget = viewChild<ElementRef<HTMLElement>>('turnstile');
+
+  /**
+   * Renders the challenge here, where the reader is.
+   *
+   * The first version told them to go and use the answer panel on the search
+   * page and come back. That was honest about the state and a poor thing to ask
+   * of somebody who has just run an analysis — sending a reader to a different
+   * feature to unlock this one. The check belongs next to the thing it guards.
+   */
+  private readonly showChallenge = effect(() => {
+    const challenge = this.summary.challenge();
+    const host = this.widget()?.nativeElement;
+    if (!challenge || !host || host.childElementCount > 0) return;
+    void renderChallenge(host, challenge.sitekey, (token) => this.summary.solve(token));
+  });
 
   async ask(): Promise<void> {
     await this.summary.summarise(this.token());
