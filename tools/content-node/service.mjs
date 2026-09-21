@@ -378,24 +378,45 @@ export const endpoints = [
        */
       handler: async (request) => {
         const id = String(request.params.id);
-        // Matched on one property, chosen before the query runs.
+        // Matched on one property, chosen before the query runs, and **under the
+        // label the index is on**.
         //
-        // The first version was `WHERE person.dbId = toInteger($numeric) OR
-        // person.orcidId = $id` -- one query for both kinds of id, which read
-        // nicely and cost a full scan of every Person, because a disjunction
-        // across two properties can use neither index. Measured: 1,097ms for an
-        // ORCID against Java's 87ms, and the same 1.1s whichever kind of id was
-        // given, since it scanned regardless.
+        // Two measured mistakes, both mine. The first version was
+        // `WHERE person.dbId = toInteger($numeric) OR person.orcidId = $id` --
+        // one query for both kinds of id, which read nicely and cost a full scan
+        // of all 176,891 Person nodes, because a disjunction across two
+        // properties can use neither index.
+        //
+        // The second survived that fix. `dbId` is indexed on **DatabaseObject**,
+        // and Neo4j treats `Person` as an unrelated label, so matching
+        // `(person:Person)` could not use it and scanned anyway. Matching
+        // DatabaseObject and asserting the label afterwards uses the index:
+        //
+        //     MATCH (p:Person)         WHERE p.dbId = …   1057ms
+        //     MATCH (n:DatabaseObject) WHERE n.dbId = …      2ms
+        //     the whole authored query, before             995ms
+        //     the whole authored query, after               48ms
+        //
+        // `orcidId` needs no such care: it is indexed on Person itself.
         const numeric = /^\d+$/.test(id);
-        const match = numeric ? 'person.dbId = toInteger($id)' : 'person.orcidId = $id';
+        const anchor = numeric ? 'person:DatabaseObject' : 'person:Person';
+        const match = numeric
+          ? 'person.dbId = toInteger($id) AND person:Person'
+          : 'person.orcidId = $id';
         const rows = await read(
-          `MATCH (person:Person)-[:author]->(edit:InstanceEdit)-[:${role}]->(event:${label})
+          `MATCH (${anchor})-[:author]->(edit:InstanceEdit)-[:${role}]->(event:${label})
            WHERE ${match}
            RETURN event.dbId AS dbId, event.stId AS stId, event.displayName AS displayName,
                   event.speciesName AS speciesName, event.schemaClass AS schemaClass,
                   edit.dateTime AS dateTime, person.dbId AS authorDbId, event.doi AS doi,
                   labels(event) AS labels
-           ORDER BY edit.dateTime DESC`,
+           // dbId breaks ties, because dateTime alone does not order them and
+           // the plan decides. Two events edited in the same second came back
+           // in one order while this query scanned and another once it used the
+           // index -- the same rows, reordered by a change that was meant to be
+           // purely about speed. Java has no tiebreaker either, so its order
+           // within a tie is equally incidental; ours is at least reproducible.
+           ORDER BY edit.dateTime DESC, event.dbId`,
           { id }
         );
 
@@ -451,7 +472,23 @@ export const endpoints = [
        */
       normalise: (javaBody) => {
         const seen = new Set();
-        return javaBody.filter((row) => !seen.has(row.dbId) && seen.add(row.dbId));
+        return (
+          javaBody
+            .filter((row) => !seen.has(row.dbId) && seen.add(row.dbId))
+            // Ties broken the same way on both sides. Thousands of events share
+            // a dateTime -- a batch edit gives them all one timestamp -- and
+            // neither service orders within a tie, so the order is whatever the
+            // query plan produced. It is not stable even for one service:
+            // changing this query from a scan to an index lookup, a change
+            // meant to be purely about speed, reordered 2,866 of 3,309 rows.
+            //
+            // Sorting both sides identically still checks the thing that
+            // matters, which is that the dateTime sequence agrees. Comparing
+            // the raw orders would only ever have compared two accidents.
+            .sort((a, b) =>
+              a.dateTime === b.dateTime ? a.dbId - b.dbId : a.dateTime < b.dateTime ? 1 : -1
+            )
+        );
       },
       differs: [/: java normalised by the endpoint's own rule before comparing$/],
     }))
