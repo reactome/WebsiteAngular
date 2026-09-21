@@ -193,8 +193,14 @@ Not bugs, so as not to waste your time:
 ## Waiting on someone else
 
 - **The render service runs in a container now** (`restart: unless-stopped`), so a
-  reboot no longer stops GIF and PPTX. Still outstanding before this fronts
-  reactome.org: rate limiting in front of it.
+  reboot no longer stops GIF and PPTX. **Rate limiting is now in front of it**, so
+  the condition this listed is met: nginx gives `/RenderService/` its own budget
+  of 2 requests a second with a burst of 8 — the service's own queue depth, past
+  which it is rejecting anyway. The site-wide limit it previously fell under is
+  100 a second, which is sized for page assets, not for a headless browser
+  drawing a 12000-pixel canvas. Crawlers on the old
+  `/ContentService/exporter/*` URLs are what exhausted Tomcat's heap and took the
+  origin down; this is the bound that stops that repeating.
 - **Cloudflare cache purge** — one-off, for figures cached before 2026-08-20.
   Nothing new is cached now.
 - **[#139](https://github.com/reactome/WebsiteAngular/issues/139) native cytoscape
