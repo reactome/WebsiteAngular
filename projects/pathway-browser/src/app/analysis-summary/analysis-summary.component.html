@@ -4,8 +4,27 @@
          service, and a reader opens a result far more often than they want one
          written about. Asking on every view would spend the budget on people
          who never read it and make the ones who do wait behind them. -->
-    @if (summarisable() && !summary.asking() && !summary.state() && !summary.challenge()) {
+    @if (offering()) {
       <button type="button" class="ask" (click)="ask()">Summarise this result</button>
+      <!--
+        Before the click, not after. What the reader consents to is their
+        analysis result leaving Reactome for a third party, and "AI-generated"
+        under the finished text names a technology after the fact. The company
+        that ends up with the data is the thing to say, and to say first.
+      -->
+      <p class="pre-disclosure">
+        Sends this result to a third party to be summarised.
+        <button
+          type="button"
+          class="how"
+          [attr.aria-expanded]="howOpen()"
+          aria-controls="summary-how"
+          (click)="toggleHow()"
+        >
+          <span class="info" aria-hidden="true">i</span>
+          What gets sent, and to whom
+        </button>
+      </p>
     }
 
     @if (summary.challenge()) {
@@ -102,19 +121,24 @@
           How this was made
         </button>
       </p>
+    }
 
-      @if (howOpen()) {
-        <div class="how-note" id="summary-how">
-          <p>
-            This summary was written by a language model, not by a curator, and it has not been reviewed.
-            {{ provenance() }}
-          </p>
-          <p>
-            It can be wrong or incomplete. Check it against the pathways listed above, and in a publication cite those
-            pathways and the Reactome release rather than this text.
-          </p>
-        </div>
-      }
+    <!--
+      One note, read before the click and after it, which is why it sits outside
+      the summary block rather than under the prose. Consent after the fact is
+      not consent: this used to appear only beneath a finished summary, telling
+      the reader what had already left the building.
+    -->
+    @if (showHow()) {
+      <div class="how-note" id="summary-how">
+        <p>{{ recipientNote() }}</p>
+        <p>{{ provenance() }}</p>
+        <p>
+          A language model writes it, not a curator, and nobody reviews it before you see it. It can be wrong or
+          incomplete. Check it against the pathways it cites, and in a publication cite those pathways and the Reactome
+          release rather than this text.
+        </p>
+      </div>
     }
 
     @if (summary.expired()) {
