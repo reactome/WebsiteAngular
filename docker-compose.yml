@@ -103,6 +103,22 @@ services:
     # the binding is pinned here rather than inherited.
     ports:
       - '127.0.0.1:4320:4320'
+    # Two ways in, for two callers that cannot share one.
+    #
+    # nginx runs in host networking, so it reaches the published port above on
+    # 127.0.0.1. The chatbot is a container on its own private network and
+    # addresses this by name -- `REACTOME_MCP_URL=http://reactome_mcp:4320` --
+    # so the alias is what lets it keep doing that. Without it the chatbot would
+    # need reconfiguring to point at a host gateway, which is a change to
+    # somebody else's deployment to solve a problem on this side.
+    #
+    # The alias is the name of the hand-run container this replaces, on purpose:
+    # the swap is then invisible to the thing depending on it.
+    networks:
+      default: {}
+      reactome_beta:
+        aliases:
+          - reactome_mcp
     environment:
       # 0.0.0.0 *inside* the container, which the port mapping above then
       # exposes on loopback only. A container binding its own loopback would be
@@ -207,6 +223,12 @@ services:
       # serving plain HTTP and has no certificates at all.
       - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
       - ${CLOUDFLARE_CERT_DIR:-/etc/ssl/cloudflare}:/etc/ssl/cloudflare:ro
+
+networks:
+  # Created by the chatbot's own stack, not by this one -- declared external so
+  # compose joins it rather than trying to own it, and never removes it.
+  reactome_beta:
+    external: true
 
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a
