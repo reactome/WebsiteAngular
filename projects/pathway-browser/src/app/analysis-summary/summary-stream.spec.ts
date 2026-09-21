@@ -43,7 +43,16 @@ describe('the start event', () => {
     expect(event).toMatchObject({ start: { analysisType: null } });
   });
 
-  it('takes the release as the string the wire sends', () => {
+  it('takes the release as an int, which is what the field is becoming', () => {
+    // The service is changing this from a string to an int to match
+    // `/api/answer`, which always sent one. Both spellings are accepted so that
+    // neither side of that change breaks the panel.
+    expect(parseFrame(frame('start', { release: 97 }))).toMatchObject({
+      start: { release: 97 },
+    });
+  });
+
+  it('still takes the string form the field had before that', () => {
     // `"97"`, not `97`. Requiring a number here silently nulled every release,
     // and the field is what tells one release's cached summary from another's.
     expect(parseFrame(frame('start', { release: '97' }))).toMatchObject({
@@ -55,6 +64,16 @@ describe('the start event', () => {
     expect(parseFrame(frame('start', { release: 'unreleased' }))).toMatchObject({
       start: { release: null },
     });
+  });
+
+  it('never turns an absent release into release 0', () => {
+    // `Number(null)`, `Number('')` and `Number(false)` are all 0, and 0 is a
+    // number that caches and compares perfectly happily while naming no release
+    // that has ever existed.
+    for (const release of [null, '', '   ', false, []]) {
+      expect(parseFrame(frame('start', { release }))).toMatchObject({ start: { release: null } });
+    }
+    expect(parseFrame(frame('start', {}))).toMatchObject({ start: { release: null } });
   });
 
   it('treats a missing cached flag as not cached', () => {
