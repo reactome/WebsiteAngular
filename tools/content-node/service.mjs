@@ -485,9 +485,19 @@ export const endpoints = [
             // Sorting both sides identically still checks the thing that
             // matters, which is that the dateTime sequence agrees. Comparing
             // the raw orders would only ever have compared two accidents.
-            .sort((a, b) =>
-              a.dateTime === b.dateTime ? a.dbId - b.dbId : a.dateTime < b.dateTime ? 1 : -1
-            )
+            .sort((a, b) => {
+              // Total and null-safe. The obvious form -- `a < b ? 1 : -1` --
+              // returns -1 both ways when either side is null, which is an
+              // inconsistent comparator, and V8 may then order such rows however
+              // it likes on each side. Every InstanceEdit has a dateTime today,
+              // all 160,392 of them, so it cannot bite; that was also true of
+              // the unordered comparator's duplicate keys earlier the same day,
+              // and the reasoning for fixing it then applies here.
+              const left = a.dateTime ?? '';
+              const right = b.dateTime ?? '';
+              if (left !== right) return left < right ? 1 : -1;
+              return (a.dbId ?? 0) - (b.dbId ?? 0);
+            })
         );
       },
       differs: [/: java normalised by the endpoint's own rule before comparing$/],
