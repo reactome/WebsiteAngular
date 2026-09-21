@@ -49,7 +49,7 @@ function renderUrl({
   subpathways = true,
   dark = false,
   select = '',
-  view = '',
+  layout = '',
 }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
@@ -62,10 +62,10 @@ function renderUrl({
   // Frames the figure on one event -- what a reaction page wants, rather than
   // the whole diagram the reaction happens to live in.
   if (select) url.searchParams.set('select', select);
-  // view=reaction draws the reaction's own layout, which is the figure the
+  // layout=reaction draws the reaction's own layout, which is the figure the
   // reaction page shows -- so its downloads are that picture rather than the
   // pathway diagram the reaction sits in.
-  if (view) url.searchParams.set('view', view);
+  if (layout) url.searchParams.set('layout', layout);
   return url.toString();
 }
 

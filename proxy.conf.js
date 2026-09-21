@@ -25,6 +25,12 @@ const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:
 
 const localService = (context) => [context, { target: backend, secure, changeOrigin: true }];
 
+const personList = {
+  target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
+  secure: false,
+  changeOrigin: true,
+};
+
 module.exports = {
   '/api': {
     target: deltaSignalBackend,
@@ -66,6 +72,13 @@ module.exports = {
       },
     ])
   ),
+  // The person page's four lists. A path pattern rather than a prefix: these
+  // take an id in the middle, and `/ContentService/data/person` would also
+  // claim `/data/person/{id}` and `/publications`, which node does not serve.
+  '/ContentService/data/person/*/authoredPathways': personList,
+  '/ContentService/data/person/*/authoredReactions': personList,
+  '/ContentService/data/person/*/reviewedPathways': personList,
+  '/ContentService/data/person/*/reviewedReactions': personList,
   ...Object.fromEntries(
     ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
   ),

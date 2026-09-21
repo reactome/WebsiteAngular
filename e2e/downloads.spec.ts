@@ -359,7 +359,7 @@ test.describe('Reaction page downloads', () => {
       expect(href, `${format} comes from the render service`).toContain(
         `/RenderService/render/${REACTION}.${format}`
       );
-      expect(href, `${format} asks for the reaction's own layout`).toContain('view=reaction');
+      expect(href, `${format} asks for the reaction's own layout`).toContain('layout=reaction');
     }
   });
 

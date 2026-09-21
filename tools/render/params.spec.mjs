@@ -83,10 +83,10 @@ describe('the canonical url offered back to a refused caller', () => {
   it('states them in one fixed order however they arrived', () => {
     // The point of offering it: two callers asking the same question land on
     // one cache entry rather than on a permutation of one.
-    const a = canonicalUrl('R-HSA-1', 'png', { scale: '1', view: 'reaction' });
-    const b = canonicalUrl('R-HSA-1', 'png', { view: 'reaction', scale: '1' });
+    const a = canonicalUrl('R-HSA-1', 'png', { scale: '1', layout: 'reaction' });
+    const b = canonicalUrl('R-HSA-1', 'png', { layout: 'reaction', scale: '1' });
     expect(a).toBe(b);
-    expect(a).toBe('/render/R-HSA-1.png?view=reaction&scale=1');
+    expect(a).toBe('/render/R-HSA-1.png?layout=reaction&scale=1');
   });
 
   it('drops a parameter whose value was out of range', () => {
@@ -103,7 +103,7 @@ describe('the canonical url offered back to a refused caller', () => {
 
 describe('values from a closed set', () => {
   it('accepts the values it names', () => {
-    expect(badEnums({ view: 'reaction', subpathways: 'false', dark: 'true' })).toEqual([]);
+    expect(badEnums({ layout: 'reaction', subpathways: 'false', dark: 'true' })).toEqual([]);
   });
 
   it('refuses a boolean that is not true or false, rather than guessing', () => {
@@ -114,12 +114,12 @@ describe('values from a closed set', () => {
     expect(badEnums({ dark: 'yes' })).toEqual(['"dark" must be "true" or "false"']);
   });
 
-  it('refuses a view it does not draw', () => {
-    expect(badEnums({ view: 'banana' })).toEqual(['"view" must be "reaction"']);
+  it('refuses a layout it does not draw', () => {
+    expect(badEnums({ layout: 'banana' })).toEqual(['"layout" must be "reaction"']);
   });
 
   it('says every problem at once, not the first', () => {
-    expect(badEnums({ dark: 'yes', view: 'banana' })).toHaveLength(2);
+    expect(badEnums({ dark: 'yes', layout: 'banana' })).toHaveLength(2);
   });
 
   it('ignores parameters it has no closed set for', () => {
@@ -129,7 +129,7 @@ describe('values from a closed set', () => {
   });
 });
 
-describe('the classes view=reaction can mean something for', () => {
+describe('the classes layout=reaction can mean something for', () => {
   it('holds the six the graph reports, including the two easily forgotten', () => {
     expect([...REACTION_CLASSES].sort()).toEqual([
       'BlackBoxEvent',

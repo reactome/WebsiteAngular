@@ -76,10 +76,25 @@ function differences(path, java, node, endpoint) {
       return undefined;
     }
   };
-  const javaJson = asJson(java);
+  let javaJson = asJson(java);
   const nodeJson = asJson(node);
 
   if (javaJson !== undefined && nodeJson !== undefined) {
+    // An endpoint may declare that its answer is Java's put through some
+    // transformation -- deduplicated, say. Applying it to Java's side and then
+    // comparing exactly is the honest way to say that: everything else still
+    // has to match element for element.
+    //
+    // The alternative is a `differs` pattern broad enough to cover the
+    // consequences, and the consequences cascade. Removing one item from a
+    // 3,310-element list shifts every row after it, so the comparison reports
+    // two thousand differences for one intended change -- and a pattern that
+    // swallows those swallows a genuinely wrong row just as easily.
+    if (endpoint?.normalise) {
+      javaJson = endpoint.normalise(javaJson);
+      problems.push(`java normalised by the endpoint's own rule before comparing`);
+    }
+
     if (endpoint?.unordered && Array.isArray(javaJson) && Array.isArray(nodeJson)) {
       const by = endpoint.unordered;
       const keyed = (list) => list.map((item) => [JSON.stringify(by(item)), item]);
@@ -179,11 +194,26 @@ function paths() {
     .filter(Boolean);
   const chosen = only ? endpoints.filter((e) => e.path === only) : endpoints;
 
-  return chosen.flatMap((endpoint) =>
-    endpoint.path.includes('{id}')
-      ? ids.map((id) => endpoint.path.replace('{id}', id))
-      : [endpoint.path]
-  );
+  const skipped = [];
+  const expanded = chosen.flatMap((endpoint) => {
+    if (!endpoint.path.includes('{id}')) return [endpoint.path];
+    // An endpoint that takes an id is expanded over the ids given, or over its
+    // own sample when none are. Without the sample it expanded to *nothing* and
+    // was silently absent from every run: `/data/pathways/top/{id}` was merged
+    // for weeks, never once compared, and carried three real differences.
+    const use = ids.length ? ids : endpoint.sample ? [endpoint.sample] : [];
+    if (!use.length) skipped.push(endpoint.path);
+    return use.map((id) => endpoint.path.replace('{id}', id));
+  });
+
+  // Said out loud. A run that tests fewer endpoints than the table holds is the
+  // failure this harness exists to prevent, one level up.
+  if (skipped.length) {
+    console.log(`  NOT COMPARED -- no --ids and no sample id declared:`);
+    for (const path of skipped) console.log(`      ${path}`);
+    console.log('');
+  }
+  return expanded;
 }
 
 async function main() {

@@ -56,6 +56,16 @@ export const endpoints = [
   },
   {
     path: '/ContentService/data/pathways/top/{id}',
+    // Compared by default. Without a sample this endpoint expanded to nothing
+    // and sat in the table unexamined for weeks.
+    sample: '9606',
+    /**
+     * The 404 body names the service that answered, so two services on
+     * different ports must disagree about it -- the field is doing its job.
+     * Behind nginx they agree, because `proxy_set_header Host $host` gives both
+     * the same external name. Declared narrowly: only `.url`, and only here.
+     */
+    differs: [/^\/ContentService\/data\/pathways\/top\/\d+: \.url: /],
     /**
      * The top-level pathways for a species, which is the pathway browser's first
      * request and the release checklist's "29 clicks".
@@ -75,9 +85,30 @@ export const endpoints = [
         `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
          WHERE s.taxId = $taxId
          RETURN properties(p) AS pathway, properties(s) AS species
-         ORDER BY p.displayName`,
+         // toLower, as /content/toc already does. Neo4j orders by code point,
+         // so uppercase sorts before lowercase and "DNA Repair" landed before
+         // "Developmental Biology"; Java's collation is case-insensitive.
+         ORDER BY toLower(p.displayName)`,
         { taxId }
       );
+      // Java answers 404, not an empty list, when a species has no top-level
+      // pathways -- checked for both an unknown id and taxId 1, which exists.
+      if (!rows.length) {
+        return notFound(request, `No TopLevelPathways were found for species: ${taxId}`);
+      }
+
+      // Scoped to this response: the back-reference is only meaningful within
+      // the document it appears in.
+      const seenSpecies = new Set();
+      const full = (species) => {
+        seenSpecies.add(species.dbId);
+        return {
+          ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
+          className: species.schemaClass,
+          schemaClass: species.schemaClass,
+        };
+      };
+
       const body = rows.map(({ pathway, species }) => ({
         ...only(pathway, [
           'dbId',
@@ -93,13 +124,17 @@ export const endpoints = [
           'doi',
           'releaseStatus',
         ]),
-        species: [
-          {
-            ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
-            className: species.schemaClass,
-            schemaClass: species.schemaClass,
-          },
-        ],
+        // Jackson writes a repeated object once and then refers back to it by
+        // dbId -- the default of the service-wide `includeRef` parameter, which
+        // only changes the *form* of the back-reference to JSOG `{@ref}`. So
+        // all 29 human pathways share one Species and only the first carries it.
+        //
+        // Not a nicety: emitting the object 29 times is a different response
+        // shape, and a caller written against Java's would read `species[0]` as
+        // a number on all but the first item. Nothing caught this because the
+        // diff expands `{id}` only when given `--ids`, so this endpoint had
+        // never once been compared.
+        species: [seenSpecies.has(species.dbId) ? species.dbId : full(species)],
         ...only(pathway, ['hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
         schemaClass: pathway.schemaClass,
         className: pathway.schemaClass,
@@ -317,6 +352,157 @@ export const endpoints = [
     unordered: (entry) => entry.person.dbId,
     differs: [/^\/ContentService\/data\/content\/contributors: order differs from java's$/],
   },
+  ...['authored', 'reviewed'].flatMap((role) =>
+    [
+      ['Pathways', 'Pathway'],
+      ['Reactions', 'ReactionLikeEvent'],
+    ].map(([suffix, label]) => ({
+      path: `/ContentService/data/person/{id}/${role}${suffix}`,
+      // A curator with enough of everything to be worth comparing: 450 authored
+      // pathways, 3,309 authored reactions, one reviewed pathway, no reviewed
+      // reactions -- so all four endpoints have something to say.
+      sample: '1169272',
+      /**
+       * What a person authored or reviewed, for the person page's four lists.
+       *
+       * The id is either the numeric dbId or an ORCID, because the page is
+       * reached both ways: `/content/detail/person/<orcid>` is the link the
+       * contributors table builds, and a dbId is the fallback for the 661 people
+       * who have no ORCID recorded.
+       *
+       * `dateTime` is the InstanceEdit's, not the event's, and `authorDbId` is
+       * the person's -- both read from the live response rather than assumed.
+       * `labels` is the node's Neo4j labels, which is why it varies by subclass.
+       * Sorted by dateTime descending, which is Java's order and the one the
+       * page renders.
+       */
+      handler: async (request) => {
+        const id = String(request.params.id);
+        // Matched on one property, chosen before the query runs, and **under the
+        // label the index is on**.
+        //
+        // Two measured mistakes, both mine. The first version was
+        // `WHERE person.dbId = toInteger($numeric) OR person.orcidId = $id` --
+        // one query for both kinds of id, which read nicely and cost a full scan
+        // of all 176,891 Person nodes, because a disjunction across two
+        // properties can use neither index.
+        //
+        // The second survived that fix. `dbId` is indexed on **DatabaseObject**,
+        // and Neo4j treats `Person` as an unrelated label, so matching
+        // `(person:Person)` could not use it and scanned anyway. Matching
+        // DatabaseObject and asserting the label afterwards uses the index:
+        //
+        //     MATCH (p:Person)         WHERE p.dbId = …   1057ms
+        //     MATCH (n:DatabaseObject) WHERE n.dbId = …      2ms
+        //     the whole authored query, before             995ms
+        //     the whole authored query, after               48ms
+        //
+        // `orcidId` needs no such care: it is indexed on Person itself.
+        const numeric = /^\d+$/.test(id);
+        const anchor = numeric ? 'person:DatabaseObject' : 'person:Person';
+        const match = numeric
+          ? 'person.dbId = toInteger($id) AND person:Person'
+          : 'person.orcidId = $id';
+        const rows = await read(
+          `MATCH (${anchor})-[:author]->(edit:InstanceEdit)-[:${role}]->(event:${label})
+           WHERE ${match}
+           RETURN event.dbId AS dbId, event.stId AS stId, event.displayName AS displayName,
+                  event.speciesName AS speciesName, event.schemaClass AS schemaClass,
+                  edit.dateTime AS dateTime, person.dbId AS authorDbId, event.doi AS doi,
+                  labels(event) AS labels
+           // dbId breaks ties, because dateTime alone does not order them and
+           // the plan decides. Two events edited in the same second came back
+           // in one order while this query scanned and another once it used the
+           // index -- the same rows, reordered by a change that was meant to be
+           // purely about speed. Java has no tiebreaker either, so its order
+           // within a tie is equally incidental; ours is at least reproducible.
+           ORDER BY edit.dateTime DESC, event.dbId`,
+          { id }
+        );
+
+        // Java returns one row per authorship edit, so an event edited twice by
+        // the same person appears twice: R-HSA-6803801 comes back for
+        // Orlic-Milacic at both 2015-10-14 and 2013-07-15, making the person
+        // page show 3,310 authored reactions where /content/contributors counts
+        // 3,309 and listing that reaction twice. The page is asking "what did
+        // they author", not "when did they edit it", so the event belongs once.
+        //
+        // The first occurrence wins, which in Java's own descending order is the
+        // most recent edit. That removes exactly one row and moves nothing else,
+        // so the list is Java's with the duplicate dropped rather than a
+        // different list.
+        // An id that is neither numeric nor an ORCID matches nothing, and this
+        // answers `[]` where Java answers a **bare empty 200** -- no body, no
+        // content-type. A deliberate difference rather than a miss: any client
+        // calling `.json()` on an empty body throws, and every client must
+        // already handle `[]`, because that is what a person with no reviewed
+        // reactions legitimately gets. Returning the same shape for "none" and
+        // "none, and your id was nonsense" cannot break a caller that works.
+        const seen = new Set();
+        const body = [];
+        for (const row of rows) {
+          if (seen.has(row.dbId)) continue;
+          seen.add(row.dbId);
+          body.push(
+            compact({
+              dbId: row.dbId,
+              stId: row.stId,
+              displayName: row.displayName,
+              speciesName: row.speciesName,
+              schemaClass: row.schemaClass,
+              dateTime: row.dateTime,
+              authorDbId: row.authorDbId,
+              doi: row.doi,
+              labels: row.labels,
+            })
+          );
+        }
+        return { status: 200, body, type: 'application/json' };
+      },
+      /**
+       * The declared difference, stated as the rule rather than its symptoms.
+       *
+       * Java returns the same event once per authorship edit; this returns it
+       * once. Saying so as a `differs` pattern would have meant swallowing the
+       * *consequences*: dropping one row from a 3,310-element list shifts every
+       * row after it, so the comparison reports two thousand differences for one
+       * intended change, and a pattern wide enough to cover them would hide a
+       * genuinely wrong row just as well. The harness applies this to Java's
+       * answer and then compares exactly.
+       */
+      normalise: (javaBody) => {
+        const seen = new Set();
+        return (
+          javaBody
+            .filter((row) => !seen.has(row.dbId) && seen.add(row.dbId))
+            // Ties broken the same way on both sides. Thousands of events share
+            // a dateTime -- a batch edit gives them all one timestamp -- and
+            // neither service orders within a tie, so the order is whatever the
+            // query plan produced. It is not stable even for one service:
+            // changing this query from a scan to an index lookup, a change
+            // meant to be purely about speed, reordered 2,866 of 3,309 rows.
+            //
+            // Sorting both sides identically still checks the thing that
+            // matters, which is that the dateTime sequence agrees. Comparing
+            // the raw orders would only ever have compared two accidents.
+            .sort((a, b) => {
+              // Total and null-safe. The obvious form -- `a < b ? 1 : -1` --
+              // returns -1 both ways when either side is null, which is an
+              // inconsistent comparator, and V8 may then order such rows however
+              // it likes on each side. Every InstanceEdit has a dateTime today,
+              // all 160,392 of them, so it cannot bite; that was also true of
+              // the unordered comparator's duplicate keys earlier the same day,
+              // and the reasoning for fixing it then applies here.
+              const left = a.dateTime ?? '';
+              const right = b.dateTime ?? '';
+              if (left !== right) return left < right ? 1 : -1;
+              return (a.dbId ?? 0) - (b.dbId ?? 0);
+            })
+        );
+      },
+      differs: [/: java normalised by the endpoint's own rule before comparing$/],
+    }))
+  ),
 ];
 
 /**
@@ -440,6 +626,35 @@ function compact(fields) {
     out[key] = value;
   }
   return out;
+}
+
+/**
+ * Java's error envelope, which callers already parse.
+ *
+ * Reproduced rather than invented because a 404 here is part of the contract:
+ * `/data/pathways/top/{taxId}` answers 404 for a species with no top-level
+ * pathways, existent or not, and node was answering `200 []`. Nothing caught it
+ * because the diff had only ever been run with valid species ids -- the
+ * not-found path was never compared with anything.
+ *
+ * `url` is rebuilt from the request. Behind nginx that is the external URL,
+ * because `proxy_set_header Host $host` preserves it; asked directly on
+ * loopback it is the loopback address, which is what Java would say too.
+ */
+function notFound(request, message) {
+  const host = request.get?.('host') ?? 'localhost';
+  const protocol = request.protocol ?? 'http';
+  return {
+    status: 404,
+    type: 'application/json',
+    body: {
+      code: 404,
+      reason: 'NOT_FOUND',
+      url: `${protocol}://${host}${request.originalUrl ?? ''}`,
+      messages: [message],
+      targets: null,
+    },
+  };
 }
 
 /** The named properties that are actually present. Absent means omitted, not null. */

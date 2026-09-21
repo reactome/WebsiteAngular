@@ -20,7 +20,7 @@
  *   --no-subpathways  leave out sub-pathway tints and labels
  *   --dark      render the dark theme (light by default, whatever the host prefers)
  *   --select    frame the figure on one event, e.g. a reaction's stable id
- *   --view      reaction, to draw a reaction's own layout rather than a diagram
+ *   --layout    reaction, to draw a reaction's own layout rather than a diagram
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX is drawn as shapes, one per
@@ -56,7 +56,7 @@ const KNOWN = [
   'no-subpathways',
   'dark',
   'select',
-  'view',
+  'layout',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
@@ -93,7 +93,7 @@ try {
     subpathways: !args.includes('--no-subpathways'),
     dark: args.includes('--dark'),
     select: flag('select', ''),
-    view: flag('view', ''),
+    layout: flag('layout', ''),
   });
 
   await writeFile(out, bytes);

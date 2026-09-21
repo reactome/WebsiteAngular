@@ -55,6 +55,13 @@ a check can only be made by eye.
   is drawn before the illustration arrives, so the heavier the illustration the
   likelier it lost. It now waits for the illustration. Re-scanned after the fix:
   1 of 218 left, and that one is the artwork question below.
+- **A person's page counted one of their reactions twice.** The contributor
+  pages listed an event once for every time that person had edited it, so a
+  reaction edited twice showed up twice and the total was correspondingly wrong
+  — 3,310 authored reactions where the contributors table said 3,309, for the
+  same person. Each event is now counted once. **Worth a look at any curator
+  with a long list**, and at whether the totals on a person's page now agree
+  with the contributors table.
 - **Downloading a pathway as SBGN failed for almost every pathway.** 9,548 of
   the 9,559 pathways with a diagram returned a server error; the 11 that worked
   were the ones our own tests use, so it looked healthy from the inside. The

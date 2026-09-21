@@ -357,6 +357,62 @@ The type is now honest and those guards are load-bearing. Nothing was broken by
 the old declaration, which is the point: it was wrong for as long as it took
 somebody to reimplement the endpoint and look.
 
+## D17. Jackson writes a repeated object once, then refers back to it
+
+`/data/pathways/top/9606` returns 29 pathways that share one Species. Java
+serialises that Species in full on the **first** item and emits only its dbId on
+the other 28:
+
+    item[0].species[0]  {"dbId":48887,"displayName":"Homo sapiens",...}
+    item[1].species[0]  48887
+
+That is the default; the service-wide `includeRef` parameter changes the _form_
+of the back-reference to JSOG `{@ref}`, not whether there is one. Node was
+emitting the object 29 times, so a caller written against Java would read
+`species[0]` as a number on every item but the first.
+
+**Any ported endpoint returning the same object more than once has to do this.**
+It is a property of the serialiser rather than of any endpoint, so it will not
+appear in a controller's source and does not show up until two responses are
+compared field by field.
+
+## D18. Java's collation is case-insensitive and Neo4j's is not
+
+`ORDER BY p.displayName` sorts by code point, so `DNA Repair` came before
+`Developmental Biology`. Java's does not. `toLower()` in the ORDER BY, which
+`/content/toc` already had and `/data/pathways/top/{id}` did not — the same
+mistake twice, once caught and once not, because only one of them was ever
+compared.
+
+## D19. A declared difference states the rule, not its symptoms
+
+`/data/person/{id}/authoredReactions` returns an event once per authorship edit;
+this returns it once. Declaring that with a `differs` pattern would have meant
+swallowing the _consequences_: dropping one row from a 3,310-element list shifts
+every row after it, so the comparison reports two thousand differences for one
+intended change — and a pattern wide enough to cover them hides a genuinely
+wrong row just as well.
+
+So an endpoint may give the harness `normalise`, a function applied to **Java's**
+answer before comparing, after which the comparison is exact. The rule is in the
+code beside the endpoint and the harness says it applied it.
+
+This is the second time the same shape has come up (D15 was the first, for
+ordering). The pattern: when an intended difference has structural consequences,
+declare the transformation, never the fallout.
+
+## D20. The endpoints nothing had ever compared
+
+`paths()` expands `{id}` only when the run is given `--ids`, so every
+parameterised endpoint was silently absent from every diff. `/data/pathways/top/{id}`
+had been merged for weeks and had never once been compared with Java; it carried
+D17, D18 and a 404 that node answered as `200 []`.
+
+A diff run that quietly tests fewer endpoints than the table holds is the same
+failure this whole harness exists to prevent, one level up. Until the harness
+defaults to a sample id per parameterised endpoint, **`--ids` is not optional**
+and a green run without it means less than it appears to.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

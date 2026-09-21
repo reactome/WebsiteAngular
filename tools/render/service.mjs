@@ -35,7 +35,7 @@
  *   RENDER_CACHE_MAX    bytes of cache to keep, default 2 GB (0 disables)
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
- * view=reaction,
+ * layout=reaction,
  * and delay and
  * maxSize for GIF.
  */
@@ -312,7 +312,7 @@ async function describe(pathway) {
     });
     if (!response.ok) return { known: false, schemaClass: '' };
     // The class comes free: this request was already being made to find out
-    // whether the id resolves, and it is what says whether `view=reaction` can
+    // whether the id resolves, and it is what says whether `layout=reaction` can
     // mean anything for it.
     const body = await response.json().catch(() => ({}));
     return { known: true, schemaClass: String(body.schemaClass ?? '') };
@@ -346,10 +346,10 @@ async function renderCached(params) {
   // Checked here rather than at the edge of the handler because it is the same
   // request that establishes the id exists, and paying for it twice to refuse
   // slightly earlier would be a poor trade.
-  if (params.view === 'reaction' && schemaClass && !REACTION_CLASSES.has(schemaClass)) {
+  if (params.layout === 'reaction' && schemaClass && !REACTION_CLASSES.has(schemaClass)) {
     const error = new Error(
-      `view=reaction needs a reaction; ${params.pathway} is a ${schemaClass}. ` +
-        'Ask for it without view=reaction to draw the diagram it contains.'
+      `layout=reaction needs a reaction; ${params.pathway} is a ${schemaClass}. ` +
+        'Ask for it without layout=reaction to draw the diagram it contains.'
     );
     error.status = 400;
     throw error;
@@ -519,7 +519,7 @@ app.get('/render/:name.:ext', async (req, res) => {
     select: typeof req.query.select === 'string' ? req.query.select : '',
     // The only view worth naming: everything else the page decides for itself
     // from the id it is given.
-    view: req.query.view === 'reaction' ? 'reaction' : '',
+    view: req.query.layout === 'reaction' ? 'reaction' : '',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),
