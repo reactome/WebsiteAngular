@@ -27,7 +27,7 @@
  * `genome-wide` and the id itself are in the path, not here.
  */
 export const ACCEPTED = [
-  'view',
+  'layout',
   'select',
   'scale',
   'subpathways',
@@ -74,17 +74,17 @@ export function inBounds(key, value) {
  *
  * These were the quiet ones. `subpathways` was `!== 'false'`, so `?subpathways=no`
  * meant *true*; `dark` was `=== 'true'`, so `?dark=yes` meant *false*; and
- * `view` fell back to the default for anything but the one word. Each is a
+ * `layout` fell back to the default for anything but the one word. Each is a
  * caller asking for something and being given the opposite, with a 200.
  */
 export const ENUMS = {
-  view: ['reaction'],
+  layout: ['reaction'],
   subpathways: ['true', 'false'],
   dark: ['true', 'false'],
 };
 
 /**
- * `view=reaction` draws a reaction's own layout, so it needs a reaction.
+ * `layout=reaction` draws a reaction's own layout, so it needs a reaction.
  *
  * Asked of a pathway the render page never becomes ready, the wait runs its
  * full 45 seconds and the caller gets a Playwright timeout as a 500 — holding

@@ -118,7 +118,12 @@ export class RenderComponent {
    * and is the right answer for a figure that wants the surrounding context;
    * this is the right answer for a figure that has to match a page.
    */
-  private readonly reactionView = this.route.snapshot.queryParamMap.get('view') === 'reaction';
+  // `layout`, not `view`. ContentService adds a global `view` parameter to every
+  // one of its operations -- flatten | nested | nested-aggregated, for JSON
+  // shaping -- and these figures are moving onto ContentService paths, where one
+  // name cannot mean two things. Renamed while /RenderService is still private
+  // and nobody outside depends on the old spelling.
+  private readonly reactionView = this.route.snapshot.queryParamMap.get('layout') === 'reaction';
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
   readonly loading = this.dataState._currentPathway.isLoading;

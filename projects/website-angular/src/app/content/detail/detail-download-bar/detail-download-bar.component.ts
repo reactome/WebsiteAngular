@@ -86,7 +86,7 @@ export class DetailDownloadBarComponent {
       `${RENDER_SERVICE}/render/${this.stId()}.${format}`,
       window.location.origin
     );
-    if (this.isReaction()) url.searchParams.set('view', 'reaction');
+    if (this.isReaction()) url.searchParams.set('layout', 'reaction');
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     return url.toString();
   }
