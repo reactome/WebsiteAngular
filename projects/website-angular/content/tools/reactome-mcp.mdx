@@ -32,11 +32,36 @@ It registers 59 tools, in six groups:
 
 ### Using it
 
-The server is on GitHub at
-[reactome/reactome-mcp](https://github.com/reactome/reactome-mcp). Clone and build
-it, then point your assistant at the built entry point.
+There are two ways, and the first needs nothing installed.
+
+#### Connect to the hosted server
+
+Point an MCP client at:
+
+```
+https://beta.reactome.org/mcp
+```
 
 For Claude Desktop, add this to your configuration file:
+
+```json
+{
+  "mcpServers": {
+    "reactome": {
+      "type": "http",
+      "url": "https://beta.reactome.org/mcp"
+    }
+  }
+}
+```
+
+Nothing to install, and it reads the same Reactome release this site serves.
+
+#### Or run it yourself
+
+Useful if you want it pointed at a different Reactome, or offline. The server is
+on GitHub at [reactome/reactome-mcp](https://github.com/reactome/reactome-mcp) —
+clone and build it, then:
 
 ```json
 {
@@ -49,21 +74,18 @@ For Claude Desktop, add this to your configuration file:
 }
 ```
 
-The server runs on your own machine and talks to Reactome's public services over
-HTTPS, the same ones your browser uses. Set `REACTOME_BASE_URL` if you want it to
-read from somewhere other than `https://reactome.org`.
+It runs on your own machine and talks to Reactome's public services over HTTPS,
+the same ones your browser uses. Set `REACTOME_BASE_URL` to read from somewhere
+other than `https://reactome.org`.
 
-Then ask your assistant things like:
+### Things to ask for
+
+Once it is connected, ask your assistant things like:
 
   * "What pathways is TP53 involved in?"
   * "Run an enrichment analysis on these gene symbols and tell me what comes up."
   * "Export the SBGN for pathway R-HSA-1640170."
-
-Three further tools run Cypher queries directly against the graph database.
-They are off unless you both point the server at a database and explicitly turn
-them on, and they are intended for curators working against their own instance
-rather than for reading the public knowledgebase — everything above works
-without them.
+  * "Which species does Reactome cover, and which release is this?"
 
 ### Things worth knowing
 

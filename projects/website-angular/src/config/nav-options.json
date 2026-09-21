@@ -282,6 +282,10 @@
       "reactome-fiviz": {
         "label": "ReactomeFIViz",
         "link": "/tools/reactome-fiviz"
+      },
+      "reactome-mcp": {
+        "label": "MCP Server",
+        "link": "/tools/reactome-mcp"
       }
     }
   },
