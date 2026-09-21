@@ -125,6 +125,19 @@ function asReason(value: unknown): RefusalReason | null {
 }
 
 /** Turns one complete SSE frame into an event, or null if it is not one we act on. */
+/**
+ * The release number, from either spelling, or null.
+ *
+ * Only a number or a non-empty string can be one, and it must be positive: the
+ * field's whole job is telling one release's cached summary from another's, and
+ * a 0 conjured out of `null` would do that job wrongly rather than not at all.
+ */
+function releaseOf(value: unknown): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) return null;
+  const release = Number(value);
+  return Number.isFinite(release) && release > 0 ? release : null;
+}
+
 export function parseFrame(frame: string): SummaryEvent | null {
   let name = '';
   const dataLines: string[] = [];
@@ -151,10 +164,16 @@ export function parseFrame(frame: string): SummaryEvent | null {
       return {
         kind: 'start',
         start: {
-          // A string on the wire ("97"), not a number. Coerced rather than
-          // required, because what this is for is telling one release's cache
-          // from another's, not arithmetic.
-          release: Number.isFinite(Number(data['release'])) ? Number(data['release']) : null,
+          // Accepts both spellings on purpose. It arrived as the string "97"
+          // while `/api/answer` sent an int for the same field; the service is
+          // making it an int here too, and a parser that accepted only one of
+          // them would have broken on one side of that change or the other.
+          //
+          // Not a bare `Number()`: `Number(null)`, `Number('')` and
+          // `Number(false)` are all 0, so an absent or empty release would
+          // become release 0 -- a number that compares, sorts and caches
+          // perfectly well while naming no release that exists.
+          release: releaseOf(data['release']),
           analysisType:
             typeof data['analysis_type'] === 'string' && TYPES.includes(data['analysis_type'])
               ? (data['analysis_type'] as AnalysisType)
