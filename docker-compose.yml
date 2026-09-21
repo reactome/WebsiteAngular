@@ -101,6 +101,33 @@ services:
     # MCP_HTTP_HOST=0.0.0.0 safely because it was on a private compose network
     # with nothing published; that is not safe under `network_mode: host`, so
     # the binding is pinned here rather than inherited.
+    # Probes a real MCP session, not /health.
+    #
+    # /health reports that the process is up, which is a different question from
+    # whether it can serve anything: a server that binds and then fails every
+    # session answers it `ok`. That is not hypothetical -- a bad
+    # MCP_TOOL_GROUPS produced exactly that shape until the server started
+    # validating before binding, and the general case survives that fix.
+    #
+    # So this does what a client does: initialize, and require a session id
+    # back. Node rather than curl or wget, because the image is node:22-slim and
+    # has neither -- a healthcheck that silently always fails is worse than none,
+    # since it reports unhealthy for a service that is fine and trains people to
+    # ignore it.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4320/mcp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2024-11-05',capabilities:{},clientInfo:{name:'healthcheck',version:'1'}}})}).then(r=>{if(!r.ok||!r.headers.get('mcp-session-id'))process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 60s
+      timeout: 10s
+      # Generous, because the first session builds a server instance and this
+      # box is busy. A healthcheck that flaps under load is noise.
+      retries: 3
+      start_period: 20s
     ports:
       - '127.0.0.1:4320:4320'
     # Two ways in, for two callers that cannot share one.
