@@ -1,5 +1,17 @@
 <!--ToDO investigate virtual scroll instead of pagination: https://material.angular.dev/cdk/scrolling/overview -->
 <div class="container" #container>
+  <!-- Under the heading and above the table: a summary is an orientation to the
+       result, so it belongs before the rows rather than after them. Renders
+       nothing at all unless the deployment offers summaries and one was asked
+       for. -->
+  @if (analysis.summary()?.token; as analysisToken) {
+    <!-- A ReactomeGSA result is not summarised, and we know that here without
+         asking: the tab already reads gsaMethod to title itself. Offering the
+         button and then refusing would spend the reader's time telling them
+         something we knew before they clicked. -->
+    <cr-analysis-summary [token]="analysisToken" [summarisable]="!analysis.summary()?.gsaMethod" />
+  }
+
   <div class="header">
     {{ analysisType() }}
     analysis results

@@ -26,14 +26,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { marked } from 'marked';
+import { renderChallenge } from './turnstile';
 import { citationHref, citationKey } from './answer-stream';
 
 import { AnswerService } from './answer.service';
-
-/** Cloudflare's widget, loaded only when a challenge is actually asked for. */
-interface Turnstile {
-  render(el: HTMLElement, options: { sitekey: string; callback: (token: string) => void }): string;
-}
 
 @Component({
   selector: 'app-search-answer',
@@ -246,22 +242,7 @@ export class SearchAnswerComponent {
   });
 
   private async renderWidget(host: HTMLElement, sitekey: string): Promise<void> {
-    try {
-      await loadTurnstile();
-    } catch {
-      // No widget means no way to prove anything, so the panel simply stays as
-      // it is. Nothing here is worth an error message to a reader who only
-      // wanted a search.
-      return;
-    }
-    const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
-    if (!turnstile) return;
-    turnstile.render(host, {
-      sitekey,
-      callback: (token: string) => {
-        void this.answers.solve(token);
-      },
-    });
+    await renderChallenge(host, sitekey, (token) => this.answers.solve(token));
   }
 
   /** A stable id resolves to its detail page; a documentation page is its url. */
@@ -317,33 +298,4 @@ export class SearchAnswerComponent {
     this._allSources.set(false);
     void this.answers.ask(this.query());
   }
-}
-
-/**
- * Loads Cloudflare's widget script once, on demand.
- *
- * Module-level rather than per-instance so two panels on a page cannot race to
- * insert the same script twice.
- */
-let turnstileScript: Promise<void> | null = null;
-
-function loadTurnstile(): Promise<void> {
-  if (turnstileScript) return turnstileScript;
-  turnstileScript = new Promise<void>((resolve, reject) => {
-    if ((window as unknown as { turnstile?: unknown }).turnstile) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      // Allow a later attempt rather than caching the failure forever.
-      turnstileScript = null;
-      reject(new Error('turnstile failed to load'));
-    };
-    document.head.appendChild(script);
-  });
-  return turnstileScript;
 }

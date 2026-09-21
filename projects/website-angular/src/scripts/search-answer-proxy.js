@@ -100,6 +100,32 @@ function signingKey() {
 }
 
 /**
+ * Whether a challenge was solved recently enough to say somebody is here.
+ *
+ * Its own function because two places need the *same* answer: the token minted
+ * below, and the summary route's decision to challenge rather than forward.
+ * While this was inline, only the token knew, and the route forwarded a request
+ * whose claim it had not looked at -- so a reader with a live identity cookie
+ * and a stale challenge was sent upstream to be refused `no_human`, with no way
+ * back except a different page. Two copies of this rule could drift into
+ * challenging a caller we would have served, or forwarding one we know will be
+ * refused; one copy cannot.
+ *
+ * `age >= 0` as well as the upper bound. A challenge solved in the future is a
+ * clock that moved, not a person: nobody can forge it -- the cookie is signed
+ * here -- but a backwards step on this host would otherwise make every stale
+ * cookie read as fresh, which is the one direction that matters.
+ *
+ * Whole seconds, because that is the precision `human_iat` has and the
+ * precision the other end compares at.
+ */
+function presenceIsFresh(presence, now = Date.now()) {
+  if (!presence) return false;
+  const age = Math.floor(now / 1000) - Math.floor(presence.solvedAt / 1000);
+  return age >= 0 && age <= HUMAN_CLAIM_MAX_AGE_SECONDS;
+}
+
+/**
  * An EdDSA JWT, assembled here rather than with a library.
  *
  * Node signs Ed25519 natively and a JWT is two base64url segments and a
@@ -115,12 +141,7 @@ function mintCallerToken(key, subject, presence = null, now = Date.now()) {
   // and a `false` invites a check that treats "absent" as "not stated" and
   // lets it through.
   const solvedAtSeconds = presence ? Math.floor(presence.solvedAt / 1000) : 0;
-  const age = seconds - solvedAtSeconds;
-  // `age >= 0` as well as the upper bound. A challenge solved in the future is
-  // a clock that moved, not a person: nobody can forge it -- the cookie is
-  // signed here -- but a backwards step on this host would otherwise make every
-  // stale cookie read as fresh, which is the one direction that matters.
-  const fresh = presence && age >= 0 && age <= HUMAN_CLAIM_MAX_AGE_SECONDS;
+  const fresh = presenceIsFresh(presence, now);
   // `human_sub` rather than reusing `sub`, even though both currently hold the
   // same value. `sub` is whatever `callerSubject` decided -- the verified
   // identity when there is one, a per-visit cookie when there is not -- and
@@ -480,7 +501,10 @@ const DISCLOSURES = ['aggregate', 'identifiers'];
  * the `done` event with HTTP 200, and which one it is changes what the reader
  * should be offered rather than whether the request worked:
  *
- *   answered     a summary was produced
+ *   summarised   a summary was produced. Note the word: the answer endpoint
+ *                above ends on `answered` and this one does not, and this
+ *                comment said `answered` until a panel built from it rendered
+ *                every good summary as "the summary could not be produced"
  *   gone         the result predates the current release -- **re-run it**, which
  *                is an action, and the only state where the reader can do
  *                something. Not the same as not_found, which is a dead end
@@ -515,7 +539,21 @@ function mountAnalysisSummaryProxy(app, route = '/analysis-summary') {
     }
 
     const verified = gate.identityFromRequest(req);
-    if (gate.REQUIRE_HUMAN && !verified) {
+    // Unlike the answer route, which asks only whether this browser has ever
+    // proved itself, this one asks whether somebody is here *now* -- because
+    // that is what the endpoint behind it asks. It verifies `human` and
+    // `human_iat` before any model call and refuses `no_human` without them,
+    // measured rather than assumed: a caller token with no presence claim gets
+    // a full answer from /api/answer and `{"state":"refused","reason":
+    // "no_human"}` from /api/analysis-summary.
+    //
+    // So forwarding a request we know carries no fresh claim spends a round
+    // trip to be told what we already knew, and hands the panel a refusal it
+    // can do nothing with. The identity cookie lives twelve hours and a
+    // presence claim thirty minutes, so this is not an edge case: it is every
+    // reader who verified earlier in the morning. Challenging here means they
+    // solve one widget where they are and get their summary.
+    if (gate.REQUIRE_HUMAN && !presenceIsFresh(gate.identityDetailsFromRequest(req))) {
       res.status(401).json({
         detail: 'Verification required',
         verify: '/search-answer/verify',
@@ -609,6 +647,7 @@ module.exports = {
   mountSearchAnswerProxy,
   mountAnalysisSummaryProxy,
   HUMAN_CLAIM_MAX_AGE_SECONDS,
+  presenceIsFresh,
   mintCallerToken,
   retryAfter,
   verifyRetryAfter,

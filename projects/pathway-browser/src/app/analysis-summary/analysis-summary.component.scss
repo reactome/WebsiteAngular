@@ -1,0 +1,185 @@
+.analysis-summary {
+  container-type: inline-size;
+  padding: 12px 0;
+}
+
+h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+// The constraint reads as guidance rather than as an error, because it is
+// neither a warning nor an aside -- it is what the summary below may mean.
+.constraint {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--tertiary-contrast-3);
+}
+
+.prose {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.incomplete,
+.downgraded,
+.explanation {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--negative);
+}
+
+// Progress rather than a spinner: a bar that sweeps says "working" without
+// implying it knows how far along it is, and the elapsed count beside it is
+// measured rather than guessed.
+.waiting {
+  margin: 0;
+}
+
+.progress {
+  height: 3px;
+  margin-bottom: 0.45rem;
+  overflow: hidden;
+  background: var(--surface3);
+  border-radius: 999px;
+
+  span {
+    display: block;
+    width: 35%;
+    height: 100%;
+    background: var(--primary);
+    border-radius: inherit;
+    animation: analysis-summary-sweep 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes analysis-summary-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+// A sweeping bar is exactly the kind of thing this setting is for. The bar
+// stays, because it is still the thing saying work is happening.
+@media (prefers-reduced-motion: reduce) {
+  .progress span {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
+.waiting-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--tertiary-contrast-3);
+}
+
+.elapsed {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+// The label is a statement about the text above it, so it reads as a label and
+// not as a warning: a reader who has to decide whether this can go in a paper
+// should find it without being alarmed by it.
+.provenance {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+}
+
+.badge {
+  padding: 1px 7px;
+  border: 1px solid var(--tertiary-contrast-4, var(--surface3));
+  border-radius: 999px;
+  color: var(--tertiary-contrast-3);
+  letter-spacing: 0.02em;
+}
+
+.how {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 0.68rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+.how-note {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--tertiary-contrast-3);
+  background: var(--surface2, transparent);
+  border-left: 2px solid var(--surface3);
+  border-radius: 0 4px 4px 0;
+
+  p {
+    margin: 0;
+
+    + p {
+      margin-top: 6px;
+    }
+  }
+}
+
+.citations {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+}
+
+.rerun {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.ask {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 12px;
+  border: 1px solid var(--tertiary-contrast-3);
+  border-radius: 4px;
+  background: none;
+  color: var(--tertiary-contrast-3);
+  cursor: pointer;
+}
+
+.ask:hover {
+  background: var(--tertiary-contrast-3);
+  color: white;
+}
