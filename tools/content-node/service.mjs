@@ -17,6 +17,10 @@
  * cannot affect the site.
  */
 import express from 'express';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { read, configured, close } from './graph.mjs';
 
 const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
@@ -447,12 +451,46 @@ function only(source, keys) {
   return out;
 }
 
+/**
+ * A fingerprint of the code this process is actually running.
+ *
+ * The image bakes these modules in, so `docker compose build` is a separate act
+ * from merging and nothing connected the two: a fix could be merged and not
+ * deployed, or a container could be quietly ahead of main, and the only way to
+ * tell was to read the source on disk -- which is the CLI's copy, not the
+ * container's, and therefore always agrees with you.
+ *
+ * A content hash rather than a git sha, because a sha has to be passed in at
+ * build time and anything that has to be remembered eventually is not. Compare
+ * it against a checkout with `cat tools/content-node/*.mjs | sha256sum`, taking
+ * the files sorted by name as readdir gives them here.
+ */
+function buildId() {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const names = readdirSync(here)
+      .filter((name) => name.endsWith('.mjs'))
+      .sort();
+    const hash = createHash('sha256');
+    for (const name of names) hash.update(readFileSync(path.join(here, name)));
+    return { build: hash.digest('hex').slice(0, 12), modules: names.length };
+  } catch {
+    // Never fail a health check over its own metadata.
+    return { build: 'unknown', modules: 0 };
+  }
+}
+
 export function app() {
   const server = express();
   server.disable('x-powered-by');
 
   server.get('/health', (_request, response) => {
-    response.json({ ok: true, graph: configured(), endpoints: endpoints.map((e) => e.path) });
+    response.json({
+      ok: true,
+      ...buildId(),
+      graph: configured(),
+      endpoints: endpoints.map((e) => e.path),
+    });
   });
 
   for (const endpoint of endpoints) {

@@ -51,6 +51,8 @@ import {
 } from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   mkdir,
   readFile,
@@ -391,6 +393,40 @@ async function renderCached(params) {
   }
 }
 
+/**
+ * A fingerprint of the code this process is actually running.
+ *
+ * The image bakes these modules in, so `docker compose build` is a separate act
+ * from merging and nothing connected the two: a fix could be merged and not
+ * deployed, or a container could be quietly ahead of main, and the only way to
+ * tell was to read the source on disk -- which is the CLI's copy, not the
+ * container's, and therefore always agrees with you.
+ *
+ * A content hash rather than a git sha, because a sha has to be passed in at
+ * build time and anything that has to be remembered eventually is not. This
+ * cannot be forgotten: it is computed from the files themselves. Compare it
+ * against a checkout with
+ *
+ *   cat <dir>/*.mjs | sha256sum
+ *
+ * taking the files in the same order -- sorted by name, which is what readdir
+ * is sorted into below.
+ */
+function buildId() {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const names = readdirSync(here)
+      .filter((name) => name.endsWith('.mjs'))
+      .sort();
+    const hash = createHash('sha256');
+    for (const name of names) hash.update(readFileSync(path.join(here, name)));
+    return { build: hash.digest('hex').slice(0, 12), modules: names.length };
+  } catch {
+    // Never fail a health check over its own metadata.
+    return { build: 'unknown', modules: 0 };
+  }
+}
+
 // ---- http ----------------------------------------------------------------
 const app = express();
 app.disable('x-powered-by');
@@ -398,6 +434,7 @@ app.disable('x-powered-by');
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
+    ...buildId(),
     base: BASE,
     cache: CACHE,
     cacheKey: CACHE_KEY,
@@ -540,22 +577,38 @@ app.get('/render/:name.:ext', async (req, res) => {
   }
 });
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`render service on http://${HOST}:${PORT}`);
-  console.log(`  rendering against ${BASE}`);
-  console.log(`  cache ${CACHE} (key ${CACHE_KEY})`);
-  console.log(`  ${CONCURRENCY} concurrent, ${MAX_QUEUE} queued before 503`);
-  console.log(
-    MAX_CACHE
-      ? `  keeping up to ${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB of figures`
-      : `  cache size unbounded (RENDER_CACHE_MAX=0)`
-  );
-});
+/**
+ * Only listen when run as a program, so the handlers can be imported and
+ * exercised by a test.
+ *
+ * They could not be, and it cost: `repeated` was used and never imported, and
+ * every gate passed -- because nothing in the suite ever executed a request.
+ * content-node has been guarded this way all along; this brings the render
+ * service into line.
+ */
+export { app };
 
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => {
-    server.close(() => {
-      void (browser ? browser.close() : Promise.resolve()).then(() => process.exit(0));
+const started = process.argv[1]?.endsWith('service.mjs');
+const server = started
+  ? app.listen(PORT, HOST, () => {
+      console.log(`render service on http://${HOST}:${PORT}`);
+      console.log(`  rendering against ${BASE}`);
+      console.log(`  cache ${CACHE} (key ${CACHE_KEY})`);
+      console.log(`  ${CONCURRENCY} concurrent, ${MAX_QUEUE} queued before 503`);
+      console.log(
+        MAX_CACHE
+          ? `  keeping up to ${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB of figures`
+          : `  cache size unbounded (RENDER_CACHE_MAX=0)`
+      );
+    })
+  : null;
+
+if (server) {
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      server.close(() => {
+        void (browser ? browser.close() : Promise.resolve()).then(() => process.exit(0));
+      });
     });
-  });
+  }
 }
