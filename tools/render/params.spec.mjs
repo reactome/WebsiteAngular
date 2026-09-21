@@ -38,6 +38,13 @@ describe('what the render endpoint accepts', () => {
   it('bounds every numeric parameter it accepts', () => {
     for (const key of Object.keys(BOUNDS)) expect(ACCEPTED).toContain(key);
   });
+
+  it('constrains every closed-set parameter it accepts', () => {
+    // An enum for a parameter that is not accepted is dead configuration: the
+    // parameter is refused by name before its value is ever looked at, so the
+    // rule would never run and nobody would know.
+    for (const key of Object.keys(ENUMS)) expect(ACCEPTED).toContain(key);
+  });
 });
 
 describe('bounds', () => {

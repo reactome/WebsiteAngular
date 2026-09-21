@@ -40,7 +40,15 @@
  * maxSize for GIF.
  */
 import express from 'express';
-import { ACCEPTED, BOUNDS, REACTION_CLASSES, badEnums, canonicalUrl, inBounds } from './params.mjs';
+import {
+  ACCEPTED,
+  BOUNDS,
+  REACTION_CLASSES,
+  badEnums,
+  canonicalUrl,
+  inBounds,
+  repeated,
+} from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import {
