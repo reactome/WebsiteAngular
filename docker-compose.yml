@@ -109,9 +109,20 @@ services:
     # MCP_TOOL_GROUPS produced exactly that shape until the server started
     # validating before binding, and the general case survives that fix.
     #
-    # So this does what a client does: initialize, and require a session id
-    # back. Node rather than curl or wget, because the image is node:22-slim and
-    # has neither -- a healthcheck that silently always fails is worse than none,
+    # So this does what a client does: initialize, require a session id back,
+    # and then DELETE the session. The delete is not tidiness. Each session gets
+    # its own server instance and idle ones are only reaped after thirty
+    # minutes, so a check that opened one every minute and walked away would
+    # hold about thirty instances for ever, purely to watch. Measured before
+    # adding it: three initialize calls took the count from 2 to 5 and it stayed
+    # there; with the delete, three runs left it unchanged.
+    #
+    # It also keeps /health's `sessions` honest, which matters because that
+    # number is the thing anyone would reach for to see whether the server is
+    # being used.
+    #
+    # Node rather than curl or wget, because the image is node:22-slim and has
+    # neither -- a healthcheck that silently always fails is worse than none,
     # since it reports unhealthy for a service that is fine and trains people to
     # ignore it.
     healthcheck:
@@ -120,7 +131,7 @@ services:
           'CMD',
           'node',
           '-e',
-          "fetch('http://127.0.0.1:4320/mcp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2024-11-05',capabilities:{},clientInfo:{name:'healthcheck',version:'1'}}})}).then(r=>{if(!r.ok||!r.headers.get('mcp-session-id'))process.exit(1)}).catch(()=>process.exit(1))",
+          "const u='http://127.0.0.1:4320/mcp',h={'Content-Type':'application/json','Accept':'application/json, text/event-stream'};fetch(u,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2024-11-05',capabilities:{},clientInfo:{name:'healthcheck',version:'1'}}})}).then(r=>{const s=r.headers.get('mcp-session-id');if(!r.ok||!s)process.exit(1);return fetch(u,{method:'DELETE',headers:{...h,'mcp-session-id':s}})}).then(()=>process.exit(0)).catch(()=>process.exit(1));",
         ]
       interval: 60s
       timeout: 10s
