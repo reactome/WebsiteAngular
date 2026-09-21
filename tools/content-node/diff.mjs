@@ -194,11 +194,26 @@ function paths() {
     .filter(Boolean);
   const chosen = only ? endpoints.filter((e) => e.path === only) : endpoints;
 
-  return chosen.flatMap((endpoint) =>
-    endpoint.path.includes('{id}')
-      ? ids.map((id) => endpoint.path.replace('{id}', id))
-      : [endpoint.path]
-  );
+  const skipped = [];
+  const expanded = chosen.flatMap((endpoint) => {
+    if (!endpoint.path.includes('{id}')) return [endpoint.path];
+    // An endpoint that takes an id is expanded over the ids given, or over its
+    // own sample when none are. Without the sample it expanded to *nothing* and
+    // was silently absent from every run: `/data/pathways/top/{id}` was merged
+    // for weeks, never once compared, and carried three real differences.
+    const use = ids.length ? ids : endpoint.sample ? [endpoint.sample] : [];
+    if (!use.length) skipped.push(endpoint.path);
+    return use.map((id) => endpoint.path.replace('{id}', id));
+  });
+
+  // Said out loud. A run that tests fewer endpoints than the table holds is the
+  // failure this harness exists to prevent, one level up.
+  if (skipped.length) {
+    console.log(`  NOT COMPARED -- no --ids and no sample id declared:`);
+    for (const path of skipped) console.log(`      ${path}`);
+    console.log('');
+  }
+  return expanded;
 }
 
 async function main() {

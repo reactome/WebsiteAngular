@@ -56,6 +56,9 @@ export const endpoints = [
   },
   {
     path: '/ContentService/data/pathways/top/{id}',
+    // Compared by default. Without a sample this endpoint expanded to nothing
+    // and sat in the table unexamined for weeks.
+    sample: '9606',
     /**
      * The 404 body names the service that answered, so two services on
      * different ports must disagree about it -- the field is doing its job.
@@ -355,6 +358,10 @@ export const endpoints = [
       ['Reactions', 'ReactionLikeEvent'],
     ].map(([suffix, label]) => ({
       path: `/ContentService/data/person/{id}/${role}${suffix}`,
+      // A curator with enough of everything to be worth comparing: 450 authored
+      // pathways, 3,309 authored reactions, one reviewed pathway, no reviewed
+      // reactions -- so all four endpoints have something to say.
+      sample: '1169272',
       /**
        * What a person authored or reviewed, for the person page's four lists.
        *
@@ -371,18 +378,25 @@ export const endpoints = [
        */
       handler: async (request) => {
         const id = String(request.params.id);
+        // Matched on one property, chosen before the query runs.
+        //
+        // The first version was `WHERE person.dbId = toInteger($numeric) OR
+        // person.orcidId = $id` -- one query for both kinds of id, which read
+        // nicely and cost a full scan of every Person, because a disjunction
+        // across two properties can use neither index. Measured: 1,097ms for an
+        // ORCID against Java's 87ms, and the same 1.1s whichever kind of id was
+        // given, since it scanned regardless.
+        const numeric = /^\d+$/.test(id);
+        const match = numeric ? 'person.dbId = toInteger($id)' : 'person.orcidId = $id';
         const rows = await read(
           `MATCH (person:Person)-[:author]->(edit:InstanceEdit)-[:${role}]->(event:${label})
-           WHERE person.dbId = toInteger($numeric) OR person.orcidId = $id
+           WHERE ${match}
            RETURN event.dbId AS dbId, event.stId AS stId, event.displayName AS displayName,
                   event.speciesName AS speciesName, event.schemaClass AS schemaClass,
                   edit.dateTime AS dateTime, person.dbId AS authorDbId, event.doi AS doi,
                   labels(event) AS labels
            ORDER BY edit.dateTime DESC`,
-          // toInteger of a non-numeric string is null in Cypher, which simply
-          // fails to match -- so one query serves both kinds of id without
-          // deciding in advance which was given.
-          { id, numeric: /^\d+$/.test(id) ? id : '0' }
+          { id }
         );
 
         // Java returns one row per authorship edit, so an event edited twice by
