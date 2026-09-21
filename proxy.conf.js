@@ -63,6 +63,11 @@ module.exports = {
       '/ContentService/data/content/toc',
       '/ContentService/data/content/doi',
       '/ContentService/data/content/contributors',
+      // The species lists. Exact contexts, not a `/data/species` prefix: Java
+      // also serves `/data/species/{taxId}` shapes that node does not, and a
+      // prefix would claim them and 404 what currently works.
+      '/ContentService/data/species/main',
+      '/ContentService/data/species/all',
     ].map((context) => [
       context,
       {

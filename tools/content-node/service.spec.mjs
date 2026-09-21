@@ -102,3 +102,24 @@ describe("the person lists' declared difference", () => {
     expect(person.differs?.length, 'the normalisation is declared').toBeGreaterThan(0);
   });
 });
+
+describe('the species lists', () => {
+  const paths = endpoints.map((e) => e.path);
+
+  it('serves both, on the paths Java uses', () => {
+    expect(paths).toContain('/ContentService/data/species/main');
+    expect(paths).toContain('/ContentService/data/species/all');
+  });
+
+  it('serves them as two entries rather than one taking a flag', () => {
+    // The two differ in order as well as contents -- `main` pins Homo sapiens
+    // first, `all` is plain alphabetical including human in its place -- and a
+    // single handler with a boolean is how one of those silently acquires the
+    // other's sort. Both orders are proven against Java by `diff.mjs`, which
+    // needs a database and so cannot run here; what this can hold is that they
+    // stayed separate.
+    const species = endpoints.filter((e) => e.path.includes('/data/species/'));
+    expect(species).toHaveLength(2);
+    expect(species[0].handler).not.toBe(species[1].handler);
+  });
+});

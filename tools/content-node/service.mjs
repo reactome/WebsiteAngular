@@ -503,6 +503,57 @@ export const endpoints = [
       differs: [/: java normalised by the endpoint's own rule before comparing$/],
     }))
   ),
+  ...[
+    {
+      suffix: 'main',
+      /**
+       * A species Reactome has curated pathways for, which is the list every
+       * species selector on the site offers.
+       *
+       * "Main" is not a property on the node -- all 96 Species carry exactly the
+       * same six -- it is a relationship: 16 of them are the target of at least
+       * one TopLevelPathway's `species`, and 16 is what Java returns. Checked
+       * against the graph rather than inferred from the count matching, because
+       * two numbers agreeing is not a rule.
+       */
+      match: '(s:Species)<-[:species]-(:TopLevelPathway)',
+    },
+    { suffix: 'all', match: '(s:Species)' },
+  ].map(({ suffix, match }) => ({
+    path: `/ContentService/data/species/${suffix}`,
+    /**
+     * The species lists, which differ in their order as well as their contents.
+     *
+     * `main` puts Homo sapiens first and sorts the rest by name; `all` is plain
+     * alphabetical, human included, in its place. Both verified against the live
+     * responses -- and the difference is the reason they are written as two rows
+     * of one generator rather than one handler taking a flag, because a shared
+     * sort would have quietly given `all` a pinned human or `main` an unpinned
+     * one, and the page would still have rendered.
+     *
+     * Reactome pins human because it is the reference species everything else is
+     * inferred from, so a selector that buries it between Gallus and Mus is
+     * asking every reader to hunt for the common case.
+     */
+    handler: cached(`species/${suffix}`, async () => {
+      const rows = await read(
+        `MATCH ${match}
+         WITH DISTINCT s
+         RETURN properties(s) AS species
+         ORDER BY CASE WHEN s.displayName = 'Homo sapiens' THEN 0 ELSE 1 END, s.displayName`
+      );
+      const body = rows.map(({ species }) => ({
+        ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
+        className: species.schemaClass,
+        schemaClass: species.schemaClass,
+      }));
+      // `all` is alphabetical throughout, so the pin the query applies for
+      // `main` is undone here rather than by a second query. One ORDER BY that
+      // both share, and one line saying which of them does not want it.
+      if (suffix === 'all') body.sort((a, b) => (a.displayName < b.displayName ? -1 : 1));
+      return { status: 200, body, type: 'application/json' };
+    }),
+  })),
 ];
 
 /**
