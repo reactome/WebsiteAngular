@@ -106,7 +106,6 @@ export class SummaryService {
    */
   readonly expired = computed(() => this._state() === 'gone');
 
-  private release: number | null = null;
   private readonly cache = new Map<string, Cached>();
   private inFlight: AbortController | null = null;
   /** What to ask again for once a challenge is solved. */
@@ -302,7 +301,12 @@ export class SummaryService {
         switch (event.kind) {
           case 'start':
             this._started.set(true);
-            this.release = event.start.release;
+            // `start.release` is deliberately not kept. It was held in a field
+            // nothing ever read, which the dead-code gate cannot see because a
+            // private field is not an export. The cache key does not use it --
+            // this cache lives in one page's memory, and a release during a
+            // session would replace the process holding it -- so storing it
+            // only invited a later reader to trust a value nobody maintains.
             this._analysisType.set(event.start.analysisType);
             this._applied.set(event.start.disclosure);
             break;
