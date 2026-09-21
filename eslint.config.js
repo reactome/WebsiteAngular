@@ -115,6 +115,50 @@ module.exports = tseslint.config(
     },
   },
   {
+    /**
+     * The node services under tools/ -- content-node and the render service.
+     *
+     * They were linted by nothing at all: the config matched TypeScript, HTML
+     * and the scripts directory, and these are plain .mjs. So a broken
+     * identifier passed every gate -- types (tsc, on the Angular app), lint,
+     * dead-code, format and 380 unit tests all green -- and the service threw
+     * "ReferenceError: repeated is not defined" on its first request. Nothing
+     * in the suite executes these handlers, so nothing noticed.
+     *
+     * no-undef is the rule that matters here, and it is an error rather than a
+     * warning: in a module with no type checking behind it, an undefined
+     * identifier is not a style question. Node globals are declared so that
+     * process, console and Buffer are not mistaken for typos.
+     */
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        URL: 'readonly',
+        AbortSignal: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        // Used inside page.evaluate, which runs in the browser rather than here.
+        btoa: 'readonly',
+        Image: 'readonly',
+      },
+    },
+    extends: [eslint.configs.recommended],
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
     // Specs and tooling scripts: looser, and not held to the app's rules about
     // awaiting promises.
     files: ['**/*.spec.ts', 'e2e/**/*.ts', 'scripts/**/*.{js,mjs}', '**/scripts/**/*.ts'],

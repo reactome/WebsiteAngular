@@ -40,8 +40,19 @@
  * maxSize for GIF.
  */
 import express from 'express';
+import {
+  ACCEPTED,
+  BOUNDS,
+  REACTION_CLASSES,
+  badEnums,
+  canonicalUrl,
+  inBounds,
+  repeated,
+} from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   mkdir,
   readFile,
@@ -95,6 +106,7 @@ const MAX_CACHE = Number(process.env.RENDER_CACHE_MAX ?? 2 * 1024 ** 3);
 const CONTENT_TYPE = {
   svg: 'image/svg+xml; charset=utf-8',
   png: 'image/png',
+  jpeg: 'image/jpeg',
   pdf: 'application/pdf',
   gif: 'image/gif',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -291,18 +303,24 @@ const inFlight = new Map();
  * a typo occupies a render slot until it times out -- and ids arrive from URLs,
  * so typos are the normal case rather than the exceptional one.
  */
-async function exists(pathway) {
-  if (!pathway) return true; // the genome-wide view takes no id
+async function describe(pathway) {
+  if (!pathway) return { known: true, schemaClass: '' }; // the genome-wide view takes no id
   try {
     const response = await fetch(`${BASE}/ContentService/data/query/${pathway}`, {
       method: 'GET',
       signal: AbortSignal.timeout(10_000),
     });
-    return response.ok;
+    if (!response.ok) return { known: false, schemaClass: '' };
+    // The class comes free: this request was already being made to find out
+    // whether the id resolves, and it is what says whether `view=reaction` can
+    // mean anything for it.
+    const body = await response.json().catch(() => ({}));
+    return { known: true, schemaClass: String(body.schemaClass ?? '') };
   } catch {
     // If the check itself cannot run, let the render decide rather than
-    // refusing work over a transient failure of something incidental.
-    return true;
+    // refusing work over a transient failure of something incidental. The class
+    // is unknown rather than wrong, so a view check cannot be made either.
+    return { known: true, schemaClass: '' };
   }
 }
 
@@ -319,9 +337,21 @@ async function renderCached(params) {
     return { ...(await inFlight.get(key)), coalesced: true };
   }
 
-  if (!(await exists(params.pathway))) {
+  const { known, schemaClass } = await describe(params.pathway);
+  if (!known) {
     const error = new Error(`no such pathway: ${params.pathway}`);
     error.status = 404;
+    throw error;
+  }
+  // Checked here rather than at the edge of the handler because it is the same
+  // request that establishes the id exists, and paying for it twice to refuse
+  // slightly earlier would be a poor trade.
+  if (params.view === 'reaction' && schemaClass && !REACTION_CLASSES.has(schemaClass)) {
+    const error = new Error(
+      `view=reaction needs a reaction; ${params.pathway} is a ${schemaClass}. ` +
+        'Ask for it without view=reaction to draw the diagram it contains.'
+    );
+    error.status = 400;
     throw error;
   }
 
@@ -363,6 +393,45 @@ async function renderCached(params) {
   }
 }
 
+/**
+ * A fingerprint of the code this process is actually running.
+ *
+ * The image bakes these modules in, so `docker compose build` is a separate act
+ * from merging and nothing connected the two: a fix could be merged and not
+ * deployed, or a container could be quietly ahead of main, and the only way to
+ * tell was to read the source on disk -- which is the CLI's copy, not the
+ * container's, and therefore always agrees with you.
+ *
+ * A content hash rather than a git sha, because a sha has to be passed in at
+ * build time and anything that has to be remembered eventually is not. This
+ * cannot be forgotten: it is computed from the files themselves. Compare it
+ * against a checkout with
+ *
+ *   cat <dir>/*.mjs | grep -v spec | sha256sum
+ *
+ * taking the files in the same order -- sorted by name, which is what readdir
+ * is sorted into below.
+ */
+function buildId() {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const names = readdirSync(here)
+      // Specs excluded. They ship in the image -- the Dockerfile copies the
+      // directory -- but they are not what the service does, and a fingerprint
+      // that changes when a test is edited reports a deployment difference that
+      // is not one. Caught by this very endpoint: adding service.spec.mjs moved
+      // the hash without changing a line the service runs.
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.spec.mjs'))
+      .sort();
+    const hash = createHash('sha256');
+    for (const name of names) hash.update(readFileSync(path.join(here, name)));
+    return { build: hash.digest('hex').slice(0, 12), modules: names.length };
+  } catch {
+    // Never fail a health check over its own metadata.
+    return { build: 'unknown', modules: 0 };
+  }
+}
+
 // ---- http ----------------------------------------------------------------
 const app = express();
 app.disable('x-powered-by');
@@ -370,6 +439,7 @@ app.disable('x-powered-by');
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
+    ...buildId(),
     base: BASE,
     cache: CACHE,
     cacheKey: CACHE_KEY,
@@ -382,9 +452,55 @@ app.get('/health', (_req, res) => {
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
 app.get('/render/:name.:ext', async (req, res) => {
   const { name, ext } = req.params;
-  const format = ext.toLowerCase();
+  // `jpg` is the same picture under the name Java's enum also accepts, so a
+  // caller moved from that endpoint keeps whichever spelling they already use.
+  const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
   if (!FORMATS.includes(format)) {
     return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
+  }
+
+  const twice = repeated(req.query);
+  if (twice.length) {
+    return res.status(400).json({
+      error: `${twice.map((k) => `"${k}"`).join(', ')} given more than once`,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  const unknown = Object.keys(req.query).filter((key) => !ACCEPTED.includes(key));
+  if (unknown.length) {
+    return res.status(400).json({
+      error: `unknown parameter${unknown.length > 1 ? 's' : ''} ${unknown.map((u) => `"${u}"`).join(', ')}`,
+      // Said rather than implied: a caller that has just been refused is the one
+      // most likely to act on being told what to send instead.
+      accepted: ACCEPTED,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  const badValues = badEnums(req.query);
+  if (badValues.length) {
+    return res.status(400).json({
+      error: badValues.join('; '),
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  const outOfRange = Object.keys(BOUNDS).filter(
+    (key) => key in req.query && !inBounds(key, req.query[key])
+  );
+  if (outOfRange.length) {
+    return res.status(400).json({
+      error: outOfRange
+        .map((key) => `"${key}" must be a number between ${BOUNDS[key][0]} and ${BOUNDS[key][1]}`)
+        .join('; '),
+      // These used to be clamped silently, so `scale=4` returned a smaller image
+      // than asked for with a 200. The ceiling is real -- a diagram's coordinate
+      // space is around 6000px, so scale 4 asks for a 320-megapixel canvas, which
+      // renders rather than failing and costs the box a gigabyte -- but a caller
+      // who wants more detail deserves to hear that they cannot have it.
+      canonical: canonicalUrl(name, format, req.query),
+    });
   }
 
   const params = {
@@ -466,22 +582,38 @@ app.get('/render/:name.:ext', async (req, res) => {
   }
 });
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`render service on http://${HOST}:${PORT}`);
-  console.log(`  rendering against ${BASE}`);
-  console.log(`  cache ${CACHE} (key ${CACHE_KEY})`);
-  console.log(`  ${CONCURRENCY} concurrent, ${MAX_QUEUE} queued before 503`);
-  console.log(
-    MAX_CACHE
-      ? `  keeping up to ${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB of figures`
-      : `  cache size unbounded (RENDER_CACHE_MAX=0)`
-  );
-});
+/**
+ * Only listen when run as a program, so the handlers can be imported and
+ * exercised by a test.
+ *
+ * They could not be, and it cost: `repeated` was used and never imported, and
+ * every gate passed -- because nothing in the suite ever executed a request.
+ * content-node has been guarded this way all along; this brings the render
+ * service into line.
+ */
+export { app };
 
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => {
-    server.close(() => {
-      void (browser ? browser.close() : Promise.resolve()).then(() => process.exit(0));
+const started = process.argv[1]?.endsWith('service.mjs');
+const server = started
+  ? app.listen(PORT, HOST, () => {
+      console.log(`render service on http://${HOST}:${PORT}`);
+      console.log(`  rendering against ${BASE}`);
+      console.log(`  cache ${CACHE} (key ${CACHE_KEY})`);
+      console.log(`  ${CONCURRENCY} concurrent, ${MAX_QUEUE} queued before 503`);
+      console.log(
+        MAX_CACHE
+          ? `  keeping up to ${(MAX_CACHE / 1024 ** 2).toFixed(0)} MB of figures`
+          : `  cache size unbounded (RENDER_CACHE_MAX=0)`
+      );
+    })
+  : null;
+
+if (server) {
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      server.close(() => {
+        void (browser ? browser.close() : Promise.resolve()).then(() => process.exit(0));
+      });
     });
-  });
+  }
 }

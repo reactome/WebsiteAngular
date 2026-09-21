@@ -86,6 +86,39 @@ for (const [context, options] of Object.entries(proxyConfig)) {
   );
 }
 
+/**
+ * Which build is actually being served.
+ *
+ * "Is beta running main?" was being answered all day by fetching the site and
+ * eyeballing the `main-<hash>.js` filename out of the markup. That hash is the
+ * right signal -- Angular derives it from the bundle's contents, so it changes
+ * exactly when the code does -- it simply was not addressable. Now it is.
+ *
+ * Read per request rather than at boot: `ng build --watch` rewrites this
+ * directory underneath a running server, so a value captured at startup would
+ * confidently describe a build that has since been replaced. That is the very
+ * failure this exists to catch, and it would be reporting it about itself.
+ */
+app.get('/health', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  let html = '';
+  try {
+    html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+  } catch {
+    // Mid-rebuild, or pointed at a directory with no build in it. Both are
+    // worth saying plainly rather than answering 500.
+    return res.status(503).json({ ok: false, reason: 'no build in the output directory' });
+  }
+  const bundle = /\bmain-([A-Z0-9]+)\.js\b/.exec(html)?.[1] ?? null;
+  let built = null;
+  try {
+    built = fs.statSync(path.join(DIST, 'index.html')).mtime.toISOString();
+  } catch {
+    // Not worth failing the check over.
+  }
+  res.json({ ok: true, bundle, built, dist: DIST });
+});
+
 // Hashed build artefacts are immutable; index.html must never be cached or a
 // redeploy leaves browsers pinned to chunks that no longer exist.
 app.use(
