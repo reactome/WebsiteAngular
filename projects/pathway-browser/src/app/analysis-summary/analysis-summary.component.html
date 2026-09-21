@@ -72,6 +72,11 @@
 
     @if (explanation(); as why) {
       <p class="explanation" role="status">{{ why }}</p>
+      <!-- An action rather than a sentence pointing at another page, for the
+           same reason the check itself moved here. -->
+      @if (retryable()) {
+        <button type="button" class="ask" (click)="ask()">Try again</button>
+      }
     }
   </section>
 }

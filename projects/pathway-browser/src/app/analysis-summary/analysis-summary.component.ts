@@ -102,9 +102,15 @@ export class AnalysisSummaryComponent {
             return 'Too many summaries requested just now. Try again shortly.';
           case 'no_human':
           case 'no_caller':
-            return 'A check that a person is here is needed first. Use the answer panel on the search page once, then come back.';
           case 'stale_human':
-            return 'That check has expired. Use the answer panel on the search page again, then come back.';
+            // No longer the common path, and the copy no longer sends anybody
+            // to the search page. The proxy asks for a *fresh* check before it
+            // forwards, so an expired one now produces the widget above rather
+            // than this. Reaching this means the two ends disagree about the
+            // claim -- a clock, or a bound changed on one side only -- and the
+            // one thing a reader can usefully do about that is ask again,
+            // which the button beside this offers.
+            return 'The check that somebody is here did not carry through.';
           case 'unsupported_tier':
             return 'That level of detail is not available for this result.';
           default:
@@ -115,6 +121,21 @@ export class AnalysisSummaryComponent {
       default:
         return null;
     }
+  });
+
+  /**
+   * Whether asking again could plausibly work.
+   *
+   * The presence refusals only: a second request re-runs the gate, and the
+   * proxy answers those with a challenge the reader can solve here. Not
+   * `rate_limited`, where asking again is exactly the wrong advice, and not
+   * `failed` -- an immediate retry button on an unexplained failure invites
+   * clicking at a service that has just told us it could not do the work.
+   */
+  readonly retryable = computed(() => {
+    if (this.summary.state() !== 'refused') return false;
+    const reason = this.summary.reason();
+    return reason === 'no_human' || reason === 'no_caller' || reason === 'stale_human';
   });
 
   constructor() {
