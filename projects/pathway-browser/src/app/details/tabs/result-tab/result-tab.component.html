@@ -5,7 +5,11 @@
        nothing at all unless the deployment offers summaries and one was asked
        for. -->
   @if (analysis.summary()?.token; as analysisToken) {
-    <cr-analysis-summary [token]="analysisToken" />
+    <!-- A ReactomeGSA result is not summarised, and we know that here without
+         asking: the tab already reads gsaMethod to title itself. Offering the
+         button and then refusing would spend the reader's time telling them
+         something we knew before they clicked. -->
+    <cr-analysis-summary [token]="analysisToken" [summarisable]="!analysis.summary()?.gsaMethod" />
   }
 
   <div class="header">

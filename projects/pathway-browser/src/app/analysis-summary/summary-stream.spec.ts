@@ -81,6 +81,29 @@ describe('the done event', () => {
   });
 });
 
+describe('citations', () => {
+  it('keeps one that can be linked', () => {
+    expect(
+      parseFrame(frame('citation', { st_id: 'R-HSA-109581', display_name: 'Apoptosis' }))
+    ).toEqual({
+      kind: 'citation',
+      citation: { stId: 'R-HSA-109581', displayName: 'Apoptosis' },
+    });
+  });
+
+  it('drops one with no stable id, rather than linking to undefined', () => {
+    // The panel builds `/content/detail/<stId>` from this. A citation arriving
+    // without one produced `/content/detail/undefined` -- a dead link under a
+    // real name, which is worse than the name not appearing. Unlike the search
+    // answer there is no url form to fall back to.
+    expect(parseFrame(frame('citation', { display_name: 'Apoptosis' }))).toBeNull();
+  });
+
+  it('drops one with no name, which would render as an empty link', () => {
+    expect(parseFrame(frame('citation', { st_id: 'R-HSA-109581' }))).toBeNull();
+  });
+});
+
 describe('frames that are not ours', () => {
   it('drops an event name it does not act on', () => {
     expect(parseFrame(frame('heartbeat', {}))).toBeNull();

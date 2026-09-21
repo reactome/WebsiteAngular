@@ -48,6 +48,16 @@ export class AnalysisSummaryComponent {
   readonly token = input.required<string>();
 
   /**
+   * Whether this kind of result can be summarised at all.
+   *
+   * The three ReactomeGSA types cannot, and the result tab already knows which
+   * it is holding. Without this the button is offered, the reader waits for a
+   * request to be made and refused, and is then told we do not summarise this
+   * kind — information we had before they clicked.
+   */
+  readonly summarisable = input(true);
+
+  /**
    * The heading, which depends on what kind of result this is.
    *
    * Null until the `start` event says — the panel shows its spinner under no
@@ -72,9 +82,24 @@ export class AnalysisSummaryComponent {
       case 'unsupported':
         return 'We do not summarise this kind of analysis yet.';
       case 'refused':
-        return this.summary.reason() === 'rate_limited'
-          ? 'Too many summaries requested just now. Try again shortly.'
-          : 'A summary is not available for this result.';
+        // Each reason is a different thing to do about it, and the two
+        // verification ones are not "unavailable" -- they are "not yet", which
+        // the reader can change. Saying "a summary is not available for this
+        // result" to somebody whose session has merely gone stale sends them
+        // away from something that would work on a retry.
+        switch (this.summary.reason()) {
+          case 'rate_limited':
+            return 'Too many summaries requested just now. Try again shortly.';
+          case 'no_human':
+          case 'no_caller':
+            return 'A check that a person is here is needed first. Use the answer panel on the search page once, then come back.';
+          case 'stale_human':
+            return 'That check has expired. Use the answer panel on the search page again, then come back.';
+          case 'unsupported_tier':
+            return 'That level of detail is not available for this result.';
+          default:
+            return 'A summary is not available for this result.';
+        }
       case 'failed':
         return 'The summary could not be produced.';
       default:

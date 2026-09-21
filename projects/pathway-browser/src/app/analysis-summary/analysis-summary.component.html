@@ -4,7 +4,7 @@
          service, and a reader opens a result far more often than they want one
          written about. Asking on every view would spend the budget on people
          who never read it and make the ones who do wait behind them. -->
-    @if (!summary.asking() && !summary.state() && !summary.challenge()) {
+    @if (summarisable() && !summary.asking() && !summary.state() && !summary.challenge()) {
       <button type="button" class="ask" (click)="ask()">Summarise this result</button>
     }
 

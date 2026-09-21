@@ -159,8 +159,13 @@ export function parseFrame(frame: string): SummaryEvent | null {
     }
     case 'citation': {
       const displayName = typeof data['display_name'] === 'string' ? data['display_name'] : '';
-      const stId = typeof data['st_id'] === 'string' ? data['st_id'] : undefined;
-      return displayName ? { kind: 'citation', citation: { stId, displayName } } : null;
+      const stId = typeof data['st_id'] === 'string' ? data['st_id'] : '';
+      // Both, or neither. A summary cites pathways in the result, so every
+      // citation has a stable id -- but the panel builds a link from it, and a
+      // citation arriving without one produced `/content/detail/undefined`: a
+      // dead link under a real name, which is worse than the name not being
+      // listed. Unlike the search answer there is no url form to fall back to.
+      return displayName && stId ? { kind: 'citation', citation: { stId, displayName } } : null;
     }
     case 'done':
       return { kind: 'done', state: asState(data['state']), reason: asReason(data['reason']) };
