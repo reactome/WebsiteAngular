@@ -21,13 +21,23 @@ export { type Citation } from '../../../../website-angular/src/app/search/answer
 /**
  * The outcomes the endpoint reports.
  *
- * `gone` is the one that is not a dead end. The Analysis Service deletes
+ * The success state is `summarised`, **not** `answered`. It was written here as
+ * `answered` first, taken from the contract's prose, which borrows the search
+ * answer's vocabulary; the wire says `summarised`. The cost was not an error
+ * but a lie: a good summary mapped to `failed`, and `failed` renders "this
+ * summary stopped before it was finished" over prose that is already complete,
+ * and "the summary could not be produced" under it. Read off a real stream in
+ * the end, which is the only place a vocabulary is actually settled.
+ *
+ * `gone` is the failure that is not a dead end. The Analysis Service deletes
  * results on a release, so it means "that analysis predates the current
- * release — run it again", which is an action the reader can take. `not_found`
- * is a dead end. Collapsing the two throws away the only useful thing the
- * service said, which is why they are separate here and separate in the panel.
+ * release -- run it again", which is an action the reader can take.
+ * `not_found` is a dead end. Collapsing the two throws away the only useful
+ * thing the service said, which is why they are separate here and separate in
+ * the panel.
  */
-export type SummaryState = 'answered' | 'gone' | 'not_found' | 'unsupported' | 'refused' | 'failed';
+export type SummaryState =
+  'summarised' | 'gone' | 'not_found' | 'unsupported' | 'refused' | 'failed';
 
 /**
  * Why a summary was refused.
@@ -87,7 +97,7 @@ export type SummaryEvent =
   | { kind: 'done'; state: SummaryState; reason: RefusalReason | null };
 
 const STATES: readonly string[] = [
-  'answered',
+  'summarised',
   'gone',
   'not_found',
   'unsupported',
@@ -141,7 +151,10 @@ export function parseFrame(frame: string): SummaryEvent | null {
       return {
         kind: 'start',
         start: {
-          release: typeof data['release'] === 'number' ? data['release'] : null,
+          // A string on the wire ("97"), not a number. Coerced rather than
+          // required, because what this is for is telling one release's cache
+          // from another's, not arithmetic.
+          release: Number.isFinite(Number(data['release'])) ? Number(data['release']) : null,
           analysisType:
             typeof data['analysis_type'] === 'string' && TYPES.includes(data['analysis_type'])
               ? (data['analysis_type'] as AnalysisType)
@@ -217,5 +230,5 @@ export function showsProse(text: string): boolean {
  * and says it is incomplete rather than withdrawing text a reader is reading.
  */
 export function isIncomplete(state: SummaryState | null, text: string): boolean {
-  return showsProse(text) && state !== null && state !== 'answered';
+  return showsProse(text) && state !== null && state !== 'summarised';
 }

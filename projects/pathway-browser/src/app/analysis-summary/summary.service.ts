@@ -40,7 +40,7 @@ const OVERALL_TIMEOUT_MS = 120_000;
  * about this moment, and remembering them would answer the next click from the
  * cache and never try again.
  */
-const CACHEABLE = new Set<SummaryState>(['answered', 'gone', 'not_found', 'unsupported']);
+const CACHEABLE = new Set<SummaryState>(['summarised', 'gone', 'not_found', 'unsupported']);
 
 interface Cached {
   text: string;

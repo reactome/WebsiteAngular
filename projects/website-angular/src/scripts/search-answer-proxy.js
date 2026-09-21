@@ -480,7 +480,10 @@ const DISCLOSURES = ['aggregate', 'identifiers'];
  * the `done` event with HTTP 200, and which one it is changes what the reader
  * should be offered rather than whether the request worked:
  *
- *   answered     a summary was produced
+ *   summarised   a summary was produced. Note the word: the answer endpoint
+ *                above ends on `answered` and this one does not, and this
+ *                comment said `answered` until a panel built from it rendered
+ *                every good summary as "the summary could not be produced"
  *   gone         the result predates the current release -- **re-run it**, which
  *                is an action, and the only state where the reader can do
  *                something. Not the same as not_found, which is a dead end

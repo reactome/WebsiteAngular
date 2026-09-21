@@ -43,12 +43,42 @@ describe('the start event', () => {
     expect(event).toMatchObject({ start: { analysisType: null } });
   });
 
+  it('takes the release as the string the wire sends', () => {
+    // `"97"`, not `97`. Requiring a number here silently nulled every release,
+    // and the field is what tells one release's cached summary from another's.
+    expect(parseFrame(frame('start', { release: '97' }))).toMatchObject({
+      start: { release: 97 },
+    });
+  });
+
+  it('has no release rather than a wrong one when the field makes no sense', () => {
+    expect(parseFrame(frame('start', { release: 'unreleased' }))).toMatchObject({
+      start: { release: null },
+    });
+  });
+
   it('treats a missing cached flag as not cached', () => {
     expect(parseFrame(frame('start', {}))).toMatchObject({ start: { cached: false } });
   });
 });
 
 describe('the done event', () => {
+  it('recognises the state a successful summary actually ends on', () => {
+    // `summarised`, not `answered`. This was written from the contract's prose,
+    // which borrows the search answer's vocabulary, and the wire says otherwise.
+    //
+    // Nothing caught it, because the cases below assert every *failure* state
+    // and never the success one -- so the whole suite passed against a parser
+    // that turned every good summary into `failed`. On beta that rendered a
+    // complete, correct summary under "this summary stopped before it was
+    // finished" and "the summary could not be produced". Read off a real
+    // stream in the end, which is the only place a vocabulary is settled.
+    expect(parseFrame(frame('done', { state: 'summarised', seconds: 4.5 }))).toMatchObject({
+      state: 'summarised',
+    });
+    expect(isIncomplete('summarised', 'a complete summary')).toBe(false);
+  });
+
   it('keeps gone and not_found apart', () => {
     // The whole reason they are separate: `gone` means the result predates this
     // release and can be re-run, which is an action. `not_found` is a dead end.
