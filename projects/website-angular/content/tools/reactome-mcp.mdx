@@ -37,28 +37,32 @@ There are two ways, and the first needs nothing installed.
 #### Connect to the hosted server
 
 A hosted server is running on Reactome's pre-release site while this is being
-evaluated. Point an MCP client at:
+evaluated:
 
 ```
 https://beta.reactome.org/mcp
 ```
 
-For Claude Desktop, add this to your configuration file:
+It speaks MCP's streamable HTTP transport. A client that supports remote MCP
+servers takes that URL directly — the exact setting differs by client, so check
+yours for "remote server", "HTTP server" or "connector".
+
+A client that only launches local servers can bridge to it:
 
 ```json
 {
   "mcpServers": {
     "reactome": {
-      "type": "http",
-      "url": "https://beta.reactome.org/mcp"
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://beta.reactome.org/mcp"]
     }
   }
 }
 ```
 
-Nothing to install. Note which Reactome it reads: that host serves Reactome's
-pre-release data, which can differ from the current public release. If you need
-the public release, run the server yourself as below and leave
+Nothing to install either way. Note which Reactome it reads: that host serves
+Reactome's pre-release data, which can differ from the current public release.
+If you need the public release, run the server yourself as below and leave
 `REACTOME_BASE_URL` at its default.
 
 #### Or run it yourself
