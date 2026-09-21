@@ -10,7 +10,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { renderChallenge } from '../../../../website-angular/src/app/search/answer/turnstile';
-import { provenance as describeProvenance, waitingMessage as describeWait } from './panel-copy';
+import {
+  provenance as describeProvenance,
+  recipientNote as describeRecipient,
+  waitingMessage as describeWait,
+} from './panel-copy';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -170,6 +174,9 @@ export class AnalysisSummaryComponent {
 
   /** Whether the "how this was made" note is open. */
   readonly howOpen = signal(false);
+
+  /** @see recipientNote -- names the third party, which "AI" does not. */
+  readonly recipientNote = describeRecipient;
 
   /** @see provenance -- reads the *applied* tier, never the requested one. */
   readonly provenance = computed(() => describeProvenance(this.summary.applied()));
