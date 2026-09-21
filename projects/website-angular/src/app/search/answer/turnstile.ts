@@ -13,6 +13,8 @@
  */
 interface Turnstile {
   render(el: HTMLElement, options: { sitekey: string; callback: (token: string) => void }): string;
+  /** Re-arms a spent widget in place. Cloudflare's own remedy for a refused token. */
+  reset(widgetId: string): void;
 }
 
 let turnstileScript: Promise<void> | null = null;
@@ -57,20 +59,32 @@ export async function renderChallenge(
   }
   const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
   if (!turnstile) return;
-  turnstile.render(host, {
+  const widgetId = turnstile.render(host, {
     sitekey,
     callback: (token: string) => {
       void onSolved(token).then((accepted) => {
+        if (accepted) return;
         // A token is single-use, so a refused exchange leaves a widget that can
-        // never succeed -- and the caller's re-render guard ("this host already
-        // has a child") then keeps it there. Emptying the host is what lets a
-        // fresh one appear.
+        // never succeed. `reset` re-arms it where it stands.
         //
-        // Both panels used to discard this result while the service's own
-        // comment said it was returned "so the panel can render a fresh widget
-        // rather than leaving the reader looking at a spent one". The intent
-        // was written down and never implemented.
-        if (!accepted) host.replaceChildren();
+        // This emptied the host instead, which was worse than doing nothing:
+        // both callers render from an effect that reads the challenge signal,
+        // and a refused exchange leaves that signal untouched -- so nothing
+        // re-ran, and the reader was left looking at the note "one quick check
+        // that you are a person" above an empty box, with no way on but a
+        // reload. The comment there claimed emptying the host "is what lets a
+        // fresh one appear"; nothing made one appear. Twice now the intent has
+        // been written down and not implemented, so what proves this one is a
+        // test that solves, has the exchange refused, and asserts a live widget
+        // is still there.
+        try {
+          turnstile.reset(widgetId);
+        } catch {
+          // An older script without `reset`. Re-rendering is the fallback, and
+          // the host must be emptied first or two widgets stack up.
+          host.replaceChildren();
+          void renderChallenge(host, sitekey, onSolved);
+        }
       });
     },
   });

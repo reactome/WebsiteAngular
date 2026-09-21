@@ -18,8 +18,30 @@
       </div>
     }
 
-    @if (summary.asking()) {
-      <p class="working" role="status">Summarising your result…</p>
+    <!--
+      Progress, not a spinner, and `&& !visible()` because the stream stays open
+      while prose arrives: once there is text the text is the progress, and a
+      bar above something the reader is already reading is noise.
+    -->
+    @if (summary.asking() && !summary.visible()) {
+      <div class="waiting">
+        <div class="progress" aria-hidden="true"><span></span></div>
+        <p class="waiting-text" role="status" aria-live="polite">
+          {{ waitingMessage() }}
+          <!--
+            Outside the announcement: the count changes every second, and a live
+            region holding it would have a screen reader read the line once a
+            second for as long as the wait lasts.
+          -->
+          <span class="elapsed" aria-hidden="true">
+            @if (elapsed() > 0) {
+              {{ elapsed() }}s — usually a few
+            } @else {
+              Usually a few seconds
+            }
+          </span>
+        </p>
+      </div>
     }
 
     <!-- Prose only when we know what it is allowed to claim. An analysis type
@@ -59,6 +81,39 @@
             </li>
           }
         </ul>
+      }
+
+      <!--
+        Said plainly and in the reader's path, not as small print. Somebody
+        deciding whether this can go in a paper needs to know what wrote it
+        before they decide, and the detail of how belongs behind the toggle
+        rather than in a paragraph most readers do not need.
+      -->
+      <p class="provenance">
+        <span class="badge">AI-generated</span>
+        <button
+          type="button"
+          class="how"
+          [attr.aria-expanded]="howOpen()"
+          aria-controls="summary-how"
+          (click)="toggleHow()"
+        >
+          <span class="info" aria-hidden="true">i</span>
+          How this was made
+        </button>
+      </p>
+
+      @if (howOpen()) {
+        <div class="how-note" id="summary-how">
+          <p>
+            This summary was written by a language model, not by a curator, and it has not been reviewed.
+            {{ provenance() }}
+          </p>
+          <p>
+            It can be wrong or incomplete. Check it against the pathways listed above, and in a publication cite those
+            pathways and the Reactome release rather than this text.
+          </p>
+        </div>
       }
     }
 

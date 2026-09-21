@@ -64,6 +64,14 @@ export class SummaryService {
   private readonly _reason = signal<RefusalReason | null>(null);
   private readonly _analysisType = signal<AnalysisType | null>(null);
   private readonly _applied = signal<Disclosure | null>(null);
+  /**
+   * Whether the `start` event has arrived.
+   *
+   * The one milestone this stream has before prose. Not inferred from
+   * `analysisType`, which is null both before `start` and for a type we have no
+   * copy for -- so a contract change would silently make the wait look stuck.
+   */
+  private readonly _started = signal(false);
   private readonly _requested = signal<Disclosure>('aggregate');
   private readonly _challenge = signal<{ sitekey: string; verify: string } | null>(null);
 
@@ -72,6 +80,9 @@ export class SummaryService {
   readonly state = this._state.asReadonly();
   readonly reason = this._reason.asReadonly();
   readonly analysisType = this._analysisType.asReadonly();
+  readonly started = this._started.asReadonly();
+  /** The tier the summary was actually built from, for saying how it was made. */
+  readonly applied = this._applied.asReadonly();
   readonly challenge = this._challenge.asReadonly();
 
   readonly citations = computed(() => this._citations());
@@ -119,6 +130,7 @@ export class SummaryService {
     this._reason.set(null);
     this._analysisType.set(null);
     this._applied.set(null);
+    this._started.set(false);
     this._challenge.set(null);
   }
 
@@ -146,6 +158,14 @@ export class SummaryService {
       this._text.set(cached.text);
       this._citations.set(cached.citations);
       this._state.set(cached.state);
+      // Only cacheable states are stored and none of them carry a reason, so a
+      // reason still sitting here belongs to some earlier refused attempt on
+      // this same token. Nothing reads it while the state is not `refused`, so
+      // this changes no behaviour today -- it stops two signals describing two
+      // different attempts, which is the kind of thing that becomes a bug the
+      // moment something new reads `reason` on its own.
+      this._reason.set(null);
+      this._started.set(true);
       this._analysisType.set(cached.analysisType);
       this._applied.set(cached.applied);
       return;
@@ -155,6 +175,7 @@ export class SummaryService {
     this._citations.set([]);
     this._state.set(null);
     this._reason.set(null);
+    this._started.set(false);
     this._asking.set(true);
 
     const controller = new AbortController();
@@ -246,6 +267,19 @@ export class SummaryService {
       return;
     }
 
+    // Our own proxy's budget, which is a different thing from the service's.
+    // The service reports being asked too often inside the stream, as
+    // `refused`/`rate_limited`, and the panel has copy for it that says to try
+    // again shortly. The proxy says the same thing in a status code, and
+    // without this that landed in `failed` below and was rendered "the summary
+    // could not be produced" -- a transient limit described to the reader as a
+    // fault, with no suggestion that waiting would help.
+    if (response.status === 429) {
+      this._state.set('refused');
+      this._reason.set('rate_limited');
+      return;
+    }
+
     // 422 is the proxy or the service rejecting the request itself -- a
     // malformed disclosure -- and carries JSON rather than events. Parsing it
     // as a stream would hang waiting for frames that never come.
@@ -267,6 +301,7 @@ export class SummaryService {
       for (const event of events) {
         switch (event.kind) {
           case 'start':
+            this._started.set(true);
             this.release = event.start.release;
             this._analysisType.set(event.start.analysisType);
             this._applied.set(event.start.disclosure);

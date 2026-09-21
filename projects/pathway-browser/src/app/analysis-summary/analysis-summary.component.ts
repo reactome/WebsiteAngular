@@ -6,9 +6,11 @@ import {
   effect,
   inject,
   input,
+  signal,
   viewChild,
 } from '@angular/core';
 import { renderChallenge } from '../../../../website-angular/src/app/search/answer/turnstile';
+import { provenance as describeProvenance, waitingMessage as describeWait } from './panel-copy';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -137,6 +139,44 @@ export class AnalysisSummaryComponent {
     const reason = this.summary.reason();
     return reason === 'no_human' || reason === 'no_caller' || reason === 'stale_human';
   });
+
+  /**
+   * Seconds since the summary was asked for, while waiting.
+   *
+   * The same choice as the search answer's: a real elapsed count rather than a
+   * bar filling at a guessed rate. The numbers differ, so the copy beside it
+   * does -- this endpoint's first token lands at about 1.8s and a whole summary
+   * took 4.5s when measured, against roughly ten seconds for an answer, so
+   * borrowing "usually about ten" would have been wrong in the reassuring
+   * direction.
+   */
+  private readonly _elapsed = signal(0);
+  readonly elapsed = this._elapsed.asReadonly();
+
+  private readonly tick = effect((onCleanup) => {
+    if (!this.summary.asking()) {
+      this._elapsed.set(0);
+      return;
+    }
+    const started = Date.now();
+    const handle = setInterval(() => {
+      this._elapsed.set(Math.round((Date.now() - started) / 1000));
+    }, 1000);
+    onCleanup(() => clearInterval(handle));
+  });
+
+  /** @see waitingMessage -- the judgement lives there, where it can be tested. */
+  readonly waitingMessage = computed(() => describeWait(this.summary.started()));
+
+  /** Whether the "how this was made" note is open. */
+  readonly howOpen = signal(false);
+
+  /** @see provenance -- reads the *applied* tier, never the requested one. */
+  readonly provenance = computed(() => describeProvenance(this.summary.applied()));
+
+  toggleHow(): void {
+    this.howOpen.update((open) => !open);
+  }
 
   constructor() {
     // The service is a singleton, so without this a summary outlives the result
