@@ -78,17 +78,21 @@ services:
   # through its own tools rather than through a browser.
   #
   # Here because until now it had no definition anywhere: it was a `docker run`
-  # somebody typed once, bind-mounting a git checkout at /srv. That works until
-  # the box reboots or the checkout moves, and nothing records what it was run
-  # with. A compose entry is the smallest thing that makes it reproducible.
+  # somebody typed once, bind-mounting a git checkout at /srv and running the
+  # `dist/` inside it. `dist/` is gitignored, so what that served was whatever
+  # branch happened to be checked out, compiled whenever anyone last ran a
+  # build -- and a test run rebuilding it from an unmerged branch had already
+  # put code into the running container that no longer existed on disk.
   #
-  # The image is built from a checkout rather than pulled, because the package
-  # is not published to npm. MCP_SRC points at it; a deployment that has the
-  # repository somewhere else sets that rather than editing this.
+  # Built from a git ref instead, so the deployed revision is something someone
+  # chose. MCP_REF is a branch or tag; the container records the commit it was
+  # built from in /srv/REVISION.
   mcp:
-    image: node:22-slim
-    working_dir: /srv
-    command: ['node', 'dist/http-server.js']
+    build:
+      context: .
+      dockerfile: deploy/mcp/Dockerfile
+      args:
+        MCP_REF: ${MCP_REF:-main}
     restart: unless-stopped
     # Loopback only, and emphatically not 0.0.0.0. Same reason as `render`
     # above, and worse per request: a tool call here can submit a real job to
@@ -100,6 +104,9 @@ services:
     ports:
       - '127.0.0.1:4320:4320'
     environment:
+      # 0.0.0.0 *inside* the container, which the port mapping above then
+      # exposes on loopback only. A container binding its own loopback would be
+      # unreachable even from the host.
       - MCP_HTTP_HOST=0.0.0.0
       - MCP_HTTP_PORT=4320
       # Which Reactome it answers from: this deployment's own, never another's.
@@ -107,13 +114,12 @@ services:
       # nobody here is running.
       - REACTOME_BASE_URL=${MCP_REACTOME_BASE_URL:-https://beta.reactome.org}
       # NEO4J_URI and MCP_ALLOW_CYPHER are both deliberately absent, and it
-      # takes both to register the Cypher tools. Arbitrary graph queries used to
+      # takes both to register the Cypher tools, the graph-schema resource and
+      # the instructions that advertise them. Arbitrary graph queries used to
       # arrive as a side effect of setting a connection string -- the startup
       # schema warm-up wants the same variable -- so an instance could acquire
       # them without anyone deciding to. Neither belongs on an instance the
       # public can reach.
-    volumes:
-      - ${MCP_SRC:-../reactome-mcp}:/srv:ro
 
   content-node:
     build:
