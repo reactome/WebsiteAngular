@@ -159,17 +159,30 @@ export function parseFrame(frame: string): AnswerEvent | null {
  * occur in practice.
  */
 export function drainFrames(buffer: string): { events: AnswerEvent[]; rest: string } {
+  const { frames, rest } = splitFrames(buffer);
+  const events: AnswerEvent[] = [];
+  for (const frame of frames) {
+    const event = parseFrame(frame);
+    if (event) events.push(event);
+  }
+  return { events, rest };
+}
+
+/**
+ * The transport half, with no opinion about what a frame means.
+ *
+ * Shared with the analysis summary stream, which reads the same SSE-over-POST
+ * transport and different events. A frame boundary is a frame boundary, and the
+ * chunk-split cases this was written for are exactly the ones not worth
+ * reimplementing beside it.
+ */
+export function splitFrames(buffer: string): { frames: string[]; rest: string } {
   const normalised = buffer.replace(/\r\n/g, '\n');
   const parts = normalised.split('\n\n');
   // The last part is either an incomplete frame or the empty string left by a
   // trailing separator. Either way it is not ready.
   const rest = parts.pop() ?? '';
-  const events: AnswerEvent[] = [];
-  for (const part of parts) {
-    const event = parseFrame(part);
-    if (event) events.push(event);
-  }
-  return { events, rest };
+  return { frames: parts, rest };
 }
 
 /**

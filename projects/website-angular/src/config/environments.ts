@@ -50,6 +50,14 @@ export interface SiteProfile {
    */
   searchAnswerEndpoint?: string;
   /**
+   * Where the analysis summary is asked for, or absent on a deployment that
+   * does not offer one. Same proxy and same gate as the answer above; a
+   * separate setting because a deployment may reasonably want one and not the
+   * other, and because an absent endpoint is how the panel stays hidden
+   * without a build flag.
+   */
+  analysisSummaryEndpoint?: string;
+  /**
    * Where the services are, or `'origin'` for "wherever this bundle is served
    * from".
    *
@@ -152,6 +160,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // deployment without that key answers 503 and the panel renders nothing, so
     // this is safe to name even if the key is ever absent.
     searchAnswerEndpoint: '/search-answer',
+    analysisSummaryEndpoint: '/analysis-summary',
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,
@@ -170,6 +179,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // Same reasoning, and note the path: `/api` above already belongs to the
     // DeltaSignal backend, so the answer proxy cannot live under it.
     searchAnswerEndpoint: '/search-answer',
+    analysisSummaryEndpoint: '/analysis-summary',
     host: 'origin',
     originFallback: 'https://dev.reactome.org',
     s3: S3,

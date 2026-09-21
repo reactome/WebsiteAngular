@@ -1,0 +1,61 @@
+@if (summary.available) {
+  <section class="analysis-summary">
+    <!-- Opt-in, not automatic. A summary is a model call against a rate-limited
+         service, and a reader opens a result far more often than they want one
+         written about. Asking on every view would spend the budget on people
+         who never read it and make the ones who do wait behind them. -->
+    @if (!summary.asking() && !summary.state()) {
+      <button type="button" class="ask" (click)="ask()">Summarise this result</button>
+    }
+
+    @if (summary.asking()) {
+      <p class="working" role="status">Summarising your result…</p>
+    }
+
+    @if (summary.visible()) {
+      @if (heading(); as head) {
+        <h3>{{ head.title }}</h3>
+        <!-- The constraint said out loud, next to the text it constrains. A
+             reader who knows enrichment carries no direction cannot misread the
+             summary as saying something went up. -->
+        <p class="constraint">{{ head.note }}</p>
+      }
+
+      <p class="prose">{{ summary.text() }}</p>
+
+      @if (summary.incomplete()) {
+        <!-- The text stays. What arrived was real, and nothing about generation
+             stopping makes it wrong. -->
+        <p class="incomplete" role="status">This summary stopped before it was finished.</p>
+      }
+
+      @if (summary.downgraded()) {
+        <p class="downgraded" role="status">
+          Your identifiers could not be retrieved, so this summarises the result without them.
+        </p>
+      }
+
+      @if (summary.citations().length) {
+        <ul class="citations">
+          @for (citation of summary.citations(); track citation.stId ?? citation.displayName) {
+            <li>
+              <a [href]="'/content/detail/' + citation.stId">{{ citation.displayName }}</a>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    @if (summary.expired()) {
+      <!-- The only outcome the reader can act on, so it gets a button rather
+           than a sentence. The analysis itself is gone: results are deleted on
+           a release, and re-running is what gets one back. -->
+      <p class="expired">This analysis was run against an earlier release and its result has since been removed.</p>
+      <a class="rerun" href="/PathwayBrowser/#/ANALYSIS">Run the analysis again</a>
+    }
+
+    @if (explanation(); as why) {
+      <p class="explanation" role="status">{{ why }}</p>
+    }
+  </section>
+}

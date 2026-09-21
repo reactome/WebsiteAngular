@@ -11,6 +11,7 @@ import {
   inject,
 } from '@angular/core';
 import { AnalysisService } from '../../../services/analysis.service';
+import { AnalysisSummaryComponent } from '../../../analysis-summary/analysis-summary.component';
 import { RevealDirective } from '../../../utils/reveal.directive';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import type { Analysis } from '../../../model/analysis.model';
@@ -43,6 +44,7 @@ import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 @Component({
   selector: 'cr-result-tab',
   imports: [
+    AnalysisSummaryComponent,
     MatTableModule,
     RevealDirective,
     MatSortModule,

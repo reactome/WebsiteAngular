@@ -1,0 +1,159 @@
+import { describe, expect, it } from 'vitest';
+import {
+  drainFrames,
+  isDowngraded,
+  isIncomplete,
+  parseFrame,
+  showsProse,
+  type Disclosure,
+} from './summary-stream';
+
+const frame = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}`;
+
+describe('the start event', () => {
+  it('carries the tier the summary was actually built from', () => {
+    // Not the tier requested. Ask for `identifiers`, have the lookup fail, and
+    // the aggregate summary comes back saying `aggregate` -- the reader chose
+    // to disclose and was handed the other summary.
+    const event = parseFrame(
+      frame('start', {
+        release: 97,
+        analysis_type: 'OVERREPRESENTATION',
+        cached: false,
+        disclosure: 'aggregate',
+      })
+    );
+    expect(event).toEqual({
+      kind: 'start',
+      start: {
+        release: 97,
+        analysisType: 'OVERREPRESENTATION',
+        cached: false,
+        disclosure: 'aggregate',
+      },
+    });
+  });
+
+  it('refuses to name an analysis type it has no copy for', () => {
+    // The three ReactomeGSA types terminate as `unsupported` and never reach a
+    // model, so a type outside the three is a contract change. Null rather than
+    // passed through, because every use of this field decides what the panel is
+    // allowed to claim.
+    const event = parseFrame(frame('start', { analysis_type: 'GSA_REGULATION' }));
+    expect(event).toMatchObject({ start: { analysisType: null } });
+  });
+
+  it('treats a missing cached flag as not cached', () => {
+    expect(parseFrame(frame('start', {}))).toMatchObject({ start: { cached: false } });
+  });
+});
+
+describe('the done event', () => {
+  it('keeps gone and not_found apart', () => {
+    // The whole reason they are separate: `gone` means the result predates this
+    // release and can be re-run, which is an action. `not_found` is a dead end.
+    expect(parseFrame(frame('done', { state: 'gone' }))).toMatchObject({ state: 'gone' });
+    expect(parseFrame(frame('done', { state: 'not_found' }))).toMatchObject({
+      state: 'not_found',
+    });
+  });
+
+  it('carries the refusal reason', () => {
+    expect(parseFrame(frame('done', { state: 'refused', reason: 'rate_limited' }))).toMatchObject({
+      state: 'refused',
+      reason: 'rate_limited',
+    });
+  });
+
+  it('marks a reason it does not know as unknown rather than dropping it', () => {
+    // A new reason is a contract change. Knowing that a reason was given, and
+    // that we do not recognise it, is worth more than pretending none came --
+    // but inventing copy for it would be worse than saying less.
+    expect(parseFrame(frame('done', { state: 'refused', reason: 'quota_exceeded' }))).toMatchObject(
+      { reason: 'unknown' }
+    );
+  });
+
+  it('treats an unrecognised state as failed, which shows nothing', () => {
+    expect(parseFrame(frame('done', { state: 'something_new' }))).toMatchObject({
+      state: 'failed',
+    });
+  });
+});
+
+describe('frames that are not ours', () => {
+  it('drops an event name it does not act on', () => {
+    expect(parseFrame(frame('heartbeat', {}))).toBeNull();
+  });
+
+  it('drops a frame whose data will not parse, rather than throwing', () => {
+    expect(parseFrame('event: done\ndata: {not json')).toBeNull();
+  });
+
+  it('drops an empty token, which would render as nothing anyway', () => {
+    expect(parseFrame(frame('token', { text: '' }))).toBeNull();
+  });
+});
+
+describe('a stream arriving in arbitrary chunks', () => {
+  it('holds back a frame split across two reads', () => {
+    const whole = `${frame('token', { text: 'Pathways ' })}\n\n${frame('token', { text: 'of interest' })}\n\n`;
+    const cut = whole.indexOf('of interest') - 12;
+
+    const first = drainFrames(whole.slice(0, cut));
+    expect(first.events).toHaveLength(1);
+    expect(first.rest).not.toBe('');
+
+    const second = drainFrames(first.rest + whole.slice(cut));
+    expect(second.events).toHaveLength(1);
+    expect(second.events[0]).toMatchObject({ kind: 'token', text: 'of interest' });
+  });
+
+  it('reads frames separated by CRLF as well as LF', () => {
+    const { events } = drainFrames(`event: done\r\ndata: {"state":"gone"}\r\n\r\n`);
+    expect(events[0]).toMatchObject({ kind: 'done', state: 'gone' });
+  });
+});
+
+describe('whether a disclosure was downgraded', () => {
+  it('says so when the applied tier differs from the requested one', () => {
+    expect(isDowngraded('identifiers', 'aggregate')).toBe(true);
+  });
+
+  it('does NOT call it a downgrade when there was nothing to disclose', () => {
+    // The case that matters. A result where every identifier matched reports
+    // `identifiers`, because the tier was honoured and there was nothing to
+    // retrieve. Telling that reader their disclosure failed, at the moment
+    // their data was perfectly clean, is the worst possible time to say it.
+    expect(isDowngraded('identifiers', 'identifiers')).toBe(false);
+  });
+
+  it('says nothing when the service did not report a tier', () => {
+    expect(isDowngraded('identifiers', null)).toBe(false);
+  });
+
+  it('is never a downgrade when aggregate was what was asked for', () => {
+    for (const applied of ['aggregate', 'identifiers', null] as (Disclosure | null)[]) {
+      if (applied === 'identifiers') continue;
+      expect(isDowngraded('aggregate', applied)).toBe(false);
+    }
+  });
+});
+
+describe('prose already on screen', () => {
+  it('is not withdrawn when generation stops early', () => {
+    // What arrived was real text, and nothing about generation stopping makes
+    // it wrong. Taking it back mid-read is the worse failure.
+    expect(isIncomplete('failed', 'Pathways of interest include')).toBe(true);
+    expect(showsProse('Pathways of interest include')).toBe(true);
+  });
+
+  it('is not called incomplete before a terminal state arrives', () => {
+    expect(isIncomplete(null, 'partial text')).toBe(false);
+  });
+
+  it('shows nothing at all for an outcome that produced no prose', () => {
+    expect(showsProse('   ')).toBe(false);
+    expect(isIncomplete('gone', '')).toBe(false);
+  });
+});

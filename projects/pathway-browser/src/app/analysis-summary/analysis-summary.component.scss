@@ -1,0 +1,64 @@
+.analysis-summary {
+  container-type: inline-size;
+  padding: 12px 0;
+}
+
+h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+// The constraint reads as guidance rather than as an error, because it is
+// neither a warning nor an aside -- it is what the summary below may mean.
+.constraint {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--tertiary-contrast-3);
+}
+
+.prose {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.incomplete,
+.downgraded,
+.explanation {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--negative);
+}
+
+.working {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--tertiary-contrast-3);
+}
+
+.citations {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+}
+
+.rerun {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.ask {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 12px;
+  border: 1px solid var(--tertiary-contrast-3);
+  border-radius: 4px;
+  background: none;
+  color: var(--tertiary-contrast-3);
+  cursor: pointer;
+}
+
+.ask:hover {
+  background: var(--tertiary-contrast-3);
+  color: white;
+}

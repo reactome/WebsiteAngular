@@ -1,5 +1,13 @@
 <!--ToDO investigate virtual scroll instead of pagination: https://material.angular.dev/cdk/scrolling/overview -->
 <div class="container" #container>
+  <!-- Under the heading and above the table: a summary is an orientation to the
+       result, so it belongs before the rows rather than after them. Renders
+       nothing at all unless the deployment offers summaries and one was asked
+       for. -->
+  @if (analysis.summary()?.token; as analysisToken) {
+    <cr-analysis-summary [token]="analysisToken" />
+  }
+
   <div class="header">
     {{ analysisType() }}
     analysis results
