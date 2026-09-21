@@ -74,6 +74,69 @@ services:
     # renderer that fails only on large diagrams is the usual symptom.
     shm_size: '1gb'
 
+  # The MCP server (reactome-mcp), which lets an AI assistant read Reactome
+  # through its own tools rather than through a browser.
+  #
+  # Here because until now it had no definition anywhere: it was a `docker run`
+  # somebody typed once, bind-mounting a git checkout at /srv and running the
+  # `dist/` inside it. `dist/` is gitignored, so what that served was whatever
+  # branch happened to be checked out, compiled whenever anyone last ran a
+  # build -- and a test run rebuilding it from an unmerged branch had already
+  # put code into the running container that no longer existed on disk.
+  #
+  # Built from a git ref instead, so the deployed revision is something someone
+  # chose. MCP_REF is a branch or tag; the container records the commit it was
+  # built from in /srv/REVISION.
+  mcp:
+    build:
+      context: .
+      dockerfile: deploy/mcp/Dockerfile
+      args:
+        MCP_REF: ${MCP_REF:-main}
+    restart: unless-stopped
+    # Loopback only, and emphatically not 0.0.0.0. Same reason as `render`
+    # above, and worse per request: a tool call here can submit a real job to
+    # the Analysis Service, so the only way in is through whatever fronts the
+    # site, which rate-limits it. The container this replaces set
+    # MCP_HTTP_HOST=0.0.0.0 safely because it was on a private compose network
+    # with nothing published; that is not safe under `network_mode: host`, so
+    # the binding is pinned here rather than inherited.
+    ports:
+      - '127.0.0.1:4320:4320'
+    # Two ways in, for two callers that cannot share one.
+    #
+    # nginx runs in host networking, so it reaches the published port above on
+    # 127.0.0.1. The chatbot is a container on its own private network and
+    # addresses this by name -- `REACTOME_MCP_URL=http://reactome_mcp:4320` --
+    # so the alias is what lets it keep doing that. Without it the chatbot would
+    # need reconfiguring to point at a host gateway, which is a change to
+    # somebody else's deployment to solve a problem on this side.
+    #
+    # The alias is the name of the hand-run container this replaces, on purpose:
+    # the swap is then invisible to the thing depending on it.
+    networks:
+      default: {}
+      reactome_beta:
+        aliases:
+          - reactome_mcp
+    environment:
+      # 0.0.0.0 *inside* the container, which the port mapping above then
+      # exposes on loopback only. A container binding its own loopback would be
+      # unreachable even from the host.
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=4320
+      # Which Reactome it answers from: this deployment's own, never another's.
+      # An MCP on beta that answered from production would describe a release
+      # nobody here is running.
+      - REACTOME_BASE_URL=${MCP_REACTOME_BASE_URL:-https://beta.reactome.org}
+      # NEO4J_URI and MCP_ALLOW_CYPHER are both deliberately absent, and it
+      # takes both to register the Cypher tools, the graph-schema resource and
+      # the instructions that advertise them. Arbitrary graph queries used to
+      # arrive as a side effect of setting a connection string -- the startup
+      # schema warm-up wants the same variable -- so an instance could acquire
+      # them without anyone deciding to. Neither belongs on an instance the
+      # public can reach.
+
   content-node:
     build:
       context: .
@@ -160,6 +223,12 @@ services:
       # serving plain HTTP and has no certificates at all.
       - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
       - ${CLOUDFLARE_CERT_DIR:-/etc/ssl/cloudflare}:/etc/ssl/cloudflare:ro
+
+networks:
+  # Created by the chatbot's own stack, not by this one -- declared external so
+  # compose joins it rather than trying to own it, and never removes it.
+  reactome_beta:
+    external: true
 
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a

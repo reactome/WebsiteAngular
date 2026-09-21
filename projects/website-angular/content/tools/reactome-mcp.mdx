@@ -1,0 +1,78 @@
+---
+title: "Reactome MCP Server"
+category: "tools"
+---
+
+## Reactome MCP Server
+
+The Reactome MCP server connects an AI assistant — Claude, or any other client that
+speaks the [Model Context Protocol](https://modelcontextprotocol.io/) — directly to
+Reactome. Instead of describing a pathway to the assistant, you let it look the
+pathway up: search the knowledgebase, read reactions and entities, run a pathway
+enrichment analysis on a list of identifiers, and export diagrams, SBGN, SBML or a
+PDF report.
+
+It is an open-source wrapper around the same public Content and Analysis Services
+the website uses. It reads Reactome; it does not change it.
+
+### What it can do
+
+It registers 59 tools, in six groups:
+
+  * **Search and browse** — find pathways, reactions and entities by name or
+    identifier, and walk the event hierarchy.
+  * **Entities** — complex subunits, what a molecule is a component of, its other
+    forms, and the diagrams it appears in.
+  * **Analysis** — submit identifiers for pathway enrichment, then read the found
+    and not-found entities, pathway sizes and filtered results.
+  * **Interactors** — interaction partners and the pathways they implicate.
+  * **Export** — diagrams as PNG, SVG, JPG or GIF, plus SBGN, SBML, PDF reports and
+    analysis results as CSV or JSON.
+  * **ReactomeGSA** — methods, data types and example datasets for gene-set analysis.
+
+### Using it
+
+The server is on GitHub at
+[reactome/reactome-mcp](https://github.com/reactome/reactome-mcp). Clone and build
+it, then point your assistant at the built entry point.
+
+For Claude Desktop, add this to your configuration file:
+
+```json
+{
+  "mcpServers": {
+    "reactome": {
+      "command": "node",
+      "args": ["/path/to/reactome-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+The server runs on your own machine and talks to Reactome's public services over
+HTTPS, the same ones your browser uses. Set `REACTOME_BASE_URL` if you want it to
+read from somewhere other than `https://reactome.org`.
+
+Then ask your assistant things like:
+
+  * "What pathways is TP53 involved in?"
+  * "Run an enrichment analysis on these gene symbols and tell me what comes up."
+  * "Export the SBGN for pathway R-HSA-1640170."
+
+Three further tools run Cypher queries directly against the graph database.
+They are off unless you both point the server at a database and explicitly turn
+them on, and they are intended for curators working against their own instance
+rather than for reading the public knowledgebase — everything above works
+without them.
+
+### Things worth knowing
+
+An assistant using these tools is reading Reactome correctly, but it is still an
+assistant: it can summarise what it read inaccurately, and it can be confidently
+wrong about anything it did not look up. Treat what it tells you as a pointer into
+Reactome rather than as a citable source, and follow the stable identifiers it
+gives you back to the pathway pages here.
+
+Analyses you submit through the server are sent to Reactome's Analysis Service
+exactly as they would be from this website, and are subject to the same
+[privacy notice](/about/privacy-notice).
