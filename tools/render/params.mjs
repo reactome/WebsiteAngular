@@ -52,7 +52,13 @@ export const BOUNDS = {
  */
 export function canonicalUrl(name, format, query) {
   const kept = ACCEPTED.filter(
-    (key) => key in query && !(key in BOUNDS && !inBounds(key, query[key]))
+    (key) =>
+      key in query &&
+      // A repeated parameter has no single value to suggest, and joining the
+      // array would recommend `token=a%2Cb` -- a different URL that is also
+      // wrong.
+      !Array.isArray(query[key]) &&
+      !(key in BOUNDS && !inBounds(key, query[key]))
   ).map((key) => `${key}=${encodeURIComponent(String(query[key]))}`);
   return `/render/${name}.${format}${kept.length ? `?${kept.join('&')}` : ''}`;
 }
@@ -106,4 +112,19 @@ export function badEnums(query) {
   return Object.keys(ENUMS)
     .filter((key) => key in query && !ENUMS[key].includes(String(query[key])))
     .map((key) => `"${key}" must be ${ENUMS[key].map((v) => `"${v}"`).join(' or ')}`);
+}
+
+/**
+ * Parameters given more than once, which express hands over as an array.
+ *
+ * Refused rather than resolved to a first or last value, because "which one did
+ * it take" is not a question a caller should have to ask. It was also a real
+ * hole: `token` was read as `typeof … === 'string' ? … : ''`, so
+ * `?token=a&token=b` rendered with **no token at all** — an analysis overlay
+ * silently not applied, with a 200. The others were refused already, but only
+ * as a side effect of their value checks failing on `"a,b"`; this makes it the
+ * rule rather than an accident.
+ */
+export function repeated(query) {
+  return Object.keys(query).filter((key) => Array.isArray(query[key]));
 }

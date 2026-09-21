@@ -409,6 +409,14 @@ app.get('/render/:name.:ext', async (req, res) => {
     return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
   }
 
+  const twice = repeated(req.query);
+  if (twice.length) {
+    return res.status(400).json({
+      error: `${twice.map((k) => `"${k}"`).join(', ')} given more than once`,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
   const unknown = Object.keys(req.query).filter((key) => !ACCEPTED.includes(key));
   if (unknown.length) {
     return res.status(400).json({

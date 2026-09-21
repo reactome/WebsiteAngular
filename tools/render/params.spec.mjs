@@ -10,6 +10,7 @@
 // picture -- `.png` is cached by extension on our zone, so only the response
 // header currently keeps junk out of Cloudflare.
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   ACCEPTED,
   BOUNDS,
@@ -18,23 +19,20 @@ import {
   badEnums,
   canonicalUrl,
   inBounds,
+  repeated,
 } from './params.mjs';
 
 describe('what the render endpoint accepts', () => {
-  it('names every parameter the handler reads', () => {
-    // If the handler grows one and this list does not, the new parameter is
-    // refused in production while working in development -- so the list is the
-    // contract rather than a convenience.
-    expect(ACCEPTED).toEqual([
-      'view',
-      'select',
-      'scale',
-      'subpathways',
-      'dark',
-      'delay',
-      'maxSize',
-      'token',
-    ]);
+  it('names every parameter the handler reads, checked against the handler', () => {
+    // Asserting a literal list only catches someone editing the list. This
+    // reads what `service.mjs` actually pulls out of the query string, so a
+    // parameter added to the handler and not to ACCEPTED fails here -- which is
+    // the real failure: it would work in development and be refused in
+    // production, since nothing in the handler rejects on its own.
+    const handler = readFileSync(new URL('./service.mjs', import.meta.url), 'utf8');
+    const read = [...handler.matchAll(/req\.query\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+    expect(read.length, 'the handler reads the query string at all').toBeGreaterThan(0);
+    for (const name of new Set(read)) expect(ACCEPTED).toContain(name);
   });
 
   it('bounds every numeric parameter it accepts', () => {
@@ -140,5 +138,28 @@ describe('the classes view=reaction can mean something for', () => {
     for (const c of ['Pathway', 'TopLevelPathway', 'CellLineagePath']) {
       expect(REACTION_CLASSES.has(c)).toBe(false);
     }
+  });
+});
+
+describe('a parameter given more than once', () => {
+  it('is named, so the caller is not left guessing which one was taken', () => {
+    expect(repeated({ dark: ['true', 'false'] })).toEqual(['dark']);
+  });
+
+  it('catches token, which used to be dropped silently', () => {
+    // `typeof req.query.token === 'string' ? … : ''` -- an array failed the
+    // check and became the empty string, so the figure rendered with no
+    // analysis overlay and a 200.
+    expect(repeated({ token: ['a', 'b'] })).toEqual(['token']);
+  });
+
+  it('passes a single value of each', () => {
+    expect(repeated({ dark: 'true', token: 'a', scale: '2' })).toEqual([]);
+  });
+
+  it('is left out of the canonical url, which has no single value to offer', () => {
+    expect(canonicalUrl('R-HSA-1', 'png', { token: ['a', 'b'], scale: '1' })).toBe(
+      '/render/R-HSA-1.png?scale=1'
+    );
   });
 });
