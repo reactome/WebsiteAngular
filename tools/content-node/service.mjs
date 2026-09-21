@@ -462,14 +462,19 @@ function only(source, keys) {
  *
  * A content hash rather than a git sha, because a sha has to be passed in at
  * build time and anything that has to be remembered eventually is not. Compare
- * it against a checkout with `cat tools/content-node/*.mjs | sha256sum`, taking
+ * it against a checkout with `ls tools/content-node/*.mjs | grep -v spec | xargs cat | sha256sum`, taking
  * the files sorted by name as readdir gives them here.
  */
 function buildId() {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const names = readdirSync(here)
-      .filter((name) => name.endsWith('.mjs'))
+      // Specs excluded. They ship in the image -- the Dockerfile copies the
+      // directory -- but they are not what the service does, and a fingerprint
+      // that changes when a test is edited reports a deployment difference that
+      // is not one. Caught by this very endpoint: adding service.spec.mjs moved
+      // the hash without changing a line the service runs.
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.spec.mjs'))
       .sort();
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));

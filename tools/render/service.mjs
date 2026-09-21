@@ -407,7 +407,7 @@ async function renderCached(params) {
  * cannot be forgotten: it is computed from the files themselves. Compare it
  * against a checkout with
  *
- *   cat <dir>/*.mjs | sha256sum
+ *   cat <dir>/*.mjs | grep -v spec | sha256sum
  *
  * taking the files in the same order -- sorted by name, which is what readdir
  * is sorted into below.
@@ -416,7 +416,12 @@ function buildId() {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const names = readdirSync(here)
-      .filter((name) => name.endsWith('.mjs'))
+      // Specs excluded. They ship in the image -- the Dockerfile copies the
+      // directory -- but they are not what the service does, and a fingerprint
+      // that changes when a test is edited reports a deployment difference that
+      // is not one. Caught by this very endpoint: adding service.spec.mjs moved
+      // the hash without changing a line the service runs.
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.spec.mjs'))
       .sort();
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));
