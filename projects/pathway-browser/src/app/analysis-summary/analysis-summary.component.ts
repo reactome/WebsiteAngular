@@ -10,7 +10,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { renderChallenge } from '../../../../website-angular/src/app/search/answer/turnstile';
-import { provenance as describeProvenance, waitingMessage as describeWait } from './panel-copy';
+import {
+  provenance as describeProvenance,
+  recipientNote as describeRecipient,
+  waitingMessage as describeWait,
+} from './panel-copy';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -170,6 +174,35 @@ export class AnalysisSummaryComponent {
 
   /** Whether the "how this was made" note is open. */
   readonly howOpen = signal(false);
+
+  /**
+   * Whether the button that offers a summary is on screen.
+   *
+   * Its own name because two things need it: the button block, and the note
+   * below, which may only appear beside something it explains.
+   */
+  readonly offering = computed(
+    () =>
+      this.summarisable() &&
+      !this.summary.asking() &&
+      !this.summary.state() &&
+      !this.summary.challenge()
+  );
+
+  /**
+   * Whether the note has anything to sit under.
+   *
+   * `howOpen` survives the thing that opened it -- a reader opens it beside the
+   * button, asks, and the request fails -- and without this the note rendered
+   * on its own: an explanation of what gets sent, floating above an error,
+   * with no button and no summary anywhere near it.
+   */
+  readonly showHow = computed(
+    () => this.howOpen() && (this.offering() || (this.summary.visible() && !!this.heading()))
+  );
+
+  /** @see recipientNote -- names the third party, which "AI" does not. */
+  readonly recipientNote = describeRecipient;
 
   /** @see provenance -- reads the *applied* tier, never the requested one. */
   readonly provenance = computed(() => describeProvenance(this.summary.applied()));

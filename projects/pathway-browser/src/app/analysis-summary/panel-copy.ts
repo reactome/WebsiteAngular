@@ -37,12 +37,39 @@ export function waitingMessage(started: boolean): string {
  * reader's behalf, which is the one thing this sentence exists to be right
  * about.
  *
- * Null -- no `start` seen -- reads as the aggregate case, because that is what
- * is true of a summary nothing has told us otherwise about, and because the
- * error worth avoiding is claiming identifiers were sent when they were not.
+ * Null -- no `start` seen, which includes every reader who has not yet clicked
+ * -- reads as the aggregate case. That is what the panel always asks for, and
+ * the error worth avoiding is telling somebody their identifiers were sent when
+ * they were not.
  */
 export function provenance(applied: Disclosure | null): string {
+  // Present tense, because this note opens on both sides of the click: "was
+  // given" is a lie to somebody who has not pressed the button yet.
   return applied === 'identifiers'
-    ? 'It was given your analysis result and the identifiers from it that Reactome could not match.'
-    : 'It was given your analysis result — the pathways it found — and not your identifiers.';
+    ? 'What is sent: your analysis result, and the identifiers from it that Reactome could not match.'
+    : 'What is sent: your analysis result — the pathways it found — and not the identifiers you uploaded.';
+}
+
+/**
+ * Who receives the result, named rather than implied.
+ *
+ * "AI-generated" describes a technology; a reader deciding whether to press the
+ * button is deciding whether their analysis result may leave Reactome, and the
+ * answer to "to whom" is a company. React-to-Me runs on Reactome's own
+ * infrastructure but calls OpenAI's models to write the text, so OpenAI is the
+ * third party even though the reader never talks to it.
+ *
+ * Present tense, and true both before the click and after it: the reader can
+ * open this note either side of pressing the button.
+ *
+ * Deliberately makes no claim about what the provider does with the data
+ * afterwards -- retention, training -- because that is their contract to state
+ * and not ours to summarise from memory.
+ */
+export function recipientNote(): string {
+  return (
+    'Summaries are written by React-to-Me, Reactome’s assistant. It runs on Reactome ' +
+    'infrastructure but sends the text of your request to OpenAI, which generates the summary. ' +
+    'That makes OpenAI a third party to this request.'
+  );
 }

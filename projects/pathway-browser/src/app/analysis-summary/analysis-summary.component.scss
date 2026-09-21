@@ -183,3 +183,15 @@ h3 {
   background: var(--tertiary-contrast-3);
   color: white;
 }
+
+// Sits under the button it qualifies, and reads as information rather than as a
+// warning: this is what pressing the button does, not a hazard notice.
+.pre-disclosure {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--tertiary-contrast-3);
+}
