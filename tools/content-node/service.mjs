@@ -396,6 +396,13 @@ export const endpoints = [
         // most recent edit. That removes exactly one row and moves nothing else,
         // so the list is Java's with the duplicate dropped rather than a
         // different list.
+        // An id that is neither numeric nor an ORCID matches nothing, and this
+        // answers `[]` where Java answers a **bare empty 200** -- no body, no
+        // content-type. A deliberate difference rather than a miss: any client
+        // calling `.json()` on an empty body throws, and every client must
+        // already handle `[]`, because that is what a person with no reviewed
+        // reactions legitimately gets. Returning the same shape for "none" and
+        // "none, and your id was nonsense" cannot break a caller that works.
         const seen = new Set();
         const body = [];
         for (const row of rows) {
