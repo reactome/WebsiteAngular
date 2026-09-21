@@ -74,6 +74,47 @@ services:
     # renderer that fails only on large diagrams is the usual symptom.
     shm_size: '1gb'
 
+  # The MCP server (reactome-mcp), which lets an AI assistant read Reactome
+  # through its own tools rather than through a browser.
+  #
+  # Here because until now it had no definition anywhere: it was a `docker run`
+  # somebody typed once, bind-mounting a git checkout at /srv. That works until
+  # the box reboots or the checkout moves, and nothing records what it was run
+  # with. A compose entry is the smallest thing that makes it reproducible.
+  #
+  # The image is built from a checkout rather than pulled, because the package
+  # is not published to npm. MCP_SRC points at it; a deployment that has the
+  # repository somewhere else sets that rather than editing this.
+  mcp:
+    image: node:22-slim
+    working_dir: /srv
+    command: ['node', 'dist/http-server.js']
+    restart: unless-stopped
+    # Loopback only, and emphatically not 0.0.0.0. Same reason as `render`
+    # above, and worse per request: a tool call here can submit a real job to
+    # the Analysis Service, so the only way in is through whatever fronts the
+    # site, which rate-limits it. The container this replaces set
+    # MCP_HTTP_HOST=0.0.0.0 safely because it was on a private compose network
+    # with nothing published; that is not safe under `network_mode: host`, so
+    # the binding is pinned here rather than inherited.
+    ports:
+      - '127.0.0.1:4320:4320'
+    environment:
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=4320
+      # Which Reactome it answers from: this deployment's own, never another's.
+      # An MCP on beta that answered from production would describe a release
+      # nobody here is running.
+      - REACTOME_BASE_URL=${MCP_REACTOME_BASE_URL:-https://beta.reactome.org}
+      # NEO4J_URI and MCP_ALLOW_CYPHER are both deliberately absent, and it
+      # takes both to register the Cypher tools. Arbitrary graph queries used to
+      # arrive as a side effect of setting a connection string -- the startup
+      # schema warm-up wants the same variable -- so an instance could acquire
+      # them without anyone deciding to. Neither belongs on an instance the
+      # public can reach.
+    volumes:
+      - ${MCP_SRC:-../reactome-mcp}:/srv:ro
+
   content-node:
     build:
       context: .
