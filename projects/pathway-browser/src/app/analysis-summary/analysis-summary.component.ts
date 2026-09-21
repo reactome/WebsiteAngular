@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -81,6 +81,19 @@ export class AnalysisSummaryComponent {
         return null;
     }
   });
+
+  constructor() {
+    // The service is a singleton, so without this a summary outlives the result
+    // it was written about: summarise analysis A, switch to analysis B, and A's
+    // text sits under B's heading attributed to B's data. Worse than an empty
+    // panel, because it is wrong rather than absent.
+    let previous: string | null = null;
+    effect(() => {
+      const token = this.token();
+      if (previous !== null && token !== previous) this.summary.clear();
+      previous = token;
+    });
+  }
 
   async ask(): Promise<void> {
     await this.summary.summarise(this.token());

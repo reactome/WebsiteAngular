@@ -114,7 +114,12 @@ export class SummaryService {
     this._requested.set(disclosure);
     this._challenge.set(null);
 
-    const key = `${this.release ?? 'unknown'}::${analysis}::${disclosure}`;
+    // Keyed on what is known *before* asking. `release` arrives in the `start`
+    // event, so including it meant the first request stored under `unknown` and
+    // every later one looked under `97` -- a cache that could never hit. It is
+    // not needed anyway: this cache lives in one page's memory, and a release
+    // during a session would replace the process that holds it.
+    const key = `${analysis}::${disclosure}`;
     const cached = this.cache.get(key);
     if (cached) {
       // The service caches too -- byte-identical text for the same token -- but

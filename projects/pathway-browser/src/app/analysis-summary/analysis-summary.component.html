@@ -4,8 +4,22 @@
          service, and a reader opens a result far more often than they want one
          written about. Asking on every view would spend the budget on people
          who never read it and make the ones who do wait behind them. -->
-    @if (!summary.asking() && !summary.state()) {
+    @if (!summary.asking() && !summary.state() && !summary.challenge()) {
       <button type="button" class="ask" (click)="ask()">Summarise this result</button>
+    }
+
+    @if (summary.challenge()) {
+      <!-- The gate refused because it cannot tell a person is here, and this
+           panel has no widget of its own to ask with. Saying so is the honest
+           state: without it the button reappears, the reader clicks, is refused
+           again, and nothing on screen ever explains the loop.
+           The identity is shared with the search page's answer, so verifying
+           once there verifies here too. -->
+      <p class="explanation" role="status">
+        This deployment asks for a quick check that a person is here before writing a summary. Use the answer panel on
+        the
+        <a href="/content/query">search page</a> once, then come back.
+      </p>
     }
 
     @if (summary.asking()) {
