@@ -11,6 +11,11 @@
   display: flex;
   flex: 1;
   flex-direction: row;
+  // Wraps, because this row is no longer two words and a link. There is no
+  // media query in this file: the bar was narrow enough never to need one, and
+  // adding the status link is what makes it possible to run out of room on a
+  // phone. A row that cannot wrap does not shrink, it overflows.
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
@@ -55,7 +60,10 @@
 }
 
 // Separates the copyright from the status link without implying a list.
+//
+// No margin: the parent already sets `gap: 4px`, and a margin on top of it gave
+// this one item 16px of space against everything else's 4px -- which looks like
+// a mistake precisely because it was one.
 .separator {
-  margin: 0 6px;
   opacity: 0.5;
 }
