@@ -26,7 +26,13 @@
       <p class="working" role="status">Summarising your result…</p>
     }
 
-    @if (summary.visible()) {
+    <!-- Prose only when we know what it is allowed to claim. An analysis type
+         outside the three we have copy for is a contract change, and the safe
+         reading of a contract change is to show nothing rather than to show a
+         reader text with no idea what it may and may not be saying -- which is
+         the whole reason the headings differ. Same rule as an unrecognised
+         terminal state. -->
+    @if (summary.visible() && heading()) {
       @if (heading(); as head) {
         <h3>{{ head.title }}</h3>
         <!-- The constraint said out loud, next to the text it constrains. A

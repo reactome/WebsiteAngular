@@ -31,6 +31,17 @@ import {
  */
 const OVERALL_TIMEOUT_MS = 120_000;
 
+/**
+ * Outcomes worth remembering for the rest of the session.
+ *
+ * Each is a fact about the analysis rather than about one attempt at it: the
+ * text itself, a result that has expired, one we have no record of, a kind we do
+ * not summarise. `failed` and `refused` are the opposite -- they say something
+ * about this moment, and remembering them would answer the next click from the
+ * cache and never try again.
+ */
+const CACHEABLE = new Set<SummaryState>(['answered', 'gone', 'not_found', 'unsupported']);
+
 interface Cached {
   text: string;
   citations: Citation[];
@@ -147,7 +158,12 @@ export class SummaryService {
     try {
       await this.stream(this.endpoint, analysis, disclosure, controller.signal);
       const state = this._state();
-      if (state) {
+      // Only outcomes that are facts about the analysis. `failed` and `refused`
+      // are facts about this *attempt*: caching a rate-limited refusal means the
+      // reader can never get a summary again in that session, because the next
+      // click is answered from the cache without a request -- a transient
+      // problem made permanent by the thing meant to make it faster.
+      if (state && CACHEABLE.has(state)) {
         this.cache.set(key, {
           text: this._text(),
           citations: this._citations(),
@@ -157,13 +173,19 @@ export class SummaryService {
         });
       }
     } catch {
-      // Includes our own abort. Anything here means no summary, which is the
-      // same outcome as `failed`.
-      if (this._state() === null) this._state.set('failed');
+      // Includes our own abort, which is why this is guarded. Clicking twice
+      // aborts the first request, and its rejection lands *after* the second
+      // has reset the state to null -- so an unguarded `failed` here is written
+      // over a request that is still streaming perfectly well.
+      if (this.inFlight === controller && this._state() === null) this._state.set('failed');
     } finally {
       clearTimeout(timer);
-      if (this.inFlight === controller) this.inFlight = null;
-      this._asking.set(false);
+      // Both guarded, for the same reason: the first request's cleanup must not
+      // turn off the second request's spinner.
+      if (this.inFlight === controller) {
+        this.inFlight = null;
+        this._asking.set(false);
+      }
     }
   }
 

@@ -158,13 +158,19 @@ export class AnswerService {
     try {
       await this.stream(this.endpoint, asked, controller.signal);
     } catch {
-      // Includes our own abort. Anything that goes wrong here means no panel,
-      // which is the same outcome as `failed` and needs no separate handling.
-      if (this._state() === null) this._state.set('failed');
+      // Includes our own abort, which is why this is guarded. Asking a second
+      // question aborts the first, and its rejection lands *after* the second
+      // has reset the state to null -- so an unguarded `failed` here is written
+      // over a request that is still streaming perfectly well.
+      if (this.inFlight === controller && this._state() === null) this._state.set('failed');
     } finally {
       clearTimeout(timer);
-      if (this.inFlight === controller) this.inFlight = null;
-      this._asking.set(false);
+      // Guarded for the same reason: the first question's cleanup must not turn
+      // off the second question's spinner.
+      if (this.inFlight === controller) {
+        this.inFlight = null;
+        this._asking.set(false);
+      }
     }
   }
 
