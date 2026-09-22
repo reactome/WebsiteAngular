@@ -62,28 +62,19 @@ export const endpoints = [
      * `cached` handler at startup, so the scan is paid once, off the request
      * path, and never by a reader.
      */
-    handler: cached(
-      'database/version',
-      async () => {
-        const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
-        if (!row) return { status: 404, body: 'no DBInfo node' };
-        return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
-      },
-      // A minute of staleness after a release, instead of forever.
-      { ttlMs: 60_000 }
-    ),
+    handler: cached('database/version', async () => {
+      const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
+      if (!row) return { status: 404, body: 'no DBInfo node' };
+      return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
+    }),
   },
   {
     path: '/ContentService/data/database/name',
-    handler: cached(
-      'database/name',
-      async () => {
-        const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
-        if (!row) return { status: 404, body: 'no DBInfo node' };
-        return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
-      },
-      { ttlMs: 60_000 }
-    ),
+    handler: cached('database/name', async () => {
+      const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
+      if (!row) return { status: 404, body: 'no DBInfo node' };
+      return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
+    }),
   },
   {
     path: '/ContentService/data/pathways/top/{id}',
@@ -605,38 +596,27 @@ export const endpoints = [
  * again. A slow start costs one slow request instead of an empty page nobody
  * connects to a restart hours earlier.
  *
- * `ttlMs` bounds how stale an answer may be. Without one the value is held for
- * the life of the process, which was justified here as "a release restarts the
- * service, and these lists only change with the graph". That is true of Java,
- * whose WAR is redeployed, and **not** of this: it runs as a container with
- * `restart: unless-stopped`, and nothing in the release procedure or in any
- * script on the host restarts it. Checked rather than assumed, after caching
- * something where being stale is worse than being slow.
+ * Held for the life of the process, which makes restarting this service part of
+ * updating the database rather than an optimisation detail. That is the agreed
+ * rule, and it is the rule rather than an inference: the previous version of
+ * this comment asserted that "a release restarts the service", which is true of
+ * Java -- its WAR is redeployed -- and was not true of this, a container with
+ * `restart: unless-stopped` that nothing restarted.
  *
- * So a value that decides what the site asks for elsewhere takes a TTL. The
- * release number is the case in point -- it keys the bucket paths for diagrams,
- * figures and icons, so serving last release's number sends every one of those
- * requests to the wrong prefix, and it would keep doing so until somebody
- * noticed and restarted a container.
- *
- * The lists keep the unbounded form. They are large to rebuild, they are only
- * read by pages that render them, and a stale entry there is a missing person
- * or a missing DOI until the next deploy rather than a wrong URL everywhere.
- * That is a judgement about consequence, not about likelihood, and it is
- * written down here so the next person can disagree with it knowingly.
+ * What it costs to get wrong, so the rule is worth keeping: the release number
+ * keys the bucket paths for diagrams, figures and icons, so a service holding
+ * the previous release's number sends every one of those requests to the wrong
+ * prefix, and keeps doing it silently. `/health` reports the release this
+ * process is holding for exactly that reason -- a missed restart is then one
+ * curl away from being obvious instead of invisible.
  */
-function cached(name, build, { ttlMs = Infinity } = {}) {
+function cached(name, build) {
   let ready;
-  let builtAt = 0;
   const handler = async (request) => {
-    if (ready && Date.now() - builtAt > ttlMs) ready = undefined;
-    if (!ready) {
-      builtAt = Date.now();
-      ready = build(request).catch((error) => {
-        ready = undefined;
-        throw error;
-      });
-    }
+    ready ??= build(request).catch((error) => {
+      ready = undefined;
+      throw error;
+    });
     const started = Date.now();
     const answer = await ready;
     const spent = Date.now() - started;
@@ -653,9 +633,6 @@ function cached(name, build, { ttlMs = Infinity } = {}) {
   // Marks this one for warming at startup; a handler that reads its request
   // cannot be warmed, and saying so here keeps that decision beside the cache.
   handler.warms = true;
-  // Readable by the spec: a cache that may never expire is a decision, and one
-  // that can be asserted is a decision that stays made.
-  handler.ttlMs = ttlMs;
   return handler;
 }
 
@@ -811,11 +788,32 @@ export function app() {
   const server = express();
   server.disable('x-powered-by');
 
-  server.get('/health', (_request, response) => {
+  server.get('/health', async (_request, response) => {
+    // The release this process is holding, which is the one thing here that can
+    // be wrong without anything looking wrong. Caches live for the life of the
+    // process by agreement -- updating the database includes restarting this --
+    // and a missed restart shows up as diagram, figure and icon URLs pointing at
+    // the previous release's bucket prefix, silently. Reporting it makes that
+    // one curl away from obvious.
+    //
+    // Read through the same cache the endpoint uses, so this reports what is
+    // being *served* rather than what the graph currently says. A health check
+    // that went straight to the database would answer correctly while every
+    // other response was stale, which is the opposite of useful.
+    let release = null;
+    try {
+      const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+      const answer = await version?.handler({ params: {}, query: {} });
+      release = answer?.body ?? null;
+    } catch {
+      // A health check that fails because the graph is down is reporting the
+      // wrong thing: the process is up, and that is what this answers.
+    }
     response.json({
       ok: true,
       ...buildId(),
       graph: configured(),
+      release,
       endpoints: endpoints.map((e) => e.path),
     });
   });

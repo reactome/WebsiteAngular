@@ -124,27 +124,29 @@ describe('the species lists', () => {
   });
 });
 
-describe('how long a cached answer may be stale', () => {
+describe('what /health says about staleness', () => {
   /**
-   * The release number keys the bucket paths for diagrams, figures and icons,
-   * so serving the previous release's number sends every one of those requests
-   * to the wrong prefix. Before this it was held for the life of the process on
-   * the grounds that "a release restarts the service" — true of Java, whose WAR
-   * is redeployed, and not of this, which runs as a container with
-   * `restart: unless-stopped` that nothing in the release procedure touches.
+   * Caches live for the life of the process by agreement: updating the database
+   * includes restarting this service. The previous version of that reasoning
+   * was an inference — "a release restarts the service", true of Java's WAR and
+   * not of a container with `restart: unless-stopped` — so the rule is now the
+   * rule, and this is what makes a missed restart visible.
+   *
+   * It matters because the release number keys the bucket paths for diagrams,
+   * figures and icons: a process holding the previous one sends all of those to
+   * the wrong prefix, and nothing else about the response looks wrong.
    */
-  it("gives the database endpoints a bounded life, not the process's", () => {
-    const version = endpoints.find((e) => e.path.endsWith('/database/version'));
-    const name = endpoints.find((e) => e.path.endsWith('/database/name'));
-    for (const endpoint of [version, name]) {
-      expect(endpoint.handler.ttlMs, `${endpoint.path} must not be cached forever`).toBeLessThan(
-        5 * 60_000
-      );
-    }
+  it('reports the release it is serving', async () => {
+    const health = await (await fetch(`${base}/health`)).json();
+    expect(health).toHaveProperty('release');
   });
 
-  it('still warms them at startup, so no reader pays the first scan', () => {
-    const version = endpoints.find((e) => e.path.endsWith('/database/version'));
-    expect(version.handler.warms).toBe(true);
+  it('still answers when the graph cannot be reached', async () => {
+    // No credentials in this suite, so the version handler throws. A health
+    // check that failed on that would be reporting the database's health under
+    // the name of the process's.
+    const response = await fetch(`${base}/health`);
+    expect(response.status).toBe(200);
+    expect((await response.json()).ok).toBe(true);
   });
 });
