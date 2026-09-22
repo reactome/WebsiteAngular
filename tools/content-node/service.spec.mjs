@@ -102,3 +102,51 @@ describe("the person lists' declared difference", () => {
     expect(person.differs?.length, 'the normalisation is declared').toBeGreaterThan(0);
   });
 });
+
+describe('the species lists', () => {
+  const paths = endpoints.map((e) => e.path);
+
+  it('serves both, on the paths Java uses', () => {
+    expect(paths).toContain('/ContentService/data/species/main');
+    expect(paths).toContain('/ContentService/data/species/all');
+  });
+
+  it('serves them as two entries rather than one taking a flag', () => {
+    // The two differ in order as well as contents -- `main` pins Homo sapiens
+    // first, `all` is plain alphabetical including human in its place -- and a
+    // single handler with a boolean is how one of those silently acquires the
+    // other's sort. Both orders are proven against Java by `diff.mjs`, which
+    // needs a database and so cannot run here; what this can hold is that they
+    // stayed separate.
+    const species = endpoints.filter((e) => e.path.includes('/data/species/'));
+    expect(species).toHaveLength(2);
+    expect(species[0].handler).not.toBe(species[1].handler);
+  });
+});
+
+describe('what /health says about staleness', () => {
+  /**
+   * Caches live for the life of the process by agreement: updating the database
+   * includes restarting this service. The previous version of that reasoning
+   * was an inference — "a release restarts the service", true of Java's WAR and
+   * not of a container with `restart: unless-stopped` — so the rule is now the
+   * rule, and this is what makes a missed restart visible.
+   *
+   * It matters because the release number keys the bucket paths for diagrams,
+   * figures and icons: a process holding the previous one sends all of those to
+   * the wrong prefix, and nothing else about the response looks wrong.
+   */
+  it('reports the release it is serving', async () => {
+    const health = await (await fetch(`${base}/health`)).json();
+    expect(health).toHaveProperty('release');
+  });
+
+  it('still answers when the graph cannot be reached', async () => {
+    // No credentials in this suite, so the version handler throws. A health
+    // check that failed on that would be reporting the database's health under
+    // the name of the process's.
+    const response = await fetch(`${base}/health`);
+    expect(response.status).toBe(200);
+    expect((await response.json()).ok).toBe(true);
+  });
+});

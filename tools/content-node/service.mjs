@@ -40,19 +40,41 @@ export const endpoints = [
     // still caught a wrong guess. The property is `releaseNumber`; `version` does
     // not exist on DBInfo and returned null, which the diff reported against
     // Java's 97 before anything could be switched on.
-    handler: async () => {
+    /**
+     * Cached, like every other list here, and for a sharper reason: measured
+     * against Java, this answered in 286ms where Java took 1.1ms, because Java
+     * holds the value and this went to the graph on every request. The site
+     * asks for the release on every page load -- it is what keys the bucket
+     * paths for diagrams, figures and icons -- so that was the most-called
+     * endpoint of the set and the slowest.
+     *
+     * Safe for the same reason Java's is: the release number changes when the
+     * database is replaced, and that restarts the service.
+     *
+     * Not fixable with an index on this instance, and the reason is worth
+     * knowing before porting anything else: there is no token index here, so
+     * `MATCH (n:DBInfo)` plans as `AllNodesScan + Filter` and reads all
+     * 2,958,129 nodes to find one. ~700ms, and the same for any label-only
+     * match -- which is why Java's `/data/species/main` takes 682ms too. See
+     * the note on `read` in graph.mjs.
+     *
+     * Caching is the fix available from this side. The service warms every
+     * `cached` handler at startup, so the scan is paid once, off the request
+     * path, and never by a reader.
+     */
+    handler: cached('database/version', async () => {
       const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
-    },
+    }),
   },
   {
     path: '/ContentService/data/database/name',
-    handler: async () => {
+    handler: cached('database/name', async () => {
       const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
-    },
+    }),
   },
   {
     path: '/ContentService/data/pathways/top/{id}',
@@ -503,6 +525,57 @@ export const endpoints = [
       differs: [/: java normalised by the endpoint's own rule before comparing$/],
     }))
   ),
+  ...[
+    {
+      suffix: 'main',
+      /**
+       * A species Reactome has curated pathways for, which is the list every
+       * species selector on the site offers.
+       *
+       * "Main" is not a property on the node -- all 96 Species carry exactly the
+       * same six -- it is a relationship: 16 of them are the target of at least
+       * one TopLevelPathway's `species`, and 16 is what Java returns. Checked
+       * against the graph rather than inferred from the count matching, because
+       * two numbers agreeing is not a rule.
+       */
+      match: '(s:Species)<-[:species]-(:TopLevelPathway)',
+    },
+    { suffix: 'all', match: '(s:Species)' },
+  ].map(({ suffix, match }) => ({
+    path: `/ContentService/data/species/${suffix}`,
+    /**
+     * The species lists, which differ in their order as well as their contents.
+     *
+     * `main` puts Homo sapiens first and sorts the rest by name; `all` is plain
+     * alphabetical, human included, in its place. Both verified against the live
+     * responses -- and the difference is the reason they are written as two rows
+     * of one generator rather than one handler taking a flag, because a shared
+     * sort would have quietly given `all` a pinned human or `main` an unpinned
+     * one, and the page would still have rendered.
+     *
+     * Reactome pins human because it is the reference species everything else is
+     * inferred from, so a selector that buries it between Gallus and Mus is
+     * asking every reader to hunt for the common case.
+     */
+    handler: cached(`species/${suffix}`, async () => {
+      const rows = await read(
+        `MATCH ${match}
+         WITH DISTINCT s
+         RETURN properties(s) AS species
+         ORDER BY CASE WHEN s.displayName = 'Homo sapiens' THEN 0 ELSE 1 END, s.displayName`
+      );
+      const body = rows.map(({ species }) => ({
+        ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
+        className: species.schemaClass,
+        schemaClass: species.schemaClass,
+      }));
+      // `all` is alphabetical throughout, so the pin the query applies for
+      // `main` is undone here rather than by a second query. One ORDER BY that
+      // both share, and one line saying which of them does not want it.
+      if (suffix === 'all') body.sort((a, b) => (a.displayName < b.displayName ? -1 : 1));
+      return { status: 200, body, type: 'application/json' };
+    }),
+  })),
 ];
 
 /**
@@ -523,8 +596,19 @@ export const endpoints = [
  * again. A slow start costs one slow request instead of an empty page nobody
  * connects to a restart hours earlier.
  *
- * Nothing refreshes it while the process lives, which matches Java: a release
- * restarts the service, and these lists only change with the graph.
+ * Held for the life of the process, which makes restarting this service part of
+ * updating the database rather than an optimisation detail. That is the agreed
+ * rule, and it is the rule rather than an inference: the previous version of
+ * this comment asserted that "a release restarts the service", which is true of
+ * Java -- its WAR is redeployed -- and was not true of this, a container with
+ * `restart: unless-stopped` that nothing restarted.
+ *
+ * What it costs to get wrong, so the rule is worth keeping: the release number
+ * keys the bucket paths for diagrams, figures and icons, so a service holding
+ * the previous release's number sends every one of those requests to the wrong
+ * prefix, and keeps doing it silently. `/health` reports the release this
+ * process is holding for exactly that reason -- a missed restart is then one
+ * curl away from being obvious instead of invisible.
  */
 function cached(name, build) {
   let ready;
@@ -704,11 +788,32 @@ export function app() {
   const server = express();
   server.disable('x-powered-by');
 
-  server.get('/health', (_request, response) => {
+  server.get('/health', async (_request, response) => {
+    // The release this process is holding, which is the one thing here that can
+    // be wrong without anything looking wrong. Caches live for the life of the
+    // process by agreement -- updating the database includes restarting this --
+    // and a missed restart shows up as diagram, figure and icon URLs pointing at
+    // the previous release's bucket prefix, silently. Reporting it makes that
+    // one curl away from obvious.
+    //
+    // Read through the same cache the endpoint uses, so this reports what is
+    // being *served* rather than what the graph currently says. A health check
+    // that went straight to the database would answer correctly while every
+    // other response was stale, which is the opposite of useful.
+    let release = null;
+    try {
+      const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+      const answer = await version?.handler({ params: {}, query: {} });
+      release = answer?.body ?? null;
+    } catch {
+      // A health check that fails because the graph is down is reporting the
+      // wrong thing: the process is up, and that is what this answers.
+    }
     response.json({
       ok: true,
       ...buildId(),
       graph: configured(),
+      release,
       endpoints: endpoints.map((e) => e.path),
     });
   });
