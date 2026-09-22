@@ -40,19 +40,43 @@ export const endpoints = [
     // still caught a wrong guess. The property is `releaseNumber`; `version` does
     // not exist on DBInfo and returned null, which the diff reported against
     // Java's 97 before anything could be switched on.
-    handler: async () => {
+    /**
+     * Cached, like every other list here, and for a sharper reason: measured
+     * against Java, this answered in 286ms where Java took 1.1ms, because Java
+     * holds the value and this went to the graph on every request. The site
+     * asks for the release on every page load -- it is what keys the bucket
+     * paths for diagrams, figures and icons -- so that was the most-called
+     * endpoint of the set and the slowest.
+     *
+     * Safe for the same reason Java's is: the release number changes when the
+     * database is replaced, and that restarts the service.
+     *
+     * Not an index problem, which was the first thing checked: this matches one
+     * DBInfo node by label, and there is no index that improves reading a
+     * single node found by label scan.
+     *
+     * What it is instead was not worth chasing further than the fix. A
+     * standalone script driving the same query through the same module reports
+     * ~700ms consistently, and the long-running service answers it in 8.7ms on
+     * its first request -- same query, same credentials file, same localhost
+     * instance. So the number a one-off script reports is not the number the
+     * service pays, and it is the service's that matters. Recorded rather than
+     * explained, because the fix for a value that never changes is the same
+     * either way: stop asking for it.
+     */
+    handler: cached('database/version', async () => {
       const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
-    },
+    }),
   },
   {
     path: '/ContentService/data/database/name',
-    handler: async () => {
+    handler: cached('database/name', async () => {
       const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
-    },
+    }),
   },
   {
     path: '/ContentService/data/pathways/top/{id}',
