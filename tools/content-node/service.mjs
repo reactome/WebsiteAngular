@@ -51,18 +51,16 @@ export const endpoints = [
      * Safe for the same reason Java's is: the release number changes when the
      * database is replaced, and that restarts the service.
      *
-     * Not an index problem, which was the first thing checked: this matches one
-     * DBInfo node by label, and there is no index that improves reading a
-     * single node found by label scan.
+     * Not fixable with an index on this instance, and the reason is worth
+     * knowing before porting anything else: there is no token index here, so
+     * `MATCH (n:DBInfo)` plans as `AllNodesScan + Filter` and reads all
+     * 2,958,129 nodes to find one. ~700ms, and the same for any label-only
+     * match -- which is why Java's `/data/species/main` takes 682ms too. See
+     * the note on `read` in graph.mjs.
      *
-     * What it is instead was not worth chasing further than the fix. A
-     * standalone script driving the same query through the same module reports
-     * ~700ms consistently, and the long-running service answers it in 8.7ms on
-     * its first request -- same query, same credentials file, same localhost
-     * instance. So the number a one-off script reports is not the number the
-     * service pays, and it is the service's that matters. Recorded rather than
-     * explained, because the fix for a value that never changes is the same
-     * either way: stop asking for it.
+     * Caching is the fix available from this side. The service warms every
+     * `cached` handler at startup, so the scan is paid once, off the request
+     * path, and never by a reader.
      */
     handler: cached('database/version', async () => {
       const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
