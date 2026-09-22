@@ -123,3 +123,28 @@ describe('the species lists', () => {
     expect(species[0].handler).not.toBe(species[1].handler);
   });
 });
+
+describe('how long a cached answer may be stale', () => {
+  /**
+   * The release number keys the bucket paths for diagrams, figures and icons,
+   * so serving the previous release's number sends every one of those requests
+   * to the wrong prefix. Before this it was held for the life of the process on
+   * the grounds that "a release restarts the service" — true of Java, whose WAR
+   * is redeployed, and not of this, which runs as a container with
+   * `restart: unless-stopped` that nothing in the release procedure touches.
+   */
+  it("gives the database endpoints a bounded life, not the process's", () => {
+    const version = endpoints.find((e) => e.path.endsWith('/database/version'));
+    const name = endpoints.find((e) => e.path.endsWith('/database/name'));
+    for (const endpoint of [version, name]) {
+      expect(endpoint.handler.ttlMs, `${endpoint.path} must not be cached forever`).toBeLessThan(
+        5 * 60_000
+      );
+    }
+  });
+
+  it('still warms them at startup, so no reader pays the first scan', () => {
+    const version = endpoints.find((e) => e.path.endsWith('/database/version'));
+    expect(version.handler.warms).toBe(true);
+  });
+});
