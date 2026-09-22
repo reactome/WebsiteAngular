@@ -251,11 +251,26 @@ services:
     # deliberately so nothing else can.
     network_mode: host
     volumes:
-      # Which environment this host is. dev.conf here; production.conf on the
-      # host that must be indexed, where the blanket bot rule would be
-      # catastrophic rather than merely wrong. See deploy/nginx/README.md.
-      - ./deploy/nginx/${NGINX_ENV:-dev}.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./deploy/nginx/common:/etc/nginx/common:ro
+      # The **staged** configuration, not the working tree.
+      #
+      # Mounting `deploy/nginx` directly made a working directory a deployment
+      # input: check out a branch and the routes inside the running container
+      # are that branch's, one reload away from live. That is not hypothetical
+      # -- a feature branch's /mcp route was found sitting in this container,
+      # inert only because nginx reads its configuration at start rather than
+      # continuously.
+      #
+      # `.staged/` is gitignored, so no checkout touches it, and
+      # `scripts/stage-nginx.sh` is the only thing that writes to it -- after
+      # running `nginx -t` against what it is about to stage, so an invalid
+      # configuration never reaches the path a reload would read.
+      #
+      # Which environment this host is is chosen when staging, by NGINX_ENV.
+      # dev on this box; production on the host that must be indexed, where the
+      # blanket bot rule would be catastrophic rather than merely wrong. See
+      # deploy/nginx/README.md.
+      - ./deploy/nginx/.staged/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/.staged/common:/etc/nginx/common:ro
       # The one part that cannot live in the repository. Paths are variables so
       # a laptop can point somewhere else, or at an empty directory when it is
       # serving plain HTTP and has no certificates at all.

@@ -89,3 +89,8 @@ tools/svg-export-harness/harness.bundle.js
 # repository is public. Mounted into the container and read literally; never
 # parsed, never committed. See docker-compose.yml.
 .content-node.env
+
+# Staged nginx configuration: written by scripts/stage-nginx.sh, mounted by the
+# nginx service. Deliberately not tracked -- the point is that a checkout
+# cannot change what the running container reads.
+deploy/nginx/.staged/
