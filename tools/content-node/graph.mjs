@@ -80,6 +80,42 @@ function connection() {
  * of a 64-bit value and a trap when the answer is compared against JSON from
  * another implementation: 74160 must serialise as 74160, not as an object.
  */
+/**
+ * **Match by an indexed property, never by label alone.**
+ *
+ * This instance has **no token (LOOKUP) index** -- `SHOW INDEXES` reports 36
+ * indexes and none of them is one -- so `MATCH (n:Label)` cannot use a label
+ * index and the planner falls back to scanning every node and filtering.
+ * Measured on `MATCH (n:DBInfo) RETURN n.releaseNumber`, which matches exactly
+ * one node:
+ *
+ *     EXPLAIN ->  AllNodesScan  +  Filter n:DBInfo
+ *     nodes in the database      2,958,129
+ *     time                       ~700ms
+ *     the same read via an indexed property (DatabaseObject.dbId)   29ms
+ *
+ * So the cost has nothing to do with how many nodes match or how many rows come
+ * back: one node and four hundred cost the same, because both scan three
+ * million. That is also why Java's own `/data/species/main` takes 682ms.
+ *
+ * Two consequences for anyone porting an endpoint:
+ *
+ * 1. Prefer a property that is indexed, and match it **under the label the
+ *    index is on** -- `dbId` is on `DatabaseObject`, and Neo4j treats `Person`
+ *    as an unrelated label, so `(p:Person) WHERE p.dbId = …` scans while
+ *    `(n:DatabaseObject) WHERE n.dbId = …` does not.
+ * 2. When an endpoint genuinely needs every node of a label -- the species
+ *    lists do, and no property can express that -- there is no query that
+ *    avoids the scan. Wrap it in `cached()` so the scan is paid once at
+ *    startup rather than on a request path.
+ *
+ * The real fix is one statement from whoever owns the database:
+ *
+ *     CREATE LOOKUP INDEX node_labels FOR (n) ON EACH labels(n)
+ *
+ * It would make every label match fast for the Java service too. It is a schema
+ * write on a shared instance, so it is not taken here.
+ */
 export async function read(cypher, parameters = {}) {
   const session = connection().session({
     database: DATABASE,
