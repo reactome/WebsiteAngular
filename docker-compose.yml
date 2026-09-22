@@ -243,7 +243,13 @@ services:
   # To go back: `docker compose stop nginx && docker start reactome-nginx`.
   # Both bind the host's ports, so only one can run at a time.
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+      args:
+        # Which deployment this host is. See deploy/nginx/README.md -- getting
+        # this wrong on the indexed host would deindex reactome.org.
+        NGINX_ENV: ${NGINX_ENV:-dev}
     restart: unless-stopped
     # Host networking, as the container it replaces used: the services it
     # proxies -- the site on 4200, content-node on 4400, render on 4310, the
@@ -251,26 +257,8 @@ services:
     # deliberately so nothing else can.
     network_mode: host
     volumes:
-      # The **staged** configuration, not the working tree.
-      #
-      # Mounting `deploy/nginx` directly made a working directory a deployment
-      # input: check out a branch and the routes inside the running container
-      # are that branch's, one reload away from live. That is not hypothetical
-      # -- a feature branch's /mcp route was found sitting in this container,
-      # inert only because nginx reads its configuration at start rather than
-      # continuously.
-      #
-      # `.staged/` is gitignored, so no checkout touches it, and
-      # `scripts/stage-nginx.sh` is the only thing that writes to it -- after
-      # running `nginx -t` against what it is about to stage, so an invalid
-      # configuration never reaches the path a reload would read.
-      #
-      # Which environment this host is is chosen when staging, by NGINX_ENV.
-      # dev on this box; production on the host that must be indexed, where the
-      # blanket bot rule would be catastrophic rather than merely wrong. See
-      # deploy/nginx/README.md.
-      - ./deploy/nginx/.staged/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./deploy/nginx/.staged/common:/etc/nginx/common:ro
+      # Only the certificates are mounted. The configuration is baked into the
+      # image above, so a checkout cannot change what this serves.
       # The one part that cannot live in the repository. Paths are variables so
       # a laptop can point somewhere else, or at an empty directory when it is
       # serving plain HTTP and has no certificates at all.
