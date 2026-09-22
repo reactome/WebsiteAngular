@@ -14,6 +14,82 @@ saves us guessing.
 
 Last updated: 2026-09-20
 
+## Answers to the 19 September round
+
+Everything you marked in purple on the report, answered. Where I could check it
+I did, and I say which; where I could not, I say that instead of guessing.
+
+### Right-click in the diagram — it works, and it is your trackpad
+
+Two of you reported no right-click menu, one noting "I use the touch pad
+though". That is almost certainly it. Driven on beta against
+`R-HSA-1368108`, a right-click on an entity opens the panel: 354x213 pixels,
+positioned over the diagram, carrying the entity name and the Molecule /
+Pathways / Interactors entries.
+
+A trackpad sends no right-click at all unless secondary click is switched on.
+On a Mac that is **System Settings -> Trackpad -> Secondary click**, or hold
+**Ctrl** and click. On Windows, a two-finger tap.
+
+If it still does nothing with Ctrl held, tell us, because then it is ours.
+
+### Still open, and we agree with you
+
+- **Which components of a complex or set are hit** — you said on 19 Sept you
+  still cannot see this in the diagram. #154 is open. The analysis _table_ can
+  flag each hit, which is the workaround you found; showing it on the complex
+  itself is the request ([#154](https://github.com/reactome/WebsiteAngular/issues/154)).
+- **Hit reaction count is one off**, which moves FDR and the entity ratios
+  ([#296](https://github.com/reactome/WebsiteAngular/issues/296)). The most
+  serious thing in the round, because every other finding is something being
+  hard to see and this one is a number being wrong. It needs the slide you
+  referenced, or any analysis token and the pathway where the count differs.
+- **PPTX granularity** — entities move now, but an icon's border and centre are
+  separate shapes, and each reaction line segment moves alone. Partially fixed
+  is a fair description ([#299](https://github.com/reactome/WebsiteAngular/issues/299)) — the fix is grouping each entity's parts, not fewer shapes.
+- **EHLD hover highlight** — hovering a subpathway in the hierarchy highlights
+  it on the live site and not here ([#297](https://github.com/reactome/WebsiteAngular/issues/297)).
+- **Trivial molecules at zoom** — H2O and H+ still disappear when zooming out,
+  which contradicts the OK on that row ([#298](https://github.com/reactome/WebsiteAngular/issues/298)). We will take yours.
+
+### Questions you asked
+
+- _"Do you mean search for something in the diagram?"_ — yes. Type in the
+  diagram's search box, then flag the result.
+- _"How do you opt to download the figure rather than the EHLD?"_ — a fair
+  question and we do not think the panel makes it clear. Treating it as a bug
+  in the panel rather than something to explain.
+- _"Will we know a GIF or PPTX failed, or must we open it?"_ — for **GIF and
+  PPTX**, you will know: those come from the render service, which builds the
+  whole file before it answers, and the page saves nothing unless the whole of
+  it arrived. A failure is an error on screen and no file.
+
+  **Not true of every format**, and the difference is worth knowing. **SBML,
+  SBGN and PDF** come from the Java exporters, which stream while they
+  generate: a failure partway produces a **truncated file that looks
+  complete**, with no size known in advance to check against. Those are the
+  ones to open and verify.
+
+  An earlier draft of this answer said "if a file arrives, it was produced",
+  full stop. That is right for the two you asked about and wrong for the other
+  three, which is the worse half to get wrong — so it is corrected rather than
+  left for somebody to trust.
+
+- _"I did not see an option to convert to editable shapes"_ — there is none to
+  find. PPTX shapes are already editable when the file opens; nothing needs
+  switching on.
+
+### Fixed since you last looked
+
+- **A searched entity being deselected when you navigate within a diagram**
+  (#168). Fixed. `select` was being overwritten with the pathway you were
+  leaving, so your own selection was discarded on one of the two ways out of a
+  diagram and kept on the other.
+- **An error thrown when deleting a custom interactor resource** (#231).
+- If you write a test URL by hand, the flag parameter is `flag=`. `FLG=` also
+  works. `flg=` is silently ignored and nothing will be flagged, which is worth
+  knowing before concluding flagging is broken.
+
 ## Please check on beta.reactome.org
 
 > Note the URL. `beta.reactome.org` is the new site. `reactome.org/beta` is an
