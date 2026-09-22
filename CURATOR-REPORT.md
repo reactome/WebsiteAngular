@@ -59,9 +59,22 @@ If it still does nothing with Ctrl held, tell us, because then it is ours.
 - _"How do you opt to download the figure rather than the EHLD?"_ — a fair
   question and we do not think the panel makes it clear. Treating it as a bug
   in the panel rather than something to explain.
-- _"Will we know a GIF or PPTX failed, or must we open it?"_ — you will know:
-  a failure produces no file and an error, not a broken one. If a file arrives,
-  it was produced.
+- _"Will we know a GIF or PPTX failed, or must we open it?"_ — for **GIF and
+  PPTX**, you will know: those come from the render service, which builds the
+  whole file before it answers, and the page saves nothing unless the whole of
+  it arrived. A failure is an error on screen and no file.
+
+  **Not true of every format**, and the difference is worth knowing. **SBML,
+  SBGN and PDF** come from the Java exporters, which stream while they
+  generate: a failure partway produces a **truncated file that looks
+  complete**, with no size known in advance to check against. Those are the
+  ones to open and verify.
+
+  An earlier draft of this answer said "if a file arrives, it was produced",
+  full stop. That is right for the two you asked about and wrong for the other
+  three, which is the worse half to get wrong — so it is corrected rather than
+  left for somebody to trust.
+
 - _"I did not see an option to convert to editable shapes"_ — there is none to
   find. PPTX shapes are already editable when the file opens; nothing needs
   switching on.
