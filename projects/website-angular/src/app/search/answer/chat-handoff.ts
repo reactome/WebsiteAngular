@@ -44,14 +44,9 @@ async function mint(endpoint: string, request: HandoffRequest, fetcher: typeof f
 
 function failureFor(status: number, reason: unknown): HandoffFailure {
   if (status === 404) return 'gone';
-  if (
-    status === 401 ||
-    reason === 'no_human' ||
-    reason === 'stale_human' ||
-    reason === 'no_caller'
-  ) {
-    return 'verify';
-  }
+  // A person-check the reader can pass. `no_caller` is not one: it means our
+  // own caller token was missing or refused, which is a fault on our side.
+  if (status === 401 || reason === 'no_human' || reason === 'stale_human') return 'verify';
   if (status === 429) return 'rate_limited';
   return 'unavailable';
 }
@@ -81,8 +76,14 @@ export async function continueInChat(
     result = await mint(endpoint, request, fetcher);
   }
 
-  if (result.status === 200 && typeof result.path === 'string') {
-    const url = new URL(result.path, win.location.origin).href;
+  // The server only returns a guest-chat path; checked again here, because the
+  // tab goes wherever this says.
+  const target =
+    result.status === 200 && typeof result.path === 'string'
+      ? new URL(result.path, win.location.origin)
+      : null;
+  if (target && target.origin === win.location.origin && target.pathname === '/chat/guest/') {
+    const url = target.href;
     if (tab) {
       tab.opener = null;
       tab.location.href = url;
@@ -107,7 +108,9 @@ export function describeHandoffFailure(
         ? 'The chat could not find this summary. Summarise the result again, then continue.'
         : 'The chat could not find this answer. Ask the question again, then continue.';
     case 'verify':
-      return 'Summarise the result again to show you are still here, then continue.';
+      return kind === 'analysis'
+        ? 'One quick check that you are still here, then continue in chat.'
+        : 'The chat could not confirm who is asking. Try again in a moment.';
     case 'rate_limited':
       return 'Too many chats were started just now. Try again in a minute.';
     case 'blocked':

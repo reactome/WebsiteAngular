@@ -26,7 +26,7 @@ process.env.CALLER_TOKEN_KEY = keyFile;
 const require = createRequire(import.meta.url);
 const express = require('express');
 const gate = require('./human-gate.js');
-const { mountChatHandoffProxy } = require('./search-answer-proxy.js');
+const { mountChatHandoffProxy, __resetLimits } = require('./search-answer-proxy.js');
 
 let site;
 let chatbot;
@@ -40,6 +40,7 @@ const listen = (app) =>
   });
 
 beforeEach(async () => {
+  __resetLimits();
   received = null;
   reply = {
     status: 200,
@@ -80,10 +81,7 @@ describe('an analysis handoff', () => {
   it('is minted with a caller token signed here and the tier the reader saw', async () => {
     const response = await post(body, fresh());
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      path: '/chat/guest/#handoff=Ev3z3JDm',
-      expires_in: 900,
-    });
+    await expect(response.json()).resolves.toEqual({ path: '/chat/guest/#handoff=Ev3z3JDm' });
     expect(received).toMatchObject({
       kind: 'analysis',
       token: body.token,
@@ -135,5 +133,26 @@ describe('what comes back', () => {
   it('rejects an unknown kind without calling upstream', async () => {
     expect((await post({ kind: 'everything' })).status).toBe(400);
     expect(received).toBeNull();
+  });
+});
+
+describe('the budget', () => {
+  it('limits how many handoffs one caller can mint', async () => {
+    // A search handoff needs no identity, so this is all that bounds it.
+    const statuses = [];
+    for (let i = 0; i < 11; i++) {
+      statuses.push(
+        (await post({ kind: 'search', answer_id: 'Ev3z3JDmIIUF4gkKTfrn9VF83H' })).status
+      );
+    }
+    expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
+    expect(statuses[10]).toBe(429);
+  });
+
+  it('does not pass through an upstream status the reader cannot act on', async () => {
+    reply = { status: 500, body: { reason: 'boom' } };
+    expect((await post({ kind: 'search', answer_id: 'Ev3z3JDmIIUF4gkKTfrn9VF83H' })).status).toBe(
+      502
+    );
   });
 });

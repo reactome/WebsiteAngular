@@ -132,6 +132,21 @@ export class AnswerService {
     this._asking.set(false);
   }
 
+  /**
+   * Forget the chat's handle on this answer: the chat no longer has it (after a
+   * chat deploy, or once its hour is up), so offering to continue from it can
+   * only fail again. Dropped from the page cache too, or asking the same
+   * question would bring the dead handle back.
+   */
+  forgetAnswerId(): void {
+    this._answerId.set(null);
+    this._answeredAt.set(null);
+    for (const entry of this.cache.values()) {
+      entry.answerId = null;
+      entry.answeredAt = null;
+    }
+  }
+
   reset(): void {
     this.cancel();
     this._challenge.set(null);

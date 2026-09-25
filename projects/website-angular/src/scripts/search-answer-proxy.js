@@ -644,6 +644,60 @@ function mountAnalysisSummaryProxy(app, route = '/analysis-summary') {
 }
 
 /**
+ * A sliding-window limiter with its own counters: per key, and across all keys.
+ * Same rules as `retryAfter` above, for a route that must not share its budget.
+ */
+function makeLimiter(perKey, global) {
+  const seenKeys = new Map();
+  let all = [];
+  const longest = perKey[perKey.length - 1].windowMs;
+  return {
+    retryAfter(key, now = Date.now()) {
+      all = all.filter((at) => now - at < global.windowMs);
+      if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
+      const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
+      for (const { windowMs, max } of perKey) {
+        const inWindow = times.filter((at) => now - at < windowMs);
+        if (inWindow.length >= max) {
+          seenKeys.set(key, times);
+          return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
+        }
+      }
+      times.push(now);
+      seenKeys.set(key, times);
+      all.push(now);
+      if (seenKeys.size > 5000) {
+        for (const [k, stamps] of seenKeys) {
+          if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
+        }
+      }
+      return 0;
+    },
+    reset() {
+      seenKeys.clear();
+      all = [];
+    },
+  };
+}
+
+/**
+ * The handoff's own budget. A handoff costs no model call, so it does not spend
+ * the answer budget -- but every one is a caller token signed with our key and
+ * a 15-minute entry in the chat's memory, and a search handoff needs no
+ * identity, so without a limit a script could mint them without end.
+ */
+const handoffLimiter = makeLimiter(
+  [
+    { windowMs: 60_000, max: 10 },
+    { windowMs: 3_600_000, max: 60 },
+  ],
+  { windowMs: 3_600_000, max: 2000 }
+);
+
+/** Upstream refusals a reader can act on; anything else is our fault or theirs. */
+const PASSED_THROUGH = new Set([403, 404, 429, 503]);
+
+/**
  * Where "Continue in chat" is minted. Read per request so a test can point it
  * at a stand-in; the default is the guest chat on the same host as the rest.
  */
@@ -717,6 +771,13 @@ function mountChatHandoffProxy(app, route = '/chat-handoff') {
       return;
     }
 
+    const wait = handoffLimiter.retryAfter(gate.identityFromRequest(req) || clientKey(req));
+    if (wait > 0) {
+      res.setHeader('Retry-After', String(wait));
+      res.status(429).json({ reason: 'rate_limited' });
+      return;
+    }
+
     const key = signingKey();
     if (!key) {
       res.status(503).json({ detail: 'Chat handoff is not configured on this deployment' });
@@ -745,10 +806,10 @@ function mountChatHandoffProxy(app, route = '/chat-handoff') {
           res.status(502).json({ detail: 'Upstream unavailable' });
           return;
         }
-        res.json({ path: body.path, expires_in: body.expires_in });
+        res.json({ path: body.path });
         return;
       }
-      if (body && typeof body.reason === 'string') {
+      if (PASSED_THROUGH.has(upstream.status) && body && typeof body.reason === 'string') {
         res.status(upstream.status).json({ reason: body.reason });
         return;
       }
@@ -777,6 +838,7 @@ module.exports = {
   VERIFY_LIMITS,
   VERIFY_GLOBAL,
   __resetLimits: () => {
+    handoffLimiter.reset();
     seen.clear();
     globalCalls = [];
     verifySeen.clear();

@@ -254,13 +254,22 @@ export class AnalysisSummaryComponent {
     const disclosure = this.summary.applied() ?? 'aggregate';
     this.continuing.set(true);
     this.continueFailure.set(null);
-    const outcome = await continueInChat(
-      endpoint,
-      { kind: 'analysis', token, disclosure },
-      { refresh: () => this.summary.summarise(token, disclosure, { refresh: true }) }
-    );
-    this.continuing.set(false);
-    if (!outcome.ok) this.continueFailure.set(describeHandoffFailure(outcome.failure, 'analysis'));
+    const refresh = () => this.summary.summarise(token, disclosure, { refresh: true });
+    try {
+      const outcome = await continueInChat(
+        endpoint,
+        { kind: 'analysis', token, disclosure },
+        { refresh }
+      );
+      if (outcome.ok) return;
+      this.continueFailure.set(describeHandoffFailure(outcome.failure, 'analysis'));
+      // The person-check has lapsed. Asking again from the server -- not this
+      // page's cache, which would answer without it -- brings the challenge up
+      // here, and once passed the summary is back and Continue works.
+      if (outcome.failure === 'verify') void refresh();
+    } finally {
+      this.continuing.set(false);
+    }
   }
 
   close(): void {

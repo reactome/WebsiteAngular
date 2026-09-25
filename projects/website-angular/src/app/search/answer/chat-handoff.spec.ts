@@ -73,6 +73,8 @@ describe('continuing in chat', () => {
       [404, 'no_answer', 'gone'],
       [403, 'stale_human', 'verify'],
       [401, undefined, 'verify'],
+      // Our own caller token refused: a fault here, not a check to pass.
+      [403, 'no_caller', 'unavailable'],
       [429, 'rate_limited', 'rate_limited'],
       [503, 'no_release', 'unavailable'],
     ] as const) {
@@ -84,6 +86,23 @@ describe('continuing in chat', () => {
       });
       expect(tab.close).toHaveBeenCalled();
     }
+  });
+
+  it('never sends the tab anywhere but the guest chat on this site', async () => {
+    const { tab, win } = fakes();
+    for (const path of ['https://evil.example/chat/guest/#handoff=x', '/elsewhere/#handoff=x']) {
+      const fetcher = respond({ status: 200, body: { path } });
+      expect(await continueInChat('/chat-handoff', search, { win, fetcher })).toEqual({
+        ok: false,
+        failure: 'unavailable',
+      });
+      expect(tab.location.href).toBe('about:blank');
+    }
+  });
+
+  it('asks an analysis reader for the check, and tells a search reader it is not theirs to fix', () => {
+    expect(describeHandoffFailure('verify', 'analysis')).toMatch(/check/);
+    expect(describeHandoffFailure('verify', 'search')).not.toMatch(/Summarise/);
   });
 
   it('says so when the browser blocks the tab', async () => {

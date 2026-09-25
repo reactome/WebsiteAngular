@@ -522,6 +522,13 @@ test.describe('Continuing an answer in the chat', () => {
     const [tab] = await Promise.all([context.waitForEvent('page'), continueButton.click()]);
     await expect(page.getByText(/could not find this answer/)).toBeVisible();
     await expect.poll(() => tab.isClosed()).toBe(true);
+    // And the offer goes back to the plain chat, rather than a button that
+    // would fail the same way again.
+    await expect(continueButton).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Continue in React-to-Me/ })).toHaveAttribute(
+      'href',
+      '/chat/guest/'
+    );
   });
 
   test('offers the plain chat link when the answer has no id', async ({ page }) => {

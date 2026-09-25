@@ -241,6 +241,58 @@ test.describe('Continuing a summary in the chat', () => {
   });
 });
 
+test.describe('Continuing a summary after the person-check lapsed', () => {
+  test.describe.configure({ timeout: 6 * 60 * 1000 });
+
+  // The check lasts thirty minutes. Past that the handoff is refused, and
+  // summarising again from this page's cache would not bring the check back --
+  // so the reader looped. The challenge has to come up where they are.
+  test('brings up the check instead of a dead end', async ({ page, context }) => {
+    let summaries = 0;
+    await page.route('**/analysis-summary', (route) => {
+      summaries += 1;
+      return summaries === 1
+        ? route.fulfill({
+            status: 200,
+            contentType: 'text/event-stream',
+            body:
+              'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+              'event: token\ndata: {"text": "A summary to continue."}\n\n' +
+              'event: done\ndata: {"state": "summarised"}\n\n',
+          })
+        : route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              sitekey: '1x00000000000000000000AA',
+              verify: '/search-answer/verify',
+            }),
+          });
+    });
+    await page.route('**/chat-handoff', (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: '{"reason": "stale_human"}',
+      })
+    );
+    await page.route('**/challenges.cloudflare.com/**', (route) => route.abort());
+
+    await runGeneList(page);
+    await openTab(page, 'Results');
+    await page.getByRole('button', { name: 'Summarise this result' }).click({ timeout: 60_000 });
+    const continueButton = page.getByRole('button', { name: 'Continue in chat' });
+    await expect(continueButton).toBeVisible({ timeout: 30_000 });
+    await Promise.all([context.waitForEvent('page'), continueButton.click()]);
+
+    // The check itself, where the reader is -- it replaces the summary while
+    // the summary is asked for again.
+    await expect(page.locator('cr-analysis-summary .challenge')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/One quick check that you are a person/)).toBeVisible();
+    expect(summaries).toBe(2);
+  });
+});
+
 test.describe('A result that cannot be loaded', () => {
   test.describe.configure({ timeout: 3 * 60 * 1000 });
 

@@ -277,18 +277,29 @@ export class SearchAnswerComponent {
    * empty one. It can when the answer has an id and the chat still keeps it --
    * an hour from when it was produced.
    */
-  readonly canHandOff = computed(() => {
-    const at = this.answers.answeredAt();
-    return (
+  readonly canHandOff = computed(
+    () =>
       !!this.handoffEndpoint &&
       this.answers.state() === 'answered' &&
       !!this.answers.answerId() &&
-      at !== null &&
-      Date.now() - at < ANSWER_ID_LIFETIME_MS
-    );
-  });
+      this.answers.answeredAt() !== null
+  );
   readonly continuing = signal(false);
   readonly continueFailure = signal<string | null>(null);
+
+  /**
+   * Past its hour the chat no longer has the answer, so the offer goes back to
+   * the plain chat link -- on a timer, because the clock is not a signal.
+   */
+  private readonly expire = effect((onCleanup) => {
+    const at = this.answers.answeredAt();
+    if (at === null) return;
+    const timer = setTimeout(
+      () => this.answers.forgetAnswerId(),
+      Math.max(0, at + ANSWER_ID_LIFETIME_MS - Date.now())
+    );
+    onCleanup(() => clearTimeout(timer));
+  });
 
   async continueInChat(): Promise<void> {
     const endpoint = this.handoffEndpoint;
@@ -296,10 +307,16 @@ export class SearchAnswerComponent {
     if (!endpoint || !answerId || this.continuing()) return;
     this.continuing.set(true);
     this.continueFailure.set(null);
-    // No refresh for an answer: asking again makes a different answer.
-    const outcome = await continueInChat(endpoint, { kind: 'search', answer_id: answerId });
-    this.continuing.set(false);
-    if (!outcome.ok) this.continueFailure.set(describeHandoffFailure(outcome.failure, 'search'));
+    try {
+      // No refresh for an answer: asking again makes a different answer.
+      const outcome = await continueInChat(endpoint, { kind: 'search', answer_id: answerId });
+      if (outcome.ok) return;
+      this.continueFailure.set(describeHandoffFailure(outcome.failure, 'search'));
+      // Gone means gone: offer the plain chat instead of a button that fails.
+      if (outcome.failure === 'gone') this.answers.forgetAnswerId();
+    } finally {
+      this.continuing.set(false);
+    }
   }
 
   constructor() {
