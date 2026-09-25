@@ -616,12 +616,18 @@ export class DiagramService {
           triggerPosition: scale(item.maxX),
         },
         classes: ['Shadow'],
-        position: closestToAverage(
-          subpathwayIdToEventIds
-            .get(item.reactomeId)!
-            .map((reactionId) => reactomeIdToEdge.get(reactionId)!)
-            .map((edge) => scale(edge!.position))
-        ),
+        // Some subpathway events (e.g. orphaned "Clone of X, replaced by Y"
+        // reactions left over from curation edits) have no matching edge in
+        // this diagram's layout. Skip those instead of crashing on them --
+        // an unhandled error here is caught by loadDiagram()'s catchError,
+        // which blanks the whole diagram with no visible error.
+        position: (() => {
+          const edgePositions = (subpathwayIdToEventIds.get(item.reactomeId) || [])
+            .map((reactionId) => reactomeIdToEdge.get(reactionId))
+            .filter((edge): edge is Edge => edge !== undefined)
+            .map((edge) => scale(edge.position));
+          return edgePositions.length > 0 ? closestToAverage(edgePositions) : scale(item.position);
+        })(),
       };
     });
 

@@ -741,7 +741,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // Pathway with a diagram
           return this.loadElvDiagram();
         }),
-        catchError(() => of(null))
+        catchError((err) => {
+          // Without this, a thrown error here blanks the whole diagram with
+          // no visible error anywhere -- not in the UI, not in the console.
+          console.error('Failed to load diagram for', this.pathwayId(), err);
+          return of(null);
+        })
       )
       .subscribe(() => {
         this.isInitialLoad = false;
