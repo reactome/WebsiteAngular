@@ -643,9 +643,128 @@ function mountAnalysisSummaryProxy(app, route = '/analysis-summary') {
   });
 }
 
+/**
+ * Where "Continue in chat" is minted. Read per request so a test can point it
+ * at a stand-in; the default is the guest chat on the same host as the rest.
+ */
+const handoffUpstream = () =>
+  process.env.HANDOFF_UPSTREAM || 'https://beta.reactome.org/chat/guest/api/handoff';
+
+/**
+ * The only thing a handoff may send the browser to: the guest chat, with the
+ * handoff id in the fragment. The browser opens whatever comes back, so a
+ * response that is anything else is refused rather than passed on -- this
+ * route must not become a redirect to wherever upstream says.
+ */
+const HANDOFF_PATH = /^\/chat\/guest\/#handoff=[A-Za-z0-9_-]+$/;
+
+/**
+ * Server side of "Continue in chat".
+ *
+ * The chat can open with the reader's summary or answer already in the
+ * conversation. Minting that needs a caller token, which only this server can
+ * sign, so the browser asks here and gets back the path to open.
+ *
+ *   analysis  { token, disclosure } -- the summary the reader saw, at the tier
+ *             they saw it. Needs a fresh presence claim, like the summary.
+ *   search    { answer_id } -- from the answer's `done` event. Public pathway
+ *             text, so no presence claim, like the answer.
+ *
+ * Upstream's refusals ({"reason": ...} with 403, 404, 429, 503) come back as
+ * they are: each means something different to offer the reader, and 404 in
+ * particular is expected after every chatbot deploy.
+ */
+function mountChatHandoffProxy(app, route = '/chat-handoff') {
+  app.post(route, express.json({ limit: '4kb' }), async (req, res) => {
+    const kind = req.body?.kind;
+    let payload;
+    if (kind === 'analysis') {
+      const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+      const disclosure = typeof req.body?.disclosure === 'string' ? req.body.disclosure : '';
+      if (!token || !DISCLOSURES.includes(disclosure)) {
+        res.status(400).json({ detail: 'An analysis token and a disclosure tier are required' });
+        return;
+      }
+      payload = { kind, token, disclosure };
+    } else if (kind === 'search') {
+      const answerId = typeof req.body?.answer_id === 'string' ? req.body.answer_id.trim() : '';
+      if (!/^[A-Za-z0-9_-]{8,64}$/.test(answerId)) {
+        res.status(400).json({ detail: 'An answer id is required' });
+        return;
+      }
+      payload = { kind, answer_id: answerId };
+    } else {
+      res.status(400).json({ detail: 'kind must be analysis or search' });
+      return;
+    }
+
+    if (gate.misconfigured()) {
+      res.status(503).json({ detail: 'Chat handoff is not configured on this deployment' });
+      return;
+    }
+    // Only the analysis handoff carries a presence claim upstream checks, so
+    // only it is challenged here -- for the same reason as the summary route.
+    if (
+      kind === 'analysis' &&
+      gate.REQUIRE_HUMAN &&
+      !presenceIsFresh(gate.identityDetailsFromRequest(req))
+    ) {
+      res.status(401).json({
+        detail: 'Verification required',
+        verify: '/search-answer/verify',
+        sitekey: gate.TURNSTILE_SITEKEY,
+      });
+      return;
+    }
+
+    const key = signingKey();
+    if (!key) {
+      res.status(503).json({ detail: 'Chat handoff is not configured on this deployment' });
+      return;
+    }
+
+    try {
+      const upstream = await fetch(handoffUpstream(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
+        body: JSON.stringify({
+          ...payload,
+          caller_token: mintCallerToken(
+            key,
+            callerSubject(req, res),
+            gate.identityDetailsFromRequest(req)
+          ),
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const body = await upstream.json().catch(() => null);
+
+      if (upstream.ok) {
+        if (!body || typeof body.path !== 'string' || !HANDOFF_PATH.test(body.path)) {
+          console.error('[handoff] upstream answered with an unexpected path');
+          res.status(502).json({ detail: 'Upstream unavailable' });
+          return;
+        }
+        res.json({ path: body.path, expires_in: body.expires_in });
+        return;
+      }
+      if (body && typeof body.reason === 'string') {
+        res.status(upstream.status).json({ reason: body.reason });
+        return;
+      }
+      console.error(`[handoff] upstream ${upstream.status}`);
+      res.status(502).json({ detail: 'Upstream unavailable' });
+    } catch (error) {
+      console.error(`[handoff] ${error.message}`);
+      res.status(502).json({ detail: 'Upstream unavailable' });
+    }
+  });
+}
+
 module.exports = {
   mountSearchAnswerProxy,
   mountAnalysisSummaryProxy,
+  mountChatHandoffProxy,
   HUMAN_CLAIM_MAX_AGE_SECONDS,
   presenceIsFresh,
   mintCallerToken,

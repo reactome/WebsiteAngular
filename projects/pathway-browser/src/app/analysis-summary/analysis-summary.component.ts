@@ -18,6 +18,14 @@ import {
   recipientNote as describeRecipient,
   waitingMessage as describeWait,
 } from './panel-copy';
+import {
+  getProfile,
+  SELECTED_PROFILE_NAME,
+} from '../../../../website-angular/src/config/environments';
+import {
+  continueInChat,
+  describeHandoffFailure,
+} from '../../../../website-angular/src/app/search/answer/chat-handoff';
 import { clearSummaryForOtherResults } from './summary-owner';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
@@ -222,7 +230,41 @@ export class AnalysisSummaryComponent {
       this.summary.asking()
   );
 
+  private readonly handoffEndpoint = getProfile(SELECTED_PROFILE_NAME).chatHandoffEndpoint;
+
+  /**
+   * Offered once a summary has finished, never while it streams: the chat can
+   * only continue a summary it holds, at the tier the reader saw, and it holds
+   * one only when it is complete.
+   */
+  readonly canContinue = computed(
+    () =>
+      !!this.handoffEndpoint &&
+      this.summary.visible() &&
+      this.summary.state() === 'summarised' &&
+      !this.summary.asking()
+  );
+  readonly continuing = signal(false);
+  readonly continueFailure = signal<string | null>(null);
+
+  async continueInChat(): Promise<void> {
+    const endpoint = this.handoffEndpoint;
+    const token = this.summary.heldFor();
+    if (!endpoint || !token || this.continuing()) return;
+    const disclosure = this.summary.applied() ?? 'aggregate';
+    this.continuing.set(true);
+    this.continueFailure.set(null);
+    const outcome = await continueInChat(
+      endpoint,
+      { kind: 'analysis', token, disclosure },
+      { refresh: () => this.summary.summarise(token, disclosure, { refresh: true }) }
+    );
+    this.continuing.set(false);
+    if (!outcome.ok) this.continueFailure.set(describeHandoffFailure(outcome.failure, 'analysis'));
+  }
+
   close(): void {
+    this.continueFailure.set(null);
     this.howOpen.set(false);
     this.summary.clear();
   }

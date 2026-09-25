@@ -140,7 +140,16 @@ export class SummaryService {
     this._challenge.set(null);
   }
 
-  async summarise(token: string, disclosure: Disclosure = 'aggregate'): Promise<void> {
+  /**
+   * @param refresh ask the service even when this page has the summary cached.
+   *   The chat keeps summaries in memory, so after it restarts a handoff finds
+   *   nothing; asking again re-caches it there.
+   */
+  async summarise(
+    token: string,
+    disclosure: Disclosure = 'aggregate',
+    { refresh = false }: { refresh?: boolean } = {}
+  ): Promise<void> {
     const analysis = token.trim();
     if (!this.endpoint || !analysis) return;
 
@@ -155,7 +164,7 @@ export class SummaryService {
     // not needed anyway: this cache lives in one page's memory, and a release
     // during a session would replace the process that holds it.
     const key = `${analysis}::${disclosure}`;
-    const cached = this.cache.get(key);
+    const cached = refresh ? undefined : this.cache.get(key);
     if (cached) {
       // The service caches too -- byte-identical text for the same token -- but
       // its store is in process and beta deploys often, so this one spares a

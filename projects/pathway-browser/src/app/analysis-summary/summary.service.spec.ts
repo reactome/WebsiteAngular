@@ -123,6 +123,20 @@ describe('a summary that arrives', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
+  it('asks again when told to refresh, for a chat that has lost its copy', async () => {
+    const fetcher = vi
+      .fn()
+      .mockImplementation(async () =>
+        streamed(
+          'event: token\ndata: {"text": "A summary."}\n\nevent: done\ndata: {"state": "summarised"}\n\n'
+        )
+      );
+    vi.stubGlobal('fetch', fetcher);
+    await service.summarise(TOKEN);
+    await service.summarise(TOKEN, 'aggregate', { refresh: true });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   it('does not remember a refusal, which is about this moment and not the result', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response('{}', { status: 429 }));
     vi.stubGlobal('fetch', fetcher);

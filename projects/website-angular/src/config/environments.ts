@@ -58,6 +58,12 @@ export interface SiteProfile {
    */
   analysisSummaryEndpoint?: string;
   /**
+   * Where "Continue in chat" is minted (serve-prod's chat handoff route).
+   * Absent means no button: the chat and the route exist only where the
+   * summaries and answers do.
+   */
+  chatHandoffEndpoint?: string;
+  /**
    * Where the services are, or `'origin'` for "wherever this bundle is served
    * from".
    *
@@ -161,6 +167,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // this is safe to name even if the key is ever absent.
     searchAnswerEndpoint: '/search-answer',
     analysisSummaryEndpoint: '/analysis-summary',
+    chatHandoffEndpoint: '/chat-handoff',
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,
@@ -180,6 +187,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // DeltaSignal backend, so the answer proxy cannot live under it.
     searchAnswerEndpoint: '/search-answer',
     analysisSummaryEndpoint: '/analysis-summary',
+    chatHandoffEndpoint: '/chat-handoff',
     host: 'origin',
     originFallback: 'https://dev.reactome.org',
     s3: S3,

@@ -207,3 +207,47 @@ h3 {
   font-size: 0.8rem;
   color: var(--tertiary-contrast-3);
 }
+
+// The mark people now read as "AI", on every control or label that involves it.
+.sparkle {
+  font-size: 1.1em;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  margin-right: 4px;
+}
+
+.continue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.continue-chat {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 16px;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}
+
+.continue-note {
+  font-size: 0.8rem;
+  color: var(--tertiary-contrast-3);
+}

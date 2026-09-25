@@ -364,3 +364,25 @@
     opacity: 0.4;
   }
 }
+
+// The mark people now read as "AI", on each control or label that involves it.
+.search-answer__sparkle {
+  font-size: 1.1em;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  margin-right: 4px;
+}
+
+button.search-answer__continue {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}

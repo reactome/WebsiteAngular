@@ -233,3 +233,26 @@ describe('citations that are documentation pages rather than entities', () => {
     expect(parseFrame('event: citation\ndata: {"display_name": "Nowhere"}')).toBeNull();
   });
 });
+
+describe('the id an answer can be continued by', () => {
+  it('is kept from a done event that answered', () => {
+    expect(
+      parseFrame(
+        'event: done\ndata: {"state": "answered", "seconds": 8.4, "answer_id": "Ev3z3JDmIIUF4gkKTfrn9VF83H"}'
+      )
+    ).toEqual({ kind: 'done', state: 'answered', answerId: 'Ev3z3JDmIIUF4gkKTfrn9VF83H' });
+  });
+
+  it('is absent from any other outcome, and from a malformed id', () => {
+    expect(
+      parseFrame('event: done\ndata: {"state": "refused", "answer_id": "Ev3z3JDmIIUF4gkKT"}')
+    ).toEqual({
+      kind: 'done',
+      state: 'refused',
+    });
+    expect(parseFrame('event: done\ndata: {"state": "answered", "answer_id": "../../x"}')).toEqual({
+      kind: 'done',
+      state: 'answered',
+    });
+  });
+});

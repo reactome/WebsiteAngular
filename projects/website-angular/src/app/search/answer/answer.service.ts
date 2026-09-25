@@ -30,7 +30,15 @@ interface CachedAnswer {
   text: string;
   citations: Citation[];
   state: AnswerState;
+  answerId: string | null;
+  answeredAt: number | null;
 }
+
+/**
+ * How long the chat keeps an answer to continue from: an hour from when it was
+ * produced (the handoff contract). Past that the button would only fail.
+ */
+export const ANSWER_ID_LIFETIME_MS = 60 * 60 * 1000;
 
 /**
  * Our own ceiling, above the server's stated 120s.
@@ -65,6 +73,9 @@ export class AnswerService {
   private readonly _citations = signal<Citation[]>([]);
   private readonly _state = signal<AnswerState | null>(null);
   private readonly _question = signal('');
+  /** The chat's handle on this answer, from `done`, and when it arrived. */
+  private readonly _answerId = signal<string | null>(null);
+  private readonly _answeredAt = signal<number | null>(null);
 
   /**
    * Set when the server will not answer until it knows a human is asking.
@@ -80,6 +91,8 @@ export class AnswerService {
   readonly text = this._text.asReadonly();
   readonly state = this._state.asReadonly();
   readonly question = this._question.asReadonly();
+  readonly answerId = this._answerId.asReadonly();
+  readonly answeredAt = this._answeredAt.asReadonly();
   readonly challenge = this._challenge.asReadonly();
 
   /** Capped and de-duplicated: the server's cap binds on ordinary questions. */
@@ -126,6 +139,8 @@ export class AnswerService {
     this._citations.set([]);
     this._state.set(null);
     this._question.set('');
+    this._answerId.set(null);
+    this._answeredAt.set(null);
   }
 
   async ask(question: string): Promise<void> {
@@ -144,11 +159,15 @@ export class AnswerService {
       this._text.set(cached.text);
       this._citations.set(cached.citations);
       this._state.set(cached.state);
+      this._answerId.set(cached.answerId);
+      this._answeredAt.set(cached.answeredAt);
       return;
     }
 
     this._text.set('');
     this._state.set(null);
+    this._answerId.set(null);
+    this._answeredAt.set(null);
     this._asking.set(true);
 
     const controller = new AbortController();
@@ -254,6 +273,10 @@ export class AnswerService {
             break;
           case 'done':
             this._state.set(event.state);
+            if (event.answerId) {
+              this._answerId.set(event.answerId);
+              this._answeredAt.set(Date.now());
+            }
             break;
         }
       }
@@ -287,6 +310,8 @@ export class AnswerService {
       text: this._text(),
       citations: this._citations(),
       state,
+      answerId: this._answerId(),
+      answeredAt: this._answeredAt(),
     };
     this.cache.set(cacheKey(question, this.release), entry);
     // Also under the unknown-release key, for a session where no `start` event
