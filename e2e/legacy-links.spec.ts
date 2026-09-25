@@ -118,3 +118,49 @@ test.describe('Legacy fragments that are only settings', () => {
     expect(landed.pathname, 'and not left the reader on a dbId').not.toMatch(/\/9006934/);
   });
 });
+
+/**
+ * Old reactome.org addresses that have a clear new home land there.
+ *
+ * The site's own content no longer uses these -- the link check sees to that
+ * -- but a decade of other people's pages, bookmarks and citations do, and the
+ * site answers them with its not-found page otherwise. Asserted by what the
+ * reader sees, not by status: a missing page here answers 200.
+ */
+test.describe('Old addresses with a new home', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  for (const [old, landing, heading] of [
+    ['/what-is-reactome', '/about/what-is-reactome', /what is reactome/i],
+    ['/license', '/about/license', /licen[cs]e/i],
+    ['/userguide', '/documentation/userguide', /user guide/i],
+    ['/userguide/reactome-fiviz', '/documentation/userguide/reactome-fiviz', /FIVIz/i],
+    ['/dev', '/documentation/dev', /developer/i],
+    ['/dev/graph-database', '/documentation/dev/graph-database', /graph database/i],
+    ['/icon-lib', '/community/icon-lib', /icon/i],
+    ['/content/contributors', '/community/contributors', /contributors/i],
+  ] as const) {
+    test(`${old} lands on ${landing}`, async ({ page }) => {
+      await page.goto(old);
+      await expect(page).toHaveURL(new RegExp(`${landing}$`), { timeout: 60_000 });
+      await expect(page.locator('h1').first()).toHaveText(heading, { timeout: 60_000 });
+      await expect(page.locator('body')).not.toContainText("We can't find that page");
+    });
+  }
+
+  test('the beta pathway browser address opens the pathway browser, keeping the pathway', async ({
+    page,
+  }) => {
+    await page.goto('/beta/PathwayBrowser/R-HSA-109581');
+    await expect(page).toHaveURL(/\/PathwayBrowser\/R-HSA-109581/, { timeout: 60_000 });
+    await expect(page.locator('cr-viewport')).toBeAttached({ timeout: 90_000 });
+  });
+
+  test('the old training page lands on the training materials', async ({ page }) => {
+    await page.goto('/community/training');
+    await expect(page).toHaveURL(/\/documentation#Reactome_Training_Materials$/, {
+      timeout: 60_000,
+    });
+    await expect(page.locator('#Reactome_Training_Materials')).toBeInViewport({ timeout: 60_000 });
+  });
+});

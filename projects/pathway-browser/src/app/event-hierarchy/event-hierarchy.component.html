@@ -61,6 +61,8 @@
             <button
               mat-button
               (click)="onTreeEventSelect(node)"
+              (mouseenter)="hierarchyHover.enter(node.stId)"
+              (mouseleave)="hierarchyHover.leave(node.stId)"
               [ngClass]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
               class="button"
             >
@@ -130,6 +132,8 @@
         [attr.st-id]="node.stId"
         [cdkTreeNodeTypeaheadLabel]="node.name"
         (click)="onTreeEventSelect(node)"
+        (mouseenter)="hierarchyHover.enter(node.stId)"
+        (mouseleave)="hierarchyHover.leave(node.stId)"
         matTreeNodeToggle
       >
         <div class="tree-node">

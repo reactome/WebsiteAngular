@@ -662,7 +662,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    */
 
   getSpeciesName(element: E): string | null {
-    const speciesName: string = isSelectableObject(element) ? element.speciesName : null;
+    const speciesName: string | null | undefined = isSelectableObject(element)
+      ? element.speciesName
+      : null;
     const species: Species = isSelectableObject(element) ? element.species : null;
 
     if (!speciesName) return null;

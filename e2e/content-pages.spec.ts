@@ -188,6 +188,37 @@ test.describe('Links from news', () => {
   });
 });
 
+test.describe('Research Spotlight', () => {
+  // The list showed half its spotlights twice (40 scrape leftovers beside the
+  // real articles), stopped at April 2026 while reactome.org had May and July,
+  // and never said what a spotlight is.
+  test('explains itself, starts with the newest, and lists each once', async ({ page }) => {
+    await page.goto('/content/reactome-research-spotlight');
+    const titles = page.locator('.news-card h2');
+    await expect(titles.first()).toHaveText(
+      'Ten common mistakes that could ruin your enrichment analysis',
+      {
+        timeout: LOAD,
+      }
+    );
+    await expect(page.locator('.page-header')).toContainText('Each month, Reactome highlights');
+    await expect(page.locator('.page-header a')).toHaveAttribute('href', '/');
+
+    const all = (await titles.allInnerTexts()).map((t) => t.trim().toLowerCase());
+    expect(all.length).toBeGreaterThanOrEqual(44);
+    expect(all.filter((t, i) => all.indexOf(t) !== i)).toEqual([]);
+    expect(all.some((t) => t.startsWith('central role of glycosylation'))).toBe(true);
+  });
+
+  test('the home page shows the newest one', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.home-spotlight-text').first()).toContainText(
+      'Ten common mistakes that could ruin your enrichment analysis',
+      { timeout: LOAD }
+    );
+  });
+});
+
 test.describe('In-page table of contents', () => {
   // The long userguide pages open with a table of contents linking each
   // section. Those ids are added at render time by addAnchorIds; the call was

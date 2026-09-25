@@ -52,6 +52,7 @@ import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
 import { RevealDirective } from '../utils/reveal.directive';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
 @Component({
   selector: 'cr-event-hierarchy',
@@ -80,6 +81,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   private speciesService: SpeciesService = inject(SpeciesService);
   public state: UrlStateService = inject(UrlStateService);
   private el: ElementRef = inject(ElementRef);
+  protected readonly hierarchyHover = inject(HierarchyHoverService);
   private router: Router = inject(Router);
   private ehldService: EhldService = inject(EhldService);
   private analysis: AnalysisService = inject(AnalysisService);
@@ -368,6 +370,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // A row removed under the pointer never fires its leave.
+    this.hierarchyHover.enter(undefined);
     clearTimeout(this.scrollTimeout);
   }
 

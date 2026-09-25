@@ -1,4 +1,5 @@
-import { Routes, UrlSegment } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes, UrlSegment } from '@angular/router';
 
 export const routes: Routes = [
   //Home Page
@@ -236,6 +237,29 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./swagger-page/swagger-page.component').then((m) => m.SwaggerPageComponent),
     data: { serviceName: 'AnalysisService' },
+  },
+
+  // Old reactome.org addresses with a clear new home. The site's own content
+  // does not use them -- the link check refuses a link that only a redirect
+  // would rescue -- but other people's pages, bookmarks and citations do.
+  { path: 'what-is-reactome', redirectTo: 'about/what-is-reactome', pathMatch: 'full' },
+  { path: 'license', redirectTo: 'about/license', pathMatch: 'full' },
+  { path: 'icon-lib', redirectTo: 'community/icon-lib', pathMatch: 'full' },
+  { path: 'icon-lib/:id', redirectTo: 'community/icon-lib/:id' },
+  { path: 'icon-info', redirectTo: 'documentation/icon-info', pathMatch: 'full' },
+  { path: 'content/contributors', redirectTo: 'community/contributors', pathMatch: 'full' },
+  { path: 'userguide', redirectTo: 'documentation/userguide', pathMatch: 'full' },
+  { path: 'userguide/:page', redirectTo: 'documentation/userguide/:page' },
+  { path: 'user/guide/:page', redirectTo: 'documentation/userguide/:page' },
+  { path: 'dev', redirectTo: 'documentation/dev', pathMatch: 'full' },
+  { path: 'dev/:page', redirectTo: 'documentation/dev/:page' },
+  { path: 'dev/:section/:page', redirectTo: 'documentation/dev/:section/:page' },
+  {
+    // The training page is gone; its materials are a section of Documentation.
+    path: 'community/training',
+    pathMatch: 'full',
+    redirectTo: () =>
+      inject(Router).createUrlTree(['/documentation'], { fragment: 'Reactome_Training_Materials' }),
   },
 
   //404 Page

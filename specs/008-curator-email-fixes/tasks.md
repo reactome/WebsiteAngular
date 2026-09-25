@@ -190,30 +190,30 @@ analysis token shows a message.
 
 ### 1c — Research Spotlight (US4)
 
-- [ ] T050 [P] [US4] Add a guard test for `WA/src/scripts/generate-index.ts` (`generate-index.spec.ts`): two entries with the same title/date in one collection fail the build with both file names. **Record it failing** against the current tree (40 `blogpost-*.mdx` duplicates in `CT/content/reactome-research-spotlight/`)
-- [ ] T051 [US4] Implement the duplicate guard in `generate-index.ts`; then delete the 40 `blogpost-*.mdx` duplicates — for each, confirm its twin exists with the same body before deleting (diff them; if a duplicate carries content the twin lacks, merge it into the twin first)
-- [ ] T052 [US4] Import the two missing spotlights verbatim from reactome.org as `294-central-role-of-glycosylation-…-omicron-variants.mdx` (22 May 2026) and `296-ten-common-mistakes-that-could-ruin-your-enrichment-analysis.mdx` (6 July 2026), matching the frontmatter of neighbouring files; copy their images locally; link pathways by stable id (Constitution IV)
-- [ ] T053 [US4] Replace the hard-coded intro at `WA/src/app/article/article-page/article-page.component.ts:59` with reactome.org's text ("Each month, Reactome highlights a recently published scientific article…"), with "Reactome home page" linking to `/`
-- [ ] T054 [US4] E2E in `e2e/content-pages.spec.ts` (record failing first): the spotlight list shows the intro, first card dated 6 July 2026, no title twice; the home page spotlight tile (`home-spotlight.component.ts:45`) shows the 6 July article
+- [x] T050 [P] [US4] Add a guard test for `WA/src/scripts/generate-index.ts` (`generate-index.spec.ts`): two entries with the same title/date in one collection fail the build with both file names. **Record it failing** against the current tree (40 `blogpost-*.mdx` duplicates in `CT/content/reactome-research-spotlight/`)
+- [x] T051 [US4] Implement the duplicate guard in `generate-index.ts`; then delete the 40 `blogpost-*.mdx` duplicates — for each, confirm its twin exists with the same body before deleting (diff them; if a duplicate carries content the twin lacks, merge it into the twin first)
+- [x] T052 [US4] Import the two missing spotlights verbatim from reactome.org as `294-central-role-of-glycosylation-…-omicron-variants.mdx` (22 May 2026) and `296-ten-common-mistakes-that-could-ruin-your-enrichment-analysis.mdx` (6 July 2026), matching the frontmatter of neighbouring files; copy their images locally; link pathways by stable id (Constitution IV)
+- [x] T053 [US4] Replace the hard-coded intro at `WA/src/app/article/article-page/article-page.component.ts:59` with reactome.org's text ("Each month, Reactome highlights a recently published scientific article…"), with "Reactome home page" linking to `/`
+- [x] T054 [US4] E2E in `e2e/content-pages.spec.ts` (record failing first): the spotlight list shows the intro, first card dated 6 July 2026, no title twice; the home page spotlight tile (`home-spotlight.component.ts:45`) shows the 6 July article
 
 ### 1e — V97/V96 news links and legacy redirects (US2)
 
-- [ ] T055 [P] [US2] E2E in `e2e/legacy-links.spec.ts` (record failing first): each legacy path with a clear new home (`/what-is-reactome`, `/userguide`, `/userguide/reactome-fiviz`, `/dev`, `/beta/PathwayBrowser`) lands on a page whose heading matches the new home — assert content, not status
-- [ ] T056 _(The link fixes landed in wave 2 with the site-wide pass; this task keeps the redirects.)_ [US2] Fix the "other news" links in `CT/about/news/295-v97-released.mdx` (lines 24, 26, 28, 32) and the same links in `CT/about/news/291-v96-released.mdx` to current paths; `/gsa` stays for decision 4
-- [ ] T057 [US2] Add redirects for those legacy paths in `WA/src/app/app.routes.ts` (`redirectTo`, placed before the wildcard); check nginx `deploy/nginx/common/routes.conf` doesn't intercept any of them first; confirm T055 and `check:links` pass
+- [x] T055 [P] [US2] E2E in `e2e/legacy-links.spec.ts` (record failing first): each legacy path with a clear new home (`/what-is-reactome`, `/userguide`, `/userguide/reactome-fiviz`, `/dev`, `/beta/PathwayBrowser`) lands on a page whose heading matches the new home — assert content, not status
+- [x] T056 _(The link fixes landed in wave 2 with the site-wide pass; this task keeps the redirects.)_ [US2] Fix the "other news" links in `CT/about/news/295-v97-released.mdx` (lines 24, 26, 28, 32) and the same links in `CT/about/news/291-v96-released.mdx` to current paths; `/gsa` stays for decision 4
+- [x] T057 [US2] Add redirects for those legacy paths in `WA/src/app/app.routes.ts` (`redirectTo`, placed before the wildcard); check nginx `deploy/nginx/common/routes.conf` doesn't intercept any of them first; confirm T055 and `check:links` pass
 
 ### 2g — Orthologous events and "Computationally inferred" (US3)
 
-- [ ] T058 [P] [US3] Look at the event payload for R-HSA-109582 and R-MMU-1640170 and record the exact fields (`orthologousEvent`, `isInferred`, `evidenceType`, `inferredFrom`) and their shapes before writing code
-- [ ] T059 [P] [US3] E2E in `e2e/detail-contents.spec.ts` (record failing first): R-HSA-109582 lists orthologous events by species including Mus musculus, linked by stable id; R-MMU-1640170 shows "Computationally inferred" and "Inferred From: Cell Cycle"
-- [ ] T060 [US3] In `PB/details/tabs/description-tab/description-tab.component.ts` add an "Orthologous events" section keyed on the event's `orthologousEvent` (the existing Inferences section at :670-674 is keyed on the PE property `DataKeys.INFERRED_TO` and never matches events), grouped and sorted by species, links by stId; add the "Computationally inferred" line when `isInferred`/`evidenceType` says so; measure render time for R-HSA-109582 before/after
-- [ ] T061 [US3] Check the same gap on the content detail page (`/content/detail/…`) which shares these panels; fix there too if it renders separately
+- [x] T058 [P] [US3] Look at the event payload for R-HSA-109582 and R-MMU-1640170 and record the exact fields (`orthologousEvent`, `isInferred`, `evidenceType`, `inferredFrom`) and their shapes before writing code
+- [x] T059 [P] [US3] E2E in `e2e/detail-contents.spec.ts` (record failing first): R-HSA-109582 lists orthologous events by species including Mus musculus, linked by stable id; R-MMU-1640170 shows "Computationally inferred" and "Inferred From: Cell Cycle"
+- [x] T060 [US3] In `PB/details/tabs/description-tab/description-tab.component.ts` add an "Orthologous events" section keyed on the event's `orthologousEvent` (the existing Inferences section at :670-674 is keyed on the PE property `DataKeys.INFERRED_TO` and never matches events), grouped and sorted by species, links by stId; add the "Computationally inferred" line when `isInferred`/`evidenceType` says so; measure render time for R-HSA-109582 before/after
+- [x] T061 [US3] Check the same gap on the content detail page (`/content/detail/…`) which shares these panels; fix there too if it renders separately
 
 ### 2d — Hierarchy hover highlights the EHLD region (US3, #297)
 
-- [ ] T062 [P] [US3] Unit test (record failing first): setting the shared hover signal to a subpathway's stId causes the EHLD to mark the matching region hovered, and clearing it unmarks it; test the pure mapping in `PB/ehld/` if the component can't render under vitest
-- [ ] T063 [US3] Add a root hierarchy-hover signal (service in `PB/services/`), set/cleared from `onTagHover` in `PB/event-hierarchy/event-hierarchy.component.ts:523-530` (keep the local `isHovered`); in `PB/ehld/ehld.component.ts` apply the existing EHLD hover style to the region for that stId; selection must be unaffected
-- [ ] T064 [US3] E2E on `/PathwayBrowser/R-HSA-1640170`: hover "Cell Cycle Checkpoints" (R-HSA-69620) in the tree → its region gets the hover class; mouse leave → cleared
+- [x] T062 [P] [US3] Unit test (record failing first): setting the shared hover signal to a subpathway's stId causes the EHLD to mark the matching region hovered, and clearing it unmarks it; test the pure mapping in `PB/ehld/` if the component can't render under vitest
+- [x] T063 [US3] Add a root hierarchy-hover signal (service in `PB/services/`), set/cleared from `onTagHover` in `PB/event-hierarchy/event-hierarchy.component.ts:523-530` (keep the local `isHovered`); in `PB/ehld/ehld.component.ts` apply the existing EHLD hover style to the region for that stId; selection must be unaffected
+- [x] T064 [US3] E2E on `/PathwayBrowser/R-HSA-1640170`: hover "Cell Cycle Checkpoints" (R-HSA-69620) in the tree → its region gets the hover class; mouse leave → cleared
 
 ### Wave 3 close-out
 

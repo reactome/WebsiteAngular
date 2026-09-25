@@ -79,6 +79,7 @@ import { InteractorsTableComponent } from '../../common/interactors-table/intera
 import { LocationsTreeComponent } from '../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component';
 import { ReactionDiagramComponent } from '../../common/reaction-diagram/reaction-diagram.component';
 import { Pathway } from '../../../model/graph/event/pathway.model';
+import type { Event as ReactomeEvent } from '../../../model/graph/event/event.model';
 
 @Component({
   selector: 'cr-description-tab',
@@ -277,6 +278,20 @@ export class DescriptionTabComponent implements OnDestroy {
     return this.getGroupedInferences(inferences);
   });
 
+  /**
+   * The events Reactome predicted from this one in other species, by species.
+   *
+   * Events carry them as `orthologousEvent`. The Inferences section above keys
+   * on `inferredTo`, which only physical entities have, so no event ever showed
+   * its predictions -- the old browser listed them as "computationally
+   * predicted events".
+   */
+  orthologousEvents = computed(() => {
+    const events: ReactomeEvent[] | undefined = getProperty(this.obj(), DataKeys.ORTHOLOGOUS_EVENT);
+    if (!events?.length) return new Map<string, ReactomeEvent[]>();
+    return this.entity.getGroupedData(events, (event) => event.speciesName ?? '');
+  });
+
   otherForms = computed(() => {
     const value = this._otherForms.value();
     if (!value) return new Map<string, PhysicalEntity[]>();
@@ -465,6 +480,7 @@ export class DescriptionTabComponent implements OnDestroy {
   catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivityTemplate');
   catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivitiesTemplate');
   inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
+  orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>('orthologousEventsTemplate');
   otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
   literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
   authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
@@ -673,6 +689,13 @@ export class DescriptionTabComponent implements OnDestroy {
       template: this.inferencesTemplate$,
     },
     {
+      key: DataKeys.ORTHOLOGOUS_EVENT,
+      label: Labels.ORTHOLOGOUS_EVENTS,
+      manual: true,
+      template: this.orthologousEventsTemplate$,
+      isPresent: computed(() => this.orthologousEvents().size > 0),
+    },
+    {
       key: DataKeys.INFERRED_FROM,
       label: Labels.INFERRED_FROM,
       disableNavigation: computed(() => this.inferenceNavigationVisibility()),
@@ -762,6 +785,8 @@ export class DescriptionTabComponent implements OnDestroy {
         return this.hasRhea();
       case DataKeys.OTHER_FORMS:
         return this.otherForms() && this.otherForms().size > 0;
+      case DataKeys.ORTHOLOGOUS_EVENT:
+        return this.orthologousEvents().size > 0;
       case camelCase(Labels.AUTHORSHIP):
         return this.authorship() && this.authorship().length > 0;
       case DataKeys.INTERACTORS:

@@ -39,6 +39,21 @@ export class DescriptionOverviewComponent {
     getProperty(this.obj(), DataKeys.REVIEW_STATUS)
   );
   readonly disease: Signal<Disease[]> = computed(() => getProperty(this.obj(), DataKeys.DISEASE));
+  /**
+   * How a computationally inferred event came to be, or undefined for a
+   * curated one. The old browser said so on every predicted event; this panel
+   * showed a predicted pathway exactly as it shows a curated one.
+   */
+  readonly inference = computed(() => {
+    const obj = this.obj() as DatabaseObject & {
+      isInferred?: boolean;
+      evidenceType?: { displayName?: string };
+    };
+    if (obj['isInferred'] !== true) return undefined;
+    const how = obj['evidenceType']?.displayName;
+    return how ? `Computationally inferred (${how})` : 'Computationally inferred';
+  });
+
   /** Events carry one; the old browser showed it, and this panel had dropped it. */
   readonly goBiologicalProcess: Signal<GO_BiologicalProcess | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.GO_BIOLOGICAL_PROCESS)

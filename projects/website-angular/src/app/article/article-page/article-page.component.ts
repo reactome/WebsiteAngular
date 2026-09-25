@@ -54,7 +54,6 @@ export class ArticlePageComponent implements OnInit {
         } else if (path_segments.includes('content')) {
           this.loadArticles('content/reactome-research-spotlight');
           this.pageTile = 'Reactome Research Spotlights';
-          this.pageDescription = 'Explore the latest research spotlights from Reactome.';
           this.articlePath = 'content/reactome-research-spotlight';
         }
       }

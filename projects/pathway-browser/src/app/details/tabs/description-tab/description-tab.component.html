@@ -282,6 +282,24 @@
   </div>
 </ng-template>
 
+<ng-template #orthologousEventsTemplate>
+  <div class="orthologous-events element-container columns">
+    @for (item of orthologousEvents() | keyvalue | sortByText: 'key'; track item.key) {
+      <div class="row padding">
+        <div class="label-container">{{ item.key }}</div>
+        <div class="composition-container">
+          @for (event of item.value; let i = $index; track event.dbId) {
+            <a [href]="`${CONTENT_DETAIL_PATH}/${event.stId}`">{{ event.displayName }}</a>
+            @if (i < item.value.length - 1) {
+              <span class="margin-right">,</span>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>
+
 <!-- Catalyst Activity-->
 <ng-template #catalystActivityTemplate>
   <div class="element-container">

@@ -252,3 +252,29 @@ test.describe('Illustrations', () => {
     );
   });
 });
+
+test.describe('Hierarchy and illustration together', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // Hovering a sub-pathway in the tree should light up its region in the
+  // illustration, as the old browser did. The tree marked its own row and
+  // told nothing else (#297).
+  test('hovering a sub-pathway row lights up its region, and leaving clears it', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-HSA-1640170');
+    await page.waitForSelector('cr-ehld #ehld svg g[id="REGION-R-HSA-69620"]', { timeout: 90_000 });
+    const region = () =>
+      page.evaluate(
+        () => (document.querySelector('g[id="REGION-R-HSA-69620"]') as SVGGElement).style.filter
+      );
+    expect(await region()).not.toContain('drop-shadow');
+
+    const row = page.locator('.tree-node button', { hasText: 'Cell Cycle Checkpoints' }).first();
+    await row.hover();
+    await expect.poll(region).toContain('drop-shadow');
+
+    await page.mouse.move(5, 5);
+    await expect.poll(region).not.toContain('drop-shadow');
+  });
+});

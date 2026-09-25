@@ -75,6 +75,12 @@
           </div>
         </div>
       }
+      @if (inference(); as how) {
+        <div class="row">
+          <div class="label">Evidence</div>
+          <div class="value">{{ how }}</div>
+        </div>
+      }
       @if (goBiologicalProcess(); as process) {
         <div class="row">
           <div class="label">GO biological process</div>
