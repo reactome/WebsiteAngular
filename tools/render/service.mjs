@@ -79,13 +79,16 @@ const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // as a filled triangle; v6 = complexes, sets and genes carry the body their
 // background image draws instead of coming out as empty rectangles; v7 = a
 // framed export clips every shape, so an arrowhead no longer protrudes past the
-// frame and a glyph the frame cuts is cut rather than squashed.
+// frame and a glyph the frame cuts is cut rather than squashed; v8 = an
+// illustration is parsed as XML, so one with an XHTML gradient inside
+// foreignObject (Circadian clock) is drawn whole instead of a blue square. That
+// fix is in the app, not under tools/render, and changes this output all the same.
 //
 // v5 exists because v4 was already published and the exporter changed again --
 // the second time in one day that a correct build served a stale file. If you
 // changed anything under tools/render that affects output, this line is part of
 // the change.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v7';
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v8';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.

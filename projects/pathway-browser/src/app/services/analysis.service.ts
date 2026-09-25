@@ -9,7 +9,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { catchError, EMPTY, Observable, of, switchMap, tap } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import type { Analysis } from '../model/analysis.model';
 import { UrlStateService } from './url-state.service';
@@ -86,6 +86,24 @@ export function defaultResource(
     .map((entry) => entry.resource)
     .filter((resource) => resource !== 'TOTAL');
   return specific.length === 1 ? specific[0] : null;
+}
+
+/**
+ * What to tell the reader when an analysis result cannot be loaded.
+ *
+ * The Analysis Service answers 410 for a result it no longer holds -- results
+ * are removed at a release -- and for one it never held, which is the case for
+ * a result another Reactome server produced. 404 means the same to a reader.
+ */
+export function describeLoadFailure(error: unknown): string {
+  if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410)) {
+    return (
+      'This analysis result is not available on this server. Results are removed when ' +
+      'Reactome releases new data, and a result produced elsewhere cannot be opened here. ' +
+      'Run the analysis again to see it.'
+    );
+  }
+  return 'The analysis result could not be loaded. Try again in a moment.';
 }
 
 export class PaletteSummary {
@@ -323,6 +341,14 @@ export class AnalysisService {
     { name: 'continuous', valid: false, palettes: ['Spectral', 'Viridis'] },
   ];
 
+  private readonly _loadFailure = signal<string | null>(null);
+  /** Why the last result the reader asked for could not be shown, if it could not. */
+  readonly loadFailure = this._loadFailure.asReadonly();
+
+  dismissLoadFailure(): void {
+    this._loadFailure.set(null);
+  }
+
   resultResource = rxResource({
     params: () => ({
       token: this.state.analysis(),
@@ -457,7 +483,17 @@ export class AnalysisService {
     effect(() => {
       [...this.paletteOptions.values()].forEach((summary) => (summary.dark = this.darkS.isDark()));
     });
-    effect(() => this.resultResource.error() && this.state.analysis.set(null)); // remove token if it is wrong
+    // A token that cannot be loaded is removed from the address, as before, but
+    // no longer silently: the reader is told why their result did not appear.
+    effect(() => {
+      const error = this.resultResource.error();
+      if (!error) return;
+      console.warn('Analysis result could not be loaded', error);
+      this._loadFailure.set(describeLoadFailure(error));
+      this.state.analysis.set(null);
+    });
+    // Any new result supersedes the message about the last one.
+    effect(() => this.state.analysis() && this._loadFailure.set(null));
 
     // Match what production shows. Setting the filter refetches against that
     // resource, and the guard makes this run once: on the second pass the

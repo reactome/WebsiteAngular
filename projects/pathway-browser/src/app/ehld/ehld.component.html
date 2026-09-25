@@ -1,5 +1,8 @@
 <div class="variables" #container>
   <div id="ehld" #ehld [class.pointer]="hovering()"></div>
+  @if (drawError() || loadError()) {
+    <p class="ehld-error" role="alert">This illustration could not be {{ drawError() ? 'drawn' : 'loaded' }}.</p>
+  }
 
   @let legendWidth = ratio * container.clientHeight;
   <div id="legend-boundary" [style.--legend-width.px]="legendWidth">

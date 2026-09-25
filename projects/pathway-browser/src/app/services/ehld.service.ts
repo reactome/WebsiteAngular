@@ -408,10 +408,10 @@ export class EhldService {
       container.style.fill = `url(#${this.pattern}${analysisPathway.stId}-fdr)`;
       container.style.opacity = entities.fdr <= this.state.significance() ? '1' : '0.5';
 
-      textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
+      textInfoElement.textContent = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
       if (this.analysis.hasPValues())
-        textInfoElement.innerHTML += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
+        textInfoElement.textContent += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
       textInfoElement.removeAttribute('transform');
       textInfoElement.classList.add('analysis-text');
 

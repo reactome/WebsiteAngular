@@ -9,6 +9,7 @@ import { Species } from '../species.model';
 import { Disease } from '../external-ontology/disease.model';
 import { InDepth } from '../in-depth.model';
 import { HasFigure } from '../figure.model';
+import { GO_BiologicalProcess } from '../go-term/go-biological-process.model';
 
 export interface Event extends DatabaseObject, InDepth, HasFigure {
   stId: string;
@@ -24,6 +25,7 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   hasCompartment?: HasCompartment[];
   species: Species[];
   disease?: Disease[];
+  goBiologicalProcess?: GO_BiologicalProcess;
 
   // not from API endpoint but are needed in the tree view
   isSelected?: boolean;

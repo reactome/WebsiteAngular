@@ -130,3 +130,87 @@ test.describe('Analysis results', () => {
     await expect(page.locator(BADGE).first()).toBeVisible({ timeout: READY });
   });
 });
+
+test.describe('Analysis summary', () => {
+  test.describe.configure({ timeout: 6 * 60 * 1000 });
+
+  /** Answers every summary request with text naming which request it was. */
+  async function stubSummaries(page: Page) {
+    let asked = 0;
+    await page.route('**/analysis-summary', async (route) => {
+      asked += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body:
+          'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+          `event: token\ndata: {"text": "Summary number ${asked}."}\n\n` +
+          'event: done\ndata: {"state": "summarised"}\n\n',
+      });
+    });
+  }
+
+  // The service holding a summary is a singleton; the panel showing it is
+  // destroyed whenever the analysis form opens. The first fix compared tokens
+  // inside the panel, so the fresh panel under the second result had nothing to
+  // compare with and showed the first result's summary above it.
+  test('a summary never appears above a different result, and can be closed', async ({ page }) => {
+    await stubSummaries(page);
+    await runGeneList(page);
+    await openTab(page, 'Results');
+    await page.getByRole('button', { name: 'Summarise this result' }).click({ timeout: 60_000 });
+    await expect(page.getByText('Summary number 1.')).toBeVisible({ timeout: 30_000 });
+    const first = new URL(page.url()).searchParams.get('analysis');
+
+    // A second analysis, in the same page, through the form.
+    await page.getByRole('button', { name: 'Analyze' }).click();
+    // The form reopens on its last step; the data is two steps back.
+    await page.getByRole('tab', { name: /Data/ }).click({ timeout: READY });
+    await page.getByRole('button', { name: 'UniProt IDs' }).click({ timeout: READY });
+    await page.getByRole('button', { name: /^Next$/ }).click();
+    // With interactors, so the request differs from the first by URL: the
+    // recordings keep no request bodies, and two submissions to one URL would
+    // replay as the same result.
+    const interactors = page.locator('.card-checkbox', { hasText: 'IntAct interactors' });
+    await interactors.click();
+    await expect(interactors).toHaveClass(/\bchecked\b/);
+    await page.getByRole('button', { name: /^Next$/ }).click();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('analysis'), { timeout: READY })
+      .not.toBe(first);
+    await expect(page.locator(BADGE).first()).toBeVisible({ timeout: READY });
+    await openTab(page, 'Results');
+
+    await expect(page.locator('cr-result-tab')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('Summary number 1.')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Summarise this result' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Summarise this result' }).click();
+    await expect(page.getByText('Summary number 2.')).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Close summary' }).click();
+    await expect(page.getByText('Summary number 2.')).toHaveCount(0);
+    // Closing leaves the results where they were, and the offer to summarise.
+    await expect(page.getByRole('columnheader', { name: /Entities FDR/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Summarise this result' })).toBeVisible();
+  });
+});
+
+test.describe('A result that cannot be loaded', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // It used to vanish: the token was dropped from the address and nothing was
+  // said. Beta's quantitative analyses ended there, because ReactomeGSA writes
+  // them to a different Analysis Service from the one beta reads.
+  test('says so, instead of showing nothing', async ({ page }) => {
+    await page.route('**/AnalysisService/token/**', (route) =>
+      route.fulfill({ status: 410, contentType: 'application/json', body: '{"code":410}' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-109582?analysis=MjAyNjA5MjUxMjAwMDBfMQ%3D%3D');
+    await expect(page.getByText(/analysis result is not available on this server/)).toBeVisible({
+      timeout: READY,
+    });
+    await expect(page).not.toHaveURL(/[?&]analysis=/);
+    await page.getByRole('button', { name: 'Dismiss' }).click();
+    await expect(page.getByText(/analysis result is not available on this server/)).toHaveCount(0);
+  });
+});

@@ -222,3 +222,33 @@ test('the Expression tab renders the Expression Atlas heatmap', async ({ page, r
     timeout: 45_000,
   });
 });
+
+test.describe('Illustrations', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // An illustration is SVG and is now parsed as XML, so a file that is not
+  // well-formed is refused. Refused has to mean told, not a blank panel: before,
+  // anything the HTML parser could not make sense of simply drew nothing.
+  test('one that cannot be drawn says so', async ({ page }) => {
+    await page.route('**/ehld/R-HSA-109581.svg', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg><g></svg>' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-109581');
+    await expect(page.locator('cr-ehld [role="alert"]')).toHaveText(
+      'This illustration could not be drawn.',
+      { timeout: 90_000 }
+    );
+    await expect(page.locator('cr-ehld #ehld svg')).toHaveCount(0);
+  });
+
+  test('one that cannot be fetched says so, once the pathway is known to have one', async ({
+    page,
+  }) => {
+    await page.route('**/ehld/R-HSA-109581.svg', (route) => route.fulfill({ status: 404 }));
+    await page.goto('/PathwayBrowser/R-HSA-109581');
+    await expect(page.locator('cr-ehld [role="alert"]')).toHaveText(
+      'This illustration could not be loaded.',
+      { timeout: 90_000 }
+    );
+  });
+});

@@ -1,6 +1,18 @@
 .analysis-summary {
   container-type: inline-size;
+  position: relative;
   padding: 12px 0;
+}
+
+// Top right, out of the text's way; the section leaves room for it.
+.close {
+  position: absolute;
+  top: 0;
+  right: -8px;
+}
+
+.analysis-summary:has(> .close) {
+  padding-right: 32px;
 }
 
 h3 {

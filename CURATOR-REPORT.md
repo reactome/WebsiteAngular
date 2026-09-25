@@ -12,7 +12,40 @@ open an issue on the WebsiteAngular repository — either reaches us. A screensh
 and the URL is usually enough; if a diagram is involved, the pathway's stable id
 saves us guessing.
 
-Last updated: 2026-09-20
+Last updated: 2026-09-25
+
+## Answers to the 25 September review
+
+Seventeen items. Each will end either fixed and checked on beta, or said plainly
+to be waiting — on a decision, on another team, or on more detail from you. This
+section grows as the fixes land.
+
+### Fixed — please check
+
+| Item                                                             | What was wrong                                                                                                                                                                                                                                                               | Where to look                             |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Digital Preservation heading                                     | The page was imported without a title and rendered "UNTITLED". Every page is now checked for one                                                                                                                                                                             | About → Digital Preservation              |
+| Logo downloads                                                   | Medium and Large imagotype PNGs had been saved as `.png.png`, so they opened the not-found page; no option downloaded; and the PNG sizes were in a menu that only opened on mouse hover. Each option now saves its file, and says its pixel size                             | About → Our Logo                          |
+| Computationally inferred events showing V95                      | The chart was a saved copy of release 95's. It now comes from the current release's statistics. The curator guide and release SOP link the V97 documents                                                                                                                     | Docs → Computationally inferred events    |
+| Circadian clock illustration                                     | It was read as HTML, not as the SVG it is; one of its gradients swallowed the rest of the drawing. Illustrations are now read as SVG, and one that cannot be drawn says so. Only one other published illustration had the same pattern, and it is not in the current release | `/PathwayBrowser/R-HSA-9909396`           |
+| GO biological process in Details                                 | Never shown. Now shown, linked to QuickGO, when the event has one                                                                                                                                                                                                            | `/PathwayBrowser/R-HSA-109582` → Details  |
+| Analysis summary outliving its analysis, with no way to close it | Our earlier fix only worked while the summary panel stayed open, and opening the analysis form closes it. The check is now made against what the summary was written about. There is a close button                                                                          | Run an example, summarise, run another    |
+| Quantitative results not appearing                               | Part of this is ours: a result beta could not load was dropped without a word. It now says the result is not available on this server. The rest is below                                                                                                                     | Run Camera on the MelanomaRNA-seq example |
+
+### Not ours
+
+- **The report email** is sent by the ReactomeGSA service, not by this site.
+  It will be raised with that team.
+- **Quantitative results on beta**: ReactomeGSA writes results to reactome.org's
+  analysis service, and beta reads its own, so beta cannot open them. We are
+  deciding how beta should handle that; on reactome.org itself they appear.
+
+### A question for you
+
+- **User guide images from reactome.org**: we could not reproduce this. All 244
+  images, videos and embeds in the user guide load from beta itself. Which page,
+  and which image? If it was on `reactome.org/beta`, that is a separate, older
+  build our changes never reach.
 
 ## Answers to the 19 September round
 

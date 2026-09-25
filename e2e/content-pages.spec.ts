@@ -142,6 +142,33 @@ test.describe('Content pages render backend data', () => {
   });
 });
 
+test.describe('Authored page headings', () => {
+  // page.component.html renders the frontmatter title as the page's h1, so a
+  // page imported with `title: Untitled` showed "UNTITLED" as its heading.
+  test('Digital Preservation is headed by its name', async ({ page }) => {
+    await page.goto('/about/digital-preservation');
+    await expect(page.locator('h1').first()).toHaveText('Digital Preservation', {
+      timeout: LOAD,
+    });
+    await expect(page.locator('body')).not.toContainText(/untitled/i);
+  });
+});
+
+test.describe('Release-stamped figures', () => {
+  // The inferred-events chart was a copy of release 95's saved into the repo, so
+  // it kept saying "Reactome Version 95" while the site served 97. The chart is
+  // republished with every release; the page has to point at the current one.
+  test("the inferred-events chart is the current release's", async ({ page }) => {
+    await page.goto('/documentation/inferred-events');
+    const chart = page.locator('app-page img[src*="reaction_release_stats"]');
+    await expect(chart).toHaveAttribute(
+      'src',
+      /download\.reactome\.org\/\d+\/stats\/reaction_release_stats\.png$/,
+      { timeout: LOAD }
+    );
+  });
+});
+
 test.describe('In-page table of contents', () => {
   // The long userguide pages open with a table of contents linking each
   // section. Those ids are added at render time by addAnchorIds; the call was
