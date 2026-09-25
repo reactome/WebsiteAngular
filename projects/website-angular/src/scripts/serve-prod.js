@@ -100,7 +100,7 @@ for (const [context, options] of Object.entries(proxyConfig)) {
  * confidently describe a build that has since been replaced. That is the very
  * failure this exists to catch, and it would be reporting it about itself.
  */
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   let html = '';
   try {
@@ -117,8 +117,78 @@ app.get('/health', (_req, res) => {
   } catch {
     // Not worth failing the check over.
   }
-  res.json({ ok: true, bundle, built, dist: DIST });
+  const services = await surveyServices();
+  // `ok` stays the *site's* answer, not the estate's. A monitor pointed here to
+  // ask "is the website up" must not be told no because a sibling it does not
+  // serve is down -- the site renders without the render service, and saying
+  // otherwise would page somebody for the wrong thing. What is wrong is in
+  // `services`, named.
+  res.json({ ok: true, bundle, built, dist: DIST, services });
 });
+
+/**
+ * The services behind this one, asked rather than assumed.
+ *
+ * Every deployment fault on this box has had the same shape: something merged,
+ * something else kept running the version from before it, and nothing said so.
+ * A route was added to nginx pointing at content-node while content-node still
+ * ran the image built before the endpoints existed, so a path Java used to
+ * answer returned 404 until somebody happened to try it.
+ *
+ * So this reports what each one *is*, not merely that it answered: the build it
+ * is running, the release it holds, how many endpoints it serves. Two services
+ * disagreeing about the release is the thing to notice, and it is invisible if
+ * all you have is a green tick each.
+ *
+ * Asked in parallel with a short timeout, because this is polled and must not
+ * become the slow thing. A service that is down is reported as down; it is not
+ * an error here, and it never makes the site's own answer false.
+ */
+async function surveyServices() {
+  // Addresses, not assumptions. They default to where these run beside the site
+  // today and are overridable, because a deployment that moves one should not
+  // have to edit this file -- and because a test can then point them at a dead
+  // port and assert what "down" looks like, which is the case that matters and
+  // the one that cannot be observed on a box where they are all running.
+  const targets = [
+    {
+      name: 'content-node',
+      url: process.env.HEALTH_CONTENT_NODE || 'http://127.0.0.1:4400/health',
+    },
+    { name: 'render', url: process.env.HEALTH_RENDER || 'http://127.0.0.1:4310/health' },
+    { name: 'mcp', url: process.env.HEALTH_MCP || 'http://127.0.0.1:4320/health' },
+  ];
+  const entries = await Promise.all(
+    targets.map(async ({ name, url }) => {
+      try {
+        const response = await fetch(url, { signal: AbortSignal.timeout(2000) });
+        if (!response.ok) return [name, { up: false, status: response.status }];
+        const body = await response.json();
+        return [
+          name,
+          {
+            up: true,
+            // Each service names these differently and there is no value in
+            // pretending otherwise -- what matters is that the fields exist to
+            // compare between them, not that they share a schema.
+            build: body.build ?? body.version ?? null,
+            release: body.release ?? null,
+            endpoints: Array.isArray(body.endpoints) ? body.endpoints.length : undefined,
+          },
+        ];
+      } catch (error) {
+        // Down, unreachable, or slower than the budget. All three are the same
+        // answer to whoever is reading this, and none of them is this route's
+        // failure.
+        return [
+          name,
+          { up: false, reason: error?.name === 'TimeoutError' ? 'timeout' : 'unreachable' },
+        ];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+}
 
 // Hashed build artefacts are immutable; index.html must never be cached or a
 // redeploy leaves browsers pinned to chunks that no longer exist.

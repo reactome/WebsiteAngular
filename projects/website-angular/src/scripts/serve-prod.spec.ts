@@ -59,7 +59,19 @@ describe('serve-prod', () => {
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
     server = spawn('node', [SCRIPT], {
-      env: { ...process.env, DIST_DIR: dist, PORT: String(port), HOST: '127.0.0.1' },
+      env: {
+        ...process.env,
+        DIST_DIR: dist,
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        // Pointed at a closed port on purpose. On a developer's box these
+        // services are genuinely running, so without this the suite would
+        // assert "down" and pass only where nothing is deployed — green in CI,
+        // red locally, for a reason that has nothing to do with the code.
+        HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
+        HEALTH_RENDER: 'http://127.0.0.1:9/health',
+        HEALTH_MCP: 'http://127.0.0.1:9/health',
+      },
       stdio: 'ignore',
     });
 
@@ -69,6 +81,34 @@ describe('serve-prod', () => {
   afterAll(async () => {
     server?.kill('SIGTERM');
     if (dist) await rm(dist, { recursive: true, force: true });
+  });
+
+  /**
+   * The health route reports the services behind this one, and this suite runs
+   * with none of them up — which is the case worth pinning. Every deployment
+   * fault on this box has been something running a version from before the
+   * merge with nothing saying so, and a health check that fell over when a
+   * sibling was down would be reporting the estate under the name of the site.
+   */
+  it('reports each service, and says which are down', async () => {
+    const body = await (await fetch(base + '/health')).json();
+    expect(Object.keys(body.services)).toEqual(
+      expect.arrayContaining(['content-node', 'render', 'mcp'])
+    );
+    // Nothing is running in this suite, so every one of them is down and each
+    // says so on its own rather than collapsing into a single failure.
+    for (const [name, state] of Object.entries(body.services as Record<string, { up: boolean }>)) {
+      expect(state.up, `${name} should report its own state`).toBe(false);
+    }
+  });
+
+  it('stays ok when a service behind it is down', async () => {
+    // `ok` is the site's answer, not the estate's. The site renders without the
+    // render service; telling a monitor otherwise pages somebody for the wrong
+    // thing, and what is actually wrong is named in `services`.
+    const body = await (await fetch(base + '/health')).json();
+    expect(body.ok).toBe(true);
+    expect(body.bundle === null || typeof body.bundle === 'string').toBe(true);
   });
 
   it('serves the build at the root', async () => {
