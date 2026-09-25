@@ -277,4 +277,28 @@ test.describe('Hierarchy and illustration together', () => {
     await page.mouse.move(5, 5);
     await expect.poll(region).not.toContain('drop-shadow');
   });
+
+  test('an expanded sub-pathway keeps its highlight after visiting a child row', async ({
+    page,
+  }) => {
+    // Selecting something inside Cell Cycle Checkpoints expands its row beside
+    // the illustration without selecting the row itself. Its node contains the
+    // child rows, so hover bound on the node was cleared by a child's leave and
+    // never set again on the way back up.
+    await page.goto('/PathwayBrowser/R-HSA-1640170?select=R-HSA-69615');
+    await page.waitForSelector('cr-ehld #ehld svg g[id="REGION-R-HSA-69620"]', { timeout: 90_000 });
+    const region = () =>
+      page.evaluate(
+        () => (document.querySelector('g[id="REGION-R-HSA-69620"]') as SVGGElement).style.filter
+      );
+    const header = page.locator('mat-nested-tree-node[st-id="R-HSA-69620"] > .tree-node').first();
+    const child = page.locator('[st-id="R-HSA-69615"] .tree-node').first();
+    await expect(child).toBeVisible({ timeout: 60_000 });
+
+    await header.hover();
+    await expect.poll(region).toContain('drop-shadow');
+    await child.hover();
+    await header.hover();
+    await expect.poll(region).toContain('drop-shadow');
+  });
 });
