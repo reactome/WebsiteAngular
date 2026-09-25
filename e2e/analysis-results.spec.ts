@@ -276,7 +276,16 @@ test.describe('Continuing a summary after the person-check lapsed', () => {
         body: '{"reason": "stale_human"}',
       })
     );
-    await page.route('**/challenges.cloudflare.com/**', (route) => route.abort());
+    // Cloudflare's widget is stubbed, never loaded: this is about our loop, and
+    // a request to them has no recording, so replay would refuse it.
+    await page.addInitScript(() => {
+      (window as unknown as { turnstile: unknown }).turnstile = {
+        render: (el: HTMLElement) => {
+          el.textContent = 'stub widget';
+          return 'stub';
+        },
+      };
+    });
 
     await runGeneList(page);
     await openTab(page, 'Results');

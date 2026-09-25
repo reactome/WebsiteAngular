@@ -139,11 +139,15 @@ export class AnswerService {
    * question would bring the dead handle back.
    */
   forgetAnswerId(): void {
+    const id = this._answerId();
     this._answerId.set(null);
     this._answeredAt.set(null);
+    // Only this answer's: other cached answers keep their own handles.
     for (const entry of this.cache.values()) {
-      entry.answerId = null;
-      entry.answeredAt = null;
+      if (id !== null && entry.answerId === id) {
+        entry.answerId = null;
+        entry.answeredAt = null;
+      }
     }
   }
 
