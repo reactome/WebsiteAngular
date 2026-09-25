@@ -14,6 +14,7 @@ import { StatsService } from '../../services/stats.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
+import { applyRelease, needsRelease } from './release-placeholder';
 
 @Component({
   selector: 'app-page',
@@ -50,35 +51,6 @@ export class PageComponent implements OnInit {
   private scrollToRequestedAnchor(): void {
     const fragment = this.route.snapshot.fragment;
     if (fragment) this.viewportScroller.scrollToAnchor(fragment);
-  }
-
-  /**
-   * Whether this page's body names a release, and so has to wait for one.
-   *
-   * Checked before awaiting so that the overwhelming majority of pages -- which
-   * mention no release at all -- render without waiting on the content service.
-   */
-  private needsRelease(html: string) {
-    return /\{release\}|download\.reactome\.org\/\d+\//.test(html);
-  }
-
-  /**
-   * Point release artefacts at the release the database is serving.
-   *
-   * Authors write `{release}`; this substitutes it. A hardcoded number in a
-   * bucket path is rewritten too, because that is how the statistics page came
-   * to embed release 95's figures while the site served 97 -- the number was
-   * typed into the content once and nothing brings it forward. Everything under
-   * the versioned bucket is republished per release, so the current one is
-   * always the right answer.
-   */
-  private applyRelease(html: string, release: string): string {
-    return html
-      .replace(/\{release\}/g, release)
-      .replace(
-        /(download\.reactome\.org\/)\d+(\/)/g,
-        (_match, before, after) => `${before}${release}${after}`
-      );
   }
 
   private rewriteContentUrls(html: string): string {
@@ -140,8 +112,8 @@ export class PageComponent implements OnInit {
           if (page) {
             this.page = page;
             let html = await marked(page.body);
-            if (this.needsRelease(html)) {
-              html = this.applyRelease(html, await this.stats.getVersion());
+            if (needsRelease(html)) {
+              html = applyRelease(html, await this.stats.getVersion());
             }
             html = this.rewriteContentUrls(html);
             // Keep this chain intact. Each step was added by a specific fix and

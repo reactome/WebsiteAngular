@@ -9,12 +9,16 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { renderChallenge } from '../../../../website-angular/src/app/search/answer/turnstile';
 import {
   provenance as describeProvenance,
   recipientNote as describeRecipient,
   waitingMessage as describeWait,
 } from './panel-copy';
+import { clearSummaryForOtherResults } from './summary-owner';
 import { SummaryService } from './summary.service';
 import { type AnalysisType } from './summary-stream';
 
@@ -53,6 +57,7 @@ const HEADINGS: Record<AnalysisType, { title: string; note: string }> = {
 @Component({
   selector: 'cr-analysis-summary',
   standalone: true,
+  imports: [MatIcon, MatIconButton, MatTooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './analysis-summary.component.html',
   styleUrl: './analysis-summary.component.scss',
@@ -207,21 +212,27 @@ export class AnalysisSummaryComponent {
   /** @see provenance -- reads the *applied* tier, never the requested one. */
   readonly provenance = computed(() => describeProvenance(this.summary.applied()));
 
+  /** Anything written or said about the result, as opposed to the offer to write it. */
+  readonly closable = computed(
+    () =>
+      this.summary.visible() ||
+      this.summary.expired() ||
+      !!this.explanation() ||
+      !!this.summary.challenge() ||
+      this.summary.asking()
+  );
+
+  close(): void {
+    this.howOpen.set(false);
+    this.summary.clear();
+  }
+
   toggleHow(): void {
     this.howOpen.update((open) => !open);
   }
 
   constructor() {
-    // The service is a singleton, so without this a summary outlives the result
-    // it was written about: summarise analysis A, switch to analysis B, and A's
-    // text sits under B's heading attributed to B's data. Worse than an empty
-    // panel, because it is wrong rather than absent.
-    let previous: string | null = null;
-    effect(() => {
-      const token = this.token();
-      if (previous !== null && token !== previous) this.summary.clear();
-      previous = token;
-    });
+    clearSummaryForOtherResults(this.summary, this.token);
   }
 
   /** The widget's container, present only while a challenge is being shown. */

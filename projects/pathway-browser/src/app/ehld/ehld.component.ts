@@ -9,6 +9,7 @@ import {
   model,
   OnDestroy,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { EhldService, LegendGroup } from '../services/ehld.service';
@@ -33,6 +34,7 @@ import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
 import { NgClass } from '@angular/common';
+import { parseEhldSvg } from './ehld-svg';
 
 @Component({
   selector: 'cr-ehld',
@@ -53,6 +55,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
   hovering = signal(false);
+  /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
+  readonly drawError = signal<string | null>(null);
 
   readonly svgData = rxResource({
     params: () => ({ id: this.pathwayId() }),
@@ -101,13 +105,26 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     );
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
     effect(() => {
-      if (this.svgData.value() && this.ehldContainer()) {
-        this.ehldContainer().nativeElement.innerHTML = this.svgData.value()!;
+      const text = this.svgData.value();
+      if (text && this.ehldContainer()) {
+        let svg: SVGSVGElement;
+        try {
+          svg = parseEhldSvg(text);
+        } catch (error) {
+          this.clearDrawing();
+          this.drawError.set(error instanceof Error ? error.message : String(error));
+          return;
+        }
+        this.drawError.set(null);
+        this.ehldContainer().nativeElement.replaceChildren(svg);
         this.stIdToSVGGElement.set(this.ehldService.setStIdToSVGGElementMap(this.ehldContainer()));
         this.addEventListenerToSvg();
         this.initializePanAndZoom();
       }
     });
+    // A file that fails to arrive must not leave the previous pathway's drawing
+    // on screen under a message saying this one could not be loaded.
+    effect(() => this.svgData.error() && untracked(() => this.clearDrawing()));
     effect(() => {
       this.loadAnalysis();
       this.currentSample = this.state.sample() || undefined;
@@ -135,6 +152,13 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
           .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
       }
     });
+  }
+
+  private clearDrawing(): void {
+    this.panZoomInstance?.destroy();
+    this.panZoomInstance = undefined;
+    this.ehldContainer().nativeElement.replaceChildren();
+    this.stIdToSVGGElement.set(new Map());
   }
 
   ngAfterViewInit(): void {

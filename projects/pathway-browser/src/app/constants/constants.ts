@@ -51,6 +51,7 @@ export const DataKeys = {
   CANDIDATES: 'candidates',
   IN_DISEASE: 'inDisease',
   DISEASE: 'disease',
+  GO_BIOLOGICAL_PROCESS: 'goBiologicalProcess',
   RNA_MARKERS: 'rnaMarker',
   PROTEIN_MARKER: 'proteinMarker',
   MARKER_REFERENCE: 'markerReference',

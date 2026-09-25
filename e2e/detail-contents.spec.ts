@@ -263,3 +263,27 @@ test.describe('Reaction diagram frame', () => {
     });
   }
 });
+
+test.describe('Details overview', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // Events carry a GO biological process and the old browser showed it; this
+  // panel never did. Hemostasis is annotated to blood coagulation.
+  test("shows an event's GO biological process, linked to the term", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109582?tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-HSA-109582', { timeout: BOOT });
+
+    const row = overview.locator('.row').filter({ hasText: 'GO biological process' });
+    await expect(row).toContainText('blood coagulation (GO:0007596)');
+    await expect(row.locator('a')).toHaveAttribute('href', /QuickGO\/term\/GO:0007596/);
+  });
+
+  test('has no GO row for an event without one', async ({ page }) => {
+    // TP53RK phosphorylates TP53 has no GO biological process.
+    await page.goto(`/PathwayBrowser/R-HSA-6804756?select=${REACTION}&tab=details`);
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText(REACTION, { timeout: BOOT });
+    await expect(overview).not.toContainText('GO biological process');
+  });
+});

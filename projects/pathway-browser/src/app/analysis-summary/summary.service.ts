@@ -108,8 +108,15 @@ export class SummaryService {
 
   private readonly cache = new Map<string, Cached>();
   private inFlight: AbortController | null = null;
-  /** What to ask again for once a challenge is solved. */
-  private _lastToken = '';
+  /**
+   * The analysis whatever this service holds was asked about, or '' when empty.
+   *
+   * A panel compares this with its own result to decide whether what is here is
+   * its to show (see summary-owner.ts). It is also what to ask again for once a
+   * challenge is solved.
+   */
+  private readonly _heldFor = signal('');
+  readonly heldFor = this._heldFor.asReadonly();
 
   /** Cancels whatever is in flight, so a second request cannot interleave. */
   cancel(): void {
@@ -122,7 +129,7 @@ export class SummaryService {
     this.cancel();
     // Nothing left to retry: a challenge solved after switching analyses must
     // not summarise the one the reader has left.
-    this._lastToken = '';
+    this._heldFor.set('');
     this._text.set('');
     this._citations.set([]);
     this._state.set(null);
@@ -138,7 +145,7 @@ export class SummaryService {
     if (!this.endpoint || !analysis) return;
 
     this.cancel();
-    this._lastToken = analysis;
+    this._heldFor.set(analysis);
     this._requested.set(disclosure);
     this._challenge.set(null);
 
@@ -223,7 +230,7 @@ export class SummaryService {
    */
   async solve(captchaToken: string): Promise<boolean> {
     const challenge = this._challenge();
-    const token = this._lastToken;
+    const token = this._heldFor();
     if (!challenge || !captchaToken || !token) return false;
     try {
       const response = await fetch(challenge.verify, {

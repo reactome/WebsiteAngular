@@ -445,3 +445,64 @@ test.describe('Reaction page downloads', () => {
     expect(widths[1], 'High is the largest').toBeLessThan(widths[2]);
   });
 });
+
+test.describe('Logo downloads', () => {
+  // The site answers 200 with its own HTML for a file that does not exist, so a
+  // status check passes a missing logo. Two of these were saved as `.png.png`
+  // and served the not-found page for months; the bytes are what tell.
+  const PNG = [0x89, 0x50, 0x4e, 0x47];
+
+  test('every option saves a real file of the named format', async ({ page, request, baseURL }) => {
+    await page.goto('/about/logo');
+    const triggers = page.getByRole('button', { name: /PNG/ });
+    await expect(triggers.first()).toBeVisible({ timeout: 45_000 });
+    expect(await triggers.count()).toBe(4);
+
+    const links: { href: string; download: string | null; label?: string }[] = [];
+    for (let i = 0; i < 4; i++) {
+      await triggers.nth(i).click();
+      const items = page.getByRole('menuitem');
+      await expect(items).toHaveCount(3);
+      links.push(
+        ...(await items.evaluateAll((els) =>
+          els.map((e) => ({
+            href: e.getAttribute('href') ?? '',
+            download: e.getAttribute('download'),
+            label: e.textContent ?? '',
+          }))
+        ))
+      );
+      await page.keyboard.press('Escape');
+    }
+    links.push(
+      ...(await page.locator('.logo-options a.inline-link').evaluateAll((els) =>
+        els.map((e) => ({
+          href: e.getAttribute('href') ?? '',
+          download: e.getAttribute('download'),
+        }))
+      ))
+    );
+    expect(links).toHaveLength(16);
+
+    for (const { href, download, label } of links) {
+      expect(download, `${href} opens as a page instead of saving`).toBeTruthy();
+      const body = await (await request.get(new URL(href, `${baseURL}/`).href)).body();
+      if (href.endsWith('.png')) {
+        expect([...body.subarray(0, 4)], `${href} is not a PNG`).toEqual(PNG);
+        // The size the menu states is the size in the file's header.
+        const size = `${body.readUInt32BE(16)} × ${body.readUInt32BE(20)} px`;
+        expect(label, `${href} is labelled with the wrong size`).toContain(size);
+      } else {
+        expect(body.toString('utf8', 0, 400), `${href} is not an SVG`).toContain('<svg');
+      }
+    }
+
+    // And a click really saves it, rather than navigating.
+    await triggers.first().click();
+    const [file] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('menuitem', { name: 'Large' }).click(),
+    ]);
+    expect(file.suggestedFilename()).toBe('Reactome_Imagotype_Positive_100mm.png');
+  });
+});

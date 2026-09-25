@@ -75,6 +75,14 @@
           </div>
         </div>
       }
+      @if (goBiologicalProcess(); as process) {
+        <div class="row">
+          <div class="label">GO biological process</div>
+          <div class="value">
+            <cr-ontology-term [term]="process" />
+          </div>
+        </div>
+      }
       @if ((name().length || 0) > 1) {
         <div class="row">
           <div class="label">Synonyms</div>

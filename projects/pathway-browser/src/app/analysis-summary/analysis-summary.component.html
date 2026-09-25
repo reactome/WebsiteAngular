@@ -1,5 +1,19 @@
 @if (summary.available) {
   <section class="analysis-summary">
+    <!-- Closable, leaving the results in place. Asking again is answered from
+         the cache, so closing costs the reader nothing. -->
+    @if (closable()) {
+      <button
+        type="button"
+        mat-icon-button
+        class="close"
+        aria-label="Close summary"
+        matTooltip="Close summary"
+        (click)="close()"
+      >
+        <mat-icon fontSet="symbols" aria-hidden="true">close</mat-icon>
+      </button>
+    }
     <!-- Opt-in, not automatic. A summary is a model call against a rate-limited
          service, and a reader opens a result far more often than they want one
          written about. Asking on every view would spend the budget on people
