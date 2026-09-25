@@ -1,6 +1,6 @@
 <div class="variables" #container>
   <div id="ehld" #ehld [class.pointer]="hovering()"></div>
-  @if (drawError() || svgData.error()) {
+  @if (drawError() || loadError()) {
     <p class="ehld-error" role="alert">This illustration could not be {{ drawError() ? 'drawn' : 'loaded' }}.</p>
   }
 

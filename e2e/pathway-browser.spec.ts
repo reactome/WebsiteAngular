@@ -240,4 +240,15 @@ test.describe('Illustrations', () => {
     );
     await expect(page.locator('cr-ehld #ehld svg')).toHaveCount(0);
   });
+
+  test('one that cannot be fetched says so, once the pathway is known to have one', async ({
+    page,
+  }) => {
+    await page.route('**/ehld/R-HSA-109581.svg', (route) => route.fulfill({ status: 404 }));
+    await page.goto('/PathwayBrowser/R-HSA-109581');
+    await expect(page.locator('cr-ehld [role="alert"]')).toHaveText(
+      'This illustration could not be loaded.',
+      { timeout: 90_000 }
+    );
+  });
 });

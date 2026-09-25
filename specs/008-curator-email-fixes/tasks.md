@@ -34,8 +34,10 @@ carries its story label, so each story's work can still be read out by filtering
 
 ## Rules that apply to every task
 
-- Every shell command starts with `export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:$PATH"`
-  (non-interactive shells otherwise get Node 18).
+- Use Node 24, as `.nvmrc` asks.
+- **Run e2e with `E2E_PORT` set.** Without it the suite reuses whatever already
+  serves port 4200, which may be a deployed build rather than this tree
+  (`playwright.config.ts` explains).
 - **Verify by the visible outcome, never by HTTP status.** The SPA answers 200 for a
   missing page; a missing page shows the heading "We can't find that page".
 - **Before any beta check**, `curl -s https://beta.reactome.org/health` and confirm
@@ -44,8 +46,7 @@ carries its story label, so each story's work can still be read out by filtering
 - **Ratchets**: `npm run check:lint` ≤ 652 warnings, `npm run check:dead` ≤ 145. Neither
   may rise in any wave.
 - **Public repository**: no curator names, email text or internal process in code,
-  comments, commits or PR bodies. The tracker at `~/curator-tracking/2026-09-25-email-review.md`
-  is outside the repo and holds the detail.
+  comments, commits or PR bodies. The review tracker is kept outside the repo and holds the detail.
 - **Don't hammer idg.reactome.org** in tests; e2e uses recorded fixtures (`E2E_RECORD=1`
   only when a fixture must be re-recorded, once).
 - Commit trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; PR body ends
@@ -58,7 +59,7 @@ carries its story label, so each story's work can still be read out by filtering
 
 **Purpose**: a known-good starting point for every wave.
 
-- [x] T001 `git fetch origin` and confirm `008-curator-email-fixes` is based on current `origin/main` (rebase if not); record the base commit in `~/curator-tracking/2026-09-25-email-review.md`
+- [x] T001 `git fetch origin` and confirm `008-curator-email-fixes` is based on current `origin/main` (rebase if not); record the base commit in the review tracker
 - [x] T002 Run the full gate on the base and record each number as the wave-0 baseline: `npm test && npm run check:types && npm run check:lint && npm run check:dead && npm run format:check && npm run e2e` (lint 652 / dead 145 expected; any difference is investigated before starting, not absorbed)
 - [x] T003 _(Health captured; the before state is recorded as the red e2e runs against the pre-fix code rather than as screenshots.)_ Capture beta's current state for the before/after record: `curl -s https://beta.reactome.org/health` into the tracker, and screenshot the 12 quickstart checks as they fail today (store under the scratchpad, reference paths from the tracker)
 
@@ -130,7 +131,7 @@ analysis token shows a message.
 - [ ] T026 Open the Wave 1 PR from `008-curator-email-fixes` (body: each item, its cause, its red→green test; no internal detail)
 - [ ] T027 **Adversarial review** of the Wave 1 diff before merging: name every inference, chase each changed function's call sites, re-run each new test against the pre-fix code to prove it fails, look for silent fallbacks, check a11y of the close button; fix every finding in the PR and re-review
 - [ ] T028 Merge (squash), then `git log origin/main` to confirm the merge commit is on main; never push follow-ups to the merged branch
-- [ ] T029 Deploy: on main, `npm run build:beta`; ask the user to run `! sudo systemctl restart reactome-site` if serve-prod needs a restart; confirm `/health` bundle postdates the merge
+- [ ] T029 Deploy: on main, `npm run build:beta`; restart the site; confirm `/health` bundle postdates the merge
 - [ ] T030 [P] [US4] Verify 1a and 1f on beta by visible outcome (heading; chart titled "Reactome Version 97")
 - [ ] T031 [P] [US2] Verify 1b on beta: click each of the 16 options, each saves a file; Medium and Large positive PNGs open as images
 - [ ] T032 [P] [US3] Verify 2c and 2f on beta: R-HSA-9909396 coloured pills, arrows, labels, no blue square; R-HSA-109582 shows "blood coagulation (GO:0007596)"

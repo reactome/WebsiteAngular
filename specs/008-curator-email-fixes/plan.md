@@ -29,7 +29,7 @@ Node 24 for build scripts and services.
 
 **Primary Dependencies**: Angular Material; cytoscape (pathway diagrams); angular-split
 (panels); the content pipeline (`.mdx` → `stage:content` → `content-dist`); nginx and
-compose services (`content-node`, `render`, `mcp`) on the beta host.
+compose services (`content-node`, `render`, `mcp`).
 
 **Storage**: Content as `.mdx` and static assets in the repository; graph data served by
 ContentService; analysis results by the Analysis Service.
@@ -37,8 +37,7 @@ ContentService; analysis results by the Analysis Service.
 **Testing**: vitest (unit), Playwright (e2e with recorded fixtures; `E2E_RECORD=1` against
 a live backend), and direct verification on beta.
 
-**Target Platform**: beta.reactome.org — built with `npm run build:beta`, served by
-`serve-prod.js` under systemd from the working tree.
+**Target Platform**: beta.reactome.org — built with `npm run build:beta`.
 
 **Project Type**: Web application (website + pathway browser in one Angular workspace).
 

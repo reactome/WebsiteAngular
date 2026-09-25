@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -251,7 +252,10 @@ export class ViewportComponent {
 
   constructor() {
     // Stays until dismissed: a reader who has just run an analysis and sees no
-    // results needs to be able to read why, not catch it in a few seconds.
+    // results needs to be able to read why, not catch it in a few seconds. But
+    // it belongs to this page and this moment: however it goes -- dismissed,
+    // replaced by another notice, or the reader leaving the pathway browser --
+    // the message is forgotten, so it does not reappear over some later page.
     effect(() => {
       const message = this.analysis.loadFailure();
       untracked(() => {
@@ -259,12 +263,17 @@ export class ViewportComponent {
         this.loadFailureNotice = undefined;
         if (!message) return;
         const notice = this.snackBar.open(message, 'Dismiss', { politeness: 'assertive' });
-        notice.afterDismissed().subscribe(({ dismissedByAction }) => {
-          if (dismissedByAction) this.analysis.dismissLoadFailure();
+        notice.afterDismissed().subscribe(() => {
+          // Only the notice still on show may clear the message: an older one
+          // closing because a newer message replaced it must not erase that.
+          if (this.loadFailureNotice !== notice) return;
+          this.loadFailureNotice = undefined;
+          this.analysis.dismissLoadFailure();
         });
         this.loadFailureNotice = notice;
       });
     });
+    inject(DestroyRef).onDestroy(() => this.loadFailureNotice?.dismiss());
     effect(() => this.detailShare.set(this.figure.expanded() ? 100 : this.detailDraggedSize()));
     effect(() => {
       if (this.dropdown() === null) {

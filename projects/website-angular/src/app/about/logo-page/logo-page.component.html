@@ -38,7 +38,12 @@
                 <div class="logo-item" [class.negative]="variant.negative">
                   <img [class]="group.id" [src]="dir + variant.file + '.svg'" [alt]="variant.alt" />
                   <div class="logo-options">
-                    <button type="button" class="png-trigger" [matMenuTriggerFor]="pngMenu">
+                    <button
+                      type="button"
+                      class="png-trigger"
+                      [matMenuTriggerFor]="pngMenu"
+                      [attr.aria-label]="'PNG sizes of the ' + variant.alt"
+                    >
                       PNG<mat-icon fontSet="symbols">arrow_drop_down</mat-icon>
                     </button>
                     <mat-menu #pngMenu="matMenu">
@@ -51,7 +56,11 @@
                         >
                       }
                     </mat-menu>
-                    <a class="inline-link" [href]="dir + variant.file + '.svg'" [download]="variant.file + '.svg'"
+                    <a
+                      class="inline-link"
+                      [href]="dir + variant.file + '.svg'"
+                      [download]="variant.file + '.svg'"
+                      [attr.aria-label]="'SVG of the ' + variant.alt"
                       >SVG</a
                     >
                   </div>

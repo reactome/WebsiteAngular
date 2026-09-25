@@ -58,6 +58,24 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
   readonly drawError = signal<string | null>(null);
 
+  /**
+   * Whether the pathway on screen is known to have an illustration.
+   *
+   * Double-clicking a region sets `pathwayId` at once, but whether that pathway
+   * has an illustration arrives later with its data; most sub-pathways have a
+   * diagram instead, and their illustration request fails. Until the data says
+   * this pathway has an illustration, a failed fetch is expected, not an error
+   * to announce -- the viewport is about to swap this component out.
+   */
+  private readonly expectsIllustration = computed(() => {
+    const pathway = this.data.currentPathway();
+    const id = this.pathwayId();
+    return !!pathway?.hasEHLD && (pathway.stId === id || String(pathway.dbId) === id);
+  });
+
+  /** A fetch that failed for a pathway that should have had an illustration. */
+  readonly loadError = computed(() => !!this.svgData.error() && this.expectsIllustration());
+
   readonly svgData = rxResource({
     params: () => ({ id: this.pathwayId() }),
     stream: (params) =>
@@ -124,7 +142,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     });
     // A file that fails to arrive must not leave the previous pathway's drawing
     // on screen under a message saying this one could not be loaded.
-    effect(() => this.svgData.error() && untracked(() => this.clearDrawing()));
+    effect(() => this.loadError() && untracked(() => this.clearDrawing()));
+    // A message about one pathway's file says nothing about the next one's.
+    effect(() => {
+      this.pathwayId();
+      untracked(() => this.drawError.set(null));
+    });
     effect(() => {
       this.loadAnalysis();
       this.currentSample = this.state.sample() || undefined;

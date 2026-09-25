@@ -171,8 +171,9 @@ test.describe('Analysis summary', () => {
     // With interactors, so the request differs from the first by URL: the
     // recordings keep no request bodies, and two submissions to one URL would
     // replay as the same result.
-    await page.locator('.card-checkbox', { hasText: 'IntAct interactors' }).click();
-    await page.waitForTimeout(2000);
+    const interactors = page.locator('.card-checkbox', { hasText: 'IntAct interactors' });
+    await interactors.click();
+    await expect(interactors).toHaveClass(/\bchecked\b/);
     await page.getByRole('button', { name: /^Next$/ }).click();
     await expect
       .poll(() => new URL(page.url()).searchParams.get('analysis'), { timeout: READY })

@@ -1,7 +1,8 @@
 @if (summary.available) {
   <section class="analysis-summary">
-    <!-- Closable, leaving the results in place. Asking again is answered from
-         the cache, so closing costs the reader nothing. -->
+    <!-- Closable, leaving the results in place. Asking again for a summary that
+         was written is answered from the cache; closing a request still in
+         flight, or a refusal, means asking afresh. -->
     @if (closable()) {
       <button
         type="button"

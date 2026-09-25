@@ -16,8 +16,8 @@ Last updated: 2026-09-25
 
 ## Answers to the 25 September review
 
-Seventeen items. Each is either fixed and checked on beta, or said plainly to be
-waiting — on a decision, on another team, or on more detail from you. This
+Seventeen items. Each will end either fixed and checked on beta, or said plainly
+to be waiting — on a decision, on another team, or on more detail from you. This
 section grows as the fixes land.
 
 ### Fixed — please check
