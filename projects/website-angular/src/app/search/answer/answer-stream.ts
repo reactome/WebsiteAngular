@@ -69,7 +69,7 @@ export type AnswerEvent =
   | { kind: 'start'; release: number | null }
   | { kind: 'token'; text: string }
   | { kind: 'citation'; citation: Citation }
-  | { kind: 'done'; state: AnswerState };
+  | { kind: 'done'; state: AnswerState; answerId?: string };
 
 /**
  * At most this many citations are shown.
@@ -143,8 +143,16 @@ export function parseFrame(frame: string): AnswerEvent | null {
         },
       };
     }
-    case 'done':
-      return { kind: 'done', state: asState(data['state']) };
+    case 'done': {
+      const state = asState(data['state']);
+      // Present only on an answered stream: the handle "Continue in chat"
+      // mints with. Kept only if it looks like one, since it goes into a
+      // request body.
+      const id = data['answer_id'];
+      return state === 'answered' && typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(id)
+        ? { kind: 'done', state, answerId: id }
+        : { kind: 'done', state };
+    }
     default:
       return null;
   }

@@ -464,3 +464,82 @@ test.describe('Search page React-to-Me answer', () => {
     await expect(panel(page)).toHaveCount(0);
   });
 });
+
+test.describe('Continuing an answer in the chat', () => {
+  const WITH_ID = ANSWERED.replace(
+    '"state": "answered", "seconds": 8.4}',
+    '"state": "answered", "seconds": 8.4, "answer_id": "Ev3z3JDmIIUF4gkKTfrn9VF83H"}'
+  );
+
+  // The chat can open on this answer, so a follow-up question has something to
+  // follow up. It used to open an empty chat.
+  test('opens the chat in a new tab, on this answer', async ({ page, context }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, WITH_ID);
+    let minted: unknown = null;
+    await page.route('**/chat-handoff', async (route) => {
+      minted = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ path: '/chat/guest/#handoff=abc123', expires_in: 900 }),
+      });
+    });
+    await context.route('**/chat/guest/**', (route) =>
+      route.fulfill({ status: 200, body: 'chat' })
+    );
+    await openSearch(page);
+    await page.getByRole('button', { name: /Ask React-to-Me/ }).click();
+
+    const continueButton = page.getByRole('button', {
+      name: /Continue in React-to-Me with this answer/,
+    });
+    await expect(continueButton).toBeVisible({ timeout: BOOT });
+    const [tab] = await Promise.all([context.waitForEvent('page'), continueButton.click()]);
+    await expect.poll(() => tab.url()).toMatch(/\/chat\/guest\/#handoff=abc123$/);
+    expect(minted).toEqual({ kind: 'search', answer_id: 'Ev3z3JDmIIUF4gkKTfrn9VF83H' });
+  });
+
+  test('says why, and closes the tab, when the chat no longer has the answer', async ({
+    page,
+    context,
+  }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, WITH_ID);
+    await page.route('**/chat-handoff', (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: '{"reason": "no_answer"}',
+      })
+    );
+    await openSearch(page);
+    await page.getByRole('button', { name: /Ask React-to-Me/ }).click();
+    const continueButton = page.getByRole('button', {
+      name: /Continue in React-to-Me with this answer/,
+    });
+    await expect(continueButton).toBeVisible({ timeout: BOOT });
+    const [tab] = await Promise.all([context.waitForEvent('page'), continueButton.click()]);
+    await expect(page.getByText(/could not find this answer/)).toBeVisible();
+    await expect.poll(() => tab.isClosed()).toBe(true);
+    // And the offer goes back to the plain chat, rather than a button that
+    // would fail the same way again.
+    await expect(continueButton).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Continue in React-to-Me/ })).toHaveAttribute(
+      'href',
+      '/chat/guest/'
+    );
+  });
+
+  test('offers the plain chat link when the answer has no id', async ({ page }) => {
+    await asDevelopmentProfile(page);
+    await stubAnswer(page, ANSWERED);
+    await openSearch(page);
+    await page.getByRole('button', { name: /Ask React-to-Me/ }).click();
+    await expect(page.getByRole('link', { name: /Continue in React-to-Me/ })).toHaveAttribute(
+      'href',
+      '/chat/guest/',
+      { timeout: BOOT }
+    );
+  });
+});

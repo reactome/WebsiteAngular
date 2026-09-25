@@ -6,7 +6,10 @@
         it takes, because ten seconds with no warning reads as a broken page.
       -->
       <button type="button" class="search-answer__ask" (click)="ask()">
-        <span class="search-answer__ask-label">Ask React-to-Me about "{{ query() }}"</span>
+        <span class="search-answer__ask-label"
+          ><mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>Ask
+          React-to-Me about "{{ query() }}"</span
+        >
         <span class="search-answer__ask-note">Takes around ten seconds. Results below are ready now.</span>
       </button>
     } @else if (noAnswer()) {
@@ -24,7 +27,10 @@
           nothing, and the chat can take a differently-worded question where
           this panel cannot.
         -->
-        <a class="search-answer__continue" [href]="chatUrl">Try asking React-to-Me</a>
+        <a class="search-answer__continue" [href]="chatUrl"
+          ><mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>Try
+          asking React-to-Me</a
+        >
       </p>
     } @else if (challenge()) {
       <!--
@@ -71,7 +77,10 @@
 
     @if (visible()) {
       <article class="search-answer__panel">
-        <h2 id="search-answer-heading" class="search-answer__heading">React-to-Me answer</h2>
+        <h2 id="search-answer-heading" class="search-answer__heading">
+          <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+          React-to-Me answer
+        </h2>
 
         @if (incomplete()) {
           <!--
@@ -144,11 +153,24 @@
             one-shot answer to a conversation, and a reader who has read to the
             end is the one most likely to want it.
           -->
-          <a class="search-answer__continue" [href]="chatUrl">
-            Continue in React-to-Me
-            <span aria-hidden="true">→</span>
-          </a>
+          @if (canHandOff()) {
+            <!-- Carries this answer across, so the chat can take a follow-up. -->
+            <button type="button" class="search-answer__continue" [disabled]="continuing()" (click)="continueInChat()">
+              <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+              Continue in React-to-Me with this answer
+              <span aria-hidden="true">→</span>
+            </button>
+          } @else {
+            <a class="search-answer__continue" [href]="chatUrl">
+              <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+              Continue in React-to-Me
+              <span aria-hidden="true">→</span>
+            </a>
+          }
         </p>
+        @if (continueFailure(); as why) {
+          <p class="search-answer__incomplete" role="status">{{ why }}</p>
+        }
       </article>
     }
   </section>

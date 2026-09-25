@@ -643,9 +643,189 @@ function mountAnalysisSummaryProxy(app, route = '/analysis-summary') {
   });
 }
 
+/**
+ * A sliding-window limiter with its own counters: per key, and across all keys.
+ * Same rules as `retryAfter` above, for a route that must not share its budget.
+ */
+function makeLimiter(perKey, global) {
+  const seenKeys = new Map();
+  let all = [];
+  const longest = perKey[perKey.length - 1].windowMs;
+  return {
+    retryAfter(key, now = Date.now()) {
+      all = all.filter((at) => now - at < global.windowMs);
+      if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
+      const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
+      for (const { windowMs, max } of perKey) {
+        const inWindow = times.filter((at) => now - at < windowMs);
+        if (inWindow.length >= max) {
+          seenKeys.set(key, times);
+          return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
+        }
+      }
+      times.push(now);
+      seenKeys.set(key, times);
+      all.push(now);
+      if (seenKeys.size > 5000) {
+        for (const [k, stamps] of seenKeys) {
+          if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
+        }
+      }
+      return 0;
+    },
+    reset() {
+      seenKeys.clear();
+      all = [];
+    },
+  };
+}
+
+/**
+ * The handoff's own budget. A handoff costs no model call, so it does not spend
+ * the answer budget -- but every one is a caller token signed with our key and
+ * a 15-minute entry in the chat's memory, and a search handoff needs no
+ * identity, so without a limit a script could mint them without end.
+ */
+const handoffLimiter = makeLimiter(
+  [
+    { windowMs: 60_000, max: 10 },
+    { windowMs: 3_600_000, max: 60 },
+  ],
+  { windowMs: 3_600_000, max: 2000 }
+);
+
+/** Upstream refusals a reader can act on; anything else is our fault or theirs. */
+const PASSED_THROUGH = new Set([403, 404, 429, 503]);
+
+/**
+ * Where "Continue in chat" is minted. Read per request so a test can point it
+ * at a stand-in; the default is the guest chat on the same host as the rest.
+ */
+const handoffUpstream = () =>
+  process.env.HANDOFF_UPSTREAM || 'https://beta.reactome.org/chat/guest/api/handoff';
+
+/**
+ * The only thing a handoff may send the browser to: the guest chat, with the
+ * handoff id in the fragment. The browser opens whatever comes back, so a
+ * response that is anything else is refused rather than passed on -- this
+ * route must not become a redirect to wherever upstream says.
+ */
+const HANDOFF_PATH = /^\/chat\/guest\/#handoff=[A-Za-z0-9_-]+$/;
+
+/**
+ * Server side of "Continue in chat".
+ *
+ * The chat can open with the reader's summary or answer already in the
+ * conversation. Minting that needs a caller token, which only this server can
+ * sign, so the browser asks here and gets back the path to open.
+ *
+ *   analysis  { token, disclosure } -- the summary the reader saw, at the tier
+ *             they saw it. Needs a fresh presence claim, like the summary.
+ *   search    { answer_id } -- from the answer's `done` event. Public pathway
+ *             text, so no presence claim, like the answer.
+ *
+ * Upstream's refusals ({"reason": ...} with 403, 404, 429, 503) come back as
+ * they are: each means something different to offer the reader, and 404 in
+ * particular is expected after every chatbot deploy.
+ */
+function mountChatHandoffProxy(app, route = '/chat-handoff') {
+  app.post(route, express.json({ limit: '4kb' }), async (req, res) => {
+    const kind = req.body?.kind;
+    let payload;
+    if (kind === 'analysis') {
+      const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+      const disclosure = typeof req.body?.disclosure === 'string' ? req.body.disclosure : '';
+      if (!token || !DISCLOSURES.includes(disclosure)) {
+        res.status(400).json({ detail: 'An analysis token and a disclosure tier are required' });
+        return;
+      }
+      payload = { kind, token, disclosure };
+    } else if (kind === 'search') {
+      const answerId = typeof req.body?.answer_id === 'string' ? req.body.answer_id.trim() : '';
+      if (!/^[A-Za-z0-9_-]{8,64}$/.test(answerId)) {
+        res.status(400).json({ detail: 'An answer id is required' });
+        return;
+      }
+      payload = { kind, answer_id: answerId };
+    } else {
+      res.status(400).json({ detail: 'kind must be analysis or search' });
+      return;
+    }
+
+    if (gate.misconfigured()) {
+      res.status(503).json({ detail: 'Chat handoff is not configured on this deployment' });
+      return;
+    }
+    // Only the analysis handoff carries a presence claim upstream checks, so
+    // only it is challenged here -- for the same reason as the summary route.
+    if (
+      kind === 'analysis' &&
+      gate.REQUIRE_HUMAN &&
+      !presenceIsFresh(gate.identityDetailsFromRequest(req))
+    ) {
+      res.status(401).json({
+        detail: 'Verification required',
+        verify: '/search-answer/verify',
+        sitekey: gate.TURNSTILE_SITEKEY,
+      });
+      return;
+    }
+
+    const wait = handoffLimiter.retryAfter(gate.identityFromRequest(req) || clientKey(req));
+    if (wait > 0) {
+      res.setHeader('Retry-After', String(wait));
+      res.status(429).json({ reason: 'rate_limited' });
+      return;
+    }
+
+    const key = signingKey();
+    if (!key) {
+      res.status(503).json({ detail: 'Chat handoff is not configured on this deployment' });
+      return;
+    }
+
+    try {
+      const upstream = await fetch(handoffUpstream(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
+        body: JSON.stringify({
+          ...payload,
+          caller_token: mintCallerToken(
+            key,
+            callerSubject(req, res),
+            gate.identityDetailsFromRequest(req)
+          ),
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const body = await upstream.json().catch(() => null);
+
+      if (upstream.ok) {
+        if (!body || typeof body.path !== 'string' || !HANDOFF_PATH.test(body.path)) {
+          console.error('[handoff] upstream answered with an unexpected path');
+          res.status(502).json({ detail: 'Upstream unavailable' });
+          return;
+        }
+        res.json({ path: body.path });
+        return;
+      }
+      if (PASSED_THROUGH.has(upstream.status) && body && typeof body.reason === 'string') {
+        res.status(upstream.status).json({ reason: body.reason });
+        return;
+      }
+      console.error(`[handoff] upstream ${upstream.status}`);
+      res.status(502).json({ detail: 'Upstream unavailable' });
+    } catch (error) {
+      console.error(`[handoff] ${error.message}`);
+      res.status(502).json({ detail: 'Upstream unavailable' });
+    }
+  });
+}
+
 module.exports = {
   mountSearchAnswerProxy,
   mountAnalysisSummaryProxy,
+  mountChatHandoffProxy,
   HUMAN_CLAIM_MAX_AGE_SECONDS,
   presenceIsFresh,
   mintCallerToken,
@@ -658,6 +838,7 @@ module.exports = {
   VERIFY_LIMITS,
   VERIFY_GLOBAL,
   __resetLimits: () => {
+    handoffLimiter.reset();
     seen.clear();
     globalCalls = [];
     verifySeen.clear();

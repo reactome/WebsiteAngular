@@ -49,7 +49,11 @@ async function waitForBuild(timeoutMs = 15 * 60 * 1000) {
   return false;
 }
 
-const { mountSearchAnswerProxy, mountAnalysisSummaryProxy } = require('./search-answer-proxy');
+const {
+  mountSearchAnswerProxy,
+  mountAnalysisSummaryProxy,
+  mountChatHandoffProxy,
+} = require('./search-answer-proxy');
 
 const app = express();
 app.disable('x-powered-by');
@@ -59,6 +63,7 @@ app.disable('x-powered-by');
 // must never see.
 mountSearchAnswerProxy(app);
 mountAnalysisSummaryProxy(app);
+mountChatHandoffProxy(app);
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.

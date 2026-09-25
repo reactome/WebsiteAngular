@@ -26,13 +26,17 @@ import {
   viewChild,
 } from '@angular/core';
 import { marked } from 'marked';
+import { MatIcon } from '@angular/material/icon';
 import { renderChallenge } from './turnstile';
 import { citationHref, citationKey } from './answer-stream';
 
-import { AnswerService } from './answer.service';
+import { ANSWER_ID_LIFETIME_MS, AnswerService } from './answer.service';
+import { continueInChat, describeHandoffFailure } from './chat-handoff';
+import { getProfile, SELECTED_PROFILE_NAME } from '../../../config/environments';
 
 @Component({
   selector: 'app-search-answer',
+  imports: [MatIcon],
   templateUrl: './search-answer.component.html',
   styleUrls: ['./search-answer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -265,6 +269,55 @@ export class SearchAnswerComponent {
    * becomes the place to pass it.
    */
   readonly chatUrl = '/chat/guest/';
+
+  private readonly handoffEndpoint = getProfile(SELECTED_PROFILE_NAME).chatHandoffEndpoint;
+
+  /**
+   * Whether "Continue" can carry this answer into the chat, rather than open an
+   * empty one. It can when the answer has an id and the chat still keeps it --
+   * an hour from when it was produced.
+   */
+  readonly canHandOff = computed(
+    () =>
+      !!this.handoffEndpoint &&
+      this.answers.state() === 'answered' &&
+      !!this.answers.answerId() &&
+      this.answers.answeredAt() !== null
+  );
+  readonly continuing = signal(false);
+  readonly continueFailure = signal<string | null>(null);
+
+  /**
+   * Past its hour the chat no longer has the answer, so the offer goes back to
+   * the plain chat link -- on a timer, because the clock is not a signal.
+   */
+  private readonly expire = effect((onCleanup) => {
+    const at = this.answers.answeredAt();
+    if (at === null) return;
+    const timer = setTimeout(
+      () => this.answers.forgetAnswerId(),
+      Math.max(0, at + ANSWER_ID_LIFETIME_MS - Date.now())
+    );
+    onCleanup(() => clearTimeout(timer));
+  });
+
+  async continueInChat(): Promise<void> {
+    const endpoint = this.handoffEndpoint;
+    const answerId = this.answers.answerId();
+    if (!endpoint || !answerId || this.continuing()) return;
+    this.continuing.set(true);
+    this.continueFailure.set(null);
+    try {
+      // No refresh for an answer: asking again makes a different answer.
+      const outcome = await continueInChat(endpoint, { kind: 'search', answer_id: answerId });
+      if (outcome.ok) return;
+      this.continueFailure.set(describeHandoffFailure(outcome.failure, 'search'));
+      // Gone means gone: offer the plain chat instead of a button that fails.
+      if (outcome.failure === 'gone') this.answers.forgetAnswerId();
+    } finally {
+      this.continuing.set(false);
+    }
+  }
 
   constructor() {
     // Clears an answer when the reader searches for something else.

@@ -20,7 +20,10 @@
          written about. Asking on every view would spend the budget on people
          who never read it and make the ones who do wait behind them. -->
     @if (offering()) {
-      <button type="button" class="ask" (click)="ask()">Summarise this result</button>
+      <button type="button" class="ask" (click)="ask()">
+        <mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>
+        Summarise this result
+      </button>
       <!--
         Before the click, not after. What the reader consents to is their
         analysis result leaving Reactome for a third party, and "AI-generated"
@@ -124,7 +127,9 @@
         rather than in a paragraph most readers do not need.
       -->
       <p class="provenance">
-        <span class="badge">AI-generated</span>
+        <span class="badge"
+          ><mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>AI-generated</span
+        >
         <button
           type="button"
           class="how"
@@ -136,6 +141,21 @@
           How this was made
         </button>
       </p>
+
+      <!-- The chat continues from exactly this summary, in a new tab, so the
+           results stay where they are. -->
+      @if (canContinue()) {
+        <p class="continue">
+          <button type="button" class="continue-chat" [disabled]="continuing()" (click)="continueInChat()">
+            <mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>
+            Continue in chat
+          </button>
+          <span class="continue-note">Opens a new tab with this summary, to ask follow-up questions.</span>
+        </p>
+      }
+      @if (continueFailure(); as why) {
+        <p class="explanation" role="status">{{ why }}</p>
+      }
     }
 
     <!--
