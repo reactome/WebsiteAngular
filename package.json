@@ -7,6 +7,7 @@
     "generate:indices": "npx tsx projects/website-angular/src/scripts/generate-index.ts",
     "stage:content": "npx tsx projects/website-angular/src/scripts/stage-content.ts",
     "check:nav-options": "npx tsx projects/website-angular/src/scripts/check-nav-options.ts",
+    "check:links": "npx tsx projects/website-angular/src/scripts/check-links.ts",
     "dev:reactome-cytoscape-style": "ng build reactome-cytoscape-style --watch --configuration development",
     "dev:serve": "wait-on dist/reactome-cytoscape-style/assets/index.scss && tinacms dev --rootPath projects/website-angular -c \"ng serve\"",
     "dev:serve:local": "wait-on dist/reactome-cytoscape-style/assets/index.scss && tinacms dev --rootPath projects/website-angular -c \"ng serve --configuration development\"",

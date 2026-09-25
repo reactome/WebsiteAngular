@@ -117,12 +117,16 @@
       color: var(--on-primary);
     }
 
+    // Wraps instead of being cut: on a laptop screen the tiles are ~80px and
+    // half of them read "C. elega…", "M. mus…". The icon takes half the tile,
+    // which leaves room for two lines at a size that follows the tile.
     .species-name {
-      width: 75%;
-      overflow: clip;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      margin-top: 5px;
+      width: calc(100% - 8px);
+      margin-top: 4px;
+      font-size: clamp(10px, 13cqw, 14px);
+      line-height: 1.15;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .mat-icon {

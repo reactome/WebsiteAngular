@@ -15,6 +15,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
 import { applyRelease, needsRelease } from './release-placeholder';
+import rewriteContentUrls from '../../utils/rewriteContentUrls';
 
 @Component({
   selector: 'app-page',
@@ -51,29 +52,6 @@ export class PageComponent implements OnInit {
   private scrollToRequestedAnchor(): void {
     const fragment = this.route.snapshot.fragment;
     if (fragment) this.viewportScroller.scrollToAnchor(fragment);
-  }
-
-  private rewriteContentUrls(html: string): string {
-    return html.replace(
-      /\b(href|src)=("([^"]*)"|'([^']*)')/g,
-      (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
-        const value = doubleQuoted ?? singleQuoted ?? '';
-        return `${attr}="${this.normalizeContentUrl(value)}"`;
-      }
-    );
-  }
-
-  private normalizeContentUrl(url: string): string {
-    const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
-    if (reactomeUrlMatch) {
-      return reactomeUrlMatch[1].replace(/^\//, '');
-    }
-
-    if (url.startsWith('/')) {
-      return url.replace(/^\/+/, '');
-    }
-
-    return url;
   }
 
   ngOnInit() {
@@ -115,7 +93,7 @@ export class PageComponent implements OnInit {
             if (needsRelease(html)) {
               html = applyRelease(html, await this.stats.getVersion());
             }
-            html = this.rewriteContentUrls(html);
+            html = rewriteContentUrls(html);
             // Keep this chain intact. Each step was added by a specific fix and
             // the imports alone do nothing: wrapCodeBlocks collapses long code
             // blocks (#98), addJumpCards builds the dev-page cards, and

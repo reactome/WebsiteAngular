@@ -118,3 +118,65 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
     await expect(page.getByText('Example Dataset')).toBeVisible({ timeout: 20_000 });
   });
 });
+
+test.describe('Names readable on a laptop screen', () => {
+  // At 1366x768 the example column split into two and every button read
+  // "UniP…", "Gen…"; half the species tiles read "C. elega…". Each name is
+  // checked for being cut on either axis and for staying inside its control.
+  const cut = (selector: string, within: string) =>
+    `[...document.querySelectorAll(${JSON.stringify(selector)})].filter((el) => {
+      const box = el.getBoundingClientRect();
+      const host = el.closest(${JSON.stringify(within)}).getBoundingClientRect();
+      return (
+        el.scrollWidth > el.clientWidth + 1 ||
+        el.scrollHeight > el.clientHeight + 1 ||
+        box.left < host.left - 1 || box.right > host.right + 1 ||
+        box.top < host.top - 1 || box.bottom > host.bottom + 1
+      );
+    }).map((el) => el.textContent.trim())`;
+
+  for (const [width, height] of [
+    [1366, 768],
+    [1280, 720],
+  ]) {
+    test(`example buttons and species at ${width}x${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.goto('/PathwayBrowser?analysisTab=qualitative');
+      await expect(page.getByRole('button', { name: 'Gene Name' })).toBeVisible({
+        timeout: 120_000,
+      });
+      await page.waitForTimeout(1000);
+      expect
+        .soft(await page.evaluate(cut('.example-buttons .mdc-button__label', 'button')))
+        .toEqual([]);
+
+      await page.goto('/PathwayBrowser?analysisTab=species');
+      await expect(page.locator('.species-name').first()).toBeVisible({ timeout: 120_000 });
+      await page.waitForTimeout(1000);
+      expect(
+        await page.evaluate(cut('.species-selector-grid .species-name', '.species-button'))
+      ).toEqual([]);
+    });
+  }
+});
+
+test.describe('Analysis options without a mouse', () => {
+  // The two option cards were divs with a click handler: no keyboard could
+  // reach them, and a screen reader heard two paragraphs, not two choices.
+  test('each option is a checkbox that Space toggles', async ({ page }) => {
+    await page.goto('/PathwayBrowser?analysisTab=qualitative');
+    await page.getByRole('button', { name: 'Gene Name' }).click({ timeout: 120_000 });
+    await page.getByRole('button', { name: /^Next$/ }).click();
+
+    const interactors = page.getByRole('checkbox', { name: 'Include Interactors' });
+    const human = page.getByRole('checkbox', { name: 'Project to Human' });
+    await expect(human).toBeVisible();
+    const before = (await interactors.getAttribute('aria-checked')) ?? '';
+
+    await interactors.focus();
+    await page.keyboard.press('Space');
+    await expect(interactors).not.toHaveAttribute('aria-checked', before);
+    await page.keyboard.press('Enter');
+    await expect(interactors).toHaveAttribute('aria-checked', before);
+  });
+});

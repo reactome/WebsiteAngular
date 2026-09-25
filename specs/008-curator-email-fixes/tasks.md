@@ -127,15 +127,15 @@ analysis token shows a message.
 
 ### Wave 1 close-out
 
-- [ ] T025 Run the full gate (T002 command); lint ≤ 652, dead ≤ 145; format clean
-- [ ] T026 Open the Wave 1 PR from `008-curator-email-fixes` (body: each item, its cause, its red→green test; no internal detail)
-- [ ] T027 **Adversarial review** of the Wave 1 diff before merging: name every inference, chase each changed function's call sites, re-run each new test against the pre-fix code to prove it fails, look for silent fallbacks, check a11y of the close button; fix every finding in the PR and re-review
-- [ ] T028 Merge (squash), then `git log origin/main` to confirm the merge commit is on main; never push follow-ups to the merged branch
-- [ ] T029 Deploy: on main, `npm run build:beta`; restart the site; confirm `/health` bundle postdates the merge
-- [ ] T030 [P] [US4] Verify 1a and 1f on beta by visible outcome (heading; chart titled "Reactome Version 97")
-- [ ] T031 [P] [US2] Verify 1b on beta: click each of the 16 options, each saves a file; Medium and Large positive PNGs open as images
-- [ ] T032 [P] [US3] Verify 2c and 2f on beta: R-HSA-9909396 coloured pills, arrows, labels, no blue square; R-HSA-109582 shows "blood coagulation (GO:0007596)"
-- [ ] T033 [P] [US1] Verify 3c and 3b-part on beta: two analyses leave no trace of the first summary; close works; a GSA token from beta shows the new message
+- [x] T025 Run the full gate (T002 command); lint ≤ 652, dead ≤ 145; format clean
+- [x] T026 Open the Wave 1 PR from `008-curator-email-fixes` (body: each item, its cause, its red→green test; no internal detail)
+- [x] T027 **Adversarial review** of the Wave 1 diff before merging: name every inference, chase each changed function's call sites, re-run each new test against the pre-fix code to prove it fails, look for silent fallbacks, check a11y of the close button; fix every finding in the PR and re-review
+- [x] T028 Merge (squash), then `git log origin/main` to confirm the merge commit is on main; never push follow-ups to the merged branch
+- [x] T029 Deploy: on main, `npm run build:beta`; restart the site; confirm `/health` bundle postdates the merge
+- [x] T030 [P] [US4] Verify 1a and 1f on beta by visible outcome (heading; chart titled "Reactome Version 97")
+- [x] T031 [P] [US2] Verify 1b on beta: click each of the 16 options, each saves a file; Medium and Large positive PNGs open as images
+- [x] T032 [P] [US3] Verify 2c and 2f on beta: R-HSA-9909396 coloured pills, arrows, labels, no blue square; R-HSA-109582 shows "blood coagulation (GO:0007596)"
+- [x] T033 [P] [US1] Verify 3c and 3b-part on beta: two analyses leave no trace of the first summary; close works; a GSA token from beta shows the new message
 - [ ] T034 Update `CURATOR-REPORT.md` and `RELEASE-TESTING.md` for the Wave 1 items; move each tracker entry to `FIXED` with evidence (or back to `INVESTIGATING` if beta disagrees)
 
 **Checkpoint**: Wave 1 verified on beta.
@@ -150,26 +150,26 @@ analysis token shows a message.
 
 ### Link-integrity check (US2, shared with US4)
 
-- [ ] T035 [US2] Write `WA/src/scripts/check-links.ts` + `npm run check:links`: extract internal links from all `CT/**/*.mdx`, nav options and app templates, and resolve each **against a content file, a route in `WA/src/app/app.routes.ts`, or a file under `WA/public/`** — never by fetching (a fetch of a missing page returns 200). Report file:line per broken link. State its limits in its header (bound template values, `#anchors`, external links not checked)
-- [ ] T036 [US2] Prove the instrument: run T035 on current content and confirm it finds the 73 known-broken links (and specifically the V97 news links in `CT/about/news/295-v97-released.mdx`); reconcile any count difference before trusting it. Add `WA/src/scripts/check-links.spec.ts` with one known-good and one known-broken fixture link
+- [x] T035 [US2] Write `WA/src/scripts/check-links.ts` + `npm run check:links`: extract internal links from all `CT/**/*.mdx`, nav options and app templates, and resolve each **against a content file, a route in `WA/src/app/app.routes.ts`, or a file under `WA/public/`** — never by fetching (a fetch of a missing page returns 200). Report file:line per broken link. State its limits in its header (bound template values, `#anchors`, external links not checked)
+- [x] T036 [US2] Prove the instrument: run T035 on current content and confirm it finds the 73 known-broken links (and specifically the V97 news links in `CT/about/news/295-v97-released.mdx`); reconcile any count difference before trusting it. Add `WA/src/scripts/check-links.spec.ts` with one known-good and one known-broken fixture link
 
 ### 3a — Example button names (US1)
 
-- [ ] T037 [P] [US1] Add an e2e test in `e2e/analysis.spec.ts` at viewport 1366×768 and 1280×720: on the qualitative form every example button's full label is visible (`scrollWidth <= clientWidth` for its label). **Record it failing** (container query `qualitative-analysis.component.scss:176-186` forces two columns; `:167-172` nowrap+ellipsis)
-- [ ] T038 [US1] In `PB/viewport/analysis-form/qualitative-analysis/qualitative-analysis.component.scss` switch to two columns only when each column can hold its label (width-based container query, not max-height), allow labels to wrap, and add a full-name `matTooltip` on each button in the matching `.html`
-- [ ] T039 [US1] Apply the same to species names in `PB/viewport/analysis-form/species-analysis/species-analysis.component.scss:120-125`; extend T037 to cover them (record failing first)
+- [x] T037 [P] [US1] Add an e2e test in `e2e/analysis.spec.ts` at viewport 1366×768 and 1280×720: on the qualitative form every example button's full label is visible (`scrollWidth <= clientWidth` for its label). **Record it failing** (container query `qualitative-analysis.component.scss:176-186` forces two columns; `:167-172` nowrap+ellipsis)
+- [x] T038 [US1] In `PB/viewport/analysis-form/qualitative-analysis/qualitative-analysis.component.scss` switch to two columns only when each column can hold its label (width-based container query, not max-height), allow labels to wrap, and add a full-name `matTooltip` on each button in the matching `.html`
+- [x] T039 [US1] Apply the same to species names in `PB/viewport/analysis-form/species-analysis/species-analysis.component.scss:120-125`; extend T037 to cover them (record failing first)
 
 ### Site-wide broken links (US2)
 
-- [ ] T040 [P] [US2] Fix the 13 `/community/training` links → `/community/outreach` across `CT/` (it is also missing on reactome.org)
-- [ ] T041 [P] [US2] Fix `/what-is-reactome` ×6 → `/about/what-is-reactome`, `/license` ×3 → `/about/license`, `/icon-lib` ×3 → `/community/icon-lib`, `/content/contributors` → `/community/contributors`, `/user/guide/…` and `/user/reactome-fiviz` → `/documentation/userguide/…`, `…/diagram/js` and `…/pathways-overview/js` (drop `/js`), and the two links ending in a full stop inside the URL (`…/dev/analysis.`, `…/dev/content-service.`)
-- [ ] T042 [P] [US2] Copy the 5 `/docs/training/*.pdf` files and `reactome-interfaces.xmi` from reactome.org into `WA/public/` at the paths content links to; confirm each opens as the expected type (`file`), and that the licence permits redistribution (it is Reactome's own material)
-- [ ] T043 [US2] Leave `/gsa/home` (blocked on decision 4) and `/reacfoam` (needs a target — propose one in the PR, default `/PathwayBrowser/`) listed in the check as known exceptions with a reason; the exception list lives in `check-links.ts`, not in a comment
-- [ ] T044 [US2] Add `npm run check:links` to the gate (package.json and CI) so a new broken link fails the build; confirm by adding a broken link locally, seeing it fail, removing it
+- [x] T040 [P] [US2] Fix the 13 `/community/training` links → `/community/outreach` across `CT/` (it is also missing on reactome.org)
+- [x] T041 [P] [US2] Fix `/what-is-reactome` ×6 → `/about/what-is-reactome`, `/license` ×3 → `/about/license`, `/icon-lib` ×3 → `/community/icon-lib`, `/content/contributors` → `/community/contributors`, `/user/guide/…` and `/user/reactome-fiviz` → `/documentation/userguide/…`, `…/diagram/js` and `…/pathways-overview/js` (drop `/js`), and the two links ending in a full stop inside the URL (`…/dev/analysis.`, `…/dev/content-service.`)
+- [x] T042 _(Changed: the `.xmi` is committed; the five training PDFs, 26 MB, are too large for the repository and go to the download bucket instead — listed in `KNOWN_BROKEN` until they are published.)_ [P] [US2] Copy the 5 `/docs/training/*.pdf` files and `reactome-interfaces.xmi` from reactome.org into `WA/public/` at the paths content links to; confirm each opens as the expected type (`file`), and that the licence permits redistribution (it is Reactome's own material)
+- [x] T043 _(Done as `KNOWN_BROKEN` in `check-links.ts`, each with its reason. `/reacfoam` now points to `/PathwayBrowser`: the genome-wide overview is the browser\'s opening view.)_ [US2] Leave `/gsa/home` (blocked on decision 4) and `/reacfoam` (needs a target — propose one in the PR, default `/PathwayBrowser/`) listed in the check as known exceptions with a reason; the exception list lives in `check-links.ts`, not in a comment
+- [x] T044 _(The check runs inside `npm test` via `check-links.spec.ts`, so CI fails on a new broken link.)_ [US2] Add `npm run check:links` to the gate (package.json and CI) so a new broken link fails the build; confirm by adding a broken link locally, seeing it fail, removing it
 
 ### 1d related — broken news images (US4)
 
-- [ ] T045 [P] [US4] Fix the three news items that put a web-page URL in an image tag: `CT/about/news/286-new-publication-in-nar-2026.mdx:16` (also mangled host `pubmed-ncbi-nlm-nih.gov`), `CT/about/news/288-…-two-new-ai-focused-preprints.mdx:14`, `CT/about/news/273-coretrustseal-news.mdx:18` — make each a link, or use the real image if one exists; extend T035 (or a sibling check) to flag `<img>`/`![]()` sources that point at HTML pages or non-image extensions, and show it catching these three first
+- [x] T045 [P] [US4] Fix the three news items that put a web-page URL in an image tag: `CT/about/news/286-new-publication-in-nar-2026.mdx:16` (also mangled host `pubmed-ncbi-nlm-nih.gov`), `CT/about/news/288-…-two-new-ai-focused-preprints.mdx:14`, `CT/about/news/273-coretrustseal-news.mdx:18` — make each a link, or use the real image if one exists; extend T035 (or a sibling check) to flag `<img>`/`![]()` sources that point at HTML pages or non-image extensions, and show it catching these three first
 
 ### Wave 2 close-out
 
@@ -199,7 +199,7 @@ analysis token shows a message.
 ### 1e — V97/V96 news links and legacy redirects (US2)
 
 - [ ] T055 [P] [US2] E2E in `e2e/legacy-links.spec.ts` (record failing first): each legacy path with a clear new home (`/what-is-reactome`, `/userguide`, `/userguide/reactome-fiviz`, `/dev`, `/beta/PathwayBrowser`) lands on a page whose heading matches the new home — assert content, not status
-- [ ] T056 [US2] Fix the "other news" links in `CT/about/news/295-v97-released.mdx` (lines 24, 26, 28, 32) and the same links in `CT/about/news/291-v96-released.mdx` to current paths; `/gsa` stays for decision 4
+- [ ] T056 _(The link fixes landed in wave 2 with the site-wide pass; this task keeps the redirects.)_ [US2] Fix the "other news" links in `CT/about/news/295-v97-released.mdx` (lines 24, 26, 28, 32) and the same links in `CT/about/news/291-v96-released.mdx` to current paths; `/gsa` stays for decision 4
 - [ ] T057 [US2] Add redirects for those legacy paths in `WA/src/app/app.routes.ts` (`redirectTo`, placed before the wildcard); check nginx `deploy/nginx/common/routes.conf` doesn't intercept any of them first; confirm T055 and `check:links` pass
 
 ### 2g — Orthologous events and "Computationally inferred" (US3)

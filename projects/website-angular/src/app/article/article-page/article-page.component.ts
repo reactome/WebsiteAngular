@@ -8,6 +8,7 @@ import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import stripFirstH from '../../../utils/stripFirstH';
 import { marked } from 'marked';
+import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 
 @Component({
   selector: 'app-article-page',
@@ -84,7 +85,7 @@ export class ArticlePageComponent implements OnInit {
           await Promise.all(
             this.articles.map(async (article) => {
               const html = await marked(article?.excerpt || '');
-              article.excerpt = stripFirstH(html);
+              article.excerpt = stripFirstH(rewriteContentUrls(html));
             })
           );
           this.loading = false;

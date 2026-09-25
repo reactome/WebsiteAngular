@@ -79,11 +79,24 @@
     <ng-template matStepLabel>Options</ng-template>
     <div class="options-wrapper">
       <div class="options-container">
-        <div class="card-checkbox flex-one" [class.checked]="projectToHuman()" (click)="toggle(projectToHuman)">
+        <div
+          class="card-checkbox flex-one"
+          role="checkbox"
+          tabindex="0"
+          aria-labelledby="option-project-to-human"
+          aria-describedby="option-project-to-human-description"
+          [attr.aria-checked]="projectToHuman()"
+          [class.checked]="projectToHuman()"
+          (click)="toggle(projectToHuman)"
+          (keydown.space)="$event.preventDefault(); toggle(projectToHuman)"
+          (keydown.enter)="$event.preventDefault(); toggle(projectToHuman)"
+        >
           <div class="card-content">
             <div class="header">
-              <p class="title">Project to Human</p>
-              <p class="description">All non-human identifiers are converted to their human equivalents</p>
+              <p class="title" id="option-project-to-human">Project to Human</p>
+              <p class="description" id="option-project-to-human-description">
+                All non-human identifiers are converted to their human equivalents
+              </p>
             </div>
             <div class="illustration" [innerHTML]="projectToHumanIllustration | async | safe: 'html' : true"></div>
             <div class="explanations">
@@ -107,8 +120,15 @@
         </div>
         <div
           class="card-checkbox flex-one"
+          role="checkbox"
+          tabindex="0"
+          aria-labelledby="option-include-interactors"
+          aria-describedby="option-include-interactors-description"
+          [attr.aria-checked]="includeInteractors()"
           [class.checked]="includeInteractors()"
           (click)="toggle(includeInteractors)"
+          (keydown.space)="$event.preventDefault(); toggle(includeInteractors)"
+          (keydown.enter)="$event.preventDefault(); toggle(includeInteractors)"
           (mouseenter)="interactorsIllustrationLottie?.play()"
           (focusin)="interactorsIllustrationLottie?.play()"
           (mouseleave)="interactorsIllustrationLottie?.pause()"
@@ -116,8 +136,10 @@
         >
           <div class="card-content">
             <div class="header">
-              <p class="title">Include Interactors</p>
-              <p class="description">IntAct interactors are used to increase the analysis background</p>
+              <p class="title" id="option-include-interactors">Include Interactors</p>
+              <p class="description" id="option-include-interactors-description">
+                IntAct interactors are used to increase the analysis background
+              </p>
             </div>
 
             <div class="illustration">
