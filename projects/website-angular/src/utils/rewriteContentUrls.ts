@@ -17,7 +17,7 @@
  */
 export const STILL_ON_PRODUCTION: readonly RegExp[] = [
   // ReactomeGSA's landing page; where it should lead here is being decided.
-  /^gsa(\/|$)/,
+  /^gsa([/?#]|$)/,
 ];
 
 export default function rewriteContentUrls(html: string): string {

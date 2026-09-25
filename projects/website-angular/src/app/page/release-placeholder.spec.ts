@@ -41,13 +41,22 @@ describe('waiting for the release', () => {
   it('gives up rather than hang when none ever comes', async () => {
     // A curator build never requests a version; the page waited forever.
     vi.useFakeTimers();
-    const waiting = releaseWithin(new Promise<string>(() => undefined), 5000);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const waiting = releaseWithin(new Promise<string>(() => undefined), { ms: 5000 });
     await vi.advanceTimersByTimeAsync(5000);
     expect(await waiting).toBeNull();
+    // Never silent: a page with unsubstituted links says why.
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
     vi.useRealTimers();
   });
 
+  it('does not wait at all on a build that never asks for a version', async () => {
+    expect(await releaseWithin(new Promise<string>(() => undefined), { skip: true })).toBeNull();
+  });
+
   it('treats a failed lookup as no release', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     expect(await releaseWithin(Promise.reject(new Error('down')))).toBeNull();
   });
 });

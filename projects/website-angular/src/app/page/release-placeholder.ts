@@ -36,18 +36,28 @@ export function applyRelease(html: string, release: string): string {
 }
 
 /**
- * The release to substitute, or null if none arrives in time.
+ * The release to substitute, or null when there is none to wait for.
  *
- * A curator build never asks for a version, so waiting on one there never
- * ends and the page spun forever. Without a release the placeholder is left
- * as written: a broken image beats a page that never renders.
+ * A curator build never asks for a version, so it does not wait at all: the
+ * page used to spin forever there. Elsewhere the version usually arrives in
+ * well under a second, but the lookup retries a fallback on error and has been
+ * slow before, so the wait is long and a give-up is logged, never silent. With
+ * no release the placeholder is left as written; the page still renders.
  */
-export async function releaseWithin(version: Promise<string>, ms = 5000): Promise<string | null> {
+export async function releaseWithin(
+  version: Promise<string>,
+  { ms = 30_000, skip = false }: { ms?: number; skip?: boolean } = {}
+): Promise<string | null> {
+  if (skip) return null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timedOut = new Promise<null>((resolve) => (timer = setTimeout(() => resolve(null), ms)));
   try {
-    return await Promise.race([version, timedOut]);
-  } catch {
+    const release = await Promise.race([version, timedOut]);
+    if (release === null)
+      console.warn(`No release after ${ms / 1000}s; {release} links left as written`);
+    return release;
+  } catch (error) {
+    console.warn('Release lookup failed; {release} links left as written', error);
     return null;
   } finally {
     clearTimeout(timer);

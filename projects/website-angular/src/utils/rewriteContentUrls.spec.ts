@@ -28,4 +28,10 @@ describe('rewriteContentUrls', () => {
     const html = '<a href="https://reactome.org/gsa">GSA</a>';
     expect(rewriteContentUrls(html)).toBe(html);
   });
+
+  it('keeps such a link on production with a query or fragment too', () => {
+    for (const url of ['https://reactome.org/gsa?x=1', 'https://reactome.org/gsa#top']) {
+      expect(rewriteContentUrls(`<a href="${url}">x</a>`)).toBe(`<a href="${url}">x</a>`);
+    }
+  });
 });

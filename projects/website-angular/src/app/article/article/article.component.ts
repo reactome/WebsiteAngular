@@ -6,15 +6,13 @@ import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { marked } from 'marked';
-import stripFirstH from '../../../utils/stripFirstH';
-import addAnchorIds from '../../../utils/addAnchorIds';
-import addJumpCards from '../../../utils/addJumpCards';
 import addImageSizes from '../../../utils/addImageSizes';
-import wrapCodeBlocks from '../../../utils/wrapCodeBlocks';
+import renderContentBody from '../../../utils/renderContentBody';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { StatsService } from '../../../services/stats.service';
 import { applyRelease, needsRelease, releaseWithin } from '../../page/release-placeholder';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { IS_CURATOR } from '../../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-article',
@@ -68,7 +66,7 @@ export class ArticleComponent implements OnInit {
           let html = await marked((article?.body as string) || '');
           // The same URL handling as the content pages (see rewriteContentUrls).
           if (needsRelease(html)) {
-            const release = await releaseWithin(this.stats.getVersion());
+            const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });
             if (release) html = applyRelease(html, release);
           }
           html = rewriteContentUrls(html);
@@ -76,10 +74,7 @@ export class ArticleComponent implements OnInit {
           // four images where a userguide page carries 114, so nobody is thrown
           // thousands of pixels off here -- but the text still moves under a
           // reader while the images arrive, and the sizes are already staged.
-          const renderedContent = addImageSizes(
-            stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
-            article?.imageSizes
-          );
+          const renderedContent = addImageSizes(renderContentBody(html), article?.imageSizes);
           this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
           this.article = {

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { marked } from 'marked';
-import addAnchorIds from '../utils/addAnchorIds';
+import renderContentBody from '../utils/renderContentBody';
 import parseFrontmatter from '../utils/parseFrontmatter';
 import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
 
@@ -17,10 +17,12 @@ import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
  * Links are read from the HTML that marked makes of each file -- what the site
  * renders -- not from the raw text, so every markdown spelling counts: a regex
  * over the text missed `<https://…>` autolinks, and four of them were broken.
- * A fragment on a content page must name an id that page renders.
+ * A fragment in a link to another content page must name an id that page
+ * renders. Same-page `#fragment` links are not checked.
  *
  * Not checked, and not claimed: links built from bound values in templates,
- * fragments on pages other than content pages, and external sites.
+ * same-page fragments, fragments on pages other than content pages, and
+ * external sites.
  *
  *     npm run check:links
  */
@@ -40,7 +42,7 @@ const SERVED_ELSEWHERE = [
   '/AnalysisService/',
   '/RenderService/',
   '/GSAServer/',
-  '/chat',
+  '/chat/',
 ];
 
 /** Routes whose `:slug` is a content file. */
@@ -50,11 +52,9 @@ const CONTENT_COLLECTIONS = ['/about/news/', '/content/reactome-research-spotlig
  * Links that are known to be broken and are waiting on something named here.
  * Keep each with its reason; an entry with no reason is a broken link hidden.
  */
-const GSA_DECISION = 'the old ReactomeGSA entry point; where it should lead is being decided';
 const TRAINING_UPLOAD =
   'training material too large for the repository; to be published to the download bucket';
 export const KNOWN_BROKEN: Record<string, string> = {
-  '/gsa': GSA_DECISION,
   '/docs/training/Reactome_Website.pdf': TRAINING_UPLOAD,
   '/docs/training/Pathways_&_Networks_Overview.pdf': TRAINING_UPLOAD,
   '/docs/training/ReactomeFIVizapp.pdf': TRAINING_UPLOAD,
@@ -301,7 +301,7 @@ export function allLinks(): Link[] {
   ];
 }
 
-/** Ids a content page renders, including the ones addAnchorIds gives headings. */
+/** Ids a content page renders, through the same steps the page takes. */
 const idsByPage = new Map<string, Set<string>>();
 function idsOn(urlPath: string): Set<string> | null {
   const rel = urlPath.replace(/^\//, '');
@@ -310,8 +310,13 @@ function idsOn(urlPath: string): Set<string> | null {
     .find((f) => fs.existsSync(f));
   if (!file) return null;
   if (!idsByPage.has(file)) {
-    const html = addAnchorIds(renderedHtml(fs.readFileSync(file, 'utf8')));
-    idsByPage.set(file, new Set([...html.matchAll(/\b(?:id|name)="([^"]+)"/g)].map((m) => m[1])));
+    const html = renderContentBody(renderedHtml(fs.readFileSync(file, 'utf8')));
+    // As the browser reads them: an id written `Developer&#39;s_Zone` is
+    // `Developer's_Zone` to the link that targets it.
+    idsByPage.set(
+      file,
+      new Set([...html.matchAll(/\b(?:id|name)="([^"]+)"/g)].map((m) => unescapeAttr(m[1])))
+    );
   }
   return idsByPage.get(file) ?? null;
 }
@@ -331,7 +336,13 @@ export function brokenLinks(links = allLinks()): (Link & { path: string })[] {
     // logo page) owns its own ids.
     const rendersContent = pages.has(target) && !routes.some((route) => route.test(target));
     const ids = fragment && rendersContent ? idsOn(target) : null;
-    if (ids && !ids.has(decodeURIComponent(fragment))) {
+    let wanted = fragment;
+    try {
+      wanted = decodeURIComponent(fragment);
+    } catch {
+      // A malformed escape cannot match any id; check it as written.
+    }
+    if (ids && !ids.has(wanted)) {
       return [{ ...link, path: `${target}#${fragment}` }];
     }
     return [];

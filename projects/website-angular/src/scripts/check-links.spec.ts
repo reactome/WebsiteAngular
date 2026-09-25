@@ -65,6 +65,11 @@ describe('the rules the first version got wrong', () => {
     expect(resolves('/about/news/typo', pages, newsRoute, noFiles)).toBe(false);
   });
 
+  it('does not take /chatX for the chat', () => {
+    expect(resolves('/chatX', pages, routes, noFiles)).toBe(false);
+    expect(resolves('/chat', pages, routes, noFiles)).toBe(true);
+  });
+
   it('does not take /PathwayBrowserX for the pathway browser', () => {
     expect(resolves('/PathwayBrowserX', pages, routes, noFiles)).toBe(false);
     expect(resolves('/PathwayBrowser', pages, routes, noFiles)).toBe(true);
