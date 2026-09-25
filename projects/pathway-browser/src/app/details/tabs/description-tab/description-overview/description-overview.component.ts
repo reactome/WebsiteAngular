@@ -39,6 +39,29 @@ export class DescriptionOverviewComponent {
     getProperty(this.obj(), DataKeys.REVIEW_STATUS)
   );
   readonly disease: Signal<Disease[]> = computed(() => getProperty(this.obj(), DataKeys.DISEASE));
+  /**
+   * "Computationally inferred", for an event that was -- and only for those.
+   *
+   * `isInferred` alone does not say it: 2,661 events in release 97 were
+   * inferred by a curator from another species, many citing literature, and
+   * calling them machine predictions would be false. The computational ones
+   * carry the evidence type "inferred by electronic annotation" (IEA); the
+   * others show where they were inferred from in their Inferred From section.
+   */
+  readonly inference = computed(() => {
+    const obj = this.obj() as DatabaseObject & {
+      isInferred?: boolean;
+      evidenceType?: { displayName?: string; name?: string[] };
+    };
+    const evidence = obj['evidenceType'];
+    const electronic =
+      evidence?.displayName === 'inferred by electronic annotation' ||
+      !!evidence?.name?.includes('IEA');
+    return obj['isInferred'] === true && electronic
+      ? 'Computationally inferred (inferred by electronic annotation)'
+      : undefined;
+  });
+
   /** Events carry one; the old browser showed it, and this panel had dropped it. */
   readonly goBiologicalProcess: Signal<GO_BiologicalProcess | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.GO_BIOLOGICAL_PROCESS)

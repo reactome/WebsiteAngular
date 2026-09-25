@@ -287,3 +287,42 @@ test.describe('Details overview', () => {
     await expect(overview).not.toContainText('GO biological process');
   });
 });
+
+test.describe('Computationally predicted events', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // Human events carry the events Reactome predicted from them in other
+  // species, and the old browser listed them. This one never did: its
+  // Inferences section keys on a property only physical entities have.
+  test('a human event lists its predictions, by species', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109582?tab=details');
+    await expect(page.locator('#orthologousEvent')).toContainText(
+      'Computationally predicted events',
+      {
+        timeout: BOOT,
+      }
+    );
+    const section = page.locator('.orthologous-events');
+    await expect(section).toContainText('Mus musculus');
+    await expect(section.locator('a[href$="/R-MMU-109582"]')).toBeAttached();
+  });
+
+  test("a curator's inference from another species is not called a prediction", async ({
+    page,
+  }) => {
+    // Inferred from rat by a curator (isInferred, no electronic evidence).
+    await page.goto('/PathwayBrowser/R-HSA-9613829?select=R-HSA-9626034&tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-HSA-9626034', { timeout: BOOT });
+    await expect(overview).not.toContainText('Computationally inferred');
+  });
+
+  test('a predicted event says it is one', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-MMU-1640170?tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-MMU-1640170', { timeout: BOOT });
+    await expect(overview.locator('.row').filter({ hasText: 'Evidence' })).toContainText(
+      'Computationally inferred'
+    );
+  });
+});

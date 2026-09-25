@@ -1,5 +1,6 @@
 /**
- * Import news announcements from the current site, verbatim.
+ * Import news announcements -- or Research Spotlight articles -- from the
+ * current site, verbatim.
  *
  * These are curated announcements: release notes, publications, contributor
  * credits. The words matter exactly as written -- a paraphrase is a different
@@ -10,6 +11,10 @@
  *
  *   npx tsx projects/website-angular/src/scripts/import-news.ts --missing
  *   npx tsx projects/website-angular/src/scripts/import-news.ts 295-v97-released
+ *   npx tsx projects/website-angular/src/scripts/import-news.ts --section=spotlight --missing
+ *
+ * Both sections are served by the same article template on the current site,
+ * so they share every step here but where they live.
  *
  * --missing compares the current site's listing against content/about/news and
  * imports whatever is not here yet. Existing files are never overwritten unless
@@ -18,9 +23,24 @@
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
 
 const SOURCE = 'https://reactome.org';
-const NEWS_DIR = path.join(process.cwd(), 'projects/website-angular/content/about/news');
+const SECTIONS = {
+  news: { source: '/about/news', dir: 'content/about/news', tags: ['about', 'news'] },
+  spotlight: {
+    source: '/content/reactome-research-spotlight',
+    dir: 'content/content/reactome-research-spotlight',
+    tags: ['content', 'reactome-research-spotlight'],
+  },
+} as const;
+type Section = (typeof SECTIONS)[keyof typeof SECTIONS];
+const sectionArg =
+  process.argv.find((arg) => arg.startsWith('--section='))?.split('=')[1] ?? 'news';
+if (!(sectionArg in SECTIONS))
+  throw new Error(`unknown section ${sectionArg}; one of ${Object.keys(SECTIONS)}`);
+const SECTION: Section = SECTIONS[sectionArg as keyof typeof SECTIONS];
+const NEWS_DIR = path.join(process.cwd(), 'projects/website-angular', SECTION.dir);
 const IMAGE_DIR = path.join(process.cwd(), 'projects/website-angular/public/images');
 
 // ---- fetching -------------------------------------------------------------
@@ -33,9 +53,10 @@ async function page(url: string) {
 
 /** Every news slug the current site lists, newest first. */
 async function publishedSlugs() {
-  const html = await page(`${SOURCE}/about/news`);
+  const html = await page(`${SOURCE}${SECTION.source}`);
   const slugs: string[] = [];
-  for (const [, slug] of html.matchAll(/href="\/about\/news\/([^"#?]+)"/g)) {
+  const escaped = SECTION.source.replace(/[/.-]/g, '\\$&');
+  for (const [, slug] of html.matchAll(new RegExp(`href="${escaped}/([^"#?]+)"`, 'g'))) {
     if (!slugs.includes(slug)) slugs.push(slug);
   }
   return slugs;
@@ -137,8 +158,13 @@ function resolveJoomlaCloak(html: string) {
 /** Site-relative for our own links, untouched for everyone else's. */
 function localise(url: string) {
   const ours = url.match(/^https?:\/\/(?:www\.)?reactome\.org(\/.*)?$/i);
-  if (ours) return ours[1] || '/';
-  return url;
+  const local = ours ? ours[1] || '/' : url;
+  // A page this site does not serve yet stays on the site that does: made
+  // local, it is a missing page here (see STILL_ON_PRODUCTION).
+  if (local.startsWith('/') && STILL_ON_PRODUCTION.some((path) => path.test(local.slice(1)))) {
+    return `${SOURCE}${local}`;
+  }
+  return local;
 }
 
 /** The text of one element, with its own markup removed. */
@@ -289,7 +315,7 @@ async function importOne(slug: string, force: boolean) {
     return false;
   }
 
-  const html = await page(`${SOURCE}/about/news/${slug}`);
+  const html = await page(`${SOURCE}${SECTION.source}/${slug}`);
   const raw = articleBody(html);
   const body = resolveJoomlaCloak(resolveCloudflareLinks(raw));
 
@@ -335,9 +361,9 @@ async function importOne(slug: string, force: boolean) {
   const frontmatter = [
     '---',
     `title: "${name.replace(/"/g, '\\"')}"`,
-    'category: "about"',
+    `category: "${SECTION.tags[0]}"`,
     `date: "${date}"`,
-    `tags: ["about", "news", "${slug}"]`,
+    `tags: [${[...SECTION.tags, slug].map((tag) => `"${tag}"`).join(', ')}]`,
     '---',
     '',
     '',

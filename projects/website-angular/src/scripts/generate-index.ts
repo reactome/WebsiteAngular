@@ -4,6 +4,7 @@ import { ArticleIndexItem } from '../types/article';
 import { SiteSearchIndexItem } from '../types/site-search';
 import parseFrontmatter from '../utils/parseFrontmatter';
 import truncateHtml from '../utils/truncateHtml';
+import { duplicateArticles } from './article-duplicates';
 
 /**
  * Strip markdown/MDX syntax to produce plain text for search indexing
@@ -146,7 +147,7 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
 
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
 
-  return files
+  const articles = files
     .map((filename) => {
       const filePath = path.join(dir, filename);
       const content = fs.readFileSync(filePath, 'utf-8');
@@ -167,6 +168,15 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
       } as ArticleIndexItem;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const duplicates = duplicateArticles(articles);
+  if (duplicates.length) {
+    throw new Error(
+      `${dir} lists the same article more than once:\n` +
+        duplicates.map((slugs) => `  ${slugs.join('  =  ')}`).join('\n')
+    );
+  }
+  return articles;
 }
 
 function buildRecursiveIndex(dir: string): any {

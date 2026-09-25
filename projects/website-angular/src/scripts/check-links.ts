@@ -90,12 +90,16 @@ export function contentUrls(contentRoot = CONTENT): Set<string> {
   );
 }
 
-/** Router paths from app.routes.ts, as patterns: `:param` matches one segment. */
+/** Router paths from app.routes.ts, as patterns: `:param` matches one segment. Redirects are left out. */
 export function routePatterns(routesFile = path.join(SITE, 'src/app/app.routes.ts')): RegExp[] {
   const source = fs.readFileSync(routesFile, 'utf8');
-  return [...source.matchAll(/path:\s*'([^']*)'/g)]
-    .map((m) => m[1])
-    .filter((p) => p !== '**')
+  // A route that only redirects is not a destination: content linking to an
+  // old address it rescues is still a link to an old address.
+  const parts = source.split(/(?=\bpath:\s*')/);
+  return parts
+    .filter((part) => !/\bredirectTo\b/.test(part.split(/\n\s*\{/)[0]))
+    .map((part) => part.match(/^path:\s*'([^']*)'/)?.[1])
+    .filter((p): p is string => p !== undefined && p !== '**')
     .map((p) => {
       const pattern = p
         .split('/')

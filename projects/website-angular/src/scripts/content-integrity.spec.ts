@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import parseFrontmatter from '../utils/parseFrontmatter';
+import { duplicateArticles } from './article-duplicates';
 
 /**
  * Checks over the authored content tree that no single page's test would catch.
@@ -37,4 +38,19 @@ describe('authored content', () => {
       .map((file) => path.relative(CONTENT, file));
     expect(untitled).toEqual([]);
   });
+
+  // Each listing -- news, spotlights -- shows every article once.
+  for (const listing of ['about/news', 'content/reactome-research-spotlight']) {
+    it(`lists each article in ${listing} once`, () => {
+      const dir = path.join(CONTENT, listing);
+      const items = fs
+        .readdirSync(dir)
+        .filter((f) => /\.mdx?$/.test(f))
+        .map((f) => ({
+          slug: f,
+          title: parseFrontmatter(fs.readFileSync(path.join(dir, f), 'utf8')).frontmatter['title'],
+        }));
+      expect(duplicateArticles(items)).toEqual([]);
+    });
+  }
 });

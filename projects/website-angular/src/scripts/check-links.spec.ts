@@ -119,6 +119,13 @@ describe('the site as it stands', () => {
     expect(routePatterns().length).toBeGreaterThan(20);
   });
 
+  it('does not count a redirect as a destination', () => {
+    // /userguide redirects for other people's old links; our own content has to
+    // link the page itself.
+    expect(routePatterns().some((r) => r.test('/userguide'))).toBe(false);
+    expect(routePatterns().some((r) => r.test('/community/icon-lib'))).toBe(true);
+  });
+
   it('lists nothing as waiting that is no longer broken', async () => {
     // A stale entry would hide the next real break at the same address.
     const { KNOWN_BROKEN } = await import('./check-links');

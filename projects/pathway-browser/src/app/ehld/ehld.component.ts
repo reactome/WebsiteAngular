@@ -35,6 +35,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
 import { NgClass } from '@angular/common';
 import { parseEhldSvg } from './ehld-svg';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
 @Component({
   selector: 'cr-ehld',
@@ -51,6 +52,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private data: DataStateService = inject(DataStateService);
   private download: DownloadService = inject(DownloadService);
   private svgExporter: SvgExporterService = inject(SvgExporterService);
+  private hierarchyHover = inject(HierarchyHoverService);
 
   ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
@@ -122,6 +124,21 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.ehldService.applyOutline(this.selectedElement()!, this.flaggedElements())
     );
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
+    // A sub-pathway hovered in the hierarchy lights up here as if hovered here.
+    effect((onCleanup) => {
+      const stId = this.hierarchyHover.hovered();
+      const region = stId ? this.stIdToSVGGElement().get(stId) : undefined;
+      // Tracked, so flagging the region while it is hovered redraws the shadow
+      // with the flag outline rather than leaving the old one.
+      const flagged = this.flaggedElements();
+      if (!region || region === this.selectedElement()) return;
+      untracked(() => this.ehldService.applyShadow(region, flagged));
+      onCleanup(() => {
+        if (region !== untracked(this.selectedElement)) {
+          this.ehldService.removeShadow(region, untracked(this.flaggedElements));
+        }
+      });
+    });
     effect(() => {
       const text = this.svgData.value();
       if (text && this.ehldContainer()) {

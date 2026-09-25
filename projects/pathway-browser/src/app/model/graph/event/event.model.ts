@@ -24,6 +24,7 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   name: string[];
   hasCompartment?: HasCompartment[];
   species: Species[];
+  speciesName?: string;
   disease?: Disease[];
   goBiologicalProcess?: GO_BiologicalProcess;
 
