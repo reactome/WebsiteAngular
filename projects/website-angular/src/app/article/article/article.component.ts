@@ -13,7 +13,7 @@ import addImageSizes from '../../../utils/addImageSizes';
 import wrapCodeBlocks from '../../../utils/wrapCodeBlocks';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { StatsService } from '../../../services/stats.service';
-import { applyRelease, needsRelease } from '../../page/release-placeholder';
+import { applyRelease, needsRelease, releaseWithin } from '../../page/release-placeholder';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
@@ -67,7 +67,10 @@ export class ArticleComponent implements OnInit {
         void (async () => {
           let html = await marked((article?.body as string) || '');
           // The same URL handling as the content pages (see rewriteContentUrls).
-          if (needsRelease(html)) html = applyRelease(html, await this.stats.getVersion());
+          if (needsRelease(html)) {
+            const release = await releaseWithin(this.stats.getVersion());
+            if (release) html = applyRelease(html, release);
+          }
           html = rewriteContentUrls(html);
           // Same reservation as the content pages. An article carries at most
           // four images where a userguide page carries 114, so nobody is thrown

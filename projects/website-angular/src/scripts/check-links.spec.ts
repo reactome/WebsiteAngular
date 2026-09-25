@@ -51,6 +51,30 @@ describe('whether a link leads somewhere', () => {
   });
 });
 
+describe('the rules the first version got wrong', () => {
+  it('reads autolinks, which the site renders as links', () => {
+    const links = linksInContent(
+      'n.mdx',
+      '---\ntitle: x\n---\nSee <https://reactome.org/userguide> now.'
+    );
+    expect(links.map((l) => [l.url, l.line])).toEqual([['https://reactome.org/userguide', 4]]);
+  });
+
+  it('does not take any slug a collection route would accept', () => {
+    const newsRoute = [/^\/about\/news\/[^/]+$/];
+    expect(resolves('/about/news/typo', pages, newsRoute, noFiles)).toBe(false);
+  });
+
+  it('does not take /PathwayBrowserX for the pathway browser', () => {
+    expect(resolves('/PathwayBrowserX', pages, routes, noFiles)).toBe(false);
+    expect(resolves('/PathwayBrowser', pages, routes, noFiles)).toBe(true);
+  });
+
+  it('leaves links the renderer keeps on production to production', () => {
+    expect(internalPath('https://reactome.org/gsa')).toBeNull();
+  });
+});
+
 describe('finding links', () => {
   it('reads markdown links in both spellings, and HTML attributes', () => {
     const text = 'a [one](</x>) b [two](/y)\n<a href="/z">three</a> <img src="/w.png">';
@@ -88,6 +112,13 @@ describe('the site as it stands', () => {
 
   it('parses the real router', () => {
     expect(routePatterns().length).toBeGreaterThan(20);
+  });
+
+  it('lists nothing as waiting that is no longer broken', async () => {
+    // A stale entry would hide the next real break at the same address.
+    const { KNOWN_BROKEN } = await import('./check-links');
+    const broken = new Set(brokenLinks().map((b) => b.path));
+    expect(Object.keys(KNOWN_BROKEN).filter((p) => !broken.has(p))).toEqual([]);
   });
 
   it('has no broken internal link beyond those listed as waiting', async () => {

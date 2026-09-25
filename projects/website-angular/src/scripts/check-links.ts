@@ -1,5 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { marked } from 'marked';
+import addAnchorIds from '../utils/addAnchorIds';
+import parseFrontmatter from '../utils/parseFrontmatter';
+import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
 
 /**
  * Every internal link in the site's content, navigation and templates has to
@@ -10,8 +14,13 @@ import * as path from 'path';
  * a page that does not exist (the not-found page is rendered by the app), so a
  * fetch calls every broken link healthy. That is how 73 of them accumulated.
  *
+ * Links are read from the HTML that marked makes of each file -- what the site
+ * renders -- not from the raw text, so every markdown spelling counts: a regex
+ * over the text missed `<https://…>` autolinks, and four of them were broken.
+ * A fragment on a content page must name an id that page renders.
+ *
  * Not checked, and not claimed: links built from bound values in templates,
- * `#anchor` fragments, and external sites.
+ * fragments on pages other than content pages, and external sites.
  *
  *     npm run check:links
  */
@@ -26,13 +35,16 @@ const CONTENT = path.join(SITE, 'content');
  * is not checked further.
  */
 const SERVED_ELSEWHERE = [
-  '/PathwayBrowser',
+  '/PathwayBrowser/',
   '/ContentService/',
   '/AnalysisService/',
   '/RenderService/',
   '/GSAServer/',
   '/chat',
 ];
+
+/** Routes whose `:slug` is a content file. */
+const CONTENT_COLLECTIONS = ['/about/news/', '/content/reactome-research-spotlight/'];
 
 /**
  * Links that are known to be broken and are waiting on something named here.
@@ -43,7 +55,6 @@ const TRAINING_UPLOAD =
   'training material too large for the repository; to be published to the download bucket';
 export const KNOWN_BROKEN: Record<string, string> = {
   '/gsa': GSA_DECISION,
-  '/gsa/home': GSA_DECISION,
   '/docs/training/Reactome_Website.pdf': TRAINING_UPLOAD,
   '/docs/training/Pathways_&_Networks_Overview.pdf': TRAINING_UPLOAD,
   '/docs/training/ReactomeFIVizapp.pdf': TRAINING_UPLOAD,
@@ -118,6 +129,10 @@ export function internalPath(url: string): string | null {
     return null;
   }
   const reactome = target.match(/^https?:\/\/(?:www\.)?reactome\.org(\/.*)?$/i);
+  // Left on production by the renderer, so not this site's to resolve.
+  if (reactome && STILL_ON_PRODUCTION.some((p) => p.test((reactome[1] ?? '').replace(/^\//, '')))) {
+    return null;
+  }
   if (reactome) target = reactome[1] || '/';
   else if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//')) return null;
   target = target.split('#')[0].split('?')[0];
@@ -146,6 +161,9 @@ export function resolves(
     return true;
   }
   if (pages.has(urlPath)) return true;
+  // These routes take any slug, but each article is a file: a mistyped slug
+  // matches the route and shows the not-found page.
+  if (CONTENT_COLLECTIONS.some((prefix) => urlPath.startsWith(prefix))) return false;
   if (routes.some((route) => route.test(urlPath))) return true;
   return fileExists(urlPath);
 }
@@ -154,14 +172,40 @@ function lineOf(text: string, index: number): number {
   return text.slice(0, index).split('\n').length;
 }
 
-/** Links in a content file: markdown links and images, and HTML href/src. */
+/** HTML-attribute entities marked writes into URLs. */
+function unescapeAttr(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+/** The HTML the site renders for a content file's body. */
+export function renderedHtml(text: string): string {
+  return marked.parse(parseFrontmatter(text).body, { async: false }) as string;
+}
+
+/**
+ * Links in a content file, read from its rendered HTML.
+ *
+ * The line is where the URL first appears in the file, for the report; a URL
+ * marked had to encode may not be found as written, and reports line 0.
+ */
 export function linksInContent(file: string, text: string): Link[] {
   const found: Link[] = [];
-  for (const m of text.matchAll(/\]\(\s*<([^>]+)>|\]\(\s*([^)\s]+)/g)) {
-    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] ?? m[2] });
-  }
-  for (const m of text.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/g)) {
-    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
+  for (const m of renderedHtml(text).matchAll(/\b(?:href|src)\s*=\s*"([^"]*)"/g)) {
+    const url = unescapeAttr(m[1]);
+    let at = text.indexOf(url);
+    if (at < 0) {
+      try {
+        at = text.indexOf(decodeURI(url));
+      } catch {
+        // A malformed escape: report the link without a line.
+      }
+    }
+    found.push({ file, line: at < 0 ? 0 : lineOf(text, at), url });
   }
   return found;
 }
@@ -227,6 +271,10 @@ export function linksInTemplate(file: string, text: string): Link[] {
   for (const m of text.matchAll(/(?<![[\w-])(?:href|routerLink)\s*=\s*"([^"{}]+)"/g)) {
     found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
   }
+  // A bound routerLink that is only a literal: [routerLink]="['/content/query']".
+  for (const m of text.matchAll(/\[routerLink\]\s*=\s*"\[\s*'(\/[^']*)'\s*\]"/g)) {
+    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
+  }
   return found;
 }
 
@@ -253,13 +301,40 @@ export function allLinks(): Link[] {
   ];
 }
 
+/** Ids a content page renders, including the ones addAnchorIds gives headings. */
+const idsByPage = new Map<string, Set<string>>();
+function idsOn(urlPath: string): Set<string> | null {
+  const rel = urlPath.replace(/^\//, '');
+  const file = [`${rel}.mdx`, `${rel}.md`, `${rel}/index.mdx`, `${rel}/index.md`]
+    .map((f) => path.join(CONTENT, f))
+    .find((f) => fs.existsSync(f));
+  if (!file) return null;
+  if (!idsByPage.has(file)) {
+    const html = addAnchorIds(renderedHtml(fs.readFileSync(file, 'utf8')));
+    idsByPage.set(file, new Set([...html.matchAll(/\b(?:id|name)="([^"]+)"/g)].map((m) => m[1])));
+  }
+  return idsByPage.get(file) ?? null;
+}
+
 export function brokenLinks(links = allLinks()): (Link & { path: string })[] {
   const pages = contentUrls();
   const routes = routePatterns();
   return links.flatMap((link) => {
     const target = internalPath(link.url);
-    if (target === null || resolves(target, pages, routes)) return [];
-    return [{ ...link, path: target }];
+    if (target === null) return [];
+    if (!resolves(target, pages, routes)) return [{ ...link, path: target }];
+    // A fragment is the point of a link like /documentation#training: on a
+    // content page it has to name something the page renders, or the reader
+    // lands at the top of a long page.
+    const fragment = link.url.split('#')[1];
+    // Only where the content file is what renders: a routed component (the
+    // logo page) owns its own ids.
+    const rendersContent = pages.has(target) && !routes.some((route) => route.test(target));
+    const ids = fragment && rendersContent ? idsOn(target) : null;
+    if (ids && !ids.has(decodeURIComponent(fragment))) {
+      return [{ ...link, path: `${target}#${fragment}` }];
+    }
+    return [];
   });
 }
 

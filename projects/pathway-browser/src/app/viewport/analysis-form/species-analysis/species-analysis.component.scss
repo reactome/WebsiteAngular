@@ -126,7 +126,8 @@
       font-size: clamp(10px, 13cqw, 14px);
       line-height: 1.15;
       white-space: normal;
-      overflow-wrap: anywhere;
+      // Between words; a single word too long for the tile may still break.
+      overflow-wrap: break-word;
     }
 
     .mat-icon {

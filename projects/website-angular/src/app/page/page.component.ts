@@ -14,7 +14,7 @@ import { StatsService } from '../../services/stats.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
-import { applyRelease, needsRelease } from './release-placeholder';
+import { applyRelease, needsRelease, releaseWithin } from './release-placeholder';
 import rewriteContentUrls from '../../utils/rewriteContentUrls';
 
 @Component({
@@ -91,7 +91,8 @@ export class PageComponent implements OnInit {
             this.page = page;
             let html = await marked(page.body);
             if (needsRelease(html)) {
-              html = applyRelease(html, await this.stats.getVersion());
+              const release = await releaseWithin(this.stats.getVersion());
+              if (release) html = applyRelease(html, release);
             }
             html = rewriteContentUrls(html);
             // Keep this chain intact. Each step was added by a specific fix and

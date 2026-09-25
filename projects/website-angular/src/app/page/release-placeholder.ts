@@ -34,3 +34,22 @@ export function applyRelease(html: string, release: string): string {
       (_match, before, after) => `${before}${release}${after}`
     );
 }
+
+/**
+ * The release to substitute, or null if none arrives in time.
+ *
+ * A curator build never asks for a version, so waiting on one there never
+ * ends and the page spun forever. Without a release the placeholder is left
+ * as written: a broken image beats a page that never renders.
+ */
+export async function releaseWithin(version: Promise<string>, ms = 5000): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<null>((resolve) => (timer = setTimeout(() => resolve(null), ms)));
+  try {
+    return await Promise.race([version, timedOut]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}

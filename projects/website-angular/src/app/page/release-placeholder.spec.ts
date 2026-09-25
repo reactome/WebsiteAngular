@@ -1,6 +1,6 @@
 import { marked } from 'marked';
-import { describe, expect, it } from 'vitest';
-import { applyRelease, needsRelease } from './release-placeholder';
+import { describe, expect, it, vi } from 'vitest';
+import { applyRelease, needsRelease, releaseWithin } from './release-placeholder';
 
 describe('the {release} placeholder', () => {
   it('is replaced in raw HTML, as the statistics page writes it', () => {
@@ -30,5 +30,24 @@ describe('the {release} placeholder', () => {
 
   it('leaves a page that names no release alone', () => {
     expect(needsRelease('<p>No release here.</p>')).toBe(false);
+  });
+});
+
+describe('waiting for the release', () => {
+  it('uses it when it arrives', async () => {
+    expect(await releaseWithin(Promise.resolve('97'))).toBe('97');
+  });
+
+  it('gives up rather than hang when none ever comes', async () => {
+    // A curator build never requests a version; the page waited forever.
+    vi.useFakeTimers();
+    const waiting = releaseWithin(new Promise<string>(() => undefined), 5000);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(await waiting).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('treats a failed lookup as no release', async () => {
+    expect(await releaseWithin(Promise.reject(new Error('down')))).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import formatDate from '../../../utils/formatDate';
 import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
+import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { NavOption } from '../../../types/link';
 
 @Component({
@@ -62,10 +63,12 @@ export class HomeSpotlightComponent implements OnInit {
               // Callback kept synchronous: an async one hands a promise to code
               // that ignores it, so any rejection in here would vanish.
               void (async () => {
-                const html = await marked(article?.body || '');
+                const html = rewriteContentUrls(await marked(article?.body || ''));
                 this.renderedContent = truncateHtml(stripFirstH(html), 150);
+                // After the await, not before it: marking first left the view
+                // to be refreshed by whatever happened to check it next.
+                this.cdr.markForCheck();
               })().catch((error) => console.error('Could not render spotlight', error));
-              this.cdr.markForCheck();
             },
           });
         this.cdr.markForCheck();

@@ -30,7 +30,7 @@ function mediaWikiAnchor(text: string): string {
     );
 }
 
-export default function addAnchorIds(html: string): string {
+function addSamePageIds(html: string): string {
   // Pass 1: existing behaviour -- headings whose first child is the anchor.
   const re = /<(h[1-6])>\s*(<a\s[^>]*href="#([^"]+)"[^>]*>)/g;
   const matches: { index: number; length: number; tag: string; href: string; full: string }[] = [];
@@ -125,4 +125,30 @@ export default function addAnchorIds(html: string): string {
     assigned.add(frag);
     return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
   });
+}
+
+/**
+ * Every heading addressable, not only the ones this page links to.
+ *
+ * The passes above only give a heading an id when the same page links to it,
+ * so a link from another page -- 22 release notes point at the documentation
+ * page's training section -- landed at the top of a long page. This runs last
+ * and only fills in headings still without an id, using the same convention
+ * (heading text, spaces as underscores), and never reuses an id already on the
+ * page, so nothing the passes above placed can move.
+ */
+function idEveryHeading(html: string): string {
+  const taken = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+  return html.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
+    if (attrs && /\bid=/.test(attrs)) return full;
+    const text = inner.replace(/<[^>]+>/g, '').trim();
+    const id = text.replace(/\s+/g, '_').replace(/"/g, '');
+    if (!id || taken.has(id)) return full;
+    taken.add(id);
+    return `<${tag}${attrs || ''} id="${id}">${inner}</${tag}>`;
+  });
+}
+
+export default function addAnchorIds(html: string): string {
+  return idEveryHeading(addSamePageIds(html));
 }

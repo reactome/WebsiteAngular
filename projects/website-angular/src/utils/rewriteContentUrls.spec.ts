@@ -21,4 +21,11 @@ describe('rewriteContentUrls', () => {
       '<a href="https://download.reactome.org/97/x.tgz">x</a><a href="https://example.org/">y</a>';
     expect(rewriteContentUrls(html)).toBe(html);
   });
+
+  it('leaves a link to a page this site does not serve yet on production', () => {
+    // Nine old news items link reactome.org/gsa, which works there and would
+    // be a missing page here.
+    const html = '<a href="https://reactome.org/gsa">GSA</a>';
+    expect(rewriteContentUrls(html)).toBe(html);
+  });
 });

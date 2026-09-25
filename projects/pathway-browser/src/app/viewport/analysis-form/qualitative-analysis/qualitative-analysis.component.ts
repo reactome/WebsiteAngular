@@ -215,6 +215,13 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     booleanSignal.set(!booleanSignal());
   }
 
+  /** Space or Enter on an option card, as on a checkbox: once per press, not per key repeat. */
+  toggleByKey(event: Event, booleanSignal: WritableSignal<boolean>) {
+    event.preventDefault();
+    if ((event as KeyboardEvent).repeat) return;
+    this.toggle(booleanSignal);
+  }
+
   projectToHumanIllustration = this.http.get('assets/animations/orthology-animation.svg', {
     responseType: 'text',
   });

@@ -88,8 +88,8 @@
           [attr.aria-checked]="projectToHuman()"
           [class.checked]="projectToHuman()"
           (click)="toggle(projectToHuman)"
-          (keydown.space)="$event.preventDefault(); toggle(projectToHuman)"
-          (keydown.enter)="$event.preventDefault(); toggle(projectToHuman)"
+          (keydown.space)="toggleByKey($event, projectToHuman)"
+          (keydown.enter)="toggleByKey($event, projectToHuman)"
         >
           <div class="card-content">
             <div class="header">
@@ -127,8 +127,8 @@
           [attr.aria-checked]="includeInteractors()"
           [class.checked]="includeInteractors()"
           (click)="toggle(includeInteractors)"
-          (keydown.space)="$event.preventDefault(); toggle(includeInteractors)"
-          (keydown.enter)="$event.preventDefault(); toggle(includeInteractors)"
+          (keydown.space)="toggleByKey($event, includeInteractors)"
+          (keydown.enter)="toggleByKey($event, includeInteractors)"
           (mouseenter)="interactorsIllustrationLottie?.play()"
           (focusin)="interactorsIllustrationLottie?.play()"
           (mouseleave)="interactorsIllustrationLottie?.pause()"
