@@ -6,12 +6,13 @@ import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { marked } from 'marked';
-import stripFirstH from '../../../utils/stripFirstH';
-import addAnchorIds from '../../../utils/addAnchorIds';
-import addJumpCards from '../../../utils/addJumpCards';
 import addImageSizes from '../../../utils/addImageSizes';
-import wrapCodeBlocks from '../../../utils/wrapCodeBlocks';
+import renderContentBody from '../../../utils/renderContentBody';
+import rewriteContentUrls from '../../../utils/rewriteContentUrls';
+import { StatsService } from '../../../services/stats.service';
+import { applyRelease, needsRelease, releaseWithin } from '../../page/release-placeholder';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { IS_CURATOR } from '../../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-article',
@@ -28,6 +29,7 @@ export class ArticleComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
+  private stats = inject(StatsService);
   // The app is zoneless and these are plain fields, not signals, so nothing
   // notices them changing inside an HTTP callback -- and `await marked(...)`
   // resumes in a microtask, further detached from anything Angular watches.
@@ -61,15 +63,18 @@ export class ArticleComponent implements OnInit {
         // Callback kept synchronous: an async one hands a promise to code
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
-          const html = await marked((article?.body as string) || '');
+          let html = await marked((article?.body as string) || '');
+          // The same URL handling as the content pages (see rewriteContentUrls).
+          if (needsRelease(html)) {
+            const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });
+            if (release) html = applyRelease(html, release);
+          }
+          html = rewriteContentUrls(html);
           // Same reservation as the content pages. An article carries at most
           // four images where a userguide page carries 114, so nobody is thrown
           // thousands of pixels off here -- but the text still moves under a
           // reader while the images arrive, and the sizes are already staged.
-          const renderedContent = addImageSizes(
-            stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
-            article?.imageSizes
-          );
+          const renderedContent = addImageSizes(renderContentBody(html), article?.imageSizes);
           this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
           this.article = {

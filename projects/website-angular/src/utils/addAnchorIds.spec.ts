@@ -23,9 +23,11 @@ describe('addAnchorIds', () => {
     }
   });
 
-  it('leaves headings alone when nothing links to them', () => {
-    const html = '<h3>Unlinked Section</h3>';
-    expect(addAnchorIds(html)).toBe(html);
+  it('gives a heading nothing on its own page links to an id too', () => {
+    // It used to be left bare, which made it unreachable from any other page.
+    expect(addAnchorIds('<h3>Unlinked Section</h3>')).toBe(
+      '<h3 id="Unlinked_Section">Unlinked Section</h3>'
+    );
   });
 
   it('keeps an id already applied to a self-linking heading', () => {
@@ -38,5 +40,17 @@ describe('addAnchorIds', () => {
     const out = addAnchorIds(html);
     expect(out).toContain('<h3 id="Topic">');
     expect(out).not.toContain('<h2 id="Topic">');
+  });
+
+  it('gives every heading an id, so another page can link to its section', () => {
+    // Release notes link /documentation#Reactome_Training_Materials, and the
+    // documentation page itself never links to that heading.
+    const out = addAnchorIds('<h3>Reactome Training Materials</h3><p>x</p>');
+    expect(out).toContain('<h3 id="Reactome_Training_Materials">');
+  });
+
+  it('never gives two headings the same id', () => {
+    const out = addAnchorIds('<h2>Notes</h2><h3>Notes</h3>');
+    expect(out.match(/id="Notes"/g)).toHaveLength(1);
   });
 });

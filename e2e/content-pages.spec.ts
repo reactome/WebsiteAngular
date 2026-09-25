@@ -169,6 +169,25 @@ test.describe('Release-stamped figures', () => {
   });
 });
 
+test.describe('Links from news', () => {
+  // Twenty-two release notes send readers to the documentation page's training
+  // section. The heading had no id -- only headings the same page links to got
+  // one -- so they landed at the top of a long page.
+  test('the training section can be linked to from another page', async ({ page }) => {
+    await page.goto('/documentation#Reactome_Training_Materials');
+    await expect(page.locator('h3#Reactome_Training_Materials')).toBeInViewport({ timeout: LOAD });
+  });
+
+  // reactome.org/gsa is still only on production. Rewritten to this site, it
+  // would be a missing page where it used to work.
+  test('an old link to ReactomeGSA still reaches it', async ({ page }) => {
+    await page.goto('/about/news/238-version-87-released');
+    await expect(page.locator('article a[href="https://reactome.org/gsa"]').first()).toBeAttached({
+      timeout: LOAD,
+    });
+  });
+});
+
 test.describe('In-page table of contents', () => {
   // The long userguide pages open with a table of contents linking each
   // section. Those ids are added at render time by addAnchorIds; the call was

@@ -4,17 +4,16 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
-import stripFirstH from '../../utils/stripFirstH';
-import addAnchorIds from '../../utils/addAnchorIds';
-import addJumpCards from '../../utils/addJumpCards';
-import wrapCodeBlocks from '../../utils/wrapCodeBlocks';
 import addImageSizes from '../../utils/addImageSizes';
+import renderContentBody from '../../utils/renderContentBody';
 import sanitize from '../../utils/sanitize';
 import { StatsService } from '../../services/stats.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
-import { applyRelease, needsRelease } from './release-placeholder';
+import { applyRelease, needsRelease, releaseWithin } from './release-placeholder';
+import rewriteContentUrls from '../../utils/rewriteContentUrls';
+import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-page',
@@ -51,29 +50,6 @@ export class PageComponent implements OnInit {
   private scrollToRequestedAnchor(): void {
     const fragment = this.route.snapshot.fragment;
     if (fragment) this.viewportScroller.scrollToAnchor(fragment);
-  }
-
-  private rewriteContentUrls(html: string): string {
-    return html.replace(
-      /\b(href|src)=("([^"]*)"|'([^']*)')/g,
-      (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
-        const value = doubleQuoted ?? singleQuoted ?? '';
-        return `${attr}="${this.normalizeContentUrl(value)}"`;
-      }
-    );
-  }
-
-  private normalizeContentUrl(url: string): string {
-    const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
-    if (reactomeUrlMatch) {
-      return reactomeUrlMatch[1].replace(/^\//, '');
-    }
-
-    if (url.startsWith('/')) {
-      return url.replace(/^\/+/, '');
-    }
-
-    return url;
   }
 
   ngOnInit() {
@@ -113,26 +89,18 @@ export class PageComponent implements OnInit {
             this.page = page;
             let html = await marked(page.body);
             if (needsRelease(html)) {
-              html = applyRelease(html, await this.stats.getVersion());
+              const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });
+              if (release) html = applyRelease(html, release);
             }
-            html = this.rewriteContentUrls(html);
-            // Keep this chain intact. Each step was added by a specific fix and
-            // the imports alone do nothing: wrapCodeBlocks collapses long code
-            // blocks (#98), addJumpCards builds the dev-page cards, and
-            // addAnchorIds gives headings the ids that same-page "#" links --
-            // including the table of contents at the top of the long userguide
-            // pages -- need to jump to (#89). Dropping the calls but keeping the
-            // imports is exactly how those regressed once already.
-            // `addImageSizes` last of the html steps, so it sees every `<img>`
+            html = rewriteContentUrls(html);
+            // renderContentBody holds the chain every content body needs, and
+            // why each step is there. `addImageSizes` last of the html steps, so it sees every `<img>`
             // the others produced. Without it a content image reserves no space
             // until it loads, and a reader who clicks a heading in the table of
             // contents is carried away from it as the images above arrive --
             // measured at 2,793px off on the FIViz page, which has 116.
             this.renderedContent = sanitize(
-              addImageSizes(
-                stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
-                this.page?.imageSizes
-              ),
+              addImageSizes(renderContentBody(html), this.page?.imageSizes),
               this.sanitizer
             );
             this.loading = false;
