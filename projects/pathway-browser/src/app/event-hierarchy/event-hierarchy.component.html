@@ -56,13 +56,16 @@
         [ngClass]="{ 'has-sibling': hasRootSiblingForLeafNode(node) }"
         [attr.st-id]="node.stId"
       >
-        <div class="tree-node child-less">
+        <!-- The row, not the tree node: a node also contains its children. -->
+        <div
+          class="tree-node child-less"
+          (mouseenter)="hierarchyHover.enter(node.stId)"
+          (mouseleave)="hierarchyHover.leave(node.stId)"
+        >
           <div class="left">
             <button
               mat-button
               (click)="onTreeEventSelect(node)"
-              (mouseenter)="hierarchyHover.enter(node.stId)"
-              (mouseleave)="hierarchyHover.leave(node.stId)"
               [ngClass]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
               class="button"
             >
@@ -132,11 +135,13 @@
         [attr.st-id]="node.stId"
         [cdkTreeNodeTypeaheadLabel]="node.name"
         (click)="onTreeEventSelect(node)"
-        (mouseenter)="hierarchyHover.enter(node.stId)"
-        (mouseleave)="hierarchyHover.leave(node.stId)"
         matTreeNodeToggle
       >
-        <div class="tree-node">
+        <div
+          class="tree-node"
+          (mouseenter)="hierarchyHover.enter(node.stId)"
+          (mouseleave)="hierarchyHover.leave(node.stId)"
+        >
           <!--todo: clean structure, try not use button for the event's displayName and replace click event with (expandedChange)-->
           <div class="left">
             <button

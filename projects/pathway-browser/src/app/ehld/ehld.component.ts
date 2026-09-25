@@ -128,8 +128,11 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     effect((onCleanup) => {
       const stId = this.hierarchyHover.hovered();
       const region = stId ? this.stIdToSVGGElement().get(stId) : undefined;
+      // Tracked, so flagging the region while it is hovered redraws the shadow
+      // with the flag outline rather than leaving the old one.
+      const flagged = this.flaggedElements();
       if (!region || region === this.selectedElement()) return;
-      untracked(() => this.ehldService.applyShadow(region, this.flaggedElements()));
+      untracked(() => this.ehldService.applyShadow(region, flagged));
       onCleanup(() => {
         if (region !== untracked(this.selectedElement)) {
           this.ehldService.removeShadow(region, untracked(this.flaggedElements));

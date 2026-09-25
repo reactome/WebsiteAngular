@@ -480,7 +480,9 @@ export class DescriptionTabComponent implements OnDestroy {
   catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivityTemplate');
   catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivitiesTemplate');
   inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
-  orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>('orthologousEventsTemplate');
+  orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>(
+    'orthologousEventsTemplate'
+  );
   otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
   literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
   authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');

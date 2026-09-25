@@ -307,6 +307,16 @@ test.describe('Computationally predicted events', () => {
     await expect(section.locator('a[href$="/R-MMU-109582"]')).toBeAttached();
   });
 
+  test("a curator's inference from another species is not called a prediction", async ({
+    page,
+  }) => {
+    // Inferred from rat by a curator (isInferred, no electronic evidence).
+    await page.goto('/PathwayBrowser/R-HSA-9613829?select=R-HSA-9626034&tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-HSA-9626034', { timeout: BOOT });
+    await expect(overview).not.toContainText('Computationally inferred');
+  });
+
   test('a predicted event says it is one', async ({ page }) => {
     await page.goto('/PathwayBrowser/R-MMU-1640170?tab=details');
     const overview = page.locator('cr-description-overview').first();
