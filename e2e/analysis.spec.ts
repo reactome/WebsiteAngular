@@ -209,6 +209,7 @@ test.describe('Quantitative analysis: adding a dataset', () => {
   for (const [width, height] of [
     [1440, 900],
     [1280, 720],
+    [1024, 768],
   ]) {
     test(`Continue stays on screen at ${width}x${height} while it waits`, async ({ page }) => {
       await page.setViewportSize({ width, height });

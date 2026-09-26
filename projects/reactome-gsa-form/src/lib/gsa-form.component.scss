@@ -18,7 +18,12 @@
 // one line of "Save the dataset to continue" pushed the row past the width
 // and wrapped Continue below the dataset card, out of view.
 .nav-label {
-  max-width: 7.5rem;
+  // Its own width counts for nothing (`contain: inline-size`), so the column
+  // keeps the width the buttons give it and the text wraps to fit. A cap in
+  // rem only moved the break point: at 1024px the capped label still made
+  // the column wider than the others, and Continue wrapped out of view.
+  contain: inline-size;
+  width: 100%;
   text-align: center;
 }
 
