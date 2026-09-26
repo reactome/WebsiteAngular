@@ -197,7 +197,14 @@ export function parseFrame(frame: string): SummaryEvent | null {
       // citation arriving without one produced `/content/detail/undefined`: a
       // dead link under a real name, which is worse than the name not being
       // listed. Unlike the search answer there is no url form to fall back to.
-      return displayName && stId ? { kind: 'citation', citation: { stId, displayName } } : null;
+      // A blank name falls back to the stable id, as in the search answer: a
+      // citation that leads somewhere is worth listing even unnamed.
+      return stId
+        ? {
+            kind: 'citation',
+            citation: { stId, displayName: displayName.trim() ? displayName : stId },
+          }
+        : null;
     }
     case 'done':
       return { kind: 'done', state: asState(data['state']), reason: asReason(data['reason']) };

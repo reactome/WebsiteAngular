@@ -133,14 +133,13 @@ export function parseFrame(frame: string): AnswerEvent | null {
       const stId = typeof data['st_id'] === 'string' && data['st_id'] ? data['st_id'] : undefined;
       const url = stId ? undefined : usableUrl(data['url']);
       if (!stId && !url) return null;
+      // A blank name is as good as none: rendered, it was an empty chip that
+      // looked broken and said nothing about where it led.
       const displayName = data['display_name'];
+      const named = typeof displayName === 'string' && displayName.trim() ? displayName : undefined;
       return {
         kind: 'citation',
-        citation: {
-          stId,
-          url,
-          displayName: typeof displayName === 'string' ? displayName : (stId ?? url ?? ''),
-        },
+        citation: { stId, url, displayName: named ?? stId ?? url ?? '' },
       };
     }
     case 'done': {

@@ -93,11 +93,22 @@
               tourAnchor="dataset.done"
               clickable
             >
-              <button [disabled]="!addDataStep.completed" class="primary-color" mat-fab matStepperNext>
+              <button
+                [disabled]="!addDataStep.completed"
+                class="primary-color"
+                mat-fab
+                matStepperNext
+                [attr.aria-label]="addDataStep.completed ? 'Continue' : 'Save the dataset to continue'"
+              >
                 <mat-icon fontSet="gsa">keyboard_arrow_right</mat-icon>
               </button>
             </div>
-            <div class="outline-color margin-top-10">Continue</div>
+            <!-- Says why it is disabled: the Save button is at the foot of the
+                 dataset card, several steps down, and "Continue" under a dead
+                 button told a reader who had chosen a dataset nothing. -->
+            <div class="outline-color margin-top-10 continue-label">
+              {{ addDataStep.completed ? 'Continue' : 'Save the dataset to continue' }}
+            </div>
           </div>
         </div>
       }

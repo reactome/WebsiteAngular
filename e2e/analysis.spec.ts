@@ -180,3 +180,53 @@ test.describe('Analysis options without a mouse', () => {
     await expect(interactors).toHaveAttribute('aria-checked', before);
   });
 });
+
+test.describe('Quantitative analysis: adding a dataset', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // Captured once from the shared GSA service, so no test here loads a dataset
+  // on it: the example list, the load and its status, and the dataset summary.
+  const gsa = JSON.parse(
+    readFileSync(join(__dirname, 'fixtures', 'gsa-melanoma-example.json'), 'utf8')
+  ) as Record<string, { status: number; body: unknown }>;
+
+  async function stubGsa(page: Page) {
+    await stubGsaMethods(page);
+    for (const [path, reply] of Object.entries(gsa)) {
+      const glob = `**/GSAServer/0.1/${path}${path === 'data/status' || path === 'data/summary' ? '/**' : ''}`;
+      await page.route(glob, (route) =>
+        route.fulfill({
+          status: reply.status,
+          contentType: typeof reply.body === 'string' ? 'text/plain' : 'application/json',
+          body: typeof reply.body === 'string' ? reply.body : JSON.stringify(reply.body),
+        })
+      );
+    }
+  }
+
+  // Continue stays disabled until the dataset is saved, and it used to say only
+  // "Continue" -- so a reader who had chosen a dataset saw a dead button, with
+  // the Save button several steps down inside the dataset card.
+  test('says what it is waiting for, and continues once the dataset is saved', async ({ page }) => {
+    await stubGsa(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+
+    await expect(page.getByText('Save the dataset to continue')).toBeVisible({ timeout: 20_000 });
+
+    // The sample table is what the loaded dataset shows first.
+    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Through the card's own steps (statistical design, parameters) to Save.
+    for (let step = 0; step < 2; step++) {
+      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
+      await page.waitForTimeout(1000);
+    }
+    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
+    await expect(page.getByText('Save the dataset to continue')).toHaveCount(0);
+    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible();
+  });
+});
