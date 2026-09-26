@@ -269,6 +269,9 @@ test.describe('Flagging a reaction', () => {
             const reaction = cy?.nodes('.reaction.flag');
             if (!cy || !reaction?.length) return false;
             cy.data('reactome').update(cy);
+            // The shared Style restyles whichever graph was bound last, which can
+            // be the legend; this diagram's own handler is run explicitly too.
+            cy.scratch('_reactomeInteractivity')?.triggerZoom();
             cy.fit(reaction.closedNeighborhood(), 80);
             return true;
           }),
@@ -281,7 +284,9 @@ test.describe('Flagging a reaction', () => {
       const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
       if (!cy) throw new Error('no cytoscape instance on #cytoscape');
       const box = cy.nodes('.reaction.flag').renderedBoundingBox({});
-      return { x1: box.x1, x2: box.x2, y1: box.y1, y2: box.y2 };
+      // In screenshot pixels, which are device pixels.
+      const r = window.devicePixelRatio;
+      return { x1: box.x1 * r, x2: box.x2 * r, y1: box.y1 * r, y2: box.y2 * r };
     });
     const png = await container.screenshot();
     const pink = await page.evaluate(
@@ -299,7 +304,7 @@ test.describe('Flagging a reaction', () => {
           const x = (i / 4) % image.width;
           const y = Math.floor(i / 4 / image.width);
           // The node's own outline is pink either way; only the lines count.
-          if (x >= node.x1 - 4 && x <= node.x2 + 4 && y >= node.y1 - 4 && y <= node.y2 + 4)
+          if (x >= node.x1 - 8 && x <= node.x2 + 8 && y >= node.y1 - 8 && y <= node.y2 + 8)
             continue;
           // --flag, #ff009a, as drawn.
           if (p[i] > 200 && p[i + 1] < 80 && p[i + 2] > 110 && p[i + 2] < 200) n++;
