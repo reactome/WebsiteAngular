@@ -98,6 +98,7 @@ test.describe('Tour and Layout', () => {
 
   test('the hierarchy comes back at the width the reader dragged it to', async ({ page }) => {
     await openBrowser(page);
+    const initial = await width(page, 'cr-event-hierarchy');
     const gutter = page.locator('#container > as-split > .as-split-gutter');
     const box = await gutter.boundingBox();
     if (!box) throw new Error('the divider beside the hierarchy is not on screen');
@@ -107,6 +108,8 @@ test.describe('Tour and Layout', () => {
     await page.mouse.up();
     await page.waitForTimeout(700);
     const dragged = await width(page, 'cr-event-hierarchy');
+    // Otherwise a drag that moved nothing would pass: the default comes back too.
+    expect(dragged, 'the drag widened the hierarchy').toBeGreaterThan(initial + 100);
 
     await choose(page, 'Hierarchy panel');
     await choose(page, 'Hierarchy panel');
