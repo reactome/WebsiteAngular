@@ -717,6 +717,35 @@ export class Style {
           'underlay-opacity': 1,
         },
       },
+      // Pointing at a reaction or sub-pathway in the hierarchy. No highlight
+      // colour can be told apart from the sub-pathway tints -- they are spread
+      // around the whole hue wheel, so green, yellow or any other colour is one
+      // of them in some diagram. So everything else fades instead, and the
+      // pointed-at element keeps its own colours at full strength, drawn thicker.
+      // (The sub-pathway bands are written inline by the zoom handler, so their
+      // part of this is done there -- see Interactivity.initZoom.)
+      {
+        selector: '.hierarchy-dim',
+        css: {
+          opacity: 0.2,
+        },
+      },
+
+      {
+        selector: 'edge.hierarchy-hover',
+        css: {
+          width: this.pm('global', 'thickness', (t) => t * 3),
+          'z-index': 4,
+        },
+      },
+
+      {
+        selector: 'node.reaction.hierarchy-hover',
+        css: {
+          'border-width': this.pm('global', 'thickness', (t) => t * 2),
+          'z-index': 4,
+        },
+      },
       {
         selector: 'edge[?weights]',
         css: {

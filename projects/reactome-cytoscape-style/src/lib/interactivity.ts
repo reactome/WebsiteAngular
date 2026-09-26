@@ -554,9 +554,23 @@ export class Interactivity {
       shadows.style({
         'underlay-opacity': shadowOpacity,
       });
+      // Something pointed at in the hierarchy: the other sub-pathways' bands
+      // fade and its own is drawn strongly. Here rather than in the stylesheet,
+      // because this handler writes the bands inline and inline always wins.
+      shadows.filter('.hierarchy-dim').style({ 'underlay-opacity': shadowOpacity * 0.15 });
+      // Only a band that is showing is strengthened: with bands off (flagging
+      // removes them) the underlay falls back to black, and boosting it drew a
+      // black halo round the hovered sub-pathway.
+      if (shadowOpacity > 0) {
+        shadows
+          .filter('.hierarchy-hover.shadow')
+          .style({ 'underlay-opacity': Math.max(shadowOpacity, 0.6) });
+      }
       shadowLabels.style({
         'text-opacity': shadowLabelOpacity,
       });
+      // The other sub-pathways' names fade with their bands.
+      shadowLabels.filter('.hierarchy-dim').style({ 'text-opacity': shadowLabelOpacity * 0.2 });
       // Not the ones flagging has pinned visible.
       //
       // This writes an inline opacity, and in cytoscape an inline style beats
@@ -570,12 +584,17 @@ export class Interactivity {
       // the structures are drawn by a different handler that was still running.
       //
       // The class is the authority. Anything wearing it is left alone.
-      trivial
-        .filter((element) => !element.hasClass('always-visible'))
-        .style({
-          opacity: trivialOpacity,
-          'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
-        });
+      const shown = trivial.filter((element) => !element.hasClass('always-visible'));
+      shown.style({
+        opacity: trivialOpacity,
+        'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
+      });
+      // Faded with the rest while something else is pointed at in the hierarchy.
+      const faded = Math.min(trivialOpacity, 0.2);
+      shown.filter('.hierarchy-dim').style({
+        opacity: faded,
+        'underlay-opacity': Math.min(shadowOpacity, faded),
+      });
 
       // The interactor count badge is not worth drawing when it cannot be read.
       //
