@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test, expect } from './support/backend';
 
 // The Content Service and Analysis Service pages (curator review, item 1g).
@@ -12,6 +14,7 @@ const BOOT = 90_000;
 for (const [root, service] of [
   ['/ContentService', 'Content Service'],
   ['/ContentService/', 'Content Service'],
+  ['/AnalysisService', 'Analysis Service'],
   ['/AnalysisService/', 'Analysis Service'],
 ] as const) {
   test(`opening ${root} directly shows this site's ${service} page`, async ({ page }) => {
@@ -51,3 +54,65 @@ test('the Tools menu opens the Content Service page without leaving the site', a
   await expect(page.locator('.swagger-ui .opblock').first()).toBeVisible({ timeout: BOOT });
   expect(await page.evaluate(() => (window as { __stayed?: boolean }).__stayed)).toBe(true);
 });
+
+test('the Download page opens the Content Service page without leaving the site', async ({
+  page,
+}) => {
+  await page.goto('/download-data');
+  const card = page.locator('a.service-card', { hasText: 'Content Service' });
+  await expect(card).toBeVisible({ timeout: BOOT });
+  await expect(card).not.toHaveAttribute('target', '_blank');
+  await page.evaluate(() => Object.assign(window, { __stayed: true }));
+  await card.click();
+  await expect(page).toHaveURL(/\/ContentService$/);
+  await expect(page.locator('.swagger-ui .opblock').first()).toBeVisible({ timeout: BOOT });
+  expect(await page.evaluate(() => (window as { __stayed?: boolean }).__stayed)).toBe(true);
+});
+
+/**
+ * Every link in the site's content to one operation or group on these pages.
+ *
+ * They were written for the old springfox page (`#!/exporter/toSBMLUsingGET`),
+ * whose names the current spec does not have, and the page did not follow a
+ * link at all -- so each opened at the top, leaving the reader to hunt.
+ */
+function deepLinks(): string[] {
+  const found = new Set<string>();
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.name.endsWith('.mdx')) {
+        for (const [, link] of readFileSync(path, 'utf8').matchAll(
+          /\((?:<)?(\/(?:Content|Analysis)Service\/#[^)>\s]+)/g
+        )) {
+          found.add(link);
+        }
+      }
+    }
+  };
+  walk(join(__dirname, '..', 'projects', 'website-angular', 'content'));
+  return [...found].sort();
+}
+
+const links = deepLinks();
+
+test('the content has links into the API pages to check', () => {
+  expect(links.length).toBeGreaterThan(3);
+});
+
+for (const link of links) {
+  test(`${link} opens what it points at`, async ({ page }) => {
+    const [, tag, operation] = link.split('#')[1].split('/');
+    await page.goto(link);
+    await expect(page.locator('.swagger-ui .opblock').first()).toBeVisible({ timeout: BOOT });
+    if (operation) {
+      await expect(page.locator(`#operations-${tag}-${operation}`)).toHaveClass(/is-open/);
+    } else {
+      await expect(page.locator(`#operations-tag-${tag}`)).toBeVisible();
+      await expect(page.locator(`.opblock-tag-section:has(#operations-tag-${tag})`)).toHaveClass(
+        /is-open/
+      );
+    }
+  });
+}

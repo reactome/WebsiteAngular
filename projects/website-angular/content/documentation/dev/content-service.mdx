@@ -25,11 +25,11 @@ category: "documentation"
 
 ### [__More Info](<#MoreInfo>)
 
-The Content Service constitutes an easy [API](</ContentService/#/>) that provides access to the Reactome knowledgebase. Information in Reactome is authored by expert biologist researchers, maintained by Reactome editorial staff, and extensively cross-referenced to other resources e.g. NCBI, Ensembl, UniProt, UCSC Genome Browser, HapMap, KEGG (Gene and Compound), ChEBI, PubMed and GO. It also incorporates inferred orthologous reactions for over 14 non-human species including mouse, rat, chicken, puffer fish, worm, fly, yeast, rice, Arabidopsis and E.coli. Additionally, the Content Service provides access to molecular interactions integrated from PSICQUIC.
+The Content Service constitutes an easy [API](</ContentService/>) that provides access to the Reactome knowledgebase. Information in Reactome is authored by expert biologist researchers, maintained by Reactome editorial staff, and extensively cross-referenced to other resources e.g. NCBI, Ensembl, UniProt, UCSC Genome Browser, HapMap, KEGG (Gene and Compound), ChEBI, PubMed and GO. It also incorporates inferred orthologous reactions for over 14 non-human species including mouse, rat, chicken, puffer fish, worm, fly, yeast, rice, Arabidopsis and E.coli. Additionally, the Content Service provides access to molecular interactions integrated from PSICQUIC.
 
 The Content Service is based on the Representational State Transfer (REST) protocol. This eliminates the need for complex clients and renders the service simpler, more lightweight, more flexible, and, thus, easier to integrate into third party software compared to its SOAP/WSDL counterparts.
 
-The [API](</ContentService/>) includes a set of methods classified in groups according to their functionality. For instance, expanding the [pathways group](</ContentService/#/pathways>) reveals a set of methods that provide specific information about pathways such as the contained Events or the participating PhysicalEntities. All methods are specified as either GET or POST requests. GET and POST are not interchangeable. [Expanding a particular method](</ContentService/#!/pathways/getParticipatingPhysicalEntitiesUsingGET>) provides more information about its input and output parameters as well as a simple test case for users to try out. In addition, users can also use any command line client such as [wget](<http://www.gnu.org/software/wget/>) or [curl](<http://curl.haxx.se/docs/manual.html>) to access the methods.
+The [API](</ContentService/>) includes a set of methods classified in groups according to their functionality. For instance, expanding the [pathways group](</ContentService/#/pathways>) reveals a set of methods that provide specific information about pathways such as the contained Events or the participating PhysicalEntities. All methods are specified as either GET or POST requests. GET and POST are not interchangeable. [Expanding a particular method](</ContentService/#/participants/getParticipatingPhysicalEntities>) provides more information about its input and output parameters as well as a simple test case for users to try out. In addition, users can also use any command line client such as [wget](<http://www.gnu.org/software/wget/>) or [curl](<http://curl.haxx.se/docs/manual.html>) to access the methods.
 
 It is worth mentioning that to use this API efficiently, the user needs to understand the Reactome [data model](</documentation/data-model>) and [schema](</content/schema/>).
 
@@ -197,7 +197,7 @@ Then the returned value is the content of it in a “text/plain” response:
     
     Mad1 binds kinetochore
 
-As the last example in the section, let’s check out how to retrieve the participanting molecules of the reaction used in the previous examples. To do so, we call the [getParticipatingPhysicalEntities](</ContentService/#!/events/getParticipatingPhysicalEntitiesUsingGET>) method in the API:
+As the last example in the section, let’s check out how to retrieve the participanting molecules of the reaction used in the previous examples. To do so, we call the [getParticipatingPhysicalEntities](</ContentService/#/participants/getParticipatingPhysicalEntities>) method in the API:
     
     
     curl -X GET --header 'Accept: application/json' 'https://www.reactome.org/ContentService/data/event/R-HSA-141409/participatingPhysicalEntities'
