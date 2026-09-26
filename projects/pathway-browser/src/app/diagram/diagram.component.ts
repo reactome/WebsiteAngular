@@ -1207,15 +1207,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       cy.batch(() => {
         this.setSubPathwayVisibility(false, cy);
         cy.elements().removeClass('flag');
-        toFlag.addClass('flag').edges().style({ 'underlay-opacity': 1 });
+        // A flagged reaction is found as its node, and `.edges()` of a node is
+        // empty: its lines never got the halo, and a flagged reaction showed as
+        // a speck on its small node (#311). The lines through it are flagged too.
+        const flagged = cy
+          .collection()
+          .union(toFlag)
+          .union(cy.collection().union(toFlag).nodes('.reaction').connectedEdges());
+        // The stylesheet's `edge.flag` rule draws the halo; any inline opacity
+        // left from before would beat it.
+        flagged.addClass('flag').edges().removeStyle('underlay-opacity');
       });
 
       return toFlag;
     } else {
       cy.batch(() => {
-        this.setSubPathwayVisibility(true, cy);
+        // Unflagged first, so the zoom handler this hands the bands back to
+        // writes their opacity too; it leaves flagged lines alone.
         cy.elements().removeClass('flag');
         cy.edges().not('[?color]').style({ 'underlay-opacity': 0 });
+        this.setSubPathwayVisibility(true, cy);
       });
 
       return cy.collection();
@@ -1254,7 +1265,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // place is what pins the molecules at whatever opacity the zoom level
       // happened to have when flagging started.
       trivials.removeStyle('opacity').addClass('always-visible');
-      cy.edges().style({ 'underlay-opacity': 0 });
+      // Not a flagged reaction's lines: hiding the bands for an export must not
+      // take the flag's halo with them.
+      cy.edges().not('.flag').style({ 'underlay-opacity': 0 });
     }
   }
 

@@ -514,7 +514,7 @@ export class Interactivity {
   }
 
   initZoom(cy: cytoscape.Core) {
-    const shadows = cy.edges('[?pathway]');
+    const allShadows = cy.edges('[?pathway]');
     const shadowLabels = cy.nodes('.Shadow');
     const trivial = cy.elements('.trivial');
     this.updateProteins();
@@ -528,6 +528,11 @@ export class Interactivity {
     const zoomEnd = structureOpacityArray[structureOpacityArray.length - 1][0];
 
     this.onZoom.shadow = () => {
+      // Not the lines of a flagged reaction: they carry a sub-pathway band too,
+      // and writing it inline here wiped the flag's halo off them on the next
+      // restyle (#311). As with trivial molecules below, the class is the
+      // authority.
+      const shadows = allShadows.not('.flag');
       const zoomLevel = cy.zoom();
       const z = zoomLevel * 100;
       const shadowLabelOpacity =

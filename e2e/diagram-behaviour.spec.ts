@@ -244,3 +244,70 @@ test.describe('Hierarchy and diagram together', () => {
     expect(await darkPixels(page, during)).toBeLessThan(await darkPixels(page, before));
   });
 });
+
+test.describe('Flagging a reaction', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // The halo went on the reaction's lines only if they were in the flagged set,
+  // and a reaction is found as its node alone -- so the lines never got it, and
+  // a flagged reaction was a speck of pink on its small node (#311).
+  test('draws the flag halo along the reaction, not just on its node', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-156580?flag=R-HSA-175983');
+    const container = await drawnDiagram(page);
+
+    // The lines also carry a sub-pathway band, and the zoom handler writes band
+    // opacity inline -- over the halo -- on every restyle. Whether a restyle came
+    // after the flag was a race the live backend lost and the recordings won, so
+    // one is forced here: what a theme change or a loading analysis does. Then
+    // brought close enough to see; fitted to the whole diagram the halo is a
+    // couple of pixels wide.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+            const reaction = cy?.nodes('.reaction.flag');
+            if (!cy || !reaction?.length) return false;
+            cy.data('reactome').update(cy);
+            cy.fit(reaction.closedNeighborhood(), 80);
+            return true;
+          }),
+        { timeout: 60_000 }
+      )
+      .toBe(true);
+    await page.waitForTimeout(1500);
+
+    const node = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const box = cy.nodes('.reaction.flag').renderedBoundingBox({});
+      return { x1: box.x1, x2: box.x2, y1: box.y1, y2: box.y2 };
+    });
+    const png = await container.screenshot();
+    const pink = await page.evaluate(
+      async ({ data, node }) => {
+        const image = await createImageBitmap(
+          await (await fetch(`data:image/png;base64,${data}`)).blob()
+        );
+        const canvas = new OffscreenCanvas(image.width, image.height);
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('no 2d context to read the screenshot with');
+        context.drawImage(image, 0, 0);
+        const p = context.getImageData(0, 0, image.width, image.height).data;
+        let n = 0;
+        for (let i = 0; i < p.length; i += 4) {
+          const x = (i / 4) % image.width;
+          const y = Math.floor(i / 4 / image.width);
+          // The node's own outline is pink either way; only the lines count.
+          if (x >= node.x1 - 4 && x <= node.x2 + 4 && y >= node.y1 - 4 && y <= node.y2 + 4)
+            continue;
+          // --flag, #ff009a, as drawn.
+          if (p[i] > 200 && p[i + 1] < 80 && p[i + 2] > 110 && p[i + 2] < 200) n++;
+        }
+        return n;
+      },
+      { data: png.toString('base64'), node }
+    );
+    expect(pink).toBeGreaterThan(2000);
+  });
+});
