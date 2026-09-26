@@ -192,7 +192,7 @@ export function parseFrame(frame: string): SummaryEvent | null {
     case 'citation': {
       const displayName = typeof data['display_name'] === 'string' ? data['display_name'] : '';
       const stId = typeof data['st_id'] === 'string' ? data['st_id'] : '';
-      // Both, or neither. A summary cites pathways in the result, so every
+      // A stable id is required; a name is not. A summary cites pathways in the result, so every
       // citation has a stable id -- but the panel builds a link from it, and a
       // citation arriving without one produced `/content/detail/undefined`: a
       // dead link under a real name, which is worse than the name not being
@@ -211,6 +211,23 @@ export function parseFrame(frame: string): SummaryEvent | null {
     default:
       return null;
   }
+}
+
+/**
+ * Adds a citation unless its pathway is already listed.
+ *
+ * The panel keys its links on the stable id, so the same pathway twice was two
+ * identical links. When one copy arrives unnamed (named by its id) and another
+ * named, the named one is kept.
+ */
+export function mergeCitation(list: Citation[], citation: Citation): Citation[] {
+  const at = list.findIndex((c) => c.stId === citation.stId);
+  if (at < 0) return [...list, citation];
+  const held = list[at];
+  if (held.displayName === held.stId && citation.displayName !== citation.stId) {
+    return list.map((c, i) => (i === at ? citation : c));
+  }
+  return list;
 }
 
 /**

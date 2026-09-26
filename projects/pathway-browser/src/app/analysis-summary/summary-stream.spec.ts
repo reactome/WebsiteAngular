@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  mergeCitation,
   drainFrames,
   isDowngraded,
   isIncomplete,
@@ -245,5 +246,19 @@ describe('a summary citation whose name arrives blank', () => {
         citation: { stId: 'R-HSA-109581', displayName: 'R-HSA-109581' },
       });
     }
+  });
+});
+
+describe('citations arriving more than once', () => {
+  const named = { stId: 'R-HSA-109581', displayName: 'Apoptosis' };
+  const unnamed = { stId: 'R-HSA-109581', displayName: 'R-HSA-109581' };
+
+  it('keeps each pathway once', () => {
+    expect(mergeCitation([named], named)).toEqual([named]);
+  });
+
+  it('prefers the real name when the same pathway arrives named and unnamed', () => {
+    expect(mergeCitation([unnamed], named)).toEqual([named]);
+    expect(mergeCitation([named], unnamed)).toEqual([named]);
   });
 });

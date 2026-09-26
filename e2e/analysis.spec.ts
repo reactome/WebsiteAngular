@@ -227,6 +227,9 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     }
     await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
     await expect(page.getByText('Save the dataset to continue')).toHaveCount(0);
-    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible();
+    const onward = page.getByRole('button', { name: 'Continue', exact: true });
+    await expect(onward).toBeEnabled();
+    await onward.click();
+    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
   });
 });
