@@ -79,7 +79,7 @@ test.describe('Tour and Layout', () => {
         return points.map(({ x, y }) => [...context.getImageData(x, y, 1, 1).data.slice(0, 3)]);
       },
       {
-        data: (await page.screenshot()).toString('base64'),
+        data: (await page.screenshot({ scale: 'css' })).toString('base64'),
         points: [inset.frame, inset.header],
       }
     );
