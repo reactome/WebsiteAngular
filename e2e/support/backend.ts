@@ -57,8 +57,13 @@ const RECORD = process.env['E2E_RECORD'] === '1';
  * `IDG_SERVICE` is an absolute URL and it is not in `proxy.conf.js` -- so it is
  * not covered by pointing REACTOME_BACKEND anywhere. Without this line every run
  * of the suite, on every push, reached that server.
+ *
+ * Something must follow the service's slash. The bare roots, `/ContentService/`
+ * and `/AnalysisService/`, are this site's API page rather than the service
+ * (proxy.conf.js `apiPage`), and recording one would replay a copy of the page
+ * instead of testing what the server does with the address.
  */
-const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/|idg\.reactome\.org/;
+const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/[^?#]|idg\.reactome\.org/;
 
 /**
  * Hosts outside this site that the suite is allowed to reach, and why.

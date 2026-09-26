@@ -245,10 +245,10 @@ once, then build whichever are answered.
 - [x] T073 [US3] Implement in `PB/viewport/viewport.component.html` (~262–305) per decision 2; the placement is EBI's design — if the decision diverges from production, confirm it with the user rather than choose — in the top bar's right-hand group, as on reactome.org; Feedback goes icon-only at ≤1280px so the title keeps room
 - [x] T074 [US3] Keep the GSA-form tour (`projects/reactome-gsa-form/src/lib/tour/`, `?gsa-tour=`) working; if a guided tour is chosen, reuse its lazy loading — untouched by this change (it lives in the GSA form and starts from `?gsa-tour=`; the browser's Tour is a separate dialog)
 
-### 1g — `/ContentService/` and `/AnalysisService/` root (US2) — blocked on decision 3
+### 1g — `/ContentService/` and `/AnalysisService/` root (US2) — decision 3 made 26 Sep: the roots are this site's API page
 
-- [ ] T075 [US2] E2E (record failing first): a full page load of `/ContentService/` and `/AnalysisService/` shows the site header and this site's API page, no legacy menu, no `/gsa/home` link
-- [ ] T076 [US2] Route the bare roots to `SwaggerPageComponent` in `proxy.conf.js:88` and `deploy/nginx/common/routes.conf` while every API path under them still reaches the service; keep `external: true` / `target="_blank"` in nav options and `CT/tools/index.mdx:27,32` only if decided; rebuild the nginx image and confirm API calls still work (`/ContentService/data/database/version`)
+- [x] T075 [US2] E2E (record failing first): a full page load of `/ContentService/` and `/AnalysisService/` shows the site header and this site's API page, no legacy menu, no `/gsa/home` link
+- [x] T076 [US2] Route the bare roots to `SwaggerPageComponent` in `proxy.conf.js:88` and `deploy/nginx/common/routes.conf` while every API path under them still reaches the service; keep `external: true` / `target="_blank"` in nav options and `CT/tools/index.mdx:27,32` only if decided; rebuild the nginx image and confirm API calls still work (`/ContentService/data/database/version`) — done in `proxy.conf.js` (`apiPage` bypass, which `serve-prod.js` honours) and both `routes.conf` and `routes-core.conf` (exact matches; a regex loses to nginx's own 301 for the no-slash form, found by running nginx against stand-in upstreams); the node-served spec follows as its own piece of work
 
 ### `/gsa` destination (US2) — blocked on decision 4
 
