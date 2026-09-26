@@ -139,6 +139,41 @@ test.describe('Diagram behaviour', () => {
 test.describe('Hierarchy and diagram together', () => {
   test.describe.configure({ timeout: 3 * 60 * 1000 });
 
+  /** Pixels of the selection's blue (`--select-edge`, #0561a6). */
+  async function selectionPixels(page: Page, png: Buffer): Promise<number> {
+    return page.evaluate(async (data) => {
+      const image = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${data}`)).blob()
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context to read the screenshot with');
+      context.drawImage(image, 0, 0);
+      const p = context.getImageData(0, 0, image.width, image.height).data;
+      let blue = 0;
+      for (let i = 0; i < p.length; i += 4) {
+        if (
+          Math.abs(p[i] - 5) < 40 &&
+          Math.abs(p[i + 1] - 97) < 40 &&
+          Math.abs(p[i + 2] - 166) < 40
+        )
+          blue++;
+      }
+      return blue;
+    }, png.toString('base64'));
+  }
+
+  async function openAndHover(page: Page, url: string, row: string) {
+    await page.goto(url);
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(6000);
+    const diagram = page.locator('#cytoscape');
+    const before = await diagram.screenshot();
+    await page.locator('.tree-node', { hasText: row }).first().hover();
+    await page.waitForTimeout(1500);
+    return { before, during: await diagram.screenshot() };
+  }
+
   /** Pixels of the diagram's own dark ink: its lines and boxes. */
   async function darkPixels(page: Page, png: Buffer): Promise<number> {
     return page.evaluate(async (data) => {
@@ -182,5 +217,30 @@ test.describe('Hierarchy and diagram together', () => {
     await expect
       .poll(async () => darkPixels(page, await diagram.screenshot()))
       .toBeGreaterThan(before * 0.9);
+  });
+
+  // Sweeping the pointer down the tree must not hide the reader's selection.
+  test('the selection stays visible while another row is hovered', async ({ page }) => {
+    const { before, during } = await openAndHover(
+      page,
+      '/PathwayBrowser/R-HSA-156580?select=R-HSA-175983',
+      'Acetylation'
+    );
+    const selected = await selectionPixels(page, before);
+    expect(selected).toBeGreaterThan(500);
+    expect(await selectionPixels(page, during)).toBeGreaterThan(selected * 0.75);
+  });
+
+  // With something flagged the sub-pathway bands are off and fall back to black;
+  // strengthening the hovered one drew a black halo, so the diagram got darker.
+  test('hovering a sub-pathway while something is flagged draws no black halo', async ({
+    page,
+  }) => {
+    const { before, during } = await openAndHover(
+      page,
+      '/PathwayBrowser/R-HSA-156580?flag=R-HSA-175983',
+      'Glucuronidation'
+    );
+    expect(await darkPixels(page, during)).toBeLessThan(await darkPixels(page, before));
   });
 });

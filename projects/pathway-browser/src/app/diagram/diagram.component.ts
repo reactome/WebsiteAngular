@@ -165,13 +165,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           const lines = found.union(found.nodes('.reaction').connectedEdges());
           const lit = lines.union(lines.connectedNodes());
           if (lit.empty()) return [];
-          const dimmed = cy.elements().not(lit).not('.Compartment').not('.Shadow');
+          // The reader's own selection and flags stay: sweeping down the tree
+          // must not hide them. The hovered sub-pathway's name stays too.
+          const litPathways = new Set(lit.edges().map((edge) => edge.data('pathway')));
+          const dimmed = cy
+            .elements()
+            .not(lit)
+            .not('.Compartment')
+            .not('.flag')
+            .not('.always-visible')
+            .not(':selected')
+            .filter(
+              (element) =>
+                !element.hasClass('Shadow') || !litPathways.has(element.data('reactomeId'))
+            );
           cy.batch(() => {
             lit.addClass('hierarchy-hover');
             dimmed.addClass('hierarchy-dim');
           });
           // The zoom handler owns the sub-pathway bands; let it redraw them.
-          interactivityOf(cy)?.triggerZoom();
+          // Only that handler: the others (structures, badges) cost as much and
+          // have nothing to do with this.
+          interactivityOf(cy)?.onZoom.shadow();
           return [{ cy, lit, dimmed }];
         })
       );
@@ -181,7 +196,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             lit.removeClass('hierarchy-hover');
             dimmed.removeClass('hierarchy-dim');
           });
-          interactivityOf(cy)?.triggerZoom();
+          interactivityOf(cy)?.onZoom.shadow();
         })
       );
     });
