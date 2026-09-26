@@ -86,6 +86,11 @@
         padding: 8px 12px;
         margin-left: 0;
         min-width: 0;
+        // Only the icon is laid out now; the gap would push it off-centre.
+        gap: 0;
+
+        --mat-button-outlined-icon-spacing: 0;
+        --mat-button-outlined-icon-offset: 0;
       }
 
       .feedback-label {
@@ -582,4 +587,10 @@ cr-interactor-threshold {
   transform: translateX(-50%);
   z-index: 998; // under .dropdown, which slides over the whole diagram
   max-width: calc(100% - 2rem);
+}
+
+// The divider beside a hidden hierarchy is the library's own focusable
+// separator; hidden with the panel so the keyboard cannot land on it.
+:host ::ng-deep .hierarchy-hidden > .as-split-gutter {
+  visibility: hidden;
 }

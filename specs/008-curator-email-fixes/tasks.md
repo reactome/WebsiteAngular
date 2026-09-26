@@ -243,7 +243,7 @@ once, then build whichever are answered.
 
 - [x] T072 [US3] E2E (record failing first): the top bar offers Tour and Layout; Tour opens as decided; each layout toggle shows/hides its panel and the state survives reload if reactome.org's does — `e2e/tour-and-layout.spec.ts` (4 red before, green after) and `PB/viewport/layout.spec.ts`; reactome.org does not keep the toggles across a reload (only dragged sizes), so neither does this
 - [x] T073 [US3] Implement in `PB/viewport/viewport.component.html` (~262–305) per decision 2; the placement is EBI's design — if the decision diverges from production, confirm it with the user rather than choose — in the top bar's right-hand group, as on reactome.org; Feedback goes icon-only at ≤1280px so the title keeps room
-- [x] T074 [US3] Keep the GSA-form tour (`projects/reactome-gsa-form/src/lib/tour/`, `?gsa-tour=`) working; if a guided tour is chosen, reuse its lazy loading
+- [x] T074 [US3] Keep the GSA-form tour (`projects/reactome-gsa-form/src/lib/tour/`, `?gsa-tour=`) working; if a guided tour is chosen, reuse its lazy loading — untouched by this change (it lives in the GSA form and starts from `?gsa-tour=`; the browser's Tour is a separate dialog)
 
 ### 1g — `/ContentService/` and `/AnalysisService/` root (US2) — blocked on decision 3
 

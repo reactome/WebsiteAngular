@@ -1,8 +1,21 @@
 <div id="container" class="variables">
   <!--A third party library Angular split helps to build resize layout, more details are : https://angular-split.github.io/-->
-  <as-split direction="horizontal" gutterSize="4" #sideSplit useTransition="true">
+  <as-split
+    direction="horizontal"
+    gutterSize="4"
+    #sideSplit
+    useTransition="true"
+    [class.hierarchy-hidden]="!panels().hierarchy"
+    (dragEnd)="onSideDragEnd($event)"
+  >
     <div *asSplitGutter="let isDragged = isDragged" class="custom-left-gutter" [class.dragged]="isDragged"></div>
-    <as-split-area [size]="20" [visible]="panels().hierarchy">
+    <!-- Hidden by the library as a zero-width column, which leaves its controls
+         focusable and read out; inert takes them out of reach while hidden. -->
+    <as-split-area
+      [size]="hierarchyShare()"
+      [visible]="panels().hierarchy"
+      [attr.inert]="panels().hierarchy ? null : ''"
+    >
       <div class="left-panel">
         <!-- Hidden from the curator build rather than from everyone: it was
              commented out wholesale in "Remove Overlay feature, feedback, and
@@ -116,7 +129,7 @@
       <!--      </div>-->
     </as-split-area>
 
-    <as-split-area [size]="80">
+    <as-split-area [size]="panels().hierarchy ? 100 - hierarchyShare() : 100">
       <div class="right-panel">
         <div class="top">
           <div class="top-left">

@@ -121,6 +121,17 @@ export class ViewportComponent {
   /** Which panels the reader has chosen to show from the Layout menu. */
   readonly panels = signal(ALL_PANELS);
 
+  /**
+   * The hierarchy's share of the width, as last dragged. Bound rather than left
+   * to the library, which re-derives both areas' sizes whenever one is hidden
+   * and would put a dragged width back to the default.
+   */
+  readonly hierarchyShare = signal(20);
+
+  onSideDragEnd($event: SplitGutterInteractionEvent) {
+    this.hierarchyShare.set($event.sizes[0] as number);
+  }
+
   toggleLayout(control: LayoutControl) {
     this.panels.update((layout) => togglePanels(layout, control));
   }
@@ -229,7 +240,11 @@ export class ViewportComponent {
   detailShare = signal(20);
   detailVisible = signal(true);
   // detailShare = computed(() => 20)
-  viewShare = computed(() => 100 - this.detailShare());
+  // All of it when the details panel is not there, so the view is not left
+  // sized as though it were (the library would only warn and share it out).
+  viewShare = computed(() =>
+    this.detailVisible() && this.panels().details ? 100 - this.detailShare() : 100
+  );
 
   diagram = viewChild(DiagramComponent);
   content = viewChild.required<ElementRef<HTMLDivElement>>('content');
