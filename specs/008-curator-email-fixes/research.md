@@ -207,6 +207,12 @@ tour means the old video or a guided tour, and placement, are the user's call.
 **Related.** The analysis form's guided tour is reachable only by a query parameter —
 no button starts it.
 
+**Decided (26 Sep).** Both, as reactome.org has them (read from `reactome/pwp-browser`):
+Tour opens a "Pathway Browser Tour" dialog playing the same video (`rDXvQcBl3Y0`, embedded
+privacy-enhanced); Layout toggles the hierarchy panel, the details panel, and "expand the
+centre" (hides both if either shows, else restores both). Not kept across reloads, as
+before.
+
 ---
 
 ## 3b — Quantitative results not shown; no email · rank 1 / 4 / 5

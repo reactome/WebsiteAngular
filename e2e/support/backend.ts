@@ -131,6 +131,7 @@ const BLOCKED = new Map<string, string>([
   ],
   ['newassets.hcaptcha.com', 'assets for that widget'],
   ['www.youtube.com', 'see below: the player is a doorway to ten more hosts'],
+  ['www.youtube-nocookie.com', 'the pathway browser tour video; the same player, privacy-enhanced'],
   ['static.hsappstatic.net', 'the HubSpot meetings widget, same reason'],
   ['csp.withgoogle.com', 'CSP violation reporting for the sheet viewer; telemetry, like analytics'],
   ['play.google.com', 'its /log endpoint, reached by the same viewer'],

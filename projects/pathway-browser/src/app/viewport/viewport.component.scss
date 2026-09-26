@@ -75,6 +75,28 @@
   .top-right {
     display: flex;
     gap: 20px;
+
+    // Tour and Layout made the bar two buttons wider, and at laptop widths the
+    // pathway's name was squeezed to a letter. Feedback gives up its label
+    // first (still its accessible name), and the spacing tightens.
+    @media (max-width: 1280px) {
+      gap: 12px;
+
+      .feedback {
+        padding: 8px 12px;
+        margin-left: 0;
+        min-width: 0;
+      }
+
+      .feedback-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    }
     height: 100%;
     flex-direction: row;
     align-items: center;

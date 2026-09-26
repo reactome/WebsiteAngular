@@ -2,7 +2,7 @@
   <!--A third party library Angular split helps to build resize layout, more details are : https://angular-split.github.io/-->
   <as-split direction="horizontal" gutterSize="4" #sideSplit useTransition="true">
     <div *asSplitGutter="let isDragged = isDragged" class="custom-left-gutter" [class.dragged]="isDragged"></div>
-    <as-split-area [size]="20">
+    <as-split-area [size]="20" [visible]="panels().hierarchy">
       <div class="left-panel">
         <!-- Hidden from the curator build rather than from everyone: it was
              commented out wholesale in "Remove Overlay feature, feedback, and
@@ -244,6 +244,58 @@
           </div>
 
           <div class="top-right">
+            <!-- reactome.org's Tour and Layout controls, behaving as they did there. -->
+            <button
+              mat-icon-button
+              class="quote"
+              aria-label="Tour"
+              matTooltip="Pathway Browser tour"
+              (click)="openTour()"
+            >
+              <mat-icon fontSet="symbols">smart_display</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              class="quote"
+              aria-label="Layout"
+              matTooltip="Layout"
+              [matMenuTriggerFor]="layoutMenu"
+            >
+              <mat-icon fontSet="symbols">space_dashboard</mat-icon>
+            </button>
+            <mat-menu #layoutMenu="matMenu">
+              <button
+                mat-menu-item
+                role="menuitemcheckbox"
+                [attr.aria-checked]="panels().hierarchy"
+                (click)="toggleLayout('hierarchy')"
+              >
+                <mat-icon fontSet="symbols">{{
+                  panels().hierarchy ? 'check_box' : 'check_box_outline_blank'
+                }}</mat-icon>
+                Hierarchy panel
+              </button>
+              <button
+                mat-menu-item
+                role="menuitemcheckbox"
+                [attr.aria-checked]="panels().details"
+                (click)="toggleLayout('details')"
+              >
+                <mat-icon fontSet="symbols">{{ panels().details ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                Details panel
+              </button>
+              <button
+                mat-menu-item
+                role="menuitemcheckbox"
+                [attr.aria-checked]="!panels().hierarchy && !panels().details"
+                (click)="toggleLayout('centre')"
+              >
+                <mat-icon fontSet="symbols">{{
+                  !panels().hierarchy && !panels().details ? 'close_fullscreen' : 'open_in_full'
+                }}</mat-icon>
+                Expand the centre view
+              </button>
+            </mat-menu>
             @if (!isCurator) {
               <a
                 [href]="formerPathwayBrowserURL()"
@@ -261,7 +313,7 @@
                 matTooltip="Send feedback for the beta version"
               >
                 <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
-                Feedback
+                <span class="feedback-label">Feedback</span>
               </a>
             }
             <mat-slide-toggle
@@ -345,7 +397,7 @@
                  behind .as-hidden was written for its old flexbox layout), leaving
                  ~130px reserved. Removing the area from the DOM collapses it
                  reliably and does not depend on the library's hidden handling. -->
-            @if (detailVisible()) {
+            @if (detailVisible() && panels().details) {
               <as-split-area [size]="detailShare()" [minSize]="detailMinSize()" id="bottom-panel">
                 <cr-details-panel></cr-details-panel>
               </as-split-area>

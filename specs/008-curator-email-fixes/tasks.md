@@ -239,11 +239,11 @@ once, then build whichever are answered.
 - [ ] T070 [US3] Unit/e2e test (record failing first): hovering a subevent row in the hierarchy highlights its nodes in the diagram (R-HSA-549364 within R-HSA-1368108) in the decided colour
 - [ ] T071 [US3] Drive the diagram highlight from the shared hover signal (T063) in `PB/diagram/diagram.component.ts`; colour per decision 1 — a dedicated highlight token, or change `--hover-node` (`projects/pathway-browser/src/styles.scss:216-217`) in both themes; check contrast in light and dark
 
-### 2a — Tour and layout controls (US3) — blocked on decision 2 (video vs guided tour; layout toggles in the EBI-designed bar)
+### 2a — Tour and layout controls (US3) — decision 2 made 26 Sep: Tour plays reactome.org's video; Layout as reactome.org's
 
-- [ ] T072 [US3] E2E (record failing first): the top bar offers Tour and Layout; Tour opens as decided; each layout toggle shows/hides its panel and the state survives reload if reactome.org's does
-- [ ] T073 [US3] Implement in `PB/viewport/viewport.component.html` (~262–305) per decision 2; the placement is EBI's design — if the decision diverges from production, confirm it with the user rather than choose
-- [ ] T074 [US3] Keep the GSA-form tour (`projects/reactome-gsa-form/src/lib/tour/`, `?gsa-tour=`) working; if a guided tour is chosen, reuse its lazy loading
+- [x] T072 [US3] E2E (record failing first): the top bar offers Tour and Layout; Tour opens as decided; each layout toggle shows/hides its panel and the state survives reload if reactome.org's does — `e2e/tour-and-layout.spec.ts` (4 red before, green after) and `PB/viewport/layout.spec.ts`; reactome.org does not keep the toggles across a reload (only dragged sizes), so neither does this
+- [x] T073 [US3] Implement in `PB/viewport/viewport.component.html` (~262–305) per decision 2; the placement is EBI's design — if the decision diverges from production, confirm it with the user rather than choose — in the top bar's right-hand group, as on reactome.org; Feedback goes icon-only at ≤1280px so the title keeps room
+- [x] T074 [US3] Keep the GSA-form tour (`projects/reactome-gsa-form/src/lib/tour/`, `?gsa-tour=`) working; if a guided tour is chosen, reuse its lazy loading
 
 ### 1g — `/ContentService/` and `/AnalysisService/` root (US2) — blocked on decision 3
 
