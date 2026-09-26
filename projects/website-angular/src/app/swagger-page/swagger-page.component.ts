@@ -61,6 +61,9 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     SwaggerUIBundle({
       domNode: this.swaggerContainer.nativeElement,
       url,
+      // Follows `#/{tag}/{operationId}` in the address, so a link to one
+      // operation opens it rather than the top of a 98-operation page.
+      deepLinking: true,
     });
   }
 

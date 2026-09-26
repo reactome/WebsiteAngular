@@ -381,6 +381,11 @@ it bookmarked — an improvement, but a change to a public URL, so it is the use
 **Verify on beta.** Typing `beta.reactome.org/ContentService` directly shows the site header
 with the API docs, and no old reactome.org menu.
 
+**Decided (26 Sep).** Yes: the roots are this site's page, the links stay in the site. The
+docs are to come from a spec content-node serves at `/ContentService/v3/api-docs`, covering
+every endpoint including those Java still answers, so readers never see the split. That is
+follow-on work; this change only moves the page.
+
 ---
 
 ## 1d — User guide images from reactome.org · rank 5 (needs detail)

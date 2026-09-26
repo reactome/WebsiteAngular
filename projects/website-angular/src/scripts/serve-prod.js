@@ -74,7 +74,13 @@ for (const [context, options] of Object.entries(proxyConfig)) {
   // so /ContentService/data/... would reach the backend as /data/... and 404.
   app.use(
     createProxyMiddleware({
-      pathFilter: `${context}/**`,
+      // The dev server's `bypass` hook, honoured here too: a path it claims for
+      // the app falls through to the static handler, which serves the app. The
+      // function is the glob below spelled out, for a context that is a prefix.
+      pathFilter: options.bypass
+        ? (pathname, req) =>
+            (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
+        : `${context}/**`,
       target: options.target,
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,

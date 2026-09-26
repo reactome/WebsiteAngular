@@ -104,7 +104,7 @@ Two layers, split by what each can cheaply know:
 Right thing is fast; wrong thing still works and is slower. It is self-enforcing
 without breaking anyone into compliance.
 
-### Three constraints on it
+### Four constraints on it
 
 1. **`token` is never cacheable**, however well-formed the URL. Analysis results
    are per-user; a shared-cache HIT serves one person's submission to another.
@@ -120,6 +120,12 @@ without breaking anyone into compliance.
 3. **Our own client must emit canonical URLs** — stable parameter order, nothing
    extraneous — or the app itself lands on the slow path. The Angular services
    have not been audited for this yet.
+4. **The bare roots are the site, not the API.** `/ContentService`,
+   `/ContentService/`, `/AnalysisService` and `/AnalysisService/` serve the
+   application's API page (its `index.html`, sent `no-cache`). A cache rule over
+   `/ContentService/*` must respect the origin there rather than set an edge
+   TTL, or it stores the application shell under an API address and serves a
+   page whose scripts no longer exist after the next deploy.
 
 ### What this does not fix
 
