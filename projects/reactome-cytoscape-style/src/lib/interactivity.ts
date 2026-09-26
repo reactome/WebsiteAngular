@@ -554,6 +554,13 @@ export class Interactivity {
       shadows.style({
         'underlay-opacity': shadowOpacity,
       });
+      // Something pointed at in the hierarchy: the other sub-pathways' bands
+      // fade and its own is drawn strongly. Here rather than in the stylesheet,
+      // because this handler writes the bands inline and inline always wins.
+      shadows.filter('.hierarchy-dim').style({ 'underlay-opacity': shadowOpacity * 0.15 });
+      shadows
+        .filter('.hierarchy-hover')
+        .style({ 'underlay-opacity': Math.max(shadowOpacity, 0.6) });
       shadowLabels.style({
         'text-opacity': shadowLabelOpacity,
       });
@@ -572,9 +579,15 @@ export class Interactivity {
       // The class is the authority. Anything wearing it is left alone.
       trivial
         .filter((element) => !element.hasClass('always-visible'))
-        .style({
-          opacity: trivialOpacity,
-          'underlay-opacity': Math.min(shadowOpacity, trivialOpacity),
+        .forEach((element) => {
+          // Faded with the rest while something else is pointed at.
+          const opacity = element.hasClass('hierarchy-dim')
+            ? Math.min(trivialOpacity, 0.2)
+            : trivialOpacity;
+          element.style({
+            opacity,
+            'underlay-opacity': Math.min(shadowOpacity, opacity),
+          });
         });
 
       // The interactor count badge is not worth drawing when it cannot be read.

@@ -13,6 +13,7 @@ import {
   ViewChild,
   inject,
   HostListener,
+  untracked,
 } from '@angular/core';
 import { DiagramService } from '../services/diagram.service';
 import {
@@ -69,6 +70,7 @@ import {
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
 import { DeltaSignalService } from '../deltasignal/deltasignal.service';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
 const INIT_RX = 2;
 
@@ -143,9 +145,46 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   comparing: boolean = false;
   isInitialLoad: boolean = true;
 
+  private readonly hierarchyHover = inject(HierarchyHoverService);
+
   constructor() {
     this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
+    // A reaction or sub-pathway pointed at in the hierarchy stands out here,
+    // as the old browser drew it in yellow; nothing reached the diagram before.
+    // It stands out by fading the rest (see `.hierarchy-dim` in the style), so
+    // it reads on any sub-pathway tint.
+    effect((onCleanup) => {
+      const stId = this.hierarchyHover.hovered();
+      if (!stId?.startsWith('R-')) return;
+      const changed = untracked(() =>
+        this.cys.filter(Boolean).flatMap((cy) => {
+          const found = cy.collection().union(this.getElements([stId], cy));
+          // A reaction is its node, the lines through it, and what they connect:
+          // faded participants would leave a bold line between unreadable names.
+          const lines = found.union(found.nodes('.reaction').connectedEdges());
+          const lit = lines.union(lines.connectedNodes());
+          if (lit.empty()) return [];
+          const dimmed = cy.elements().not(lit).not('.Compartment').not('.Shadow');
+          cy.batch(() => {
+            lit.addClass('hierarchy-hover');
+            dimmed.addClass('hierarchy-dim');
+          });
+          // The zoom handler owns the sub-pathway bands; let it redraw them.
+          interactivityOf(cy)?.triggerZoom();
+          return [{ cy, lit, dimmed }];
+        })
+      );
+      onCleanup(() =>
+        changed.forEach(({ cy, lit, dimmed }) => {
+          cy.batch(() => {
+            lit.removeClass('hierarchy-hover');
+            dimmed.removeClass('hierarchy-dim');
+          });
+          interactivityOf(cy)?.triggerZoom();
+        })
+      );
+    });
     // Redraw the interactors whenever the reader moves the confidence control.
     // Both diagrams, because the comparison view has its own graph and an
     // interactor hidden in one but not the other would be a difference the

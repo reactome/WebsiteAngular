@@ -135,3 +135,52 @@ test.describe('Diagram behaviour', () => {
     });
   }
 });
+
+test.describe('Hierarchy and diagram together', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  /** Pixels of the diagram's own dark ink: its lines and boxes. */
+  async function darkPixels(page: Page, png: Buffer): Promise<number> {
+    return page.evaluate(async (data) => {
+      const image = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${data}`)).blob()
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context to read the screenshot with');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height).data;
+      let dark = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] + pixels[i + 1] + pixels[i + 2] < 200) dark++;
+      }
+      return dark;
+    }, png.toString('base64'));
+  }
+
+  // Pointing at a reaction in the hierarchy makes it stand out in the diagram,
+  // as the old browser drew it in yellow; only the row itself used to change.
+  // It stands out by the rest fading -- no colour can be told apart from every
+  // sub-pathway tint -- so the measure is the diagram's ink dropping, then
+  // coming back when the pointer leaves.
+  test('hovering a reaction row makes it stand out, and leaving restores the diagram', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-HSA-1368108');
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(5000);
+    const diagram = page.locator('#cytoscape');
+    const before = await darkPixels(page, await diagram.screenshot());
+    expect(before).toBeGreaterThan(1000);
+
+    await page.locator('.tree-node', { hasText: 'binds AVP gene' }).first().hover();
+    await expect
+      .poll(async () => darkPixels(page, await diagram.screenshot()))
+      .toBeLessThan(before * 0.5);
+
+    await page.mouse.move(5, 5);
+    await expect
+      .poll(async () => darkPixels(page, await diagram.screenshot()))
+      .toBeGreaterThan(before * 0.9);
+  });
+});
