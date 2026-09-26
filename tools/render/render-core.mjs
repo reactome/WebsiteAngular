@@ -87,7 +87,7 @@ export async function render(
     subpathways = true,
     dark = false,
     select = '',
-    view = '',
+    layout = '',
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -106,7 +106,7 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, view }), {
+    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, layout }), {
       waitUntil: 'load',
       timeout,
     });
