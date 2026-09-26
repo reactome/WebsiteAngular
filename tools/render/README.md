@@ -210,16 +210,16 @@ curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
-| variable             | default               |                                                                     |
-| -------------------- | --------------------- | ------------------------------------------------------------------- |
-| `RENDER_PORT`        | 4310                  |                                                                     |
-| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work |
-| `RENDER_BASE`        | http://localhost:4200 | site to render against                                              |
-| `RENDER_CACHE`       | `.render-cache`       |                                                                     |
-| `RENDER_CACHE_KEY`   | `v1`                  | change to invalidate everything, e.g. per release                   |
-| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                |
-| `RENDER_QUEUE`       | 8                     | pending renders before 503                                          |
-| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                     |
+| variable             | default               |                                                                            |
+| -------------------- | --------------------- | -------------------------------------------------------------------------- |
+| `RENDER_PORT`        | 4310                  |                                                                            |
+| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work        |
+| `RENDER_BASE`        | http://localhost:4200 | site to render against                                                     |
+| `RENDER_CACHE`       | `.render-cache`       |                                                                            |
+| `RENDER_CACHE_KEY`   | the code's (`v9`)     | override only to invalidate by hand; the code bumps it when output changes |
+| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                       |
+| `RENDER_QUEUE`       | 8                     | pending renders before 503                                                 |
+| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                            |
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache
