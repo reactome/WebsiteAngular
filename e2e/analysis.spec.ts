@@ -204,6 +204,29 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     }
   }
 
+  // The first version of the hint widened its column, the row wrapped, and
+  // Continue ended up below the dataset card -- present, and out of view.
+  for (const [width, height] of [
+    [1440, 900],
+    [1280, 720],
+  ]) {
+    test(`Continue stays on screen at ${width}x${height} while it waits`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await stubGsa(page);
+      await page.goto('/PathwayBrowser?analysisTab=quantitative');
+      await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+      await page.locator('button.mat-mdc-fab').first().click();
+      await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+      await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(
+        page.getByRole('button', { name: 'Save the dataset to continue' })
+      ).toBeInViewport();
+      await expect(page.getByText('Save the dataset to continue')).toBeInViewport();
+    });
+  }
+
   // Continue stays disabled until the dataset is saved, and it used to say only
   // "Continue" -- so a reader who had chosen a dataset saw a dead button, with
   // the Save button several steps down inside the dataset card.
