@@ -20,17 +20,23 @@
   }
 }
 
-.video {
+.tour-video {
+  // Not `.video`: the diagram style library brightens every `.video` on the page
+  // (meant for videos drawn in diagram nodes), which washed the frame out.
   // Two-thirds of the window, as the former browser sized it, and always 16:9
   // and inside the window whichever way round the window is.
   --video-width: min(66vw, calc(66vh * 16 / 9));
-  padding: 0;
+  // Framed in the header's colour on every side, as reactome.org's is. Run to
+  // the edge, the dialog's rounded corners cut the video's off.
+  padding: 0 24px 24px;
   max-height: none;
+  background: var(--primary-container);
 
   iframe {
     display: block;
     width: var(--video-width);
     aspect-ratio: 16 / 9;
     border: 0;
+    border-radius: 12px;
   }
 }

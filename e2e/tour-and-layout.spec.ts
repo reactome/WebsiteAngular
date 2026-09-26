@@ -44,6 +44,47 @@ test.describe('Tour and Layout', () => {
     await expect(dialog.locator('iframe')).toBeInViewport({ ratio: 1 });
     expect(await width(page, 'mat-dialog-container iframe')).toBeGreaterThan(600);
 
+    // Framed on every side, as reactome.org's is: run to the edge, the video
+    // had its bottom corners cut off by the dialog's rounded ones.
+    const inset = await page.evaluate(() => {
+      const surface = document.querySelector('mat-dialog-container .mat-mdc-dialog-surface');
+      const video = document.querySelector('mat-dialog-container iframe');
+      if (!surface || !video) return null;
+      const s = surface.getBoundingClientRect();
+      const v = video.getBoundingClientRect();
+      return {
+        left: v.left - s.left,
+        right: s.right - v.right,
+        bottom: s.bottom - v.bottom,
+        // Where to compare the frame's painted colour with the header's.
+        frame: { x: s.left + 8, y: (v.top + v.bottom) / 2 },
+        header: { x: s.left + 8, y: (s.top + v.top) / 2 },
+      };
+    });
+    if (!inset) throw new Error('no dialog surface or video to measure');
+    for (const side of ['left', 'right', 'bottom'] as const) {
+      expect(inset[side], `space ${side} of the video`).toBeGreaterThanOrEqual(16);
+    }
+    // Painted, not computed: the computed colours matched while a global filter
+    // on the frame drew it several shades lighter than the header.
+    const [frame, header] = await page.evaluate(
+      async ({ data, points }) => {
+        const image = await createImageBitmap(
+          await (await fetch(`data:image/png;base64,${data}`)).blob()
+        );
+        const canvas = new OffscreenCanvas(image.width, image.height);
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('no 2d context to read the screenshot with');
+        context.drawImage(image, 0, 0);
+        return points.map(({ x, y }) => [...context.getImageData(x, y, 1, 1).data.slice(0, 3)]);
+      },
+      {
+        data: (await page.screenshot()).toString('base64'),
+        points: [inset.frame, inset.header],
+      }
+    );
+    expect(frame, 'the frame is the header carried round').toEqual(header);
+
     await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toHaveCount(0);
   });
