@@ -256,3 +256,19 @@ describe('the id an answer can be continued by', () => {
     });
   });
 });
+
+describe('a citation whose name arrives blank', () => {
+  it('is named by its stable id rather than rendered as an empty chip', () => {
+    // Seen on beta: a chip with no text, linking R-HSA-2243935.
+    for (const name of ['', '   ']) {
+      expect(
+        parseFrame(
+          `event: citation\ndata: {"st_id": "R-HSA-2243935", "display_name": ${JSON.stringify(name)}}`
+        )
+      ).toEqual({
+        kind: 'citation',
+        citation: { stId: 'R-HSA-2243935', url: undefined, displayName: 'R-HSA-2243935' },
+      });
+    }
+  });
+});

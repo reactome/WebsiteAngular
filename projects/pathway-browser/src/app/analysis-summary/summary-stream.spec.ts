@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  mergeCitation,
   drainFrames,
   isDowngraded,
   isIncomplete,
@@ -148,8 +149,11 @@ describe('citations', () => {
     expect(parseFrame(frame('citation', { display_name: 'Apoptosis' }))).toBeNull();
   });
 
-  it('drops one with no name, which would render as an empty link', () => {
-    expect(parseFrame(frame('citation', { st_id: 'R-HSA-109581' }))).toBeNull();
+  it('names one with no name by its stable id, rather than render an empty link', () => {
+    expect(parseFrame(frame('citation', { st_id: 'R-HSA-109581' }))).toEqual({
+      kind: 'citation',
+      citation: { stId: 'R-HSA-109581', displayName: 'R-HSA-109581' },
+    });
   });
 });
 
@@ -227,5 +231,34 @@ describe('prose already on screen', () => {
   it('shows nothing at all for an outcome that produced no prose', () => {
     expect(showsProse('   ')).toBe(false);
     expect(isIncomplete('gone', '')).toBe(false);
+  });
+});
+
+describe('a summary citation whose name arrives blank', () => {
+  it('keeps the citation, named by its stable id', () => {
+    for (const name of ['', '   ']) {
+      expect(
+        parseFrame(
+          `event: citation\ndata: {"st_id": "R-HSA-109581", "display_name": ${JSON.stringify(name)}}`
+        )
+      ).toEqual({
+        kind: 'citation',
+        citation: { stId: 'R-HSA-109581', displayName: 'R-HSA-109581' },
+      });
+    }
+  });
+});
+
+describe('citations arriving more than once', () => {
+  const named = { stId: 'R-HSA-109581', displayName: 'Apoptosis' };
+  const unnamed = { stId: 'R-HSA-109581', displayName: 'R-HSA-109581' };
+
+  it('keeps each pathway once', () => {
+    expect(mergeCitation([named], named)).toEqual([named]);
+  });
+
+  it('prefers the real name when the same pathway arrives named and unnamed', () => {
+    expect(mergeCitation([unnamed], named)).toEqual([named]);
+    expect(mergeCitation([named], unnamed)).toEqual([named]);
   });
 });

@@ -7,6 +7,7 @@ import {
   drainFrames,
   isDowngraded,
   isIncomplete,
+  mergeCitation,
   showsProse,
   type AnalysisType,
   type Citation,
@@ -330,7 +331,7 @@ export class SummaryService {
             this._text.update((text) => text + event.text);
             break;
           case 'citation':
-            this._citations.update((list) => [...list, event.citation]);
+            this._citations.update((list) => mergeCitation(list, event.citation));
             break;
           case 'done':
             this._state.set(event.state);
