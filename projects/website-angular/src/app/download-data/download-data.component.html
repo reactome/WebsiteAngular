@@ -48,14 +48,22 @@
           </h2>
           <div class="service-cards">
             @for (card of serviceCards; track card.title) {
-              <a class="service-card" [href]="card.url" [target]="card.external ? '_blank' : '_self'" rel="noopener">
-                <span class="material-symbols-rounded card-icon">{{ card.icon }}</span>
-                <h3>{{ card.title }}</h3>
-                <p>{{ card.description }}</p>
-                @if (card.external) {
+              <!-- This site's own pages are router links, so opening one does not
+                   reload the application; other sites open in a new tab. -->
+              @if (card.external) {
+                <a class="service-card" [href]="card.url" target="_blank" rel="noopener">
+                  <span class="material-symbols-rounded card-icon">{{ card.icon }}</span>
+                  <h3>{{ card.title }}</h3>
+                  <p>{{ card.description }}</p>
                   <span class="material-symbols-rounded external-indicator">open_in_new</span>
-                }
-              </a>
+                </a>
+              } @else {
+                <a class="service-card" [routerLink]="card.url">
+                  <span class="material-symbols-rounded card-icon">{{ card.icon }}</span>
+                  <h3>{{ card.title }}</h3>
+                  <p>{{ card.description }}</p>
+                </a>
+              }
             }
           </div>
         </section>

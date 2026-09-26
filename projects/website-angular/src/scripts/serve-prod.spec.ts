@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
+import { createServer as createHttpServer, type Server } from 'node:http';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -163,5 +164,90 @@ describe('serve-prod', () => {
     } finally {
       await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
     }
+  });
+});
+
+// The two API roots. Opened directly, they used to reach Tomcat's legacy page,
+// wrapped in a copy of the old reactome.org header whose menu points at pages
+// this site does not have (curator review, item 1g). The bare roots are this
+// site's API page now; everything under them is still the service.
+describe('serve-prod and the API roots', () => {
+  let dist = '';
+  let base = '';
+  let server: ChildProcess | undefined;
+  let backend: Server | undefined;
+  const reached: string[] = [];
+
+  beforeAll(async () => {
+    dist = await mkdtemp(path.join(tmpdir(), 'serve-prod-api-'));
+    await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
+
+    const backendPort = await freePort();
+    const upstream = createHttpServer((req, res) => {
+      reached.push(req.url ?? '');
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(`backend ${req.url}`);
+    });
+    backend = upstream;
+    await new Promise<void>((resolve) => upstream.listen(backendPort, '127.0.0.1', resolve));
+
+    const port = await freePort();
+    base = `http://127.0.0.1:${port}`;
+    server = spawn('node', [SCRIPT], {
+      env: {
+        ...process.env,
+        DIST_DIR: dist,
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        REACTOME_BACKEND: `http://127.0.0.1:${backendPort}`,
+        HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
+        HEALTH_RENDER: 'http://127.0.0.1:9/health',
+        HEALTH_MCP: 'http://127.0.0.1:9/health',
+      },
+      stdio: 'ignore',
+    });
+    expect(await waitForServer(base), 'the server came up').toBe(true);
+  }, 40_000);
+
+  afterAll(async () => {
+    server?.kill('SIGTERM');
+    backend?.close();
+    if (dist) await rm(dist, { recursive: true, force: true });
+  });
+
+  for (const root of [
+    '/ContentService',
+    '/ContentService/',
+    '/AnalysisService',
+    '/AnalysisService/',
+  ]) {
+    it(`answers ${root} with this site's API page`, async () => {
+      const before = reached.length;
+      const body = await (await fetch(base + root)).text();
+      expect(body).toContain(INDEX_MARKER);
+      expect(reached.length, 'the service was not asked').toBe(before);
+    });
+  }
+
+  it('keeps the query string on the page, not the service', async () => {
+    const body = await (await fetch(base + '/ContentService/?urls.primaryName=x')).text();
+    expect(body).toContain(INDEX_MARKER);
+  });
+
+  for (const api of [
+    '/ContentService/data/database/version',
+    '/ContentService/v3/api-docs',
+    '/AnalysisService/v3/api-docs',
+    '/ContentService/swagger-ui/index.html',
+  ]) {
+    it(`still sends ${api} to the service`, async () => {
+      const body = await (await fetch(base + api)).text();
+      expect(body).toBe(`backend ${api}`);
+    });
+  }
+
+  it('leaves ExperimentDigester alone, which has no page here', async () => {
+    const body = await (await fetch(base + '/ExperimentDigester/')).text();
+    expect(body).toBe('backend /ExperimentDigester/');
   });
 });

@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { computed, Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
@@ -31,7 +32,7 @@ import {
 
 @Component({
   selector: 'app-download-data',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './download-data.component.html',
   styleUrl: './download-data.component.scss',
 })

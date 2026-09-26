@@ -25,6 +25,30 @@ const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:
 
 const localService = (context) => [context, { target: backend, secure, changeOrigin: true }];
 
+/**
+ * The bare API roots are this site's API page, not the service's.
+ *
+ * Opened directly, `/ContentService/` reached Tomcat's legacy Swagger page,
+ * wrapped in a copy of the old reactome.org header whose menu leads to pages
+ * this site does not have. The site's own page shows the same spec (read from
+ * `v3/api-docs`, which is still the service's) under the site header. Only the
+ * roots: every path beneath them is the API itself and stays proxied.
+ *
+ * `bypass` is the dev server's (Vite) hook: returning a path serves the app
+ * instead of proxying. serve-prod.js honours the same hook, so the two cannot
+ * disagree.
+ */
+const API_PAGE = /^\/(ContentService|AnalysisService)\/?(\?.*)?$/;
+const apiPage = (context) => [
+  context,
+  {
+    target: backend,
+    secure,
+    changeOrigin: true,
+    bypass: (req) => (API_PAGE.test(req.url ?? '') ? '/index.html' : undefined),
+  },
+];
+
 const personList = {
   target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
   secure: false,
@@ -84,9 +108,11 @@ module.exports = {
   '/ContentService/data/person/*/authoredReactions': personList,
   '/ContentService/data/person/*/reviewedPathways': personList,
   '/ContentService/data/person/*/reviewedReactions': personList,
-  ...Object.fromEntries(
-    ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
-  ),
+  ...Object.fromEntries([
+    apiPage('/ContentService'),
+    apiPage('/AnalysisService'),
+    localService('/ExperimentDigester'),
+  ]),
   // The headless render service (tools/render/service.mjs), which produces the
   // formats the Java exporters used to: GIF, PPTX and anything else a document
   // needs. It binds to loopback and is reached only through this proxy, so
