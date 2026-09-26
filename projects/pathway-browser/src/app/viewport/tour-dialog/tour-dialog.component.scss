@@ -1,0 +1,36 @@
+@use '@angular/material' as mat;
+
+:host {
+  @include mat.dialog-overrides(
+    (
+      subhead-color: var(--primary),
+    )
+  );
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-container);
+
+  .close-button {
+    margin-right: 12px;
+    color: var(--primary);
+  }
+}
+
+.video {
+  // Two-thirds of the window, as the former browser sized it, and always 16:9
+  // and inside the window whichever way round the window is.
+  --video-width: min(66vw, calc(66vh * 16 / 9));
+  padding: 0;
+  max-height: none;
+
+  iframe {
+    display: block;
+    width: var(--video-width);
+    aspect-ratio: 16 / 9;
+    border: 0;
+  }
+}

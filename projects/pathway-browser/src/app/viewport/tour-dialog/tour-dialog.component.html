@@ -1,0 +1,15 @@
+<div class="header">
+  <h2 mat-dialog-title>Pathway Browser Tour</h2>
+  <button class="close-button" mat-dialog-close mat-icon-button aria-label="Close">
+    <mat-icon fontSet="symbols">close</mat-icon>
+  </button>
+</div>
+<mat-dialog-content class="video">
+  <iframe
+    [src]="video"
+    title="Pathway Browser Tour video"
+    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+    allowfullscreen
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
+</mat-dialog-content>

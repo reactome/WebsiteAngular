@@ -59,6 +59,9 @@ import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
+import { MatDialog } from '@angular/material/dialog';
+import { ALL_PANELS, type LayoutControl, togglePanels } from './layout';
+import { TourDialogComponent } from './tour-dialog/tour-dialog.component';
 
 const DETAIL_MIN_HEIGHT = 0;
 
@@ -113,6 +116,29 @@ export class ViewportComponent {
   public general: GeneralService = inject(GeneralService);
   public dataState: DataStateService = inject(DataStateService);
   public citation: CitationService = inject(CitationService);
+  private readonly dialog = inject(MatDialog);
+
+  /** Which panels the reader has chosen to show from the Layout menu. */
+  readonly panels = signal(ALL_PANELS);
+
+  /**
+   * The hierarchy's share of the width, as last dragged. Bound rather than left
+   * to the library, which re-derives both areas' sizes whenever one is hidden
+   * and would put a dragged width back to the default.
+   */
+  readonly hierarchyShare = signal(20);
+
+  onSideDragEnd($event: SplitGutterInteractionEvent) {
+    this.hierarchyShare.set($event.sizes[0] as number);
+  }
+
+  toggleLayout(control: LayoutControl) {
+    this.panels.update((layout) => togglePanels(layout, control));
+  }
+
+  openTour() {
+    this.dialog.open(TourDialogComponent, { maxWidth: '95vw', autoFocus: 'dialog' });
+  }
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
 
@@ -214,7 +240,11 @@ export class ViewportComponent {
   detailShare = signal(20);
   detailVisible = signal(true);
   // detailShare = computed(() => 20)
-  viewShare = computed(() => 100 - this.detailShare());
+  // All of it when the details panel is not there, so the view is not left
+  // sized as though it were (the library would only warn and share it out).
+  viewShare = computed(() =>
+    this.detailVisible() && this.panels().details ? 100 - this.detailShare() : 100
+  );
 
   diagram = viewChild(DiagramComponent);
   content = viewChild.required<ElementRef<HTMLDivElement>>('content');
