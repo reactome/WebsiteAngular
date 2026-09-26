@@ -88,7 +88,10 @@ const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // the second time in one day that a correct build served a stale file. If you
 // changed anything under tools/render that affects output, this line is part of
 // the change.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v8';
+// v9: `layout=reaction` had not reached the page since #277, so every reaction
+// figure cached under v8 is the pathway diagram around it, filed under the
+// reaction's key. A correct render must not be answered from that.
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v9';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
@@ -185,7 +188,7 @@ function cacheKey({
   maxSize,
   dark,
   select,
-  view,
+  layout,
 }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
@@ -202,7 +205,7 @@ function cacheKey({
         maxSize,
         dark,
         select,
-        view,
+        layout,
       ].join(' ')
     )
     .digest('hex');
@@ -520,9 +523,11 @@ app.get('/render/:name.:ext', async (req, res) => {
     // Frames the figure on one event: a reaction page asks for its own reaction,
     // not the diagram around it.
     select: typeof req.query.select === 'string' ? req.query.select : '',
-    // The only view worth naming: everything else the page decides for itself
-    // from the id it is given.
-    view: req.query.layout === 'reaction' ? 'reaction' : '',
+    // The only layout worth naming: everything else the page decides for itself
+    // from the id it is given. `layout` all the way through: renamed from
+    // `view` on one side only (#277), it never reached the page, and every
+    // reaction figure came out as the whole pathway diagram around it.
+    layout: req.query.layout === 'reaction' ? 'reaction' : '',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),
