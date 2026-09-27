@@ -228,6 +228,12 @@ function bodyOf(entry: HarEntry, harDir: string): Buffer {
   return Buffer.from(c.text, c.encoding === 'base64' ? 'base64' : 'utf8');
 }
 
+/** Whether the recording kept a body for this response, inline or beside it. */
+function hasBody(entry: HarEntry): boolean {
+  const c = entry.response.content;
+  return Boolean(c._file) || (c.text !== undefined && c.text !== '');
+}
+
 function load(har: string): Map<string, HarEntry> {
   const log = JSON.parse(readFileSync(har, 'utf8')) as { log: { entries: HarEntry[] } };
   const index = new Map<string, HarEntry>();
@@ -239,9 +245,14 @@ function load(har: string): Map<string, HarEntry> {
     // what happened to it when the recording was taken.
     if (entry.response.status < 100) continue;
     // First write wins. A spec that asks for the same thing twice recorded it
-    // twice; the responses match, and the first is the one it saw first.
+    // twice; the responses match, and the first is the one it saw first --
+    // unless the first has no body and a later one does. A request cancelled
+    // mid-stream (a resource re-firing, say) is recorded as a 200 with nothing
+    // in it, and serving that made every replay see an empty response where
+    // the recording itself had the real one.
     const k = key(entry.request.method, entry.request.url);
-    if (!index.has(k)) index.set(k, entry);
+    const kept = index.get(k);
+    if (!kept || (!hasBody(kept) && hasBody(entry))) index.set(k, entry);
   }
   return index;
 }
