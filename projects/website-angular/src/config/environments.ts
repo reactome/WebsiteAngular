@@ -88,7 +88,13 @@ export interface SiteProfile {
    */
   contentService?: string;
   s3: string;
-  gsaServer: string;
+  /**
+   * The Reactome server ReactomeGSA delivers this site's results to, by its
+   * name for it: production (www.reactome.org), dev (dev.reactome.org) or
+   * release (release.reactome.org). A result is stored in that server's Analysis
+   * Service, so it must be the one this site reads.
+   */
+  gsaServer: 'production' | 'dev' | 'release';
   /**
    * Google Analytics property, and only reactome.org has one.
    *
@@ -171,7 +177,9 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,
-    gsaServer: 'production',
+    // dev.reactome.org is this box, so results land in the Analysis Service
+    // beta reads -- and beta's test runs stay off the production server.
+    gsaServer: 'dev',
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },

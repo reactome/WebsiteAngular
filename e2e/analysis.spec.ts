@@ -256,4 +256,42 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await onward.click();
     await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
   });
+
+  // ReactomeGSA delivers the result to the Reactome server the request names,
+  // and only a site reading that server's Analysis Service can open it. The
+  // profile named one all along -- `dev` here, the development profile -- but
+  // nothing read it, so every deployment asked for `production`, and beta could
+  // show none of its own results (curator review, item 3b).
+  test("asks ReactomeGSA to deliver to this deployment's server", async ({ page }) => {
+    await stubGsa(page);
+    let submitted: { parameters?: { name: string; value: string }[] } | null = null;
+    await page.route('**/GSAServer/0.1/analysis', (route) => {
+      submitted = route.request().postDataJSON();
+      return route.fulfill({ contentType: 'text/plain', body: 'test-analysis-id' });
+    });
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+      timeout: 30_000,
+    });
+    for (let step = 0; step < 2; step++) {
+      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
+      await page.waitForTimeout(1000);
+    }
+    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
+    // Into Step 4, which is what submits.
+    await page
+      .locator('button.mat-mdc-fab:visible', { hasText: 'keyboard_arrow_right' })
+      .last()
+      .click();
+
+    await expect.poll(() => submitted, { timeout: 20_000 }).not.toBeNull();
+    const parameters: { name: string; value: string }[] =
+      (submitted as { parameters?: { name: string; value: string }[] } | null)?.parameters ?? [];
+    expect(parameters.find((p) => p.name === 'reactome_server')?.value).toBe('dev');
+  });
 });

@@ -39,15 +39,12 @@ section grows as the fixes land.
 | Hovering sub-events in the hierarchy at diagram level            | Nothing reached the diagram. Now the hovered reaction or sub-pathway stands out: drawn thicker in its own colours, with the rest of the diagram faded. Not yellow: sub-pathways here are tinted in colours spread around the whole spectrum, so any single highlight colour would match one of them                                                                                              | Any pathway diagram: hover a reaction in the tree                            |
 | Tour and Layout buttons missing from the menu bar                | They had never been carried over to the new browser. Both are in the top bar now and behave as on reactome.org: Tour plays the same Pathway Browser tour video, and Layout shows or hides the hierarchy and details panels, or expands the centre view                                                                                                                                           | Any pathway: the two buttons left of Feedback, at the top right              |
 | Content Service and Analysis Service pages full of broken links  | Opened directly, as Tools and Download opened them, these addresses showed the backend's own page, wrapped in a copy of the old reactome.org menu whose links lead nowhere here. They now show this site's API pages, under the site's header, and the links open them in the site                                                                                                               | Tools → Content Service, or type `/ContentService` into the address bar      |
-| Quantitative results not appearing                               | Part of this is ours: a result beta could not load was dropped without a word. It now says the result is not available on this server. The rest is below                                                                                                                                                                                                                                         | Run Camera on the MelanomaRNA-seq example                                    |
+| Quantitative results not appearing                               | ReactomeGSA hands each result to a Reactome server, and beta was asking for reactome.org, whose results beta cannot open. Beta now asks ReactomeGSA to use this server (dev.reactome.org), so results are computed on beta's data and open in beta, and beta's test runs no longer touch the production server. A result that still cannot be loaded says so rather than vanishing               | Run Camera on the MelanomaRNA-seq example                                    |
 
 ### Not ours
 
 - **The report email** is sent by the ReactomeGSA service, not by this site.
   It will be raised with that team.
-- **Quantitative results on beta**: ReactomeGSA writes results to reactome.org's
-  analysis service, and beta reads its own, so beta cannot open them. We are
-  deciding how beta should handle that; on reactome.org itself they appear.
 
 ### A question for you
 

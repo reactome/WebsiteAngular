@@ -227,6 +227,13 @@ the token. One Camera run confirmed: token 200 on reactome.org, 410 on beta.
 - **Rank 4, decision:** point beta's GSA at a server beta can read; fall back to
   reactome.org for GSA tokens; or link out to the result on reactome.org.
 
+**Decided (27 Sep): beta names `dev`.** How ReactomeGSA works, from `reactome/gsa-backend`:
+it does its Reactome side against the server the request names -- identifier mapping,
+the projection, then a POST of the result to that server's `/AnalysisService/import/form`,
+which returns the token. Names map to hosts in `util.py` (production, dev, release). dev
+is this box, retired to 503; it now answers exactly those calls. Results are computed on
+beta's own release and stay off production. The profiles' `gsaServer` had never been read.
+
 **Email — not ours, rank 5.** This site has no mailer; ReactomeGSA sends it. Our side is
 already hardened (#237, #242). **Owner: ReactomeGSA backend.**
 
