@@ -43,7 +43,13 @@
  * because Playwright names response bodies by their content hash -- identical
  * payloads across tests collapse to a single file only while they are siblings.
  */
-import { test as base, expect, type APIRequestContext } from '@playwright/test';
+import {
+  test as base,
+  expect,
+  type APIRequestContext,
+  type BrowserContext,
+  type TestInfo,
+} from '@playwright/test';
 import path from 'node:path';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -325,13 +331,86 @@ function pool(harDir: string): Map<string, HarEntry> {
   return pooled;
 }
 
+/**
+ * Angular's own error codes, as a development build reports them: `NG0100`,
+ * `NG05105`, and so on.
+ *
+ * The suite runs `ng serve`, a development build, and development builds check
+ * things production builds silently skip. So these are exactly the faults a
+ * reader on the production site never sees an error for, while the page stops
+ * updating under them. The tissue form threw NG05105 for weeks (a dead
+ * animation binding); the tests that touched it failed intermittently, or
+ * passed while looking the other way, and nothing named the cause.
+ */
+const ANGULAR_ERROR = /\bNG0\d{3,4}\b/;
+
+/**
+ * Opt-out for a test that raises an Angular error on purpose. Say why:
+ *
+ *     test.info().annotations.push({ type: 'angular-errors', description: '...' });
+ */
+const ALLOW_ANGULAR_ERRORS = 'angular-errors';
+
+/**
+ * Watches a test's pages for Angular errors, and fails the test on any once it
+ * is done. Attached where the browser context is made, so only tests that use
+ * a page pay for it -- an API-only test makes no context at all.
+ */
+function watchAngularErrors(context: BrowserContext) {
+  const seen: string[] = [];
+  const reads: Promise<void>[] = [];
+  context.on('console', (message) => {
+    if (message.type() !== 'error' || !ANGULAR_ERROR.test(message.text())) return;
+    const first = message.text().split('\n')[0].slice(0, 300);
+    // Angular logs the error object beside the text, and only the object has
+    // the stack -- the part that says which component threw.
+    reads.push(
+      Promise.all(
+        message
+          .args()
+          .map((arg) =>
+            arg
+              .evaluate((value) => (value instanceof Error ? (value.stack ?? '') : ''))
+              .catch(() => '')
+          )
+      ).then((stacks) => {
+        const where = stacks
+          .join('\n')
+          .split('\n')
+          .filter((line) => /^\s+at /.test(line))
+          .slice(0, 5)
+          .map((line) => line.trim())
+          .join(' / ');
+        seen.push(where ? `${first} -- ${where}` : first);
+      })
+    );
+  });
+  context.on('weberror', (error) => {
+    const text = String(error.error().stack ?? error.error());
+    if (ANGULAR_ERROR.test(text)) seen.push(text.split('\n').slice(0, 6).join(' / ').slice(0, 900));
+  });
+  return {
+    async check(testInfo: TestInfo) {
+      await Promise.all(reads);
+      const allowed = testInfo.annotations.some((a) => a.type === ALLOW_ANGULAR_ERRORS);
+      // Only on a test that otherwise passed: a failing one already says what
+      // went wrong, and this would bury it.
+      if (!allowed && testInfo.status === testInfo.expectedStatus) {
+        expect(seen, 'Angular reported errors (development build)').toEqual([]);
+      }
+    },
+  };
+}
+
 export const test = base.extend({
   context: async ({ context, baseURL }, use, testInfo) => {
+    const angular = watchAngularErrors(context);
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });
       await use(context);
+      await angular.check(testInfo);
       return;
     }
 
@@ -422,6 +501,7 @@ export const test = base.extend({
     });
 
     await use(context);
+    await angular.check(testInfo);
 
     // Thrown from the fixture rather than inside the handler, because a route
     // handler cannot fail a test -- it can only abort a request, which surfaces

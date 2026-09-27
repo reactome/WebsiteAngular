@@ -66,7 +66,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   private clipboard = inject(Clipboard);
   readonly tableStore = inject(TableStore);
 
-  readonly input = viewChild.required<ElementRef<HTMLInputElement>>('flyingRename');
+  // Optional: the input is rendered only once there are start coordinates, and
+  // focusInput() can run before it is -- a required query threw NG0951 there.
+  readonly input = viewChild<ElementRef<HTMLInputElement>>('flyingRename');
   readonly rootRef = viewChild.required<ElementRef<HTMLDivElement>>('root');
   readonly cornerRef = viewChild<ElementRef<HTMLTableCellElement>>('corner');
   readonly viewport = viewChild.required<CdkVirtualScrollViewport>('scrollViewport');
