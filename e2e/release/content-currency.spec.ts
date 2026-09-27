@@ -41,7 +41,7 @@ test.describe('Release currency', () => {
     await expect(figure).toBeVisible({ timeout: 60_000 });
     await expect(figure, "the release's own figure").toHaveAttribute(
       'src',
-      new RegExp(`/${release}/stats/`)
+      new RegExp(`/${release.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/stats/`)
     );
     // Really drawn, not a broken link with alt text: the figure is republished
     // per release, so a missing file is the failure mode.

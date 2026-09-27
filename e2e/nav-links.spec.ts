@@ -15,8 +15,9 @@ import { test, expect } from './support/backend';
 test.describe('Site navigation', () => {
   test('every link in the navigation reaches a real page', async ({ page }) => {
     // 70-odd navigations. Slow, and the alternative is a person doing it.
-    // A ceiling for the slowest case; a healthy run is a few minutes.
-    test.setTimeout(12 * 60 * 1000);
+    // Up to 15s a page if every page stalled, so it still ends with the list of
+    // what broke rather than a timeout; a healthy run is a few minutes.
+    test.setTimeout(20 * 60 * 1000);
 
     await page.goto('/');
     await expect(page.locator('app-navigation-bar')).toBeVisible();
@@ -58,7 +59,7 @@ test.describe('Site navigation', () => {
             !!document.querySelector('.not-found') ||
             document.body.innerText.replace(/\s+/g, ' ').trim().length >= enough,
           ENOUGH,
-          { timeout: 30_000 }
+          { timeout: 15_000 }
         )
         .catch(() => undefined);
 

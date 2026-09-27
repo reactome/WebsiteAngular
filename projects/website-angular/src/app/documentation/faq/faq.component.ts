@@ -50,6 +50,7 @@ export class FaqComponent {
     this.collapsed.set(next);
   }
 
+  /** A category's tabs: every key but its own `articles`. Any tab at all shows the tab bar. */
   getSubcategories(category: string): string[] {
     return Object.keys(this.faqIndex()[category] ?? {}).filter((key) => key !== 'articles');
   }
@@ -69,8 +70,10 @@ export class FaqComponent {
 
   getArticles(category: string, subcategory?: string): ArticleIndexItem[] {
     const entry = this.faqIndex()[category];
-    const group = (subcategory ? entry?.[subcategory] : entry) as FaqGroup | undefined;
-    return group?.articles ?? [];
+    const group: FaqGroup | ArticleIndexItem[] | undefined = subcategory
+      ? entry?.[subcategory]
+      : entry;
+    return group && !Array.isArray(group) ? (group.articles ?? []) : [];
   }
 
   formatName(name: string): string {

@@ -20,7 +20,7 @@
           </h2>
           @if (isCategoryExpanded(category)) {
             <div class="faq-category-content">
-              @if (getSubcategories(category).length > 1) {
+              @if (getSubcategories(category).length > 0) {
                 <!-- Tabs Header -->
                 <div class="faq-tabs">
                   @for (sub of getSubcategories(category); track sub) {
