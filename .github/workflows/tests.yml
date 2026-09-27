@@ -84,6 +84,12 @@ jobs:
       - name: Check unreachable code has not increased
         run: npm run check:dead
 
+      # A recorded answer cut off after its headers replayed as a successful
+      # empty one, and the page quietly showed nothing. The harness aborts
+      # those now; this refuses a recording that has one.
+      - name: E2E recordings
+        run: npm run check:har
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news

@@ -33,6 +33,7 @@
     "e2e:changed": "playwright test --project=code --only-changed",
     "e2e:failed": "playwright test --project=code --last-failed",
     "e2e:record": "node scripts/record-e2e.mjs",
+    "check:har": "node scripts/check-har.mjs",
     "e2e:ui": "playwright test --ui",
     "serve:ssr:website": "node dist/website-angular/server/server.mjs",
     "serve:prod": "node projects/website-angular/src/scripts/serve-prod.js",
