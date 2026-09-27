@@ -267,7 +267,7 @@ once, then build whichever are answered.
 - [x] T081 [US1] **Decision 5 made 27 Sep: beta names `dev`** — ReactomeGSA delivers to dev.reactome.org, which is this box: profiles' `gsaServer` is now provided to the form (`provideGsaConfig`, it was never read), beta's is `dev`, and nginx answers ReactomeGSA's six calls on dev.reactome.org (everything else 503). e2e captures the submitted `reactome_server` (red on main: `production`)
 - [ ] T082 [US1] Classify 3b report email as `NOT-OURS` in the tracker, owner ReactomeGSA backend, with the evidence (this site has no mailer; #237/#242 hardened our side); draft a short note for that team for the user to send
 - [ ] T083 [US4] Classify 1d as `NEEDS-INFO` in the tracker: all 244 user-guide media are local; draft the question for the curator (which page, which image; were they on reactome.org/beta?)
-- [ ] T084 [US5] **Blocked on decision 6** (overview: keep Reacfoam, offer both, restore Fireworks): record `NEEDS-DECISION` with the history (Fireworks removed in `4d53f23`, closes #90); no code until decided
+- [x] T084 [US5] **Decision 6 made 27 Sep: Fireworks is retired with this release; Reacfoam replaces it.** Classified BY-DESIGN; the curator reported it as an observation, not a request. No code change
 
 ---
 
