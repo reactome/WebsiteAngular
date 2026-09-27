@@ -47,6 +47,12 @@ section grows as the fixes land.
 - **The report email** is sent by the ReactomeGSA service, not by this site.
   It will be raised with that team.
 
+### By design
+
+- **The pathway overview as Voronoi (Reacfoam), not nodes (Fireworks)**: this
+  release retires the Fireworks layout. Reacfoam is its replacement, so the
+  node view is gone deliberately rather than missing.
+
 ### A question for you
 
 - **User guide images from reactome.org**: we could not reproduce this. All 244
