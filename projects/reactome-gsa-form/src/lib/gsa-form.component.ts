@@ -2,7 +2,9 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  computed,
   effect,
+  signal,
   input,
   OnDestroy,
   Output,
@@ -10,6 +12,7 @@ import {
   inject,
 } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { methodFeature } from './state/method/method.selector';
 import { combineLatest, filter, firstValueFrom, map, Observable, take } from 'rxjs';
@@ -114,7 +117,23 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
     this.store.dispatch(datasetActions.add());
   }
 
+  private readonly stepIndex = signal(0);
+  private readonly tourState = toSignal(this.tour.state$, { initialValue: 'off' as const });
+
+  /**
+   * Whether the guided tour can start now: from the first step only, where it
+   * begins -- later steps keep the first one's panels in the page, hidden, so
+   * the tour would point at something the reader cannot see, and going back to
+   * it resets their datasets -- and not while it is already running.
+   */
+  readonly canStartTour = computed(() => this.stepIndex() === 0 && this.tourState() === 'off');
+
+  startTour() {
+    if (this.canStartTour()) this.tour.start();
+  }
+
   async stepChange($event: StepperSelectionEvent, vm: any) {
+    this.stepIndex.set($event.selectedIndex);
     switch ($event.selectedStep) {
       case this.setMethodStep():
         this.store.dispatch(datasetActions.reset());

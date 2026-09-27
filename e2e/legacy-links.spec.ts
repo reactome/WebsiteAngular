@@ -156,6 +156,20 @@ test.describe('Old addresses with a new home', () => {
     await expect(page.locator('cr-viewport')).toBeAttached({ timeout: 90_000 });
   });
 
+  // ReactomeGSA's landing page was a separate app on reactome.org. Its wizard is
+  // built in here, and papers and bookmarks carry the old address.
+  for (const old of ['/gsa', '/gsa/', '/gsa/home']) {
+    test(`${old} opens the quantitative analysis`, async ({ page }) => {
+      await page.goto(old);
+      await expect(page).toHaveURL(/\/PathwayBrowser\?(.*&)?analysisTab=quantitative(&|$)/, {
+        timeout: 60_000,
+      });
+      await expect(page.getByText('Quantitative Entity Enrichment Analysis')).toBeVisible({
+        timeout: 90_000,
+      });
+    });
+  }
+
   test('the old training page lands on the training materials', async ({ page }) => {
     await page.goto('/community/training');
     await expect(page).toHaveURL(/\/documentation#Reactome_Training_Materials$/, {

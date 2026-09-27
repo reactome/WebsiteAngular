@@ -119,6 +119,51 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
   });
 });
 
+test.describe('Quantitative analysis: the landing page it replaced', () => {
+  // reactome.org/gsa was a separate landing page with a Guided Tour button and
+  // the method's citation; /gsa leads to this tab now, so both live here. The
+  // tour itself was only reachable through a ?gsa-tour= parameter.
+  test('offers the guided tour, and starts it', async ({ page }) => {
+    await stubGsaMethods(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await expect(page.locator('gsa-method').first()).toBeVisible({ timeout: BOOT_TIMEOUT });
+    const before = page.url();
+    await page.getByRole('button', { name: 'Guided tour' }).click();
+    // The first step's own words: "Select method" is also the stepper's label,
+    // which is on screen whether the tour started or not.
+    await expect(page.getByText('Click "Camera" panel to select')).toBeVisible();
+    // And it stays here. The step used to send the reader to /form, the
+    // wizard's path in the stand-alone app the form came from.
+    expect(page.url()).toBe(before);
+    // Not twice at once.
+    await expect(page.getByRole('button', { name: 'Guided tour' })).toBeDisabled();
+  });
+
+  // Later steps keep the first step's panels in the page, hidden, so a tour
+  // started there points at nothing the reader can see; and going back to step
+  // 1 resets their datasets. So it is offered from step 1 only.
+  test('offers the tour from the first step only', async ({ page }) => {
+    await stubGsaMethods(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    const tour = page.getByRole('button', { name: 'Guided tour' });
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await expect(tour).toBeEnabled();
+    await page.locator('button.mat-mdc-fab').first().click();
+    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(tour).toBeDisabled();
+  });
+
+  test('cites the method', async ({ page }) => {
+    await stubGsaMethods(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    const citation = page.getByRole('link', { name: /Griss J et al/ });
+    await expect(citation).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(citation).toHaveAttribute('href', 'https://europepmc.org/article/MED/32907876');
+  });
+});
+
 test.describe('Names readable on a laptop screen', () => {
   // At 1366x768 the example column split into two and every button read
   // "UniP…", "Gen…"; half the species tiles read "C. elega…". Each name is

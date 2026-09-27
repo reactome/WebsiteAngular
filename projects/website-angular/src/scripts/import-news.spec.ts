@@ -77,9 +77,11 @@ describe('where an imported link points', () => {
     expect(forTests.localise('https://reactome.org/userguide')).toBe('/userguide');
   });
 
-  it('leaves a page this site does not serve yet on reactome.org', () => {
-    // The July spotlight linked /gsa/home, which was a missing page here.
-    expect(forTests.localise('/gsa/home')).toBe('https://reactome.org/gsa/home');
-    expect(forTests.localise('https://reactome.org/gsa')).toBe('https://reactome.org/gsa');
+  it("brings ReactomeGSA's landing page home, to the quantitative analysis", () => {
+    // The July spotlight linked /gsa/home.
+    expect(forTests.localise('/gsa/home')).toBe('/PathwayBrowser?analysisTab=quantitative');
+    expect(forTests.localise('https://reactome.org/gsa')).toBe(
+      '/PathwayBrowser?analysisTab=quantitative'
+    );
   });
 });

@@ -3,7 +3,7 @@ import * as path from 'path';
 import { marked } from 'marked';
 import renderContentBody from '../utils/renderContentBody';
 import parseFrontmatter from '../utils/parseFrontmatter';
-import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
+import { relocate, STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
 
 /**
  * Every internal link in the site's content, navigation and templates has to
@@ -139,6 +139,8 @@ export function internalPath(url: string): string | null {
   }
   if (reactome) target = reactome[1] || '/';
   else if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//')) return null;
+  // Checked where the renderer sends it.
+  target = target.startsWith('/') ? `/${relocate(target.slice(1))}` : relocate(target);
   target = target.split('#')[0].split('?')[0];
   if (!target) return null;
   if (!target.startsWith('/')) target = '/' + target;
