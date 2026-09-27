@@ -10,7 +10,7 @@
       </p>
     </header>
     <section class="faq-section">
-      @for (category of categories; track category) {
+      @for (category of categories(); track category) {
         <div>
           <h2 class="faq-category-header" (click)="toggleCategory(category)">
             <span class="category-name">{{ formatName(category) }}</span>
@@ -35,9 +35,9 @@
                 </div>
                 <!-- Active Tab Content -->
                 <ul class="faq-list">
-                  @for (questionArticle of getArticles(category, activeTabs[category]); track questionArticle) {
+                  @for (questionArticle of getArticles(category, activeTab(category)); track questionArticle) {
                     <li class="faq-item">
-                      <a [routerLink]="['/documentation/faq', category, activeTabs[category], questionArticle.slug]">
+                      <a [routerLink]="['/documentation/faq', category, activeTab(category), questionArticle.slug]">
                         {{ formatName(questionArticle.title) }}
                       </a>
                     </li>

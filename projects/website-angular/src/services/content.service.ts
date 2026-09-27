@@ -1,7 +1,7 @@
 import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map, catchError, of, tap } from 'rxjs';
-import { Article, ArticleIndexItem } from '../types/article';
+import { Article, ArticleIndexItem, FaqIndex } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
 
 /**
@@ -184,11 +184,9 @@ export class ContentService {
   /**
    * Get all FAQ categories
    */
-  getFaqIndex(): Observable<Record<string, ArticleIndexItem[]>> {
+  getFaqIndex(): Observable<FaqIndex> {
     return this.http
-      .get<Record<string, ArticleIndexItem[]>>(
-        `${this.contentBasePath}/documentation/faq/index.json`
-      )
+      .get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`)
       .pipe(catchError(() => of({})));
   }
 

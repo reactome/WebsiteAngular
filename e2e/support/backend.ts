@@ -325,7 +325,76 @@ function pool(harDir: string): Map<string, HarEntry> {
   return pooled;
 }
 
-export const test = base.extend({
+/**
+ * Angular's own error codes, as a development build reports them: `NG0100`,
+ * `NG05105`, and so on.
+ *
+ * The suite runs `ng serve`, a development build, and development builds check
+ * things production builds silently skip. So these are exactly the faults a
+ * reader on the production site never sees an error for, while the page stops
+ * updating under them. The tissue form threw NG05105 for weeks (a dead
+ * animation binding); the tests that touched it failed intermittently, or
+ * passed while looking the other way, and nothing named the cause.
+ */
+const ANGULAR_ERROR = /\bNG0\d{3,4}\b/;
+
+/**
+ * Opt-out for a test that raises an Angular error on purpose. Say why:
+ *
+ *     test.info().annotations.push({ type: 'angular-errors', description: '...' });
+ */
+const ALLOW_ANGULAR_ERRORS = 'angular-errors';
+
+export const test = base.extend<{ angularErrors: void }>({
+  // Every test, automatically: an Angular error on any page of the test fails
+  // it, naming the error, after the test's own assertions have run.
+  angularErrors: [
+    async ({ context }, use, testInfo) => {
+      const seen: string[] = [];
+      const reads: Promise<void>[] = [];
+      context.on('console', (message) => {
+        if (message.type() !== 'error' || !ANGULAR_ERROR.test(message.text())) return;
+        const first = message.text().split('\n')[0].slice(0, 300);
+        // Angular logs the error object beside the text, and only the object
+        // has the stack -- the part that says which component threw.
+        reads.push(
+          Promise.all(
+            message
+              .args()
+              .map((arg) =>
+                arg
+                  .evaluate((value) => (value instanceof Error ? (value.stack ?? '') : ''))
+                  .catch(() => '')
+              )
+          ).then((stacks) => {
+            const where = stacks
+              .join('\n')
+              .split('\n')
+              .filter((line) => /^\s+at /.test(line))
+              .slice(0, 5)
+              .map((line) => line.trim())
+              .join(' / ');
+            seen.push(where ? `${first} -- ${where}` : first);
+          })
+        );
+      });
+      context.on('weberror', (error) => {
+        const text = String(error.error().stack ?? error.error());
+        if (ANGULAR_ERROR.test(text))
+          seen.push(text.split('\n').slice(0, 6).join(' / ').slice(0, 900));
+      });
+      await use();
+      await Promise.all(reads);
+      const allowed = testInfo.annotations.some((a) => a.type === ALLOW_ANGULAR_ERRORS);
+      // Only on a test that otherwise passed: a failing one already says what
+      // went wrong, and this would bury it.
+      if (!allowed && testInfo.status === testInfo.expectedStatus) {
+        expect(seen, 'Angular reported errors (development build)').toEqual([]);
+      }
+    },
+    { auto: true },
+  ],
+
   context: async ({ context, baseURL }, use, testInfo) => {
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 

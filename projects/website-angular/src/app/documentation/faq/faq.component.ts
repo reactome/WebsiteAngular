@@ -1,81 +1,76 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
 
-import { ArticleIndexItem } from 'projects/website-angular/src/types/article';
+import type {
+  ArticleIndexItem,
+  FaqGroup,
+  FaqIndex,
+} from 'projects/website-angular/src/types/article';
 
+/**
+ * The FAQ: categories, each either a list of questions or tabs of them.
+ *
+ * All state is signals, and rendering only reads it. The page used to choose a
+ * category's default tab while rendering -- asking whether a tab was active
+ * wrote the default into the state the question list had already read -- which
+ * a development build reports as NG0100 and a production build renders from a
+ * value that changed underneath it.
+ */
 @Component({
   selector: 'app-faq',
   imports: [PageLayoutComponent, RouterLink],
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })
-export class FaqComponent implements OnInit {
-  contentService = inject(ContentService);
-  // Plain fields assigned from an async callback: the app is zoneless, so
-  // nothing notices them changing without being told.
-  private cdr = inject(ChangeDetectorRef);
+export class FaqComponent {
+  // The service answers an empty index if the request fails.
+  private readonly faqIndex = toSignal(inject(ContentService).getFaqIndex(), {
+    initialValue: {} as FaqIndex,
+  });
 
-  categories: string[] = [];
-  expandedCategories: Set<string> = new Set();
-  faqIndex: Record<string, any> = {};
-  activeTabs: Record<string, string> = {};
+  readonly categories = computed(() => Object.keys(this.faqIndex()));
 
-  ngOnInit() {
-    this.contentService.getFaqIndex().subscribe({
-      next: (result) => {
-        // Callback kept synchronous: an async one hands a promise to code
-        // that ignores it, so any rejection in here would vanish.
-        void (async () => {
-          this.faqIndex = result;
-          this.categories = Object.keys(result);
-          Object.keys(result).forEach((category) => {
-            this.toggleCategory(category);
-          });
-        })().catch((error) => console.error('Could not render FAQ', error));
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error fetching FAQ index:', err);
-      },
-    });
-  }
+  /** Categories the reader has closed; every category starts open. */
+  private readonly collapsed = signal<ReadonlySet<string>>(new Set());
 
-  setActiveTab(category: string, sub: string) {
-    this.activeTabs[category] = sub;
-  }
-
-  isActiveTab(category: string, sub: string): boolean {
-    if (!this.activeTabs[category]) {
-      // default to first subcategory
-      this.activeTabs[category] = this.getSubcategories(category)[0];
-    }
-    return this.activeTabs[category] === sub;
-  }
+  /** Tabs the reader has chosen, by category; otherwise the first. */
+  private readonly chosenTabs = signal<Readonly<Record<string, string>>>({});
 
   isCategoryExpanded(category: string): boolean {
-    return this.expandedCategories.has(category);
+    return !this.collapsed().has(category);
   }
 
   toggleCategory(category: string): void {
-    if (this.isCategoryExpanded(category)) {
-      this.expandedCategories.delete(category);
-    } else {
-      this.expandedCategories.add(category);
-    }
+    const next = new Set(this.collapsed());
+    if (next.has(category)) next.delete(category);
+    else next.add(category);
+    this.collapsed.set(next);
   }
 
   getSubcategories(category: string): string[] {
-    // console.log(Object.keys(this.faqIndex[category] || []));
-    return Object.keys(this.faqIndex[category] || []);
+    return Object.keys(this.faqIndex()[category] ?? {}).filter((key) => key !== 'articles');
+  }
+
+  /** The tab showing for a category: the reader's choice, or the first. */
+  activeTab(category: string): string | undefined {
+    return this.chosenTabs()[category] ?? this.getSubcategories(category)[0];
+  }
+
+  setActiveTab(category: string, sub: string) {
+    this.chosenTabs.update((tabs) => ({ ...tabs, [category]: sub }));
+  }
+
+  isActiveTab(category: string, sub: string): boolean {
+    return this.activeTab(category) === sub;
   }
 
   getArticles(category: string, subcategory?: string): ArticleIndexItem[] {
-    //Articles array is stored in record["articles"]
-    const record = subcategory ? this.faqIndex[category][subcategory] : this.faqIndex[category];
-    console.log(`Getting articles for category: ${category}, subcategory: ${subcategory}`, record);
-    return record['articles'] || [];
+    const entry = this.faqIndex()[category];
+    const group = (subcategory ? entry?.[subcategory] : entry) as FaqGroup | undefined;
+    return group?.articles ?? [];
   }
 
   formatName(name: string): string {
