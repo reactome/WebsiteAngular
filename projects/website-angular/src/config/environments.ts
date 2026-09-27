@@ -179,6 +179,8 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     s3: S3,
     // dev.reactome.org is this box, so results land in the Analysis Service
     // beta reads -- and beta's test runs stay off the production server.
+    // Follows the Analysis Service beta reads: when beta runs on the production
+    // machine and reads reactome.org's, this becomes 'production'.
     gsaServer: 'dev',
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
