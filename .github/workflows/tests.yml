@@ -29,18 +29,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # No build step needed: no remaining spec imports the workspace libraries
-      # from dist/, so this passes on a clean checkout.
-      - name: Test
-        run: npm test
-
-      # The type-aware lint rules and knip both need the workspace libraries to
-      # resolve. Without dist/ they report against a different graph than they do
-      # locally, so the baselines drift -- which already failed one run with
-      # "Cannot find module 'reactome-gsa-form'". Build them first so CI and a
-      # developer's machine are looking at the same code.
+      # Before the tests, not after. tsconfig maps the workspace libraries to
+      # their builds in dist/, so a spec importing one -- reactome-gsa-form has
+      # no npm copy to fall back on -- resolves only once they are built. With
+      # the build after the tests, such a spec passed on any machine that had
+      # built them and failed to resolve here. The type-aware lint rules and knip
+      # need them too: without dist/ they report against a different graph than
+      # they do locally, which already failed one run with "Cannot find module
+      # 'reactome-gsa-form'". About 16s.
       - name: Build workspace libraries
         run: npm run build:libs
+
+      - name: Test
+        run: npm test
 
       # The app build is the only thing that runs Angular's template type
       # checking, and strictTemplates is on: a template referencing a member
