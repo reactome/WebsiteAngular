@@ -6,6 +6,8 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
 import { IconService } from './services/icon.service';
 import { provideUiTour } from 'ngx-ui-tour-md-menu';
+import { provideGsaServer } from './viewport/analysis-form/gsa-config';
+import { environment } from '../environments/environment';
 
 const registerPathwayBrowserIcons = () => {
   const matIconRegistry = inject(MatIconRegistry);
@@ -84,6 +86,10 @@ export const routes: Routes = [
       // Pathway Browser, and providing it at the root pulled ngx-ui-tour +
       // ngx-ui-tour-core (~275 kB) into the initial bundle.
       provideUiTour(),
+      // Where ReactomeGSA delivers this deployment's results. Here for the same
+      // reason: the form lives behind this route, and configuring it at the root
+      // pulled the whole library into the initial bundle.
+      provideGsaServer(environment.gsaServer),
       {
         provide: ENVIRONMENT_INITIALIZER,
         multi: true,
