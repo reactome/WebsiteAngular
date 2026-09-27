@@ -126,12 +126,22 @@ export class TissueAnalysisComponent {
   }
 
   interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
-  animate = signal(true);
+  /**
+   * The tissue last dropped by dragging, which is already where the pointer
+   * left it and so does not slide in. Cleared only when that tissue moves
+   * again: clearing it earlier would restart the slide on a box standing still.
+   */
+  dropped = signal<string | null>(null);
+
+  private settle(tissue: string) {
+    if (this.dropped() === tissue) this.dropped.set(null);
+  }
 
   addOne() {
     const availableTissues = this.availableTissues();
     const shift = availableTissues.shift();
     if (shift) {
+      this.settle(shift);
       this.availableTissues.set([...availableTissues]);
       this.selectedTissues.set([...this.selectedTissues(), shift]);
     } else if (this.interval) {
@@ -144,6 +154,7 @@ export class TissueAnalysisComponent {
     const selectedTissues = this.selectedTissues();
     const shift = selectedTissues.shift();
     if (shift) {
+      this.settle(shift);
       this.selectedTissues.set([...selectedTissues]);
       this.availableTissues.set([...this.availableTissues(), shift]);
     } else if (this.interval) {
@@ -161,6 +172,7 @@ export class TissueAnalysisComponent {
   }
 
   moveRight(tissue: string) {
+    this.settle(tissue);
     const from = this.availableTissues();
     const i = from.indexOf(tissue);
     from.splice(i, 1);
@@ -172,6 +184,7 @@ export class TissueAnalysisComponent {
   }
 
   moveLeft(tissue: string) {
+    this.settle(tissue);
     const from = this.selectedTissues();
     const i = from.indexOf(tissue);
     from.splice(i, 1);
@@ -186,19 +199,27 @@ export class TissueAnalysisComponent {
     return `${summary.description} - ${summary.numberOfGenes} Genes - ${summary.timestamp} `;
   }
 
+  /**
+   * Through the signals, never in place. CDK's helpers mutate the arrays they
+   * are given, and these are the signals' own arrays: the page moved the box,
+   * but nothing downstream heard -- the form control stayed invalid, so the
+   * stepper would not advance to the analysis after a drag.
+   */
   drop(event: CdkDragDrop<string[]>) {
-    this.animate.set(false);
+    const fromAvailable = event.previousContainer.data === this.availableTissues();
+    const toAvailable = event.container.data === this.availableTissues();
+    const from = [...(fromAvailable ? this.availableTissues() : this.selectedTissues())];
+    const tissue = from[event.previousIndex];
     if (event.previousContainer === event.container) {
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      moveItemInArray(from, event.previousIndex, event.currentIndex);
+      (toAvailable ? this.availableTissues : this.selectedTissues).set(from);
     } else {
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
+      const to = [...(toAvailable ? this.availableTissues() : this.selectedTissues())];
+      transferArrayItem(from, to, event.previousIndex, event.currentIndex);
+      (fromAvailable ? this.availableTissues : this.selectedTissues).set(from);
+      (toAvailable ? this.availableTissues : this.selectedTissues).set(to);
     }
-    setTimeout(() => this.animate.set(true));
+    this.dropped.set(tissue);
   }
 
   lottie?: DotLottie;
