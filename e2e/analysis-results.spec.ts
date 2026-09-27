@@ -117,17 +117,39 @@ test.describe('Analysis results', () => {
 
   test('tissue distribution overlays the pathways', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=tissue');
+    // One tissue, so the analysis is the same request every run. This used to
+    // press "add all" as well, which moves the tissues across on a timer, and
+    // Next went while it was still going -- a different request each time.
     await page.getByText('Colon', { exact: true }).click({ timeout: READY });
-    // The chevron between the two lists moves the selection across.
-    await page
-      .locator('.arrow, [class*="forward"], mat-icon')
-      .filter({ hasText: /double_arrow|fast_forward/ })
-      .first()
-      .click({ timeout: 15_000 })
-      .catch(() => {});
-    await page.getByRole('button', { name: /^Next$/ }).click();
+    const next = page.getByRole('button', { name: /^Next$/ });
+    await expect(next).toBeEnabled();
+    await next.click();
 
     await expect(page.locator(BADGE).first()).toBeVisible({ timeout: READY });
+    // Held open until the result has finished arriving. Ending the moment the
+    // badge showed closed the page mid-response, so the recording stored the
+    // result and the hierarchy as failed requests, and a replay served them as
+    // failures -- the test then passed or failed on timing alone.
+    await page.waitForLoadState('networkidle');
+  });
+
+  // The form kept two @angular/animations bindings after that package was
+  // removed. Production builds ignore them; development builds -- which this
+  // suite runs -- threw NG05105 each time a tissue moved and stopped updating
+  // the view, so a chosen tissue arrived but Next never enabled.
+  test('choosing tissues raises no errors, in either direction', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    await page.goto('/PathwayBrowser?analysisTab=tissue');
+    await page.getByText('Colon', { exact: true }).click({ timeout: READY });
+    await page.getByText('Liver', { exact: true }).click();
+    // And back, which is the other list's binding.
+    await page.getByText('Colon', { exact: true }).click();
+    await expect(page.getByRole('button', { name: /^Next$/ })).toBeEnabled();
+    expect(errors.filter((e) => /NG0|synthetic/i.test(e))).toEqual([]);
   });
 });
 

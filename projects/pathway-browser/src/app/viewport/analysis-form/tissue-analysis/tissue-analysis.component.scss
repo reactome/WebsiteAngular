@@ -261,3 +261,11 @@
     animation: none;
   }
 }
+
+// A dragged tissue is already where the pointer left it; sliding it in again
+// would be wrong. This was `[@.disabled]` on the wrapper, which -- with
+// @angular/animations gone -- threw NG05105 in development builds and stopped
+// the view updating, so the selection moved but Next never enabled.
+.no-animate .tissue-box {
+  animation: none;
+}

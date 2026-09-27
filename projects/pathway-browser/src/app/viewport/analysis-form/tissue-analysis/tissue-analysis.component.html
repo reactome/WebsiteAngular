@@ -43,7 +43,7 @@
           @let available = availableTissues();
           @let selected = selectedTissues();
 
-          <div class="tissue-selector-wrapper" [@.disabled]="!animate()">
+          <div class="tissue-selector-wrapper" [class.no-animate]="!animate()">
             <div class="tissue-columns">
               <div
                 cdkDropList
@@ -87,7 +87,7 @@
                 (cdkDropListDropped)="drop($event)"
               >
                 @for (tissue of selected; track tissue) {
-                  <div class="tissue-box" cdkDrag @right-column (click)="moveLeft(tissue)">{{ tissue }}</div>
+                  <div class="tissue-box" cdkDrag (click)="moveLeft(tissue)">{{ tissue }}</div>
                 }
               </div>
             </div>
