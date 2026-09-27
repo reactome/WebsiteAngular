@@ -135,6 +135,24 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
     // And it stays here. The step used to send the reader to /form, the
     // wizard's path in the stand-alone app the form came from.
     expect(page.url()).toBe(before);
+    // Not twice at once.
+    await expect(page.getByRole('button', { name: 'Guided tour' })).toBeDisabled();
+  });
+
+  // Later steps keep the first step's panels in the page, hidden, so a tour
+  // started there points at nothing the reader can see; and going back to step
+  // 1 resets their datasets. So it is offered from step 1 only.
+  test('offers the tour from the first step only', async ({ page }) => {
+    await stubGsaMethods(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    const tour = page.getByRole('button', { name: 'Guided tour' });
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await expect(tour).toBeEnabled();
+    await page.locator('button.mat-mdc-fab').first().click();
+    await expect(page.getByText('Step 2: Add and annotate your datasets')).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(tour).toBeDisabled();
   });
 
   test('cites the method', async ({ page }) => {

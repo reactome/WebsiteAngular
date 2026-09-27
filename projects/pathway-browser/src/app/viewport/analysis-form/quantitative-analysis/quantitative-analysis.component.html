@@ -2,7 +2,12 @@
   <div class="title-row">
     <span class="title">Quantitative Entity Enrichment Analysis (Reactome GSA)</span>
     <!-- From reactome.org's ReactomeGSA landing page, which /gsa leads to now. -->
-    <button mat-stroked-button (click)="startTour()">
+    <button
+      mat-stroked-button
+      (click)="form()?.startTour()"
+      [disabled]="!form()?.canStartTour()"
+      [matTooltip]="form()?.canStartTour() ? '' : 'The tour starts from step 1'"
+    >
       <mat-icon>explore</mat-icon>
       Guided tour
     </button>
@@ -22,7 +27,9 @@
     </div>
     <div>
       For details of the method, see
-      <a href="https://europepmc.org/article/MED/32907876" target="_blank" rel="noopener">Griss J et al., MCP 2020</a>.
+      <a href="https://europepmc.org/article/MED/32907876" target="_blank" rel="noopener noreferrer"
+        >Griss J et al., MCP 2020<span class="visually-hidden"> (opens in a new tab)</span></a
+      >.
     </div>
   </div>
 </div>

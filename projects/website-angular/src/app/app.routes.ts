@@ -257,7 +257,8 @@ export const routes: Routes = [
   {
     // ReactomeGSA's landing page on reactome.org was a separate app, with any
     // path beneath it (/gsa/home). Its wizard is built into the Pathway
-    // Browser here; the server answers this with a 301 too.
+    // Browser here; the server answers this with a 301 too. Any query is
+    // dropped on purpose: the old app's parameters mean nothing here.
     path: 'gsa',
     children: [
       {

@@ -38,6 +38,16 @@ describe('rewriteContentUrls', () => {
     }
   });
 
+  it('moves a relative link the same way, as the link checker reads it', () => {
+    expect(rewriteContentUrls('<a href="gsa/home">x</a>')).toBe(
+      '<a href="PathwayBrowser?analysisTab=quantitative">x</a>'
+    );
+    // And leaves this page's anchors and other sites alone.
+    for (const url of ['#gsa', 'https://gsa.reactome.org/0.1/ui', '//cdn.example/gsa']) {
+      expect(rewriteContentUrls(`<a href="${url}">x</a>`)).toBe(`<a href="${url}">x</a>`);
+    }
+  });
+
   it('does not take a path that only starts with gsa for it', () => {
     expect(rewriteContentUrls('<a href="https://reactome.org/gsaX">x</a>')).toBe(
       '<a href="gsaX">x</a>'

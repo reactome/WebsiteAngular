@@ -52,8 +52,19 @@ function normalizeContentUrl(url: string): string {
     return relocate(rest) || '/';
   }
 
+  // Protocol-relative: another site, like any absolute URL. It used to fall
+  // into the branch below and lose its slashes, becoming a path on this site.
+  if (url.startsWith('//')) return url;
+
   if (url.startsWith('/')) {
     return relocate(url.replace(/^\/+/, ''));
+  }
+
+  // Relative, which the base href (`/`) makes site-rooted; the link checker
+  // reads it the same way. Schemes, protocol-relative URLs and fragments are
+  // someone else's or this page's.
+  if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url) && !url.startsWith('//') && !url.startsWith('#')) {
+    return relocate(url);
   }
 
   return url;

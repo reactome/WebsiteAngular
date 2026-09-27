@@ -5,10 +5,11 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { GsaFormComponent, GsaFormModule } from 'reactome-gsa-form';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'cr-quantitative-analysis',
-  imports: [GsaFormModule, MatButton, MatIcon],
+  imports: [GsaFormModule, MatButton, MatIcon, MatTooltip],
   templateUrl: './quantitative-analysis.component.html',
   styleUrl: './quantitative-analysis.component.scss',
 })
@@ -21,12 +22,8 @@ export class QuantitativeAnalysisComponent {
 
   gsaId = signal<string>('');
 
-  private readonly form = viewChild(GsaFormComponent);
-
-  /** The form's guided tour, which otherwise only a ?gsa-tour= parameter starts. */
-  startTour() {
-    this.form()?.tour.start();
-  }
+  /** For its guided tour, which otherwise only a ?gsa-tour= parameter starts. */
+  readonly form = viewChild(GsaFormComponent);
 
   gsaFinished(token: string | undefined) {
     if (!token) return;
