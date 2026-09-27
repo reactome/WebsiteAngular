@@ -12,15 +12,12 @@ import {
 } from '@hakimio/ngx-google-analytics';
 import { environment } from '../environments/environment';
 import { DatePipe } from '@angular/common';
-import { provideGsaConfig } from './viewport/analysis-form/gsa-config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     // ngx-ui-tour 16 no longer provides TourService in root; without this the
     // GSA form's tour anchors fail with NG0201 and the whole viewport dies.
     provideUiTour(),
-    // Where ReactomeGSA delivers results: the Analysis Service this site reads.
-    provideGsaConfig(environment.gsaServer),
     provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptorsFromDi()),

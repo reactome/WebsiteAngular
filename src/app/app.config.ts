@@ -15,7 +15,6 @@ import {
 import { environment } from '../../projects/pathway-browser/src/environments/environment';
 
 import { routes } from './app.routes';
-import { provideGsaConfig } from '../../projects/pathway-browser/src/app/viewport/analysis-form/gsa-config';
 
 /**
  * Analytics, when the deployment has a property to report to.
@@ -36,8 +35,6 @@ const analytics = environment.gtagId
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Where ReactomeGSA delivers results: the Analysis Service this site reads.
-    provideGsaConfig(environment.gsaServer),
     // Zoneless. zone.js is no longer loaded as a polyfill, so nothing patches
     // the browser's async APIs and change detection is driven by signals,
     // template event bindings and explicit markForCheck instead.
