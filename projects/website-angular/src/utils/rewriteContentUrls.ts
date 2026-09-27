@@ -15,10 +15,22 @@
  * one keeps going there. Rewritten, it would land on a missing page here --
  * where it used to work. Remove an entry when this site serves the path.
  */
-export const STILL_ON_PRODUCTION: readonly RegExp[] = [
-  // ReactomeGSA's landing page; where it should lead here is being decided.
-  /^gsa([/?#]|$)/,
+export const STILL_ON_PRODUCTION: readonly RegExp[] = [];
+
+/**
+ * Old paths whose page lives somewhere else here, and where a link to one
+ * should go instead -- straight there rather than through a redirect.
+ */
+const MOVED: readonly [RegExp, string][] = [
+  // ReactomeGSA's landing page on reactome.org was a separate app; its wizard
+  // is built into the Pathway Browser here. The server redirects /gsa too.
+  [/^gsa([/?#]|$)/, 'PathwayBrowser?analysisTab=quantitative'],
 ];
+
+/** Where an old site-relative path (no leading slash) lives now, or itself. */
+export function relocate(path: string): string {
+  return MOVED.find(([from]) => from.test(path))?.[1] ?? path;
+}
 
 export default function rewriteContentUrls(html: string): string {
   return html.replace(
@@ -37,11 +49,11 @@ function normalizeContentUrl(url: string): string {
     if (STILL_ON_PRODUCTION.some((path) => path.test(rest))) return url;
     // The home page itself has no path left; an empty href would mean the page
     // the reader is already on.
-    return rest || '/';
+    return relocate(rest) || '/';
   }
 
   if (url.startsWith('/')) {
-    return url.replace(/^\/+/, '');
+    return relocate(url.replace(/^\/+/, ''));
   }
 
   return url;

@@ -23,7 +23,7 @@
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
+import { relocate, STILL_ON_PRODUCTION } from '../utils/rewriteContentUrls';
 
 const SOURCE = 'https://reactome.org';
 const SECTIONS = {
@@ -164,7 +164,8 @@ function localise(url: string) {
   if (local.startsWith('/') && STILL_ON_PRODUCTION.some((path) => path.test(local.slice(1)))) {
     return `${SOURCE}${local}`;
   }
-  return local;
+  // A page that moved is linked where it is now.
+  return local.startsWith('/') ? `/${relocate(local.slice(1))}` : local;
 }
 
 /** The text of one element, with its own markup removed. */

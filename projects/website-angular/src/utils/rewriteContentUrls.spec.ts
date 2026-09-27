@@ -22,16 +22,25 @@ describe('rewriteContentUrls', () => {
     expect(rewriteContentUrls(html)).toBe(html);
   });
 
-  it('leaves a link to a page this site does not serve yet on production', () => {
-    // Nine old news items link reactome.org/gsa, which works there and would
-    // be a missing page here.
-    const html = '<a href="https://reactome.org/gsa">GSA</a>';
-    expect(rewriteContentUrls(html)).toBe(html);
+  it("sends ReactomeGSA's old landing page to the quantitative analysis here", () => {
+    // Thirteen links in old news and spotlights point at reactome.org/gsa, a
+    // separate app whose wizard this site has built in.
+    const target = 'PathwayBrowser?analysisTab=quantitative';
+    for (const url of [
+      'https://reactome.org/gsa',
+      'https://reactome.org/gsa/',
+      'https://www.reactome.org/gsa/home',
+      'https://reactome.org/gsa?x=1',
+      'https://reactome.org/gsa#top',
+      '/gsa/home',
+    ]) {
+      expect(rewriteContentUrls(`<a href="${url}">x</a>`)).toBe(`<a href="${target}">x</a>`);
+    }
   });
 
-  it('keeps such a link on production with a query or fragment too', () => {
-    for (const url of ['https://reactome.org/gsa?x=1', 'https://reactome.org/gsa#top']) {
-      expect(rewriteContentUrls(`<a href="${url}">x</a>`)).toBe(`<a href="${url}">x</a>`);
-    }
+  it('does not take a path that only starts with gsa for it', () => {
+    expect(rewriteContentUrls('<a href="https://reactome.org/gsaX">x</a>')).toBe(
+      '<a href="gsaX">x</a>'
+    );
   });
 });

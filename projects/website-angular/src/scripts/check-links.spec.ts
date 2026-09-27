@@ -75,8 +75,8 @@ describe('the rules the first version got wrong', () => {
     expect(resolves('/PathwayBrowser', pages, routes, noFiles)).toBe(true);
   });
 
-  it('leaves links the renderer keeps on production to production', () => {
-    expect(internalPath('https://reactome.org/gsa')).toBeNull();
+  it('checks a moved link where the renderer sends it', () => {
+    expect(internalPath('https://reactome.org/gsa/home')).toBe('/PathwayBrowser');
   });
 });
 

@@ -57,6 +57,13 @@ svg.background {
 }
 
 .header {
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .title {
     font: var(--mat-sys-title-medium);
     color: var(--primary);

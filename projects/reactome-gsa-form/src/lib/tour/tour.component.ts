@@ -49,7 +49,9 @@ export class TourComponent {
         content:
           'Click "Camera" panel to select the Camera analysis method.<br>' +
           "Camera is a good choice for a first analysis: it's the fastest to perform",
-        route: 'form',
+        // No `route`. It said 'form', the wizard's path in the stand-alone
+        // ReactomeGSA app this came from; embedded here, starting the tour
+        // navigated to /form, a page this site does not have.
         nextOnAnchorClick: true,
         isAsync: true,
         scrollContainer: '#scroll-container-method',

@@ -255,6 +255,21 @@ export const routes: Routes = [
   { path: 'dev/:page', redirectTo: 'documentation/dev/:page' },
   { path: 'dev/:section/:page', redirectTo: 'documentation/dev/:section/:page' },
   {
+    // ReactomeGSA's landing page on reactome.org was a separate app, with any
+    // path beneath it (/gsa/home). Its wizard is built into the Pathway
+    // Browser here; the server answers this with a 301 too.
+    path: 'gsa',
+    children: [
+      {
+        path: '**',
+        redirectTo: () =>
+          inject(Router).createUrlTree(['/PathwayBrowser'], {
+            queryParams: { analysisTab: 'quantitative' },
+          }),
+      },
+    ],
+  },
+  {
     // The training page is gone; its materials are a section of Documentation.
     path: 'community/training',
     pathMatch: 'full',

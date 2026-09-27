@@ -1,5 +1,12 @@
 <div class="header">
-  <span class="title">Quantitative Entity Enrichment Analysis (Reactome GSA)</span>
+  <div class="title-row">
+    <span class="title">Quantitative Entity Enrichment Analysis (Reactome GSA)</span>
+    <!-- From reactome.org's ReactomeGSA landing page, which /gsa leads to now. -->
+    <button mat-stroked-button (click)="startTour()">
+      <mat-icon>explore</mat-icon>
+      Guided tour
+    </button>
+  </div>
 
   <div class="description">
     <div>
@@ -12,6 +19,10 @@
       You can provide full datasets from transcriptomics, proteomics, or single-cell experiments. The analysis will
       reveal which pathways are up- or down-regulated between conditions, highlighting coordinated biological changes
       across the entire dataset.
+    </div>
+    <div>
+      For details of the method, see
+      <a href="https://europepmc.org/article/MED/32907876" target="_blank" rel="noopener">Griss J et al., MCP 2020</a>.
     </div>
   </div>
 </div>

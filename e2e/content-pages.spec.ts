@@ -178,13 +178,13 @@ test.describe('Links from news', () => {
     await expect(page.locator('h3#Reactome_Training_Materials')).toBeInViewport({ timeout: LOAD });
   });
 
-  // reactome.org/gsa is still only on production. Rewritten to this site, it
-  // would be a missing page where it used to work.
-  test('an old link to ReactomeGSA still reaches it', async ({ page }) => {
+  // reactome.org/gsa was ReactomeGSA's separate landing page; its wizard is
+  // built into the Pathway Browser here, and the news links go straight to it.
+  test('an old link to ReactomeGSA opens the quantitative analysis', async ({ page }) => {
     await page.goto('/about/news/238-version-87-released');
-    await expect(page.locator('article a[href="https://reactome.org/gsa"]').first()).toBeAttached({
-      timeout: LOAD,
-    });
+    const link = page.locator('article a[href="PathwayBrowser?analysisTab=quantitative"]').first();
+    await expect(link).toBeAttached({ timeout: LOAD });
+    await expect(page.locator('article a[href*="reactome.org/gsa"]')).toHaveCount(0);
   });
 });
 
