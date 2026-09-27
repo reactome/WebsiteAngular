@@ -48,13 +48,19 @@
               <div
                 cdkDropList
                 #availableList="cdkDropList"
+                [cdkDropListDisabled]="interval() !== undefined"
                 [cdkDropListData]="available"
                 [cdkDropListConnectedTo]="[selectedList]"
                 class="tissue-list"
                 (cdkDropListDropped)="drop($event)"
               >
                 @for (tissue of available; track tissue) {
-                  <div class="tissue-box" cdkDrag [class.no-animate]="tissue === dropped()" (click)="moveRight(tissue)">
+                  <div
+                    class="tissue-box"
+                    cdkDrag
+                    [class.no-animate]="dropped().has(tissue)"
+                    (click)="moveRight(tissue)"
+                  >
                     {{ tissue }}
                   </div>
                 }
@@ -83,13 +89,14 @@
               <div
                 cdkDropList
                 #selectedList="cdkDropList"
+                [cdkDropListDisabled]="interval() !== undefined"
                 [cdkDropListData]="selected"
                 [cdkDropListConnectedTo]="[availableList]"
                 class="tissue-list"
                 (cdkDropListDropped)="drop($event)"
               >
                 @for (tissue of selected; track tissue) {
-                  <div class="tissue-box" cdkDrag [class.no-animate]="tissue === dropped()" (click)="moveLeft(tissue)">
+                  <div class="tissue-box" cdkDrag [class.no-animate]="dropped().has(tissue)" (click)="moveLeft(tissue)">
                     {{ tissue }}
                   </div>
                 }

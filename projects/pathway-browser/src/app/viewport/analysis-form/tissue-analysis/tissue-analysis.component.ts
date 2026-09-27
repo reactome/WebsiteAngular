@@ -127,15 +127,21 @@ export class TissueAnalysisComponent {
 
   interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
   /**
-   * The tissue last dropped by dragging, which is already where the pointer
-   * left it and so does not slide in. Cleared only when that tissue moves
-   * again: clearing it earlier would restart the slide on a box standing still.
+   * Tissues placed by dragging, which are already where the pointer left them
+   * and so do not slide in. Each leaves the set only when it moves again:
+   * leaving earlier would restart the slide on a box standing still.
    */
-  dropped = signal<string | null>(null);
+  dropped = signal<ReadonlySet<string>>(new Set());
 
   private settle(tissue: string) {
-    if (this.dropped() === tissue) this.dropped.set(null);
+    if (!this.dropped().has(tissue)) return;
+    const next = new Set(this.dropped());
+    next.delete(tissue);
+    this.dropped.set(next);
   }
+
+  /** The two lists, told apart by the lists themselves rather than their data. */
+  private readonly availableList = viewChild<CdkDropList<string[]>>('availableList');
 
   addOne() {
     const availableTissues = this.availableTissues();
@@ -206,8 +212,10 @@ export class TissueAnalysisComponent {
    * stepper would not advance to the analysis after a drag.
    */
   drop(event: CdkDragDrop<string[]>) {
-    const fromAvailable = event.previousContainer.data === this.availableTissues();
-    const toAvailable = event.container.data === this.availableTissues();
+    // Not by comparing data with the signals: the lists are bound to the
+    // arrays of the last render, which an "add all" tick can have replaced.
+    const fromAvailable = event.previousContainer === this.availableList();
+    const toAvailable = event.container === this.availableList();
     const from = [...(fromAvailable ? this.availableTissues() : this.selectedTissues())];
     const tissue = from[event.previousIndex];
     if (event.previousContainer === event.container) {
@@ -219,7 +227,7 @@ export class TissueAnalysisComponent {
       (fromAvailable ? this.availableTissues : this.selectedTissues).set(from);
       (toAvailable ? this.availableTissues : this.selectedTissues).set(to);
     }
-    this.dropped.set(tissue);
+    this.dropped.set(new Set(this.dropped()).add(tissue));
   }
 
   lottie?: DotLottie;
