@@ -25,17 +25,22 @@ const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
 
 /**
  * Answers the *app* abandons mid-stream, which a recording therefore always
- * catches cut off. Replayed as aborted, which is what really happens -- so they
- * are listed, each with why, rather than refused. Keep this short: anything
- * not here is a test ending too soon, and gets re-recorded instead.
+ * catches cut off. The harness never replays them as empty: a request falls to
+ * another test's complete copy if one exists, and is aborted if not -- either
+ * way what the page saw. So they are listed, each pinned to its recording and
+ * with why, rather than refused. Keep this short: anything not here is a test
+ * ending too soon, and gets re-recorded instead.
  */
 const ABANDONED = [
   {
-    recording: /^legacy-links--legacy-pathway-links-/,
-    request: /\/data\/eventsHierarchy\/9606\?|\/data\/query\/enhanced\/v2\/1280218\?/,
-    why:
-      'the test backs out of the pathway browser while it is still loading -- and a dbId ' +
-      'is swapped for its stable id mid-load first',
+    recording: /^legacy-links--legacy-pathway-links-a-dbid-fragment-as-links-in-the-wild-/,
+    request: /\/data\/query\/enhanced\/v2\/1280218\?/,
+    why: 'the page swaps the dbId for its stable id mid-load',
+  },
+  {
+    recording: /^legacy-links--legacy-pathway-links-a-direct-stable-id-for-comparison-/,
+    request: /\/data\/eventsHierarchy\/9606\?/,
+    why: 'the test backs out of the pathway browser while its hierarchy is still loading',
   },
   {
     recording: /^analysis-results--a-result-that-cannot-be-loaded-/,
@@ -82,7 +87,7 @@ function main() {
     .sort()) {
     const found = problems(JSON.parse(readFileSync(path.join(HAR_DIR, name), 'utf8')));
     const truncated = found.truncated.filter((k) => !abandoned(name, k));
-    // Abandoned answers count with the cut-offs: replayed as aborted, as they were.
+    // Abandoned answers count with the cut-offs: never replayed as empty.
     cutOffs += found.cutOff.length + (found.truncated.length - truncated.length);
     if (truncated.length === 0) continue;
     failed += truncated.length;
@@ -91,7 +96,7 @@ function main() {
     );
   }
   console.log(
-    `${cutOffs} requests were still in flight when their test ended (replayed as aborted).`
+    `${cutOffs} requests were still in flight when their test ended (never replayed as empty).`
   );
   if (failed) {
     console.error(

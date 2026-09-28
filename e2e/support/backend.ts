@@ -439,7 +439,8 @@ export const test = base.extend({
       // The wait below happens in this fixture's teardown, which counts against
       // the test's own time limit; give it room so a slow test does not time out
       // only when it is being recorded.
-      testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
+      // (A limit of 0 means none, and stays none.)
+      if (testInfo.timeout) testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
       await use(context);
       // The HAR is written when the context closes, and a response still
       // streaming then is recorded as a 200 with no body -- replayed, a
