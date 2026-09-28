@@ -115,7 +115,20 @@ if [ "$mode" != "fast" ]; then
   # render container: that is the deployed renderer, drawing beta's deployed
   # pages, so it would test what is already live rather than what is about to
   # be pushed. The data comes from the local backend; nothing leaves the box.
-  if curl -fsS -m 5 http://localhost:8080/ContentService/data/database/version >/dev/null 2>&1; then
+  #
+  # Only when the push touches what a figure is made from -- it adds minutes,
+  # and a pre-push that runs long enough makes GitHub drop the waiting push.
+  # PREFLIGHT_RENDER=always runs it regardless.
+  render_paths='^(tools/render/|projects/pathway-browser/src/app/(render|diagram|ehld|reacfoam)/|projects/pathway-browser/src/app/details/tabs/download-tab/|projects/reactome-cytoscape-style/|e2e/(downloads|download-feedback|detail-contents)\.spec\.ts$|e2e/fixtures/serves\.ts$|proxy\.conf\.js$|scripts/preflight\.sh$)'
+  render_base=$(git merge-base HEAD origin/main 2>/dev/null || echo HEAD)
+  render_touched=$(
+    { git diff --name-only "$render_base"...HEAD; git diff --name-only HEAD; } 2>/dev/null |
+      grep -E "$render_paths" | head -1
+  )
+  if [ "${PREFLIGHT_RENDER:-}" != "always" ] && [ -z "$render_touched" ]; then
+    echo
+    echo "  render, live: skipped -- nothing a figure is made from changed"
+  elif curl -fsS -m 5 http://localhost:8080/ContentService/data/database/version >/dev/null 2>&1; then
     render_cache=$(mktemp -d)
     RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
       node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
