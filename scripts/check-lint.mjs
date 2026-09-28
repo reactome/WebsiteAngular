@@ -20,7 +20,8 @@
  */
 import { execFile } from 'node:child_process';
 import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { isEntry } from './is-entry.mjs';
 import { dirname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -163,4 +164,4 @@ async function main() {
   console.log(`No errors; ${total(counts)} warnings, unchanged from the baseline.`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
+if (isEntry(import.meta.url)) await main();
