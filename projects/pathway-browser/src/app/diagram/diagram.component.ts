@@ -244,8 +244,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     effect(
       () =>
         this.analysis.sampleIndex() !== undefined &&
-        this._loadAnalysisFn &&
-        this._loadAnalysisFn(this.analysis.sampleIndex())
+        this._loadAnalysisFn?.(this.analysis.sampleIndex())
     );
     effect(() => {
       // Update style upon dark change
@@ -1648,7 +1647,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     )
     .subscribe((e) => {
       [this.reactomeStyle, this.reactomeStyleCompare]
-        .filter((s) => s !== undefined && e.detail.cy === s.cy)
+        .filter((s) => e.detail.cy === s?.cy)
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
 

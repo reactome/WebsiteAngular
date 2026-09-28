@@ -60,7 +60,7 @@ test.describe('Diagram behaviour', () => {
     const target = await page.evaluate(() => {
       const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
       const node = cy?.nodes('.Interacting.Pathway').first();
-      return node && node.length ? (node.data('graph.stId') as string) : null;
+      return node?.length ? (node.data('graph.stId') as string) : null;
     });
     // Asserted, not skipped. The recordings make this deterministic, so a diagram
     // with no pathway box means the fixture changed under us -- and a test that

@@ -591,7 +591,7 @@ export class EventService {
         }
 
         // Use existing selectedEvent data if stId matches
-        if (object && object.stId === ancestor.stId) {
+        if (object?.stId === ancestor.stId) {
           this.processHasEventData(
             object,
             targetTreeEvent,

@@ -73,7 +73,7 @@ export class NavigationBarComponent implements AfterViewInit {
     // Restrict hover-to-open to wide layouts; click handles narrow mode.
     if (this.windowWidth <= this.hamburgerBreakpoint) return;
     const option = this.navOptions()[label];
-    if (option && option.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
+    if (option?.dropdownLinks && Object.keys(option.dropdownLinks).length > 0) {
       this.activeDropdown = label;
     }
   }

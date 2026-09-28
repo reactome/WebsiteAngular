@@ -103,7 +103,7 @@ export class MolecularProcessComponent {
       reactions: entry.catalyzedEvent,
       type: 'Catalysis',
       activity: entry.activity,
-      ecNumber: entry.activity && entry.activity.ecNumber,
+      ecNumber: entry.activity?.ecNumber,
       activeUnit: entry.activeUnit,
       catalyst: entry.physicalEntity,
       catalystActivityReference: this.catalystActivityReference(),

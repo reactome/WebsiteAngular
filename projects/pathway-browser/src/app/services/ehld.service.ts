@@ -142,7 +142,7 @@ export class EhldService {
   getStableId(identifier: string) {
     const STID_PATTERN_LITE = /R-[A-Z]{3}-[0-9]{3,}/;
 
-    if (identifier && identifier.trim()) {
+    if (identifier?.trim()) {
       const result = STID_PATTERN_LITE.exec(identifier);
 
       if (result && result.length > 0) {
@@ -189,7 +189,7 @@ export class EhldService {
   getDbId(identifier: string) {
     const DBID_PATTERN_LITE = /\d+$/;
 
-    if (identifier && identifier.trim()) {
+    if (identifier?.trim()) {
       const result = DBID_PATTERN_LITE.exec(identifier);
       if (result && result.length > 0) {
         return result[0]; // First match
@@ -571,7 +571,7 @@ export class EhldService {
 
   // collect filter for a selected pathway when exporting EHLD
   private applyDynamicFilters(svg: SVGSVGElement, select: string | null) {
-    if (!select || !select.startsWith('R-')) return;
+    if (!select?.startsWith('R-')) return;
 
     const id = `REGION-${select}`;
     const selectedElement = svg.querySelector(`#${id}`) as HTMLElement;
