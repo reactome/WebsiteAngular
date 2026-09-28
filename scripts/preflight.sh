@@ -45,6 +45,19 @@ cd "$(dirname "$0")/.."
 mode=${1:-full}
 failed=()
 
+# What a step leaves running or on disk, removed however the script ends. A
+# hook is not an interactive shell, so Ctrl-C does not reach a background job:
+# without this an abandoned push leaves the render service running and a
+# production build in /tmp.
+render_pid=""
+scratch=()
+cleanup() {
+  [ -n "$render_pid" ] && kill "$render_pid" 2>/dev/null
+  [ ${#scratch[@]} -gt 0 ] && rm -rf -- "${scratch[@]}"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
 step() {
   local name=$1; shift
   printf '  %-34s ' "$name"
@@ -88,9 +101,14 @@ step "e2e recordings" npm run check:har
 # beta is served from this working tree's dist/reactome, and building over it
 # would serve a half-written site, of the wrong profile, for the whole push.
 if [ "$mode" != "fast" ]; then
-  app_build=$(mktemp -d)
-  step "app build" npm run build -- --output-path "$app_build"
-  rm -rf -- "$app_build"
+  if app_build=$(mktemp -d) && [ -n "$app_build" ]; then
+    scratch+=("$app_build")
+    step "app build" npm run build -- --output-path "$app_build"
+  else
+    printf '  %-34s FAILED\n' "app build"
+    echo "      could not make a directory to build into"
+    failed+=("app build")
+  fi
 fi
 
 if [ "$mode" != "fast" ]; then
@@ -158,15 +176,15 @@ if [ "$mode" != "fast" ]; then
     printf '  %-34s FAILED\n' "render, live"
     echo "      port 4312 is already serving a render service; stop it and push again"
     failed+=("render, live")
+  elif ! render_cache=$(mktemp -d) || [ -z "$render_cache" ]; then
+    printf '  %-34s FAILED\n' "render, live"
+    echo "      could not make a directory for the render cache"
+    failed+=("render, live")
   else
-    render_cache=$(mktemp -d)
+    scratch+=("$render_cache")
     RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
       node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
     render_pid=$!
-    # A hook is not an interactive shell, so Ctrl-C does not reach a background
-    # job: without this an abandoned push leaves the service running.
-    trap 'kill "$render_pid" 2>/dev/null; rm -rf -- "$render_cache"' EXIT
-    trap 'exit 130' INT TERM
     render_up=""
     for _ in $(seq 1 60); do
       kill -0 "$render_pid" 2>/dev/null || break
@@ -190,8 +208,7 @@ if [ "$mode" != "fast" ]; then
     fi
     kill "$render_pid" 2>/dev/null
     wait "$render_pid" 2>/dev/null
-    rm -rf -- "$render_cache"
-    trap - EXIT INT TERM
+    render_pid=""
   fi
 fi
 
