@@ -57,6 +57,12 @@ function navFor(segments: string[], navOptions: Record<string, NavOption>): Side
 
   const sectionDropdownLinks = section.dropdownLinks || {};
 
+  // Every page in a section is headed with the section. Only the section's own
+  // page used to set the heading; a page inside it kept whatever heading the
+  // sidebar had last shown -- the right one when reached from the section page,
+  // another section's when reached from anywhere else, and none when opened
+  // directly.
+
   // A section page itself (e.g. /about) lists the section's links.
   if (segments.length === 1) {
     return {
@@ -94,13 +100,13 @@ function navFor(segments: string[], navOptions: Record<string, NavOption>): Side
         }
       }
     }
-    return { title: '', icon: '', items: nested, activeItem };
+    return { title: section.label, icon: section.icon || '', items: nested, activeItem };
   }
 
   // Otherwise the section's links, with this sub-section marked.
   return {
-    title: '',
-    icon: '',
+    title: section.label,
+    icon: section.icon || '',
     items: sectionDropdownLinks,
     activeItem: matchedSubSectionKey || null,
   };

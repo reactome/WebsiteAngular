@@ -437,6 +437,21 @@ test.describe('Release calendar', () => {
 });
 
 test.describe('Section sidebar', () => {
+  // A page inside a section was headed only if the section's own page had been
+  // shown first, and reached from another section it kept that section's name.
+  test('heads a page with its own section, however it is reached', async ({ page }) => {
+    const heading = page.locator('app-sidebar .section-title');
+    await page.goto('/about/team');
+    await expect(heading).toHaveText('About', { timeout: LOAD });
+
+    await page.goto('/documentation');
+    await expect(heading).toHaveText('Docs', { timeout: LOAD });
+    // In the app, not a fresh load: the sidebar is the same one.
+    await page.locator('app-sidebar .sidebar-item a').first().click();
+    await expect(page).not.toHaveURL(/\/documentation$/);
+    await expect(heading).toHaveText('Docs');
+  });
+
   // An article's sidebar lists its siblings from the section's index. The list
   // was written into plain fields when the index arrived, after change
   // detection had been asked for, so Angular found the view changed after
