@@ -14,12 +14,6 @@ const gsaMethods = JSON.parse(
   readFileSync(join(__dirname, 'fixtures', 'gsa-methods.json'), 'utf8')
 );
 
-async function stubGsaMethods(page: Page) {
-  await page.route('**/GSAServer/**/methods', (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(gsaMethods) })
-  );
-}
-
 // Smoke coverage for the two analysis entry points, which are the public face of
 // the two libraries absorbed from reactome/gsa-frontend into projects/:
 //
@@ -88,17 +82,16 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
       timeout: BOOT_TIMEOUT,
     });
 
-    // Methods arrive via an NgRx effect hitting /GSAServer/0.1/methods. If that
-    // call fails the accordion renders empty and the wizard is a dead end, so
-    // assert on the cards themselves.
+    // Methods arrive via an NgRx effect hitting /GSAServer/0.1/methods --
+    // answered by the harness from a captured copy; no test calls the real
+    // service. If the call fails the accordion renders empty and the wizard is
+    // a dead end, so assert on the cards themselves.
     const methods = page.locator('gsa-method');
     await expect(methods.first()).toBeVisible({ timeout: BOOT_TIMEOUT });
     expect(await methods.count()).toBeGreaterThan(0);
   });
 
   test('selecting a method advances to dataset selection', async ({ page }) => {
-    // Replayed, not live: the test above already proves the real call works.
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
     const methods = page.locator('gsa-method');
@@ -124,7 +117,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   // the method's citation; /gsa leads to this tab now, so both live here. The
   // tour itself was only reachable through a ?gsa-tour= parameter.
   test('offers the guided tour, and starts it', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     await expect(page.locator('gsa-method').first()).toBeVisible({ timeout: BOOT_TIMEOUT });
     const before = page.url();
@@ -143,7 +135,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   // started there points at nothing the reader can see; and going back to step
   // 1 resets their datasets. So it is offered from step 1 only.
   test('offers the tour from the first step only', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     const tour = page.getByRole('button', { name: 'Guided tour' });
     await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
@@ -156,7 +147,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   });
 
   test('cites the method', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     const citation = page.getByRole('link', { name: /Griss J et al/ });
     await expect(citation).toBeVisible({ timeout: BOOT_TIMEOUT });
@@ -236,7 +226,6 @@ test.describe('Quantitative analysis: adding a dataset', () => {
   ) as Record<string, { status: number; body: unknown }>;
 
   async function stubGsa(page: Page) {
-    await stubGsaMethods(page);
     for (const [path, reply] of Object.entries(gsa)) {
       const glob = `**/GSAServer/0.1/${path}${path === 'data/status' || path === 'data/summary' ? '/**' : ''}`;
       await page.route(glob, (route) =>
@@ -336,6 +325,13 @@ test.describe('Quantitative analysis: adding a dataset', () => {
       submitted = route.request().postDataJSON();
       return route.fulfill({ contentType: 'text/plain', body: 'test-analysis-id' });
     });
+    // Submitting starts a status poll; it is answered, not sent on.
+    await page.route('**/GSAServer/0.1/status/test-analysis-id', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'test-analysis-id', status: 'running', completed: 0 }),
+      })
+    );
     await submitCameraOnMelanoma(page);
 
     await expect.poll(() => submitted, { timeout: 20_000 }).not.toBeNull();

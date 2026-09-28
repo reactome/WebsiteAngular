@@ -428,6 +428,25 @@ function watchAngularErrors(context: BrowserContext) {
   };
 }
 
+/**
+ * ReactomeGSA's answers to the reads a page makes on its own, captured once
+ * (e2e/fixtures). Keyed by the path after `/GSAServer/0.1/`.
+ */
+const GSA_READS: Record<string, unknown> = (() => {
+  const fixture = (name: string) =>
+    JSON.parse(readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf8'));
+  const example = fixture('gsa-melanoma-example.json') as Record<string, { body: unknown }>;
+  return {
+    methods: fixture('gsa-methods.json'),
+    ...Object.fromEntries(
+      ['types', 'data/sources', 'data/examples', 'data/search/species'].map((key) => [
+        key,
+        example[key].body,
+      ])
+    ),
+  };
+})();
+
 export const test = base.extend({
   context: async ({ context, baseURL }, use, testInfo) => {
     const angular = watchAngularErrors(context);
@@ -486,6 +505,25 @@ export const test = base.extend({
         .join('|')})/`
     );
     await context.route(blockedPattern, (route) => route.abort());
+
+    // ReactomeGSA is a shared service, reached through the dev server's proxy
+    // and so same-origin to every check above. No test may use it. The
+    // Pathway Browser reads its method list on load, so every test that opened
+    // it was calling the real service; the reads a page makes before anyone
+    // submits anything are answered here from captured copies, a test stubs
+    // anything more it needs (page routes take precedence over this one), and
+    // any other request is refused rather than sent.
+    await context.route(/\/GSAServer\//, (route) => {
+      const reply = GSA_READS[new URL(route.request().url()).pathname.replace(/^.*?\/0\.1\//, '')];
+      if (reply && route.request().method() === 'GET') {
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(reply) });
+      }
+      testInfo.annotations.push({
+        type: 'unstubbed GSA request, aborted',
+        description: `${route.request().method()} ${route.request().url()}`,
+      });
+      return route.abort();
+    });
 
     // Passive. A host that is neither ours, nor local, nor declared is recorded
     // and reported when the test ends. Its request does leave once -- the

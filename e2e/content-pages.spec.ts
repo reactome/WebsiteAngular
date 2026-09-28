@@ -333,11 +333,6 @@ test.describe('Tools page', () => {
   });
 
   test('"Analyse Gene Expression" opens the quantitative analysis', async ({ page }) => {
-    // This test cares where the link goes, not whether GSAServer answers, so it
-    // does not call that shared service -- analysis.spec.ts covers it for real.
-    await page.route('**/GSAServer/**/methods', (route) =>
-      route.fulfill({ contentType: 'application/json', body: '[]' })
-    );
     await page.goto('/tools');
     await page
       .locator('a.module-card')

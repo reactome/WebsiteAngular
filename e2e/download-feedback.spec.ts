@@ -47,24 +47,32 @@ test.describe('Download feedback', () => {
 
     await openDownloadTab(page);
 
-    const seen: string[] = [];
-    const watch = setInterval(() => {
-      void page
-        .locator('.button--busy .button__state')
-        .first()
-        .textContent({ timeout: 150 })
-        .then((text) => {
-          const state = text?.trim();
+    // Recorded in the page as each state is drawn. This sampled every 200ms,
+    // and a figure an earlier test had already made comes back from the render
+    // service's cache faster than that -- so in a full run it saw nothing.
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as { __states: string[] }).__states = seen;
+      const record = () => {
+        for (const el of document.querySelectorAll('.button--busy .button__state')) {
+          const state = el.textContent?.trim();
           if (state && !seen.includes(state)) seen.push(state);
-        })
-        .catch(() => undefined);
-    }, 200);
+        }
+      };
+      new MutationObserver(record).observe(document.body, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    });
 
     const [download] = await Promise.all([
       page.waitForEvent('download', { timeout: 240_000 }),
       pptxButton(page).click(),
     ]);
-    clearInterval(watch);
+    const seen = await page.evaluate(() => (window as unknown as { __states: string[] }).__states);
 
     // Named from Content-Disposition rather than from the URL.
     expect(download.suggestedFilename()).toBe(`${DIAGRAM}.pptx`);
