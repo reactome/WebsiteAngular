@@ -24,7 +24,7 @@
 # desync CI will not see and misses one CI would.
 #
 #   npm run preflight          # everything (a few minutes)
-#   npm run preflight -- fast  # skip the end-to-end smoke
+#   npm run preflight -- fast  # skip the app build and the end-to-end smoke
 #
 # Fast mode is for iterating, not for deciding you are done. The smoke it skips
 # is the only check that downloads a file and looks inside it, so a change to an
@@ -72,10 +72,26 @@ step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
 # cannot see: a wholesale regeneration satisfies package.json perfectly.
 step "lockfile drift" npm run check:lockfile
 step "format" npm run format:check
+# Types, lint, dead code and the unit tests all resolve the workspace libraries
+# from dist/, so without this they check whatever was built there last -- which
+# may not be this tree -- while CI builds them fresh.
+step "libraries" npm run build:libs
 step "types" npm run check:types
 step "lint" npm run check:lint
 step "dead code" npm run check:dead
 step "unit tests" npm test
+step "e2e recordings" npm run check:har
+
+# The app build is the only check that runs Angular's template type checking
+# and the bundle budgets; a broken template and a blown budget have both passed
+# every step above and failed in CI. It builds into a directory of its own:
+# beta is served from this working tree's dist/reactome, and building over it
+# would serve a half-written site, of the wrong profile, for the whole push.
+if [ "$mode" != "fast" ]; then
+  app_build=$(mktemp -d)
+  step "app build" npm run build -- --output-path "$app_build"
+  rm -rf -- "$app_build"
+fi
 
 if [ "$mode" != "fast" ]; then
   echo
