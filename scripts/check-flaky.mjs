@@ -67,7 +67,10 @@ function* tests(node) {
         title: spec.title,
         file: spec.file ?? node.file,
         status: test.status,
-        reason: (test.annotations ?? []).find((a) => a.type === 'skip')?.description ?? '',
+        // `fixme` is a skip too, with its own annotation.
+        reason:
+          (test.annotations ?? []).find((a) => a.type === 'skip' || a.type === 'fixme')
+            ?.description ?? '',
       };
     }
   }
@@ -85,9 +88,18 @@ export function summarise(report, expected) {
   const flaky = [];
   const skipped = [];
   const unexpected = [];
-  for (const test of tests(report)) {
+  const all = [...tests(report)];
+  // A serial group stops at its first failure, and Playwright reports the rest
+  // as skipped with no reason. On a run that is already red, those are not
+  // skips anyone chose -- so they are said to be what they are, not refused.
+  const failedFiles = new Set(all.filter((t) => t.status === 'unexpected').map((t) => t.file));
+  for (const test of all) {
     if (test.status === 'flaky') flaky.push(name(test));
     if (test.status === 'skipped') {
+      if (!test.reason && failedFiles.has(test.file)) {
+        skipped.push({ name: name(test), reason: 'not run: an earlier test in its file failed' });
+        continue;
+      }
       const entry = { name: name(test), reason: test.reason || '(no reason given)' };
       skipped.push(entry);
       if (!(entry.name in expected)) unexpected.push(entry);

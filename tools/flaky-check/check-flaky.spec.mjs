@@ -44,3 +44,15 @@ describe('skipped tests', () => {
     expect(result.skipped).toEqual([]);
   });
 });
+
+describe('tests a failure stopped', () => {
+  it('are not refused as skips when an earlier test in the file failed', () => {
+    const result = summarise(report(['first', 'unexpected'], ['second', 'skipped', '']), {});
+    expect(result.unexpected).toEqual([]);
+    expect(result.skipped[0].reason).toBe('not run: an earlier test in its file failed');
+  });
+
+  it('still refuse an unexplained skip in a file where nothing failed', () => {
+    expect(summarise(report(['second', 'skipped', '']), {}).unexpected).toHaveLength(1);
+  });
+});

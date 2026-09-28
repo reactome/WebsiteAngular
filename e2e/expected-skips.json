@@ -1,5 +1,5 @@
 {
-  "_what": "Tests that skip themselves in CI, and why. scripts/check-flaky.mjs fails a shard on any skip not listed here, so a test that starts skipping -- the behaviour it checks went missing, or a probe answered wrongly -- is seen instead of reported green. Add an entry only with the reason it cannot run in CI.",
+  "_what": "Tests that skip themselves in CI, and why. scripts/check-flaky.mjs fails a shard on any skip not listed here, so a test that starts skipping -- the behaviour it checks went missing, or a probe answered wrongly -- is seen instead of reported green. Add an entry only with the reason it cannot run in CI, and remove one when the test can run -- nothing flags an entry that no longer skips anywhere.",
   "skips": {
     "admin.spec.ts › loads without the \"Failed loading assets\" placeholder": "the TinaCMS dev server, a local content-editing surface, does not run in CI",
     "admin.spec.ts › every collection in tina/config.ts is reachable by URL": "the TinaCMS dev server, a local content-editing surface, does not run in CI",
