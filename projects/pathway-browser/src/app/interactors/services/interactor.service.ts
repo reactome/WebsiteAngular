@@ -73,7 +73,6 @@ export class InteractorService {
   private readonly DEFAULT_INTERACTOR_WIDTH = 100;
   private readonly DEFAULT_DISGENET_WIDTH = 250;
   private readonly INTERACTOR_PADDING = 20;
-  private readonly CHAR_WIDTH = 10;
   private readonly CHAR_HEIGHT = 12;
   private readonly GENE_DECORATION_HEIGHT = 20;
 
@@ -838,7 +837,7 @@ export class InteractorService {
     cy?.add(interactorEdges);
   }
 
-  public displayInteractors(interactorsToDisplay: NodeCollection, cy: cytoscape.Core) {
+  public displayInteractors(interactorsToDisplay: NodeCollection, _cy: cytoscape.Core) {
     const layoutOptions: cytoscape.LayoutOptions = {
       name: 'preset',
       fit: false,

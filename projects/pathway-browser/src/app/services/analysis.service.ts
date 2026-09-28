@@ -8,7 +8,7 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
-import { catchError, EMPTY, Observable, of, switchMap, tap } from 'rxjs';
+import { catchError, Observable, of, switchMap, tap } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import type { Analysis } from '../model/analysis.model';
@@ -17,7 +17,6 @@ import chroma, { Color, Scale } from 'chroma-js';
 import { extract, Style } from 'reactome-cytoscape-style';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
-import { DataStateService } from './data-state.service';
 import { Params } from '@angular/router';
 import { cleanObject } from '../reacfoam/reacfoam.service';
 import { isDefined, shouldBeScientificFormat } from './utils';
@@ -115,7 +114,7 @@ export class PaletteSummary {
   padding = 0;
   private _domain: [number, number] = [0, 1];
 
-  constructor(private data: StandardPalette | string[]) {
+  constructor(data: StandardPalette | string[]) {
     if (typeof data === 'string') {
       this.padding = 0.1;
       this.scale = chroma.scale(data).padding(this.padding);
@@ -238,7 +237,6 @@ export type Examples = 'uniprot' | 'microarray' | 'cancer-gene-census' | 'extrem
 export class AnalysisService {
   private http: HttpClient = inject(HttpClient);
   private state: UrlStateService = inject(UrlStateService);
-  private data: DataStateService = inject(DataStateService);
   private darkS: DarkService = inject(DarkService);
   private speciesService: SpeciesService = inject(SpeciesService);
   style: Style = new Style(document.body);
@@ -355,7 +353,7 @@ export class AnalysisService {
       resource: this.state.resourceFilter(),
       species: this.state.speciesFilter(),
     }),
-    stream: ({ params, previous }) => {
+    stream: ({ params }) => {
       //console.log("Loading ", params, previous)
       return params.token
         ? this.loadAnalysis(params.token, {
@@ -599,7 +597,7 @@ export class AnalysisService {
       .pipe(
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
-        tap((result) => clearFilters && this.clearFilters()),
+        tap((_result) => clearFilters && this.clearFilters()),
         tap((result) => this.state.analysis.set(result.summary.token))
       );
   }
@@ -618,7 +616,7 @@ export class AnalysisService {
       .pipe(
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
-        tap((result) => clearFilters && this.clearFilters()),
+        tap((_result) => clearFilters && this.clearFilters()),
         tap((result) => this.state.analysis.set(result.summary.token))
       );
   }
@@ -638,7 +636,7 @@ export class AnalysisService {
       .pipe(
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
-        tap((result) => clearFilters && this.clearFilters()),
+        tap((_result) => clearFilters && this.clearFilters()),
         tap((result) => this.state.analysis.set(result.summary.token))
       );
   }

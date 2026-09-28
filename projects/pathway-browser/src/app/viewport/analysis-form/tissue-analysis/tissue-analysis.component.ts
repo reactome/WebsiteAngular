@@ -27,11 +27,9 @@ import {
 } from '@angular/cdk/drag-drop';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { add } from 'vectorious';
 type Summary = TissueExperiment.Summary;
 import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
 import { FormBuilder, FormControl } from '@angular/forms';
-import { AsyncPipe } from '@angular/common';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DarkService } from '../../../services/dark.service';
 

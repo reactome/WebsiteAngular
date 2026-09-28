@@ -1,8 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { DataStateService } from './data-state.service';
 import { map, Observable } from 'rxjs';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { PropertyType } from '../details/tabs/molecule-tab/molecule-tab.component';
 import { extractFromSpace } from './utils';
@@ -32,7 +31,6 @@ export interface Participant {
 })
 export class ParticipantService {
   private http = inject(HttpClient);
-  private dataState = inject(DataStateService);
 
   getParticipants(stId: string): Observable<Participant[]> {
     const url = `${CONTENT_SERVICE}/data/participants/${stId}`;

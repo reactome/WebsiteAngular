@@ -356,7 +356,7 @@ export class SvgExporterService {
     let keyframes = `@keyframes ${keyframeName} {\n`;
     const lastValues: Partial<Record<string, string>> = { ...diffs[diffs.length - 1].style }; // start with the last value as it loops
 
-    diffs.forEach((diff, i) => {
+    diffs.forEach((diff, _i) => {
       const { start, stop } = this.calcTransitionTime(diff.frame);
       // start of transition: previous value
       keyframes += `  ${start}% {\n`;

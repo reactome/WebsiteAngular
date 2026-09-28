@@ -8,7 +8,6 @@ import { HomeHelpComponent } from './home-help/home-help.component';
 import { HomeApiDataComponent } from './home-api-data/home-api-data.component';
 import { HomeRelatedComponent } from './home-related/home-related.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
-import { NavOption } from '../../types/link';
 import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.component';
 import { CuratorHomeShortcutsComponent } from './curator-home-shortcuts/curator-home-shortcuts.component';
 import { NavOptionsService } from '../../services/nav-options.service';

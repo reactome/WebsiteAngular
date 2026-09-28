@@ -78,7 +78,7 @@ export class NavigationBarComponent implements AfterViewInit {
     }
   }
 
-  showHamburgerDropdown(label: string) {
+  showHamburgerDropdown(_label: string) {
     this.activeHamburgerMenu = true;
   }
 
@@ -118,7 +118,7 @@ export class NavigationBarComponent implements AfterViewInit {
     return !!links && Object.keys(links).length > 0;
   }
 
-  @HostListener('window:resize', ['$event']) onResize(event: any) {
+  @HostListener('window:resize', ['$event']) onResize(_event: any) {
     this.windowWidth = window.innerWidth;
   }
 }

@@ -12,7 +12,6 @@ import { DatabaseIdentifier } from '../../../model/graph/database-identifier.mod
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RheaService } from '../../../services/rhea.service';
 import { forkJoin } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { template } from 'lodash';
 import { layers } from 'cytoscape-layers';
 import '@swissprot/rhea-reaction-viz-test';
@@ -23,15 +22,6 @@ export type Layout = {
   areas: string;
 };
 
-interface LabelLayout {
-  left: number; // horizontal center position
-  width: number; // width of the g element scaled
-}
-
-interface SvgLayout {
-  labels: LabelLayout[];
-}
-
 @Component({
   selector: 'cr-rhea',
   imports: [],
@@ -41,7 +31,6 @@ interface SvgLayout {
 })
 export class RheaComponent {
   private rheaService = inject(RheaService);
-  private http = inject(HttpClient);
   private dark = inject(DarkService);
 
   readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });

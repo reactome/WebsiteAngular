@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import {
   BehaviorSubject,
@@ -273,7 +273,7 @@ export class EventService {
         tree,
         allVisibleTreeNodes
       ).pipe(
-        map(([treeData, treeEvent]) => {
+        map(([treeData]) => {
           this.setCurrentEventAndObj(diagramTreeEvent, event);
           return treeData;
         })
@@ -326,7 +326,7 @@ export class EventService {
     diagramId: string | undefined,
     allVisibleTreeNodes: Event[],
     tree: MatTree<Event, string>,
-    hitReactions: number[]
+    _hitReactions: number[]
   ): void {
     const reactionDiagramStId = [...selectedReaction.ancestors]
       .reverse()

@@ -39,21 +39,6 @@ import { safeInput } from '../../utils/web-component-utils';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { downloadTable } from '../download-table/download-table.component';
-
-interface SelectedCellRange {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-}
-
-type Direction = 'up' | 'down' | 'left' | 'right';
-/**
- * [x,y]
- */
-type Coord = [number, number];
-type Range = { start: Coord; stop?: Coord };
-
 @UntilDestroy()
 @Component({
   selector: 'reactome-table',
@@ -306,7 +291,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.tableStore.deleteRow({ y });
   }
 
-  focusLastCell($event: any) {
+  focusLastCell(_$event: any) {
     this.tableStore.focusLast();
   }
 
@@ -392,7 +377,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.scrollOffset.set(this.viewport().getRenderedRange().start * this.rowHeight());
   }
 
-  trackByIndex: TrackByFunction<any> = <T>(index: number, element: T) => {
+  trackByIndex: TrackByFunction<any> = <T>(index: number, _element: T) => {
     return index;
   };
 

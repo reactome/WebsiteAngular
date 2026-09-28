@@ -324,8 +324,6 @@ export class Interactivity {
       },
       {
         init: (elem: RenderableHTMLElement, node: cytoscape.NodeSingular) => {
-          const name = node.data('displayName');
-
           elem.innerHTML = node.data('html') || '';
           elem.style.display = 'flex';
           const video = elem.children[0] as HTMLVideoElement;
@@ -340,11 +338,11 @@ export class Interactivity {
               ) {
                 // video.classList.add('loading');
                 this.addLoading(elem);
-                video.oncanplay = (e) => this.removeLoading(elem);
+                video.oncanplay = (_e) => this.removeLoading(elem);
                 let errors = 0;
                 const sources = video.querySelectorAll('source')!;
                 sources.forEach((source) =>
-                  source.addEventListener('error', (e) => {
+                  source.addEventListener('error', (_e) => {
                     errors++;
                     if (errors === sources.length) this.removeStructureContainer(elem, node);
                   })
@@ -444,7 +442,7 @@ export class Interactivity {
 
     layers.renderPerNode(
       this.moleculeLayer,
-      (elem: HTMLElement, node: cytoscape.NodeSingular) => {},
+      (_elem: HTMLElement, _node: cytoscape.NodeSingular) => {},
       {
         init: (elem: HTMLElement, node: cytoscape.NodeSingular) => {
           elem.classList.add('molecule-structure');

@@ -350,7 +350,7 @@ export class ViewportComponent {
    * `afterNextRender` is tied to the injector, so it does not run after
    * destruction, and it waits for a render rather than guessing at 200ms.
    */
-  private readonly glyphs = afterNextRender(() => {
+  readonly glyphs = afterNextRender(() => {
     const element = this.darkToggle()._switchElement.nativeElement;
     element
       ?.querySelector('.mdc-switch__icon--on')

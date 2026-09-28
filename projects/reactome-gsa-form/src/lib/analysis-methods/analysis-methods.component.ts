@@ -1,11 +1,10 @@
-import { Component, effect, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { Method } from '../state/method/method.state';
 import { methodFeature } from '../state/method/method.selector';
 import { methodActions } from '../state/method/method.action';
-import { ConfigProvider, REACTOME_GSA_CONFIG } from '../config/gsa-config';
 import { LetDirective } from '@ngrx/component';
 import { MatAccordion } from '@angular/material/expansion';
 import { MethodComponent } from './method/method.component';

@@ -1,6 +1,6 @@
-import { computed, Injectable, signal, Signal, inject } from '@angular/core';
+import { computed, Injectable, Signal, inject } from '@angular/core';
 import { SpeciesService } from '../services/species.service';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { map, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Species } from '../model/graph/species.model';

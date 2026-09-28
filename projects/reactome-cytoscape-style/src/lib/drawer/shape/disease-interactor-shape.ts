@@ -1,10 +1,7 @@
 import { extract } from '../../properties-utils';
 import { DrawerProvider } from '../types';
 
-export const diseaseInteractor: DrawerProvider = (
-  properties,
-  { width, height, drug, disease, interactor }
-) => {
+export const diseaseInteractor: DrawerProvider = (properties, { width, height }) => {
   const hover = extract(properties.global.hoverNode);
   const select = extract(properties.global.selectNode);
   const fill = extract(properties.global.negative);

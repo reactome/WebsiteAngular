@@ -36,7 +36,6 @@ import {
 import { UrlStateService } from '../services/url-state.service';
 import { SplitComponent } from 'angular-split';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { NavigationEnd, Router } from '@angular/router';
 import { EhldService } from '../services/ehld.service';
 import { AnalysisService } from '../services/analysis.service';
 import { IconService } from '../services/icon.service';
@@ -46,7 +45,7 @@ import { DatabaseObjectService } from '../services/database-object.service';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { MatTreeNode, MatNestedTreeNode } from '@angular/material/tree';
+import { MatNestedTreeNode } from '@angular/material/tree';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -82,7 +81,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   public state: UrlStateService = inject(UrlStateService);
   private el: ElementRef = inject(ElementRef);
   protected readonly hierarchyHover = inject(HierarchyHoverService);
-  private router: Router = inject(Router);
   private ehldService: EhldService = inject(EhldService);
   private analysis: AnalysisService = inject(AnalysisService);
   private iconService: IconService = inject(IconService);
@@ -154,7 +152,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     pathwayId: toObservable(this.pathwayId),
   })
     .pipe(
-      tap(({ select, pathwayId }) => (this.selectedIdFromUrl = select!)),
+      tap(({ select }) => (this.selectedIdFromUrl = select!)),
       //todo: revisit here to check the logic
       filter(
         () => !this._ignore && !this._isInitialLoad
@@ -182,7 +180,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           .getHitReactions(this.pathwayId()!, token)
           .pipe(map((hitReactions) => ({ idToUse, enhancedEvent, hitReactions })));
       }),
-      switchMap(({ idToUse, enhancedEvent, hitReactions }) => {
+      switchMap(({ enhancedEvent, hitReactions }) => {
         return this.eventService.adjustTreeFromUrlSelectUpdate(
           enhancedEvent,
           this.pathwayId(),
@@ -270,7 +268,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
     this.split()
       .dragProgress$.pipe(untilDestroyed(this))
-      .subscribe((data) => {
+      .subscribe((_data) => {
         this.adjustWidths();
       });
 
@@ -490,7 +488,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       });
   }
 
-  trackById(index: number, event: Event): string {
+  trackById(_index: number, event: Event): string {
     return event.stId;
   }
 
@@ -567,7 +565,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     targetElement.style.left = `-${distanceToScroll}px`;
   }
 
-  onNameHoverLeave($event: MouseEvent, event: Event) {
+  onNameHoverLeave($event: MouseEvent, _event: Event) {
     const nameElement = $event.target as HTMLElement;
     nameElement.style.left = '0'; // Reset position
   }

@@ -48,7 +48,7 @@ import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
 import { average, isDefined, isPathwayWithDiagram, isReferenceEntityStId } from '../services/utils';
 import type { Analysis } from '../model/analysis.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
@@ -108,7 +108,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   analysis = inject(AnalysisService);
   private event = inject(EventService);
   private router = inject(Router);
-  private route = inject(ActivatedRoute);
   private download = inject(DownloadService);
   private data = inject(DataStateService);
   private deltaSignal = inject(DeltaSignalService);
@@ -213,7 +212,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     });
     effect(
       () => {
-        const flag = this.data.flagIdentifiers();
+        // Read to subscribe: the effect re-runs when the flagged identifiers change.
+        this.data.flagIdentifiers();
         if (!this.data.flagResource.isLoading())
           this.avoidSideEffect(() =>
             this.cys.forEach((cy) => this.flag(this.data.flagIdentifiers(), cy))
@@ -954,7 +954,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   loadSubpathwayWithDiagram(event: EventModel) {
     return this.event.fetchEventAncestors(this.pathwayId()!).pipe(
       map((ancestors) => this.event.getFinalAncestor(ancestors)),
-      switchMap((ancestors) => {
+      switchMap((_ancestors) => {
         const pathwayWithDiagram = this.event.getPathwayWithDiagram(event);
         if (pathwayWithDiagram) {
           const newDiagramId = pathwayWithDiagram.stId;

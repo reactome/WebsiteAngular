@@ -66,7 +66,7 @@ export class SearchAnswerComponent {
   private readonly _elapsed = signal(0);
   readonly elapsed = this._elapsed.asReadonly();
 
-  private readonly tick = effect((onCleanup) => {
+  readonly tick = effect((onCleanup) => {
     if (!this.asking()) {
       this._elapsed.set(0);
       return;
@@ -238,7 +238,7 @@ export class SearchAnswerComponent {
    * widget just in case. `render=explicit` so it does not hunt the page for
    * containers of its own accord.
    */
-  private readonly showChallenge = effect(() => {
+  readonly showChallenge = effect(() => {
     const challenge = this.challenge();
     const host = this.widget()?.nativeElement;
     if (!challenge || !host || host.childElementCount > 0) return;
@@ -291,7 +291,7 @@ export class SearchAnswerComponent {
    * Past its hour the chat no longer has the answer, so the offer goes back to
    * the plain chat link -- on a timer, because the clock is not a signal.
    */
-  private readonly expire = effect((onCleanup) => {
+  readonly expire = effect((onCleanup) => {
     const at = this.answers.answeredAt();
     if (at === null) return;
     const timer = setTimeout(

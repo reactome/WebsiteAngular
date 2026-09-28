@@ -33,7 +33,6 @@ import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
-import { NgClass } from '@angular/common';
 import { parseEhldSvg } from './ehld-svg';
 import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 

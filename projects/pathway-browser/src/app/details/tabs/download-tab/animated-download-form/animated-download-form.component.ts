@@ -7,7 +7,6 @@ import {
 } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { defaultDownloadOptions, DownloadOptions } from '../../../../services/download.service';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { MatError, MatFormField, MatLabel, MatSuffix } from '@angular/material/select';
 import { MatInput } from '@angular/material/input';

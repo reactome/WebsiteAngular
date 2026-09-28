@@ -11,7 +11,6 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
 import { Labels } from '../../../constants/constants';
-import { StructureService } from '../../../services/structure.service';
 import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
 
 @Component({
@@ -32,7 +31,6 @@ export class ExternalReferenceComponent {
   private entity = inject(EntityService);
   private state = inject(UrlStateService);
   data = inject(DataStateService);
-  private structure = inject(StructureService);
 
   readonly referenceEntity = input.required<ReferenceEntity>();
   readonly xRefs = input<DatabaseIdentifier[]>([]);

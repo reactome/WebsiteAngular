@@ -1,8 +1,6 @@
 import {
   AfterViewInit,
   Component,
-  contentChild,
-  effect,
   ElementRef,
   input,
   linkedSignal,
@@ -68,7 +66,7 @@ export class ShadowScrollComponent implements AfterViewInit, OnDestroy {
   private resizeObserver = new ResizeObserver(() => this.updateShadows());
 
   updateShadows() {
-    this.visibility.forEach((v, k) => {
+    this.visibility.forEach((_v, k) => {
       this.visibility.set(k, this.scroll().measureScrollOffset(k) > this.marginDetection());
     });
   }

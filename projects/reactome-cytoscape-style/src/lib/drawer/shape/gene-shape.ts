@@ -3,7 +3,7 @@ import { DrawerProvider } from '../types';
 
 export const gene: DrawerProvider = (
   properties,
-  { width, height, drug, interactor, disease, lossOfFunction }
+  { width, height, interactor, disease, lossOfFunction }
 ) => {
   const t = extract(properties.global.thickness);
   const dHeight = extract(properties.gene.decorationHeight);

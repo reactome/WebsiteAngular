@@ -1,7 +1,7 @@
 import { DrawerProvider } from '../types';
 import { extract } from '../../properties-utils';
 
-export const interactingPathway: DrawerProvider = (properties, { width, height, drug }) => {
+export const interactingPathway: DrawerProvider = (properties, { width, height }) => {
   const select = extract(properties.global.selectNode);
   const hover = extract(properties.global.hoverNode);
   const flag = extract(properties.global.flag);

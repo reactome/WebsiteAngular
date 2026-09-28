@@ -3,7 +3,7 @@ import { DrawerProvider } from '../types';
 
 export const entitySet: DrawerProvider = (
   properties,
-  { width, height, drug, disease, lossOfFunction, interactor }
+  { width, height, drug, disease, interactor }
 ) => {
   const select = extract(properties.global.selectNode);
   const hover = extract(properties.global.hoverNode);
@@ -33,15 +33,6 @@ export const entitySet: DrawerProvider = (
   const stateHeight = height / 2 + t;
   const bracesOffset = r2 + t2;
 
-  let realDashLength = width;
-
-  if (lossOfFunction) {
-    const hidingLength = width - 2 * bracesOffset;
-    const idealDashLength = t2;
-    const dashNumber = Math.round((hidingLength / idealDashLength + 1) / 2);
-    realDashLength = hidingLength / (2 * dashNumber - 1);
-  }
-
   const defs = `<defs>
    <path id="curly" d="
        M ${r2 + t} ${t}
@@ -69,8 +60,6 @@ export const entitySet: DrawerProvider = (
      <use href="#curly"/>
    </clipPath>
  </defs>`;
-
-  const t1_5 = t * 1.5;
   return {
     background: {
       'background-image': `

@@ -9,8 +9,6 @@ import {
   inject,
 } from '@angular/core';
 
-type EventType = keyof HTMLElementEventMap;
-
 @Directive({
   selector: '[passive]',
 })

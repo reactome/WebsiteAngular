@@ -126,7 +126,9 @@ export class SearchComponent {
         )
     );
     effect(() => {
-      const subs = [this.resultHeight(), this.resultsScroll()];
+      // Read to subscribe: the effect re-runs when the results panel is resized or replaced.
+      this.resultHeight();
+      this.resultsScroll();
       setTimeout(() => this.resultsScroll()?.checkViewportSize(), 500); // After opening animation
     });
     effect(() => {
@@ -273,7 +275,7 @@ export class SearchComponent {
   currentScope = computed(() => this.scopes[this.currentScopeName()]);
 
   resultHeight = computed(() => {
-    const [scope, ...sources] = [
+    const [scope] = [
       this.currentScopeName(),
       this.scopes.local.found(),
       this.scopes.global.found(),
@@ -430,7 +432,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         switchMap((param) =>
           param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
         ),
-        catchError((err) => of(Search.EMPTY_RESULTS))
+        catchError((_err) => of(Search.EMPTY_RESULTS))
       )
       .subscribe((result) => {
         this._result.set(result);

@@ -23,7 +23,6 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
-import { Router } from '@angular/router';
 import { TypeSafeMatCellDef } from '../../../utils/type-safe-mat-cell-def.directive';
 import { TypeSafeMatRowDef } from '../../../utils/type-safe-mat-row-def.directive';
 import { NotFoundTableComponent } from './not-found-table/not-found-table.component';
@@ -79,7 +78,6 @@ export class ResultTabComponent {
   analysis = inject(AnalysisService);
   state = inject(UrlStateService);
   data = inject(DataStateService);
-  private router = inject(Router);
 
   analysisType = computed(
     () =>
@@ -225,38 +223,29 @@ export class ResultTabComponent {
 
   filteredDataNoSize = computed(() => {
     let data = this.analysis.result()?.pathways || [];
-    let size = data.length;
     if (this.includeGrouping() === false) {
       data = data.filter((p) => p.llp);
-      //console.log('Filter llp', size, '==>', data.length)
-      size = data.length;
     }
     if (this.includeDisease() === false) {
       data = data.filter((p) => !p.inDisease);
-      //console.log('Filter disease', size, '==>', data.length)
-      size = data.length;
     }
     if (this.state.fdrFilter() !== undefined) {
       data = data.filter((p) => p.entities.fdr <= this.state.fdrFilter()!);
-      //console.log('Filter fdr', size, '==>', data.length)
     }
     if (this.state.minExpressionFilter() !== undefined) {
       data = data.filter(
         (p) => p.entities.exp[this.analysis.sampleIndex()] >= this.state.minExpressionFilter()!
       );
-      //console.log('Filter minExpression', size, '==>', data.length)
     }
     if (this.state.maxExpressionFilter() !== undefined) {
       data = data.filter(
         (p) => p.entities.exp[this.analysis.sampleIndex()] <= this.state.maxExpressionFilter()!
       );
-      //console.log('Filter minExpression', size, '==>', data.length)
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter((p) =>
         this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()])
       );
-      //console.log('Filter gsa', size, '==>', data.length)
     }
     return data;
   });
@@ -267,18 +256,12 @@ export class ResultTabComponent {
 
   filteredData = computed(() => {
     let data = this.filteredDataNoSize();
-    let size = data.length;
     if (this.state.pathwayMinSizeFilter()) {
       data = data.filter((p) => p.entities.total >= this.state.pathwayMinSizeFilter()!);
-      //console.log('Filter min size', size, '==>', data.length)
-      size = data.length;
     }
     if (this.state.pathwayMaxSizeFilter()) {
       data = data.filter((p) => p.entities.total <= this.state.pathwayMaxSizeFilter()!);
-      //console.log('Filter max size', size, '==>', data.length)
-      size = data.length;
     }
-    //console.log("Total filter", this.analysis.result()?.pathways.length, '==>', size)
     return data;
   });
 
@@ -419,7 +402,7 @@ export class ResultTabComponent {
     );
   }
 
-  isExpanded = (index: number, pathway: Analysis.Pathway) => {
+  isExpanded = (_index: number, pathway: Analysis.Pathway) => {
     return this.expandedPathway() === pathway;
   };
 

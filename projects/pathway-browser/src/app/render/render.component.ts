@@ -1426,15 +1426,6 @@ export class RenderComponent {
     throw new Error('nothing on this page can export SVG');
   }
 
-  /** The colour the diagram draws itself on, whichever theme is active. */
-  private diagramBackground(cy: cytoscape.Core) {
-    const container = cy.container();
-    const background = container ? getComputedStyle(container).backgroundColor : '';
-    // A container with no background of its own would give "rgba(0, 0, 0, 0)",
-    // which is the transparency this exists to avoid.
-    return background && !background.startsWith('rgba(0, 0, 0, 0') ? background : '#ffffff';
-  }
-
   /**
    * The drawn view as a raster data URL.
    *

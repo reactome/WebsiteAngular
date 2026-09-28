@@ -1,10 +1,10 @@
 import { computed, effect, Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { OrthologousMap, Species } from '../model/graph/species.model';
 import { Event } from '../model/graph/event/event.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { UrlStateService } from './url-state.service';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { isDefined } from './utils';
@@ -16,7 +16,6 @@ import { SelectableObject } from './event.service';
 export class SpeciesService {
   private http = inject(HttpClient);
   private state = inject(UrlStateService);
-  private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
@@ -114,7 +113,7 @@ export class SpeciesService {
           (mapping) =>
             new Map(identifiers.map((i) => [i, i.startsWith('R-ALL') ? i : mapping[i]?.stId]))
         ),
-        catchError((e) => of(new Map(identifiers.map((i) => [i, undefined]))))
+        catchError((_e) => of(new Map(identifiers.map((i) => [i, undefined]))))
       );
   }
 

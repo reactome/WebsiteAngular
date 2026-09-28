@@ -170,7 +170,7 @@ export class AnalysisSummaryComponent {
   private readonly _elapsed = signal(0);
   readonly elapsed = this._elapsed.asReadonly();
 
-  private readonly tick = effect((onCleanup) => {
+  readonly tick = effect((onCleanup) => {
     if (!this.summary.asking()) {
       this._elapsed.set(0);
       return;
@@ -297,7 +297,7 @@ export class AnalysisSummaryComponent {
    * of somebody who has just run an analysis — sending a reader to a different
    * feature to unlock this one. The check belongs next to the thing it guards.
    */
-  private readonly showChallenge = effect(() => {
+  readonly showChallenge = effect(() => {
     const challenge = this.summary.challenge();
     const host = this.widget()?.nativeElement;
     if (!challenge || !host || host.childElementCount > 0) return;

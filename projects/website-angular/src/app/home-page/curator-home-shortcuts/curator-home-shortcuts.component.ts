@@ -3,7 +3,6 @@ import { Component, Input, inject } from '@angular/core';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
-import { NavOption } from '../../../types/link';
 import { environment } from '../../../../../pathway-browser/src/environments/environment';
 
 @Component({
