@@ -90,6 +90,10 @@ module.exports = tseslint.config(
       // one is new. Deprecated is how Angular, and the libraries, say what the
       // next major version removes.
       '@typescript-eslint/no-deprecated': 'error',
+      // A thrown string has no stack, and Angular does not wait for an async
+      // lifecycle hook, so its errors escape. The code has neither.
+      '@typescript-eslint/only-throw-error': 'error',
+      '@angular-eslint/no-async-lifecycle-method': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
