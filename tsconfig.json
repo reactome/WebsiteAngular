@@ -45,11 +45,15 @@
   // go would trade 185 edits, most of them assertions, for that handful.
   // strictStandalone is deliberately absent: reactome-table is still an
   // NgModule library with declared, non-standalone components, and it is
-  // published, so converting it is not a config change. The redundancy diagnostics (NG8107/NG8102, ~51 findings) stay at
-  // their default warning: they fire where a type says a value cannot be null,
-  // which is not the same as the API guaranteeing it, so making them errors
-  // would push people to delete defensive code on the word of an optimistic
-  // type.
+  // published, so converting it is not a config change.
+  //
+  // Every other template diagnostic is an error, including any a later Angular
+  // adds (defaultCategory), except the two redundancy ones, NG8107/NG8102. They
+  // fire where a type says a value cannot be null, which is not the same as
+  // the API guaranteeing it, so making them errors would push people to delete
+  // defensive code on the word of an optimistic type. (There were ~51; the
+  // honest Solr types of #263 cleared them, and a warning is still the right
+  // weight for a new one.)
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
@@ -65,7 +69,9 @@
         "textAttributeNotBinding": "error",
         "suffixNotSupported": "error",
         "skipHydrationNotStatic": "error",
-        "unusedStandaloneImports": "error"
+        "unusedStandaloneImports": "error",
+        "nullishCoalescingNotNullable": "warning",
+        "optionalChainNotNullable": "warning"
       }
     }
   }
