@@ -1,0 +1,22 @@
+{
+  "_what": "Tests that skip themselves in CI, and why. scripts/check-flaky.mjs fails a shard on any skip not listed here, so a test that starts skipping -- the behaviour it checks went missing, or a probe answered wrongly -- is seen instead of reported green. Add an entry only with the reason it cannot run in CI.",
+  "skips": {
+    "admin.spec.ts › loads without the \"Failed loading assets\" placeholder": "the TinaCMS dev server, a local content-editing surface, does not run in CI",
+    "admin.spec.ts › every collection in tina/config.ts is reachable by URL": "the TinaCMS dev server, a local content-editing surface, does not run in CI",
+    "admin.spec.ts › clicking a row title opens the form-only admin editor, not visual edit": "the TinaCMS dev server, a local content-editing surface, does not run in CI",
+    "custom-interactor-dialog.spec.ts › is uploaded only when a shareable link is asked for": "writes to the real interactor store, which is permanent; E2E_ALLOW_UPLOADS=1 runs it",
+    "custom-interactor-dialog.spec.ts › opens for whoever follows it, and can be put away again": "writes to the real interactor store, which is permanent; E2E_ALLOW_UPLOADS=1 runs it",
+    "tina-admin.spec.ts › the editor is not reachable from the public internet": "only meaningful against a deployment; a dev server serves the editor on purpose",
+    "detail-contents.spec.ts › a cytoscape diagram is drawn by the site's own renderer": "needs the render service, which CI does not run (#321)",
+    "detail-contents.spec.ts › an illustration is drawn by the site's own renderer": "needs the render service, which CI does not run (#321)",
+    "download-feedback.spec.ts › says the file is being made, then saves it": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a diagram's GIF contains GIF": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a diagram's PPTX contains PPTX": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a heavy illustration renders as the illustration": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a reaction's PPTX is the reaction's own figure": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a reaction's SVG is the reaction's own figure": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a server-rendered .jpeg contains JPEG, not PNG under another name": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › a server-rendered .jpg contains JPEG, not PNG under another name": "needs the render service, which CI does not run (#321)",
+    "downloads.spec.ts › the PNG tiers are three different sizes": "needs the render service, which CI does not run (#321)"
+  }
+}
