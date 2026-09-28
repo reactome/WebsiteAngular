@@ -528,10 +528,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const parent = parents[i];
       const grandParent = i > 0 ? parents[i - 1] : null;
 
-      const grandParentChildCount =
-        grandParent?.element.composedOf && grandParent.element.composedOf.length
-          ? grandParent.element.composedOf.length
-          : null;
+      const grandParentChildCount = grandParent?.element.composedOf?.length
+        ? grandParent.element.composedOf.length
+        : null;
       // Compare the order of current parent with the size of previous parent composedOf to determine if the parent is the last kid, adding empty string as connector
       if (grandParentChildCount && parent.index === grandParentChildCount - 1) {
         connectorClasses.push(null);

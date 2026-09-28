@@ -401,7 +401,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
   onDragEnter($event: DragEvent) {
     this.dragCounter++;
-    if ($event.dataTransfer && $event.dataTransfer.files) this.isDraggingFile = true;
+    if ($event.dataTransfer?.files) this.isDraggingFile = true;
   }
 
   onDragLeave() {

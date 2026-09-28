@@ -82,7 +82,7 @@ export async function continueInChat(
     result.status === 200 && typeof result.path === 'string'
       ? new URL(result.path, win.location.origin)
       : null;
-  if (target && target.origin === win.location.origin && target.pathname === '/chat/guest/') {
+  if (target?.origin === win.location.origin && target.pathname === '/chat/guest/') {
     const url = target.href;
     if (tab) {
       tab.opener = null;

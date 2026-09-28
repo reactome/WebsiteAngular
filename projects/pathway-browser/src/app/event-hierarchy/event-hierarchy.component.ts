@@ -294,7 +294,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       take(1),
       switchMap((diagramPathway) => {
         if (!idToUse) return of({ enhancedEvent: undefined });
-        if (diagramPathway && diagramPathway.stId === idToUse) {
+        if (diagramPathway?.stId === idToUse) {
           return of({ enhancedEvent: diagramPathway });
         } else {
           return this.dboService

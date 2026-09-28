@@ -272,7 +272,7 @@ export class UrlStateService implements State {
         let id = undefined; // Default routing
 
         const match = fragment.match(FRAGMENT_PATTERN);
-        if (match && match.groups) {
+        if (match?.groups) {
           if (match.groups['id']) {
             id = match.groups['id'];
           }

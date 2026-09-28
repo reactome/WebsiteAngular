@@ -97,6 +97,9 @@ module.exports = tseslint.config(
       '@typescript-eslint/only-throw-error': 'error',
       '@typescript-eslint/prefer-promise-reject-errors': 'error',
       '@typescript-eslint/await-thenable': 'error',
+      // `a && a.b` guards one thing and says it twice; the rule rewrites only
+      // where the result cannot change, and each of the rest was checked by hand.
+      '@typescript-eslint/prefer-optional-chain': 'error',
       // An object in a template literal becomes "[object Object]", an array
       // "a,b" -- which is how a two-species filter put "9606,10090" into the
       // PDF report's address and got a 404.

@@ -436,7 +436,7 @@ export class DescriptionTabComponent implements OnDestroy {
   );
 
   crossReference = computed(() => {
-    if (this.referenceEntity() && this.referenceEntity().crossReference) {
+    if (this.referenceEntity()?.crossReference) {
       return this.referenceEntity().crossReference;
     }
 
