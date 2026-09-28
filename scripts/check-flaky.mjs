@@ -32,7 +32,7 @@
  */
 import { readFileSync, appendFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isEntry } from './is-entry.mjs';
 
 /**
  * The most flaky tests **one shard** may report.
@@ -109,11 +109,20 @@ export function summarise(report, expected) {
 }
 
 function main() {
-  const reports = process.argv.slice(2).filter((file) => existsSync(file));
-  if (reports.length === 0) {
-    console.log('  no playwright report found; nothing to check');
-    process.exit(0);
+  // A report that is not there is a broken check, not a clean one: it used to
+  // print "nothing to check" and pass, so a renamed report file would have
+  // switched the flaky and skip checks off for good without anyone noticing.
+  const named = process.argv.slice(2);
+  const missing = named.filter((file) => !existsSync(file));
+  if (named.length === 0 || missing.length > 0) {
+    console.error(
+      named.length === 0
+        ? '  no Playwright report named; usage: check-flaky.mjs <report.json>'
+        : `  no Playwright report at ${missing.join(', ')}; the e2e run did not write one`
+    );
+    process.exit(1);
   }
+  const reports = named;
   const expected = JSON.parse(
     readFileSync(path.join(import.meta.dirname, '..', 'e2e', 'expected-skips.json'), 'utf8')
   ).skips;
@@ -178,4 +187,4 @@ function main() {
   if (failed) process.exit(1);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (isEntry(import.meta.url)) main();

@@ -24,8 +24,11 @@ ratchets, and one rule about severity.
 **Severity records whether the codebase is already clean of a rule.**
 
 - `error` — no existing violations. Any error is therefore new, and CI fails.
-- `warn` — violations exist. The count is recorded in `lint-baseline.json` and
-  can only go down.
+- `warn` — violations exist. Each rule's count is recorded in
+  `lint-baseline.json` and can only go down, rule by rule: fixing one rule does
+  not buy room to add to another. A rule the baseline does not list is held at
+  zero, so a newly warned rule is recorded with `npm run check:lint -- --update`
+  when it is added.
 
 When you fix a warned rule's last violation, promote it to `error` in
 `eslint.config.js`. That is how the list shrinks rather than sitting at its

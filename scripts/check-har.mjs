@@ -18,7 +18,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isEntry } from './is-entry.mjs';
 import { BACKEND, isCutOff, isTruncated, isUsable } from '../e2e/support/har-entry.mjs';
 
 const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
@@ -108,4 +108,4 @@ function main() {
   console.log('No recording has an answer cut off after its headers.');
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (isEntry(import.meta.url)) main();
