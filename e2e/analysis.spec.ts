@@ -280,10 +280,12 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     });
   }
 
-  // Deleting a dataset removes its form, and must not trip the form's view
-  // queries on the way out: the stepper they point at is inside an @if on
-  // the dataset, and a required query read without it throws NG0951 (#342).
-  // The harness fails any test that sees an Angular error.
+  // Deleting a dataset removes its form. A guard on that path rather than a
+  // regression test: it passes on the code before #342 as well, because the
+  // form's delayed stepper move was already cancelled on destroy. What it
+  // holds is that nothing on the way out reads the form's view queries --
+  // their stepper is inside an @if on the dataset, and the harness fails any
+  // test that sees an Angular error such as NG0951.
   test('a dataset can be deleted, and its form goes with it', async ({ page }) => {
     await stubGsa(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');

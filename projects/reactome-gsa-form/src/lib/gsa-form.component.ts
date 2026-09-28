@@ -8,6 +8,7 @@ import {
   input,
   OnDestroy,
   viewChild,
+  DestroyRef,
   inject,
 } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
@@ -48,6 +49,18 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   readonly stepper = viewChild.required<MatStepper>('stepper');
+  // The stepper is moved on the next tick after a cancel or a restart. The
+  // stepper is inside *ngrxLet and its queries are required, so a move that
+  // lands after the form is destroyed would throw NG0951; each is cancelled
+  // on destroy instead.
+  private readonly destroyRef = inject(DestroyRef);
+  private later(move: () => void) {
+    const timer = setTimeout(() => {
+      unregister();
+      move();
+    });
+    const unregister = this.destroyRef.onDestroy(() => clearTimeout(timer));
+  }
 
   readonly setMethodStep = viewChild.required<CdkStep>('setMethodStep');
   readonly addDataStep = viewChild.required<CdkStep>('addDataStep');
@@ -165,7 +178,7 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
       const cancel = await firstValueFrom(dialogRef.afterClosed());
       if (cancel) {
         this.editable = true;
-        setTimeout(() => this.stepper().previous());
+        this.later(() => this.stepper().previous());
         this.analysisId$
           .pipe(take(1))
           .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
@@ -175,7 +188,7 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
 
   restartAnalysis() {
     this.editable = true;
-    setTimeout(() => (this.stepper().selected = this.setMethodStep()));
+    this.later(() => (this.stepper().selected = this.setMethodStep()));
     this.analysisId$
       .pipe(take(1))
       .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));

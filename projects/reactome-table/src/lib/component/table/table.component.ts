@@ -199,11 +199,17 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.settings = toSignal(this.tableStore.settings$);
   }
 
+  // Cleared on destroy: the viewport query is required and the table sits
+  // inside *ngrxLet, so a callback that lands after the table has gone would
+  // throw NG0951.
+  private afterViewInitTimer?: ReturnType<typeof setTimeout>;
+
   ngAfterViewInit(): void {
-    setTimeout(() => {
+    this.afterViewInitTimer = setTimeout(() => {
       this.updateEdgeVisibility();
-      this.scrollDimensionsObserver.observe(this.viewport()!.elementRef.nativeElement);
-      this.cornerObserver.observe(this.cornerRef()!.nativeElement);
+      this.scrollDimensionsObserver.observe(this.viewport().elementRef.nativeElement);
+      const corner = this.cornerRef();
+      if (corner) this.cornerObserver.observe(corner.nativeElement);
     });
   }
 
@@ -232,6 +238,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.afterViewInitTimer);
     this.cornerObserver.disconnect();
     this.scrollDimensionsObserver.disconnect();
   }
