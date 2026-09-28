@@ -17,6 +17,7 @@
     "downloads.spec.ts › a reaction's SVG is the reaction's own figure": "needs the render service, which CI does not run (#321)",
     "downloads.spec.ts › a server-rendered .jpeg contains JPEG, not PNG under another name": "needs the render service, which CI does not run (#321)",
     "downloads.spec.ts › a server-rendered .jpg contains JPEG, not PNG under another name": "needs the render service, which CI does not run (#321)",
-    "downloads.spec.ts › the PNG tiers are three different sizes": "needs the render service, which CI does not run (#321)"
+    "downloads.spec.ts › the PNG tiers are three different sizes": "needs the render service, which CI does not run (#321)",
+    "pathway-browser.spec.ts › the Expression tab renders the Expression Atlas heatmap": "only while EBI Expression Atlas, a third-party service the widget loads live, is not answering the CI runner; it fails as usual whenever EBI answers"
   }
 }
