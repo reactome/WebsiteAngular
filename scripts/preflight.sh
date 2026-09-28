@@ -52,11 +52,13 @@ failed=()
 render_pid=""
 scratch=()
 cleanup() {
-  [ -n "$render_pid" ] && kill "$render_pid" 2>/dev/null
+  # Waited for, so it is not still writing its cache while that is removed.
+  [ -n "$render_pid" ] && { kill "$render_pid" 2>/dev/null; wait "$render_pid" 2>/dev/null; }
   [ ${#scratch[@]} -gt 0 ] && rm -rf -- "${scratch[@]}"
 }
 trap cleanup EXIT
-trap 'exit 130' INT TERM
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 step() {
   local name=$1; shift
