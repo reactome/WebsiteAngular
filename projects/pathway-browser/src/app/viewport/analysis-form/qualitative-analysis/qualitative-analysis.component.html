@@ -71,7 +71,7 @@
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext [disabled]="!(table.hasData$ | async)">Next</button>
+      <button mat-flat-button matStepperNext [disabled]="(table.hasData$ | async) !== true">Next</button>
     </div>
   </mat-step>
 

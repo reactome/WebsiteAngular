@@ -186,7 +186,7 @@ export class PaletteSummary {
       stops = this.colors
         .map((c, i) => {
           const offset = (i / (this.colors.length - 1)) * 100;
-          return `<stop offset="${offset}%" stop-color="${c}" />`;
+          return `<stop offset="${offset}%" stop-color="${c.hex()}" />`;
         })
         .join('\n');
     } else {

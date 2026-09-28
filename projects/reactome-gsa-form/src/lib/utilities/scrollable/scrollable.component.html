@@ -5,7 +5,7 @@
   [ngClass]="{
     'overflow-hide': tourVisible | async,
     'tour-active': tour.on,
-    'small-screen': !(height.medium$ | async),
+    'small-screen': (height.medium$ | async) !== true,
   }"
   id="scroll-container-{{ name() }}"
   class="center-vertical width-hundred relative flex-container align-center justify-center scrollbar fill-height"

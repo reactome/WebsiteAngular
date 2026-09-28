@@ -38,7 +38,7 @@ type Section = (typeof SECTIONS)[keyof typeof SECTIONS];
 const sectionArg =
   process.argv.find((arg) => arg.startsWith('--section='))?.split('=')[1] ?? 'news';
 if (!(sectionArg in SECTIONS))
-  throw new Error(`unknown section ${sectionArg}; one of ${Object.keys(SECTIONS)}`);
+  throw new Error(`unknown section ${sectionArg}; one of ${Object.keys(SECTIONS).join(', ')}`);
 const SECTION: Section = SECTIONS[sectionArg as keyof typeof SECTIONS];
 const NEWS_DIR = path.join(process.cwd(), 'projects/website-angular', SECTION.dir);
 const IMAGE_DIR = path.join(process.cwd(), 'projects/website-angular/public/images');
