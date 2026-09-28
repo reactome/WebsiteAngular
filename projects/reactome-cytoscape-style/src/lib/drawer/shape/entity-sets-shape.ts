@@ -39,7 +39,8 @@ export const entitySet: DrawerProvider = (
   // fitted to it -- a whole number of them, as long as the gaps, starting
   // and ending on a dash -- so neither end stops on a stub.
   const hidingLength = width - 2 * bracesOffset;
-  const dashNumber = Math.max(1, Math.round((hidingLength / t2 + 1) / 2));
+  // At least two, so a narrow set still reads as dashed rather than closed.
+  const dashNumber = Math.max(2, Math.round((hidingLength / t2 + 1) / 2));
   const dashLength = hidingLength / (2 * dashNumber - 1);
   const lossOfFunctionDashes =
     lossOfFunction && hidingLength > 0

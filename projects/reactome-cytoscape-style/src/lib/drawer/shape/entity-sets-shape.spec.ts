@@ -17,8 +17,14 @@ const properties = {
 
 const decorator = (lossOfFunction: boolean): string => {
   const drawn = entitySet(properties, { width: 120, height: 40, lossOfFunction } as never);
-  return String(drawn.decorators?.[0]?.['background-image'] ?? '');
+  const svg = String(drawn.decorators?.[0]?.['background-image'] ?? '');
+  // The braces are drawn from the #curly path; an empty string would make the
+  // "no dashes" case pass for the wrong reason.
+  expect(svg).toContain('href="#curly"');
+  return svg;
 };
+
+const dashedPath = (svg: string) => /<path [^>]*stroke-dasharray[^>]*\/>/.exec(svg)?.[0] ?? '';
 
 describe('an entity set', () => {
   it('is drawn with no dashes ordinarily', () => {
@@ -36,7 +42,14 @@ describe('an entity set', () => {
     // drawer widens the set by 2r first. r = 4, t = 2: bracesOffset = 2r + 2t.
     const width = 120 + 2 * 4;
     const bracesOffset = 2 * 4 + 2 * 2;
-    expect(svg).toContain(`M ${bracesOffset} 2 H ${width - bracesOffset}`);
+    const path = dashedPath(svg);
+    // Top and bottom edges of #curly: y = t and y = height - t.
+    expect(path).toContain(`M ${bracesOffset} 2 H ${width - bracesOffset}`);
+    expect(path).toContain(`M ${bracesOffset} ${40 - 2} H ${width - bracesOffset}`);
+    // Clipped like the braces' stroke, and not under the mask that hides this
+    // stretch -- masked, the dashes would not be drawn at all.
+    expect(path).toContain('clip-path="url(#inside)"');
+    expect(path).not.toContain('mask=');
 
     // A whole number of dashes as long as the gaps, starting and ending on a
     // dash: the stretch is an odd number of dash lengths.
@@ -44,5 +57,13 @@ describe('an entity set', () => {
     const segments = stretch / dashLength;
     expect(Math.abs(segments - Math.round(segments))).toBeLessThan(1e-9);
     expect(Math.round(segments) % 2).toBe(1);
+  });
+
+  it('still dashes a narrow set, rather than drawing a solid line', () => {
+    const drawn = entitySet(properties, { width: 30, height: 40, lossOfFunction: true } as never);
+    const svg = String(drawn.decorators?.[0]?.['background-image'] ?? '');
+    const dashLength = Number(/stroke-dasharray="([\d.]+)"/.exec(svg)?.[1]);
+    const stretch = 30 + 2 * 4 - 2 * (2 * 4 + 2 * 2);
+    expect(Math.round(stretch / dashLength)).toBeGreaterThanOrEqual(3);
   });
 });
