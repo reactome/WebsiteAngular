@@ -90,6 +90,12 @@ module.exports = tseslint.config(
       // one is new. Deprecated is how Angular, and the libraries, say what the
       // next major version removes.
       '@typescript-eslint/no-deprecated': 'error',
+      // A promise nobody awaits loses its error: the page carries on as if the
+      // call succeeded. The code has none, so each of these is a new one.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/only-throw-error': 'error',
+      '@angular-eslint/no-async-lifecycle-method': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',

@@ -12,6 +12,7 @@
     "allowJs": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
     "sourceMap": true,
     "declaration": false,
     "skipLibCheck": true,
@@ -56,6 +57,7 @@
     "strictTemplates": true,
     "typeCheckHostBindings": true,
     "extendedDiagnostics": {
+      "defaultCategory": "error",
       "checks": {
         "invalidBananaInBox": "error",
         "uninvokedFunctionInEventBinding": "error",
