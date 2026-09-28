@@ -62,7 +62,7 @@
       @if (isTOCIncluded(element.key)) {
         <a
           class="toc-item"
-          [class.selected]="selectedKey() == element.key"
+          [class.selected]="selectedKey() === element.key"
           [routerLink]="[]"
           [fragment]="element.key"
           [queryParamsHandling]="'preserve'"

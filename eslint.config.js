@@ -93,6 +93,18 @@ module.exports = tseslint.config(
       // A thrown string has no stack, and Angular does not wait for an async
       // lifecycle hook, so its errors escape. The code has neither.
       '@typescript-eslint/only-throw-error': 'error',
+      '@typescript-eslint/prefer-promise-reject-errors': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      // An object in a template literal becomes "[object Object]", an array
+      // "a,b" -- which is how a two-species filter put "9606,10090" into the
+      // PDF report's address and got a 404.
+      '@typescript-eslint/restrict-template-expressions': 'error',
+      // A switch over a union with no default that misses a member. A default
+      // branch counts as handling the rest: that is its job.
+      '@typescript-eslint/switch-exhaustiveness-check': [
+        'error',
+        { considerDefaultExhaustiveForUnions: true },
+      ],
       '@angular-eslint/no-async-lifecycle-method': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
@@ -114,11 +126,14 @@ module.exports = tseslint.config(
     files: ['**/*.html'],
     extends: [...angular.configs.templateRecommended],
     rules: {
-      // Accessibility rules are worth having on and are mostly unmet today.
-      '@angular-eslint/template/eqeqeq': 'warn',
+      // All nine were same-type comparisons, so `===` was a no-op change; a new
+      // `==` is a new chance of coercion.
+      '@angular-eslint/template/eqeqeq': 'error',
       // Catches `!(value | async)`, which is truthy while the observable is
-      // still pending -- a real bug pattern, but there are already four of them.
-      '@angular-eslint/template/no-negated-async': 'warn',
+      // still pending. The four there were meant exactly that, and now say so:
+      // `(value | async) !== true`. (The rule's own `=== false` would not be the
+      // same -- it is false while pending.)
+      '@angular-eslint/template/no-negated-async': 'error',
       '@angular-eslint/template/prefer-control-flow': 'warn',
     },
   },

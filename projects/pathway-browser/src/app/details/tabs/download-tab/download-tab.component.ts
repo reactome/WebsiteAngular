@@ -24,6 +24,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
+import { analysisReportUrl } from './analysis-report-url';
 
 /**
  * An analysis token in its raw form.
@@ -132,10 +133,6 @@ export class DownloadTabComponent {
   currentAnalysisResource = computed(() => {
     return this.analysis.resourceFilterActive() ? this.analysis.resourceFilter() : 'TOTAL';
   });
-  currentAnalysisSpecies = computed(() => {
-    return this.analysis.speciesFilterActive() ? this.state.speciesFilter() : 'Homo Sapiens';
-  });
-
   hasGSAReports = computed(() => this.analysis.gsaReportsRequired());
   gsaReports = computed(() => this.analysis.gsaReports());
 
@@ -244,9 +241,13 @@ export class DownloadTabComponent {
       title: 'PDF Result',
       description:
         'Download a detailed report with the most significant pathway analysis results in PDF format',
-      url: computed(
-        () =>
-          `${ANALYSIS_SERVICE}/report/${this.token()}/${this.currentAnalysisSpecies()}/report.pdf`
+      url: computed(() =>
+        analysisReportUrl(
+          ANALYSIS_SERVICE,
+          this.token(),
+          this.state.speciesFilter(),
+          this.analysis.result()?.summary.species
+        )
       ),
       icon: { id: 'docs' },
       isShown: computed(() => !this.analysis.isGSA()),

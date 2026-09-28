@@ -354,7 +354,7 @@ test.describe('The threshold a resource was left at', () => {
     await setThreshold(page, 0.8);
 
     // A different resource that actually holds something here, per the panel.
-    const other = await page
+    const other = page
       .locator('cr-interactors button.psicquic-button')
       .filter({ has: page.locator('.resource-count:not(.none)') })
       .first();
