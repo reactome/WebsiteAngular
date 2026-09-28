@@ -37,7 +37,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T004 **Spike (first task, decides the approach)**: in a throwaway page under `projects/reactome-diagram-element/spike/`, not shipped, mount a cytoscape instance, drawing one Reactome diagram via `reactome-cytoscape-style`, inside an open shadow root. Check with Playwright that:
+- [x] T004 **Spike (first task, decides the approach)**: in a throwaway page under `projects/reactome-diagram-element/spike/`, not shipped, mount a cytoscape instance, drawing one Reactome diagram via `reactome-cytoscape-style`, inside an open shadow root. Check with Playwright that:
   - wheel zoom, drag pan, node click select and hover all fire and render;
   - `renderedPosition` hit-testing is correct at a non-zero page scroll offset.
 
@@ -76,6 +76,8 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   It reaches `cy` through a test-only hook on the element (`__cy` in development builds only). Shown failing before T013.
 
+  Also "click after the host page scrolls": scroll the host page after the first interaction, then click a second node. It must select that node. **Red** without T015's document scroll listener: the spike (research R5) reproduced it, where the click selected nothing.
+
 - [ ] T010 [P] [US1] Spec "leaves the host alone": capture `location.href`, `history.length`, `document.title`, `scrollY`, `localStorage` keys and `document.body.className`/`style.cssText`, before and after drawing, zooming, selecting and double-clicking a sub-pathway. All must be identical.
   - **Red**: show it failing against a deliberately wrong build that provides the real `UrlStateService` and `DarkService`. Record the failing assertion in the PR.
 - [ ] T011 [P] [US1] Spec "styles do not cross": screenshot the element on `index.html` and on `hostile.html` and require them pixel-identical. Also check that the host page's own `h1` keeps its colour after the element loads (nothing leaks out).
@@ -111,6 +113,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - maps `diagramLoaded` and `reactomeEvents$` select/hover to `CustomEvent`s (`bubbles: true, composed: true`) per `contracts/reactome-diagram-element.md`;
   - shows an in-box message and fires `diagramerror` on load failure;
   - defaults to 800×500 when unsized.
+  - listens for `scroll` on `document` (`{capture: true, passive: true}`) and calls `cy.resize()`, at most once per animation frame, removed on destroy. Cytoscape's own ancestor scroll listeners stop at the shadow root (research R5), so without this a click after the page scrolls lands in the wrong place. The comment says so.
 - [ ] T016 [P] [US1] Write `EL/theme.scss`: the `ngx-reactome-style` theme tokens re-emitted on `:host` and `:host(.dark)`, plus sizing (`:host{display:block;contain:content}`). **Not** the site's global `styles.scss`, which sets `body{overflow:hidden}` (R5).
 - [ ] T017 [US1] Write `EL/main.ts`:
   - `createApplication({providers: [provideZonelessChangeDetection(), provideHttpClient()]})`;
