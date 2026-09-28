@@ -22,4 +22,18 @@ describe('the PDF report of an analysis', () => {
       '/AnalysisService/report/T/9606/report.pdf'
     );
   });
+
+  // A species comparison or an unprojected list is of its own species; the
+  // report was of human regardless.
+  it("is of the result's own species when none is chosen", () => {
+    expect(analysisReportUrl(AS, 'T', [], 48892)).toBe(
+      '/AnalysisService/report/T/48892/report.pdf'
+    );
+  });
+
+  it("is of the chosen species over the result's", () => {
+    expect(analysisReportUrl(AS, 'T', ['9606'], 48892)).toBe(
+      '/AnalysisService/report/T/9606/report.pdf'
+    );
+  });
 });

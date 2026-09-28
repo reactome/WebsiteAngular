@@ -242,7 +242,12 @@ export class DownloadTabComponent {
       description:
         'Download a detailed report with the most significant pathway analysis results in PDF format',
       url: computed(() =>
-        analysisReportUrl(ANALYSIS_SERVICE, this.token(), this.state.speciesFilter())
+        analysisReportUrl(
+          ANALYSIS_SERVICE,
+          this.token(),
+          this.state.speciesFilter(),
+          this.analysis.result()?.summary.species
+        )
       ),
       icon: { id: 'docs' },
       isShown: computed(() => !this.analysis.isGSA()),
