@@ -50,7 +50,9 @@ function describeAnalysisFailure(error: unknown): string {
       return 'The analysis service could not read the submitted data. Check that the table has at least one column of identifiers.';
     }
     const reason = (error.error as { reason?: string } | null)?.reason;
-    return reason ?? `The analysis failed (${error.status} ${error.statusText}). Please try again.`;
+    // Not statusText: over HTTP/2 and later there is none, and Angular reports
+    // "OK" whatever the status, which would read "failed (500 OK)".
+    return reason ?? `The analysis failed (HTTP ${error.status}). Please try again.`;
   }
   return 'The analysis failed for an unknown reason. Please try again.';
 }

@@ -249,6 +249,28 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     }
   }
 
+  /** Camera on the melanoma example, through to Step 4, which submits it. */
+  async function submitCameraOnMelanoma(page: Page) {
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+      timeout: 30_000,
+    });
+    for (let step = 0; step < 2; step++) {
+      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
+      await page.waitForTimeout(1000);
+    }
+    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
+    await page
+      .locator('button.mat-mdc-fab:visible', { hasText: 'keyboard_arrow_right' })
+      .last()
+      .click();
+  }
+
   // The first version of the hint widened its column, the row wrapped, and
   // Continue ended up below the dataset card -- present, and out of view.
   for (const [width, height] of [
@@ -314,29 +336,100 @@ test.describe('Quantitative analysis: adding a dataset', () => {
       submitted = route.request().postDataJSON();
       return route.fulfill({ contentType: 'text/plain', body: 'test-analysis-id' });
     });
-    await page.goto('/PathwayBrowser?analysisTab=quantitative');
-    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
-    await page.locator('button.mat-mdc-fab').first().click();
-    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
-      timeout: 30_000,
-    });
-    for (let step = 0; step < 2; step++) {
-      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
-      await page.waitForTimeout(1000);
-    }
-    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
-    // Into Step 4, which is what submits.
-    await page
-      .locator('button.mat-mdc-fab:visible', { hasText: 'keyboard_arrow_right' })
-      .last()
-      .click();
+    await submitCameraOnMelanoma(page);
 
     await expect.poll(() => submitted, { timeout: 20_000 }).not.toBeNull();
     const parameters: { name: string; value: string }[] =
       (submitted as { parameters?: { name: string; value: string }[] } | null)?.parameters ?? [];
     expect(parameters.find((p) => p.name === 'reactome_server')?.value).toBe('dev');
+  });
+
+  // The report card's progress bar was bound to the fraction complete (0 to 1)
+  // with the "* 100" outside the binding, so it never passed 1%; its percentage
+  // was unrounded ("33.33333333%"); and a report whose name was not one of the
+  // three expected showed as an empty button.
+  test('shows how far the reports have got, and every report it is given', async ({ page }) => {
+    // Reports on, so the Report card is shown.
+    const methods = JSON.parse(JSON.stringify(gsaMethods)) as typeof gsaMethods;
+    for (const method of methods as { parameters?: { name: string; default?: string }[] }[]) {
+      for (const parameter of method.parameters ?? []) {
+        if (parameter.name === 'create_reports') parameter.default = 'True';
+      }
+    }
+    await stubGsa(page);
+    await page.route('**/GSAServer/**/methods', (route) =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(methods) })
+    );
+    const id = 'test-analysis-id';
+    await page.route('**/GSAServer/0.1/analysis', (route) =>
+      route.fulfill({ contentType: 'text/plain', body: id })
+    );
+    await page.route(`**/GSAServer/0.1/status/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ id, status: 'complete', completed: 1, description: 'Done' }),
+      })
+    );
+    // No token in the link: with one, the Pathway Browser takes the result and
+    // closes the form before the reports can be seen.
+    await page.route(`**/GSAServer/0.1/result/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          release: '97',
+          method_name: 'Camera',
+          results: [],
+          reactome_links: [],
+          mappings: [],
+        }),
+      })
+    );
+    // Running until the test has looked, then complete.
+    let reportsDone = false;
+    await page.route(`**/GSAServer/0.1/report_status/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify(
+          reportsDone
+            ? {
+                id,
+                status: 'complete',
+                completed: 1,
+                description: 'Reports created',
+                reports: [
+                  {
+                    name: 'PDF Report',
+                    url: 'https://example.org/report.pdf',
+                    mimetype: 'application/pdf',
+                  },
+                  {
+                    name: 'Pathway figures',
+                    url: 'https://example.org/figures.zip',
+                    mimetype: 'application/zip',
+                  },
+                ],
+              }
+            : { id, status: 'running', completed: 1 / 3, description: 'Creating the Excel report' }
+        ),
+      })
+    );
+
+    await submitCameraOnMelanoma(page);
+
+    const card = page
+      .locator('mat-card', { hasText: 'Report' })
+      .filter({ has: page.locator('mat-card-title', { hasText: /^Report$/ }) });
+    await expect(card.getByText('Report loading: 33%', { exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Out of 100: bound to the bare fraction, it read 0.33.
+    const bar = card.locator('mat-progress-bar');
+    await expect
+      .poll(async () => Math.round(Number(await bar.getAttribute('aria-valuenow'))))
+      .toBe(33);
+
+    reportsDone = true;
+    await expect(card.getByRole('link', { name: /PDF Report/ })).toBeVisible({ timeout: 10_000 });
+    await expect(card.getByRole('link', { name: /Pathway figures/ })).toBeVisible();
   });
 });

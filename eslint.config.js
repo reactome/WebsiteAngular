@@ -86,6 +86,10 @@ module.exports = tseslint.config(
       // Migrated in full with ng generate @angular/core:inject-migration, so
       // any new constructor injection is a step backwards.
       '@angular-eslint/prefer-inject': 'error',
+      // Every deprecated API the code called has been replaced, so any use of
+      // one is new. Deprecated is how Angular, and the libraries, say what the
+      // next major version removes.
+      '@typescript-eslint/no-deprecated': 'error',
       '@angular-eslint/prefer-standalone': 'warn',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
