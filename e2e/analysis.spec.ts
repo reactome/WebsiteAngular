@@ -280,6 +280,31 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     });
   }
 
+  // Deleting a dataset removes its form. A guard on that path rather than a
+  // regression test: it passes on the code before #342 as well, because the
+  // form's delayed stepper move was already cancelled on destroy. What it
+  // holds is that nothing on the way out reads the form's view queries --
+  // their stepper is inside an @if on the dataset, and the harness fails any
+  // test that sees an Angular error such as NG0951.
+  test('a dataset can be deleted, and its form goes with it', async ({ page }) => {
+    await stubGsa(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+      timeout: 30_000,
+    });
+    const forms = page.locator('gsa-dataset-form');
+    const before = await forms.count();
+    expect(before, 'a dataset form is open').toBeGreaterThan(0);
+
+    await page.locator('gsa-dataset-form button[mattooltip="Delete dataset"]').first().click();
+    await expect(forms).toHaveCount(before - 1, { timeout: 10_000 });
+    // Past the stepper's delayed advance, which is where a stray read would land.
+    await page.waitForTimeout(500);
+  });
+
   // Continue stays disabled until the dataset is saved, and it used to say only
   // "Continue" -- so a reader who had chosen a dataset saw a dead button, with
   // the Save button several steps down inside the dataset card.

@@ -8,6 +8,7 @@ import {
   input,
   OnDestroy,
   viewChild,
+  DestroyRef,
   inject,
 } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
@@ -48,6 +49,21 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   readonly stepper = viewChild.required<MatStepper>('stepper');
+  // The stepper is moved on the next tick after a cancel or a restart. The
+  // stepper is inside *ngrxLet and its queries are required, so a move that
+  // lands after the form is destroyed would throw NG0951; each is cancelled
+  // on destroy instead.
+  private readonly destroyRef = inject(DestroyRef);
+  private later(move: () => void) {
+    // Also after destroy: onDestroy on a destroyed view throws (NG0911), and
+    // there is no stepper left to move.
+    if (this.destroyRef.destroyed) return;
+    const timer = setTimeout(() => {
+      unregister();
+      move();
+    });
+    const unregister = this.destroyRef.onDestroy(() => clearTimeout(timer));
+  }
 
   readonly setMethodStep = viewChild.required<CdkStep>('setMethodStep');
   readonly addDataStep = viewChild.required<CdkStep>('addDataStep');
@@ -164,20 +180,22 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
       });
       const cancel = await firstValueFrom(dialogRef.afterClosed());
       if (cancel) {
-        this.editable = true;
-        setTimeout(() => this.stepper().previous());
+        // The analysis is cancelled first, so nothing about the form -- it may
+        // have been closed while the dialog was open -- can stop it.
         this.analysisId$
           .pipe(take(1))
           .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+        this.editable = true;
+        this.later(() => this.stepper().previous());
       }
     }
   }
 
   restartAnalysis() {
-    this.editable = true;
-    setTimeout(() => (this.stepper().selected = this.setMethodStep()));
     this.analysisId$
       .pipe(take(1))
       .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+    this.editable = true;
+    this.later(() => (this.stepper().selected = this.setMethodStep()));
   }
 }
