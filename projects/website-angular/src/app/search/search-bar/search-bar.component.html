@@ -4,7 +4,7 @@
     rows="1"
     placeholder="Search proteins, pathways, complexes"
     class="search-input"
-    [value]="query"
+    [value]="text()"
     (input)="onInput($event)"
     (keydown.enter)="onEnter($event)"
     (focus)="showDropdown()"
@@ -24,7 +24,7 @@
   </button>
   <button type="submit" class="search-button">Go!</button>
 </form>
-@if (query && suggestions.length > 0 && showSuggestions()) {
+@if (text() && suggestions.length > 0 && showSuggestions()) {
   <div class="suggestions-container">
     <ul class="suggestions-list">
       @for (s of suggestions; track s; let i = $index) {
@@ -101,7 +101,7 @@
     </p>
   </div>
 }
-@if (filters && allFacets) {
+@if (filters() && allFacets) {
   <div class="advanced-facets">
     <h3 class="advanced-facets-title">Filter by</h3>
     <div class="">

@@ -19,7 +19,7 @@ export class CellMarkerComponent {
 
   constructor() {}
 
-  refs = computed(() => {
+  readonly refs = computed(() => {
     const map = new Map<number, MarkerReference>();
     for (const ref of this.markerRefs()) {
       const dbId = ref.marker?.dbId;

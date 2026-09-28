@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 @Component({
   standalone: true,
@@ -8,31 +8,28 @@ import { Component, Input } from '@angular/core';
   styleUrl: './button.component.scss',
 })
 export class ButtonComponent {
-  @Input() variant: 'dark' | 'light' = 'light';
+  readonly variant = input<'dark' | 'light'>('light');
 
-  @Input() onClick: () => void = () => {};
+  readonly onClick = input<() => void>(() => {});
 
-  @Input() shape: 'circle' | 'square' = 'square';
+  readonly shape = input<'circle' | 'square'>('square');
 
-  @Input() size: 'small' | 'medium' | 'large' = 'medium';
+  readonly size = input<'small' | 'medium' | 'large'>('medium');
 
-  @Input() style: string = '';
+  readonly style = input<string>('');
 
-  @Input() border: boolean = false;
+  readonly border = input<boolean>(false);
 
   get buttonVariant(): string {
-    return this.variant === 'dark' ? 'dark-button' : 'light-button';
+    return this.variant() === 'dark' ? 'dark-button' : 'light-button';
   }
 
   get buttonShape(): string {
-    return this.shape === 'circle' ? 'circle-button' : 'square-button';
+    return this.shape() === 'circle' ? 'circle-button' : 'square-button';
   }
 
   get buttonSize(): string {
-    return this.size === 'small'
-      ? 'small-button'
-      : this.size === 'large'
-        ? 'large-button'
-        : 'medium-button';
+    const size = this.size();
+    return size === 'small' ? 'small-button' : size === 'large' ? 'large-button' : 'medium-button';
   }
 }

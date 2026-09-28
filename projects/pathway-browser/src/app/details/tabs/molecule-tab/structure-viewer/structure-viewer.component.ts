@@ -119,20 +119,20 @@ export class StructureViewerComponent {
   readonly obj = input.required<ReferenceEntity | SelectableObject>();
   readonly xRefs = input.required<DatabaseIdentifier[]>();
   readonly moleculeType = input.required<string | null>();
-  viewer = viewChild<ElementRef<HTMLElement>>('viewer');
-  isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
-  isChemical = computed(
+  readonly viewer = viewChild<ElementRef<HTMLElement>>('viewer');
+  readonly isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
+  readonly isChemical = computed(
     () =>
       this.moleculeType() === MoleculeType.CHEMICAL ||
       this.moleculeType() === MoleculeType.CHEMICAL_DRUG
   );
-  chebiIdentifier = signal<string | undefined>(undefined);
+  readonly chebiIdentifier = signal<string | undefined>(undefined);
 
-  pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
+  readonly pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
 
   reactomeStyle: Style = new Style(document.body);
 
-  alphaFoldEntryId = linkedSignal(() => {
+  readonly alphaFoldEntryId = linkedSignal(() => {
     if (!this.isProtein()) return null;
     const summary = this.alphafoldSummary.value();
     if (summary?.structures?.[0]?.summary?.model_url) {
@@ -142,14 +142,14 @@ export class StructureViewerComponent {
     return null;
   });
 
-  selected = signal<string | null>(null);
+  readonly selected = signal<string | null>(null);
 
-  sourceLabel = computed(() => {
+  readonly sourceLabel = computed(() => {
     return this.selected()?.startsWith('AF-') ? Source.ALPHA_FOLD : Source.PDB;
   });
 
   /** protein structure data from AlphaFold and PDB */
-  proteinStructureData = computed(() => {
+  readonly proteinStructureData = computed(() => {
     if (!this.isProtein()) return null;
     const result = [];
 
@@ -177,9 +177,9 @@ export class StructureViewerComponent {
     },
   });
 
-  isChebiLoading = computed(() => this.chebiStructureSVGData.isLoading());
+  readonly isChebiLoading = computed(() => this.chebiStructureSVGData.isLoading());
 
-  isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
+  readonly isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
   bestPdbStructure = rxResource({
     params: () => this.obj().identifier,
@@ -210,17 +210,17 @@ export class StructureViewerComponent {
     },
   });
 
-  alphafoldUrl = computed(
+  readonly alphafoldUrl = computed(
     () =>
       this.alphafoldSummary.value()?.structures?.[0]?.summary?.model_url ||
       `https://alphafold.ebi.ac.uk/files/${this.alphaFoldEntryId()}-model_v6.cif`
   );
 
-  hasAnyStructure = computed(
+  readonly hasAnyStructure = computed(
     () => this.chebiStructureSVGData.hasValue() || !!this.proteinStructureData()?.length
   );
 
-  bgColor = computed(() => {
+  readonly bgColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return extract(this.reactomeStyle.properties.global.surface);
   });

@@ -58,7 +58,7 @@ export class MolecularProcessComponent {
     return this.iconService.getIconDetails(obj);
   }
 
-  data = computed(() => this.getData());
+  readonly data = computed(() => this.getData());
 
   getData(): MolecularProcess[] {
     return this.objects().map((entry) => {

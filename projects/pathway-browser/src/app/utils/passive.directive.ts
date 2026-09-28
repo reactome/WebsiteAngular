@@ -16,13 +16,17 @@ export class PassiveDirective implements OnDestroy {
   private element = inject(ElementRef);
   private renderer = inject(Renderer2);
 
-  listeners = input.required<{
+  readonly listeners = input.required<{
     [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void;
   }>({ alias: 'passive' });
-  once = input(false);
-  capture = input(false);
+  readonly once = input(false);
+  readonly capture = input(false);
 
-  options = computed(() => ({ passive: true, once: this.once(), capture: this.capture() }));
+  readonly options = computed(() => ({
+    passive: true,
+    once: this.once(),
+    capture: this.capture(),
+  }));
 
   private removers: (() => void)[] = [];
 

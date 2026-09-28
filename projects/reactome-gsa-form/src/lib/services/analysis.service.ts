@@ -35,10 +35,10 @@ export class AnalysisService {
   private snackBar = inject(MatSnackBar);
   private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
 
-  submitAnalysisUrl = computed(() => `${this.config().apiRoot}/analysis`);
-  analysisStatusUrl = computed(() => `${this.config().apiRoot}/status/`);
-  analysisResultUrl = computed(() => `${this.config().apiRoot}/result/`);
-  reportStatusUrl = computed(() => `${this.config().apiRoot}/report_status/`);
+  readonly submitAnalysisUrl = computed(() => `${this.config().apiRoot}/analysis`);
+  readonly analysisStatusUrl = computed(() => `${this.config().apiRoot}/status/`);
+  readonly analysisResultUrl = computed(() => `${this.config().apiRoot}/result/`);
+  readonly reportStatusUrl = computed(() => `${this.config().apiRoot}/report_status/`);
 
   submitQuery(method: Method, parameters: Parameter[], datasets: Dataset[]): Observable<string> {
     const query: Request.Query = {

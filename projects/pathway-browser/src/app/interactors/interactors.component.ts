@@ -3,10 +3,9 @@ import {
   ChangeDetectorRef,
   Component,
   effect,
-  EventEmitter,
   inject,
   input,
-  Output,
+  output,
 } from '@angular/core';
 import {
   InteractorToken,
@@ -101,7 +100,7 @@ export class InteractorsComponent implements AfterViewInit {
     const entities = `${tally.entities} entit${tally.entities === 1 ? 'y' : 'ies'}`;
     return `${interactions} across ${entities} in this diagram`;
   }
-  @Output() initialiseReplaceElements: EventEmitter<any> = new EventEmitter();
+  readonly initialiseReplaceElements = output<void>();
 
   ngAfterViewInit(): void {
     this.getPsicquicResources();

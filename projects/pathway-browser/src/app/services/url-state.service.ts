@@ -237,7 +237,7 @@ export class UrlStateService implements State {
 
   public readonly pathwayId = signal<string | undefined>(undefined);
 
-  section = toSignal(this.route.fragment);
+  readonly section = toSignal(this.route.fragment);
 
   constructor() {
     this.router.events

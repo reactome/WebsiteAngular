@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, Input, inject } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
@@ -14,5 +14,5 @@ import { MatIcon } from '@angular/material/icon';
 export class HomeShortcutsComponent {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
-  @Input() dark: boolean = true;
+  readonly dark = input<boolean>(true);
 }

@@ -15,11 +15,11 @@ export class FetchDatasetService {
   private snackBar = inject(MatSnackBar);
   private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
 
-  exampleDataUrl = computed(() => `${this.config().apiRoot}/data/examples`);
-  localDataUrl = computed(() => `${this.config().apiRoot}/types`);
-  inputDataUrl = computed(() => `${this.config().apiRoot}/data/sources`);
-  searchDataUrl = computed(() => `${this.config().apiRoot}/data/search`);
-  speciesDataUrl = computed(() => `${this.config().apiRoot}/data/search/species`);
+  readonly exampleDataUrl = computed(() => `${this.config().apiRoot}/data/examples`);
+  readonly localDataUrl = computed(() => `${this.config().apiRoot}/types`);
+  readonly inputDataUrl = computed(() => `${this.config().apiRoot}/data/sources`);
+  readonly searchDataUrl = computed(() => `${this.config().apiRoot}/data/search`);
+  readonly speciesDataUrl = computed(() => `${this.config().apiRoot}/data/search/species`);
 
   fetchExampleDataSources(): Observable<DatasetSource[]> {
     return this.http.get<DatasetSource[]>(this.exampleDataUrl()).pipe(

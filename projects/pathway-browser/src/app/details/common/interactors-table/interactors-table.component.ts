@@ -43,7 +43,7 @@ import { DecimalPipe } from '@angular/common';
 export class InteractorsTableComponent {
   readonly _interactors = input.required<CustomInteraction[]>({ alias: 'interactors' });
 
-  interactors = computed(() => {
+  readonly interactors = computed(() => {
     const interactors = this._interactors();
     return interactors.map((interactor) => ({
       ...interactor,

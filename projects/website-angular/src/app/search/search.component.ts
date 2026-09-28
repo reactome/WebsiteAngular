@@ -4,9 +4,9 @@ import {
   OnInit,
   OnDestroy,
   AfterViewInit,
-  ViewChild,
   ElementRef,
   ChangeDetectorRef,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -67,7 +67,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   // this component rather than a refactor.
   private cdr = inject(ChangeDetectorRef);
 
-  @ViewChild('captchaContainer') captchaContainer!: ElementRef<HTMLDivElement>;
+  // Optional: the container is drawn only on the no-results form, inside an
+  // @if. It was declared `!`, which the query migration read as "required",
+  // and a required query throws (NG0951) wherever the form is not shown.
+  readonly captchaContainer = viewChild<ElementRef<HTMLDivElement>>('captchaContainer');
 
   captchaToken: string | null = null;
   private captchaWidgetId: string | null = null;
@@ -201,7 +204,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   private renderCaptchaWhenReady(): void {
     // Wait until the captcha container is available in the DOM
     const checkContainer = () => {
-      if (this.captchaContainer?.nativeElement) {
+      if (this.captchaContainer()?.nativeElement) {
         this.loadHCaptchaScript()
           .then(() => this.renderCaptcha())
           // Without the widget the form cannot be submitted at all, so say so
@@ -231,9 +234,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private renderCaptcha(): void {
     const hcaptcha = (window as any).hcaptcha;
-    if (!hcaptcha || !this.captchaContainer?.nativeElement) return;
+    const captchaContainer = this.captchaContainer();
+    if (!hcaptcha || !captchaContainer?.nativeElement) return;
 
-    this.captchaWidgetId = hcaptcha.render(this.captchaContainer.nativeElement, {
+    this.captchaWidgetId = hcaptcha.render(captchaContainer.nativeElement, {
       sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
       theme: 'light',
       callback: (token: string) => {

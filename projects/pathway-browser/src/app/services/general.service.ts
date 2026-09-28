@@ -33,7 +33,7 @@ export class GeneralService {
         .pipe(catchError(() => this.http.get<number>(VERSION_FALLBACK))),
   });
 
-  download = computed(() =>
+  readonly download = computed(() =>
     !environment.assetsFromHost && this.version.value()
       ? `${environment.s3}/${this.version.value()}`
       : DOWNLOAD

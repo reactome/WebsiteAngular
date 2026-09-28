@@ -2,7 +2,7 @@
   <mat-icon
     [class]="
       'left-button' +
-      (dark ? ' dark' : ' light') +
+      (dark() ? ' dark' : ' light') +
       (!canScrollLeft() ? ' disabled' : '') +
       (!showButtons() ? ' hidden' : '')
     "
@@ -15,7 +15,7 @@
   <mat-icon
     [class]="
       'right-button' +
-      (dark ? ' dark' : ' light') +
+      (dark() ? ' dark' : ' light') +
       (!canScrollRight() ? ' disabled' : '') +
       (!showButtons() ? ' hidden' : '')
     "

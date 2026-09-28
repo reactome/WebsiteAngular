@@ -11,13 +11,13 @@ import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/
 export class DetailUrlState implements Partial<UrlStateService> {
   private route = inject(ActivatedRoute);
 
-  section = toSignal(this.route.fragment);
+  readonly section = toSignal(this.route.fragment);
   summariseDisease = urlParam<boolean | undefined>(undefined, 'boolean');
 
   select = urlParam<string | null>(null, 'id');
   flag = urlParam<string[]>([], 'id');
   path = urlParam<string[]>([], 'id');
-  pathwayId = signal<string | undefined>(undefined);
+  readonly pathwayId = signal<string | undefined>(undefined);
   flagInteractors = urlParam<boolean>(false, 'boolean');
   tab = urlParam<string | null>(null, 'string');
   overlay = urlParam<string | null>(null, 'string');

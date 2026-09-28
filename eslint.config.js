@@ -88,6 +88,11 @@ module.exports = tseslint.config(
       // Migrated in full with ng generate @angular/core:inject-migration, so
       // any new constructor injection is a step backwards.
       '@angular-eslint/prefer-inject': 'error',
+      // Migrated in full (signal inputs, outputs and queries, by Angular's own
+      // migrations, and every signal field readonly), so a decorator input or
+      // a reassignable signal field is new.
+      '@angular-eslint/prefer-signals': 'error',
+      '@angular-eslint/prefer-output-emitter-ref': 'error',
       // Every deprecated API the code called has been replaced, so any use of
       // one is new. Deprecated is how Angular, and the libraries, say what the
       // next major version removes.

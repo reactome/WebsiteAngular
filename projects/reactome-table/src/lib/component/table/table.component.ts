@@ -8,7 +8,6 @@ import {
   OnChanges,
   OnDestroy,
   OnInit,
-  Output,
   signal,
   Signal,
   SimpleChanges,
@@ -36,7 +35,7 @@ import {
 import { isDefined } from '../../model/utils.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { safeInput } from '../../utils/web-component-utils';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { downloadTable } from '../download-table/download-table.component';
 @UntilDestroy()
@@ -75,20 +74,20 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   readonly minBufferRows = input<number>(50);
   readonly maxBufferRows = input<number>(100);
 
-  minBufferPx = computed(() => this.minBufferRows() * this.rowHeight());
-  maxBufferPx = computed(() => this.maxBufferRows() * this.rowHeight());
+  readonly minBufferPx = computed(() => this.minBufferRows() * this.rowHeight());
+  readonly maxBufferPx = computed(() => this.maxBufferRows() * this.rowHeight());
 
-  height = computed(() => {
+  readonly height = computed(() => {
     let height =
       (this.data().length + (this.settings()?.addRow ? 1 : 0)) * this.rowHeight() +
       this.scrollDimensions().bottom;
     if (this.maxHeight()) height = height < this.maxHeight()! ? height : this.maxHeight()!;
     return height;
   });
-  scrollOffset = signal(0);
+  readonly scrollOffset = signal(0);
 
   // Styling logic reactive to resize
-  scrollDimensions = linkedSignal(() => this.getScrollDimensions());
+  readonly scrollDimensions = linkedSignal(() => this.getScrollDimensions());
   scrollDimensionsObserver = new ResizeObserver(() =>
     this.scrollDimensions.set(this.getScrollDimensions())
   );
@@ -101,12 +100,12 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     };
   }
 
-  cornerRect = linkedSignal(() => this.cornerRef()?.nativeElement.getBoundingClientRect());
+  readonly cornerRect = linkedSignal(() => this.cornerRef()?.nativeElement.getBoundingClientRect());
   cornerObserver = new ResizeObserver(() =>
     this.cornerRect.set(this.cornerRef()?.nativeElement.getBoundingClientRect())
   );
 
-  stickyOffset = linkedSignal(() => {
+  readonly stickyOffset = linkedSignal(() => {
     const cornerRect = this.cornerRect();
     return {
       top: cornerRect?.height || 0,
@@ -115,11 +114,11 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     };
   });
 
-  edgeVisibility = signal({ top: true, bottom: true, left: true, right: true });
+  readonly edgeVisibility = signal({ top: true, bottom: true, left: true, right: true });
 
   // Core logic
-  data: Signal<Cell[][]>;
-  settings: Signal<Settings | undefined>;
+  readonly data: Signal<Cell[][]>;
+  readonly settings: Signal<Settings | undefined>;
   data$: Observable<Cell[][]> = this.tableStore.data$;
   hasData$: Observable<boolean> = this.tableStore.hasData$;
   cleanData$: Observable<string[][]> = this.tableStore.cleanData$;
@@ -183,7 +182,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   settings$: Observable<Settings> = this.tableStore.settings$;
   value!: string;
 
-  @Output() tableChange: Observable<string[][]> = this.cleanData$.pipe(skip(1));
+  readonly tableChange = outputFromObservable<string[][]>(this.cleanData$.pipe(skip(1)));
 
   constructor() {
     this.data = toSignal(this.tableStore.data$, {

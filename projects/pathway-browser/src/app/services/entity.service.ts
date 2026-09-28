@@ -20,7 +20,7 @@ export class EntityService {
   private dataStateService: DataStateService = inject(DataStateService);
   private participant: ParticipantService = inject(ParticipantService);
 
-  eventId = signal<string | undefined>(undefined);
+  readonly eventId = signal<string | undefined>(undefined);
 
   selectedElement$ = toObservable(this.dataStateService.selectedElement);
 
@@ -40,7 +40,7 @@ export class EntityService {
     },
   });
 
-  refEntities = computed(() => this._refEntities.value());
+  readonly refEntities = computed(() => this._refEntities.value());
 
   getOtherForms(stId: string): Observable<PhysicalEntity[]> {
     const url = `${CONTENT_SERVICE}/data/entity/${stId}/otherForms`;

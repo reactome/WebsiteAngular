@@ -36,7 +36,7 @@ export class RheaComponent {
   readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
 
   //todo: custom layout, remove it when dropping this layout
-  reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
+  readonly reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
 
   //layouts = signal<Layout[]>([{columns: '', areas: ''}]);
 
@@ -154,7 +154,7 @@ export class RheaComponent {
     },
   });
 
-  rheaResources = computed(() => this._rheaResources.value());
+  readonly rheaResources = computed(() => this._rheaResources.value());
 
   //todo: custom layout, remove it when dropping this layout
 
@@ -182,7 +182,7 @@ export class RheaComponent {
   //   }
   // })
 
-  allParticipantStructures = computed(() => {
+  readonly allParticipantStructures = computed(() => {
     return this.rheaResources()?.flatMap((rheaJson) => rheaJson.participants);
   });
 

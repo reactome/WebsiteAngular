@@ -19,16 +19,16 @@ export type OntologyTerm = DatabaseObject & {
   styleUrl: './ontology-term.component.scss',
 })
 export class OntologyTermComponent {
-  term = input.required<OntologyTerm>();
-  titleCase = input<boolean>(false);
-  displayId = input<boolean>(true);
+  readonly term = input.required<OntologyTerm>();
+  readonly titleCase = input<boolean>(false);
+  readonly displayId = input<boolean>(true);
 
-  name = computed(
+  readonly name = computed(
     () =>
       (this.term().name instanceof Array ? this.term().name![0] : (this.term().name as string)) ||
       this.term().displayName
   );
-  id = computed(() => this.term().identifier! || this.term().accession!);
+  readonly id = computed(() => this.term().identifier! || this.term().accession!);
 
   constructor() {}
 }

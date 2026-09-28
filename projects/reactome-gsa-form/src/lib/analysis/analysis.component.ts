@@ -70,7 +70,7 @@ export class AnalysisComponent {
   readonly datasetId = input<number>();
   readonly restart = output<void>();
 
-  seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>();
+  readonly seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>();
 
   constructor() {
     this.analysisStep = this.formBuilder.group({

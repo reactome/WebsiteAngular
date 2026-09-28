@@ -50,13 +50,13 @@ type MoleculeRow = {
   styleUrl: './molecule-download-table.component.scss',
 })
 export class MoleculeDownloadTableComponent {
-  moleculeData = input.required<MoleculeGroup[]>();
-  sort = viewChild.required(MatSort);
-  objId = input.required<string | undefined>();
+  readonly moleculeData = input.required<MoleculeGroup[]>();
+  readonly sort = viewChild.required(MatSort);
+  readonly objId = input.required<string | undefined>();
 
-  table = viewChild.required(MatTable);
+  readonly table = viewChild.required(MatTable);
 
-  tableData = computed(() => {
+  readonly tableData = computed(() => {
     return this.moleculeData().flatMap((group) =>
       group.data.map((data) => {
         const entity = data.entity;
@@ -69,17 +69,17 @@ export class MoleculeDownloadTableComponent {
     );
   });
 
-  category = computed(() => this.moleculeData().map((data) => data.category));
+  readonly category = computed(() => this.moleculeData().map((data) => data.category));
 
-  selectedCategory = linkedSignal(() => this.category());
+  readonly selectedCategory = linkedSignal(() => this.category());
 
-  includeType = signal(true);
-  includeIdentifier = signal(true);
-  includeName = signal(true);
+  readonly includeType = signal(true);
+  readonly includeIdentifier = signal(true);
+  readonly includeName = signal(true);
 
-  displayedColumns: Signal<string[]> = computed(() => ['type', 'identifier', 'name']);
+  readonly displayedColumns: Signal<string[]> = computed(() => ['type', 'identifier', 'name']);
 
-  exportedColumns: Signal<string[]> = computed(() => {
+  readonly exportedColumns: Signal<string[]> = computed(() => {
     const fields = [];
     if (this.includeType()) fields.push('type');
     if (this.includeIdentifier()) fields.push('identifier');
@@ -87,13 +87,13 @@ export class MoleculeDownloadTableComponent {
     return fields;
   });
 
-  filteredData = computed<MoleculeRow[]>(() => {
+  readonly filteredData = computed<MoleculeRow[]>(() => {
     return this.tableData().filter((molecule) => this.selectedCategory().includes(molecule.type));
   });
 
-  finalData = computed(() => this.filteredData() ?? this.tableData());
+  readonly finalData = computed(() => this.filteredData() ?? this.tableData());
 
-  maxWidths = computed(() => {
+  readonly maxWidths = computed(() => {
     const columns = this.displayedColumns();
     const maxData = new Map<string, string>(columns.map((column) => [column, '']));
     this.filteredData().forEach((row) => {

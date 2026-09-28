@@ -49,14 +49,14 @@ export class FoundTableComponent {
   analysis = inject(AnalysisService);
   state = inject(UrlStateService);
 
-  pathway = input.required<Analysis.Pathway>();
+  readonly pathway = input.required<Analysis.Pathway>();
 
-  headerRowHeight = input<string>('56px');
-  parentRowHeight = input<string>('56px');
+  readonly headerRowHeight = input<string>('56px');
+  readonly parentRowHeight = input<string>('56px');
 
   dataSource = new MatTableDataSource<FoundIdentifier>([]);
 
-  sort = viewChild.required(MatSort);
+  readonly sort = viewChild.required(MatSort);
 
   constructor() {
     this.dataSource.sortingDataAccessor = (data, header) => {
@@ -93,7 +93,7 @@ export class FoundTableComponent {
         : of(undefined),
   });
 
-  foundEntities: Signal<FoundIdentifier[]> = computed(() => {
+  readonly foundEntities: Signal<FoundIdentifier[]> = computed(() => {
     const found = this.pathwayFoundEntities.value();
     if (!found) return [];
     return [
@@ -114,12 +114,16 @@ export class FoundTableComponent {
     ];
   });
 
-  resources = computed(() => this.pathwayFoundEntities.value()?.resources || []);
-  resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
-  expressionColumnNames = computed(() => this.analysis.result()?.expression?.columnNames || []);
-  expressionColumnIds = computed(() => this.expressionColumnNames().map((_, i) => `exp-${i}`));
+  readonly resources = computed(() => this.pathwayFoundEntities.value()?.resources || []);
+  readonly resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
+  readonly expressionColumnNames = computed(
+    () => this.analysis.result()?.expression?.columnNames || []
+  );
+  readonly expressionColumnIds = computed(() =>
+    this.expressionColumnNames().map((_, i) => `exp-${i}`)
+  );
 
-  expandedColumns = computed(() =>
+  readonly expandedColumns = computed(() =>
     this.pathwayFoundEntities.value()
       ? [
           'id',

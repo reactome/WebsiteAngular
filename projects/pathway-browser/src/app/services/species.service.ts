@@ -30,14 +30,14 @@ export class SpeciesService {
     schemaClass: 'Species',
   };
 
-  currentSpecies = signal<Species>(this.defaultSpecies);
+  readonly currentSpecies = signal<Species>(this.defaultSpecies);
 
   private allSpecies = rxResource({
     params: () => null,
     stream: () => this.http.get<Species[]>(this._MAIN_SPECIES),
   });
 
-  allShortenSpecies = computed(() =>
+  readonly allShortenSpecies = computed(() =>
     this.allSpecies
       .value()
       ?.map(this.setShortName)
@@ -53,7 +53,7 @@ export class SpeciesService {
   //   return speciesList?.filter((specie: Species) => orthologs.has(specie.displayName)) || []
   // })
 
-  abbreviationToSpecies = computed(
+  readonly abbreviationToSpecies = computed(
     () => new Map(this.allShortenSpecies()?.map((s) => [s.abbreviation, s]))
   );
 

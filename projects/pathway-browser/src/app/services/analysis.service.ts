@@ -272,7 +272,7 @@ export class AnalysisService {
   );
 
   // Use primary palette if we have expression values, or the normal palette if we just represent FDR anyway
-  fdrPalette = computed(() =>
+  readonly fdrPalette = computed(() =>
     this.type() !== 'OVERREPRESENTATION' && this.type() !== 'SPECIES_COMPARISON'
       ? new PaletteSummary([
           extract(this.style.properties.global.primaryContainer),
@@ -283,7 +283,7 @@ export class AnalysisService {
       : this.palette()
   );
 
-  palette: WritableSignal<PaletteSummary> = linkedSignal({
+  readonly palette: WritableSignal<PaletteSummary> = linkedSignal({
     source: () => ({ palette: this.state.palette(), type: this.type() }),
     computation: ({ palette, type }) => {
       // Fall back rather than assert. Callers do `palette().scale(...)`, so an
@@ -366,7 +366,7 @@ export class AnalysisService {
   });
 
   // Avoid resetting to undefined while waiting for loading
-  result = linkedSignal<Analysis.Result | undefined, Analysis.Result | undefined>({
+  readonly result = linkedSignal<Analysis.Result | undefined, Analysis.Result | undefined>({
     source: this.resultResource.value,
     computation: (source, previous) => {
       return (
@@ -378,27 +378,29 @@ export class AnalysisService {
     },
   });
 
-  isLoading = linkedSignal(() => (this.result()?.summary?.token || null) !== this.state.analysis());
+  readonly isLoading = linkedSignal(
+    () => (this.result()?.summary?.token || null) !== this.state.analysis()
+  );
 
-  pathwayStIdToData = computed(
+  readonly pathwayStIdToData = computed(
     () => new Map<string, Analysis.Pathway>(this.result()?.pathways?.map((p) => [p.stId, p]))
   );
 
   result$ = toObservable(this.result);
 
-  summary = computed(() => this.result()?.summary);
-  hasInteractors = computed(() => this.summary()?.interactors === true);
-  hasPValues = computed(() => this.result()?.summary?.type !== 'GSVA');
-  type = computed(() => this.summary()?.type as Analysis.Type | undefined);
-  species = computed(() =>
+  readonly summary = computed(() => this.result()?.summary);
+  readonly hasInteractors = computed(() => this.summary()?.interactors === true);
+  readonly hasPValues = computed(() => this.result()?.summary?.type !== 'GSVA');
+  readonly type = computed(() => this.summary()?.type as Analysis.Type | undefined);
+  readonly species = computed(() =>
     this.speciesService
       .allShortenSpecies()
       ?.find((species) => species.dbId === this.result()?.summary?.species)
   );
-  isGSARegulation = computed(() => this.type() === 'GSA_REGULATION');
-  isGSA = computed(() => this.type() === 'GSA_REGULATION' || this.type() === 'GSVA');
-  gsaReportsRequired = signal(false);
-  gsaReports = signal<Report[] | undefined>(undefined);
+  readonly isGSARegulation = computed(() => this.type() === 'GSA_REGULATION');
+  readonly isGSA = computed(() => this.type() === 'GSA_REGULATION' || this.type() === 'GSVA');
+  readonly gsaReportsRequired = signal(false);
+  readonly gsaReports = signal<Report[] | undefined>(undefined);
 
   /**
    * Expression values from the running analysis, keyed by every identifier the
@@ -444,8 +446,8 @@ export class AnalysisService {
     return undefined;
   }
 
-  samples = computed(() => this.result()?.expression.columnNames || []);
-  sampleIndex = linkedSignal({
+  readonly samples = computed(() => this.result()?.expression.columnNames || []);
+  readonly sampleIndex = linkedSignal({
     source: () => ({ result: this.result(), sample: this.state.sample() }),
     computation: ({ result, sample }) =>
       Math.max(
@@ -455,7 +457,7 @@ export class AnalysisService {
       ),
   });
 
-  expressionScientificFormat = computed(() => {
+  readonly expressionScientificFormat = computed(() => {
     const result = this.result();
     const expressions = result?.expression;
     if (!result || !expressions) return false;
@@ -470,12 +472,12 @@ export class AnalysisService {
   });
 
   resourceFilter = this.state.resourceFilter;
-  resourceOptions = computed(() => this.result()?.resourceSummary || []);
-  resourceFilterActive = computed(
+  readonly resourceOptions = computed(() => this.result()?.resourceSummary || []);
+  readonly resourceFilterActive = computed(
     () => this.state.resourceFilter() !== null && this.state.resourceFilter() !== 'TOTAL'
   );
-  speciesOptions = computed(() => this.result()?.speciesSummary || []);
-  speciesFilterActive = computed(() => this.state.speciesFilter().length !== 0);
+  readonly speciesOptions = computed(() => this.result()?.speciesSummary || []);
+  readonly speciesFilterActive = computed(() => this.state.speciesFilter().length !== 0);
 
   constructor() {
     effect(() => {
@@ -709,7 +711,7 @@ export class AnalysisService {
 
   // Not Found
 
-  notFoundPagination = signal<Pagination>({ page: 1, pageSize: 40 });
+  readonly notFoundPagination = signal<Pagination>({ page: 1, pageSize: 40 });
 
   notFoundIdentifiersResource = rxResource({
     params: () => ({ token: this.state.analysis(), pagination: this.notFoundPagination() }),

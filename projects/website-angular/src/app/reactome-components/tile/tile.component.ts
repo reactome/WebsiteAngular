@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 @Component({
   standalone: true,
@@ -8,15 +8,16 @@ import { Component, Input } from '@angular/core';
   styleUrl: './tile.component.scss',
 })
 export class TileComponent {
-  @Input() variant: 'dark' | 'light' | 'dark-transparent' | 'light-transparent' = 'light';
-  @Input() style: string = '';
+  readonly variant = input<'dark' | 'light' | 'dark-transparent' | 'light-transparent'>('light');
+  readonly style = input<string>('');
 
   get tileVariant(): string {
-    return this.variant === 'dark'
+    const variant = this.variant();
+    return variant === 'dark'
       ? 'dark-tile'
-      : this.variant === 'light'
+      : variant === 'light'
         ? 'light-tile'
-        : this.variant === 'dark-transparent'
+        : variant === 'dark-transparent'
           ? 'dark-transparent-tile'
           : 'light-transparent-tile';
   }

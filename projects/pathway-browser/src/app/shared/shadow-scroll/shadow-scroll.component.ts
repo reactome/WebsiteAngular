@@ -23,10 +23,10 @@ export type Side = 'top' | 'bottom' | 'left' | 'right';
 export class ShadowScrollComponent implements AfterViewInit, OnDestroy {
   elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  marginDetection = input(5);
-  scroll = viewChild.required(CdkScrollable);
-  height = input<number | undefined>(undefined);
-  width = input<number | undefined>(undefined);
+  readonly marginDetection = input(5);
+  readonly scroll = viewChild.required(CdkScrollable);
+  readonly height = input<number | undefined>(undefined);
+  readonly width = input<number | undefined>(undefined);
 
   visibility = new Map<Side, boolean>([
     ['top', false],
@@ -35,7 +35,7 @@ export class ShadowScrollComponent implements AfterViewInit, OnDestroy {
     ['right', false],
   ]);
 
-  scrollDimensions = linkedSignal(() => this.getScrollDimensions());
+  readonly scrollDimensions = linkedSignal(() => this.getScrollDimensions());
   scrollDimensionsObserver = new ResizeObserver(() =>
     this.scrollDimensions.set(this.getScrollDimensions())
   );

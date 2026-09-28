@@ -7,12 +7,11 @@ import {
   signal,
   input,
   OnDestroy,
-  Output,
   viewChild,
   inject,
 } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { methodFeature } from './state/method/method.selector';
 import { combineLatest, filter, firstValueFrom, map, Observable, take } from 'rxjs';
@@ -73,13 +72,13 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   datasetIds$ = this.store.select(datasetFeature.selectIds) as Observable<number[]>;
   datasets$ = this.store.select(datasetFeature.selectAll) as Observable<Dataset[]>;
   allSaved$: Observable<boolean> = this.store.select(datasetFeature.selectAllSaved);
-  @Output('analysisId')
   analysisId$: Observable<string> = this.store
     .select(analysisFeature.selectAnalysisId)
     .pipe(filter(isDefined));
-  @Output()
-  analysisResult = this.store.select(analysisFeature.selectAnalysisResult);
-  @Output('reportsRequired')
+  readonly analysisId = outputFromObservable(this.analysisId$);
+  readonly analysisResult = outputFromObservable(
+    this.store.select(analysisFeature.selectAnalysisResult)
+  );
   reportRequired$ = this.commonParameters$.pipe(
     map(
       (parameters) =>
@@ -87,11 +86,11 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
           false) as boolean
     )
   );
-  @Output()
-  analysisReports = this.store.select(analysisFeature.selectReports);
+  readonly reportsRequired = outputFromObservable(this.reportRequired$);
+  readonly analysisReports = outputFromObservable(this.store.select(analysisFeature.selectReports));
 
-  seeResultAction = input<'link' | ((result: AnalysisResult) => void)>('link');
-  tourComponent = viewChild.required(TourComponent);
+  readonly seeResultAction = input<'link' | ((result: AnalysisResult) => void)>('link');
+  readonly tourComponent = viewChild.required(TourComponent);
   editable = true;
 
   constructor() {

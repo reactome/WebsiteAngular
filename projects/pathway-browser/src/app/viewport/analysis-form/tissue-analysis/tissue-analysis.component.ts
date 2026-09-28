@@ -64,17 +64,17 @@ export class TissueAnalysisComponent {
   private darkService = inject(DarkService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
-  experiment = linkedSignal(() => this.summaries().at(0));
+  readonly summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
+  readonly experiment = linkedSignal(() => this.summaries().at(0));
 
-  tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
-  availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
-  selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
+  readonly tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
+  readonly availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
+  readonly selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
 
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
-  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
+  readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   selectTissuesControl: FormControl;
 
@@ -123,13 +123,13 @@ export class TissueAnalysisComponent {
     });
   }
 
-  interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
+  readonly interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
   /**
    * Tissues placed by dragging, which are already where the pointer left them
    * and so do not slide in. Each leaves the set only when it moves again:
    * leaving earlier would restart the slide on a box standing still.
    */
-  dropped = signal<ReadonlySet<string>>(new Set());
+  readonly dropped = signal<ReadonlySet<string>>(new Set());
 
   private settle(tissue: string) {
     if (!this.dropped().has(tissue)) return;
@@ -231,8 +231,8 @@ export class TissueAnalysisComponent {
   lottie?: DotLottie;
   token: string | null = null;
 
-  analysisLaunched = signal(false);
-  analysisAvailable = signal(false);
+  readonly analysisLaunched = signal(false);
+  readonly analysisAvailable = signal(false);
 
   analyse() {
     this.analysisLaunched.set(true);

@@ -63,15 +63,15 @@ export class DetailComponent implements OnInit {
   private domSanitizer = inject(DomSanitizer);
   private iconService = inject(IconService);
 
-  obj = signal<SelectableObject | undefined>(undefined);
-  loading = signal(true);
-  error = signal(false);
+  readonly obj = signal<SelectableObject | undefined>(undefined);
+  readonly loading = signal(true);
+  readonly error = signal(false);
 
   // Read the embedded description-tab so we can mirror its section TOC
   // into the left sidebar.
-  private descriptionTab = viewChild(DescriptionTabComponent);
-  tocItems = signal<{ key: string; label: string }[]>([]);
-  selectedTocKey = signal('');
+  private readonly descriptionTab = viewChild(DescriptionTabComponent);
+  readonly tocItems = signal<{ key: string; label: string }[]>([]);
+  readonly selectedTocKey = signal('');
 
   selectTocItem(key: string) {
     this.descriptionTab()?.selectItem(key);

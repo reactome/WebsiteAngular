@@ -1,13 +1,12 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
+  input,
   OnChanges,
   SimpleChanges,
   OnDestroy,
   ChangeDetectorRef,
   inject,
+  output,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -44,8 +43,8 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
-  @Input() instanceId!: number | string;
-  @Output() instanceLinkClick = new EventEmitter<number>();
+  readonly instanceId = input.required<number | string>();
+  readonly instanceLinkClick = output<number>();
 
   instance: any = null;
   schemaClass = '';
@@ -56,7 +55,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   error = false;
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['instanceId'] && this.instanceId != null) {
+    if (changes['instanceId'] && this.instanceId() != null) {
       this.loadInstance();
     }
   }
@@ -73,7 +72,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
     this.referrals = [];
 
     this.contentDataService
-      .getInstance(this.instanceId)
+      .getInstance(this.instanceId())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (instance) => {
@@ -94,7 +93,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
 
   private loadReferrals() {
     this.contentDataService
-      .getInstanceReferrers(this.instanceId)
+      .getInstanceReferrers(this.instanceId())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (groups) => {

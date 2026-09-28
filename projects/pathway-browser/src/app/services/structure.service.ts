@@ -5,7 +5,7 @@ import { Injectable, signal } from '@angular/core';
 })
 export class StructureService {
   //todo: move structure logic here?
-  hasAnyStructure = signal<boolean>(true);
+  readonly hasAnyStructure = signal<boolean>(true);
 
   constructor() {}
 }

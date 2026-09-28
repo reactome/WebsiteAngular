@@ -8,7 +8,6 @@ import {
   input,
   model,
   OnDestroy,
-  ViewChild,
   viewChild,
 } from '@angular/core';
 import { Event } from '../model/graph/event/event.model';
@@ -101,9 +100,9 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    */
   readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
   readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
-  @ViewChild('treeControlButton', { read: ElementRef }) treeControlButton?: ElementRef;
-  @ViewChild('eventIcon', { read: ElementRef }) eventIcon?: ElementRef<HTMLElement>;
-  @ViewChild(MatTree) tree!: MatTree<Event, string>;
+  readonly treeControlButton = viewChild('treeControlButton', { read: ElementRef });
+  readonly eventIcon = viewChild('eventIcon', { read: ElementRef });
+  readonly tree = viewChild.required(MatTree);
 
   private _SCROLL_SPEED = 50; // pixels per second
   private _ICON_PADDING = 16;
@@ -184,7 +183,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         return this.eventService.adjustTreeFromUrlSelectUpdate(
           enhancedEvent,
           this.pathwayId(),
-          this.tree,
+          this.tree(),
           hitReactions
         );
       }),
@@ -341,7 +340,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
         // Build the tree with all data
         switchMap(({ enhancedEvent, hitReactions }) =>
-          this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree, hitReactions)
+          this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree(), hitReactions)
         )
         //tap(d => console.log('Final data', d)),
       )
@@ -523,7 +522,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   }
 
   onTagHover(event: Event) {
-    if (event.isSelected || (this.tree.isExpanded(event) && isPathway(event))) return;
+    if (event.isSelected || (this.tree().isExpanded(event) && isPathway(event))) return;
     event.isHovered = true;
   }
 
@@ -547,10 +546,10 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
   private calculateContentWidth(targetElement: HTMLElement, event: Event): number {
     const iconWidth =
-      this.eventIcon?.nativeElement.getBoundingClientRect().width ||
+      this.eventIcon()?.nativeElement.getBoundingClientRect().width ||
       18 + this._ICON_PADDING + this._ICON_MARGIN; // width and padding
     const treeControlButtonWidth =
-      this.treeControlButton?.nativeElement.getBoundingClientRect().width ||
+      this.treeControlButton()?.nativeElement.getBoundingClientRect().width ||
       20 + this._EXPAND_ICON_MARGIN;
     const baseWidth =
       targetElement.offsetWidth + iconWidth + this._GRADIENT_WIDTH + 2 * this._NAME_TAG_PADDING;
@@ -610,7 +609,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const expanded = new Set<string>();
     const traverse = (items: Event[]) => {
       for (const node of items) {
-        if (this.tree?.isExpanded(node)) {
+        if (this.tree()?.isExpanded(node)) {
           expanded.add(node.stId);
         }
         if (isPathway(node) && node.events) {
@@ -627,7 +626,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const traverse = (items: Event[]) => {
       for (const node of items) {
         if (expandedIds.has(node.stId)) {
-          this.tree?.expand(node);
+          this.tree()?.expand(node);
         }
         if (isPathway(node) && node.events) {
           traverse(node.events.map((e) => e.element));

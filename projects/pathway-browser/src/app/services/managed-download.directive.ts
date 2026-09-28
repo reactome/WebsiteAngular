@@ -38,14 +38,16 @@ import {
 export class ManagedDownloadDirective {
   private downloads = inject(FileDownloadService);
   private anchor = inject<ElementRef<HTMLAnchorElement>>(ElementRef);
-  private active = signal<ManagedDownload | null>(null);
+  private readonly active = signal<ManagedDownload | null>(null);
 
   // Deliberately not cancelled when the link goes away. A reader who clicked
   // download asked for the file, and some of these links live inside a menu
   // that closes on the click -- cancelling then would have thrown away the
   // download they just asked for the moment it was slow enough to matter.
 
-  private phase = computed<DownloadPhase>(() => this.active()?.phase() ?? { status: 'idle' });
+  private readonly phase = computed<DownloadPhase>(
+    () => this.active()?.phase() ?? { status: 'idle' }
+  );
 
   readonly busy = computed(() => {
     const status = this.phase().status;
