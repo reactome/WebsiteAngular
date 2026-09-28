@@ -245,16 +245,14 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
           .pipe(
             map((entityResult) => {
               if (entityResult && entityResult.composedOf) {
-                entityResult.composedOf = entityResult.composedOf.map(
-                  (composed, index, _array) => ({
-                    ...composed,
-                    element: {
-                      ...composed.element,
-                      composedOf: [], // Add an empty composedOf array to ensure the node is expandable
-                    },
-                    index: index,
-                  })
-                );
+                entityResult.composedOf = entityResult.composedOf.map((composed, index) => ({
+                  ...composed,
+                  element: {
+                    ...composed.element,
+                    composedOf: [], // Add an empty composedOf array to ensure the node is expandable
+                  },
+                  index: index,
+                }));
               }
               return {
                 ...entityResult,

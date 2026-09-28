@@ -39,10 +39,6 @@ import { safeInput } from '../../utils/web-component-utils';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { downloadTable } from '../download-table/download-table.component';
-/**
- * [x,y]
- */
-
 @UntilDestroy()
 @Component({
   selector: 'reactome-table',
