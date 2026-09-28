@@ -3,11 +3,10 @@ import { join } from 'node:path';
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
-// GSAServer is a shared production service, and this suite runs often. Exactly
-// one test below calls it for real -- that is the integration check worth
-// having, since an empty methods list makes the wizard a dead end. Every other
-// test that merely needs the wizard on screen replays a captured response, so a
-// full run costs one request rather than three.
+// GSAServer is a shared production service, and no test calls it: the harness
+// (support/backend.ts) answers the reads the form makes on load from captured
+// copies, and fails a test that makes any request it did not stub. This copy
+// is read here too, for the test that turns reports on.
 const gsaMethods = JSON.parse(
   // __dirname, not import.meta.url: this package is CommonJS, and import.meta
   // makes Playwright's loader treat the spec as ESM and fail to load it at all.
@@ -24,9 +23,6 @@ const gsaMethods = JSON.parse(
 // source in this repo, so these tests are the regression net for that change --
 // and for the Angular upgrade, where their NgRx and Material peer deps have to
 // move in lockstep with the rest of the workspace.
-//
-// The quantitative form additionally needs /GSAServer to be reachable; against a
-// dev server that requires the proxy.conf.json entry.
 
 const BOOT_TIMEOUT = 45_000;
 
@@ -73,7 +69,7 @@ test.describe('Qualitative analysis (reactome-table)', () => {
 });
 
 test.describe('Quantitative analysis (reactome-gsa-form)', () => {
-  test('loads the analysis methods from GSAServer', async ({ page }) => {
+  test('shows the analysis methods GSAServer lists', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
     await expect(
