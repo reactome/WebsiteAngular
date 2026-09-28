@@ -24,7 +24,7 @@
 # desync CI will not see and misses one CI would.
 #
 #   npm run preflight          # everything (a few minutes)
-#   npm run preflight -- fast  # skip the end-to-end smoke
+#   npm run preflight -- fast  # skip the app build and the end-to-end smoke
 #
 # Fast mode is for iterating, not for deciding you are done. The smoke it skips
 # is the only check that downloads a file and looks inside it, so a change to an
@@ -44,6 +44,21 @@ cd "$(dirname "$0")/.."
 
 mode=${1:-full}
 failed=()
+
+# What a step leaves running or on disk, removed however the script ends. A
+# hook is not an interactive shell, so Ctrl-C does not reach a background job:
+# without this an abandoned push leaves the render service running and a
+# production build in /tmp.
+render_pid=""
+scratch=()
+cleanup() {
+  # Waited for, so it is not still writing its cache while that is removed.
+  [ -n "$render_pid" ] && { kill "$render_pid" 2>/dev/null; wait "$render_pid" 2>/dev/null; }
+  [ ${#scratch[@]} -gt 0 ] && rm -rf -- "${scratch[@]}"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 step() {
   local name=$1; shift
@@ -72,10 +87,31 @@ step "lockfile in sync (npm ci)" npm ci --dry-run --no-audit --no-fund
 # cannot see: a wholesale regeneration satisfies package.json perfectly.
 step "lockfile drift" npm run check:lockfile
 step "format" npm run format:check
+# Types, lint, dead code and the unit tests all resolve the workspace libraries
+# from dist/, so without this they check whatever was built there last -- which
+# may not be this tree -- while CI builds them fresh.
+step "libraries" npm run build:libs
 step "types" npm run check:types
 step "lint" npm run check:lint
 step "dead code" npm run check:dead
 step "unit tests" npm test
+step "e2e recordings" npm run check:har
+
+# The app build is the only check that runs Angular's template type checking
+# and the bundle budgets; a broken template and a blown budget have both passed
+# every step above and failed in CI. It builds into a directory of its own:
+# beta is served from this working tree's dist/reactome, and building over it
+# would serve a half-written site, of the wrong profile, for the whole push.
+if [ "$mode" != "fast" ]; then
+  if app_build=$(mktemp -d) && [ -n "$app_build" ]; then
+    scratch+=("$app_build")
+    step "app build" npm run build -- --output-path "$app_build"
+  else
+    printf '  %-34s FAILED\n' "app build"
+    echo "      could not make a directory to build into"
+    failed+=("app build")
+  fi
+fi
 
 if [ "$mode" != "fast" ]; then
   echo
@@ -142,15 +178,15 @@ if [ "$mode" != "fast" ]; then
     printf '  %-34s FAILED\n' "render, live"
     echo "      port 4312 is already serving a render service; stop it and push again"
     failed+=("render, live")
+  elif ! render_cache=$(mktemp -d) || [ -z "$render_cache" ]; then
+    printf '  %-34s FAILED\n' "render, live"
+    echo "      could not make a directory for the render cache"
+    failed+=("render, live")
   else
-    render_cache=$(mktemp -d)
+    scratch+=("$render_cache")
     RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
       node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
     render_pid=$!
-    # A hook is not an interactive shell, so Ctrl-C does not reach a background
-    # job: without this an abandoned push leaves the service running.
-    trap 'kill "$render_pid" 2>/dev/null; rm -rf -- "$render_cache"' EXIT
-    trap 'exit 130' INT TERM
     render_up=""
     for _ in $(seq 1 60); do
       kill -0 "$render_pid" 2>/dev/null || break
@@ -174,8 +210,7 @@ if [ "$mode" != "fast" ]; then
     fi
     kill "$render_pid" 2>/dev/null
     wait "$render_pid" 2>/dev/null
-    rm -rf -- "$render_cache"
-    trap - EXIT INT TERM
+    render_pid=""
   fi
 fi
 
