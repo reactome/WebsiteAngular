@@ -41,7 +41,7 @@
               >
                 <span>Drag & Drop RNA-Seq file here</span>
                 <span>or</span>
-                <button mat-flat-button [color]="'primary'" (click)="rna.click()">Browse</button>
+                <button type="button" mat-flat-button [color]="'primary'" (click)="rna.click()">Browse</button>
                 <input
                   type="file"
                   #rna
@@ -75,7 +75,7 @@
               >
                 <span>Drag & Drop Ribo-Seq file here</span>
                 <span>or</span>
-                <button mat-flat-button [color]="'primary'" (click)="ribo.click()">Browse</button>
+                <button type="button" mat-flat-button [color]="'primary'" (click)="ribo.click()">Browse</button>
                 <input
                   type="file"
                   #ribo
@@ -111,6 +111,7 @@
         <!-- Buttons to submit or close -->
         <div class="button-container">
           <button
+            type="button"
             [disabled]="!filesLoaded || !fileMatching || !fileValid"
             (click)="uploadRiboData()"
             mat-flat-button
@@ -118,7 +119,7 @@
           >
             Submit
           </button>
-          <button (click)="closePopUp()" mat-stroked-button>Close</button>
+          <button type="button" (click)="closePopUp()" mat-stroked-button>Close</button>
         </div>
       </form>
     </div>
