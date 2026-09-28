@@ -3,22 +3,15 @@ import { join } from 'node:path';
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
-// GSAServer is a shared production service, and this suite runs often. Exactly
-// one test below calls it for real -- that is the integration check worth
-// having, since an empty methods list makes the wizard a dead end. Every other
-// test that merely needs the wizard on screen replays a captured response, so a
-// full run costs one request rather than three.
+// GSAServer is a shared production service, and no test calls it: the harness
+// (support/backend.ts) answers the reads the form makes on load from captured
+// copies, and fails a test that makes any request it did not stub. This copy
+// is read here too, for the test that turns reports on.
 const gsaMethods = JSON.parse(
   // __dirname, not import.meta.url: this package is CommonJS, and import.meta
   // makes Playwright's loader treat the spec as ESM and fail to load it at all.
   readFileSync(join(__dirname, 'fixtures', 'gsa-methods.json'), 'utf8')
 );
-
-async function stubGsaMethods(page: Page) {
-  await page.route('**/GSAServer/**/methods', (route) =>
-    route.fulfill({ contentType: 'application/json', body: JSON.stringify(gsaMethods) })
-  );
-}
 
 // Smoke coverage for the two analysis entry points, which are the public face of
 // the two libraries absorbed from reactome/gsa-frontend into projects/:
@@ -30,9 +23,6 @@ async function stubGsaMethods(page: Page) {
 // source in this repo, so these tests are the regression net for that change --
 // and for the Angular upgrade, where their NgRx and Material peer deps have to
 // move in lockstep with the rest of the workspace.
-//
-// The quantitative form additionally needs /GSAServer to be reachable; against a
-// dev server that requires the proxy.conf.json entry.
 
 const BOOT_TIMEOUT = 45_000;
 
@@ -79,7 +69,7 @@ test.describe('Qualitative analysis (reactome-table)', () => {
 });
 
 test.describe('Quantitative analysis (reactome-gsa-form)', () => {
-  test('loads the analysis methods from GSAServer', async ({ page }) => {
+  test('shows the analysis methods GSAServer lists', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
     await expect(
@@ -88,17 +78,16 @@ test.describe('Quantitative analysis (reactome-gsa-form)', () => {
       timeout: BOOT_TIMEOUT,
     });
 
-    // Methods arrive via an NgRx effect hitting /GSAServer/0.1/methods. If that
-    // call fails the accordion renders empty and the wizard is a dead end, so
-    // assert on the cards themselves.
+    // Methods arrive via an NgRx effect hitting /GSAServer/0.1/methods --
+    // answered by the harness from a captured copy; no test calls the real
+    // service. If the call fails the accordion renders empty and the wizard is
+    // a dead end, so assert on the cards themselves.
     const methods = page.locator('gsa-method');
     await expect(methods.first()).toBeVisible({ timeout: BOOT_TIMEOUT });
     expect(await methods.count()).toBeGreaterThan(0);
   });
 
   test('selecting a method advances to dataset selection', async ({ page }) => {
-    // Replayed, not live: the test above already proves the real call works.
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
 
     const methods = page.locator('gsa-method');
@@ -124,7 +113,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   // the method's citation; /gsa leads to this tab now, so both live here. The
   // tour itself was only reachable through a ?gsa-tour= parameter.
   test('offers the guided tour, and starts it', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     await expect(page.locator('gsa-method').first()).toBeVisible({ timeout: BOOT_TIMEOUT });
     const before = page.url();
@@ -143,7 +131,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   // started there points at nothing the reader can see; and going back to step
   // 1 resets their datasets. So it is offered from step 1 only.
   test('offers the tour from the first step only', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     const tour = page.getByRole('button', { name: 'Guided tour' });
     await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
@@ -156,7 +143,6 @@ test.describe('Quantitative analysis: the landing page it replaced', () => {
   });
 
   test('cites the method', async ({ page }) => {
-    await stubGsaMethods(page);
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     const citation = page.getByRole('link', { name: /Griss J et al/ });
     await expect(citation).toBeVisible({ timeout: BOOT_TIMEOUT });
@@ -236,7 +222,6 @@ test.describe('Quantitative analysis: adding a dataset', () => {
   ) as Record<string, { status: number; body: unknown }>;
 
   async function stubGsa(page: Page) {
-    await stubGsaMethods(page);
     for (const [path, reply] of Object.entries(gsa)) {
       const glob = `**/GSAServer/0.1/${path}${path === 'data/status' || path === 'data/summary' ? '/**' : ''}`;
       await page.route(glob, (route) =>
@@ -247,6 +232,28 @@ test.describe('Quantitative analysis: adding a dataset', () => {
         })
       );
     }
+  }
+
+  /** Camera on the melanoma example, through to Step 4, which submits it. */
+  async function submitCameraOnMelanoma(page: Page) {
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
+      timeout: 30_000,
+    });
+    for (let step = 0; step < 2; step++) {
+      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
+      await page.waitForTimeout(1000);
+    }
+    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
+    await page
+      .locator('button.mat-mdc-fab:visible', { hasText: 'keyboard_arrow_right' })
+      .last()
+      .click();
   }
 
   // The first version of the hint widened its column, the row wrapped, and
@@ -314,29 +321,107 @@ test.describe('Quantitative analysis: adding a dataset', () => {
       submitted = route.request().postDataJSON();
       return route.fulfill({ contentType: 'text/plain', body: 'test-analysis-id' });
     });
-    await page.goto('/PathwayBrowser?analysisTab=quantitative');
-    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
-    await page.locator('button.mat-mdc-fab').first().click();
-    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: 'Upload table' })).toBeVisible({
-      timeout: 30_000,
-    });
-    for (let step = 0; step < 2; step++) {
-      await page.locator('button:visible', { hasText: 'keyboard_arrow_down' }).last().click();
-      await page.waitForTimeout(1000);
-    }
-    await page.getByRole('button', { name: 'Save Dataset' }).click({ timeout: 20_000 });
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
-    // Into Step 4, which is what submits.
-    await page
-      .locator('button.mat-mdc-fab:visible', { hasText: 'keyboard_arrow_right' })
-      .last()
-      .click();
+    // Submitting starts a status poll; it is answered, not sent on.
+    await page.route('**/GSAServer/0.1/status/test-analysis-id', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'test-analysis-id', status: 'running', completed: 0 }),
+      })
+    );
+    await submitCameraOnMelanoma(page);
 
     await expect.poll(() => submitted, { timeout: 20_000 }).not.toBeNull();
     const parameters: { name: string; value: string }[] =
       (submitted as { parameters?: { name: string; value: string }[] } | null)?.parameters ?? [];
     expect(parameters.find((p) => p.name === 'reactome_server')?.value).toBe('dev');
+  });
+
+  // The report card's progress bar was bound to the fraction complete (0 to 1)
+  // with the "* 100" outside the binding, so it never passed 1%; its percentage
+  // was unrounded ("33.33333333%"); and a report whose name was not one of the
+  // three expected showed as an empty button.
+  test('shows how far the reports have got, and every report it is given', async ({ page }) => {
+    // Reports on, so the Report card is shown.
+    const methods = JSON.parse(JSON.stringify(gsaMethods)) as typeof gsaMethods;
+    for (const method of methods as { parameters?: { name: string; default?: string }[] }[]) {
+      for (const parameter of method.parameters ?? []) {
+        if (parameter.name === 'create_reports') parameter.default = 'True';
+      }
+    }
+    await stubGsa(page);
+    await page.route('**/GSAServer/**/methods', (route) =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(methods) })
+    );
+    const id = 'test-analysis-id';
+    await page.route('**/GSAServer/0.1/analysis', (route) =>
+      route.fulfill({ contentType: 'text/plain', body: id })
+    );
+    await page.route(`**/GSAServer/0.1/status/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ id, status: 'complete', completed: 1, description: 'Done' }),
+      })
+    );
+    // No token in the link: with one, the Pathway Browser takes the result and
+    // closes the form before the reports can be seen.
+    await page.route(`**/GSAServer/0.1/result/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          release: '97',
+          method_name: 'Camera',
+          results: [],
+          reactome_links: [],
+          mappings: [],
+        }),
+      })
+    );
+    // Running until the test has looked, then complete.
+    let reportsDone = false;
+    await page.route(`**/GSAServer/0.1/report_status/${id}`, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify(
+          reportsDone
+            ? {
+                id,
+                status: 'complete',
+                completed: 1,
+                description: 'Reports created',
+                reports: [
+                  {
+                    name: 'PDF Report',
+                    url: 'https://example.org/report.pdf',
+                    mimetype: 'application/pdf',
+                  },
+                  {
+                    name: 'Pathway figures',
+                    url: 'https://example.org/figures.zip',
+                    mimetype: 'application/zip',
+                  },
+                ],
+              }
+            : { id, status: 'running', completed: 1 / 3, description: 'Creating the Excel report' }
+        ),
+      })
+    );
+
+    await submitCameraOnMelanoma(page);
+
+    const card = page
+      .locator('mat-card', { hasText: 'Report' })
+      .filter({ has: page.locator('mat-card-title', { hasText: /^Report$/ }) });
+    await expect(card.getByText('Report loading: 33%', { exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Out of 100: bound to the bare fraction, it read 0.33.
+    const bar = card.locator('mat-progress-bar');
+    await expect
+      .poll(async () => Math.round(Number(await bar.getAttribute('aria-valuenow'))))
+      .toBe(33);
+
+    reportsDone = true;
+    await expect(card.getByRole('link', { name: /PDF Report/ })).toBeVisible({ timeout: 10_000 });
+    await expect(card.getByRole('link', { name: /Pathway figures/ })).toBeVisible();
   });
 });

@@ -428,9 +428,59 @@ function watchAngularErrors(context: BrowserContext) {
   };
 }
 
+/**
+ * ReactomeGSA's answers to the reads a page makes on its own, captured once
+ * (e2e/fixtures). Keyed by the path after `/GSAServer/0.1/`.
+ */
+const GSA_READS: Record<string, unknown> = (() => {
+  const fixture = (name: string) =>
+    JSON.parse(readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf8'));
+  const example = fixture('gsa-melanoma-example.json') as Record<string, { body: unknown }>;
+  return {
+    methods: fixture('gsa-methods.json'),
+    ...Object.fromEntries(
+      ['types', 'data/sources', 'data/examples', 'data/search/species'].map((key) => [
+        key,
+        example[key].body,
+      ])
+    ),
+  };
+})();
+
+/**
+ * ReactomeGSA is a shared service, reached through the dev server's proxy and
+ * so same-origin to every other check here. No test may use it, recording or
+ * replaying. The Pathway Browser reads its method list on load, so every test
+ * that opened it was calling the real service; the reads a page makes before
+ * anyone submits anything are answered from captured copies, a test stubs
+ * anything more it needs (page routes take precedence over this one), and any
+ * other request is refused rather than sent -- and fails the test, so a
+ * missing stub is fixed rather than quietly tolerated.
+ */
+async function answerGsa(context: BrowserContext) {
+  const refused: string[] = [];
+  await context.route(/\/GSAServer\//, (route) => {
+    const request = route.request();
+    const reply = GSA_READS[new URL(request.url()).pathname.replace(/^.*?\/0\.1\//, '')];
+    if (reply && request.method() === 'GET') {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(reply) });
+    }
+    refused.push(`${request.method()} ${request.url()}`);
+    return route.abort();
+  });
+  return {
+    check(testInfo: TestInfo) {
+      // A test already failing keeps its own failure as the one reported.
+      if (testInfo.status !== testInfo.expectedStatus) return;
+      expect(refused, 'GSA requests this test did not stub (refused, not sent)').toEqual([]);
+    },
+  };
+}
+
 export const test = base.extend({
   context: async ({ context, baseURL }, use, testInfo) => {
     const angular = watchAngularErrors(context);
+    const gsa = await answerGsa(context);
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
@@ -449,6 +499,7 @@ export const test = base.extend({
       // Recording only: a replay has nothing to wait for.
       await settle(RECORDING_SETTLE_MS);
       await angular.check(testInfo);
+      gsa.check(testInfo);
       return;
     }
 
@@ -540,6 +591,7 @@ export const test = base.extend({
 
     await use(context);
     await angular.check(testInfo);
+    gsa.check(testInfo);
 
     // Thrown from the fixture rather than inside the handler, because a route
     // handler cannot fail a test -- it can only abort a request, which surfaces

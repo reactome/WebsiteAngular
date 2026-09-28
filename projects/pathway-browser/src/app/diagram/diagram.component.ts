@@ -148,7 +148,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private readonly hierarchyHover = inject(HierarchyHoverService);
 
   constructor() {
-    this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
+    this.isInitialLoad = Boolean(!this.router.currentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
     // A reaction or sub-pathway pointed at in the hierarchy stands out here,
     // as the old browser drew it in yellow; nothing reached the diagram before.
