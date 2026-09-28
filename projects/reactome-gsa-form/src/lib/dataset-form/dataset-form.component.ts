@@ -65,10 +65,15 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
   readonly datasetId = input.required<number>();
   readonly method = input.required<Method>();
 
-  public readonly stepper = viewChild.required<MatStepper>('nestedStepper');
-  readonly selectStep = viewChild.required<CdkStep>('selectStep');
-  readonly annotateStep = viewChild.required<CdkStep>('annotateStep');
-  readonly statisticalDesignStep = viewChild.required<CdkStep>('statisticalDesignStep');
+  // Optional: the stepper and its steps are inside `@if (dataset$ | async)`,
+  // and a required query throws (NG0951) when read while its element is not
+  // drawn. They are read only from the stepper's own events and a timer that
+  // is cancelled on destroy, so nothing reaches them today with the dataset
+  // gone -- but that holds by the order of two operators, not by design.
+  public readonly stepper = viewChild<MatStepper>('nestedStepper');
+  readonly selectStep = viewChild<CdkStep>('selectStep');
+  readonly annotateStep = viewChild<CdkStep>('annotateStep');
+  readonly statisticalDesignStep = viewChild<CdkStep>('statisticalDesignStep');
 
   dataset$!: Observable<PDataset | undefined>;
   summaryComplete$!: Observable<boolean>;
@@ -83,7 +88,7 @@ export class DatasetFormComponent implements OnInit, OnDestroy {
       .pipe(distinctUntilChanged(), share());
     this.summaryComplete$
       .pipe(delay(0), untilDestroyed(this))
-      .subscribe(() => this.stepper().next());
+      .subscribe(() => this.stepper()?.next());
     this.annotationComplete$ = this.store
       .select(datasetFeature.selectAnnotationComplete(this.datasetId()))
       .pipe(distinctUntilChanged(), share());
