@@ -55,6 +55,9 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   // on destroy instead.
   private readonly destroyRef = inject(DestroyRef);
   private later(move: () => void) {
+    // Also after destroy: onDestroy on a destroyed view throws (NG0911), and
+    // there is no stepper left to move.
+    if (this.destroyRef.destroyed) return;
     const timer = setTimeout(() => {
       unregister();
       move();
@@ -177,20 +180,22 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
       });
       const cancel = await firstValueFrom(dialogRef.afterClosed());
       if (cancel) {
-        this.editable = true;
-        this.later(() => this.stepper().previous());
+        // The analysis is cancelled first, so nothing about the form -- it may
+        // have been closed while the dialog was open -- can stop it.
         this.analysisId$
           .pipe(take(1))
           .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+        this.editable = true;
+        this.later(() => this.stepper().previous());
       }
     }
   }
 
   restartAnalysis() {
-    this.editable = true;
-    this.later(() => (this.stepper().selected = this.setMethodStep()));
     this.analysisId$
       .pipe(take(1))
       .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+    this.editable = true;
+    this.later(() => (this.stepper().selected = this.setMethodStep()));
   }
 }
