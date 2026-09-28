@@ -1,7 +1,7 @@
 /**
  * Check the e2e recordings for backend answers a replay would get wrong.
  *
- * A response cut off after its headers is recorded as a 200 with no body.
+ * A response cut off mid-stream is recorded as a 200 with no body.
  * Replayed, it was a successful *empty* answer the server never gave, and the
  * page quietly showed nothing -- one test skipped itself for weeks on an empty
  * ancestors list. The harness now aborts such a request instead; this refuses
@@ -22,6 +22,30 @@ import { pathToFileURL } from 'node:url';
 import { BACKEND, isCutOff, isTruncated, isUsable } from '../e2e/support/har-entry.mjs';
 
 const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
+
+/**
+ * Answers the *app* abandons mid-stream, which a recording therefore always
+ * catches cut off. Replayed as aborted, which is what really happens -- so they
+ * are listed, each with why, rather than refused. Keep this short: anything
+ * not here is a test ending too soon, and gets re-recorded instead.
+ */
+const ABANDONED = [
+  {
+    recording: /^legacy-links--legacy-pathway-links-/,
+    request: /\/data\/eventsHierarchy\/9606\?|\/data\/query\/enhanced\/v2\/1280218\?/,
+    why:
+      'the test backs out of the pathway browser while it is still loading -- and a dbId ' +
+      'is swapped for its stable id mid-load first',
+  },
+  {
+    recording: /^analysis-results--a-result-that-cannot-be-loaded-/,
+    request: /\/data\/query\/enhanced\/v2\/R-HSA-109582\?/,
+    why: 'a result that is gone takes analysis= off the address, which reloads the details',
+  },
+];
+
+const abandoned = (recording, request) =>
+  ABANDONED.some((a) => a.recording.test(recording) && a.request.test(request));
 
 /** `METHOD /path?query`, as the harness keys a request. */
 function key(entry) {
@@ -56,10 +80,10 @@ function main() {
   for (const name of readdirSync(HAR_DIR)
     .filter((f) => f.endsWith('.har'))
     .sort()) {
-    const { truncated, cutOff } = problems(
-      JSON.parse(readFileSync(path.join(HAR_DIR, name), 'utf8'))
-    );
-    cutOffs += cutOff.length;
+    const found = problems(JSON.parse(readFileSync(path.join(HAR_DIR, name), 'utf8')));
+    const truncated = found.truncated.filter((k) => !abandoned(name, k));
+    // Abandoned answers count with the cut-offs: replayed as aborted, as they were.
+    cutOffs += found.cutOff.length + (found.truncated.length - truncated.length);
     if (truncated.length === 0) continue;
     failed += truncated.length;
     console.error(
@@ -79,4 +103,4 @@ function main() {
   console.log('No recording has an answer cut off after its headers.');
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

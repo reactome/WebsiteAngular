@@ -235,8 +235,6 @@ function bodyOf(entry: HarEntry, harDir: string): Buffer {
   return Buffer.from(c.text, c.encoding === 'base64' ? 'base64' : 'utf8');
 }
 
-/** Whether the recording kept a body for this response, inline or beside it. */
-
 function load(har: string): Map<string, HarEntry> {
   const log = JSON.parse(readFileSync(har, 'utf8')) as { log: { entries: HarEntry[] } };
   const index = new Map<string, HarEntry>();
@@ -250,7 +248,9 @@ function load(har: string): Map<string, HarEntry> {
     // Likewise a response cut off after its headers: recorded as a 200 with no
     // body. Served, it would be a successful empty answer the server never
     // gave, and the page quietly shows nothing -- one test skipped itself for
-    // weeks on an empty ancestors list. Aborted instead, as it really was.
+    // weeks on an empty ancestors list. So it is not replayed: the request falls
+    // to the pooled recordings like any other miss (another test's complete
+    // copy) and is aborted if none has one.
     if (isTruncated(entry)) continue;
     // First write wins. A spec that asks for the same thing twice recorded it
     // twice; the responses match, and the first is the one it saw first --
@@ -353,11 +353,6 @@ const ANGULAR_ERROR = /\bNG0\d{3,4}\b/;
  */
 const ALLOW_ANGULAR_ERRORS = 'angular-errors';
 
-/**
- * Watches a test's pages for Angular errors, and fails the test on any once it
- * is done. Attached where the browser context is made, so only tests that use
- * a page pay for it -- an API-only test makes no context at all.
- */
 /** How long a recording waits, at most, for a test's backend requests to finish. */
 const RECORDING_SETTLE_MS = 15_000;
 
@@ -382,6 +377,11 @@ function trackBackendRequests(context: BrowserContext) {
   };
 }
 
+/**
+ * Watches a test's pages for Angular errors, and fails the test on any once it
+ * is done. Attached where the browser context is made, so only tests that use
+ * a page pay for it -- an API-only test makes no context at all.
+ */
 function watchAngularErrors(context: BrowserContext) {
   const seen: string[] = [];
   const reads: Promise<void>[] = [];
@@ -436,6 +436,10 @@ export const test = base.extend({
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });
       const settle = trackBackendRequests(context);
+      // The wait below happens in this fixture's teardown, which counts against
+      // the test's own time limit; give it room so a slow test does not time out
+      // only when it is being recorded.
+      testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
       await use(context);
       // The HAR is written when the context closes, and a response still
       // streaming then is recorded as a 200 with no body -- replayed, a

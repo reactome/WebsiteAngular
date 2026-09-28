@@ -27,18 +27,27 @@ export function hasBody(/** @type {HarEntry} */ entry) {
 }
 
 /**
- * A response recorded before it finished: its headers promised a body and none
- * was kept. Playwright writes such a request as a 200 when the page closes
+ * A response recorded before it finished: it promised a body and none was
+ * kept. Playwright writes such a request as a 200 when the page closes
  * mid-stream. Replayed, it would be a *successful empty* response -- something
  * the server never sent -- and the app shows "nothing here" without a word.
+ *
+ * "Promised a body" is a Content-Length above 0; or, with no length declared,
+ * a response that streamed (chunked) or said it was JSON -- this backend's JSON
+ * endpoints always have something to say, and a chunked response carries no
+ * length, so a cut-off one otherwise looked like an answer that really was
+ * empty. An explicit Content-Length of 0, and 204, are empty on purpose.
  */
 export function isTruncated(/** @type {HarEntry} */ entry) {
   const { status } = entry.response;
   if (status < 200 || status >= 300 || status === 204 || hasBody(entry)) return false;
-  const length = (entry.response.headers ?? []).find(
-    (h) => h.name.toLowerCase() === 'content-length'
-  );
-  return Number(length?.value ?? 0) > 0;
+  const headers = entry.response.headers ?? [];
+  const header = (name) => headers.find((h) => h.name.toLowerCase() === name)?.value;
+  const length = header('content-length');
+  if (length !== undefined) return Number(length) > 0;
+  const chunked = /chunked/i.test(header('transfer-encoding') ?? '');
+  const json = /json/i.test(entry.response.content?.mimeType ?? header('content-type') ?? '');
+  return chunked || json;
 }
 
 /**

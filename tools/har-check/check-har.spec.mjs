@@ -22,6 +22,22 @@ describe('a recorded answer cut off after its headers', () => {
     expect(problems(har(at(path, truncated), at(path, ok('[]')))).truncated).toEqual([]);
   });
 
+  it('is caught when it streamed, with no length declared', () => {
+    // A chunked response carries no Content-Length, so a cut-off one looked
+    // like an answer that really was empty.
+    const chunked = {
+      status: 200,
+      headers: [{ name: 'Transfer-Encoding', value: 'chunked' }],
+      content: { mimeType: 'application/json' },
+    };
+    expect(isTruncated({ response: chunked })).toBe(true);
+    expect(
+      isTruncated({
+        response: { status: 200, headers: [], content: { mimeType: 'application/json' } },
+      })
+    ).toBe(true);
+  });
+
   it('is told apart from answers that really were empty', () => {
     expect(isTruncated({ response: { status: 204, headers: [], content: {} } })).toBe(false);
     expect(
