@@ -49,3 +49,19 @@ export async function serves(
   // can this target serve this endpoint right now.
   return response.ok();
 }
+
+/**
+ * Whether the render service is there to draw figures -- and, where a run has
+ * been told it must be (E2E_REQUIRE_RENDER=1, as the live render step in
+ * preflight sets), a failure instead of a skip when it is not.
+ *
+ * CI has no render service, so these tests skip there by design. Somewhere that
+ * is meant to run them, a skip would read as a pass having checked nothing.
+ */
+export async function renderServiceAvailable(request: APIRequestContext): Promise<boolean> {
+  const up = await serves(request, '/RenderService/health');
+  if (!up && process.env['E2E_REQUIRE_RENDER']) {
+    throw new Error('E2E_REQUIRE_RENDER is set, and the render service is not answering');
+  }
+  return up;
+}

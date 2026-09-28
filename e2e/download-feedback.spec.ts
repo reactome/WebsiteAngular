@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 import { readFileSync } from 'node:fs';
-import { serves } from './fixtures/serves';
+import { renderServiceAvailable, serves } from './fixtures/serves';
 
 /**
  * What a download tells you while it is being made, and what it does when it
@@ -42,7 +42,7 @@ test.describe('Download feedback', () => {
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
   test('says the file is being made, then saves it', async ({ page, request }) => {
-    const up = await serves(request, '/RenderService/health');
+    const up = await renderServiceAvailable(request);
     test.skip(!up, 'the render service is not running; a PPTX comes from it');
 
     await openDownloadTab(page);
