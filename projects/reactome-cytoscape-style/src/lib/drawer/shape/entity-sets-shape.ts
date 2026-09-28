@@ -3,7 +3,7 @@ import { DrawerProvider } from '../types';
 
 export const entitySet: DrawerProvider = (
   properties,
-  { width, height, drug, disease, interactor }
+  { width, height, drug, disease, interactor, lossOfFunction }
 ) => {
   const select = extract(properties.global.selectNode);
   const hover = extract(properties.global.hoverNode);
@@ -32,6 +32,20 @@ export const entitySet: DrawerProvider = (
   const v = height / 2 - r2 - t; // Vertical
   const stateHeight = height / 2 + t;
   const bracesOffset = r2 + t2;
+
+  // A set is drawn as its braces: the stretch of outline between them is
+  // masked out. A loss-of-function set dashes that stretch, top and bottom,
+  // as complexes, genes and proteins dash their outlines. The dashes are
+  // fitted to it -- a whole number of them, as long as the gaps, starting
+  // and ending on a dash -- so neither end stops on a stub.
+  const hidingLength = width - 2 * bracesOffset;
+  // At least two, so a narrow set still reads as dashed rather than closed.
+  const dashNumber = Math.max(2, Math.round((hidingLength / t2 + 1) / 2));
+  const dashLength = hidingLength / (2 * dashNumber - 1);
+  const lossOfFunctionDashes =
+    lossOfFunction && hidingLength > 0
+      ? `<path d="M ${bracesOffset} ${t} H ${width - bracesOffset} M ${bracesOffset} ${height - t} H ${width - bracesOffset}" fill="none" stroke="${stroke}" stroke-width="${t2}" stroke-dasharray="${dashLength}" clip-path="url(#inside)"/>`
+      : '';
 
   const defs = `<defs>
    <path id="curly" d="
@@ -138,6 +152,7 @@ export const entitySet: DrawerProvider = (
          <rect fill="black" x="${bracesOffset}" y="${0}" width="${width - 2 * bracesOffset}" height="${height}"/>
        </mask>
        <use href="#curly" fill="none" stroke="${stroke}" stroke-width="${t2}" clip-path="url(#inside)" mask="url(#myMask)"/>
+       ${lossOfFunctionDashes}
 `,
         'background-position-x': -r,
         'bounds-expansion': r,
