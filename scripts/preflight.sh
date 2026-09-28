@@ -106,6 +106,47 @@ if [ "$mode" != "fast" ]; then
     REACTOME_BACKEND=http://127.0.0.1:9 \
     RENDER_TARGET=http://127.0.0.1:1 \
     npx playwright test e2e/diagram-behaviour.spec.ts e2e/downloads.spec.ts --project=code --reporter=line
+
+  # The render tests, for real. CI has no render service and no data, so the
+  # tests that need one skip there (e2e/expected-skips.json) -- which is how a
+  # bug in the renderer reached beta (#317). Where this machine has the backend
+  # (Tomcat on 8080), they run here against a render service started from THIS
+  # working tree, drawing pages from a dev server of this working tree. Not the
+  # render container: that is the deployed renderer, drawing beta's deployed
+  # pages, so it would test what is already live rather than what is about to
+  # be pushed. The data comes from the local backend; nothing leaves the box.
+  if curl -fsS -m 5 http://localhost:8080/ContentService/data/database/version >/dev/null 2>&1; then
+    render_cache=$(mktemp -d)
+    RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
+      node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
+    render_pid=$!
+    render_up=""
+    for _ in $(seq 1 60); do
+      curl -fsS -m 2 http://127.0.0.1:4312/health >/dev/null 2>&1 && { render_up=1; break; }
+      sleep 1
+    done
+    # Refused, not skipped: with no service the render tests skip themselves and
+    # the step would read "ok" having checked nothing.
+    if [ -z "$render_up" ]; then
+      printf '  %-34s FAILED\n' "render, live"
+      echo "      the render service did not start; its log:"
+      tail -12 "$render_cache/service.log" | sed 's/^/      /'
+      failed+=("render, live")
+    else
+      step "render, live" env \
+      E2E_PORT=4202 \
+      RENDER_TARGET=http://127.0.0.1:4312 \
+      E2E_REQUIRE_RENDER=1 \
+      npx playwright test e2e/downloads.spec.ts e2e/download-feedback.spec.ts e2e/detail-contents.spec.ts \
+      --project=code --reporter=line
+    fi
+    kill "$render_pid" 2>/dev/null
+    wait "$render_pid" 2>/dev/null
+    rm -rf -- "$render_cache"
+  else
+    echo
+    echo "  render, live: skipped -- no local backend on :8080 to draw from"
+  fi
 fi
 
 echo

@@ -1,4 +1,4 @@
-import { serves } from './fixtures/serves';
+import { renderServiceAvailable } from './fixtures/serves';
 import { type Page, type Download } from '@playwright/test';
 import { test, expect } from './support/backend';
 import { readFileSync } from 'node:fs';
@@ -195,7 +195,7 @@ test.describe('Server-rendered figures', () => {
 
   for (const format of ['GIF', 'PPTX']) {
     test(`a diagram's ${format} contains ${format}`, async ({ page, request }) => {
-      const renderServiceUp = await serves(request, '/RenderService/health');
+      const renderServiceUp = await renderServiceAvailable(request);
       test.skip(
         !renderServiceUp,
         'the render service is not running; GIF and PPTX come from it, so this says nothing about the build'
@@ -222,7 +222,7 @@ test.describe('Server-rendered figures', () => {
     test(`a server-rendered .${ext} contains JPEG, not PNG under another name`, async ({
       request,
     }) => {
-      const renderServiceUp = await serves(request, '/RenderService/health');
+      const renderServiceUp = await renderServiceAvailable(request);
       test.skip(!renderServiceUp, 'the render service is not running');
 
       // The specific trap this guards, already once shipped from the in-page
@@ -246,7 +246,7 @@ test.describe('Server-rendered figures', () => {
   }
 
   test('a heavy illustration renders as the illustration', async ({ request }) => {
-    const renderServiceUp = await serves(request, '/RenderService/health');
+    const renderServiceUp = await renderServiceAvailable(request);
     test.skip(!renderServiceUp, 'the render service is not running');
 
     // Not only the download tab: a content detail page takes its picture from
@@ -384,7 +384,7 @@ test.describe('Reaction page downloads', () => {
 
   for (const format of ['SVG', 'PPTX']) {
     test(`a reaction's ${format} is the reaction's own figure`, async ({ page, request }) => {
-      const renderServiceUp = await serves(request, '/RenderService/health');
+      const renderServiceUp = await renderServiceAvailable(request);
       test.skip(
         !renderServiceUp,
         'the render service is not running; a reaction figure comes from it, so this says nothing about the build'
@@ -421,7 +421,7 @@ test.describe('Reaction page downloads', () => {
   // offers Low, Medium and High and returns the same bytes for each is worse
   // than one that offers a single PNG.
   test('the PNG tiers are three different sizes', async ({ page, request }) => {
-    const renderServiceUp = await serves(request, '/RenderService/health');
+    const renderServiceUp = await renderServiceAvailable(request);
     test.skip(!renderServiceUp, 'the render service is not running; the tiers come from it');
 
     await openReaction(page);

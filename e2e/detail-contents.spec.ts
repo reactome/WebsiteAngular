@@ -1,4 +1,4 @@
-import { serves } from './fixtures/serves';
+import { renderServiceAvailable, serves } from './fixtures/serves';
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
@@ -169,7 +169,7 @@ test.describe('Pathway page figure', () => {
   ] as const) {
     test(`${kind} is drawn by the site's own renderer`, async ({ page, request }) => {
       test.skip(
-        !(await serves(request, '/RenderService/health')),
+        !(await renderServiceAvailable(request)),
         'the render service is not running; the figure comes from it'
       );
 
