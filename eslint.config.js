@@ -82,7 +82,8 @@ module.exports = tseslint.config(
       // `any` flowing through the code: an API answer read as any, then passed,
       // returned or dereferenced as if its shape were known. Warned, and held
       // at today's count rule by rule (scripts/check-lint.mjs), so new code
-      // types what it reads while the existing ~980 are worked down.
+      // types what it reads while the existing ones (990, tests and e2e
+      // included) are worked down.
       '@typescript-eslint/no-unsafe-assignment': 'warn',
       '@typescript-eslint/no-unsafe-member-access': 'warn',
       '@typescript-eslint/no-unsafe-call': 'warn',

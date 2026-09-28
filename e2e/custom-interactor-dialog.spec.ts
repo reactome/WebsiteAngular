@@ -122,6 +122,39 @@ test.describe('Adding your own interaction resource', () => {
     await expect(dialog(page).locator('mat-spinner')).toHaveCount(0);
   });
 
+  // Enter in a field submits the form, as it does everywhere else. Close sits
+  // before Submit in the form, and would be what Enter presses if it were a
+  // submit button -- shutting the dialog and throwing away what was typed. It
+  // is not (mat-dialog-close makes its host type="button"), and this keeps it
+  // that way whatever the markup says.
+  test('submits on Enter, rather than closing and losing the input', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
+    await page.waitForTimeout(4000);
+    const accession = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      return cy
+        .nodes('[acc]')
+        .map((node) => node.data('acc') as string)
+        .find(Boolean);
+    });
+    expect(accession, 'the diagram has an identifier to match').toBeTruthy();
+
+    await page.locator('.species-interactor-container .interactor').click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Add overlay resource' }).click();
+    await expect(dialog(page)).toHaveCount(1);
+
+    await page.getByRole('radio', { name: /copy & paste/i }).click();
+    await page.locator('textarea').fill(`#ID_A\tID_B\n${accession}\tQ99741\n`);
+    await page.getByLabel('Name').fill('EnterPartners');
+    await page.getByLabel('Name').press('Enter');
+
+    await expect(dialog(page), 'it closes once accepted').toHaveCount(0, { timeout: 60_000 });
+    await expect(page.locator('cr-interactors mat-list-option')).toContainText('EnterPartners');
+  });
+
   test('draws the interactions you gave it', async ({ page }) => {
     await page.goto(`/PathwayBrowser/${PATHWAY}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT_TIMEOUT });
