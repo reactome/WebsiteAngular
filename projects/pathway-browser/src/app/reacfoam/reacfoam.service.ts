@@ -106,7 +106,9 @@ export class ReacfoamService {
 
   style: Style = new Style(document.body);
 
-  speciesName = computed(() => this.species.currentSpecies().displayName.replaceAll(' ', '_'));
+  readonly speciesName = computed(() =>
+    this.species.currentSpecies().displayName.replaceAll(' ', '_')
+  );
 
   fetchEventsHierarchy(
     species: Species,
@@ -165,7 +167,7 @@ export class ReacfoamService {
     stream: ({ params }) => this.fetchEventsHierarchy(params.species, params.params),
   });
 
-  mergedData = computed(() => {
+  readonly mergedData = computed(() => {
     return this.layoutMap.value() && this.eventsHierarchyData.value()
       ? {
           layoutMap: this.layoutMap.value()!,
@@ -174,7 +176,7 @@ export class ReacfoamService {
       : undefined;
   });
 
-  familyColorMap = computed(() => {
+  readonly familyColorMap = computed(() => {
     if (!this.layoutMap.value()) return new Map<string, Signal<chroma.Color>>();
     const layoutMap = this.layoutMap.value()!;
     const families = [...new Set([...layoutMap.values()].map((tlp) => tlp.family))];
@@ -193,32 +195,32 @@ export class ReacfoamService {
     );
   });
 
-  flagColor = computed(() => {
+  readonly flagColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return chroma(extract(this.style.properties.global.flag));
   });
 
-  surfaceColor = computed(() => {
+  readonly surfaceColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return chroma(extract(this.style.properties.global.surface));
   });
 
-  onSurfaceColor = computed(() => {
+  readonly onSurfaceColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return chroma(extract(this.style.properties.global.onSurface));
   });
 
-  primaryColor = computed(() => {
+  readonly primaryColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return chroma(extract(this.style.properties.global.primary));
   });
 
-  onPrimaryColor = computed(() => {
+  readonly onPrimaryColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return chroma(extract(this.style.properties.global.onPrimary));
   });
 
-  mergedFilters = computed(() => ({
+  readonly mergedFilters = computed(() => ({
     excludeGrouping: this.state.includeGrouping() === false,
     excludeDiseases: this.state.includeDisease() === false,
     minSize: this.state.pathwayMinSizeFilter(),
@@ -230,7 +232,7 @@ export class ReacfoamService {
   }));
 
   // Avoid triggering data update if lockView is enabled by firing same default object
-  filters = computed(() =>
+  readonly filters = computed(() =>
     this.state.filterViewMode() === 'overview'
       ? {
           excludeGrouping: undefined,
@@ -245,21 +247,22 @@ export class ReacfoamService {
       : this.mergedFilters()
   );
 
-  dataAndIdResolver: Signal<{ data: PathwayGroup[]; idResolver: Map<string, string> } | undefined> =
-    computed(() => {
-      // this.dark.isDark();  // Compute on dark update
-      this.filters(); // Compute on filters update
-      if (!this.mergedData()) return;
-      const { layoutMap, events } = this.mergedData()!;
-      const stIdToFirstId = new Map<string, string>();
-      return {
-        data: events.map((e) => this.event2group(e, layoutMap, stIdToFirstId)).flatMap((g) => g),
-        idResolver: stIdToFirstId,
-      };
-    });
+  readonly dataAndIdResolver: Signal<
+    { data: PathwayGroup[]; idResolver: Map<string, string> } | undefined
+  > = computed(() => {
+    // this.dark.isDark();  // Compute on dark update
+    this.filters(); // Compute on filters update
+    if (!this.mergedData()) return;
+    const { layoutMap, events } = this.mergedData()!;
+    const stIdToFirstId = new Map<string, string>();
+    return {
+      data: events.map((e) => this.event2group(e, layoutMap, stIdToFirstId)).flatMap((g) => g),
+      idResolver: stIdToFirstId,
+    };
+  });
 
-  data = computed(() => this.dataAndIdResolver()?.data);
-  idToStId = computed(() => this.dataAndIdResolver()?.idResolver);
+  readonly data = computed(() => this.dataAndIdResolver()?.data);
+  readonly idToStId = computed(() => this.dataAndIdResolver()?.idResolver);
 
   event2group(
     event: EventsHierarchy.Data,

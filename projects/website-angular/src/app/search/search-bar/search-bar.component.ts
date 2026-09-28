@@ -3,16 +3,16 @@ import {
   Component,
   ElementRef,
   inject,
-  Input,
-  Output,
-  EventEmitter,
   OnChanges,
   SimpleChanges,
   HostListener,
-  ViewChild,
   signal,
+  linkedSignal,
   ChangeDetectorRef,
   OnInit,
+  input,
+  output,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -43,8 +43,11 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
   private cdr = inject(ChangeDetectorRef);
-  @Input() query: string = '';
-  @Input() filters = false;
+  /** The query the page is showing; it seeds, and resets, what the bar holds. */
+  readonly query = input<string | null | undefined>('');
+  /** What the bar holds: the page's query until the reader types or picks one. */
+  readonly text = linkedSignal(() => this.query() || '');
+  readonly filters = input(false);
 
   /**
    * The filters currently applied, read from the URL by the page.
@@ -58,10 +61,10 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
    * The URL is the one place both halves of the page agree on, so it is the
    * source of truth and this is how it reaches the bar.
    */
-  @Input() activeFilters: SearchFilters = {};
-  @Output() queryChange = new EventEmitter<string>();
+  readonly activeFilters = input<SearchFilters>({});
+  readonly queryChange = output<string>();
 
-  @ViewChild('queryInput') queryInput?: ElementRef<HTMLTextAreaElement>;
+  readonly queryInput = viewChild<ElementRef<HTMLTextAreaElement>>('queryInput');
 
   suggestions: string[] = [];
   highlightedIndex: number = -1;
@@ -75,7 +78,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   readonly showSuggestions = signal(false);
 
   ngOnInit(): void {
-    if (this.filters) {
+    if (this.filters()) {
       this.getAllFacets();
     }
   }
@@ -87,9 +90,9 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
 
   onInput(event: Event): void {
     const ta = event.target as HTMLTextAreaElement;
-    this.query = ta.value;
+    this.text.set(ta.value);
     this.autoGrow();
-    this.getSuggestions(this.query);
+    this.getSuggestions(this.text());
   }
 
   onEnter(event: Event): void {
@@ -104,7 +107,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   // Resize the textarea to match its content so the bar looks like a
   // single-line input at rest and grows naturally for long boolean queries.
   private autoGrow(): void {
-    const ta = this.queryInput?.nativeElement;
+    const ta = this.queryInput()?.nativeElement;
     if (!ta) return;
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
@@ -120,13 +123,12 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       // with the page's own `filters` -- and ticking a box here would silently
       // rewrite what the page believes is applied, with no navigation and no
       // change to the URL.
-      const applied = this.activeFilters || {};
+      const applied = this.activeFilters() || {};
       this.advancedFilters = Object.fromEntries(
         Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
       ) as SearchFilters;
     }
     if (changes['query']) {
-      this.query = this.query || '';
       // Defer to next tick so the textarea has the bound value before measuring.
       setTimeout(() => this.autoGrow(), 0);
     }
@@ -136,7 +138,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     this.showSuggestions.set(false);
 
-    const q = this.query.trim();
+    const q = this.text().trim();
     if (!q) {
       return;
     }
@@ -188,7 +190,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     }
 
     this.highlightedIndex = -1;
-    this.query = s;
+    this.text.set(s);
 
     void this.router.navigate(['/content/query'], { queryParams: params });
     this.queryChange.emit(s);
@@ -252,7 +254,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
-      this.query = this.suggestions[this.highlightedIndex];
+      this.text.set(this.suggestions[this.highlightedIndex]);
     }
   }
 
@@ -262,7 +264,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
-      this.query = this.suggestions[this.highlightedIndex];
+      this.text.set(this.suggestions[this.highlightedIndex]);
     }
   }
 }

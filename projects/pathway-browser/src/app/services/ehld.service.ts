@@ -31,8 +31,8 @@ export class EhldService {
   private general = inject(GeneralService);
   private download = inject(DownloadService);
 
-  hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
-  select = computed(() => this.state.select());
+  readonly hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
+  readonly select = computed(() => this.state.select());
 
   overlay = 'OVERLAY-';
   analysisInfoId = 'ANALINFO';

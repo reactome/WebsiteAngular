@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-dropdown-toggle',
@@ -7,8 +7,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styleUrl: './dropdown-toggle.component.scss',
 })
 export class DropdownToggleComponent {
-  @Input() name: string = '';
-  @Output() toggleEvent = new EventEmitter<boolean>();
+  readonly name = input<string>('');
+  readonly toggleEvent = output<boolean>();
 
   open = true;
 

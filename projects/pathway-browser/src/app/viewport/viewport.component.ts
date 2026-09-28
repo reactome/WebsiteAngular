@@ -145,21 +145,21 @@ export class ViewportComponent {
   // Ancestors are part of deciding what to draw (see hasDiagram), so keep the
   // spinner up until they have settled too - otherwise the "no diagram" notice
   // flashes for pathways that do have one further up their lineage.
-  loadingPathwayData = computed(
+  readonly loadingPathwayData = computed(
     () => this.dataState._currentPathway.isLoading() || this.dataState.ancestorsLoading()
   );
-  hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
+  readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
   // A pathway without a diagram of its own is still drawable when an ancestor
   // has one - cr-diagram walks up and renders the parent, e.g. /R-HSA-69541.
   // An event with neither, such as a newly cloned curation pathway that hangs
   // off no top-level pathway, has nothing to draw and gets a notice instead.
-  hasDiagram = computed(() => {
+  readonly hasDiagram = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (!pathway || !isPathway(pathway)) return false;
     if (pathway.hasDiagram) return true;
     return (pathway.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
   });
-  title = computed(() => this.dataState.currentPathway()?.displayName);
+  readonly title = computed(() => this.dataState.currentPathway()?.displayName);
 
   /**
    * Switch the diagram to another pathway for comparison.
@@ -187,14 +187,14 @@ export class ViewportComponent {
    * than offered and then quietly doing nothing; if that empties the list the
    * button disables itself.
    */
-  diseasePathways = computed(() => {
+  readonly diseasePathways = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (pathway && isPathway(pathway)) {
       return (pathway.diseasePathways || []).filter((diseasePathway) => !diseasePathway.hasEHLD);
     }
     return [] as Pathway[];
   });
-  normalPathway = computed(() => {
+  readonly normalPathway = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (pathway && isPathway(pathway)) {
       return pathway.normalPathway;
@@ -213,7 +213,7 @@ export class ViewportComponent {
   // the initial commit and never written. Comparing against a disease variant
   // is the Compare button in the toolbar, which navigates rather than opening a
   // panel.
-  dropdown = signal<'analysis' | 'deltasignal' | null>(null);
+  readonly dropdown = signal<'analysis' | 'deltasignal' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');
@@ -229,27 +229,27 @@ export class ViewportComponent {
     if (this.state.analysisTab()) this.state.analysisTab.set(null);
   }
 
-  contentHeight = linkedSignal(() => this.content().nativeElement.clientHeight);
+  readonly contentHeight = linkedSignal(() => this.content().nativeElement.clientHeight);
   sizeObserver = new ResizeObserver(() => {
     this.contentHeight.set(this.content().nativeElement.clientHeight);
   });
 
-  detailMinSize = computed(() => (DETAIL_MIN_HEIGHT * 100) / this.contentHeight());
+  readonly detailMinSize = computed(() => (DETAIL_MIN_HEIGHT * 100) / this.contentHeight());
   // Use bellow when fixed layout solution found
-  detailDraggedSize = signal(20);
-  detailShare = signal(20);
-  detailVisible = signal(true);
+  readonly detailDraggedSize = signal(20);
+  readonly detailShare = signal(20);
+  readonly detailVisible = signal(true);
   // detailShare = computed(() => 20)
   // All of it when the details panel is not there, so the view is not left
   // sized as though it were (the library would only warn and share it out).
-  viewShare = computed(() =>
+  readonly viewShare = computed(() =>
     this.detailVisible() && this.panels().details ? 100 - this.detailShare() : 100
   );
 
-  diagram = viewChild(DiagramComponent);
-  content = viewChild.required<ElementRef<HTMLDivElement>>('content');
-  interactors = viewChild.required(InteractorsComponent);
-  darkToggle = viewChild.required<MatSlideToggle>('darkToggle');
+  readonly diagram = viewChild(DiagramComponent);
+  readonly content = viewChild.required<ElementRef<HTMLDivElement>>('content');
+  readonly interactors = viewChild.required(InteractorsComponent);
+  readonly darkToggle = viewChild.required<MatSlideToggle>('darkToggle');
 
   currentInteractorResource = this.interactorService.currentResource;
   /** Whether any interactors are drawn, which is when the threshold matters. */
@@ -264,7 +264,9 @@ export class ViewportComponent {
     stream: ({ params }) => (params ? this.analysis.loadDefaultExample(params) : of(undefined)),
   });
 
-  analysisLoading = computed(() => this.exampleAnalysis.isLoading() || this.analysis.isLoading());
+  readonly analysisLoading = computed(
+    () => this.exampleAnalysis.isLoading() || this.analysis.isLoading()
+  );
 
   /** The two header controls, so focus can be put back where it came from. */
   readonly speciesControl = viewChild<ElementRef<HTMLElement>>('speciesControl');
@@ -398,10 +400,12 @@ export class ViewportComponent {
   }
 
   interval?: number;
-  isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
-  isLastProfile = computed(() => this.analysis.sampleIndex() >= this.analysis.samples().length - 1);
-  hasMultipleProfile = computed(() => this.analysis.samples().length > 1);
-  playSpeed = model(2);
+  readonly isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
+  readonly isLastProfile = computed(
+    () => this.analysis.sampleIndex() >= this.analysis.samples().length - 1
+  );
+  readonly hasMultipleProfile = computed(() => this.analysis.samples().length > 1);
+  readonly playSpeed = model(2);
 
   updateSpeed = effect(() => {
     // console.log('Update play speed', this.playSpeed());
@@ -455,7 +459,7 @@ export class ViewportComponent {
     this.citation.openDialog();
   }
 
-  formerPathwayBrowserURL = computed(() => {
+  readonly formerPathwayBrowserURL = computed(() => {
     let url = `${environment.host}/PathwayBrowser/#/`;
     if (this.state.pathwayId() || this.state.select())
       url += this.state.pathwayId() || this.state.select();

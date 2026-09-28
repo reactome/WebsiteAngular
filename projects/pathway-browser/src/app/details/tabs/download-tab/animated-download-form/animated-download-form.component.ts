@@ -32,12 +32,12 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
   styleUrl: './animated-download-form.component.scss',
 })
 export class AnimatedDownloadFormComponent {
-  includeTimeline = signal(defaultDownloadOptions.includeTimeline);
-  includeLegend = signal(defaultDownloadOptions.includeLegend);
-  timePerFrame = signal(defaultDownloadOptions.timePerFrame);
-  transitionTime = signal(defaultDownloadOptions.transitionTime);
+  readonly includeTimeline = signal(defaultDownloadOptions.includeTimeline);
+  readonly includeLegend = signal(defaultDownloadOptions.includeLegend);
+  readonly timePerFrame = signal(defaultDownloadOptions.timePerFrame);
+  readonly transitionTime = signal(defaultDownloadOptions.transitionTime);
 
-  options = computed<DownloadOptions>(() => ({
+  readonly options = computed<DownloadOptions>(() => ({
     animate: true,
     includeTimeline: this.includeTimeline(),
     includeLegend: this.includeLegend(),

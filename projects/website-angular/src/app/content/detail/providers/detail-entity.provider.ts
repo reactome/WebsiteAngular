@@ -16,11 +16,11 @@ import {
 export class DetailEntityService implements Partial<EntityService> {
   private http = inject(HttpClient);
 
-  eventId = signal<string | undefined>(undefined);
+  readonly eventId = signal<string | undefined>(undefined);
   selectedElement$ = of(undefined);
 
   _refEntities: any = { value: signal(null) };
-  refEntities = signal(null);
+  readonly refEntities = signal(null);
 
   getOtherForms(stId: string): Observable<PhysicalEntity[]> {
     const url = `${CONTENT_SERVICE}/data/entity/${stId}/otherForms`;

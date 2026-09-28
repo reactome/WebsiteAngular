@@ -9,7 +9,7 @@ import { CustomInteraction } from '../../../../../../pathway-browser/src/app/int
 export class DetailInteractorService implements Partial<InteractorService> {
   private http = inject(HttpClient);
 
-  currentResource = signal<any>({ type: null, name: null });
+  readonly currentResource = signal<any>({ type: null, name: null });
   identifiers = '';
 
   getCustomInteractorsByAcc(acc: string): Observable<CustomInteraction[]> {

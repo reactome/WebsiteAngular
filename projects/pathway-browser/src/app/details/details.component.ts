@@ -46,8 +46,8 @@ export class DetailsComponent {
   public state: UrlStateService = inject(UrlStateService);
 
   obj = this.dataState.selectedElement;
-  hasResult = computed(() => !!this.analysis.result());
-  hasDetail = computed(() => this.dataState.hasDetail());
+  readonly hasResult = computed(() => !!this.analysis.result());
+  readonly hasDetail = computed(() => this.dataState.hasDetail());
 
   /**
    * The tab names, in the order the template renders them.
@@ -67,7 +67,7 @@ export class DetailsComponent {
     ...(this.isCurator ? [] : ['download']),
   ]);
 
-  selectedTabIndex = linkedSignal<number>(() =>
+  readonly selectedTabIndex = linkedSignal<number>(() =>
     Math.max(0, this.tabs().indexOf(this.state.tab() || 'info'))
   );
 

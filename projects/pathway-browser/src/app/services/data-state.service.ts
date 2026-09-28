@@ -52,7 +52,7 @@ export class DataStateService {
       }),
   });
 
-  public currentPathway = computed(() => {
+  public readonly currentPathway = computed(() => {
     const currentPathway = this._currentPathway.value();
     if (currentPathway) {
       // Reading value() on a resource in the error state throws, which would
@@ -87,16 +87,16 @@ export class DataStateService {
   public selectedElement = this._selectedElement.asReadonly().value;
   public selectedElementLoading = this._selectedElement.asReadonly().isLoading;
 
-  hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
-  selectIsSummary = computed(() => isReferenceEntityStId(this.state.select()));
+  readonly hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
+  readonly selectIsSummary = computed(() => isReferenceEntityStId(this.state.select()));
 
-  private _selectionData = computed<SelectionData>(() => ({
+  private readonly _selectionData = computed<SelectionData>(() => ({
     selectedElement: this.selectedElement(),
     selectedElementLoading: this.selectedElementLoading(),
     currentPathway: this.state.pathwayId(),
   }));
 
-  selectedPathwayStId = linkedSignal<SelectionData, string | undefined>({
+  readonly selectedPathwayStId = linkedSignal<SelectionData, string | undefined>({
     source: this._selectionData,
     computation: (
       source: SelectionData,
@@ -109,7 +109,7 @@ export class DataStateService {
     },
   });
 
-  flagRequest = computed(() => {
+  readonly flagRequest = computed(() => {
     const params = {
       tokens: this.state.flag().filter((token) => !token.startsWith('class:')),
       diagram: this.state.pathwayId(),
@@ -173,7 +173,7 @@ export class DataStateService {
       );
   }
 
-  flagIdentifiers = computed(() => {
+  readonly flagIdentifiers = computed(() => {
     const identifiers: string[] = this.state.flag().filter((token) => token.startsWith('class:'));
     const match = this.flagResource.value();
     if (match?.matches) identifiers.push(...match.matches);

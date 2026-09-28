@@ -3,7 +3,6 @@ import {
   DestroyRef,
   OnChanges,
   OnInit,
-  Output,
   SimpleChanges,
   computed,
   inject,
@@ -11,7 +10,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { outputFromObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParameterType } from '../../model/methods.model';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { FormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -93,8 +92,8 @@ export class MethodParameterComponent implements OnInit, OnChanges {
    */
   private readonly liveProbe = new FormControl('', Validators.email);
 
-  @Output() parameterChange: Observable<Parameter> = this.control.valueChanges.pipe(
-    map((value) => ({ ...this.parameter(), value }))
+  readonly parameterChange = outputFromObservable<Parameter>(
+    this.control.valueChanges.pipe(map((value) => ({ ...this.parameter(), value })))
   );
 
   onLiveInput(event: Event): void {

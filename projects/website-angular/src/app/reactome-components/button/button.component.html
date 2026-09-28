@@ -1,8 +1,8 @@
 <button
-  (click)="onClick()"
-  [class]="buttonVariant + ' ' + buttonShape + ' ' + buttonSize + (border ? ' border' : '')"
+  (click)="onClick()()"
+  [class]="buttonVariant + ' ' + buttonShape + ' ' + buttonSize + (border() ? ' border' : '')"
   class="reactome-button"
-  [style]="style"
+  [style]="style()"
 >
   <ng-content></ng-content>
 </button>

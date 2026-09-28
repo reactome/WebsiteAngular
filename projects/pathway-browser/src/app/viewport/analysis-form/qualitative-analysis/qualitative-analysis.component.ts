@@ -84,11 +84,11 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   private darkService: DarkService = inject(DarkService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  table = viewChild<TableComponent>('table');
-  data = signal<string[][]>([['']]);
-  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
+  readonly table = viewChild<TableComponent>('table');
+  readonly data = signal<string[][]>([['']]);
+  readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   settings: Partial<Settings> = {
     renameCols: true,
@@ -113,7 +113,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   dataStepForm = new FormControl(null);
-  interactorsIllustrationCanvas =
+  readonly interactorsIllustrationCanvas =
     viewChild<ElementRef<HTMLCanvasElement>>('interactorsIllustration');
   interactorsIllustrationLottie?: DotLottie;
 
@@ -229,10 +229,10 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   });
 
   // STEP 3 Analysis
-  analysisLaunched = signal(false);
-  analysisAvailable = signal(false);
-  analysisError = signal<string | null>(null);
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  readonly analysisLaunched = signal(false);
+  readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
+  readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
   lottieEnd?: DotLottie;
   token: string | null = null;
 

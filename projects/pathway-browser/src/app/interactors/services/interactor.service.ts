@@ -79,7 +79,7 @@ export class InteractorService {
   identifiers: string = '';
   cyToSelectedResource = new Map<cytoscape.Core, string>();
 
-  currentResource = signal<ResourceAndType>({ type: null, name: null });
+  readonly currentResource = signal<ResourceAndType>({ type: null, name: null });
 
   /**
    * Whether any interactors are currently drawn.

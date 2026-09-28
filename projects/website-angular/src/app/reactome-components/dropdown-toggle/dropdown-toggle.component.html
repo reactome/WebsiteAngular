@@ -1,6 +1,6 @@
 <div class="facet-section">
   <button class="facet-title" (click)="toggle()">
-    <span>{{ name }}</span>
+    <span>{{ name() }}</span>
     <span class="facet-toggle">{{ open ? '-' : '+' }}</span>
   </button>
   @if (open) {

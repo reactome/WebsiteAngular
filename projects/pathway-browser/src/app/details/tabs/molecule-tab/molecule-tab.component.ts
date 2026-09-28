@@ -76,10 +76,12 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly selectableObject = input.required<SelectableObject>();
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   // Get selected pathway id on Reacfoam view
-  objStId = computed(() => (this.pathwayId() ? this.pathwayId() : this.selectableObject()?.stId));
-  hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
+  readonly objStId = computed(() =>
+    this.pathwayId() ? this.pathwayId() : this.selectableObject()?.stId
+  );
+  readonly hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
 
-  selectedKey = signal<string>('');
+  readonly selectedKey = signal<string>('');
   private manualSelection = false;
   private observer?: () => void;
 
@@ -116,7 +118,7 @@ export class MoleculeTabComponent implements OnDestroy {
 
   pathwayParticipants = this._pathwayParticipants.value;
 
-  moleculeData = computed(() => {
+  readonly moleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
 
     const pathwayParticipants = this.pathwayParticipants();

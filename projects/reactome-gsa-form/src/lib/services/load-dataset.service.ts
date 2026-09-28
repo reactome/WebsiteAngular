@@ -16,11 +16,11 @@ export class LoadDatasetService {
   private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
 
   // stepper: MatStepper;
-  loadDataUrl = computed(() => `${this.config().apiRoot}/data/load/`);
-  loadingStatusUrl = computed(() => `${this.config().apiRoot}/data/status/`);
-  summaryDataUrl = computed(() => `${this.config().apiRoot}/data/summary/`);
-  uploadDataUrl = computed(() => `${this.config().apiSecretRoot}/upload`);
-  uploadRiboDataUrl = computed(() => `${this.config().apiSecretRoot}/uploadRibo`);
+  readonly loadDataUrl = computed(() => `${this.config().apiRoot}/data/load/`);
+  readonly loadingStatusUrl = computed(() => `${this.config().apiRoot}/data/status/`);
+  readonly summaryDataUrl = computed(() => `${this.config().apiRoot}/data/summary/`);
+  readonly uploadDataUrl = computed(() => `${this.config().apiSecretRoot}/upload`);
+  readonly uploadRiboDataUrl = computed(() => `${this.config().apiSecretRoot}/uploadRibo`);
 
   snackError<T>(err: HttpErrorResponse, failValue$: Observable<T>): Observable<T> {
     this.snackBar.open(

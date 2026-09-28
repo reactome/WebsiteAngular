@@ -90,7 +90,7 @@ export class DownloadTabComponent {
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 
-  newtUrl = computed(() => {
+  readonly newtUrl = computed(() => {
     const reactomeUrl = new URL(
       `${CONTENT_SERVICE}/exporter/event/${this.finalEventId()}.sbgn&inferNestingOnLoad=true&mapColorScheme=opposed_red_blue&fitLabelsToNodes=true`,
       window.location.origin
@@ -100,7 +100,7 @@ export class DownloadTabComponent {
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   selectedElement = this.dataState.selectedElement;
 
-  finalEventId = computed(() => {
+  readonly finalEventId = computed(() => {
     const pathwayId = this.pathwayId();
     const selected = this.selectedElement();
     if (pathwayId) return pathwayId;
@@ -108,9 +108,9 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
+  readonly biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
 
-  finalPathwayName = computed(() => {
+  readonly finalPathwayName = computed(() => {
     const pathway = this.dataState.currentPathway();
     const selected = this.selectedElement();
     if (pathway) return pathway.displayName;
@@ -118,26 +118,26 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  hasResult = computed(() => !!this.analysis.result());
-  hasDetail = computed(() => this.dataState.hasDetail());
-  hasEHLD = computed(() => this.ehld.hasEHLD());
+  readonly hasResult = computed(() => !!this.analysis.result());
+  readonly hasDetail = computed(() => this.dataState.hasDetail());
+  readonly hasEHLD = computed(() => this.ehld.hasEHLD());
 
-  hasDownload = computed(() => {
+  readonly hasDownload = computed(() => {
     if (this.hasResult()) return true;
     return this.hasDetail();
   });
 
-  token = computed(() => this.analysis.result()?.summary.token);
-  currentAnalysisResource = computed(() => {
+  readonly token = computed(() => this.analysis.result()?.summary.token);
+  readonly currentAnalysisResource = computed(() => {
     return this.analysis.resourceFilterActive() ? this.analysis.resourceFilter() : 'TOTAL';
   });
-  hasGSAReports = computed(() => this.analysis.gsaReportsRequired());
-  gsaReports = computed(() => this.analysis.gsaReports());
+  readonly hasGSAReports = computed(() => this.analysis.gsaReportsRequired());
+  readonly gsaReports = computed(() => this.analysis.gsaReports());
 
   formats: DownloadFormat[] = Object.values(DownloadFormat) as DownloadFormat[];
   reacfoamFormats = [DownloadFormat.SVG, DownloadFormat.PNG, DownloadFormat.JPEG];
 
-  diagramItems = computed<DiagramItem[]>(() => {
+  readonly diagramItems = computed<DiagramItem[]>(() => {
     return this.hasEHLD() ? this.getDiagramItems(true) : this.getDiagramItems(false);
   });
 

@@ -16,9 +16,9 @@ export class AnalysisLegendComponent {
   analysis = inject(AnalysisService);
   state = inject(UrlStateService);
 
-  radius = input(10);
-  viewBox = computed(() => `0 -1 ${this.radius() * 2} ${this.radius()}`);
-  d = computed(
+  readonly radius = input(10);
+  readonly viewBox = computed(() => `0 -1 ${this.radius() * 2} ${this.radius()}`);
+  readonly d = computed(
     () =>
       `M -1 0
     h 1
@@ -30,11 +30,11 @@ export class AnalysisLegendComponent {
     Z`
   );
 
-  floating = input(true);
+  readonly floating = input(true);
   //TODO support values representation
-  values = input<number[]>([]);
-  valuesStats = computed(() => getArrayStats(this.values()));
-  name = computed(() => this.state.sample() || 'FDR');
+  readonly values = input<number[]>([]);
+  readonly valuesStats = computed(() => getArrayStats(this.values()));
+  readonly name = computed(() => this.state.sample() || 'FDR');
 
   selectingPalette = false;
 

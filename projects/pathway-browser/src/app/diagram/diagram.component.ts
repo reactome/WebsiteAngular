@@ -7,10 +7,8 @@ import {
   input,
   model,
   OnDestroy,
-  Output,
   signal,
   viewChild,
-  ViewChild,
   inject,
   HostListener,
   untracked,
@@ -113,9 +111,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private deltaSignal = inject(DeltaSignalService);
 
   title = 'pathway-browser';
-  @ViewChild('cytoscape') cytoscapeContainer?: ElementRef<HTMLDivElement>;
-  @ViewChild('cytoscapeCompare') compareContainer?: ElementRef<HTMLDivElement>;
-  @ViewChild('legend') legendContainer?: ElementRef<HTMLDivElement>;
+  readonly cytoscapeContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscape');
+  readonly compareContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscapeCompare');
+  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legend');
   readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
   readonly interactorsComponent = input<InteractorsComponent>(undefined, {
@@ -527,31 +525,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.controlMinZoom() +
     this.controlRange() *
       (Math.log(zoomCy / this.minZoom()) / Math.log(this.maxZoom() / this.minZoom()));
-  thumbnailImg = signal<string>('');
+  readonly thumbnailImg = signal<string>('');
   sizeObserver!: ResizeObserver;
-  containerSize = signal<{ width: number; height: number }>({
+  readonly containerSize = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
-  thumbnailSize = signal<{ width: number; height: number }>({
+  readonly thumbnailSize = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
-  boundingBox = signal<BoundingBoxWH>({ x1: 0, y1: 1, w: 1, h: 1 });
+  readonly boundingBox = signal<BoundingBoxWH>({ x1: 0, y1: 1, w: 1, h: 1 });
 
-  thumbnailViewBox = computed(
+  readonly thumbnailViewBox = computed(
     () => `0 0 ${this.thumbnailSize().width} ${this.thumbnailSize().height}`
   );
-  viewportPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
-  zoomLevel = signal<number>(0.1);
-  minZoom = signal<number>(0.1);
-  maxZoom = signal<number>(15);
+  readonly viewportPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly zoomLevel = signal<number>(0.1);
+  readonly minZoom = signal<number>(0.1);
+  readonly maxZoom = signal<number>(15);
 
-  thumbnailRxA = computed(() => (END_RX - INIT_RX) / (this.maxZoom() - this.minZoom()));
-  thumbnailRxB = computed(() => INIT_RX - this.thumbnailRxA() * this.minZoom());
-  thumbnailRx = computed(() => this.zoomLevel() * this.thumbnailRxA() + this.thumbnailRxB());
+  readonly thumbnailRxA = computed(() => (END_RX - INIT_RX) / (this.maxZoom() - this.minZoom()));
+  readonly thumbnailRxB = computed(() => INIT_RX - this.thumbnailRxA() * this.minZoom());
+  readonly thumbnailRx = computed(
+    () => this.zoomLevel() * this.thumbnailRxA() + this.thumbnailRxB()
+  );
 
-  shrunkViewport = computed(() => {
+  readonly shrunkViewport = computed(() => {
     // Get bounding box of the entire graph
     const bbox = this.boundingBox();
 
@@ -603,14 +603,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   leafIdToParentIds = new Map<string, string[]>();
 
-  hovering = signal(false);
+  readonly hovering = signal(false);
   selecting = false; // Avoid zooming in diagram when selection came from in diagram
   flagging = false; // Avoid flagging in diagram when flagging came from in diagram
 
   ngAfterViewInit(): void {
-    const container = this.cytoscapeContainer!.nativeElement;
-    const compareContainer = this.compareContainer!.nativeElement;
-    const legendContainer = this.legendContainer!.nativeElement;
+    const container = this.cytoscapeContainer()!.nativeElement;
+    const compareContainer = this.compareContainer()!.nativeElement;
+    const legendContainer = this.legendContainer()!.nativeElement;
 
     Object.values(ReactomeEventTypes).forEach((type) => {
       container.addEventListener(type, (e) => this._reactomeEvents$.next(e as ReactomeEvent));
@@ -821,9 +821,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   loadElvDiagram(): Observable<ElementsDefinition> {
-    if (!this.cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+    const cytoscapeContainer = this.cytoscapeContainer();
+    if (!cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
 
-    const container = this.cytoscapeContainer.nativeElement;
+    const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(
       tap((elements) => {
         this.comparing =
@@ -1020,7 +1021,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      const compareContainer = this.compareContainer!.nativeElement;
+      const compareContainer = this.compareContainer()!.nativeElement;
       this.cyCompare = cytoscape({
         container: compareContainer,
         elements: elements,
@@ -1152,9 +1153,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (!running) return;
           this.syncViewports(
             this.cy,
-            this.cytoscapeContainer!.nativeElement,
+            this.cytoscapeContainer()!.nativeElement,
             this.cyCompare,
-            this.compareContainer!.nativeElement,
+            this.compareContainer()!.nativeElement,
             true
           );
           requestAnimationFrame(syncFrame);
@@ -1542,14 +1543,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.cyCompare.resize();
     this.syncViewports(
       this.cy!,
-      this.cytoscapeContainer!.nativeElement,
+      this.cytoscapeContainer()!.nativeElement,
       this.cyCompare!,
-      this.compareContainer!.nativeElement
+      this.compareContainer()!.nativeElement
     );
   }
 
-  legendPosition = signal<Point>({ x: 0, y: 0 });
-  animateLegend = signal(false);
+  readonly legendPosition = signal<Point>({ x: 0, y: 0 });
+  readonly animateLegend = signal(false);
   updateLegend() {
     this.legend.resize();
     this.legend.panningEnabled(true);
@@ -1579,7 +1580,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this._ignore = false;
   }
 
-  @Output()
   public reactomeEvents$: Observable<ReactomeEvent> = this._reactomeEvents$.asObservable().pipe(
     distinctUntilChanged(
       (prev, current) =>

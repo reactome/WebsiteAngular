@@ -53,9 +53,9 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private svgExporter: SvgExporterService = inject(SvgExporterService);
   private hierarchyHover = inject(HierarchyHoverService);
 
-  ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
+  readonly ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
-  hovering = signal(false);
+  readonly hovering = signal(false);
   /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
   readonly drawError = signal<string | null>(null);
 
@@ -94,12 +94,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   style!: Style;
   ratio = 0.384;
 
-  stIdToSVGGElement = signal(new Map<string, SVGGElement>());
-  subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
-  selectedElement = linkedSignal(() =>
+  readonly stIdToSVGGElement = signal(new Map<string, SVGGElement>());
+  readonly subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
+  readonly selectedElement = linkedSignal(() =>
     this.state.select() ? this.stIdToSVGGElement().get(this.state.select()!) : undefined
   );
-  flaggedElements = computed(() =>
+  readonly flaggedElements = computed(() =>
     this.data
       .flagIdentifiers()
       .map((stId) => this.stIdToSVGGElement().get(stId))
@@ -211,8 +211,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver.observe(this.ehldContainer().nativeElement);
   }
 
-  legendPosition = signal<Point>({ x: 0, y: 0 });
-  animateLegend = signal(false);
+  readonly legendPosition = signal<Point>({ x: 0, y: 0 });
+  readonly animateLegend = signal(false);
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);

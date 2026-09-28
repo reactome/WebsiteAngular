@@ -49,9 +49,9 @@ export class ReacfoamComponent implements OnDestroy {
   private svgExporter = inject(SvgExporterService);
   private dialog = inject(MatDialog);
 
-  container = viewChild.required<ElementRef<HTMLDivElement>>('container');
+  readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
 
-  options: Signal<FoamTree.InitialOptions<PathwayGroup>> = computed(
+  readonly options: Signal<FoamTree.InitialOptions<PathwayGroup>> = computed(
     () =>
       ({
         element: this.container().nativeElement,
@@ -148,10 +148,10 @@ export class ReacfoamComponent implements OnDestroy {
       }) as FoamTree.InitialOptions<PathwayGroup>
   );
 
-  foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
-  select = linkedSignal(() => this.state.select());
-  selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
-  correctedSelectedId = computed(() =>
+  readonly foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
+  readonly select = linkedSignal(() => this.state.select());
+  readonly selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
+  readonly correctedSelectedId = computed(() =>
     this.state.select()
       ? this.foamTree().get('hierarchy', this.selectedId())
         ? this.selectedId()
@@ -159,7 +159,7 @@ export class ReacfoamComponent implements OnDestroy {
       : null
   );
 
-  relaxing = signal(false);
+  readonly relaxing = signal(false);
 
   sizeObserver = new ResizeObserver(
     throttle(50, () => {
@@ -185,10 +185,10 @@ export class ReacfoamComponent implements OnDestroy {
     })
   );
 
-  cleanFlagIdentifiers = computed(
+  readonly cleanFlagIdentifiers = computed(
     () => new Set(this.data.flagIdentifiers().filter((id) => id.startsWith('R-')))
   );
-  flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
+  readonly flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
 
   setFlag(groups: PathwayGroup[]) {
     groups?.forEach((group: PathwayGroup) => {

@@ -37,16 +37,16 @@ export class ExternalReferenceComponent {
 
   readonly displayReference = input<boolean>(true);
 
-  externalRef = computed(() => {
+  readonly externalRef = computed(() => {
     return this.entity.getTransformedExternalRef(this.referenceEntity());
   });
 
-  moleculeType = computed(() => {
+  readonly moleculeType = computed(() => {
     const entity = this.referenceEntity();
     return entity ? entity.moleculeType : null;
   });
 
-  hasStructure = computed(() =>
+  readonly hasStructure = computed(() =>
     [MoleculeType.CHEMICAL, MoleculeType.CHEMICAL_DRUG, MoleculeType.PROTEIN].includes(
       this.moleculeType() as MoleculeType
     )

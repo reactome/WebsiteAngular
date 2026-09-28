@@ -31,7 +31,7 @@ const PNG_TIERS = [
   styleUrl: './detail-download-bar.component.scss',
 })
 export class DetailDownloadBarComponent {
-  obj = input.required<DatabaseObject>();
+  readonly obj = input.required<DatabaseObject>();
 
   /**
    * Where this copy is being rendered.
@@ -42,32 +42,32 @@ export class DetailDownloadBarComponent {
    * figure. Content projection cannot be wrapped in a `@if`, so both copies are
    * always projected and each decides for itself whether it is the right one.
    */
-  placement = input<'default' | 'reaction'>('default');
+  readonly placement = input<'default' | 'reaction'>('default');
 
   protected readonly tiers = PNG_TIERS;
 
-  private isReaction = computed(() => isRLE(this.obj()));
+  private readonly isReaction = computed(() => isRLE(this.obj()));
 
-  protected shown = computed(
+  protected readonly shown = computed(
     () => isEvent(this.obj()) && this.isReaction() === (this.placement() === 'reaction')
   );
 
   // A figure needs something to draw: a reaction has its own layout, a pathway
   // has a diagram, and a pathway without one has neither.
-  protected showFigureExports = computed(
+  protected readonly showFigureExports = computed(
     () => this.isReaction() || isPathwayWithDiagram(this.obj())
   );
 
-  stId = computed(() => this.obj().stId);
-  dbId = computed(() => this.obj().dbId);
+  readonly stId = computed(() => this.obj().stId);
+  readonly dbId = computed(() => this.obj().dbId);
 
-  sbmlUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbml`);
-  sbgnUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbgn`);
-  biopaxUrl = computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.dbId()}`);
-  pdfUrl = computed(() => `${CONTENT_SERVICE}/exporter/document/event/${this.stId()}.pdf`);
+  readonly sbmlUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbml`);
+  readonly sbgnUrl = computed(() => `${CONTENT_SERVICE}/exporter/event/${this.stId()}.sbgn`);
+  readonly biopaxUrl = computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.dbId()}`);
+  readonly pdfUrl = computed(() => `${CONTENT_SERVICE}/exporter/document/event/${this.stId()}.pdf`);
 
-  svgUrl = computed(() => this.figureUrl('svg'));
-  pptxUrl = computed(() => this.figureUrl('pptx'));
+  readonly svgUrl = computed(() => this.figureUrl('svg'));
+  readonly pptxUrl = computed(() => this.figureUrl('pptx'));
 
   pngUrl(scale: number): string {
     return this.figureUrl('png', { scale: String(scale) });

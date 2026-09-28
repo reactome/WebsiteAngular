@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
   template: '',
 })
 export class LoggerComponent {
-  toLog = input<any>();
+  readonly toLog = input<any>();
 
   constructor() {}
 }

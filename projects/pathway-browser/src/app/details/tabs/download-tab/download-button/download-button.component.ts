@@ -32,13 +32,13 @@ export type Icon = { id: string; svg?: boolean };
   styleUrl: './download-button.component.scss',
 })
 export class DownloadButtonComponent {
-  url = input<string>();
-  download = input<string | boolean>();
-  icon = input<Icon>();
+  readonly url = input<string>();
+  readonly download = input<string | boolean>();
+  readonly icon = input<Icon>();
 
-  label = input<string>();
-  tooltip = input<string>();
-  openInNewTab = input<string>('_blank');
+  readonly label = input<string>();
+  readonly tooltip = input<string>();
+  readonly openInNewTab = input<string>('_blank');
   click = output<void>();
 
   onClick(event: MouseEvent) {

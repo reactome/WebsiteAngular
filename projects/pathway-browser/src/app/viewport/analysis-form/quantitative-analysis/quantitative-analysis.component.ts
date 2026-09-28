@@ -18,9 +18,9 @@ export class QuantitativeAnalysisComponent {
   public analysis: AnalysisService = inject(AnalysisService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  gsaId = signal<string>('');
+  readonly gsaId = signal<string>('');
 
   /** For its guided tour, which otherwise only a ?gsa-tour= parameter starts. */
   readonly form = viewChild(GsaFormComponent);

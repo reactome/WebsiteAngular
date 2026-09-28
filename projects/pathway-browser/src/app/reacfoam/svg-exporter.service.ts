@@ -50,16 +50,16 @@ export class SvgExporterService {
   style!: SvgDecoration.Style;
   options!: DownloadOptions & { halfTransition: number; totalTime: number };
 
-  hasExpressionFilter = computed(
+  readonly hasExpressionFilter = computed(
     () =>
       this.state.minExpressionFilter() !== undefined ||
       this.state.maxExpressionFilter() !== undefined ||
       this.state.gsaFilter().length > 1
   );
-  isReacfoamLayoutChanging = computed(
+  readonly isReacfoamLayoutChanging = computed(
     () => this.state.filterViewMode() !== 'overview' && this.hasExpressionFilter()
   );
-  select = computed(() => this.state.select());
+  readonly select = computed(() => this.state.select());
 
   async exportReacfoam(reacfoam: ReacfoamComponent, options: DownloadOptions): Promise<string> {
     const { decorationSize } = this.initExport(options);

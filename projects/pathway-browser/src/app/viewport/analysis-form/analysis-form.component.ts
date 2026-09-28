@@ -49,7 +49,7 @@ export class AnalysisFormComponent {
   tissue = this.http.get('assets/icons/analysis/TissueCompare.svg', { responseType: 'text' });
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
   /**
    * The tab names, in the order the template renders them.
@@ -65,7 +65,7 @@ export class AnalysisFormComponent {
     'tissue',
   ];
 
-  selectedTabIndex = computed(() =>
+  readonly selectedTabIndex = computed(() =>
     Math.max(0, this.tabs.indexOf(this.state.analysisTab() ?? 'qualitative'))
   );
 }

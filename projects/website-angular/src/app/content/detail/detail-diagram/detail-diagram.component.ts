@@ -18,7 +18,7 @@ interface PathwayLike extends DatabaseObject {
   styleUrl: './detail-diagram.component.scss',
 })
 export class DetailDiagramComponent {
-  obj = input.required<DatabaseObject>();
+  readonly obj = input.required<DatabaseObject>();
 
   /**
    * The pathway's own figure, drawn by the site's renderer.
@@ -34,7 +34,7 @@ export class DetailDiagramComponent {
    * the exporter's PNG endpoint used to 500 on top-level pathways that have an
    * illustration.
    */
-  diagramUrl = computed<string | null>(() => {
+  readonly diagramUrl = computed<string | null>(() => {
     const p = this.obj() as PathwayLike;
     if (!p?.stId || !p.hasDiagram) return null;
     return `${RENDER_SERVICE}/render/${p.stId}.svg`;
@@ -63,5 +63,5 @@ export class DetailDiagramComponent {
     image.src = exporter;
   }
 
-  alt = computed(() => `${this.obj().displayName} diagram`);
+  readonly alt = computed(() => `${this.obj().displayName} diagram`);
 }

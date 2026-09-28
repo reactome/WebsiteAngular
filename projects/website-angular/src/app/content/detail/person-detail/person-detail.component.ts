@@ -84,16 +84,16 @@ export class PersonDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
 
-  person = signal<Person | null>(null);
-  loading = signal(true);
-  error = signal(false);
+  readonly person = signal<Person | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal(false);
 
-  authoredPathways = signal<SimpleEvent[]>([]);
-  authoredReactions = signal<SimpleEvent[]>([]);
-  reviewedPathways = signal<SimpleEvent[]>([]);
-  reviewedReactions = signal<SimpleEvent[]>([]);
+  readonly authoredPathways = signal<SimpleEvent[]>([]);
+  readonly authoredReactions = signal<SimpleEvent[]>([]);
+  readonly reviewedPathways = signal<SimpleEvent[]>([]);
+  readonly reviewedReactions = signal<SimpleEvent[]>([]);
 
-  publicationsSorted = computed(() => {
+  readonly publicationsSorted = computed(() => {
     const pubs = this.person()?.publications ?? [];
     return [...pubs].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
   });
@@ -177,7 +177,7 @@ export class PersonDetailComponent implements OnInit {
   // Per-section expand/collapse state. Each section header is clickable
   // and toggles independently; the bulk button at the top sets all four
   // at once. Default: all expanded.
-  private sectionState = signal<Record<SectionKey, boolean>>({
+  private readonly sectionState = signal<Record<SectionKey, boolean>>({
     authoredPathways: true,
     authoredReactions: true,
     reviewedPathways: true,
@@ -188,7 +188,7 @@ export class PersonDetailComponent implements OnInit {
   // flag. Long lists (>20 rows) start truncated; the search box matches
   // displayName (case-insensitive contains); species chips narrow to a
   // single organism.
-  private sectionExtras = signal<
+  private readonly sectionExtras = signal<
     Record<SectionKey, { showAll: boolean; query: string; species: string }>
   >({
     authoredPathways: { showAll: false, query: '', species: '' },
@@ -210,7 +210,7 @@ export class PersonDetailComponent implements OnInit {
     this.sectionState.update((s) => ({ ...s, [key]: !s[key] }));
   }
 
-  allExpanded = computed(() => {
+  readonly allExpanded = computed(() => {
     const s = this.sectionState();
     return s.authoredPathways && s.authoredReactions && s.reviewedPathways && s.reviewedReactions;
   });

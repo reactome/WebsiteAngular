@@ -35,7 +35,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
 
   readonly stId = input.required<string>();
 
-  private containerRef = viewChild.required<ElementRef<HTMLDivElement>>('container');
+  private readonly containerRef = viewChild.required<ElementRef<HTMLDivElement>>('container');
   private cy?: cytoscape.Core;
   private reactomeStyle?: Style;
   private resizeObserver?: ResizeObserver;

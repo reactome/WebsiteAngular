@@ -3,9 +3,9 @@ import {
   AfterViewInit,
   OnDestroy,
   ElementRef,
-  ViewChild,
   PLATFORM_ID,
   inject,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
@@ -20,7 +20,7 @@ declare const SwaggerUIBundle: any;
 export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
-  @ViewChild('swaggerContainer', { static: true }) swaggerContainer!: ElementRef<HTMLDivElement>;
+  readonly swaggerContainer = viewChild.required<ElementRef<HTMLDivElement>>('swaggerContainer');
 
   private serviceName = '';
   private isBrowser: boolean;
@@ -59,7 +59,7 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     // the time this runs.
     const url = `${window.location.origin}/${this.serviceName}/v3/api-docs`;
     SwaggerUIBundle({
-      domNode: this.swaggerContainer.nativeElement,
+      domNode: this.swaggerContainer().nativeElement,
       url,
       // Follows `#/{tag}/{operationId}` in the address, so a link to one
       // operation opens it rather than the top of a 98-operation page.
@@ -90,8 +90,9 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.swaggerContainer?.nativeElement) {
-      this.swaggerContainer.nativeElement.innerHTML = '';
+    const swaggerContainer = this.swaggerContainer();
+    if (swaggerContainer?.nativeElement) {
+      swaggerContainer.nativeElement.innerHTML = '';
     }
   }
 }

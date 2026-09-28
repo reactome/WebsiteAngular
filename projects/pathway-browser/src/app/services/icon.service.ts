@@ -41,7 +41,7 @@ export class IconService {
     return `${this.iconBase()}/${stId}.svg`;
   }
 
-  currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
+  readonly currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
 
   protein = { name: 'protein', tooltip: 'Protein', route: 'protein' };
   negativeRegulation = {
