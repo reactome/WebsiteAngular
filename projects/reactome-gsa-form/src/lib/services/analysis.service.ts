@@ -73,7 +73,7 @@ export class AnalysisService {
     return this.http.post(this.submitAnalysisUrl(), query, { responseType: 'text' });
   }
 
-  cancelAnalysis(analysisId: string): Observable<never> {
+  cancelAnalysis(_analysisId: string): Observable<never> {
     return EMPTY; // TODO Switch to actual API call when backend ready (https://github.com/reactome/gsa-backend/issues/47)
   }
 

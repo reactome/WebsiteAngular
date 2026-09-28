@@ -245,14 +245,16 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
           .pipe(
             map((entityResult) => {
               if (entityResult && entityResult.composedOf) {
-                entityResult.composedOf = entityResult.composedOf.map((composed, index, array) => ({
-                  ...composed,
-                  element: {
-                    ...composed.element,
-                    composedOf: [], // Add an empty composedOf array to ensure the node is expandable
-                  },
-                  index: index,
-                }));
+                entityResult.composedOf = entityResult.composedOf.map(
+                  (composed, index, _array) => ({
+                    ...composed,
+                    element: {
+                      ...composed.element,
+                      composedOf: [], // Add an empty composedOf array to ensure the node is expandable
+                    },
+                    index: index,
+                  })
+                );
               }
               return {
                 ...entityResult,
@@ -410,7 +412,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   // Important to use the updateCounter to trigger the update on the parent node when the child node is updated
-  trackBy: TrackByFunction<R> = (index, node) =>
+  trackBy: TrackByFunction<R> = (_index, node) =>
     node.element.dbId + '-' + node.element._updateCounter;
 
   updateMatTreeDataSource(node: E) {
@@ -625,7 +627,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return `${CONTENT_DETAIL}/${element.stId}`;
   }
 
-  getDisplayName(node: R, element: E): string {
+  getDisplayName(_node: R, element: E): string {
     if (this.moleculeView() && isMolecule(element) && element.identifier) {
       const displayName = element.formattedName;
       return `${displayName}`;

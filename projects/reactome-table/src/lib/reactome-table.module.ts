@@ -9,11 +9,7 @@ import { UploadTableComponent } from './component/upload-table/upload-table.comp
 import { DownloadTableComponent } from './component/download-table/download-table.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
-import {
-  FixedSizeVirtualScrollStrategy,
-  ScrollingModule,
-  VIRTUAL_SCROLL_STRATEGY,
-} from '@angular/cdk/scrolling';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 @NgModule({
   declarations: [TableComponent, UploadTableComponent, DownloadTableComponent],

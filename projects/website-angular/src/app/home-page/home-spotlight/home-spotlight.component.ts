@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { ChangeDetectorRef, Component, inject, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
@@ -9,7 +9,6 @@ import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
-import { NavOption } from '../../../types/link';
 
 @Component({
   selector: 'app-home-spotlight',

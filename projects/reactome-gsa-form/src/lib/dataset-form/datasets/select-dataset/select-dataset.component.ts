@@ -7,7 +7,6 @@ import {
   FormsModule,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { BreakpointObserver } from '@angular/cdk/layout';
 import { SearchLibraryDataset } from '../../../model/dataset-library';
 import { PDatasetSource } from '../../../state/dataset-source/dataset-source.state';
 import { Store } from '@ngrx/store';
@@ -38,7 +37,6 @@ import { AsyncPipe } from '@angular/common';
 export class SelectDatasetComponent implements OnInit {
   private formBuilder = inject(FormBuilder);
   store = inject(Store);
-  private responsive = inject(BreakpointObserver);
 
   readonly datasetId = input.required<number>();
   readonly method = input.required<Method>();

@@ -383,11 +383,6 @@ export function observeSections(
   manualSelection: boolean,
   includeDownload: boolean
 ) {
-  const options = {
-    root: null,
-    rootMargin: '0px', // no offset
-    threshold: 0, // trigger as soon as any pixel is visible
-  };
   const observer = new IntersectionObserver((entries) => {
     if (manualSelection) return;
     // filtering visible elements

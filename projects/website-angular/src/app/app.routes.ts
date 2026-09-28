@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { Router, Routes, UrlSegment } from '@angular/router';
+import { Router, Routes } from '@angular/router';
 
 export const routes: Routes = [
   //Home Page

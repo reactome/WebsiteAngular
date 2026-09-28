@@ -326,7 +326,7 @@ export class EhldService {
     );
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
-    values.forEach((exp, i) => {
+    values.forEach((exp, _i) => {
       const p = stops.length - 1;
       const realExp = isArray(exp) ? exp[0] : exp;
       if (stops.length !== 0 && stops[p].exp === realExp) {
@@ -347,7 +347,7 @@ export class EhldService {
       `<pattern id="${this.pattern}${stId}-${type}" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 1 1" preserveAspectRatio="none">` +
       stops
         .map(
-          (stop, i) =>
+          (stop, _i) =>
             `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`
         )
         .join('') +
@@ -456,7 +456,7 @@ export class EhldService {
   }
 
   clearAnalysisInfo(elementsMap: Map<string, SVGGElement>) {
-    elementsMap.forEach((region: SVGGElement, stId: string) => {
+    elementsMap.forEach((region: SVGGElement, _stId: string) => {
       const analysisInfoElement = region.querySelector(`g[id^="${this.analysisInfoId}"]`);
       if (analysisInfoElement) {
         analysisInfoElement.classList.remove(`${this.analysisInfoContainer}`);

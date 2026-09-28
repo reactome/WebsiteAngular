@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { InteractorService } from '../../../../../../pathway-browser/src/app/interactors/services/interactor.service';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
 import { CustomInteraction } from '../../../../../../pathway-browser/src/app/interactors/model/interactor.model';

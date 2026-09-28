@@ -1,7 +1,7 @@
 import { extract } from '../../properties-utils';
 import { DrawerProvider } from '../types';
 
-export const protein: DrawerProvider = (properties, { width, height, drug }) => {
+export const protein: DrawerProvider = (properties, { width, height }) => {
   const fill = extract(properties.protein.fill);
   const select = extract(properties.global.selectNode);
   const hover = extract(properties.global.hoverNode);

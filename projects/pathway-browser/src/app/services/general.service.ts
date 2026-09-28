@@ -1,4 +1,4 @@
-import { computed, Injectable, resource, inject } from '@angular/core';
+import { computed, Injectable, inject } from '@angular/core';
 import {
   CONTENT_SERVICE,
   DOWNLOAD,

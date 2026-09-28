@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { FoamTree } from '@carrotsearch/foamtree';
 import { PathwayGroup, ReacfoamService } from './reacfoam.service';
-import { Router } from '@angular/router';
 import { DarkService } from '../services/dark.service';
 import { UrlStateService } from '../services/url-state.service';
 import { AnalysisService } from '../services/analysis.service';
@@ -46,7 +45,6 @@ export class ReacfoamComponent implements OnDestroy {
   analysis = inject(AnalysisService);
   private species = inject(SpeciesService);
   private dark = inject(DarkService);
-  private router = inject(Router);
   private download = inject(DownloadService);
   private svgExporter = inject(SvgExporterService);
   private dialog = inject(MatDialog);
@@ -262,7 +260,7 @@ export class ReacfoamComponent implements OnDestroy {
       this.foamTree().set({
         groupStrokePlainLightnessShift: this.dark.isDark() ? 70 : -70,
         groupStrokePlainSaturationShift: 0,
-        groupColorDecorator: (options, props, values) => {
+        groupColorDecorator: (_options, props, values) => {
           const depth = props.group.depth;
           // If child groups of some group doesn't have enough space to
           // render, draw the parent group in red.
@@ -341,7 +339,7 @@ export class ReacfoamComponent implements OnDestroy {
         // Two strokes: a dark one underneath so the flag colour reads against a
         // pale fill as well as a saturated one, and thinner at depth so a
         // flagged child inside a flagged parent stays legible.
-        groupContentDecorator: (options, props) => {
+        groupContentDecorator: (_options, props) => {
           if (!this.flagging() || !props.group.flag) return;
 
           const context = props.context;

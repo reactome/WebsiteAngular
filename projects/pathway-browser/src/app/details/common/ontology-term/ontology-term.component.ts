@@ -1,4 +1,4 @@
-import { Component, computed, effect, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { MatTooltip } from '@angular/material/tooltip';
 import { TitleCasePipe } from '@angular/common';
 import { DatabaseObject } from '../../../model/graph/database-object.model';

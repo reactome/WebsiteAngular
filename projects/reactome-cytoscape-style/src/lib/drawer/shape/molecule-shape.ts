@@ -12,8 +12,6 @@ export const molecule: DrawerProvider = (properties, { width, height, drug, inte
       : extract(properties.molecule.drug)
     : extract(properties.interactor.fill);
   const fill = extract(properties.molecule.fill);
-
-  const ht = t / 2;
   const halfHeight = height / 2;
   const oR = halfHeight + t;
   const iR = halfHeight - t;

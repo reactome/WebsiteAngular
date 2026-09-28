@@ -4,7 +4,6 @@ import { Component, inject } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { NavOption } from '../../types/link';
 
 @Component({
   selector: 'app-info-footer',

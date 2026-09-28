@@ -15,13 +15,11 @@ import {
   ResourceType,
 } from './model/interactor.model';
 import cytoscape from 'cytoscape';
-import { DiagramService } from '../services/diagram.service';
 import { DarkService } from '../services/dark.service';
 import { InteractorService, ResourceTally } from './services/interactor.service';
 import { UrlStateService } from '../services/url-state.service';
 import { MatDialog } from '@angular/material/dialog';
 import { CustomInteractorDialogComponent } from './custom-interactor-dialog/custom-interactor-dialog.component';
-import { Subscription } from 'rxjs';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -54,7 +52,6 @@ import { DEFAULT_INTERACTOR_SCORE } from './interactor-threshold';
   ],
 })
 export class InteractorsComponent implements AfterViewInit {
-  private diagram: DiagramService = inject(DiagramService);
   public dark: DarkService = inject(DarkService);
   private interactors: InteractorService = inject(InteractorService);
   private state: UrlStateService = inject(UrlStateService);
@@ -317,7 +314,7 @@ export class InteractorsComponent implements AfterViewInit {
         restoreFocus: false, // Deselect button when closing
       });
 
-      dialogRef.afterClosed().subscribe((result) => {
+      dialogRef.afterClosed().subscribe((_result) => {
         const resource = dialogRef.componentInstance.token;
         if (resource) {
           this.resourceTokens!.push(resource);

@@ -190,7 +190,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.dataStepForm.setAsyncValidators((control) =>
+    this.dataStepForm.setAsyncValidators((_control) =>
       this.table()!.hasData$.pipe(
         map((hasData) => (hasData ? null : { invalid: true })),
         untilDestroyed(this)

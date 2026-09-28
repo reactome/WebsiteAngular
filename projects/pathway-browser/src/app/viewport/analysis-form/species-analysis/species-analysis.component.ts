@@ -21,7 +21,6 @@ import { FormControl } from '@angular/forms';
 import { LottieService } from '../../../services/lottie.service';
 import { MatRipple } from '@angular/material/core';
 import { MatTooltip } from '@angular/material/tooltip';
-import { switchMap, take } from 'rxjs';
 import { DarkService } from '../../../services/dark.service';
 import { IconService } from '../../../services/icon.service';
 

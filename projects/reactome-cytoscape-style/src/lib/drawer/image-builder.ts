@@ -138,7 +138,7 @@ const defaultBg: Image = {
   'bounds-expansion': 0,
 };
 
-function addGradient(svgText: string, gradient: string, single: boolean = false): string {
+function addGradient(svgText: string, gradient: string, _single: boolean = false): string {
   // if (single) {
   //   const s = `<style>.gradient{fill: ${gradient}!important;}</style>${svgText}`;
   //   console.log(s)
@@ -150,9 +150,9 @@ function addGradient(svgText: string, gradient: string, single: boolean = false)
 }
 
 function _expToGradient(
-  id: string,
+  _id: string,
   exps: (number | [number, number] | undefined)[],
-  properties: Properties,
+  _properties: Properties,
   palette: chroma.Scale
 ): string | undefined {
   if (!exps) return;
@@ -166,7 +166,7 @@ function _expToGradient(
   }[] = [];
   const size = exps.reduce((l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1), 0);
   const delta = 1 / size;
-  exps.forEach((exp, i) => {
+  exps.forEach((exp, _i) => {
     const p = stops.length - 1;
     const realExp = isArray(exp) ? exp[0]! : exp;
     if (stops.length !== 0 && stops[p].exp === realExp) {
@@ -202,7 +202,7 @@ function _expToGradient(
     '<defs><pattern id="gradient" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 1 1" preserveAspectRatio="none">' +
     stops
       .map(
-        (stop, i) =>
+        (stop, _i) =>
           `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`
       )
       .join('') +
@@ -237,7 +237,7 @@ function svgStr(svgText: string, viewPortWidth: number, viewPortHeight: number) 
   );
 }
 
-const dim = (properties: Properties, { id }: DrawerParameters) => id;
+const dim = (_properties: Properties, { id }: DrawerParameters) => id;
 const classToDrawers = new Map<Node, Memo<DrawerProvider>>([
   ['Protein', memoize(protein, dim)],
   ['GenomeEncodedEntity', memoize(genomeEncodedEntity, dim)],
@@ -321,7 +321,7 @@ export const CROSS = memoize(
       'background-image-opacity': 1,
     };
   },
-  (p, { width, height }) => `${width}x${height}`
+  (_p, { width, height }) => `${width}x${height}`
 );
 
 export const OMMITED_ICON = memoize(
@@ -333,5 +333,5 @@ export const OMMITED_ICON = memoize(
       10
     );
   },
-  (p) => ''
+  (_p) => ''
 );

@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal, Signal, WritableSignal } from '@angular/core';
 import { UrlStateService } from '../../../services/url-state.service';
-import { HttpClient } from '@angular/common/http';
 import { DataStateService } from '../../../services/data-state.service';
 import { isPathway } from '../../../services/utils';
 import { AnalysisService } from '../../../services/analysis.service';
@@ -75,7 +74,6 @@ type DiagramItem = {
 })
 export class DownloadTabComponent {
   private state: UrlStateService = inject(UrlStateService);
-  private http: HttpClient = inject(HttpClient);
   private dataState: DataStateService = inject(DataStateService);
   public analysis: AnalysisService = inject(AnalysisService);
   private download: DownloadService = inject(DownloadService);

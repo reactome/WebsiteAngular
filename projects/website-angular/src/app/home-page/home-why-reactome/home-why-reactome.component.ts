@@ -1,6 +1,6 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, OnInit } from '@angular/core';
-import { ExternalLink, NavOption } from '../../../types/link';
+import { ExternalLink } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({

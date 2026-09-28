@@ -169,7 +169,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     this.selectedValue = $event.value;
   }
 
-  onFileChange($event: Event) {
+  onFileChange(_$event: Event) {
     // const inputElement = $event.target as HTMLInputElement;
     // if (inputElement.files && inputElement.files.length) {
     //   const file = inputElement.files[0]; // Single file upload

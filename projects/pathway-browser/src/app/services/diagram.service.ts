@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { catchError, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import {
   Diagram,
@@ -197,7 +197,7 @@ export class DiagramService {
   public async loadStructureSvg(id: number): Promise<string | undefined> {
     return fetch(`https://www.ebi.ac.uk/chebi/backend/api/public/compound/${id}/structure/`, {})
       .then((r) => (r.ok ? r.text() : undefined))
-      .catch((err) => undefined);
+      .catch((_err) => undefined);
   }
 
   public getDiagram(id: number | string): Observable<cytoscape.ElementsDefinition> {
@@ -241,7 +241,7 @@ export class DiagramService {
                   }
                   return { diagram, graph };
                 }),
-                catchError((err) => of({ diagram, graph }))
+                catchError((_err) => of({ diagram, graph }))
               );
             } else {
               return of({ diagram, graph });
@@ -1030,7 +1030,7 @@ export class DiagramService {
     // const peTypes = ['Gene'];
     const reactionTypes = ['association', 'dissociation', 'transition', 'uncertain', 'omitted'];
 
-    const physicalEntities: cytoscape.NodeDefinition[] = Array.from({ length: amount }, (x, i) => {
+    const physicalEntities: cytoscape.NodeDefinition[] = Array.from({ length: amount }, (_x, i) => {
       const clazz = this.pick(peTypes);
       return {
         group: 'nodes',
@@ -1045,7 +1045,7 @@ export class DiagramService {
       };
     });
 
-    const reactions: cytoscape.NodeDefinition[] = physicalEntities.map((node, i) => ({
+    const reactions: cytoscape.NodeDefinition[] = physicalEntities.map((_node, i) => ({
       group: 'nodes',
       data: {
         id: `${i}-react`,
@@ -1059,7 +1059,7 @@ export class DiagramService {
       reactions[i],
     ]);
 
-    const inOut: cytoscape.EdgeDefinition[] = physicalEntities.flatMap((node, i) => [
+    const inOut: cytoscape.EdgeDefinition[] = physicalEntities.flatMap((_node, i) => [
       {
         group: 'edges',
         data: {
@@ -1142,16 +1142,6 @@ function overlapLimited(nodeA: Node, nodeB: Node, limit: number = 0.8): boolean 
     bottom: Math.min(rectA.bottom, rectB.bottom),
   };
   return o.left < o.right && o.top < o.bottom && area(o) / area(rectA) > limit;
-}
-
-function overlap(nodeA: Node, nodeB: Node): boolean {
-  if (nodeA.position.x === nodeB.position.x && nodeA.position.y === nodeB.position.y) return true;
-  const rectA = getRect(nodeA),
-    rectB = getRect(nodeB);
-  return (
-    Math.max(rectA.left, rectB.left) < Math.min(rectA.right, rectB.right) &&
-    Math.max(rectA.top, rectB.top) < Math.min(rectA.bottom, rectB.bottom)
-  );
 }
 
 function area(rect: Rectangle) {

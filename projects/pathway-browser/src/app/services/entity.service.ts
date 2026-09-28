@@ -10,7 +10,7 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { ParticipantService } from './participant.service';
 import { DataKeys, Labels } from '../constants/constants';
-import { isDefined, isRefEntity, isReferenceEntityStId, isReferenceSummary } from './utils';
+import { isDefined, isRefEntity, isReferenceEntityStId } from './utils';
 
 @Injectable({
   providedIn: 'root',

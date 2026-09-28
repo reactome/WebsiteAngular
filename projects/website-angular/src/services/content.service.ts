@@ -1,6 +1,6 @@
 import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, map, catchError, of, tap } from 'rxjs';
+import { Observable, map, catchError, of } from 'rxjs';
 import { Article, ArticleIndexItem, FaqIndex } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
 
