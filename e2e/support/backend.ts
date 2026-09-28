@@ -53,6 +53,7 @@ import {
 import path from 'node:path';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -69,7 +70,7 @@ const RECORD = process.env['E2E_RECORD'] === '1';
  * (proxy.conf.js `apiPage`), and recording one would replay a copy of the page
  * instead of testing what the server does with the address.
  */
-const BACKEND = /\/(ContentService|AnalysisService|ExperimentDigester)\/[^?#]|idg\.reactome\.org/;
+// The pattern itself lives in har-entry.mjs, which the recordings check shares.
 
 /**
  * Hosts outside this site that the suite is allowed to reach, and why.
@@ -234,12 +235,6 @@ function bodyOf(entry: HarEntry, harDir: string): Buffer {
   return Buffer.from(c.text, c.encoding === 'base64' ? 'base64' : 'utf8');
 }
 
-/** Whether the recording kept a body for this response, inline or beside it. */
-function hasBody(entry: HarEntry): boolean {
-  const c = entry.response.content;
-  return Boolean(c._file) || (c.text !== undefined && c.text !== '');
-}
-
 function load(har: string): Map<string, HarEntry> {
   const log = JSON.parse(readFileSync(har, 'utf8')) as { log: { entries: HarEntry[] } };
   const index = new Map<string, HarEntry>();
@@ -250,6 +245,13 @@ function load(har: string): Map<string, HarEntry> {
     // means a request matching only such an entry is aborted, which is exactly
     // what happened to it when the recording was taken.
     if (entry.response.status < 100) continue;
+    // Likewise a response cut off after its headers: recorded as a 200 with no
+    // body. Served, it would be a successful empty answer the server never
+    // gave, and the page quietly shows nothing -- one test skipped itself for
+    // weeks on an empty ancestors list. So it is not replayed: the request falls
+    // to the pooled recordings like any other miss (another test's complete
+    // copy) and is aborted if none has one.
+    if (isTruncated(entry)) continue;
     // First write wins. A spec that asks for the same thing twice recorded it
     // twice; the responses match, and the first is the one it saw first --
     // unless the first has no body and a later one does. A request cancelled
@@ -351,6 +353,30 @@ const ANGULAR_ERROR = /\bNG0\d{3,4}\b/;
  */
 const ALLOW_ANGULAR_ERRORS = 'angular-errors';
 
+/** How long a recording waits, at most, for a test's backend requests to finish. */
+const RECORDING_SETTLE_MS = 15_000;
+
+/**
+ * Counts a context's backend requests in flight, and returns a wait for them
+ * to finish. A request that never completes -- a long poll, a lookup the page
+ * abandoned -- ends the wait at the ceiling rather than holding the test.
+ */
+function trackBackendRequests(context: BrowserContext) {
+  const inFlight = new Set<object>();
+  context.on('request', (request) => {
+    if (BACKEND.test(request.url())) inFlight.add(request);
+  });
+  const done = (request: object) => inFlight.delete(request);
+  context.on('requestfinished', done);
+  context.on('requestfailed', done);
+  return async (ceiling: number) => {
+    const until = Date.now() + ceiling;
+    while (inFlight.size > 0 && Date.now() < until) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  };
+}
+
 /**
  * Watches a test's pages for Angular errors, and fails the test on any once it
  * is done. Attached where the browser context is made, so only tests that use
@@ -409,7 +435,19 @@ export const test = base.extend({
 
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });
+      const settle = trackBackendRequests(context);
+      // The wait below happens in this fixture's teardown, which counts against
+      // the test's own time limit; give it room so a slow test does not time out
+      // only when it is being recorded.
+      // (A limit of 0 means none, and stays none.)
+      if (testInfo.timeout) testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
       await use(context);
+      // The HAR is written when the context closes, and a response still
+      // streaming then is recorded as a 200 with no body -- replayed, a
+      // successful empty answer the server never gave. So the context stays
+      // open until the test's backend requests have finished, up to a ceiling.
+      // Recording only: a replay has nothing to wait for.
+      await settle(RECORDING_SETTLE_MS);
       await angular.check(testInfo);
       return;
     }

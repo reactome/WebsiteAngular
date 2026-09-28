@@ -20,5 +20,12 @@ const run = spawnSync('npx', ['playwright', 'test', '--project=code', ...process
 });
 
 spawnSync('node', [path.join(import.meta.dirname, 'trim-har.mjs')], { stdio: 'inherit' });
+// Says at once if this recording caught an answer cut off mid-response, rather
+// than leaving it for CI.
+const check = spawnSync('node', [path.join(import.meta.dirname, 'check-har.mjs')], {
+  stdio: 'inherit',
+});
 
-process.exit(run.status ?? 1);
+// The recording's failure first; a killed recording (no status) is a failure too.
+const recorded = run.status ?? 1;
+process.exit(recorded || (check.status ?? 1));

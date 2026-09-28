@@ -119,7 +119,10 @@ test('publication authors link to their person pages', async ({ page }) => {
   );
   if (!href) throw new Error('no href to follow');
 
-  // and it has to actually land on a person
+  // and it has to actually land on a person -- once this page has finished
+  // loading, or leaving it cuts its requests off mid-response and the
+  // recording keeps the truncated answers (scripts/check-har.mjs refuses them).
+  await page.waitForLoadState('networkidle');
   await page.goto(href);
   await expect(page.locator('app-person-detail')).toContainText(/Publications|Authored/, {
     timeout: 25_000,
