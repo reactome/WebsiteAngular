@@ -435,3 +435,55 @@ test.describe('Release calendar', () => {
     await expect(page.locator('app-page-layout')).toContainText(/Released/i, { timeout: 60_000 });
   });
 });
+
+test.describe('Section sidebar', () => {
+  // A page inside a section was headed only if the section's own page had been
+  // shown first, and reached from another section it kept that section's name.
+  test('heads a page with its own section, however it is reached', async ({ page }) => {
+    const heading = page.locator('app-sidebar .section-title');
+    await page.goto('/about/team');
+    await expect(heading).toHaveText('About', { timeout: LOAD });
+
+    await page.goto('/documentation');
+    await expect(heading).toHaveText('Docs', { timeout: LOAD });
+    // In the app, not a fresh load: the sidebar is the same one.
+    await page.locator('app-sidebar .sidebar-item a').first().click();
+    await expect(page).not.toHaveURL(/\/documentation$/);
+    await expect(heading).toHaveText('Docs');
+  });
+
+  // An article's sidebar lists its siblings from the section's index. The list
+  // was written into plain fields when the index arrived, after change
+  // detection had been asked for, so Angular found the view changed after
+  // checking it (NG0100) -- intermittently, whenever the index was slow.
+  for (const [section, page, title, heading] of [
+    ['about/news', '238-version-87-released', 'V87 released', 'News & Updates'],
+    ['content/reactome-research-spotlight', null, null, 'Reactome Research Spotlights'],
+  ] as const) {
+    test(`lists ${heading} beside an article, however late the list arrives`, async ({
+      page: browser,
+    }) => {
+      await browser.route(`**/content/${section}/index.json`, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await route.continue();
+      });
+      let slug: string = page ?? '';
+      let label: string = title ?? '';
+      if (!page) {
+        // Whichever spotlight the index lists first; they change.
+        type Entry = { slug: string; title: string };
+        const data = (await (
+          await browser.request.get(`/content/${section}/index.json`)
+        ).json()) as Entry[] | { articles: Entry[] };
+        const first = (Array.isArray(data) ? data : data.articles)[0];
+        slug = first.slug;
+        label = first.title;
+      }
+      await browser.goto(`/${section}/${slug}`);
+      const sidebar = browser.locator('app-sidebar');
+      await expect(sidebar.locator('.section-title')).toHaveText(heading, { timeout: LOAD });
+      await expect(sidebar.locator('.sidebar-item.active')).toHaveText(label, { timeout: LOAD });
+      expect(await sidebar.locator('.sidebar-item').count()).toBeGreaterThan(1);
+    });
+  }
+});
