@@ -1,3 +1,19 @@
 {
-  "warnings": 497
+  "warnings": 497,
+  "rules": {
+    "@angular-eslint/no-input-rename": 7,
+    "@angular-eslint/no-output-native": 6,
+    "@angular-eslint/prefer-standalone": 4,
+    "@typescript-eslint/ban-ts-comment": 22,
+    "@typescript-eslint/no-empty-object-type": 48,
+    "@typescript-eslint/no-explicit-any": 121,
+    "@typescript-eslint/no-namespace": 15,
+    "@typescript-eslint/no-non-null-assertion": 253,
+    "@typescript-eslint/no-unused-expressions": 9,
+    "@typescript-eslint/prefer-as-const": 1,
+    "no-empty-pattern": 1,
+    "no-useless-assignment": 5,
+    "no-useless-escape": 4,
+    "prefer-const": 1
+  }
 }
