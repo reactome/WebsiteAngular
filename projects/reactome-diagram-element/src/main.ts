@@ -111,12 +111,12 @@ class ReactomeDiagram extends HTMLElement {
 
   /** Fits the whole diagram in view. */
   fit() {
-    this.toView(new Event(FIT_EVENT));
+    this.toReadyView(new Event(FIT_EVENT));
   }
   /** Clears the selection: the partner's, and one the reader clicked. */
   resetSelection() {
     this.removeAttribute(PROPERTIES.select);
-    this.toView(new Event(CLEAR_SELECTION_EVENT));
+    this.toReadyView(new Event(CLEAR_SELECTION_EVENT));
   }
   /** Makes an entity stand out, without selecting it. */
   highlight(id: string) {
@@ -134,6 +134,16 @@ class ReactomeDiagram extends HTMLElement {
    */
   private toView(event: Event) {
     void customElements.whenDefined(VIEW).then(() => this.view?.dispatchEvent(event));
+  }
+
+  /**
+   * A request that only means something to a view that is there: nothing is
+   * drawn to fit, and nothing selected by the reader to clear, before it is.
+   * Waiting for it instead, a clear sent before a queued select arrived after
+   * that select had been applied, and undid it.
+   */
+  private toReadyView(event: Event) {
+    if (customElements.get(VIEW)) this.view?.dispatchEvent(event);
   }
   /** Each the same as removing its attribute. */
   resetFlag() {

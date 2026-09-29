@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A page started the documented old way</title>
+    <!--
+      The old widget's documented start: the page defines onReactomeDiagramReady
+      and the widget calls it. Everything here is called at once inside it,
+      before the diagram's code has defined the element -- which the page
+      records, so a test can tell the calls were queued.
+    -->
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+    <script>
+      window.__legacy = [];
+      function onReactomeDiagramReady() {
+        window.__definedAtCreate = !!customElements.get('reactome-diagram');
+        var diagram = Reactome.Diagram.create({ placeHolder: 'diagramHolder', width: 950, height: 500 });
+        window.widget = diagram;
+        diagram.onDiagramLoaded(function (stId) {
+          window.__legacy.push(['loaded', stId]);
+        });
+        diagram.resetSelection();
+        diagram.selectItem('R-HSA-182558');
+        diagram.highlightItem('R-HSA-182558');
+        diagram.flagItems('CHEK1');
+        diagram.loadDiagram('R-HSA-69620');
+      }
+    </script>
+  </head>
+  <body>
+    <div id="diagramHolder"></div>
+  </body>
+</html>

@@ -221,12 +221,29 @@ export class DiagramElementComponent {
    */
   highlight(event: Event) {
     const id =
-      event instanceof CustomEvent && typeof event.detail === 'string' ? event.detail : undefined;
-    this.hierarchyHover.enter(id);
+      event instanceof CustomEvent && typeof event.detail === 'string' ? event.detail : null;
+    this.highlighted = id;
+    this.applyHighlight();
+  }
+
+  /** The partner's highlight, kept: each new drawing has to be marked again. */
+  private highlighted: string | null = null;
+
+  /**
+   * Marks the highlighted entity in what is drawn now. Cleared first, and set
+   * on the next turn: the diagram only marks what is drawn when the mark
+   * changes, so the same id set again -- after a new drawing, or asked for
+   * twice -- would otherwise mark nothing.
+   */
+  private applyHighlight() {
+    this.hierarchyHover.enter(undefined);
+    const id = this.highlighted;
+    if (id) queueMicrotask(() => this.highlighted === id && this.hierarchyHover.enter(id));
   }
 
   protected loaded(pathway: string) {
     this.status.set('drawn');
+    if (this.highlighted) this.applyHighlight();
     this.emit('diagramloaded', { pathway });
   }
 

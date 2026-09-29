@@ -97,6 +97,27 @@ test.describe('Reactome.Diagram, the old widget interface', () => {
     ]);
   });
 
+  test('starts the documented way, and applies everything called before it was ready', async ({
+    page,
+  }) => {
+    // onReactomeDiagramReady, as the old widget's documentation has it, and in
+    // it every call made before the diagram's code has defined the element.
+    await page.goto(`http://localhost:${HOST_PAGE_PORT}/ready.html`);
+    await loaded(page);
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __definedAtCreate: boolean }).__definedAtCreate
+      )
+    ).toBe(false);
+    const counts = (selector: string) =>
+      page.evaluate<number>(
+        `(() => { const cy = document.querySelector('#diagramHolder reactome-diagram')?.shadowRoot?.querySelector('reactome-diagram-view')?.shadowRoot?.querySelector('#cytoscape')?._cyreg?.cy; return cy ? cy.elements(${JSON.stringify(selector)}).length : 0; })()`
+      );
+    await expect.poll(() => counts(':selected'), { timeout: LOAD }).toBeGreaterThan(0);
+    await expect.poll(() => counts('.flag'), { timeout: LOAD }).toBeGreaterThan(0);
+    await expect.poll(() => counts('.hierarchy-hover'), { timeout: LOAD }).toBeGreaterThan(0);
+  });
+
   test('applies calls made before the diagram is ready, in order', async ({ page }) => {
     // Straight after create, as a page does: all queued, none lost.
     await page.goto(PAGE);

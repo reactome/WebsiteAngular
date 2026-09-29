@@ -57,24 +57,30 @@ function fakeElement(tag) {
 }
 
 /** A page with one placeholder, and a custom-element registry whose definition the test releases. */
-function page() {
+function page({ customElements = true, readyState = 'loading', ready } = {}) {
   const holder = fakeElement('div');
   const head = fakeElement('head');
   let define;
   const defined = new Promise((resolve) => (define = resolve));
+  const loadedListeners = [];
   const document = {
+    readyState,
+    addEventListener: (type, fn) => type === 'DOMContentLoaded' && loadedListeners.push(fn),
     head,
     currentScript: { src: 'https://example.org/embed/diagram/v1/reactome-diagram.js' },
     getElementById: (id) => (id === 'holder' ? holder : null),
     createElement: (tag) => fakeElement(tag),
     querySelector: () => null,
   };
-  const window = { document, customElements: { whenDefined: () => defined } };
+  const window = { document, setTimeout };
+  if (customElements) window.customElements = { whenDefined: () => defined };
+  if (ready) window.onReactomeDiagramReady = ready;
   window.window = window;
-  const context = vm.createContext({ window, document, customElements: window.customElements });
+  const context = vm.createContext(window);
   vm.runInContext(LOADER, context);
   const diagram = () => holder.children[0];
-  return { window, holder, diagram, define: () => define() };
+  const parsed = () => loadedListeners.forEach((fn) => fn());
+  return { window, holder, diagram, define: () => define(), parsed };
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -201,5 +207,40 @@ describe('Reactome.Diagram, from the classic loader', () => {
     const first = window.Reactome.Diagram;
     vm.runInContext(LOADER, vm.createContext(window));
     expect(window.Reactome.Diagram).toBe(first);
+  });
+
+  it("calls the page's onReactomeDiagramReady once the page has parsed, as the old widget did", async () => {
+    // The old widget's documented start: the page defines this, the widget
+    // calls it when it is ready, and create() is called inside it.
+    let calls = 0;
+    const { parsed } = page({ ready: () => calls++ });
+    expect(calls).toBe(0);
+    parsed();
+    expect(calls).toBe(1);
+  });
+
+  it('calls it on the next turn when the page had already parsed', async () => {
+    let calls = 0;
+    page({ readyState: 'complete', ready: () => calls++ });
+    expect(calls).toBe(0);
+    await settle();
+    expect(calls).toBe(1);
+  });
+
+  it('leaves nothing of its own on the window but Reactome', () => {
+    const { window } = page();
+    const own = Object.keys(window).filter(
+      (key) => !['document', 'setTimeout', 'customElements', 'window'].includes(key)
+    );
+    expect(own).toEqual(['Reactome']);
+  });
+
+  it('says the browser cannot show it, rather than throwing, without custom elements', async () => {
+    const { window } = page({ customElements: false });
+    const widget = window.Reactome.Diagram.create({ placeHolder: 'holder' });
+    let told = 0;
+    widget.onCanvasNotSupported(() => told++);
+    await settle();
+    expect(told).toBe(1);
   });
 });

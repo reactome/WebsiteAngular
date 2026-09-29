@@ -137,14 +137,16 @@ For a page that loads ES modules itself, `https://reactome.org/embed/diagram/v1/
 The previous Diagram JS widget is retired, but its interface is kept: a page written for it switches by changing only the script's address, to the one above.
 
 ```js
-var diagram = Reactome.Diagram.create({ placeHolder: 'holder', width: 1130, height: 600 });
-diagram.loadDiagram('R-HSA-69620');
-diagram.onObjectSelected(function (obj) {
-  // obj is { stId, displayName, schemaClass }, or null when nothing is selected
-});
+function onReactomeDiagramReady() {
+  var diagram = Reactome.Diagram.create({ placeHolder: 'holder', width: 1130, height: 600 });
+  diagram.loadDiagram('R-HSA-69620');
+  diagram.onObjectSelected(function (obj) {
+    // obj is { stId, displayName, schemaClass }, or null when nothing is selected
+  });
+}
 ```
 
-`create`, `loadDiagram`, `selectItem`, `flagItems`, `highlightItem`, `setAnalysisToken`, `resize`, the `reset…` methods and the `on…` handlers all work as they did, and calls made before the diagram is ready are applied once it is. `proxyPrefix` is accepted and ignored: no proxy is needed. New pages should use the element directly.
+`onReactomeDiagramReady` is called as before, and `Reactome` is there as soon as the script has run, for pages that wait for it instead. `create`, `loadDiagram`, `selectItem`, `flagItems`, `highlightItem`, `setAnalysisToken`, `resize`, the `reset…` methods and the `on…` handlers work as before, and calls made before the diagram is ready are applied, in order, once it is. The objects given to the handlers no longer carry `identifier` or `geneNames`, and `onCanvasNotSupported` is only called by a browser too old to show the diagram at all. `proxyPrefix` is accepted and ignored: no proxy is needed. New pages should use the element directly.
 
 ### [__Resources](<#Resources>)
 

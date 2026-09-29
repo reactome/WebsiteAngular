@@ -2,6 +2,17 @@
 
 This reimplements the interface documented for the old diagram widget (https://reactome.org/dev/diagram/js), on top of `<reactome-diagram>`. It's defined **synchronously** by the classic loader, so hosts that poll `typeof Reactome` and then call `create` straight away keep working. That's AllianceGenome's `pathwayWidget.jsx`.
 
+## Starting
+
+As the old widget did, the loader calls a page's `onReactomeDiagramReady()`, once, when the page has parsed: the documented way to start. `Reactome.Diagram` itself is there as soon as the script has run, for pages that poll for it instead.
+
+```js
+function onReactomeDiagramReady() {
+  var diagram = Reactome.Diagram.create({ placeHolder: 'diagramHolder', width: 950, height: 500 });
+  diagram.loadDiagram('R-HSA-109582');
+}
+```
+
 ## Create
 
 ```js
@@ -45,4 +56,4 @@ Each one maps to the v1 element:
 
 Several handlers may be registered for each event; each registration adds one.
 
-The objects passed to `onObjectSelected` and `onObjectHovered` have `stId`, `displayName` and `schemaClass`. The old widget sometimes also gave `identifier` and `geneNames`, which the documentation marked optional; they are not given. `onCanvasNotSupported` never fires in a browser that can run the element at all: it is there so code that registers it keeps working.
+The objects passed to `onObjectSelected` and `onObjectHovered` have `stId`, `displayName` and `schemaClass`. The old widget sometimes also gave `identifier` and `geneNames`, which the documentation marked optional; they are not given. `onCanvasNotSupported` is called, once, in a browser without custom elements, where `create` makes an element that cannot draw; in any other browser it never is.
