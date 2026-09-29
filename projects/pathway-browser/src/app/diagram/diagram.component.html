@@ -14,12 +14,17 @@
 
   <cr-flag-banner />
 
-  <cr-entity-popup
-    [target]="popupTarget()"
-    (navigate)="onPopupNavigate($event)"
-    (recenter)="onPopupRecenter()"
-    (dismissed)="popupTarget.set(null)"
-  />
+  <!-- Loaded on the first right-click: its tabs and trees are most of the
+       diagram's Material weight, which a reader who never right-clicks, and the
+       embeddable diagram's first download, need not pay for. -->
+  @defer (when popupTarget()) {
+    <cr-entity-popup
+      [target]="popupTarget()"
+      (navigate)="onPopupNavigate($event)"
+      (recenter)="onPopupRecenter()"
+      (dismissed)="popupTarget.set(null)"
+    />
+  }
   <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex' : 'none'">
     <div
       id="handle-limits"

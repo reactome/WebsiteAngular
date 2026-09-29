@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>The loader and the module both</title>
+    <!-- A partner with our loader on one page and main.js in their own bundle. -->
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+      document.write('<script type="module" src="' + EMBED + 'main.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <reactome-diagram id="diagram" pathway="R-HSA-69620" style="width: 700px; height: 420px"></reactome-diagram>
+  </body>
+</html>

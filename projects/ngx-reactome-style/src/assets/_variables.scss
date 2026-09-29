@@ -1,8 +1,8 @@
 @use '@angular/material' as mat;
 @use 'sass:map';
 
-@mixin variables() {
-  body {
+@mixin variables($selector: 'body') {
+  #{$selector} {
     --primary: var(--mat-sys-primary);
     --on-primary: var(--mat-sys-on-primary);
     --primary-container: var(--mat-sys-primary-container);

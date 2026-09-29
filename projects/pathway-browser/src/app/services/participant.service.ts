@@ -3,7 +3,7 @@ import { map, Observable } from 'rxjs';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { PropertyType } from '../details/tabs/molecule-tab/molecule-tab.component';
+import { PropertyType } from '../model/property-type';
 import { extractFromSpace } from './utils';
 import { SchemaClasses } from '../constants/constants';
 

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reactome diagram demo</title>
+    <!--
+      The partner-facing demo (specs/009-embeddable-diagram). Deliberately a plain
+      page: one script tag and one element are all an embedding site needs, and
+      this is the proof. Everything else here is the picker and the explanation.
+    -->
+    <script src="reactome-diagram.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #1b2a33;
+        --muted: #52636e;
+        --bg: #ffffff;
+        --panel: #f2f6f8;
+        --line: #d5dee3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #e3eaee;
+          --muted: #9fb0ba;
+          --bg: #111a1f;
+          --panel: #1a262d;
+          --line: #2d3c45;
+        }
+      }
+      body {
+        margin: 0;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 4px;
+      }
+      p {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      select {
+        font: inherit;
+        padding: 4px 8px;
+        max-width: 100%;
+      }
+      reactome-diagram {
+        width: 100%;
+        height: 520px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      #status {
+        min-height: 1.5em;
+        font-size: 0.9rem;
+        margin-top: 8px;
+      }
+      pre {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 12px;
+        overflow-x: auto;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Reactome pathway diagram</h1>
+      <p>A live Reactome diagram on any page: zoom, pan and select as on reactome.org.</p>
+
+      <label>
+        Pathway
+        <select id="pathway">
+          <option value="R-HSA-69620">Cell Cycle Checkpoints</option>
+          <option value="R-HSA-1257604">PIP3 activates AKT signaling</option>
+          <option value="R-HSA-5693567">
+            HDR through Homologous Recombination (HRR) or Single Strand Annealing (SSA)
+          </option>
+        </select>
+      </label>
+
+      <reactome-diagram id="diagram" pathway="R-HSA-69620"></reactome-diagram>
+      <div id="status" role="status"></div>
+
+      <h2>On your page</h2>
+      <pre><code id="snippet"></code></pre>
+    </main>
+
+    <script>
+      (function () {
+        var diagram = document.getElementById('diagram');
+        var picker = document.getElementById('pathway');
+        var status = document.getElementById('status');
+        var snippet = document.getElementById('snippet');
+        // Where this page was loaded from, so the snippet names the right host.
+        var base = location.href.replace(/[^/]*$/, '');
+
+        function show(id) {
+          snippet.textContent =
+            '<script src="' +
+            base +
+            'reactome-diagram.js"></' +
+            'script>\n<reactome-diagram pathway="' +
+            id +
+            '"></reactome-diagram>';
+        }
+
+        picker.addEventListener('change', function () {
+          status.textContent = 'Loading…';
+          diagram.setAttribute('pathway', picker.value);
+          show(picker.value);
+        });
+        diagram.addEventListener('diagramloaded', function (event) {
+          status.textContent = 'Showing ' + event.detail.pathway + '.';
+        });
+        diagram.addEventListener('diagramerror', function (event) {
+          status.textContent = event.detail.pathway + ' could not be shown.';
+        });
+
+        status.textContent = 'Loading…';
+        show(picker.value);
+      })();
+    </script>
+  </body>
+</html>

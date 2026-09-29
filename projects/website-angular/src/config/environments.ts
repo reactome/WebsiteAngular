@@ -15,7 +15,15 @@
 
 type SiteVariant = 'main' | 'curator';
 
-export type ProfileName = 'production' | 'beta' | 'development' | 'curator' | 'curator-local';
+export type ProfileName =
+  | 'production'
+  | 'beta'
+  | 'development'
+  | 'curator'
+  | 'curator-local'
+  | 'embed-production'
+  | 'embed-beta'
+  | 'embed-development';
 
 export interface SiteProfile {
   /** Which UI this deployment presents. */
@@ -203,6 +211,35 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     s3: S3,
     gsaServer: 'dev',
     versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  // The embeddable diagram (projects/reactome-diagram-element) runs on other
+  // sites' pages, so its host is never 'origin': that would be the partner's
+  // own site, and every request would go there. No gtagId, on purpose -- a
+  // partner's visitors are not this site's to count.
+  'embed-production': {
+    variant: 'main',
+    host: 'https://reactome.org',
+    s3: S3,
+    gsaServer: 'production',
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  'embed-beta': {
+    variant: 'main',
+    host: 'https://beta.reactome.org',
+    s3: S3,
+    gsaServer: 'dev',
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  // The e2e dev server: requests there are answered from recordings.
+  'embed-development': {
+    variant: 'main',
+    host: 'http://localhost:4330',
+    s3: S3,
+    gsaServer: 'dev',
+    versionFallback: 'http://localhost:4330/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
   curator: {

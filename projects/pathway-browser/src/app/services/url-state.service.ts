@@ -134,31 +134,16 @@ export function urlParam<T>(
   return writableSignal;
 }
 
-type State = UrlStateService['values'];
-
-@UntilDestroy()
-@Injectable({
-  providedIn: 'root',
-})
-export class UrlStateService implements State {
-  private route: ActivatedRoute = inject(ActivatedRoute);
-  private router: Router = inject(Router);
-  private http: HttpClient = inject(HttpClient);
-
-  private readonly tabsCompatibility: [string | null, string][] = [
-    ['ST', 'details'],
-    [null, 'details'],
-    ['MT', 'molecule'],
-    ['AN', 'results'],
-    ['EX', 'expression'],
-    ['DT', 'download'],
-  ];
-  readonly oldToNewTab = new Map(this.tabsCompatibility);
-  readonly newToOldTab = new Map(
-    this.tabsCompatibility.map(([newTab, oldTab]) => [oldTab, newTab])
-  );
-
-  readonly values = {
+/**
+ * Every piece of Pathway Browser state, as signals.
+ *
+ * A factory so the embeddable diagram's in-memory state
+ * (projects/reactome-diagram-element) is built from exactly these definitions:
+ * two copies of this list would drift, and a param added here but not there is
+ * a param the embedded diagram silently ignores.
+ */
+export function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
+  return {
     select: urlParam<string | null>(null, 'id', ['SEL']),
     flag: urlParam<string[]>([], 'id', ['FLG']),
     path: urlParam<string[]>([], 'id', ['PATH']),
@@ -176,7 +161,7 @@ export class UrlStateService implements State {
       ['TOOL'],
       (tool) => (tool === 'AT' ? 'qualitative' : null)
     ),
-    tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => this.oldToNewTab.get(tab)!),
+    tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => oldToNewTab.get(tab)!),
     significance: urlParam<number>(0.05, 'number'),
     sample: urlParam<string | null>(null, 'string'),
     /**
@@ -208,6 +193,33 @@ export class UrlStateService implements State {
     summariseDisease: urlParam<boolean | undefined>(undefined, 'boolean'),
     example: urlParam<string | null>(null, 'string'),
   };
+}
+
+type State = UrlStateService['values'];
+
+@UntilDestroy()
+@Injectable({
+  providedIn: 'root',
+})
+export class UrlStateService implements State {
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private router: Router = inject(Router);
+  private http: HttpClient = inject(HttpClient);
+
+  private readonly tabsCompatibility: [string | null, string][] = [
+    ['ST', 'details'],
+    [null, 'details'],
+    ['MT', 'molecule'],
+    ['AN', 'results'],
+    ['EX', 'expression'],
+    ['DT', 'download'],
+  ];
+  readonly oldToNewTab = new Map(this.tabsCompatibility);
+  readonly newToOldTab = new Map(
+    this.tabsCompatibility.map(([newTab, oldTab]) => [oldTab, newTab])
+  );
+
+  readonly values = createStateValues(this.oldToNewTab);
 
   public readonly select = this.values.select;
   public readonly flag = this.values.flag;

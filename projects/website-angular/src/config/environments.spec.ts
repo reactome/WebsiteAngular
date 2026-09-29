@@ -93,7 +93,25 @@ describe('site profiles', () => {
     const configurations = Object.keys(
       angularJson.projects.reactome.architect.build.configurations
     ).sort();
-    expect(configurations).toEqual(Object.keys(SITE_PROFILES).sort());
+    const siteProfiles = Object.keys(SITE_PROFILES).filter((name) => !name.startsWith('embed-'));
+    expect(configurations).toEqual(siteProfiles.sort());
+  });
+
+  it('selects every profile from exactly one build, across the site and the embed', () => {
+    // The embeddable diagram (spec 009) is a second project with profiles of
+    // its own. What each build runs as is its APP_ENV define, so that is what
+    // is counted: a profile no build names is unreachable, and one named twice
+    // is two deployments sharing hosts by accident.
+    type Configurations = Record<string, { define?: { APP_ENV?: string } }>;
+    const named = [angularJson.projects.reactome, angularJson.projects['reactome-diagram-element']]
+      .flatMap((project) =>
+        Object.values<Configurations[string]>(project.architect.build.configurations)
+      )
+      .flatMap((configuration) => {
+        const env = configuration.define?.APP_ENV;
+        return env === undefined ? [] : [JSON.parse(env) as string];
+      });
+    expect(named.sort()).toEqual(Object.keys(SITE_PROFILES).sort());
   });
 
   it('offers DeltaSignal only where a DeltaSignal backend can be reached', () => {

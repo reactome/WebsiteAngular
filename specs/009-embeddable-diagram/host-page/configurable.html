@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A diagram chosen by the address</title>
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <script>
+      const el = document.createElement('reactome-diagram');
+      el.id = 'diagram';
+      el.setAttribute('pathway', new URLSearchParams(location.search).get('pathway') || 'R-HSA-69620');
+      el.style.cssText = 'width: 700px; height: 420px';
+      document.body.appendChild(el);
+    </script>
+  </body>
+</html>

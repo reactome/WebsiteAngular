@@ -2,10 +2,12 @@ import {
   AfterViewInit,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   input,
   model,
+  output,
   OnDestroy,
   signal,
   viewChild,
@@ -13,6 +15,7 @@ import {
   HostListener,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DiagramService } from '../services/diagram.service';
 import {
   extract,
@@ -60,11 +63,8 @@ import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
-import {
-  EntityPopupComponent,
-  EntityPopupTab,
-  EntityPopupTarget,
-} from './entity-popup/entity-popup.component';
+import { EntityPopupComponent } from './entity-popup/entity-popup.component';
+import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
 import { DeltaSignalService } from '../deltasignal/deltasignal.service';
@@ -100,12 +100,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly isCurator = IS_CURATOR;
 
   private diagram = inject(DiagramService);
+  private readonly destroyRef = inject(DestroyRef);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);
   protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
-  private router = inject(Router);
+  // Optional: the embeddable diagram (projects/reactome-diagram-element) has no
+  // router -- it must never read or write its host page's address.
+  private router = inject(Router, { optional: true });
   private download = inject(DownloadService);
   private data = inject(DataStateService);
   private deltaSignal = inject(DeltaSignalService);
@@ -120,6 +123,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     alias: 'interactor',
   });
   readonly pathwayId = model.required<string>();
+  /** A diagram has been drawn, with the stable id of the pathway it shows. */
+  readonly diagramLoaded = output<string>();
+  /** The pathway's diagram could not be loaded. */
+  readonly diagramFailed = output<string>();
 
   /** The entity a right-click landed on, or null when no popup is open. */
   readonly popupTarget = signal<EntityPopupTarget | null>(null);
@@ -145,7 +152,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private readonly hierarchyHover = inject(HierarchyHoverService);
 
   constructor() {
-    this.isInitialLoad = Boolean(!this.router.currentNavigation()?.previousNavigation);
+    this.isInitialLoad = Boolean(!this.router?.currentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
     // A reaction or sub-pathway pointed at in the hierarchy stands out here,
     // as the old browser drew it in yellow; nothing reached the diagram before.
@@ -624,20 +631,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     this.underlayPadding = extract(this.reactomeStyle.properties.shadow.padding);
 
-    this.diagram.getLegend().subscribe((legend) => {
-      this.legend = cytoscape({
-        container: legendContainer,
-        elements: legend,
-        style: this.reactomeStyle?.getStyleSheet(),
-        layout: { name: 'preset' },
-        boxSelectionEnabled: false,
-      });
-      this.reactomeStyle?.bindToCytoscape(this.legend);
+    // Cancelled with the component: a diagram removed while these load would
+    // otherwise make its cytoscape instance afterwards, with nothing left to
+    // destroy it (see ngOnDestroy).
+    this.diagram
+      .getLegend()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((legend) => {
+        this.legend = cytoscape({
+          container: legendContainer,
+          elements: legend,
+          style: this.reactomeStyle?.getStyleSheet(),
+          layout: { name: 'preset' },
+          boxSelectionEnabled: false,
+        });
+        this.reactomeStyle?.bindToCytoscape(this.legend);
 
-      this.legend.zoomingEnabled(false);
-      this.legend.panningEnabled(false);
-      this.legend.minZoom(0);
-    });
+        this.legend.zoomingEnabled(false);
+        this.legend.panningEnabled(false);
+        this.legend.minZoom(0);
+      });
 
     this.sizeObserver = new ResizeObserver((entries) => {
       entries.forEach((entry) => {
@@ -758,6 +771,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    // Cytoscape binds resize, scroll and pointer listeners on window, and only
+    // destroy() removes them. A new instance in the same container destroys the
+    // old one itself, so this is only for the last: without it, every diagram
+    // removed from a page -- an embedded one on a partner's single-page app, or
+    // this one on leaving the browser -- left its listeners and canvases behind.
+    const instances: (cytoscape.Core | undefined)[] = [this.cy, this.cyCompare, this.legend];
+    for (const cy of instances) cy?.destroy();
   }
 
   // Needs Input event binding to react to mouse drag instead of mouse drop on slider
@@ -813,16 +833,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // Pathway with a diagram
           return this.loadElvDiagram();
         }),
-        catchError(() => of(null))
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(() => {
+      .subscribe((drawn) => {
         this.isInitialLoad = false;
+        if (drawn) this.diagramLoaded.emit(this.pathwayId());
+        else this.diagramFailed.emit(this.pathwayId());
       });
   }
+
+  /**
+   * The pathway being drawn, or last drawn.
+   *
+   * loadDiagram runs from two places on a first render -- the pathwayId effect
+   * and ngAfterViewInit, the second there because the first can run before the
+   * container exists -- and both reached this point, so every diagram was
+   * fetched and drawn twice (four file requests, two draws). The first one to
+   * get here draws; a second for the same pathway has nothing to do.
+   */
+  private drawing?: string;
 
   loadElvDiagram(): Observable<ElementsDefinition> {
     const cytoscapeContainer = this.cytoscapeContainer();
     if (!cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+    const pathwayId = this.pathwayId();
+    if (this.drawing === pathwayId) return EMPTY;
+    this.drawing = pathwayId;
 
     const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(
@@ -959,16 +996,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         if (pathwayWithDiagram) {
           const newDiagramId = pathwayWithDiagram.stId;
           const diagramId = this.pathwayId();
-          if (newDiagramId !== diagramId) {
-            this.pathwayId.set(newDiagramId);
-            // this.router.navigate([diagramId], {
-            //   queryParamsHandling: "preserve"
-            // }).then(() => {
-            this.state.select.set(event.stId);
-            // });
+          // The same diagram: another load of this pathway is drawing it, so
+          // there is nothing to do -- which is not a failure.
+          if (newDiagramId === diagramId) return EMPTY;
+          this.pathwayId.set(newDiagramId);
+          // this.router.navigate([diagramId], {
+          //   queryParamsHandling: "preserve"
+          // }).then(() => {
+          this.state.select.set(event.stId);
+          // });
 
-            return this.loadElvDiagram();
-          }
+          return this.loadElvDiagram();
         }
         return of(null);
       })

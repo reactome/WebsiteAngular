@@ -63,6 +63,12 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      # The embeddable diagram (spec 009) is served to other sites' pages and is
+      # built by nothing else, so it is built here on every change, with its
+      # size budget. Two angular.json projects rotted unbuilt before (#339).
+      - name: Build the embeddable diagram
+        run: npm run build:embed
+
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
       # Warnings are the ~1600 pre-existing findings, held to a baseline so they

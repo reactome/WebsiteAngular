@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { EMBED_PORT, HOST_PAGE_PORT } from './e2e/support/embed-ports';
 
 // By default the suite spins up its own `ng serve` on :4200. Set E2E_BASE_URL to
 // run against something already running instead -- another local port, or a
@@ -104,18 +105,38 @@ export default defineConfig({
   ...(externalBaseURL
     ? {}
     : {
-        webServer: {
-          // npm appends extra args to the end of the script string, so this
-          // becomes `... && ng serve --port <n>` and still runs the content
-          // staging that the search specs need.
-          command: ownPort ? `npm run start:simple -- --port ${ownPort}` : 'npm run start:simple',
-          url: baseURL,
-          // Never reuse when we asked for our own port: the point is to serve
-          // the tree under test.
-          reuseExistingServer: !process.env['CI'] && !ownPort,
-          // A cold Angular build well exceeds playwright's 60s default, and the
-          // gate always pays for one because it never reuses.
-          timeout: ownPort ? 300_000 : 180_000,
-        },
+        webServer: [
+          {
+            // npm appends extra args to the end of the script string, so this
+            // becomes `... && ng serve --port <n>` and still runs the content
+            // staging that the search specs need.
+            command: ownPort ? `npm run start:simple -- --port ${ownPort}` : 'npm run start:simple',
+            url: baseURL,
+            // Never reuse when we asked for our own port: the point is to serve
+            // the tree under test.
+            reuseExistingServer: !process.env['CI'] && !ownPort,
+            // A cold Angular build well exceeds playwright's 60s default, and the
+            // gate always pays for one because it never reuses.
+            timeout: ownPort ? 300_000 : 180_000,
+          },
+          // The embeddable diagram and a partner's page, each on an origin of its
+          // own (e2e/embed-diagram.spec.ts): the point is to test it where it
+          // runs, which is never the site's own origin. The development build
+          // asks http://localhost:4330 for data, which the harness answers from
+          // recordings on whatever port the site is on.
+          {
+            command:
+              'npx ng build reactome-diagram-element --configuration development && ' +
+              `node e2e/support/static-server.mjs dist/reactome-diagram/browser ${EMBED_PORT}`,
+            url: `http://localhost:${EMBED_PORT}/reactome-diagram.js`,
+            reuseExistingServer: false,
+            timeout: 300_000,
+          },
+          {
+            command: `node e2e/support/static-server.mjs specs/009-embeddable-diagram/host-page ${HOST_PAGE_PORT}`,
+            url: `http://localhost:${HOST_PAGE_PORT}/`,
+            reuseExistingServer: false,
+          },
+        ],
       }),
 });

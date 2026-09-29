@@ -16,7 +16,9 @@ import { SelectableObject } from './event.service';
 export class SpeciesService {
   private http = inject(HttpClient);
   private state = inject(UrlStateService);
-  private route = inject(ActivatedRoute);
+  // Optional: the embeddable diagram has no router. It is read only when the
+  // reader switches species in the browser, which the embed does not offer.
+  private route = inject(ActivatedRoute, { optional: true });
 
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
   private readonly _ORTHOLOGIES = `${CONTENT_SERVICE}/data/orthologies/ids/species/`;
@@ -130,7 +132,7 @@ export class SpeciesService {
   }
 
   updateQueryParams(map: OrthologousMap, pathwayId: string | undefined) {
-    const params = { ...this.route.snapshot.queryParams };
+    const params = { ...this.route?.snapshot.queryParams };
     for (const [key, value] of Object.entries(params)) {
       let newValue = JSON.stringify(value);
       for (const [initial, replacement] of map) {

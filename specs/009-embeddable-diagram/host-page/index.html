@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A partner page</title>
+    <!-- A page on another origin, as a partner's would be. EMBED is where the
+         embed build is served; the tests set it, and so can a person. -->
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>Gene X: pathways</h1>
+    <p>Content the partner owns, above the diagram.</p>
+    <reactome-diagram id="diagram" pathway="R-HSA-69620" style="width: 900px; height: 520px"></reactome-diagram>
+    <p style="height: 1200px">Content below, so the page scrolls.</p>
+  </body>
+</html>
