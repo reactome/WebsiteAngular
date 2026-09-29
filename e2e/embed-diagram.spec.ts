@@ -75,6 +75,39 @@ async function boxOf(page: Page, id = 'diagram') {
   return box;
 }
 
+/**
+ * How many pixels of two same-sized screenshots differ, in any channel, by more
+ * than `threshold` levels. Decoded by the browser, so nothing but public APIs.
+ */
+async function significantPixels(page: Page, a: Buffer, b: Buffer, threshold: number) {
+  return page.evaluate(
+    async ([a, b, threshold]) => {
+      const pixels = async (base64: string) => {
+        const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob();
+        const bitmap = await createImageBitmap(blob);
+        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('no 2d context');
+        context.drawImage(bitmap, 0, 0);
+        return context.getImageData(0, 0, bitmap.width, bitmap.height);
+      };
+      const [x, y] = await Promise.all([pixels(a), pixels(b)]);
+      if (x.width !== y.width || x.height !== y.height) return x.width * x.height;
+      let count = 0;
+      for (let i = 0; i < x.data.length; i += 4) {
+        const delta = Math.max(
+          Math.abs(x.data[i] - y.data[i]),
+          Math.abs(x.data[i + 1] - y.data[i + 1]),
+          Math.abs(x.data[i + 2] - y.data[i + 2])
+        );
+        if (delta > threshold) count++;
+      }
+      return count;
+    },
+    [a.toString('base64'), b.toString('base64'), threshold] as const
+  );
+}
+
 /** Wait for an element's diagram to be drawn, and return how many nodes it has. */
 async function drawn(page: Page, id = 'diagram'): Promise<number> {
   await expect
@@ -293,19 +326,40 @@ test.describe('the embeddable diagram', () => {
     expect(await hostState(page), 'navigating inside the diagram').toEqual(before);
   });
 
-  test("keeps its styles and the host's apart", async ({ page }) => {
+  test("keeps its styles and the host's apart", async ({ page }, testInfo) => {
+    // Cytoscape does not rasterise a diagram identically twice under load:
+    // the same page drawn twice on a throttled CPU differs in ~160 pixels, by
+    // at most ~35 levels -- antialiasing, not content. Comparing for exact
+    // identity failed on CI runners for that alone. A style that reaches in
+    // changes glyphs and colours against their background, by far more: with
+    // the frame's reset removed, 339,352 pixels differ, up to 255 levels. So
+    // what counts is a pixel that differs by more than that noise ever does.
+    const SIGNIFICANT = 64;
     const shot = async (url: string) => {
       await page.goto(url);
       await drawn(page);
-      await page.waitForTimeout(1500); // cytoscape finishes drawing a frame after the event
-      return page.locator('#diagram').screenshot();
+      await page.evaluate(() => document.fonts.ready);
+      // Until it has stopped drawing: two shots in a row with nothing
+      // significant between them.
+      let previous = await page.locator('#diagram').screenshot();
+      for (let i = 0; i < 20; i++) {
+        await page.waitForTimeout(500);
+        const next = await page.locator('#diagram').screenshot();
+        if ((await significantPixels(page, previous, next, SIGNIFICANT)) === 0) return next;
+        previous = next;
+      }
+      throw new Error(`the diagram on ${url} never stopped changing`);
     };
     // plain.html is hostile.html without its stylesheet: the same layout, so
     // any difference is the styles reaching in.
     const plain = await shot(`${HOST}/plain.html`);
     const hostile = await shot(`${HOST}/hostile.html`);
-    // Not one pixel of the diagram changes under a stylesheet aimed at everything.
-    expect(hostile.equals(plain), 'the diagram under hostile page styles').toBe(true);
+    const differing = await significantPixels(page, plain, hostile, SIGNIFICANT);
+    if (differing > 0) {
+      await testInfo.attach('plain', { body: plain, contentType: 'image/png' });
+      await testInfo.attach('hostile', { body: hostile, contentType: 'image/png' });
+    }
+    expect(differing, 'pixels of the diagram changed by hostile page styles').toBe(0);
 
     // And nothing of ours reaches out: the partner's own heading keeps its look.
     await page.goto(`${HOST}/`);
