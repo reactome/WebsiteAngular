@@ -13,8 +13,9 @@
  * diagram's typeface and icon fonts have to be registered on the document.
  */
 (function () {
-  if (window.__reactomeDiagramLoader) return; // included twice: harmless
-  window.__reactomeDiagramLoader = true;
+  // Included twice: harmless. Told by the module script the first copy added,
+  // rather than by a global of ours on the partner's window.
+  if (document.querySelector('script[data-reactome-diagram]')) return;
 
   var script = document.currentScript;
   var base = script && script.src ? script.src.replace(/[^/]*$/, '') : '';
@@ -34,6 +35,7 @@
   var module = document.createElement('script');
   module.type = 'module';
   module.crossOrigin = 'anonymous';
+  module.setAttribute('data-reactome-diagram', '');
   module.src = base + 'main.js';
   document.head.appendChild(module);
 })();

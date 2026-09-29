@@ -1,4 +1,15 @@
-import { ElementRef, inject, Injectable, Provider, signal } from '@angular/core';
+import {
+  APP_ID,
+  CSP_NONCE,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  Injectable,
+  PLATFORM_ID,
+  Provider,
+  signal,
+} from '@angular/core';
+import { ɵSharedStylesHost as SharedStylesHost } from '@angular/platform-browser';
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { UrlStateService } from '../../pathway-browser/src/app/services/url-state.service';
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
@@ -12,6 +23,27 @@ import { EventService } from '../../pathway-browser/src/app/services/event.servi
 import { FigureService } from '../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
 import { InteractorService } from '../../pathway-browser/src/app/interactors/services/interactor.service';
 import { SpeciesService } from '../../pathway-browser/src/app/services/species.service';
+
+/**
+ * Component styles, written into the elements' shadow roots and nowhere else.
+ *
+ * Angular writes every component's styles to each shadow root it renders and
+ * to `document.head` as well, always. For components that are not themselves in
+ * shadow DOM -- Material's slider, tooltip and icon, the CDK's overlay rules --
+ * that is the partner's head: our `.mdc-slider` and `.cdk-overlay-container`
+ * rules, at our versions, applied to their page and any Material of theirs.
+ * Nothing of ours renders outside a shadow root, so the head is dropped as a
+ * host. Private Angular API (ɵ): the e2e check that the partner's head gains
+ * nothing is what notices if it changes shape.
+ */
+@Injectable()
+export class ShadowRootsOnlyStylesHost extends SharedStylesHost {
+  constructor() {
+    const doc = inject(DOCUMENT);
+    super(doc, inject(APP_ID), inject(CSP_NONCE, { optional: true }), inject(PLATFORM_ID));
+    this.removeHost(doc.head);
+  }
+}
 
 /**
  * The colour scheme, set by the element's `theme` attribute.

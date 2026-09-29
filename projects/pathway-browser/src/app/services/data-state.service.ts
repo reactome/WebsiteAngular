@@ -53,11 +53,17 @@ export class DataStateService {
   });
 
   public readonly currentPathway = computed(() => {
-    const currentPathway = this._currentPathway.value();
+    // Reading value() on a resource in the error state throws, which would
+    // propagate out of this computed and take down every view that depends on
+    // it -- a pathway id the service does not know is exactly that state. It
+    // stopped an embedded diagram's view refreshing, so its "could not be
+    // shown" never appeared. No pathway is the answer; the lookup's own status
+    // is what says it failed.
+    const currentPathway = this._currentPathway.hasValue()
+      ? this._currentPathway.value()
+      : undefined;
     if (currentPathway) {
-      // Reading value() on a resource in the error state throws, which would
-      // propagate out of this computed and take down every view that depends on
-      // it. Ancestors are supplementary, so fall back to none.
+      // Ancestors are supplementary, so on the same error fall back to none.
       currentPathway.ancestors = (this._ancestors.hasValue() && this._ancestors.value()) || [];
     }
     return currentPathway;

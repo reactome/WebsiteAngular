@@ -99,13 +99,17 @@ export class DiagramElementComponent {
   }
 
   protected failed(pathway: string) {
+    // Two routes reach here for one failure -- the lookup settling empty, and
+    // the diagram's own load failing -- and the partner should hear it once.
+    if (this.status() === 'not-found' && this.state.pathwayId() === pathway) return;
     this.status.set('not-found');
     this.emit('diagramerror', { pathway, reason: 'not-found' });
   }
 
   private emit(name: string, detail: object) {
-    // From the element the partner placed, not from this view inside it.
-    const target = this.host.nativeElement.closest('reactome-diagram') ?? this.host.nativeElement;
+    // From the element the partner placed, whose shadow root holds this view.
+    const root = this.host.nativeElement.getRootNode();
+    const target = root instanceof ShadowRoot ? root.host : this.host.nativeElement;
     target.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
 

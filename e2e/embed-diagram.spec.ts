@@ -26,7 +26,6 @@ type EmbedGlobals = {
   __cy(id: string): { cy: Cy; box: DOMRect };
   __el(id: string): HTMLElement;
   __held?: HTMLElement;
-  __baseline?: Record<string, unknown>;
 };
 
 type CyNode = {
@@ -44,7 +43,7 @@ async function recordEvents(page: Page) {
     w.__cy = (id: string) => {
       const c = document
         .getElementById(id)
-        ?.querySelector('reactome-diagram-view')
+        ?.shadowRoot?.querySelector('reactome-diagram-view')
         ?.shadowRoot?.querySelector<HTMLElement & { _cyreg?: { cy: Cy } }>('#cytoscape');
       const cy = c?._cyreg?.cy;
       if (!c || !cy) throw new Error(`no drawn diagram in #${id}`);
@@ -86,7 +85,7 @@ async function drawn(page: Page, id = 'diagram'): Promise<number> {
   return page.evaluate((id) => {
     const c = document
       .getElementById(id)
-      ?.querySelector('reactome-diagram-view')
+      ?.shadowRoot?.querySelector('reactome-diagram-view')
       ?.shadowRoot?.querySelector('#cytoscape') as
       (HTMLElement & { _cyreg?: { cy: { nodes(): { length: number } } } }) | null;
     return c?._cyreg?.cy.nodes().length ?? 0;
@@ -129,41 +128,54 @@ async function selectedIds(page: Page, id = 'diagram') {
 }
 
 /**
- * The host page as it was before any script on it ran -- a snapshot taken after
- * load would already include whatever the diagram did while loading.
+ * Whatever of the host page the diagram must leave exactly as it found it,
+ * recorded before any script on it ran -- a snapshot taken after load would
+ * already include whatever the diagram did while loading. `hostState` reads it
+ * again with the same code.
  */
 async function recordHostBaseline(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { __baseline: Record<string, unknown> };
-    document.addEventListener(
-      'DOMContentLoaded',
-      () => {
-        w.__baseline = {
-          href: location.href,
-          history: history.length,
-          title: document.title,
-          scrollY: Math.round(window.scrollY),
-          storage: Object.keys(localStorage).sort().join(','),
-          bodyClass: document.body.className,
-          bodyStyle: document.body.style.cssText,
-        };
-      },
-      { once: true, capture: true }
-    );
+    const w = window as unknown as HostGlobals;
+    // Two libraries write to the head whatever a page does, and neither can
+    // touch the partner's page: cytoscape a rule for its own container class,
+    // and the CDK's breakpoint observer empty `@media … { body {} }` rules, a
+    // WebKit workaround. Anything else in the head after load is ours.
+    const inert = (e: Element) =>
+      e.id === '__________cytoscape_stylesheet' ||
+      (e instanceof HTMLStyleElement &&
+        !e.textContent &&
+        [...(e.sheet?.cssRules ?? [])].every(
+          (rule) =>
+            rule instanceof CSSMediaRule &&
+            [...rule.cssRules].every((r) => r instanceof CSSStyleRule && r.style.length === 0)
+        ));
+    w.__hostState = () => ({
+      href: location.href,
+      history: history.length,
+      title: document.title,
+      scrollY: Math.round(window.scrollY),
+      storage: Object.keys(localStorage).sort().join(','),
+      bodyClass: document.body.className,
+      bodyStyle: document.body.style.cssText,
+      head: [...document.head.children]
+        .filter((e) => !inert(e))
+        .map((e) => e.tagName)
+        .join(','),
+    });
+    document.addEventListener('DOMContentLoaded', () => (w.__baseline = w.__hostState()), {
+      once: true,
+      capture: true,
+    });
   });
 }
 
-/** Whatever of the host page the diagram must leave exactly as it found it. */
+type HostGlobals = {
+  __hostState(): Record<string, unknown>;
+  __baseline: Record<string, unknown>;
+};
+
 async function hostState(page: Page) {
-  return page.evaluate(() => ({
-    href: location.href,
-    history: history.length,
-    title: document.title,
-    scrollY: Math.round(window.scrollY),
-    storage: Object.keys(localStorage).sort().join(','),
-    bodyClass: document.body.className,
-    bodyStyle: document.body.style.cssText,
-  }));
+  return page.evaluate(() => (window as unknown as HostGlobals).__hostState());
 }
 
 test.describe('the embeddable diagram', () => {
@@ -249,9 +261,7 @@ test.describe('the embeddable diagram', () => {
     await recordHostBaseline(page);
     await page.goto(`${HOST}/`);
     await drawn(page);
-    const before = await page.evaluate(
-      () => (window as unknown as { __baseline: Record<string, unknown> }).__baseline
-    );
+    const before = await page.evaluate(() => (window as unknown as HostGlobals).__baseline);
     expect(await hostState(page), 'nothing changed while the diagram loaded').toEqual(before);
 
     const box = await boxOf(page);
@@ -262,6 +272,25 @@ test.describe('the embeddable diagram', () => {
     await expect.poll(() => selectedIds(page)).toEqual([node.id]);
     // The wheel over the diagram zooms it; it must not scroll the page.
     expect(await hostState(page)).toEqual(before);
+
+    // Double-clicking a pathway box is the browser's navigation: here it goes
+    // to that pathway inside the element, and not in the partner's address.
+    const box2 = await page.evaluate(() => {
+      const { cy, box } = (window as unknown as EmbedGlobals).__cy('diagram');
+      const [target] = cy
+        .nodes('.Interacting.Pathway')
+        .filter((n: CyNode) => Boolean(n.data('graph.stId')));
+      if (!target) throw new Error('no pathway box in the diagram');
+      const p = target.renderedPosition();
+      return { id: String(target.data('graph.stId')), x: box.left + p.x, y: box.top + p.y };
+    });
+    await page.mouse.dblclick(box2.x, box2.y);
+    await expect
+      .poll(async () => (await events(page, 'diagramloaded')).map(([, , d]) => d), {
+        timeout: LOAD,
+      })
+      .toContainEqual({ pathway: box2.id });
+    expect(await hostState(page), 'navigating inside the diagram').toEqual(before);
   });
 
   test("keeps its styles and the host's apart", async ({ page }) => {
@@ -315,6 +344,11 @@ test.describe('the embeddable diagram', () => {
   test('can be moved, or removed and added back', async ({ page }) => {
     await page.goto(`${HOST}/`);
     const nodes = await drawn(page);
+    // The diagram is in the element's shadow root: none of the partner's DOM
+    // calls see it, and a copy of the element does not copy it.
+    expect(
+      await page.evaluate(() => (window as unknown as EmbedGlobals).__el('diagram').children.length)
+    ).toBe(0);
     const cyNodes = () =>
       page.evaluate(() => (window as unknown as EmbedGlobals).__cy('diagram').cy.nodes().length);
     await page.evaluate(() => {
@@ -380,5 +414,98 @@ test.describe('the embeddable diagram', () => {
       () => (window as unknown as EmbedGlobals).__cy('diagram').cy.nodes().length
     );
     expect(shown, 'the new pathway is drawn').toBeGreaterThan(0);
+  });
+
+  test('can be loaded both ways on one page', async ({ page }) => {
+    // The loader, and main.js in the partner's own bundle: one definition wins
+    // and the other stands down.
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${HOST}/mixed.html`);
+    await drawn(page);
+    expect(await events(page, 'diagramloaded')).toHaveLength(1);
+    expect(errors).toEqual([]);
+  });
+
+  test('takes a pathway set as a property before its code loaded', async ({ page }) => {
+    await page.goto(`${HOST}/early-property.html`);
+    expect(await drawn(page)).toBeGreaterThan(0);
+  });
+
+  test('draws the parent of a pathway without its own diagram, and reports no error', async ({
+    page,
+  }) => {
+    // R-HSA-69541, Stabilization of p53, is drawn in its parent's diagram.
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69541`);
+    await drawn(page);
+    await page.waitForTimeout(1500);
+    expect(await events(page, 'diagramerror')).toEqual([]);
+  });
+
+  test('reports a pathway it cannot show once, when switched to it', async ({ page }) => {
+    // Two things find out, each on its own: the pathway lookup, and the
+    // diagram's download. The download is held back so the lookup answers
+    // first, which is the order that used to report the failure twice.
+    await page.route('**/diagram/R-HSA-999999999*.json', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.fallback();
+    });
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('pathway', 'R-HSA-999999999')
+    );
+    await expect
+      .poll(async () => (await events(page, 'diagramerror')).length, { timeout: LOAD })
+      .toBeGreaterThan(0);
+    await page.waitForTimeout(3000);
+    expect((await events(page, 'diagramerror')).map(([, , d]) => d)).toEqual([
+      { pathway: 'R-HSA-999999999', reason: 'not-found' },
+    ]);
+    await expect(page.locator('#diagram reactome-diagram-view').locator('.message')).toHaveText(
+      'This pathway could not be shown.'
+    );
+  });
+
+  test('says so on the page when switched to a pathway it cannot show', async ({ page }) => {
+    // Its failure can land outside change detection, and the view then has to
+    // refresh on its own -- which it did not while the failed lookup threw on
+    // every read. Nothing is held back here: the order the failures arrive in
+    // unaided is the one that showed it.
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('pathway', 'R-HSA-999999999')
+    );
+    await expect(page.locator('#diagram reactome-diagram-view').locator('.message')).toHaveText(
+      'This pathway could not be shown.',
+      { timeout: LOAD }
+    );
+    await page.waitForTimeout(3000);
+    expect(await events(page, 'diagramerror')).toHaveLength(1);
+  });
+
+  test('opens the right-click popup at the pointer, with its icons', async ({ page }) => {
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    const [node] = await twoNodes(page);
+    await page.mouse.click(node.x, node.y, { button: 'right' });
+    const popup = page.locator('#diagram .entity-popup');
+    await expect(popup).toBeVisible({ timeout: LOAD });
+    const box = await popup.boundingBox();
+    if (!box) throw new Error('the popup has no box');
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error('no viewport');
+    // Where the popup puts itself: at the pointer, kept 8px inside the window.
+    const at = (pointer: number, size: number, room: number) =>
+      Math.max(8, Math.min(pointer, room - size - 8));
+    expect(Math.abs(box.x - at(node.x, box.width, viewport.width))).toBeLessThan(2);
+    expect(Math.abs(box.y - at(node.y, box.height, viewport.height))).toBeLessThan(2);
+    // An icon is set in its icon font, not in the text face as its own name.
+    const font = await popup
+      .locator('mat-icon')
+      .first()
+      .evaluate((icon) => getComputedStyle(icon).fontFamily);
+    expect(font).toContain('Material Icons');
   });
 });

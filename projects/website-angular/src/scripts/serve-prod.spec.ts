@@ -60,6 +60,7 @@ describe('serve-prod', () => {
     embed = await mkdtemp(path.join(tmpdir(), 'serve-prod-embed-'));
     await writeFile(path.join(embed, 'main.js'), 'export const diagram = 1;', 'utf8');
     await writeFile(path.join(embed, 'loader.gif'), 'GIF89a', 'utf8');
+    await writeFile(path.join(embed, 'chunk-AB12CD34.js'), 'export {};', 'utf8');
 
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
@@ -191,6 +192,15 @@ describe('serve-prod', () => {
       const res = await fetch(base + '/embed/diagram/v1/loader.gif');
       expect(res.status).toBe(200);
       expect(res.headers.get('cache-control')).toContain('max-age=86400');
+    });
+
+    it('caches its content-named chunks for good, and only those', async () => {
+      // A chunk's name is its content, so it never changes meaning; main.js
+      // does, on every release, and must not be pinned to the old one.
+      const chunk = await fetch(base + '/embed/diagram/v1/chunk-AB12CD34.js');
+      expect(chunk.headers.get('cache-control')).toContain('immutable');
+      const main = await fetch(base + '/embed/diagram/v1/main.js');
+      expect(main.headers.get('cache-control')).toBe('no-cache');
     });
 
     it('answers 404 for a file it does not have, not the site', async () => {

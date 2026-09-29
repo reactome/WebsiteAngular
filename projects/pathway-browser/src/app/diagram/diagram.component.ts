@@ -762,6 +762,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    // Cytoscape binds resize, scroll and pointer listeners on window, and only
+    // destroy() removes them. A new instance in the same container destroys the
+    // old one itself, so this is only for the last: without it, every diagram
+    // removed from a page -- an embedded one on a partner's single-page app, or
+    // this one on leaving the browser -- left its listeners and canvases behind.
+    const instances: (cytoscape.Core | undefined)[] = [this.cy, this.cyCompare, this.legend];
+    for (const cy of instances) cy?.destroy();
   }
 
   // Needs Input event binding to react to mouse drag instead of mouse drop on slider
@@ -979,16 +986,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         if (pathwayWithDiagram) {
           const newDiagramId = pathwayWithDiagram.stId;
           const diagramId = this.pathwayId();
-          if (newDiagramId !== diagramId) {
-            this.pathwayId.set(newDiagramId);
-            // this.router.navigate([diagramId], {
-            //   queryParamsHandling: "preserve"
-            // }).then(() => {
-            this.state.select.set(event.stId);
-            // });
+          // The same diagram: another load of this pathway is drawing it, so
+          // there is nothing to do -- which is not a failure.
+          if (newDiagramId === diagramId) return EMPTY;
+          this.pathwayId.set(newDiagramId);
+          // this.router.navigate([diagramId], {
+          //   queryParamsHandling: "preserve"
+          // }).then(() => {
+          this.state.select.set(event.stId);
+          // });
 
-            return this.loadElvDiagram();
-          }
+          return this.loadElvDiagram();
         }
         return of(null);
       })

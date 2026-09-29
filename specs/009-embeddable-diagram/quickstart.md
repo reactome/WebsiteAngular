@@ -6,7 +6,7 @@
 export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:$PATH"
 npm run build:libs
 npx ng build reactome-diagram-element --configuration development   # or production / beta
-ls dist/reactome-diagram/browser                                     # main.js, styles.css, chunk-*.js, reactome-diagram.js, demo.html
+ls dist/reactome-diagram/browser                                     # main.js, chunk-*.js, reactome-diagram.js, demo.html, media/
 ```
 
 ## See it on a page of another origin

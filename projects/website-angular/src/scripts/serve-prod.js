@@ -206,8 +206,8 @@ async function surveyServices() {
  *
  * Its files are fetched from the partner's origin -- main.js as a module script,
  * which the browser refuses without the CORS header -- and they are replaced in
- * place on each release under the same names, so its scripts revalidate rather
- * than being cached as immutable like the site's hashed chunks. A file it does
+ * place on each release under the same names, so those revalidate; only its
+ * content-named chunks are cached as immutable, like the site's. A file it does
  * not have is a 404: the site's index.html with a 200, which is what the
  * catch-all below would send, is a page a partner's browser would try to run.
  */
@@ -224,9 +224,16 @@ app.use(
     index: false,
     setHeaders: (res, filePath) => {
       embedHeaders(res);
+      // Chunks are named by their content, so a name never changes meaning;
+      // main.js, the loader and the demo keep their names across releases.
+      const name = path.basename(filePath);
       res.setHeader(
         'Cache-Control',
-        /\.(js|html)$/.test(filePath) ? 'no-cache' : 'public, max-age=86400'
+        /^chunk-[A-Z0-9]+\.js$/.test(name)
+          ? 'public, max-age=31536000, immutable'
+          : /\.(js|html)$/.test(name)
+            ? 'no-cache'
+            : 'public, max-age=86400'
       );
     },
   }),

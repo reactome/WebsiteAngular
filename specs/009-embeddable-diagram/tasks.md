@@ -106,6 +106,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - a router-free `SpeciesService`, modelled on the website's `DetailSpeciesService`;
   - `AnalysisService`'s style source pointed at the element, not `document.body` (research R5, `analysis.service.ts:242`), via a provider or setter;
   - `EL/shadow-overlay-container.ts` provided as `OverlayContainer`, appending into the element's shadow root.
+  - **As built**: the AnalysisService style source was not repointed; it still reads `getComputedStyle(document.body)` on the partner's page. Nothing in Story 1 shows an analysis overlay, so it moves to T029. Also added: `ShadowRootsOnlyStylesHost`, so component styles go only into the elements' shadow roots and never the partner's `<head>` (found in review), and `APP_ID` `reactome-diagram`, so a partner's server-rendered Angular styles aren't adopted.
 - [x] T015 [US1] Write `EL/diagram-element.component.ts`, with `ViewEncapsulation.ShadowDom`. It:
   - takes inputs `pathway`, and later `select`, `flag`, `analysisToken`, `theme` (attributes via `createCustomElement` input mapping);
   - provides `embedProviders` at component level (**one injector per element**, which satisfies T012);
@@ -126,6 +127,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - derives `base` from `document.currentScript.src`;
   - once only, adds `<link>`s for Roboto, Material Symbols Rounded and Material Icons (the URLs from `src/index.html`) and `base+'styles.css'`, then `<script type="module" src=base+'main.js' crossorigin>`;
   - guards against double inclusion with a `window.__reactomeDiagramLoader` flag.
+  - **As built**: no `styles.css` (the element's styles are in its shadow root) and no window flag; a second copy recognises the module script the first added (`script[data-reactome-diagram]`). The wrapper element holds its view in its own shadow root and takes a property set before upgrade.
 
   Its comment carries the failure: a classic tag can't load the builder's chunked module output (R4).
 
@@ -182,6 +184,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - add `fit()`, `resetSelection()`, `resetFlag()` and `resetAnalysis()` as element methods;
   - emit `flagcleared`/`analysiscleared` when state clears, from code or from the legend;
   - emit `entityhovered`.
+  - Also: point `AnalysisService`'s style source at the element instead of `document.body` (moved from T014).
 - [ ] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
 - [ ] T031 [US2] Run the gates and the full e2e suite. Open the PR, with review focused on state-clearing paths, event shapes against the contract, and EHLD asset URLs. CI green, merge, deploy. Verify on beta with the demo page's flag, select and theme controls. Add those controls to `demo.html` in T029.
 
@@ -241,10 +244,12 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 - [ ] T041 Decide #339 with this in place. `PathwayBrowser` is superseded by `reactome-diagram-element` plus the `reactome` app. Remove it, or make it build and add it to CI; record which, and why, on #339. Decide `WebsiteAngular` the same way.
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
+- [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
+- [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
 
 ## Dependencies & Execution Order
 
-- **Order**: Setup (T001–T003) → Foundational (T004 spike **gates everything**; T005–T006) → US1 (T007–T024) → US2 (T025–T031) → US3 (T032–T036) → US4 (T037–T039) → close-out (T040–T042).
+- **Order**: Setup (T001–T003) → Foundational (T004 spike **gates everything**; T005–T006) → US1 (T007–T024) → US2 (T025–T031) → US3 (T032–T036) → US4 (T037–T039) → close-out (T040–T044).
 - **US4 is independent** of the element and could go any time after Setup. It's kept last per the plan's order.
 - **Within a story**: tests (red), then implementation, then the gates, then the PR.
 

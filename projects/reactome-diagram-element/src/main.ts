@@ -1,10 +1,13 @@
-import { provideZonelessChangeDetection } from '@angular/core';
-import { createApplication } from '@angular/platform-browser';
+import { APP_ID, provideZonelessChangeDetection } from '@angular/core';
+import {
+  createApplication,
+  ɵSharedStylesHost as SharedStylesHost,
+} from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
 import { createCustomElement } from '@angular/elements';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DiagramElementComponent } from './diagram-element.component';
-import { rootGuards } from './embed-providers';
+import { rootGuards, ShadowRootsOnlyStylesHost } from './embed-providers';
 
 /** The element partners write. */
 const TAG = 'reactome-diagram';
@@ -26,13 +29,37 @@ const ATTRIBUTES = ['pathway'];
  * A single-page host app removes and re-adds elements all the time. Here each
  * connection gets a new view element, which has neither problem. Removal is
  * deferred a tick, so an element that is only moved keeps its diagram.
+ *
+ * The view lives in this element's own shadow root, not among its children:
+ * there the partner's `reactome-diagram > *` rules cannot reach it, their
+ * `innerHTML` and `children` do not see it, and cloning the element does not
+ * copy it. The default box is a `:host` rule for the same reason -- any rule
+ * of the partner's beats it, and nothing is added to their document.
  */
 class ReactomeDiagram extends HTMLElement {
   static observedAttributes = ATTRIBUTES;
+  private readonly root: ShadowRoot;
   private view: HTMLElement | null = null;
   private pendingRemoval: ReturnType<typeof setTimeout> | null = null;
 
+  constructor() {
+    super();
+    this.root = this.attachShadow({ mode: 'open' });
+    const box = document.createElement('style');
+    box.textContent = ':host { display: block; width: 800px; height: 500px; }';
+    this.root.appendChild(box);
+  }
+
   connectedCallback() {
+    // A property set before this code loaded is an own property of the element
+    // that hides the accessor below: take it, and set it through the accessor.
+    for (const name of ATTRIBUTES) {
+      if (Object.prototype.hasOwnProperty.call(this, name)) {
+        const value = (this as Record<string, unknown>)[name];
+        delete (this as Record<string, unknown>)[name];
+        (this as Record<string, unknown>)[name] = value;
+      }
+    }
     if (this.pendingRemoval !== null) {
       clearTimeout(this.pendingRemoval);
       this.pendingRemoval = null;
@@ -45,7 +72,7 @@ class ReactomeDiagram extends HTMLElement {
       if (value !== null) view.setAttribute(name, value);
     }
     this.view = view;
-    this.appendChild(view);
+    this.root.appendChild(view);
   }
 
   disconnectedCallback() {
@@ -76,14 +103,17 @@ class ReactomeDiagram extends HTMLElement {
 if (!customElements.get(TAG)) {
   // The partner's element exists from the start, so the page can size it and
   // listen to it; its view appears when the diagram code is ready.
-  // A default box, at zero specificity so any rule of the partner's wins: an
-  // unknown element is inline, and an inline element ignores width and height.
-  const defaults = document.createElement('style');
-  defaults.textContent = `:where(${TAG}) { display: block; width: 800px; height: 500px; }`;
-  document.head.appendChild(defaults);
   customElements.define(TAG, ReactomeDiagram);
   createApplication({
-    providers: [provideZonelessChangeDetection(), provideHttpClient(), ...rootGuards],
+    providers: [
+      provideZonelessChangeDetection(),
+      provideHttpClient(),
+      // Not Angular's default 'ng', which a partner's own Angular app has too:
+      // styles it rendered on the server are claimed by the app with that id.
+      { provide: APP_ID, useValue: 'reactome-diagram' },
+      { provide: SharedStylesHost, useClass: ShadowRootsOnlyStylesHost },
+      ...rootGuards,
+    ],
   })
     .then((app) => {
       app.injector
