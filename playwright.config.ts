@@ -124,10 +124,16 @@ export default defineConfig({
           // runs, which is never the site's own origin. The development build
           // asks http://localhost:4330 for data, which the harness answers from
           // recordings on whatever port the site is on.
+          //
+          // Built into a directory of its own: dist/reactome-diagram is what
+          // serve-prod publishes at /embed/diagram/v1/, so building the
+          // development configuration there replaced beta's embed with one that
+          // loads its code from localhost:4340 -- on every e2e run and every
+          // pre-push preflight on this machine.
           {
             command:
-              'npx ng build reactome-diagram-element --configuration development && ' +
-              `node e2e/support/static-server.mjs dist/reactome-diagram/browser ${EMBED_PORT}`,
+              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram && ' +
+              `node e2e/support/static-server.mjs dist/e2e/reactome-diagram/browser ${EMBED_PORT}`,
             url: `http://localhost:${EMBED_PORT}/reactome-diagram.js`,
             reuseExistingServer: false,
             timeout: 300_000,
