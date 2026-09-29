@@ -44,7 +44,8 @@ class ReactomeDiagram extends HTMLElement {
 
   constructor() {
     super();
-    this.root = this.attachShadow({ mode: 'open' });
+    // An open root the partner already attached is reused rather than thrown on.
+    this.root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
     const box = document.createElement('style');
     box.textContent = ':host { display: block; width: 800px; height: 500px; }';
     this.root.appendChild(box);
@@ -57,7 +58,7 @@ class ReactomeDiagram extends HTMLElement {
       if (Object.prototype.hasOwnProperty.call(this, name)) {
         const value = (this as Record<string, unknown>)[name];
         delete (this as Record<string, unknown>)[name];
-        (this as Record<string, unknown>)[name] = value;
+        if (value !== undefined) (this as Record<string, unknown>)[name] = value;
       }
     }
     if (this.pendingRemoval !== null) {

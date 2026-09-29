@@ -190,6 +190,10 @@ async function recordHostBaseline(page: Page) {
       storage: Object.keys(localStorage).sort().join(','),
       bodyClass: document.body.className,
       bodyStyle: document.body.style.cssText,
+      // Libraries append to <body> too: an element of ours there is on the
+      // partner's page, in their layout.
+      body: [...document.body.children].map((e) => e.tagName).join(','),
+      height: document.documentElement.scrollHeight,
       head: [...document.head.children]
         .filter((e) => !inert(e))
         .map((e) => e.tagName)
@@ -199,12 +203,22 @@ async function recordHostBaseline(page: Page) {
       once: true,
       capture: true,
     });
+    // Except the page's height, which changes as it should once the element is
+    // defined: until then it is an unknown, inline element, and ignores the
+    // size the partner gave it. Taken once it has its box, before the diagram
+    // has drawn anything.
+    void customElements
+      .whenDefined('reactome-diagram')
+      .then(() =>
+        requestAnimationFrame(() => (w.__sizedHeight = document.documentElement.scrollHeight))
+      );
   });
 }
 
 type HostGlobals = {
   __hostState(): Record<string, unknown>;
   __baseline: Record<string, unknown>;
+  __sizedHeight: number;
 };
 
 async function hostState(page: Page) {
@@ -294,8 +308,17 @@ test.describe('the embeddable diagram', () => {
     await recordHostBaseline(page);
     await page.goto(`${HOST}/`);
     await drawn(page);
-    const before = await page.evaluate(() => (window as unknown as HostGlobals).__baseline);
+    const before = await page.evaluate(() => {
+      const w = window as unknown as HostGlobals;
+      return { ...w.__baseline, height: w.__sizedHeight };
+    });
     expect(await hostState(page), 'nothing changed while the diagram loaded').toEqual(before);
+    // The controls' tooltip text, as their accessible description on the
+    // control itself rather than in a container on the partner's body.
+    await expect(page.locator('#diagram reactome-diagram-view #fit')).toHaveAttribute(
+      'aria-description',
+      'Fit to screen'
+    );
 
     const box = await boxOf(page);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -333,8 +356,12 @@ test.describe('the embeddable diagram', () => {
     // identity failed on CI runners for that alone. A style that reaches in
     // changes glyphs and colours against their background, by far more: with
     // the frame's reset removed, 339,352 pixels differ, up to 255 levels. So
-    // what counts is a pixel that differs by more than that noise ever does.
+    // what counts is a pixel that differs by more than that noise ever does --
+    // and, for a leak too faint for that (a slight tint or fade over the whole
+    // diagram), more pixels differing a little than noise ever makes.
     const SIGNIFICANT = 64;
+    const FAINT = 16;
+    const FAINT_ALLOWED = 1000;
     const shot = async (url: string) => {
       await page.goto(url);
       await drawn(page);
@@ -355,11 +382,13 @@ test.describe('the embeddable diagram', () => {
     const plain = await shot(`${HOST}/plain.html`);
     const hostile = await shot(`${HOST}/hostile.html`);
     const differing = await significantPixels(page, plain, hostile, SIGNIFICANT);
-    if (differing > 0) {
+    const faint = await significantPixels(page, plain, hostile, FAINT);
+    if (differing > 0 || faint >= FAINT_ALLOWED) {
       await testInfo.attach('plain', { body: plain, contentType: 'image/png' });
       await testInfo.attach('hostile', { body: hostile, contentType: 'image/png' });
     }
     expect(differing, 'pixels of the diagram changed by hostile page styles').toBe(0);
+    expect(faint, 'pixels of the diagram faintly changed').toBeLessThan(FAINT_ALLOWED);
 
     // And nothing of ours reaches out: the partner's own heading keeps its look.
     await page.goto(`${HOST}/`);
@@ -427,6 +456,39 @@ test.describe('the embeddable diagram', () => {
       if (w.__held) document.body.appendChild(w.__held);
     });
     expect(await drawn(page), 'removed and added back: drawn again').toBe(nodes);
+  });
+
+  test('removed while it loads, leaves nothing behind on the window', async ({ page }) => {
+    // cytoscape binds its listeners on window, and only destroying the
+    // instance removes them. One made after its element was gone -- its data
+    // arriving late -- used to have nothing left to destroy it.
+    const cdp = await page.context().newCDPSession(page);
+    const windowListeners = async () => {
+      const { result } = await cdp.send('Runtime.evaluate', { expression: 'window' });
+      const { listeners } = await cdp.send('DOMDebugger.getEventListeners', {
+        objectId: result.objectId ?? '',
+      });
+      return listeners.length;
+    };
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    await page.waitForTimeout(1000);
+    const withOne = await windowListeners();
+
+    await page.route('**/diagram/R-HSA-5693567*.json', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.fallback();
+    });
+    await page.evaluate(() => {
+      const el = document.createElement('reactome-diagram');
+      el.id = 'brief';
+      el.setAttribute('pathway', 'R-HSA-5693567');
+      document.body.appendChild(el);
+      // Gone well before its diagram arrives, and long enough to be torn down.
+      setTimeout(() => el.remove(), 1000);
+    });
+    await page.waitForTimeout(6000);
+    expect(await windowListeners(), "the removed diagram's listeners").toBe(withOne);
   });
 
   test('is harmless when its script is included twice', async ({ page }) => {

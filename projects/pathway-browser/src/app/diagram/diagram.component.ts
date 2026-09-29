@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   input,
@@ -14,6 +15,7 @@ import {
   HostListener,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DiagramService } from '../services/diagram.service';
 import {
   extract,
@@ -98,6 +100,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly isCurator = IS_CURATOR;
 
   private diagram = inject(DiagramService);
+  private readonly destroyRef = inject(DestroyRef);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);
   protected state = inject(UrlStateService);
@@ -628,20 +631,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     this.underlayPadding = extract(this.reactomeStyle.properties.shadow.padding);
 
-    this.diagram.getLegend().subscribe((legend) => {
-      this.legend = cytoscape({
-        container: legendContainer,
-        elements: legend,
-        style: this.reactomeStyle?.getStyleSheet(),
-        layout: { name: 'preset' },
-        boxSelectionEnabled: false,
-      });
-      this.reactomeStyle?.bindToCytoscape(this.legend);
+    // Cancelled with the component: a diagram removed while these load would
+    // otherwise make its cytoscape instance afterwards, with nothing left to
+    // destroy it (see ngOnDestroy).
+    this.diagram
+      .getLegend()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((legend) => {
+        this.legend = cytoscape({
+          container: legendContainer,
+          elements: legend,
+          style: this.reactomeStyle?.getStyleSheet(),
+          layout: { name: 'preset' },
+          boxSelectionEnabled: false,
+        });
+        this.reactomeStyle?.bindToCytoscape(this.legend);
 
-      this.legend.zoomingEnabled(false);
-      this.legend.panningEnabled(false);
-      this.legend.minZoom(0);
-    });
+        this.legend.zoomingEnabled(false);
+        this.legend.panningEnabled(false);
+        this.legend.minZoom(0);
+      });
 
     this.sizeObserver = new ResizeObserver((entries) => {
       entries.forEach((entry) => {
@@ -824,7 +833,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // Pathway with a diagram
           return this.loadElvDiagram();
         }),
-        catchError(() => of(null))
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((drawn) => {
         this.isInitialLoad = false;

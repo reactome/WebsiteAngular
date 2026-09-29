@@ -225,13 +225,14 @@ app.use(
     setHeaders: (res, filePath) => {
       embedHeaders(res);
       // Chunks are named by their content, so a name never changes meaning;
-      // main.js, the loader and the demo keep their names across releases.
+      // main.js and its source map, the loader and the demo keep their names
+      // across releases.
       const name = path.basename(filePath);
       res.setHeader(
         'Cache-Control',
         /^chunk-[A-Z0-9]+\.js$/.test(name)
           ? 'public, max-age=31536000, immutable'
-          : /\.(js|html)$/.test(name)
+          : /\.(js|html|map)$/.test(name)
             ? 'no-cache'
             : 'public, max-age=86400'
       );

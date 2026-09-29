@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { ɵSharedStylesHost as SharedStylesHost } from '@angular/platform-browser';
 import { OverlayContainer } from '@angular/cdk/overlay';
+import { AriaDescriber } from '@angular/cdk/a11y';
 import { UrlStateService } from '../../pathway-browser/src/app/services/url-state.service';
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
 import { MemoryState } from './memory-state';
@@ -42,6 +43,29 @@ export class ShadowRootsOnlyStylesHost extends SharedStylesHost {
     const doc = inject(DOCUMENT);
     super(doc, inject(APP_ID), inject(CSP_NONCE, { optional: true }), inject(PLATFORM_ID));
     this.removeHost(doc.head);
+  }
+}
+
+/**
+ * Tooltip text as an accessible description, on the control itself.
+ *
+ * The CDK's AriaDescriber puts every message in a container it appends to
+ * `document.body` and points `aria-describedby` at it. On a partner's page that
+ * container is in their layout -- unstyled, since its visually-hidden rule is
+ * in our shadow roots now, it made the page 650px taller -- and the reference
+ * could not work anyway: an id in the document is out of reach from inside a
+ * shadow root. The controls have no other accessible text, so the message goes
+ * where assistive technology can read it.
+ */
+@Injectable()
+class EmbedAriaDescriber implements Pick<AriaDescriber, 'describe' | 'removeDescription'> {
+  describe(hostElement: Element, message: string | HTMLElement): void {
+    const text = typeof message === 'string' ? message : message.textContent;
+    if (text?.trim()) hostElement.setAttribute('aria-description', text);
+  }
+
+  removeDescription(hostElement: Element): void {
+    hostElement.removeAttribute('aria-description');
   }
 }
 
@@ -92,6 +116,7 @@ export const embedProviders: Provider[] = [
   { provide: UrlStateService, useExisting: MemoryState },
   { provide: DarkService, useClass: EmbedDarkService },
   { provide: OverlayContainer, useClass: ShadowRootOverlayContainer },
+  { provide: AriaDescriber, useClass: EmbedAriaDescriber },
   AnalysisService,
   CitationService,
   DataStateService,
