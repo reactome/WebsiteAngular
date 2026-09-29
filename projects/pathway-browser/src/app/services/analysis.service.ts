@@ -3,6 +3,7 @@ import {
   effect,
   inject,
   Injectable,
+  InjectionToken,
   linkedSignal,
   signal,
   untracked,
@@ -231,6 +232,17 @@ export class PaletteSummary {
 
 export type Examples = 'uniprot' | 'microarray' | 'cancer-gene-census' | 'extreme';
 
+/**
+ * The element whose custom properties are the site's colour tokens: the
+ * analysis palette reads them from here. `document.body` on the site; an
+ * embedded diagram (spec 009) provides its own host, since the partner's body
+ * has none of our tokens.
+ */
+export const STYLE_ROOT = new InjectionToken<HTMLElement>('STYLE_ROOT', {
+  providedIn: 'root',
+  factory: () => document.body,
+});
+
 @Injectable({
   providedIn: 'root',
 })
@@ -239,7 +251,7 @@ export class AnalysisService {
   private state: UrlStateService = inject(UrlStateService);
   private darkS: DarkService = inject(DarkService);
   private speciesService: SpeciesService = inject(SpeciesService);
-  style: Style = new Style(document.body);
+  style: Style = new Style(inject(STYLE_ROOT));
 
   paletteOptions: Map<PaletteName, PaletteSummary> = new Map(
     (

@@ -48,10 +48,10 @@ Setting a property is the same as setting its attribute. Removing the attribute,
 
 ## Methods
 
-| Method                                               | Effect                                                |
-| ---------------------------------------------------- | ----------------------------------------------------- |
-| `fit()`                                              | Fits the whole diagram in view.                       |
-| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. |
+| Method                                               | Effect                                                                                                                        |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `fit()`                                              | Fits the whole diagram in view.                                                                                               |
+| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. `resetSelection()` also clears a selection the reader made by clicking. |
 
 ## Events
 
@@ -65,6 +65,13 @@ Each is a `CustomEvent`, dispatched on the element. They bubble and are composed
 | `entityhovered`   | same shape                                                                   | The visitor's pointer entered (or left, with `id: null`) an entity. |
 | `flagcleared`     | `{}`                                                                         | The flag was cleared, from code or by the visitor.                  |
 | `analysiscleared` | `{}`                                                                         | The analysis overlay was cleared.                                   |
+
+- Today `diagramerror` always carries `reason: 'not-found'`: the other two reasons are reserved, and a partner should treat any reason as "not shown".
+- `entityselected` is for what the reader selects, deselecting included: setting `select` from code does not fire it. Clicking one entity while another is selected fires it once, for the new one.
+- `flagcleared` fires when the term the partner flagged is no longer flagged: the attribute removed, the diagram's own "clear" used, or a legend entry flagging its class in its place.
+- `entityhovered` is for entities with a stable id; a compartment is not one. On an illustrated pathway it is not reported yet.
+
+Setting an attribute to the value it already has applies it again. The reader can clear a selection or a flag from inside the diagram while the attribute still holds it; setting it again brings it back.
 
 ## Guarantees
 

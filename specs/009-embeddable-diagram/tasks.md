@@ -169,23 +169,26 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ### Tests first
 
-- [ ] T025 [P] [US2] Spec "flag": `flag="<a gene in the pathway>"` flags the same elements as the Pathway Browser's `?flag=` for that pathway and term. Compare the element's flagged element ids with the site's, same recording. Clearing the attribute unflags and fires `flagcleared`. Red before T029.
-- [ ] T026 [P] [US2] Spec "select": `select="<an entity stId in the diagram>"` selects it and brings it into view. Clicking another fires `entityselected` with that stable id. Clearing it deselects. Red before T029.
-- [ ] T027 [P] [US2] Spec "analysis": `analysis-token` set to a token recorded in an existing analysis-results HAR (read only; submit nothing) shows the overlay, as the site does for the same token. Removing it clears the overlay and fires `analysiscleared`. Red before T029.
-- [ ] T028 [P] [US2] Specs:
+- [x] T025 [P] [US2] Spec "flag": `flag="<a gene in the pathway>"` flags the same elements as the Pathway Browser's `?flag=` for that pathway and term. Compare the element's flagged element ids with the site's, same recording. Clearing the attribute unflags and fires `flagcleared`. Red before T029.
+- [x] T026 [P] [US2] Spec "select": `select="<an entity stId in the diagram>"` selects it and brings it into view. Clicking another fires `entityselected` with that stable id. Clearing it deselects. Red before T029.
+- [x] T027 [P] [US2] Spec "analysis": `analysis-token` set to a token recorded in an existing analysis-results HAR (read only; submit nothing) shows the overlay, as the site does for the same token. Removing it clears the overlay and fires `analysiscleared`. Red before T029.
+  - **As built**: token `MjAyNjA5MjUxNDM3NThfMTM=`, an existing local result (read only); the element's overlaid-node count equals the site's for the same token.
+- [x] T028 [P] [US2] Specs:
   - "EHLD": a top-level pathway with an illustration draws the illustration in the element, then fires `diagramloaded`.
   - "theme": `theme="dark"` switches colours, checked by pixels differing from light.
   - "dbId": `pathway="<its dbId>"` loads, and the event carries the stable id.
 
 ### Implementation
 
-- [ ] T029 [US2] In `EL/diagram-element.component.ts`:
+- [x] T029 [US2] In `EL/diagram-element.component.ts`:
   - map the `select`, `flag`, `analysisToken`/`analysisResource` and `theme` inputs to `MemoryState` (and the fixed `DarkService`);
   - add `fit()`, `resetSelection()`, `resetFlag()` and `resetAnalysis()` as element methods;
   - emit `flagcleared`/`analysiscleared` when state clears, from code or from the legend;
   - emit `entityhovered`.
   - Also: point `AnalysisService`'s style source at the element instead of `document.body` (moved from T014).
-- [ ] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
+  - **As built**: the analysis palette reads its tokens from a `STYLE_ROOT` token (the element's host in the embed, `document.body` on the site). `entityselected` reports what is selected ~20ms after a change, so a click from one entity to another is one event, not a null then the new one. Removing `select`, or `resetSelection()`, also clears a selection the reader made -- the diagram leaves the last one drawn when the state is cleared.
+- [x] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
+  - **As built**: `cr-ehld` inside a small `reactome-illustration` wrapper under `@defer`, a 92 KB lazy chunk; the wrapper gives it a stand-in SVG exporter, since the real one brings Reacfoam, a root service reading the address. The kind (diagram/illustration) holds through a pathway switch until the next answer. Legend arrows come from an `EHLD_LEGEND_BASE` token, beside main.js in the embed; the images are copied into the build.
 - [ ] T031 [US2] Run the gates and the full e2e suite. Open the PR, with review focused on state-clearing paths, event shapes against the contract, and EHLD asset URLs. CI green, merge, deploy. Verify on beta with the demo page's flag, select and theme controls. Add those controls to `demo.html` in T029.
 
 ## Phase 5: User Story 3: the old `Reactome.Diagram` interface (P2)
@@ -247,10 +250,11 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 - [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
 - [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
 - [ ] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
+- [ ] T046 On an illustrated pathway: report `entityhovered` (the illustration's regions do not go through the diagram's event stream), and make clearing the selection remove the region's outline (`EhldComponent.selectedElement` only ever applies one). Found in the Story 2 review.
 
 ## Dependencies & Execution Order
 
-- **Order**: Setup (T001–T003) → Foundational (T004 spike **gates everything**; T005–T006) → US1 (T007–T024) → US2 (T025–T031) → US3 (T032–T036) → US4 (T037–T039) → close-out (T040–T045).
+- **Order**: Setup (T001–T003) → Foundational (T004 spike **gates everything**; T005–T006) → US1 (T007–T024) → US2 (T025–T031) → US3 (T032–T036) → US4 (T037–T039) → close-out (T040–T046).
 - **US4 is independent** of the element and could go any time after Setup. It's kept last per the plan's order.
 - **Within a story**: tests (red), then implementation, then the gates, then the PR.
 

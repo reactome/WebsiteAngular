@@ -15,7 +15,10 @@ import { AriaDescriber } from '@angular/cdk/a11y';
 import { UrlStateService } from '../../pathway-browser/src/app/services/url-state.service';
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
 import { MemoryState } from './memory-state';
-import { AnalysisService } from '../../pathway-browser/src/app/services/analysis.service';
+import {
+  AnalysisService,
+  STYLE_ROOT,
+} from '../../pathway-browser/src/app/services/analysis.service';
 import { CitationService } from '../../pathway-browser/src/app/services/citation.service';
 import { DataStateService } from '../../pathway-browser/src/app/services/data-state.service';
 import { EhldService } from '../../pathway-browser/src/app/services/ehld.service';
@@ -24,6 +27,7 @@ import { EventService } from '../../pathway-browser/src/app/services/event.servi
 import { FigureService } from '../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
 import { InteractorService } from '../../pathway-browser/src/app/interactors/services/interactor.service';
 import { SpeciesService } from '../../pathway-browser/src/app/services/species.service';
+import { HierarchyHoverService } from '../../pathway-browser/src/app/services/hierarchy-hover.service';
 
 /**
  * Component styles, written into the elements' shadow roots and nowhere else.
@@ -117,6 +121,12 @@ export const embedProviders: Provider[] = [
   { provide: DarkService, useClass: EmbedDarkService },
   { provide: OverlayContainer, useClass: ShadowRootOverlayContainer },
   { provide: AriaDescriber, useClass: EmbedAriaDescriber },
+  // The analysis palette reads the colour tokens from here: the element's own
+  // host, where they are defined, not the partner's body, where they are not.
+  {
+    provide: STYLE_ROOT,
+    useFactory: () => inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+  },
   AnalysisService,
   CitationService,
   DataStateService,
@@ -126,6 +136,9 @@ export const embedProviders: Provider[] = [
   FigureService,
   InteractorService,
   SpeciesService,
+  // A hovered event, shared at the root: two illustrations on one page lit
+  // each other's regions.
+  HierarchyHoverService,
 ];
 
 function perElementOnly(name: string): () => never {

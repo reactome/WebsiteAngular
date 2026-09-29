@@ -18,7 +18,7 @@ const LOAD = 90_000;
 type Cy = {
   nodes(sel?: string): { length: number; filter(f: (n: CyNode) => boolean): CyNode[] };
   $(sel: string): { map(f: (n: CyNode) => string): string[] };
-  zoom(): number;
+  zoom(level?: number): number;
   pan(): { x: number; y: number };
 };
 type EmbedGlobals = {
@@ -54,7 +54,14 @@ async function recordEvents(page: Page) {
       if (!el) throw new Error(`no #${id} on the page`);
       return el;
     };
-    for (const type of ['diagramloaded', 'diagramerror', 'entityselected', 'entityhovered']) {
+    for (const type of [
+      'diagramloaded',
+      'diagramerror',
+      'entityselected',
+      'entityhovered',
+      'flagcleared',
+      'analysiscleared',
+    ]) {
       document.addEventListener(type, (e) =>
         w.__events.push([type, (e.target as HTMLElement).id, (e as CustomEvent).detail])
       );
@@ -539,6 +546,20 @@ test.describe('the embeddable diagram', () => {
       () => (window as unknown as EmbedGlobals).__cy('diagram').cy.nodes().length
     );
     expect(shown, 'the new pathway is drawn').toBeGreaterThan(0);
+
+    // Its flag control, as a visitor would use it.
+    await page.locator('#flag').fill('AKT1');
+    await page.locator('#flag').press('Enter');
+    await page.locator('#flag').blur();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => (window as unknown as EmbedGlobals).__cy('diagram').cy.nodes('.flag').length
+          ),
+        { timeout: LOAD }
+      )
+      .toBeGreaterThan(0);
   });
 
   test('can be loaded both ways on one page', async ({ page }) => {
@@ -632,5 +653,346 @@ test.describe('the embeddable diagram', () => {
       .first()
       .evaluate((icon) => getComputedStyle(icon).fontFamily);
     expect(font).toContain('Material Icons');
+  });
+});
+
+/**
+ * Story 2: what a partner sets on the element, and what it tells them back
+ * (contracts/reactome-diagram-element.md). Where the site already does the
+ * same thing -- a flag, an analysis overlay -- the element is held to the
+ * site's own answer for the same pathway and the same recordings.
+ */
+test.describe('the embeddable diagram, told what to show', () => {
+  test.describe.configure({ timeout: 3 * 60_000 });
+
+  // CHEK1 occurs in Cell Cycle Checkpoints (ContentService's flag search).
+  const FLAG = 'CHEK1';
+  // An existing result, read only: nothing is submitted. It finds entities in
+  // R-HSA-69620.
+  const TOKEN = 'MjAyNjA5MjUxNDM3NThfMTM=';
+  // Drawn in the R-HSA-69620 diagram: CDKN1A,CDKN1B, a DefinedSet.
+  const ENTITY = 'R-HSA-182558';
+
+  test.beforeEach(async ({ page }) => {
+    await recordEvents(page);
+  });
+
+  /**
+   * The drawn diagram: in the element, or on the site's own Pathway Browser.
+   * Null until there is one, so a poll waits rather than failing.
+   */
+  const cyIn = (where: 'element' | 'site') =>
+    `(${where === 'element'})
+      ? document.getElementById('diagram')?.shadowRoot?.querySelector('reactome-diagram-view')
+          ?.shadowRoot?.querySelector('#cytoscape')?._cyreg?.cy
+      : document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy`;
+
+  /** Ids of what a diagram shows flagged. */
+  const flagged = (page: Page, where: 'element' | 'site') =>
+    page.evaluate<string[]>(`(() => {
+      const cy = ${cyIn(where)};
+      if (!cy) return [];
+      const ids = cy.elements('.flag').map((e) => String(e.data('graph.stId') ?? e.id()));
+      return [...new Set(ids)].sort();
+    })()`);
+
+  /** How many nodes carry an analysis value. */
+  const analysed = (page: Page, where: 'element' | 'site') =>
+    page.evaluate<number>(`(() => {
+      const cy = ${cyIn(where)};
+      return cy ? cy.nodes().filter((n) => n.data('exp') !== undefined).length : 0;
+    })()`);
+
+  test('flags what the Pathway Browser flags for the same term, and says when cleared', async ({
+    page,
+  }) => {
+    await page.goto(`/PathwayBrowser/R-HSA-69620?flag=${FLAG}`);
+    await expect
+      .poll(() => flagged(page, 'site').then((ids) => ids.length), { timeout: LOAD })
+      .toBeGreaterThan(0);
+    const site = await flagged(page, 'site');
+    // Its requests finished before leaving it, or the recording keeps a half.
+    await page.waitForLoadState('networkidle');
+
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620&flag=${FLAG}`);
+    await drawn(page);
+    await expect.poll(() => flagged(page, 'element'), { timeout: LOAD }).toEqual(site);
+
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').removeAttribute('flag')
+    );
+    await expect.poll(() => flagged(page, 'element')).toEqual([]);
+    await expect.poll(async () => (await events(page, 'flagcleared')).length).toBe(1);
+  });
+
+  test('selects what it is told to, and reports what the reader selects', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620&select=${ENTITY}`);
+    await drawn(page);
+    const told = () =>
+      page.evaluate((entity) => {
+        const { cy, box } = (window as unknown as EmbedGlobals).__cy('diagram');
+        const selected = cy
+          .nodes(':selected')
+          .filter((n: CyNode) => n.data('graph.stId') === entity);
+        const [node] = selected;
+        if (!node) return null;
+        const p = node.renderedPosition();
+        return p.x >= 0 && p.y >= 0 && p.x <= box.width && p.y <= box.height;
+      }, ENTITY);
+    await expect.poll(told, { timeout: LOAD }).toBe(true);
+    // Set by the partner, not chosen by the reader: nothing to report.
+    expect(await events(page, 'entityselected')).toEqual([]);
+
+    // Brought into view means zoomed in on it; the whole diagram again, to
+    // find something else to click.
+    await page.evaluate(() =>
+      ((window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & { fit(): void }).fit()
+    );
+    await page.waitForTimeout(1500);
+    const candidates = await twoNodes(page);
+    const stIds = await page.evaluate(
+      (ids) =>
+        ids.map((id) => {
+          const { cy } = (window as unknown as EmbedGlobals).__cy('diagram');
+          return String(
+            cy
+              .nodes()
+              .filter((n: CyNode) => n.id() === id)[0]
+              .data('graph.stId')
+          );
+        }),
+      candidates.map((c) => c.id)
+    );
+    const other = candidates[stIds.findIndex((stId) => stId !== ENTITY)];
+    const expected = await page.evaluate((id) => {
+      const { cy } = (window as unknown as EmbedGlobals).__cy('diagram');
+      const node = cy.nodes().filter((n: CyNode) => n.id() === id)[0];
+      return {
+        id: String(node.data('graph.stId')),
+        name: String(node.data('displayName')),
+        schemaClass: String(node.data('graph.schemaClass')),
+      };
+    }, other.id);
+    await page.mouse.click(other.x, other.y);
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d))
+      .toEqual([expected]);
+
+    // Clicking the empty canvas deselects, and says so.
+    const canvas = await boxOf(page);
+    await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + 6);
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d))
+      .toEqual([expected, { id: null, name: null, schemaClass: null }]);
+
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').removeAttribute('select')
+    );
+    await expect.poll(() => selectedIds(page)).toEqual([]);
+
+    // And one the reader made, which has no attribute to remove.
+    const [again] = await twoNodes(page);
+    await page.mouse.click(again.x, again.y);
+    await expect.poll(() => selectedIds(page)).toEqual([again.id]);
+    await page.evaluate(() =>
+      (
+        (window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & {
+          resetSelection(): void;
+        }
+      ).resetSelection()
+    );
+    await expect.poll(() => selectedIds(page)).toEqual([]);
+  });
+
+  test('reports what the pointer is over, and when it leaves', async ({ page }) => {
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    const [node] = await twoNodes(page);
+    const id = await page.evaluate((cyId) => {
+      const { cy } = (window as unknown as EmbedGlobals).__cy('diagram');
+      return String(
+        cy
+          .nodes()
+          .filter((n: CyNode) => n.id() === cyId)[0]
+          .data('graph.stId')
+      );
+    }, node.id);
+    await page.mouse.move(node.x, node.y);
+    await expect
+      .poll(async () =>
+        (await events(page, 'entityhovered')).map(([, , d]) => (d as { id: string }).id)
+      )
+      .toContain(id);
+    // Onto the diagram's empty canvas: the controls in its corners are over the
+    // canvas, and the pointer on them is not on the diagram at all.
+    const box = await boxOf(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + 6);
+    await expect
+      .poll(async () => (await events(page, 'entityhovered')).at(-1)?.[2])
+      .toEqual({ id: null, name: null, schemaClass: null });
+  });
+
+  test('overlays an analysis result as the site does, and says when cleared', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/R-HSA-69620?analysis=${encodeURIComponent(TOKEN)}`);
+    await expect.poll(() => analysed(page, 'site'), { timeout: LOAD }).toBeGreaterThan(0);
+    const site = await analysed(page, 'site');
+    // Its requests finished before leaving it, or the recording keeps a half.
+    await page.waitForLoadState('networkidle');
+
+    await page.goto(
+      `${HOST}/configurable.html?pathway=R-HSA-69620&analysis-token=${encodeURIComponent(TOKEN)}`
+    );
+    await drawn(page);
+    await expect.poll(() => analysed(page, 'element'), { timeout: LOAD }).toBe(site);
+
+    await page.evaluate(() => {
+      const el = (window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & {
+        resetAnalysis(): void;
+      };
+      el.resetAnalysis();
+    });
+    await expect.poll(() => analysed(page, 'element')).toBe(0);
+    await expect.poll(async () => (await events(page, 'analysiscleared')).length).toBe(1);
+  });
+
+  test('fits the diagram back into view when asked', async ({ page }) => {
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    await page.waitForTimeout(1500);
+    const zoom = () =>
+      page.evaluate(() => (window as unknown as EmbedGlobals).__cy('diagram').cy.zoom());
+    const fitted = await zoom();
+    // Zoomed well in, as a reader would leave it.
+    await page.evaluate(
+      (level) => (window as unknown as EmbedGlobals).__cy('diagram').cy.zoom(level),
+      fitted * 3
+    );
+    await expect.poll(zoom).toBeGreaterThan(fitted * 2);
+    await page.evaluate(() =>
+      ((window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & { fit(): void }).fit()
+    );
+    await expect
+      .poll(async () => Math.abs((await zoom()) / fitted - 1), { timeout: 5000 })
+      .toBeLessThan(0.05);
+  });
+
+  test('takes a dbId, and reports the stable id', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=69620`);
+    await expect
+      .poll(async () => (await events(page, 'diagramloaded')).map(([, , d]) => d), {
+        timeout: LOAD,
+      })
+      .toEqual([{ pathway: 'R-HSA-69620' }]);
+  });
+
+  test('draws an illustrated pathway as its illustration', async ({ page }) => {
+    // Programmed Cell Death has an illustration (hasEHLD), and no diagram of
+    // cytoscape's to draw instead.
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-5357801`);
+    await expect
+      .poll(async () => (await events(page, 'diagramloaded')).map(([, , d]) => d), {
+        timeout: LOAD,
+      })
+      .toEqual([{ pathway: 'R-HSA-5357801' }]);
+    await expect(
+      page.locator('#diagram reactome-diagram-view cr-ehld #ehld svg').first()
+    ).toBeVisible();
+  });
+
+  test('switches to its dark theme', async ({ page }) => {
+    const shot = async (url: string) => {
+      await page.goto(url);
+      await drawn(page);
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(1500);
+      return page.locator('#diagram').screenshot();
+    };
+    const light = await shot(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    const dark = await shot(`${HOST}/configurable.html?pathway=R-HSA-69620&theme=dark`);
+    // A theme, not noise: most of the box changes colour.
+    expect(await significantPixels(page, light, dark, 64)).toBeGreaterThan(100_000);
+  });
+
+  test('reports what the reader selects and deselects, with no select set', async ({ page }) => {
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    const [node] = await twoNodes(page);
+    await page.mouse.click(node.x, node.y);
+    await expect.poll(async () => (await events(page, 'entityselected')).length).toBe(1);
+    const box = await boxOf(page);
+    await page.mouse.click(box.x + box.width / 2, box.y + 6);
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d).at(-1))
+      .toEqual({ id: null, name: null, schemaClass: null });
+    expect(await events(page, 'entityselected')).toHaveLength(2);
+  });
+
+  test('applies a value again when set to the one it already has', async ({ page }) => {
+    // Cleared from inside -- the diagram's own flag banner -- the attribute
+    // still says CHEK1; setting it to CHEK1 again has to flag again.
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620&flag=${FLAG}`);
+    await drawn(page);
+    await expect
+      .poll(() => flagged(page, 'element').then((ids) => ids.length), { timeout: LOAD })
+      .toBeGreaterThan(0);
+    await page.locator('#diagram reactome-diagram-view .flag-banner-clear').click();
+    await expect.poll(() => flagged(page, 'element')).toEqual([]);
+    await expect.poll(async () => (await events(page, 'flagcleared')).length).toBe(1);
+    await page.evaluate(
+      (term) =>
+        ((
+          (window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & { flag: string }
+        ).flag = term),
+      FLAG
+    );
+    await expect
+      .poll(() => flagged(page, 'element').then((ids) => ids.length), { timeout: LOAD })
+      .toBeGreaterThan(0);
+  });
+
+  test('switches theme after it has drawn', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    await drawn(page);
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1500);
+    const light = await page.locator('#diagram').screenshot();
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('theme', 'dark')
+    );
+    await page.waitForTimeout(1500);
+    const dark = await page.locator('#diagram').screenshot();
+    expect(await significantPixels(page, light, dark, 64)).toBeGreaterThan(100_000);
+  });
+
+  test('switches from a diagram to an illustration, reporting each once', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    await drawn(page);
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('pathway', 'R-HSA-5357801')
+    );
+    await expect(
+      page.locator('#diagram reactome-diagram-view cr-ehld #ehld svg').first()
+    ).toBeVisible({ timeout: LOAD });
+    await page.waitForTimeout(3000);
+    expect((await events(page, 'diagramloaded')).map(([, , d]) => d)).toEqual([
+      { pathway: 'R-HSA-69620' },
+      { pathway: 'R-HSA-5357801' },
+    ]);
+    expect(await events(page, 'diagramerror')).toEqual([]);
+  });
+
+  test("loads the illustration's legend from its own host, not the partner's", async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-5357801`);
+    await expect(
+      page.locator('#diagram reactome-diagram-view cr-ehld #ehld svg').first()
+    ).toBeVisible({ timeout: LOAD });
+    const sources = await page
+      .locator('#diagram reactome-diagram-view cr-ehld img')
+      .evaluateAll((images) => images.map((i) => (i as HTMLImageElement).src));
+    expect(sources.length).toBeGreaterThan(0);
+    for (const src of sources) {
+      expect(src.startsWith(`${EMBED}EHLD-legend/`), src).toBe(true);
+      expect((await page.request.get(src)).status(), src).toBe(200);
+    }
   });
 });

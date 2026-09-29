@@ -49,11 +49,22 @@
         color: var(--muted);
         margin: 0 0 16px;
       }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
       label {
         display: inline-flex;
         gap: 8px;
         align-items: center;
-        margin-bottom: 12px;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 4px 8px;
       }
       select {
         font: inherit;
@@ -86,19 +97,34 @@
       <h1>Reactome pathway diagram</h1>
       <p>A live Reactome diagram on any page: zoom, pan and select as on reactome.org.</p>
 
-      <label>
-        Pathway
-        <select id="pathway">
-          <option value="R-HSA-69620">Cell Cycle Checkpoints</option>
-          <option value="R-HSA-1257604">PIP3 activates AKT signaling</option>
-          <option value="R-HSA-5693567">
-            HDR through Homologous Recombination (HRR) or Single Strand Annealing (SSA)
-          </option>
-        </select>
-      </label>
+      <div class="controls">
+        <label>
+          Pathway
+          <select id="pathway">
+            <option value="R-HSA-69620">Cell Cycle Checkpoints</option>
+            <option value="R-HSA-1257604">PIP3 activates AKT signaling</option>
+            <option value="R-HSA-5693567">
+              HDR through Homologous Recombination (HRR) or Single Strand Annealing (SSA)
+            </option>
+          </select>
+        </label>
+        <label>
+          Flag
+          <input id="flag" placeholder="a gene, e.g. CHEK1" size="16" />
+        </label>
+        <label>
+          Theme
+          <select id="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <button type="button" id="clear">Clear selection</button>
+      </div>
 
       <reactome-diagram id="diagram" pathway="R-HSA-69620"></reactome-diagram>
       <div id="status" role="status"></div>
+      <div id="selection"></div>
 
       <h2>On your page</h2>
       <pre><code id="snippet"></code></pre>
@@ -110,6 +136,9 @@
         var picker = document.getElementById('pathway');
         var status = document.getElementById('status');
         var snippet = document.getElementById('snippet');
+        var flag = document.getElementById('flag');
+        var theme = document.getElementById('theme');
+        var selection = document.getElementById('selection');
         // Where this page was loaded from, so the snippet names the right host.
         var base = location.href.replace(/[^/]*$/, '');
 
@@ -130,6 +159,22 @@
         });
         diagram.addEventListener('diagramloaded', function (event) {
           status.textContent = 'Showing ' + event.detail.pathway + '.';
+        });
+        flag.addEventListener('change', function () {
+          diagram.flag = flag.value.trim() || null;
+        });
+        theme.addEventListener('change', function () {
+          diagram.theme = theme.value;
+        });
+        document.getElementById('clear').addEventListener('click', function () {
+          diagram.resetSelection();
+        });
+        diagram.addEventListener('entityselected', function (event) {
+          var d = event.detail;
+          selection.textContent = d.id ? 'Selected: ' + d.name + ' (' + d.id + ')' : '';
+        });
+        diagram.addEventListener('flagcleared', function () {
+          flag.value = '';
         });
         diagram.addEventListener('diagramerror', function (event) {
           status.textContent = event.detail.pathway + ' could not be shown.';

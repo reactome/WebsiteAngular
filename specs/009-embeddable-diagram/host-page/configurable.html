@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>A diagram chosen by the address</title>
+    <title>A diagram configured by the address</title>
     <script>
       window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
       document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
@@ -12,7 +12,13 @@
     <script>
       const el = document.createElement('reactome-diagram');
       el.id = 'diagram';
-      el.setAttribute('pathway', new URLSearchParams(location.search).get('pathway') || 'R-HSA-69620');
+      // Every parameter but `embed` becomes an attribute of the element, as it
+      // would be written in a partner's markup.
+      const params = new URLSearchParams(location.search);
+      el.setAttribute('pathway', params.get('pathway') || 'R-HSA-69620');
+      for (const [name, value] of params) {
+        if (name !== 'embed' && name !== 'pathway') el.setAttribute(name, value);
+      }
       el.style.cssText = 'width: 700px; height: 420px';
       document.body.appendChild(el);
     </script>

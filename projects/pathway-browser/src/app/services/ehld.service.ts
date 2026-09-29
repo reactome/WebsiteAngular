@@ -1,4 +1,4 @@
-import { computed, ElementRef, Injectable, inject } from '@angular/core';
+import { computed, ElementRef, Injectable, InjectionToken, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import type { Analysis } from '../model/analysis.model';
@@ -20,6 +20,16 @@ export interface LegendGroup {
   items: LegendItem[];
 }
 
+/**
+ * Where the illustration legend's arrow images are: relative on the site, and
+ * absolute in an embedded diagram (spec 009), where a relative path would
+ * resolve against the partner's page.
+ */
+export const EHLD_LEGEND_BASE = new InjectionToken<string>('EHLD_LEGEND_BASE', {
+  providedIn: 'root',
+  factory: () => 'assets/EHLD-legend/',
+});
+
 @Injectable({
   providedIn: 'root',
 })
@@ -39,17 +49,19 @@ export class EhldService {
   analysisInfoContainer = 'analysis-info-container';
   pattern = 'pattern-';
 
+  private readonly legendBase = inject(EHLD_LEGEND_BASE);
+
   legendItems: LegendGroup[] = [
     {
       type: 'Arrow Type',
       items: [
-        { name: 'Indication', src: 'assets/EHLD-legend/R-ICO-012345.svg', alt: 'indication arrow' },
-        { name: 'Motion', src: 'assets/EHLD-legend/R-ICO-012347.svg', alt: 'motion arrow' },
-        { name: 'Process', src: 'assets/EHLD-legend/R-ICO-012348.svg', alt: 'process arrow' },
-        { name: 'Inhibition', src: 'assets/EHLD-legend/R-ICO-012346.svg', alt: 'inhibition arrow' },
+        { name: 'Indication', src: `${this.legendBase}R-ICO-012345.svg`, alt: 'indication arrow' },
+        { name: 'Motion', src: `${this.legendBase}R-ICO-012347.svg`, alt: 'motion arrow' },
+        { name: 'Process', src: `${this.legendBase}R-ICO-012348.svg`, alt: 'process arrow' },
+        { name: 'Inhibition', src: `${this.legendBase}R-ICO-012346.svg`, alt: 'inhibition arrow' },
         {
           name: 'Transformation',
-          src: 'assets/EHLD-legend/R-ICO-012349.svg',
+          src: `${this.legendBase}R-ICO-012349.svg`,
           alt: 'transformation arrow',
         },
       ],
@@ -59,12 +71,12 @@ export class EhldService {
       items: [
         {
           name: 'Not happening',
-          src: 'assets/EHLD-legend/R-ICO-012339.svg',
+          src: `${this.legendBase}R-ICO-012339.svg`,
           alt: 'not happening arrow',
         },
         {
           name: 'Disease related',
-          src: 'assets/EHLD-legend/R-ICO-012342.svg',
+          src: `${this.legendBase}R-ICO-012342.svg`,
           alt: 'disease-related arrow',
         },
       ],
