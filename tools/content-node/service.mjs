@@ -788,6 +788,21 @@ export function app() {
   const server = express();
   server.disable('x-powered-by');
 
+  // Readable from any origin, as Java's ContentService is: pages on other sites
+  // read it -- the embeddable diagram (spec 009) asks for the species list from
+  // a partner's page. The ported endpoints matched Java's bodies byte for byte
+  // and still broke that, by leaving this header out. On every answer, errors
+  // included, so a page elsewhere can read that a request failed; and a
+  // preflight is answered the way Java answers it.
+  server.use('/ContentService', (request, response, next) => {
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    if (request.method !== 'OPTIONS') return next();
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.setHeader('Access-Control-Max-Age', '1');
+    response.sendStatus(200);
+  });
+
   server.get('/health', async (_request, response) => {
     // The release this process is holding, which is the one thing here that can
     // be wrong without anything looking wrong. Caches live for the life of the
