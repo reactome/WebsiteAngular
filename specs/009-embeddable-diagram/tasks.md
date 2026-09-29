@@ -226,8 +226,9 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 **Goal**: the image addresses and old-form links partners use keep working, guarded by tests.
 
-- [ ] T037 [US4] Look up a real **reaction** stId and a real **pathway** stId in the local backend. R-HSA-109582 is a pathway, and the reaction exporter returned 400 for it. Record them.
-- [ ] T038 [US4] Write `e2e/partner-links.spec.ts`. Against the e2e server:
+- [x] T037 [US4] Look up a real **reaction** stId and a real **pathway** stId in the local backend. R-HSA-109582 is a pathway, and the reaction exporter returned 400 for it. Record them.
+  - **As built**: reaction R-HSA-69891 (Phosphorylation and activation of CHEK2 by ATM); pathway R-HSA-2206280 (MPS IX - Natowicz syndrome), whose exports (~450 KB for all three formats) are small enough to record. The exporters go through the ContentService proxy to Java, not the render service, so the tests replay in CI and need no skips.
+- [x] T038 [US4] Write `e2e/partner-links.spec.ts`. Against the e2e server:
   - `/ContentService/exporter/reaction/{reaction}.svg` and `.png`, and `/ContentService/exporter/diagram/{pathway}.svg`, `.png` and `.jpg`, each return that image type. Check magic bytes, not status alone (constitution I). Where the render service is needed, reuse `renderServiceAvailable()` so it runs live in preflight and skips in CI, and add the skips to `e2e/expected-skips.json` with reasons.
   - `/PathwayBrowser/#/{pathway}` opens that pathway. Reuse `legacy-links.spec` patterns.
 
