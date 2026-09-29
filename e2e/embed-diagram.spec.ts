@@ -377,6 +377,15 @@ test.describe('the embeddable diagram', () => {
       }
       throw new Error(`the diagram on ${url} never stopped changing`);
     };
+    // The web fonts first. The diagram fits itself to its labels as soon as it
+    // is drawn, and a label measured before Roboto has arrived is a different
+    // width: on a cold cache the first page was framed differently from the
+    // second, which found the fonts cached -- 40,000 pixels apart on a CI
+    // runner, and the same locally with the fonts held back. Loaded once and
+    // thrown away, both pages below draw with the fonts already there.
+    await page.goto(`${HOST}/plain.html`);
+    await drawn(page);
+    await page.evaluate(() => document.fonts.ready);
     // plain.html is hostile.html without its stylesheet: the same layout, so
     // any difference is the styles reaching in.
     const plain = await shot(`${HOST}/plain.html`);
