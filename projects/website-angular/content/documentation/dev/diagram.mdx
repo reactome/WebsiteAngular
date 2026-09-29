@@ -64,10 +64,19 @@ diagram.pathway = 'R-HSA-1257604';
 diagram.flag = 'AKT1';
 ```
 
-In React (19 or later), the element is used like any other; properties and events work directly:
+In React, the element is used like any other tag. Give it `pathway` from state, and listen for its events through a ref — this works in React 18 and 19 alike:
 
 ```jsx
-<reactome-diagram pathway={stId} flag={gene} style={{ width: '100%', height: 600 }} />
+function PathwayDiagram({ stId, onLoaded }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const element = ref.current;
+    const handler = (event) => onLoaded(event.detail.pathway);
+    element.addEventListener('diagramloaded', handler);
+    return () => element.removeEventListener('diagramloaded', handler);
+  }, [onLoaded]);
+  return <reactome-diagram ref={ref} pathway={stId} style={{ width: '100%', height: 600 }} />;
+}
 ```
 
 Load the script once, anywhere on the page. Loading it more than once is harmless.
