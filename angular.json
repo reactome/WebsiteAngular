@@ -592,6 +592,94 @@
           }
         }
       }
+    },
+    "reactome-diagram-element": {
+      "projectType": "application",
+      "root": "projects/reactome-diagram-element",
+      "sourceRoot": "projects/reactome-diagram-element/src",
+      "prefix": "reactome",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/reactome-diagram",
+            "browser": "projects/reactome-diagram-element/src/main.ts",
+            "index": false,
+            "polyfills": [],
+            "tsConfig": "projects/reactome-diagram-element/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "styles": [],
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules/", "dist/"]
+            },
+            "outputHashing": "none",
+            "namedChunks": false,
+            "crossOrigin": "anonymous",
+            "assets": [
+              {
+                "glob": "**/*.{gif,webm,svg,png}",
+                "input": "dist/reactome-cytoscape-style/assets",
+                "output": "/"
+              },
+              {
+                "glob": "reactome-diagram.js",
+                "input": "projects/reactome-diagram-element/src/loader",
+                "output": "/"
+              },
+              {
+                "glob": "demo.html",
+                "input": "projects/reactome-diagram-element",
+                "output": "/"
+              }
+            ],
+            "allowedCommonJsDependencies": [
+              "cytoscape",
+              "cytoscape-fcose",
+              "lodash",
+              "svgcanvas",
+              "svg-pan-zoom"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "define": {
+                "APP_ENV": "\"embed-production\""
+              },
+              "deployUrl": "https://reactome.org/embed/diagram/v1/",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.65MB",
+                  "maximumError": "1.8MB"
+                }
+              ]
+            },
+            "beta": {
+              "define": {
+                "APP_ENV": "\"embed-beta\""
+              },
+              "deployUrl": "https://beta.reactome.org/embed/diagram/v1/",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.65MB",
+                  "maximumError": "1.8MB"
+                }
+              ]
+            },
+            "development": {
+              "define": {
+                "APP_ENV": "\"embed-development\""
+              },
+              "deployUrl": "http://localhost:4340/",
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
     }
   },
   "cli": {

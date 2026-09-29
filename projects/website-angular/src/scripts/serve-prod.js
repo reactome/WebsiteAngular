@@ -201,6 +201,41 @@ async function surveyServices() {
   return Object.fromEntries(entries);
 }
 
+/**
+ * The embeddable diagram (specs/009-embeddable-diagram), loaded by other sites.
+ *
+ * Its files are fetched from the partner's origin -- main.js as a module script,
+ * which the browser refuses without the CORS header -- and they are replaced in
+ * place on each release under the same names, so its scripts revalidate rather
+ * than being cached as immutable like the site's hashed chunks. A file it does
+ * not have is a 404: the site's index.html with a 200, which is what the
+ * catch-all below would send, is a page a partner's browser would try to run.
+ */
+const EMBED_DIST = process.env.EMBED_DIST_DIR
+  ? path.resolve(process.env.EMBED_DIST_DIR)
+  : path.join(ROOT, 'dist/reactome-diagram/browser');
+const embedHeaders = (res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+};
+app.use(
+  '/embed/diagram/v1',
+  express.static(EMBED_DIST, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      embedHeaders(res);
+      res.setHeader(
+        'Cache-Control',
+        /\.(js|html)$/.test(filePath) ? 'no-cache' : 'public, max-age=86400'
+      );
+    },
+  }),
+  (_req, res) => {
+    embedHeaders(res);
+    res.status(404).type('text/plain').send('Not found');
+  }
+);
+
 // Hashed build artefacts are immutable; index.html must never be cached or a
 // redeploy leaves browsers pinned to chunks that no longer exist.
 app.use(

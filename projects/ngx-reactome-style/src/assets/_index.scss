@@ -4,8 +4,10 @@
 @use 'theme-colors' as colors;
 @use 'variables';
 
-@mixin theme() {
-  :root {
+// The selectors are parameters for the embeddable diagram, whose theme lives on
+// its shadow host (:host, :host(.dark)) rather than on the partner's page.
+@mixin theme($root: ':root', $dark: 'body.dark', $vars: 'body') {
+  #{$root} {
     color-scheme: light;
     @include mat.theme(
       (
@@ -21,7 +23,7 @@
     font: var(--mat-sys-body-large);
   }
 
-  body.dark {
+  #{$dark} {
     color-scheme: dark;
     @include mat.theme(
       (
@@ -39,5 +41,5 @@
   .high-contrast {
     @include colors.high-contrast-overrides('color-scheme');
   }
-  @include variables.variables();
+  @include variables.variables($vars);
 }

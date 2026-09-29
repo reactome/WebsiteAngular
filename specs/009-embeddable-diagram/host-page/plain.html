@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>The same page, without them</title>
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>Gene X: pathways</h1>
+    <p>Content the partner owns, above the diagram.</p>
+    <!-- Fixed at the same whole-pixel position as in plain.html, so the two pages
+         are compared on the diagram alone. -->
+    <reactome-diagram
+      id="diagram"
+      pathway="R-HSA-69620"
+      style="position: absolute; top: 200px; left: 20px; width: 900px; height: 520px"
+    ></reactome-diagram>
+  </body>
+</html>

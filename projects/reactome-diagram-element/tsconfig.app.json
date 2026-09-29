@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../out-tsc/reactome-diagram-element",
+    "types": []
+  },
+  "files": ["src/main.ts"],
+  "include": ["../pathway-browser/src/**/*.d.ts", "../../src/**/*.d.ts"]
+}

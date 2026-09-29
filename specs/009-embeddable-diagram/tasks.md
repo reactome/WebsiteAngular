@@ -43,11 +43,12 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   Record the result in `research.md` R5, replacing "unverified". **If it fails**, stop and revise the plan: the alternative is emulated encapsulation with a prefixed host class. Delete the spike before the Story 1 PR.
 
-- [ ] T005 Extract a `PathwayState` abstract class token in `PB/services/pathway-state.ts`. It carries the read and write surface the diagram chain uses: the `pathwayId`, `select`, `flag`, `flagInteractors`, `analysis`, `overlay`, `interactorScore`, `speciesFilter`, … signals, plus `navigateTo`, `settle` and `ensureStId`, taken from research R1's list.
+- [x] T005 Extract a `PathwayState` abstract class token in `PB/services/pathway-state.ts`. It carries the read and write surface the diagram chain uses: the `pathwayId`, `select`, `flag`, `flagInteractors`, `analysis`, `overlay`, `interactorScore`, `speciesFilter`, … signals, plus `navigateTo`, `settle` and `ensureStId`, taken from research R1's list.
   - `UrlStateService` extends or implements it, and is provided as `{provide: PathwayState, useExisting: UrlStateService}` where the app provides it.
   - Change the diagram chain's `inject(UrlStateService)` to `inject(PathwayState)` **only** where the embed needs it: `diagram.component.ts`, `DataStateService`, `AnalysisService`, `InteractorService`, entity popup.
   - Gate: unit tests, `check:types`, the app build and the full e2e suite all pass unchanged. The site behaves identically.
-- [ ] T006 In `PB/diagram/diagram.component.ts`:
+  - **As built**: no `PathwayState` token. `MemoryState` implements `Pick<UrlStateService, keyof UrlStateService>`, built from the same `createStateValues()` factory, and is provided as `UrlStateService` via `useExisting`. The compiler then holds the two in step without touching the site's injection points.
+- [x] T006 In `PB/diagram/diagram.component.ts`:
   - inject `Router` with `{optional: true}` and treat its absence as `isInitialLoad = true` (:148);
   - add a `diagramLoaded = output<string>()`, emitted when `cy` is ready after `loadElvDiagram` (:824) with the stable id drawn.
 
@@ -63,13 +64,13 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ### Tests first (each written and shown failing before its implementation)
 
-- [ ] T007 [US1] Create host pages in `specs/009-embeddable-diagram/host-page/`:
+- [x] T007 [US1] Create host pages in `specs/009-embeddable-diagram/host-page/`:
   - `index.html`: the classic loader and one `<reactome-diagram pathway="R-HSA-69620">` (look the id up in the local backend and use a real pathway that has a diagram and no EHLD);
   - `two.html`: two elements, different pathways;
   - `hostile.html`: host CSS `* { font-family: serif !important; color: red !important; background: yellow !important; }`, `div { border: 3px solid lime !important }` and `canvas { opacity: .2 !important }`;
   - `twice.html`: the loader included twice.
-- [ ] T008 [US1] Add a static server helper to `e2e/support/`. It's a node script, no new dependency. It serves `dist/reactome-diagram/browser` on port 4340 with `Access-Control-Allow-Origin: *` and the host pages on 4341, and is started as extra Playwright `webServer` entries only for `embed-diagram.spec.ts` (or a dedicated project). The spec asserts `new URL(page.url()).origin !== embed origin !== data origin` before anything else (constitution I).
-- [ ] T009 [US1] Write `e2e/embed-diagram.spec.ts` "draws and responds", on `index.html`. It checks:
+- [x] T008 [US1] Add a static server helper to `e2e/support/`. It's a node script, no new dependency. It serves `dist/reactome-diagram/browser` on port 4340 with `Access-Control-Allow-Origin: *` and the host pages on 4341, and is started as extra Playwright `webServer` entries only for `embed-diagram.spec.ts` (or a dedicated project). The spec asserts `new URL(page.url()).origin !== embed origin !== data origin` before anything else (constitution I).
+- [x] T009 [US1] Write `e2e/embed-diagram.spec.ts` "draws and responds", on `index.html`. It checks:
   - the element's shadow root contains a cytoscape canvas;
   - the diagram draws (the element's `diagramloaded` event, with the stable id);
   - wheel zoom changes `cy.zoom()`, drag pans, clicking a node selects it.
@@ -78,11 +79,11 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   Also "click after the host page scrolls": scroll the host page after the first interaction, then click a second node. It must select that node. **Red** without T015's document scroll listener: the spike (research R5) reproduced it, where the click selected nothing.
 
-- [ ] T010 [P] [US1] Spec "leaves the host alone": capture `location.href`, `history.length`, `document.title`, `scrollY`, `localStorage` keys and `document.body.className`/`style.cssText`, before and after drawing, zooming, selecting and double-clicking a sub-pathway. All must be identical.
+- [x] T010 [P] [US1] Spec "leaves the host alone": capture `location.href`, `history.length`, `document.title`, `scrollY`, `localStorage` keys and `document.body.className`/`style.cssText`, before and after drawing, zooming, selecting and double-clicking a sub-pathway. All must be identical.
   - **Red**: show it failing against a deliberately wrong build that provides the real `UrlStateService` and `DarkService`. Record the failing assertion in the PR.
-- [ ] T011 [P] [US1] Spec "styles do not cross": screenshot the element on `index.html` and on `hostile.html` and require them pixel-identical. Also check that the host page's own `h1` keeps its colour after the element loads (nothing leaks out).
+- [x] T011 [P] [US1] Spec "styles do not cross": screenshot the element on `index.html` and on `hostile.html` and require them pixel-identical. Also check that the host page's own `h1` keeps its colour after the element loads (nothing leaks out).
   - **Red**: against a build with `ViewEncapsulation.Emulated` on the root.
-- [ ] T012 [P] [US1] Specs:
+- [x] T012 [P] [US1] Specs:
   - "two diagrams are independent", on `two.html`: selecting in one leaves the other unselected, and each emits its own events.
   - "remove and re-add": remove the element, add it back, and it draws again with no console errors (the harness's Angular-error guard applies).
   - "loaded twice is harmless", on `twice.html`: no `customElements.define` error, one registration.
@@ -90,21 +91,22 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ### Implementation
 
-- [ ] T013 [US1] Write `EL/memory-state.ts`, a `MemoryState` that extends `PathwayState`:
+- [x] T013 [US1] Write `EL/memory-state.ts`, a `MemoryState` that extends `PathwayState`:
   - it holds signals only;
   - `navigateTo(id)` sets `pathwayId` (and emits nothing to history);
   - `settle()` resolves;
   - `ensureStId` normalises a dbId via ContentService (constitution IV).
+  - **As built**: see T005. `navigateTo` sets `pathwayId` and clears `select`.
 
   Comment: what the real one does on a host page (it takes over the URL).
 
-- [ ] T014 [P] [US1] Write `EL/embed-providers.ts` with:
+- [x] T014 [P] [US1] Write `EL/embed-providers.ts` with:
   - `{provide: PathwayState, useClass: MemoryState}`;
   - a fixed `DarkService` subclass that never touches `localStorage` or `body` (R1), reading the `theme` attribute later;
   - a router-free `SpeciesService`, modelled on the website's `DetailSpeciesService`;
   - `AnalysisService`'s style source pointed at the element, not `document.body` (research R5, `analysis.service.ts:242`), via a provider or setter;
   - `EL/shadow-overlay-container.ts` provided as `OverlayContainer`, appending into the element's shadow root.
-- [ ] T015 [US1] Write `EL/diagram-element.component.ts`, with `ViewEncapsulation.ShadowDom`. It:
+- [x] T015 [US1] Write `EL/diagram-element.component.ts`, with `ViewEncapsulation.ShadowDom`. It:
   - takes inputs `pathway`, and later `select`, `flag`, `analysisToken`, `theme` (attributes via `createCustomElement` input mapping);
   - provides `embedProviders` at component level (**one injector per element**, which satisfies T012);
   - pushes `pathway` into `MemoryState.pathwayId`;
@@ -114,31 +116,34 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - shows an in-box message and fires `diagramerror` on load failure;
   - defaults to 800×500 when unsized.
   - listens for `scroll` on `document` (`{capture: true, passive: true}`) and calls `cy.resize()`, at most once per animation frame, removed on destroy. Cytoscape's own ancestor scroll listeners stop at the shadow root (research R5), so without this a click after the page scrolls lands in the wrong place. The comment says so.
-- [ ] T016 [P] [US1] Write `EL/theme.scss`: the `ngx-reactome-style` theme tokens re-emitted on `:host` and `:host(.dark)`, plus sizing (`:host{display:block;contain:content}`). **Not** the site's global `styles.scss`, which sets `body{overflow:hidden}` (R5).
-- [ ] T017 [US1] Write `EL/main.ts`:
+- [x] T016 [P] [US1] Write `EL/theme.scss`: the `ngx-reactome-style` theme tokens re-emitted on `:host` and `:host(.dark)`, plus sizing (`:host{display:block;contain:content}`). **Not** the site's global `styles.scss`, which sets `body{overflow:hidden}` (R5).
+  - **As built**: in `EL/diagram-element.component.scss`; `ngx-reactome-style`'s theme mixin takes the selectors as parameters, and the diagram controls' styles are a shared `diagram-controls` mixin (site CSS verified byte-identical).
+- [x] T017 [US1] Write `EL/main.ts`:
   - `createApplication({providers: [provideZonelessChangeDetection(), provideHttpClient()]})`;
   - register the icon font alias `symbols`;
   - `if (!customElements.get('reactome-diagram')) customElements.define('reactome-diagram', createCustomElement(DiagramElementComponent, {injector}))`.
-- [ ] T018 [US1] Write `EL/loader/reactome-diagram.js`, hand-written ES2017 with no imports and under 3 KB. It:
+- [x] T018 [US1] Write `EL/loader/reactome-diagram.js`, hand-written ES2017 with no imports and under 3 KB. It:
   - derives `base` from `document.currentScript.src`;
   - once only, adds `<link>`s for Roboto, Material Symbols Rounded and Material Icons (the URLs from `src/index.html`) and `base+'styles.css'`, then `<script type="module" src=base+'main.js' crossorigin>`;
   - guards against double inclusion with a `window.__reactomeDiagramLoader` flag.
 
   Its comment carries the failure: a classic tag can't load the builder's chunked module output (R4).
 
-- [ ] T019 [US1] Run `npx ng build reactome-diagram-element --configuration production`. Record in the PR:
+- [x] T019 [US1] Run `npx ng build reactome-diagram-element --configuration production`. Record in the PR:
   - the real size, gzipped, from the output files;
   - that it's under a third of the `reactome` initial bundle (SC-004);
   - that the budget error fires if the budget is set below the actual size (red proof for the budget).
-- [ ] T020 [US1] Add a CI build to `.github/workflows/tests.yml` (unit job, after `build:libs`): `npx ng build reactome-diagram-element --configuration production`. Add the same build as a step in `scripts/preflight.sh`, in full mode, to a temp output path.
+  - **Result**: 1.57 MB raw / 394 KB gzipped, about 37% of the site: SC-004 is **missed**. Budget set at warn 1.65 MB / error 1.8 MB; slimming is #356.
+- [x] T020 [US1] Add a CI build to `.github/workflows/tests.yml` (unit job, after `build:libs`): `npx ng build reactome-diagram-element --configuration production`. Add the same build as a step in `scripts/preflight.sh`, in full mode, to a temp output path.
   - **Red**: introduce a type error in `EL/diagram-element.component.ts` on a throwaway commit, and show preflight and CI both fail. Revert.
-- [ ] T021 [US1] Serve on beta:
+- [x] T021 [US1] Serve on beta:
   - `projects/website-angular/src/scripts/serve-prod.js` serves `dist/reactome-diagram/browser` at `/embed/diagram/v1/`, with `Access-Control-Allow-Origin: *`, `Cache-Control: no-cache` for `*.js`, and long cache for media;
   - `deploy/nginx` passes `/embed/` to serve-prod;
   - `npm run build:beta` also builds the embed with `--configuration beta`;
   - rebuild with `docker compose build nginx`, then `docker compose run --rm --no-deps --entrypoint nginx nginx -t`, then `docker compose up -d --no-deps nginx`.
-- [ ] T022 [US1] Write `projects/reactome-diagram-element/demo.html`: the partner-facing demo, a plain page using the classic loader and one element, with a pathway picker changing the `pathway` attribute. It's copied to the output root.
-- [ ] T023 [US1] Run the full gates:
+  - **As built**: nginx needed no change: `/embed/` already reaches serve-prod through `location /`. The route answers a missing file with a plain 404, not the site's page. Deploy is `~/rebuild-beta.sh` plus a serve-prod restart.
+- [x] T022 [US1] Write `projects/reactome-diagram-element/demo.html`: the partner-facing demo, a plain page using the classic loader and one element, with a pathway picker changing the `pathway` attribute. It's copied to the output root.
+- [x] T023 [US1] Run the full gates:
   - unit tests, types, lint (per-rule ratchet unchanged), dead code, format, `check:har`;
   - the app build and the embed build;
   - the full e2e suite, plus `embed-diagram.spec.ts` (T009–T012 all green, each red proof recorded).

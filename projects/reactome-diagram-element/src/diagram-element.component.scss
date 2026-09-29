@@ -1,0 +1,55 @@
+// The site's theme, on the shadow host instead of :root/body -- the partner's
+// page has neither our tokens nor our body rules, and must not get them. Custom
+// properties inherit into the shadow root, and the diagram's style library
+// reads them from its container (getComputedStyle), so tokens here reach it.
+@use 'ngx-reactome-style';
+@use 'reactome-cytoscape-style/assets' as reactome-cytoscape-style;
+@use '../../pathway-browser/src/app/diagram/controls' as diagram-controls;
+
+@include ngx-reactome-style.theme($root: ':host', $dark: ':host(.dark)', $vars: ':host');
+
+// The diagram's own global rules (loader, structures), scoped to this root.
+@include reactome-cytoscape-style.configure-diagrams();
+@include diagram-controls.diagram-controls();
+
+:host {
+  display: block;
+  position: relative;
+  // Fills the <reactome-diagram> the partner placed and sized.
+  width: 100%;
+  height: 100%;
+  contain: content;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--on-surface);
+}
+
+.frame {
+  // Inherited properties -- colour, font, line-height and the rest -- flow into
+  // a shadow root from the element itself, and the element is in the partner's
+  // document, where any `* { color: … }` of theirs applies to it. Resetting them
+  // here, rather than on :host, cuts that off without taking away the partner's
+  // own control of the element's box (width, height, margin).
+  all: initial;
+  position: absolute;
+  inset: 0;
+  display: block;
+  font: var(--mat-sys-body-large);
+  color: var(--on-surface);
+  background: var(--surface);
+}
+
+cr-diagram {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font: var(--mat-sys-body-large);
+}

@@ -19,7 +19,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { CONTENT_SERVICE } from '../../../environments/environment';
 import { SchemaClasses } from '../../constants/constants';
-import { PropertyType } from '../../details/tabs/molecule-tab/molecule-tab.component';
+import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
 

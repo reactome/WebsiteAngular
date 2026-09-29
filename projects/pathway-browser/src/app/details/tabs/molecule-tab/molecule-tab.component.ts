@@ -39,13 +39,6 @@ export type MoleculeData = {
   highlight: boolean;
 };
 
-export enum PropertyType {
-  PROTEINS = 'Proteins',
-  CHEMICAL_COMPOUNDS = 'Chemical Compounds',
-  SEQUENCES = 'DNA/RNA',
-  DRUG = 'Drugs',
-  OTHERS = 'Others',
-}
 // molecule type from backend when sending enhanced query
 export enum MoleculeType {
   PROTEIN = 'Protein', //Protein

@@ -106,6 +106,8 @@ if [ "$mode" != "fast" ]; then
   if app_build=$(mktemp -d) && [ -n "$app_build" ]; then
     scratch+=("$app_build")
     step "app build" npm run build -- --output-path "$app_build"
+    # The embeddable diagram is built by nothing else (spec 009), with its budget.
+    step "embed build" npm run build:embed -- --output-path "$app_build/embed"
   else
     printf '  %-34s FAILED\n' "app build"
     echo "      could not make a directory to build into"
