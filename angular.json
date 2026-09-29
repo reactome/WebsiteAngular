@@ -630,6 +630,11 @@
                 "glob": "demo.html",
                 "input": "projects/reactome-diagram-element",
                 "output": "/"
+              },
+              {
+                "glob": "*.svg",
+                "input": "projects/pathway-browser/src/assets/EHLD-legend",
+                "output": "EHLD-legend"
               }
             ],
             "allowedCommonJsDependencies": [

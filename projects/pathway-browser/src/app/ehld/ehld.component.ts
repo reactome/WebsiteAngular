@@ -7,6 +7,7 @@ import {
   inject,
   linkedSignal,
   model,
+  output,
   OnDestroy,
   signal,
   untracked,
@@ -58,6 +59,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   readonly hovering = signal(false);
   /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
   readonly drawError = signal<string | null>(null);
+  /** The illustration is on screen, for its pathway id. */
+  readonly illustrationLoaded = output<string>();
+  /** It could not be shown: its file failed to arrive, or failed to draw. */
+  readonly illustrationFailed = output<string>();
 
   /**
    * Whether the pathway on screen is known to have an illustration.
@@ -154,7 +159,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.stIdToSVGGElement.set(this.ehldService.setStIdToSVGGElementMap(this.ehldContainer()));
         this.addEventListenerToSvg();
         this.initializePanAndZoom();
+        this.illustrationLoaded.emit(untracked(this.pathwayId));
       }
+    });
+    effect(() => {
+      if (this.loadError() || this.drawError())
+        this.illustrationFailed.emit(untracked(this.pathwayId));
     });
     // A file that fails to arrive must not leave the previous pathway's drawing
     // on screen under a message saying this one could not be loaded.

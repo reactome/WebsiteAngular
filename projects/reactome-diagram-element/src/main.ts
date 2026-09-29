@@ -6,15 +6,28 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 import { createCustomElement } from '@angular/elements';
 import { MatIconRegistry } from '@angular/material/icon';
-import { DiagramElementComponent } from './diagram-element.component';
+import {
+  CLEAR_SELECTION_EVENT,
+  DiagramElementComponent,
+  FIT_EVENT,
+} from './diagram-element.component';
 import { rootGuards, ShadowRootsOnlyStylesHost } from './embed-providers';
+import { EHLD_LEGEND_BASE } from '../../pathway-browser/src/app/services/ehld.service';
 
 /** The element partners write. */
 const TAG = 'reactome-diagram';
 /** The Angular view it holds: an implementation detail, made afresh when needed. */
 const VIEW = 'reactome-diagram-view';
-/** Attributes passed through to the view (the contract's attribute table). */
-const ATTRIBUTES = ['pathway'];
+/** The contract's attributes, each with its property, passed through to the view. */
+const PROPERTIES = {
+  pathway: 'pathway',
+  select: 'select',
+  flag: 'flag',
+  analysisToken: 'analysis-token',
+  analysisResource: 'analysis-resource',
+  theme: 'theme',
+} as const;
+const ATTRIBUTES: string[] = Object.values(PROPERTIES);
 
 /**
  * `<reactome-diagram>`: what a partner puts on their page.
@@ -54,7 +67,7 @@ class ReactomeDiagram extends HTMLElement {
   connectedCallback() {
     // A property set before this code loaded is an own property of the element
     // that hides the accessor below: take it, and set it through the accessor.
-    for (const name of ATTRIBUTES) {
+    for (const name of Object.keys(PROPERTIES)) {
       if (Object.prototype.hasOwnProperty.call(this, name)) {
         const value = (this as Record<string, unknown>)[name];
         delete (this as Record<string, unknown>)[name];
@@ -90,13 +103,36 @@ class ReactomeDiagram extends HTMLElement {
     else this.view.setAttribute(name, value);
   }
 
-  get pathway(): string | null {
-    return this.getAttribute('pathway');
+  /** Fits the whole diagram in view. */
+  fit() {
+    this.view?.dispatchEvent(new Event(FIT_EVENT));
   }
-  set pathway(value: string | null) {
-    if (value === null) this.removeAttribute('pathway');
-    else this.setAttribute('pathway', value);
+  /** Clears the selection: the partner's, and one the reader clicked. */
+  resetSelection() {
+    this.removeAttribute(PROPERTIES.select);
+    this.view?.dispatchEvent(new Event(CLEAR_SELECTION_EVENT));
   }
+  /** Each the same as removing its attribute. */
+  resetFlag() {
+    this.removeAttribute(PROPERTIES.flag);
+  }
+  resetAnalysis() {
+    this.removeAttribute(PROPERTIES.analysisToken);
+  }
+}
+
+// Setting a property is the same as setting its attribute; null removes it.
+for (const [property, attribute] of Object.entries(PROPERTIES)) {
+  Object.defineProperty(ReactomeDiagram.prototype, property, {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.getAttribute(attribute);
+    },
+    set(this: HTMLElement, value: string | null) {
+      if (value === null || value === undefined) this.removeAttribute(attribute);
+      else this.setAttribute(attribute, String(value));
+    },
+  });
 }
 
 // Loading this twice -- two script tags, or a partner's bundler plus ours --
@@ -113,6 +149,8 @@ if (!customElements.get(TAG)) {
       // styles it rendered on the server are claimed by the app with that id.
       { provide: APP_ID, useValue: 'reactome-diagram' },
       { provide: SharedStylesHost, useClass: ShadowRootsOnlyStylesHost },
+      // Beside this script, wherever it was loaded from -- not the partner's page.
+      { provide: EHLD_LEGEND_BASE, useValue: new URL('EHLD-legend/', import.meta.url).href },
       ...rootGuards,
     ],
   })

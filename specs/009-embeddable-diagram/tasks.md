@@ -169,23 +169,26 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ### Tests first
 
-- [ ] T025 [P] [US2] Spec "flag": `flag="<a gene in the pathway>"` flags the same elements as the Pathway Browser's `?flag=` for that pathway and term. Compare the element's flagged element ids with the site's, same recording. Clearing the attribute unflags and fires `flagcleared`. Red before T029.
-- [ ] T026 [P] [US2] Spec "select": `select="<an entity stId in the diagram>"` selects it and brings it into view. Clicking another fires `entityselected` with that stable id. Clearing it deselects. Red before T029.
-- [ ] T027 [P] [US2] Spec "analysis": `analysis-token` set to a token recorded in an existing analysis-results HAR (read only; submit nothing) shows the overlay, as the site does for the same token. Removing it clears the overlay and fires `analysiscleared`. Red before T029.
-- [ ] T028 [P] [US2] Specs:
+- [x] T025 [P] [US2] Spec "flag": `flag="<a gene in the pathway>"` flags the same elements as the Pathway Browser's `?flag=` for that pathway and term. Compare the element's flagged element ids with the site's, same recording. Clearing the attribute unflags and fires `flagcleared`. Red before T029.
+- [x] T026 [P] [US2] Spec "select": `select="<an entity stId in the diagram>"` selects it and brings it into view. Clicking another fires `entityselected` with that stable id. Clearing it deselects. Red before T029.
+- [x] T027 [P] [US2] Spec "analysis": `analysis-token` set to a token recorded in an existing analysis-results HAR (read only; submit nothing) shows the overlay, as the site does for the same token. Removing it clears the overlay and fires `analysiscleared`. Red before T029.
+  - **As built**: token `MjAyNjA5MjUxNDM3NThfMTM=`, an existing local result (read only); the element's overlaid-node count equals the site's for the same token.
+- [x] T028 [P] [US2] Specs:
   - "EHLD": a top-level pathway with an illustration draws the illustration in the element, then fires `diagramloaded`.
   - "theme": `theme="dark"` switches colours, checked by pixels differing from light.
   - "dbId": `pathway="<its dbId>"` loads, and the event carries the stable id.
 
 ### Implementation
 
-- [ ] T029 [US2] In `EL/diagram-element.component.ts`:
+- [x] T029 [US2] In `EL/diagram-element.component.ts`:
   - map the `select`, `flag`, `analysisToken`/`analysisResource` and `theme` inputs to `MemoryState` (and the fixed `DarkService`);
   - add `fit()`, `resetSelection()`, `resetFlag()` and `resetAnalysis()` as element methods;
   - emit `flagcleared`/`analysiscleared` when state clears, from code or from the legend;
   - emit `entityhovered`.
   - Also: point `AnalysisService`'s style source at the element instead of `document.body` (moved from T014).
-- [ ] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
+  - **As built**: the analysis palette reads its tokens from a `STYLE_ROOT` token (the element's host in the embed, `document.body` on the site). `entityselected` reports what is selected ~20ms after a change, so a click from one entity to another is one event, not a null then the new one. Removing `select`, or `resetSelection()`, also clears a selection the reader made -- the diagram leaves the last one drawn when the state is cleared.
+- [x] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
+  - **As built**: `cr-ehld` inside a small `reactome-illustration` wrapper under `@defer`, a 92 KB lazy chunk; the wrapper gives it a stand-in SVG exporter, since the real one brings Reacfoam, a root service reading the address. The kind (diagram/illustration) holds through a pathway switch until the next answer. Legend arrows come from an `EHLD_LEGEND_BASE` token, beside main.js in the embed; the images are copied into the build.
 - [ ] T031 [US2] Run the gates and the full e2e suite. Open the PR, with review focused on state-clearing paths, event shapes against the contract, and EHLD asset URLs. CI green, merge, deploy. Verify on beta with the demo page's flag, select and theme controls. Add those controls to `demo.html` in T029.
 
 ## Phase 5: User Story 3: the old `Reactome.Diagram` interface (P2)

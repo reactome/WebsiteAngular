@@ -48,23 +48,27 @@ Setting a property is the same as setting its attribute. Removing the attribute,
 
 ## Methods
 
-| Method                                               | Effect                                                |
-| ---------------------------------------------------- | ----------------------------------------------------- |
-| `fit()`                                              | Fits the whole diagram in view.                       |
-| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. |
+| Method                                               | Effect                                                                                                                        |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `fit()`                                              | Fits the whole diagram in view.                                                                                               |
+| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. `resetSelection()` also clears a selection the reader made by clicking. |
 
 ## Events
 
 Each is a `CustomEvent`, dispatched on the element. They bubble and are composed, so they cross the shadow boundary.
 
-| Event             | `detail`                                                                     | When                                                                |
-| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `diagramloaded`   | `{ pathway: string }`                                                        | A pathway has finished drawing.                                     |
-| `diagramerror`    | `{ pathway: string, reason: 'not-found' \| 'unavailable' \| 'unsupported' }` | It couldn't be shown. The element also shows a message.             |
-| `entityselected`  | `{ id: string \| null, name: string \| null, schemaClass: string \| null }`  | The visitor selected (or deselected, with `id: null`) an entity.    |
-| `entityhovered`   | same shape                                                                   | The visitor's pointer entered (or left, with `id: null`) an entity. |
-| `flagcleared`     | `{}`                                                                         | The flag was cleared, from code or by the visitor.                  |
-| `analysiscleared` | `{}`                                                                         | The analysis overlay was cleared.                                   |
+| Event           | `detail`                                                                     | When                                                    |
+| --------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `diagramloaded` | `{ pathway: string }`                                                        | A pathway has finished drawing.                         |
+| `diagramerror`  | `{ pathway: string, reason: 'not-found' \| 'unavailable' \| 'unsupported' }` | It couldn't be shown. The element also shows a message. |
+
+Today `diagramerror` always carries `reason: 'not-found'`: the other two reasons are reserved, and a partner should treat any reason as "not shown".
+
+`entityselected` is for what the reader selects: setting `select` from code does not fire it. Clicking one entity while another is selected fires it once, for the new one.
+| `entityselected` | `{ id: string \| null, name: string \| null, schemaClass: string \| null }` | The visitor selected (or deselected, with `id: null`) an entity. |
+| `entityhovered` | same shape | The visitor's pointer entered (or left, with `id: null`) an entity. |
+| `flagcleared` | `{}` | The flag was cleared, from code or by the visitor. |
+| `analysiscleared` | `{}` | The analysis overlay was cleared. |
 
 ## Guarantees
 
