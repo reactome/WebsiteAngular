@@ -150,3 +150,45 @@ describe('what /health says about staleness', () => {
     expect((await response.json()).ok).toBe(true);
   });
 });
+
+describe('cross-origin reads', () => {
+  // Java answers every ContentService request with Access-Control-Allow-Origin:
+  // *, and pages on other sites rely on it -- the embeddable diagram (spec 009)
+  // reads the species list from a partner's page. The ported endpoints matched
+  // Java byte for byte and still broke it, by leaving the header out: the
+  // browser refused the answer before anyone saw the body.
+  const path = '/ContentService/data/species/main';
+
+  it('allows any origin to read an answer, a failure included', async () => {
+    const response = await fetch(`${base}${path}`, { headers: { Origin: 'https://example.org' } });
+    // No database here, so this is the error path: a partner's page has to be
+    // able to read that it failed, as well as what it got.
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('answers a preflight the way Java does', async () => {
+    const response = await fetch(`${base}${path}`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://example.org',
+        'Access-Control-Request-Method': 'GET',
+      },
+    });
+    expect(response.status).toBeLessThan(300);
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    expect(response.headers.get('access-control-allow-methods')).toContain('GET');
+  });
+
+  it('covers every ported endpoint', async () => {
+    // In parallel: with no database here, each one takes a while to fail.
+    const origins = await Promise.all(
+      endpoints.map(async (endpoint) => {
+        const url = `${base}${endpoint.path.replace(/\{(\w+)\}/g, 'R-HSA-69620')}`;
+        const response = await fetch(url, { headers: { Origin: 'https://example.org' } });
+        await response.arrayBuffer();
+        return [endpoint.path, response.headers.get('access-control-allow-origin')];
+      })
+    );
+    expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
+  }, 30_000);
+});
