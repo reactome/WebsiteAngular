@@ -1,5 +1,14 @@
 # Angular Elements Setup for Standalone Components
 
+> **To put a pathway diagram on another website, use `<reactome-diagram>`, not
+> this.** It is built from `projects/reactome-diagram-element` and served at
+> `/embed/diagram/v1/`; how to use it is on the site's
+> [Pathway Diagrams developer page](https://reactome.org/documentation/dev/diagram)
+> (source: `projects/website-angular/content/documentation/dev/diagram.mdx`), and
+> its contract is `specs/009-embeddable-diagram/contracts/reactome-diagram-element.md`.
+> The `<pathway-browser>` element below wraps the whole browser, router included,
+> so it reads and writes the host page's address.
+
 This setup allows you to use the pathway-browser as a standalone web component.
 
 ## Structure

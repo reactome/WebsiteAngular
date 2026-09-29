@@ -236,7 +236,8 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ## Phase 7: Close-out
 
-- [ ] T040 Write the partner embedding guide, replacing the content of `ANGULAR_ELEMENTS_SETUP.md`, or as `docs/embedding-the-diagram.md` linked from it. It covers:
+- [x] T040 Write the partner embedding guide, replacing the content of `ANGULAR_ELEMENTS_SETUP.md`, or as `docs/embedding-the-diagram.md` linked from it. It covers:
+  - **As built**: the guide is the Get Started and API sections of the site's Pathway Diagrams developer page (`content/documentation/dev/diagram.mdx`), with a gene-page example (set `pathway` from the page, flag the gene); `ANGULAR_ELEMENTS_SETUP.md` points to it. The `Reactome.Diagram` shim is mentioned as coming (Story 3).
   - both script forms;
   - the element's attributes, methods and events (from the contract);
   - the old-interface migration: change one URL;
