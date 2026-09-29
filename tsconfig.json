@@ -1,6 +1,22 @@
 /* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
   "compileOnSave": false,
+  // No include, so this project is every file under the root, and with allowJs
+  // that took in the applications' built bundles in dist/ too. The type-aware
+  // lint resolves specs and scripts against this project, so a build could
+  // move its counts: the e2e embed build added 60 no-unsafe-call warnings in
+  // files it has nothing to do with. The built libraries stay in: their
+  // imports of each other resolve through `paths`, which only applies here.
+  "exclude": [
+    "node_modules",
+    "out-tsc",
+    "dist/out-tsc",
+    "dist/e2e",
+    "dist/reactome",
+    "dist/reactome-diagram",
+    "dist/website-angular",
+    "dist/pathway-browser"
+  ],
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
