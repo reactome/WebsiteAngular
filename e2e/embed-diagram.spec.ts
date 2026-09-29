@@ -778,6 +778,13 @@ test.describe('the embeddable diagram, told what to show', () => {
       .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d))
       .toEqual([expected]);
 
+    // Clicking the empty canvas deselects, and says so.
+    const canvas = await boxOf(page);
+    await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + 6);
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d))
+      .toEqual([expected, { id: null, name: null, schemaClass: null }]);
+
     await page.evaluate(() =>
       (window as unknown as EmbedGlobals).__el('diagram').removeAttribute('select')
     );
@@ -904,5 +911,88 @@ test.describe('the embeddable diagram, told what to show', () => {
     const dark = await shot(`${HOST}/configurable.html?pathway=R-HSA-69620&theme=dark`);
     // A theme, not noise: most of the box changes colour.
     expect(await significantPixels(page, light, dark, 64)).toBeGreaterThan(100_000);
+  });
+
+  test('reports what the reader selects and deselects, with no select set', async ({ page }) => {
+    await page.goto(`${HOST}/`);
+    await drawn(page);
+    const [node] = await twoNodes(page);
+    await page.mouse.click(node.x, node.y);
+    await expect.poll(async () => (await events(page, 'entityselected')).length).toBe(1);
+    const box = await boxOf(page);
+    await page.mouse.click(box.x + box.width / 2, box.y + 6);
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d).at(-1))
+      .toEqual({ id: null, name: null, schemaClass: null });
+    expect(await events(page, 'entityselected')).toHaveLength(2);
+  });
+
+  test('applies a value again when set to the one it already has', async ({ page }) => {
+    // Cleared from inside -- the diagram's own flag banner -- the attribute
+    // still says CHEK1; setting it to CHEK1 again has to flag again.
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620&flag=${FLAG}`);
+    await drawn(page);
+    await expect
+      .poll(() => flagged(page, 'element').then((ids) => ids.length), { timeout: LOAD })
+      .toBeGreaterThan(0);
+    await page.locator('#diagram reactome-diagram-view .flag-banner-clear').click();
+    await expect.poll(() => flagged(page, 'element')).toEqual([]);
+    await expect.poll(async () => (await events(page, 'flagcleared')).length).toBe(1);
+    await page.evaluate(
+      (term) =>
+        ((
+          (window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & { flag: string }
+        ).flag = term),
+      FLAG
+    );
+    await expect
+      .poll(() => flagged(page, 'element').then((ids) => ids.length), { timeout: LOAD })
+      .toBeGreaterThan(0);
+  });
+
+  test('switches theme after it has drawn', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    await drawn(page);
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1500);
+    const light = await page.locator('#diagram').screenshot();
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('theme', 'dark')
+    );
+    await page.waitForTimeout(1500);
+    const dark = await page.locator('#diagram').screenshot();
+    expect(await significantPixels(page, light, dark, 64)).toBeGreaterThan(100_000);
+  });
+
+  test('switches from a diagram to an illustration, reporting each once', async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    await drawn(page);
+    await page.evaluate(() =>
+      (window as unknown as EmbedGlobals).__el('diagram').setAttribute('pathway', 'R-HSA-5357801')
+    );
+    await expect(
+      page.locator('#diagram reactome-diagram-view cr-ehld #ehld svg').first()
+    ).toBeVisible({ timeout: LOAD });
+    await page.waitForTimeout(3000);
+    expect((await events(page, 'diagramloaded')).map(([, , d]) => d)).toEqual([
+      { pathway: 'R-HSA-69620' },
+      { pathway: 'R-HSA-5357801' },
+    ]);
+    expect(await events(page, 'diagramerror')).toEqual([]);
+  });
+
+  test("loads the illustration's legend from its own host, not the partner's", async ({ page }) => {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-5357801`);
+    await expect(
+      page.locator('#diagram reactome-diagram-view cr-ehld #ehld svg').first()
+    ).toBeVisible({ timeout: LOAD });
+    const sources = await page
+      .locator('#diagram reactome-diagram-view cr-ehld img')
+      .evaluateAll((images) => images.map((i) => (i as HTMLImageElement).src));
+    expect(sources.length).toBeGreaterThan(0);
+    for (const src of sources) {
+      expect(src.startsWith(`${EMBED}EHLD-legend/`), src).toBe(true);
+      expect((await page.request.get(src)).status(), src).toBe(200);
+    }
   });
 });

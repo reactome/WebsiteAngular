@@ -97,10 +97,15 @@ class ReactomeDiagram extends HTMLElement {
     });
   }
 
-  attributeChangedCallback(name: string, _old: string | null, value: string | null) {
+  attributeChangedCallback(name: string, old: string | null, value: string | null) {
     if (!this.view) return;
-    if (value === null) this.view.removeAttribute(name);
-    else this.view.setAttribute(name, value);
+    if (value === null) return this.view.removeAttribute(name);
+    // Set to the value it already has: apply it again. The state it set can be
+    // cleared from inside -- the flag banner, a background click -- while the
+    // attribute still holds it, and an input set to its own value changes
+    // nothing, so the partner could never flag that term again.
+    if (old === value) this.view.removeAttribute(name);
+    this.view.setAttribute(name, value);
   }
 
   /** Fits the whole diagram in view. */

@@ -1,4 +1,4 @@
-import { Component, model, output } from '@angular/core';
+import { Component, model, output, viewChild } from '@angular/core';
 import { EhldComponent } from '../../pathway-browser/src/app/ehld/ehld.component';
 import { SvgExporterService } from '../../pathway-browser/src/app/reacfoam/svg-exporter.service';
 
@@ -36,4 +36,9 @@ export class IllustrationComponent {
   readonly pathwayId = model.required<string>();
   readonly illustrationLoaded = output<string>();
   readonly illustrationFailed = output<string>();
+  private readonly ehld = viewChild(EhldComponent);
+
+  fit() {
+    this.ehld()?.fitScreen();
+  }
 }

@@ -27,6 +27,7 @@ import { EventService } from '../../pathway-browser/src/app/services/event.servi
 import { FigureService } from '../../pathway-browser/src/app/details/tabs/description-tab/figure/figure.service';
 import { InteractorService } from '../../pathway-browser/src/app/interactors/services/interactor.service';
 import { SpeciesService } from '../../pathway-browser/src/app/services/species.service';
+import { HierarchyHoverService } from '../../pathway-browser/src/app/services/hierarchy-hover.service';
 
 /**
  * Component styles, written into the elements' shadow roots and nowhere else.
@@ -135,6 +136,9 @@ export const embedProviders: Provider[] = [
   FigureService,
   InteractorService,
   SpeciesService,
+  // A hovered event, shared at the root: two illustrations on one page lit
+  // each other's regions.
+  HierarchyHoverService,
 ];
 
 function perElementOnly(name: string): () => never {

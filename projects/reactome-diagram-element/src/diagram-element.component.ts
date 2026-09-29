@@ -64,15 +64,16 @@ export const CLEAR_SELECTION_EVENT = 'reactome-diagram-clear-selection';
         @if (kind() === 'illustration') {
           @defer (on immediate) {
             <reactome-illustration
+              #illustration
               [pathwayId]="id"
               (pathwayIdChange)="pathwayId.set($event)"
               (illustrationLoaded)="loaded($event)"
               (illustrationFailed)="failed($event)"
             />
           }
-        } @else if (kind() === 'diagram') {
+        } @else if (kind() === 'diagram' && diagramId(); as shown) {
           <cr-diagram
-            [pathwayId]="id"
+            [pathwayId]="shown"
             (pathwayIdChange)="pathwayId.set($event)"
             (diagramLoaded)="loaded($event)"
             (diagramFailed)="failed($event)"
@@ -107,24 +108,52 @@ export class DiagramElementComponent {
 
   protected readonly pathwayId = this.state.pathwayId;
   protected readonly status = signal<Status>('loading');
+  /** The term the partner flagged, while it is flagged. */
+  private readonly partnerFlag = signal<string | null>(null);
   private readonly diagram = viewChild(DiagramComponent);
+  // By template reference, not by class: a query naming the class is a static
+  // import of it, which put the whole illustration back in the main bundle
+  // that @defer keeps it out of.
+  private readonly illustration = viewChild<{ fit(): void }>('illustration');
+
+  /** The pathway lookup, when it is for the pathway being shown. */
+  private readonly lookedUp = () => {
+    const pathway = this.dataState.currentPathway();
+    const id = this.pathwayId();
+    return pathway && (pathway.stId === id || String(pathway.dbId) === id) ? pathway : undefined;
+  };
 
   /**
-   * What the pathway is drawn as. Kept through a switch until the next
-   * pathway's own answer arrives: the lookup is empty in between, and following
-   * it would tear the diagram down and build it again on every pathway change.
+   * What the pathway is drawn as, once its own lookup says -- and kept through a
+   * switch until then, or every pathway change would tear the drawing down and
+   * build it again.
    */
-  protected readonly kind = linkedSignal<
-    ReturnType<typeof this.dataState.currentPathway>,
-    Kind | undefined
-  >({
-    source: this.dataState.currentPathway,
+  protected readonly kind = linkedSignal<ReturnType<typeof this.lookedUp>, Kind | undefined>({
+    source: this.lookedUp,
     computation: (pathway, previous) =>
       pathway ? (pathway.hasEHLD ? 'illustration' : 'diagram') : previous?.value,
   });
 
-  /** The last selection the partner set, so it is not reported as the reader's. */
-  private selectFromAttribute: string | null | undefined;
+  /**
+   * The pathway the diagram is given: the one shown, once its lookup says it is
+   * a diagram. Given the next id straight away, the diagram fetched that
+   * pathway's layout before knowing it had an illustration instead -- a false
+   * diagramerror, or a drawing flashed up and reported, then replaced.
+   */
+  protected readonly diagramId = linkedSignal<ReturnType<typeof this.lookedUp>, string | undefined>(
+    {
+      source: this.lookedUp,
+      computation: (pathway, previous) =>
+        pathway && !pathway.hasEHLD ? this.pathwayId() : previous?.value,
+    }
+  );
+
+  /**
+   * The selection the partner's attribute has just made, not yet seen by the
+   * report: it is not the reader's. Consumed once, so a later deselect or a
+   * return to the same entity by the reader is reported.
+   */
+  private selectFromAttribute: { value: string | null } | undefined;
 
   constructor() {
     effect(() => {
@@ -164,7 +193,9 @@ export class DiagramElementComponent {
 
   /** Fits the whole diagram in view (the element's `fit()`). */
   fit() {
-    this.diagram()?.fitScreen();
+    if (this.kind() === 'illustration') return this.illustration()?.fit();
+    // Not before it has drawn: there is nothing to fit, and cytoscape is not there.
+    if (this.diagram()?.cy) this.diagram()?.fitScreen();
   }
 
   /**
@@ -194,7 +225,7 @@ export class DiagramElementComponent {
     effect(() => {
       const select = this.select();
       untracked(() => {
-        this.selectFromAttribute = select;
+        this.selectFromAttribute = { value: select };
         this.state.select.set(select);
         // The diagram draws a selection when there is one, and leaves the last
         // one drawn when there is none -- which removing the attribute has to
@@ -204,7 +235,12 @@ export class DiagramElementComponent {
     });
     effect(() => {
       const flag = this.flag()?.trim();
-      untracked(() => this.state.flag.set(flag ? [flag] : []));
+      untracked(() => {
+        // Only a new term is recorded here. Removing the attribute leaves the
+        // old one, for the check below to see it go and report it.
+        if (flag) this.partnerFlag.set(flag);
+        this.state.flag.set(flag ? [flag] : []);
+      });
     });
     effect(() => {
       const token = this.analysisToken();
@@ -223,15 +259,22 @@ export class DiagramElementComponent {
   }
 
   /**
-   * `flagcleared` and `analysiscleared`: whenever the state goes from something
-   * to nothing, whoever cleared it -- the partner's code, or the reader.
+   * `flagcleared` when the partner's flag is no longer flagged, and
+   * `analysiscleared` when the overlay goes: whoever did it, the partner's code
+   * or the reader.
    */
   private reportClears() {
-    let flagged = false;
+    // The partner's flag, gone: removed, cleared from the diagram's banner, or
+    // replaced -- a legend entry flags its class in its place.
     effect(() => {
-      const now = this.state.flag().length > 0;
-      if (flagged && !now) this.emit('flagcleared', {});
-      flagged = now;
+      const term = this.partnerFlag();
+      const flags = this.state.flag();
+      untracked(() => {
+        if (term && !flags.includes(term)) {
+          this.partnerFlag.set(null);
+          this.emit('flagcleared', {});
+        }
+      });
     });
     let analysed = false;
     effect(() => {
@@ -254,18 +297,20 @@ export class DiagramElementComponent {
     let reported: string | null = null;
     let pending: ReturnType<typeof setTimeout> | undefined;
     effect(() => {
-      const selected = this.state.select();
+      this.state.select();
       untracked(() => {
         clearTimeout(pending);
-        if (selected === this.selectFromAttribute) {
-          reported = selected;
-          return;
-        }
         pending = setTimeout(() => {
           // What is selected now, not what was when this was scheduled: the
           // signal has its next value before this effect runs for it.
           const now = this.state.select();
-          if (now === reported || now === this.selectFromAttribute) return;
+          const fromAttribute = this.selectFromAttribute;
+          this.selectFromAttribute = undefined;
+          if (fromAttribute?.value === now) {
+            reported = now;
+            return;
+          }
+          if (now === reported) return;
           reported = now;
           this.emit('entityselected', now ? this.describe(now) : NOTHING);
         }, 20);
@@ -282,7 +327,9 @@ export class DiagramElementComponent {
       const subscription = diagram.reactomeEvents$.subscribe((event) => {
         if (event.detail.cy === diagram.legend) return;
         if (event.type === ReactomeEventTypes.hover) {
-          this.emit('entityhovered', this.detailOf(event.detail.element));
+          const detail = this.detailOf(event.detail.element);
+          // A compartment has no stable id, and id: null is what leaving says.
+          if (detail.id) this.emit('entityhovered', detail);
         } else if (event.type === ReactomeEventTypes.leave) {
           this.emit('entityhovered', NOTHING);
         }
@@ -294,7 +341,13 @@ export class DiagramElementComponent {
   private describe(stId: string): EntityDetail {
     const cy = this.diagram()?.cy;
     const [node] = cy ? cy.elements().filter((e) => e.data('graph.stId') === stId) : [];
-    return node ? this.detailOf(node) : { id: stId, name: null, schemaClass: null };
+    if (node) return this.detailOf(node);
+    // An illustration's regions, and anything not drawn, are the pathway's own
+    // events.
+    const event = this.dataState
+      .currentPathway()
+      ?.events?.find((e) => e.element.stId === stId)?.element;
+    return { id: stId, name: event?.displayName ?? null, schemaClass: event?.schemaClass ?? null };
   }
 
   private detailOf(element: cytoscape.SingularElementArgument): EntityDetail {

@@ -57,18 +57,21 @@ Setting a property is the same as setting its attribute. Removing the attribute,
 
 Each is a `CustomEvent`, dispatched on the element. They bubble and are composed, so they cross the shadow boundary.
 
-| Event           | `detail`                                                                     | When                                                    |
-| --------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `diagramloaded` | `{ pathway: string }`                                                        | A pathway has finished drawing.                         |
-| `diagramerror`  | `{ pathway: string, reason: 'not-found' \| 'unavailable' \| 'unsupported' }` | It couldn't be shown. The element also shows a message. |
+| Event             | `detail`                                                                     | When                                                                |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `diagramloaded`   | `{ pathway: string }`                                                        | A pathway has finished drawing.                                     |
+| `diagramerror`    | `{ pathway: string, reason: 'not-found' \| 'unavailable' \| 'unsupported' }` | It couldn't be shown. The element also shows a message.             |
+| `entityselected`  | `{ id: string \| null, name: string \| null, schemaClass: string \| null }`  | The visitor selected (or deselected, with `id: null`) an entity.    |
+| `entityhovered`   | same shape                                                                   | The visitor's pointer entered (or left, with `id: null`) an entity. |
+| `flagcleared`     | `{}`                                                                         | The flag was cleared, from code or by the visitor.                  |
+| `analysiscleared` | `{}`                                                                         | The analysis overlay was cleared.                                   |
 
-Today `diagramerror` always carries `reason: 'not-found'`: the other two reasons are reserved, and a partner should treat any reason as "not shown".
+- Today `diagramerror` always carries `reason: 'not-found'`: the other two reasons are reserved, and a partner should treat any reason as "not shown".
+- `entityselected` is for what the reader selects, deselecting included: setting `select` from code does not fire it. Clicking one entity while another is selected fires it once, for the new one.
+- `flagcleared` fires when the term the partner flagged is no longer flagged: the attribute removed, the diagram's own "clear" used, or a legend entry flagging its class in its place.
+- `entityhovered` is for entities with a stable id; a compartment is not one. On an illustrated pathway it is not reported yet.
 
-`entityselected` is for what the reader selects: setting `select` from code does not fire it. Clicking one entity while another is selected fires it once, for the new one.
-| `entityselected` | `{ id: string \| null, name: string \| null, schemaClass: string \| null }` | The visitor selected (or deselected, with `id: null`) an entity. |
-| `entityhovered` | same shape | The visitor's pointer entered (or left, with `id: null`) an entity. |
-| `flagcleared` | `{}` | The flag was cleared, from code or by the visitor. |
-| `analysiscleared` | `{}` | The analysis overlay was cleared. |
+Setting an attribute to the value it already has applies it again. The reader can clear a selection or a flag from inside the diagram while the attribute still holds it; setting it again brings it back.
 
 ## Guarantees
 
