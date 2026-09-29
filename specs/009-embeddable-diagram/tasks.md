@@ -199,17 +199,17 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ### Tests first
 
-- [ ] T032 [US3] Create `specs/009-embeddable-diagram/host-page/alliance.html`: AllianceGenome's `pathwayWidget` pattern reproduced in plain JS.
+- [x] T032 [US3] Create `specs/009-embeddable-diagram/host-page/alliance.html`: AllianceGenome's `pathwayWidget` pattern reproduced in plain JS.
   - Poll `typeof Reactome` once a second, up to 15 times.
   - Call `Reactome.Diagram.create({placeHolder: 'reactomePathwayHolder', width: 1130, height: 600})`, then `.loadDiagram(stId)`.
   - Switch pathway from a dropdown.
-- [ ] T033 [US3] Write `e2e/embed-legacy-api.spec.ts`, one test per method and per handler from the contract table. Each is **written and run red before its implementation**, and the PR lists each red result. Also:
+- [x] T033 [US3] Write `e2e/embed-legacy-api.spec.ts`, one test per method and per handler from the contract table. Each is **written and run red before its implementation**, and the PR lists each red result. Also:
   - "create before ready": calls made synchronously after `create` are queued and applied;
   - "polling host": `alliance.html` finds `Reactome` on its first poll after the loader runs, and draws at 1130×600.
 
 ### Implementation
 
-- [ ] T034 [US3] In `EL/loader/reactome-diagram.js`, define `window.Reactome.Diagram` synchronously:
+- [x] T034 [US3] In `EL/loader/reactome-diagram.js`, define `window.Reactome.Diagram` synchronously:
   - `create(opts)` appends a sized `<reactome-diagram>` to `document.getElementById(opts.placeHolder)` and returns an object;
   - the object queues calls until `customElements.whenDefined('reactome-diagram')`;
   - its methods map to the element per the contract;
@@ -218,7 +218,8 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   Keep the queue and mapping in small pure functions, unit-tested in `projects/reactome-diagram-element/src/loader/legacy-api.spec.mjs`. vitest's include covers `projects/**`.
 
-- [ ] T035 [US3] Implement `highlightItem`/`resetHighlight` as a new element method pair, `highlight(id)`/`resetHighlight()`, which makes the entity stand out as a hover does without selecting it, via the diagram's hover path. Add it to the element contract.
+- [x] T035 [US3] Implement `highlightItem`/`resetHighlight` as a new element method pair, `highlight(id)`/`resetHighlight()`, which makes the entity stand out as a hover does without selecting it, via the diagram's hover path. Add it to the element contract.
+  - **As built**: through `HierarchyHoverService`, the Pathway Browser's mark for what is pointed at in its hierarchy (the rest fades) -- not the pointer's `hover` class, which the reader's pointer clears and which physical entities have no style for; it reaches an illustration's regions too. The loader's unit tests run the real file in a `vm` sandbox, since it has no exports.
 - [ ] T036 [US3] Run the gates and both embed specs. Open the PR, with review focused on queue ordering, handler argument shapes against the old docs, and the synchronous global. CI green, merge, deploy. Verify on beta with `alliance.html` pointing at beta's script (served locally, so from another origin).
 
 ## Phase 6: User Story 4: partner image addresses and links (P3)

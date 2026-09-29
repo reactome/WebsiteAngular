@@ -44,3 +44,5 @@ Each one maps to the v1 element:
 | `onCanvasNotSupported(fn)` | `fn()`                                                                   | `diagramerror` with `reason: 'unsupported'` |
 
 Several handlers may be registered for each event; each registration adds one.
+
+The objects passed to `onObjectSelected` and `onObjectHovered` have `stId`, `displayName` and `schemaClass`. The old widget sometimes also gave `identifier` and `geneNames`, which the documentation marked optional; they are not given. `onCanvasNotSupported` never fires in a browser that can run the element at all: it is there so code that registers it keeps working.

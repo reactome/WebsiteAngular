@@ -18,6 +18,7 @@ import { IllustrationComponent } from './illustration.component';
 import { DataStateService } from '../../pathway-browser/src/app/services/data-state.service';
 import { EventService } from '../../pathway-browser/src/app/services/event.service';
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
+import { HierarchyHoverService } from '../../pathway-browser/src/app/services/hierarchy-hover.service';
 import { Analysis } from '../../pathway-browser/src/app/model/analysis.model';
 import { MemoryState } from './memory-state';
 import { embedProviders } from './embed-providers';
@@ -36,6 +37,8 @@ const NOTHING: EntityDetail = { id: null, name: null, schemaClass: null };
 /** The events the wrapper element sends its view for `fit()` and `resetSelection()`. */
 export const FIT_EVENT = 'reactome-diagram-fit';
 export const CLEAR_SELECTION_EVENT = 'reactome-diagram-clear-selection';
+/** `highlight(id)` sends the id as the event's detail; `resetHighlight()` sends none. */
+export const HIGHLIGHT_EVENT = 'reactome-diagram-highlight';
 
 /**
  * `<reactome-diagram pathway="R-HSA-…">`: one live pathway diagram, for other
@@ -57,6 +60,7 @@ export const CLEAR_SELECTION_EVENT = 'reactome-diagram-clear-selection';
     '[class.dark]': "theme() === 'dark'",
     [`(${FIT_EVENT})`]: 'fit()',
     [`(${CLEAR_SELECTION_EVENT})`]: 'clearSelection()',
+    [`(${HIGHLIGHT_EVENT})`]: 'highlight($event)',
   },
   template: `
     <div class="frame">
@@ -92,6 +96,7 @@ export class DiagramElementComponent {
   private readonly dataState = inject(DataStateService);
   private readonly events = inject(EventService);
   private readonly dark = inject(DarkService);
+  private readonly hierarchyHover = inject(HierarchyHoverService);
 
   /** The pathway to show: a stable id, or a dbId, which is normalised. */
   readonly pathway = input<string | null>(null);
@@ -205,6 +210,19 @@ export class DiagramElementComponent {
   clearSelection() {
     this.state.select.set(null);
     this.diagram()?.cy?.elements(':selected').unselect();
+  }
+
+  /**
+   * Makes an entity stand out without selecting it (the element's
+   * `highlight(id)`; `resetHighlight()` sends no id), the way the Pathway
+   * Browser marks what is pointed at in its hierarchy: the rest fades. That
+   * path, not the pointer's own hover, because the reader's pointer leaving a
+   * node clears a hover -- and it reaches an illustration's regions too.
+   */
+  highlight(event: Event) {
+    const id =
+      event instanceof CustomEvent && typeof event.detail === 'string' ? event.detail : undefined;
+    this.hierarchyHover.enter(id);
   }
 
   protected loaded(pathway: string) {

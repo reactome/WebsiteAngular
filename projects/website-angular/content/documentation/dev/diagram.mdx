@@ -132,7 +132,19 @@ For a page that loads ES modules itself, `https://reactome.org/embed/diagram/v1/
 - **A link or a frame** to the Pathway Browser: `https://reactome.org/PathwayBrowser/{stId}`, with `?select=` for an entity.
 - **A static image** from the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
 
-The previous Diagram JS widget (`Reactome.Diagram.create`) is retired. Sites that still use it will be able to switch by changing only its script's address to the new one; until then, the element above is the supported way to embed a live diagram.
+#### Sites written for the previous widget
+
+The previous Diagram JS widget is retired, but its interface is kept: a page written for it switches by changing only the script's address, to the one above.
+
+```js
+var diagram = Reactome.Diagram.create({ placeHolder: 'holder', width: 1130, height: 600 });
+diagram.loadDiagram('R-HSA-69620');
+diagram.onObjectSelected(function (obj) {
+  // obj is { stId, displayName, schemaClass }, or null when nothing is selected
+});
+```
+
+`create`, `loadDiagram`, `selectItem`, `flagItems`, `highlightItem`, `setAnalysisToken`, `resize`, the `reset…` methods and the `on…` handlers all work as they did, and calls made before the diagram is ready are applied once it is. `proxyPrefix` is accepted and ignored: no proxy is needed. New pages should use the element directly.
 
 ### [__Resources](<#Resources>)
 

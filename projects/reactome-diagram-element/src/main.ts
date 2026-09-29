@@ -10,6 +10,7 @@ import {
   CLEAR_SELECTION_EVENT,
   DiagramElementComponent,
   FIT_EVENT,
+  HIGHLIGHT_EVENT,
 } from './diagram-element.component';
 import { rootGuards, ShadowRootsOnlyStylesHost } from './embed-providers';
 import { EHLD_LEGEND_BASE } from '../../pathway-browser/src/app/services/ehld.service';
@@ -110,12 +111,29 @@ class ReactomeDiagram extends HTMLElement {
 
   /** Fits the whole diagram in view. */
   fit() {
-    this.view?.dispatchEvent(new Event(FIT_EVENT));
+    this.toView(new Event(FIT_EVENT));
   }
   /** Clears the selection: the partner's, and one the reader clicked. */
   resetSelection() {
     this.removeAttribute(PROPERTIES.select);
-    this.view?.dispatchEvent(new Event(CLEAR_SELECTION_EVENT));
+    this.toView(new Event(CLEAR_SELECTION_EVENT));
+  }
+  /** Makes an entity stand out, without selecting it. */
+  highlight(id: string) {
+    this.toView(new CustomEvent(HIGHLIGHT_EVENT, { detail: id }));
+  }
+  resetHighlight() {
+    this.toView(new CustomEvent(HIGHLIGHT_EVENT));
+  }
+
+  /**
+   * A method's request, to the view that carries it out. The view is only
+   * listening once its own element is defined, after the diagram's code has
+   * started -- later than this element, whose methods a page (or the old
+   * widget's queue) can call as soon as it exists.
+   */
+  private toView(event: Event) {
+    void customElements.whenDefined(VIEW).then(() => this.view?.dispatchEvent(event));
   }
   /** Each the same as removing its attribute. */
   resetFlag() {

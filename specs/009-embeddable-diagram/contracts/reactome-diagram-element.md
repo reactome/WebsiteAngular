@@ -48,10 +48,11 @@ Setting a property is the same as setting its attribute. Removing the attribute,
 
 ## Methods
 
-| Method                                               | Effect                                                                                                                        |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `fit()`                                              | Fits the whole diagram in view.                                                                                               |
-| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. `resetSelection()` also clears a selection the reader made by clicking. |
+| Method                                               | Effect                                                                                                                                        |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fit()`                                              | Fits the whole diagram in view.                                                                                                               |
+| `resetSelection()`, `resetFlag()`, `resetAnalysis()` | Clear that state, the same as removing the attribute. `resetSelection()` also clears a selection the reader made by clicking.                 |
+| `highlight(id)`, `resetHighlight()`                  | Make an entity stand out without selecting it, as the Pathway Browser marks what is pointed at in its hierarchy (the rest fades); clear that. |
 
 ## Events
 
