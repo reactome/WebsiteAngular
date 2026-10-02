@@ -85,7 +85,7 @@ const RECORD = process.env['E2E_RECORD'] === '1';
  * Measured across the suite rather than guessed, which is the only reason this
  * list is right. From an audit run that logged every foreign host per test: at
  * least 89 tests reach Google Fonts, 89 reach jsDelivr for the pdbe-molstar
- * viewer that `pathway-browser/src/index.html` loads, 49 reach
+ * viewer that `src/index.html` loads, 49 reach
  * download.reactome.org and 40 reach EBI. Floors rather than totals -- that run
  * lost its dev server partway and some tests never got to ask for anything.
  *
@@ -105,7 +105,7 @@ const ALLOWED = new Map<string, string>([
   ['*-sheets.googleusercontent.com', 'where docs.google.com redirects a published sheet to'],
   ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
   ['fonts.gstatic.com', 'the font files those stylesheets point at'],
-  ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by pathway-browser/src/index.html'],
+  ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by src/index.html'],
   ['download.reactome.org', "Reactome's own download host, linked from the download pages"],
   ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
   ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],

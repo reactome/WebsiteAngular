@@ -248,7 +248,8 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   Keep it public-safe. Link it from `demo.html`.
 
-- [ ] T041 Decide #339 with this in place. `PathwayBrowser` is superseded by `reactome-diagram-element` plus the `reactome` app. Remove it, or make it build and add it to CI; record which, and why, on #339. Decide `WebsiteAngular` the same way.
+- [x] T041 Decide #339 with this in place. `PathwayBrowser` is superseded by `reactome-diagram-element` plus the `reactome` app. Remove it, or make it build and add it to CI; record which, and why, on #339. Decide `WebsiteAngular` the same way.
+  - **As built**: both removed (user's decision, 2 Oct 2026), with the files only they reached (knip-confirmed), the `<pathway-browser>` element and `ANGULAR_ELEMENTS_SETUP.md`, and the two analogjs packages only PathwayBrowser's `ng test` target used. The site's build is unchanged.
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
 - [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
 - [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
