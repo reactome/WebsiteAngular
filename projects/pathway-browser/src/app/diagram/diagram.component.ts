@@ -160,6 +160,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * whole diagram -- the disease pathway alone, as it opens.
    */
   readonly compareMode = signal(false);
+  /**
+   * The handle and the disease side's tint are showing: from the moment a
+   * comparison starts until the layer has slid back out of it. Not the same
+   * as `compareMode`, which says where it is going and turns at once.
+   */
+  readonly compareShown = signal(false);
+  private compareAnimation = 0;
+  /** Where the line is, as a share of the width, so a resize keeps it in view. */
+  private compareFraction = 0;
   isInitialLoad: boolean = true;
 
   private readonly hierarchyHover = inject(HierarchyHoverService);
@@ -669,6 +678,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       entries.forEach((entry) => {
         if (entry.target === container) {
           this.containerSize.set(entry.contentRect);
+          this.keepComparePosition();
 
           // Update min zoom to be able to fit the whole diagram in the resized viewport
           if (this.cy) {
@@ -884,9 +894,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Each disease pathway opens on its own, not compared -- including
         // the next one after a comparison, whose layer would start where that
         // one's handle was left.
-        this.compareMode.set(false);
-        const layer = this.compareLayer()?.nativeElement;
-        if (layer) layer.style.left = '0px';
+        this.resetCompare();
 
         this.cy = cytoscape({
           container: container,
@@ -896,6 +904,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         });
         this.cys[0] = this.cy;
         this.reactomeStyles[0] = this.reactomeStyle;
+        // A pathway with no disease has no compare layer: the previous
+        // disease pathway's must not stay in the list exports draw from.
+        if (!this.comparing()) {
+          this.cys.length = 1;
+          this.reactomeStyles.length = 1;
+        }
         this.reactomeStyle.bindToCytoscape(this.cy);
 
         this.leafIdToParentIds.clear();
@@ -1367,6 +1381,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const extent = this.cyCompare!.extent();
     let limitIndex = this.replacedElementsPosition.findIndex((x1) => x1 >= extent.x1);
     if (limitIndex === -1) limitIndex = this.replacedElements.length;
+    // The layer across the whole width is the disease pathway alone, wherever
+    // the reader has panned: measured in the diagram, its edge is just the
+    // viewport's, and panning used to bring the normal versions back.
+    if (this.comparePosition() <= 0) limitIndex = 0;
 
     /// Alternative calculation. In theory more optimised, but seems worse when console is opened for some reason
 
@@ -1613,8 +1631,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   toggleCompare() {
     const area = this.compareArea();
     if (!area) return;
+    // Says at once where it is going -- a second click while it slides
+    // reverses it, rather than starting the same slide again.
     const entering = !this.compareMode();
-    if (entering) this.compareMode.set(true);
+    this.compareMode.set(entering);
+    if (entering) this.compareShown.set(true);
+    cancelAnimationFrame(this.compareAnimation);
     const from = this.comparePosition();
     const to = entering ? area.clientWidth / 2 : 0;
     const started = performance.now();
@@ -1623,10 +1645,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       const t = Math.min(1, (now - started) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
       this.setComparePosition(from + (to - from) * eased);
-      if (t < 1) requestAnimationFrame(step);
-      else if (!entering) this.compareMode.set(false);
+      if (t < 1) this.compareAnimation = requestAnimationFrame(step);
+      else if (!entering) this.hideCompare();
     };
-    requestAnimationFrame(step);
+    this.compareAnimation = requestAnimationFrame(step);
+  }
+
+  /** Back to the disease pathway alone, at once: each pathway opens so. */
+  private resetCompare() {
+    cancelAnimationFrame(this.compareAnimation);
+    this.compareMode.set(false);
+    this.hideCompare();
+    this.compareFraction = 0;
+    const layer = this.compareLayer()?.nativeElement;
+    if (layer) layer.style.left = '0px';
+  }
+
+  private hideCompare() {
+    this.compareShown.set(false);
+    // The handle goes with it, and a pointer it had captured never sends up.
+    this.compareDragging.set(false);
+  }
+
+  /** After a resize, the line stays where it was across the width. */
+  private keepComparePosition() {
+    const area = this.compareArea();
+    if (this.compareShown() && area)
+      this.setComparePosition(this.compareFraction * area.clientWidth);
   }
 
   /** The element the disease layer is placed in, and measured against. */
@@ -1644,7 +1689,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const canvas = this.compareContainer()?.nativeElement;
     const area = this.compareArea();
     if (!layer || !canvas || !area || !this.cyCompare) return;
-    layer.style.left = `${Math.max(0, Math.min(x, area.clientWidth))}px`;
+    const clamped = Math.max(0, Math.min(x, area.clientWidth));
+    layer.style.left = `${clamped}px`;
+    this.compareFraction = area.clientWidth ? clamped / area.clientWidth : 0;
     this.cyCompare.resize();
     this.syncViewports(this.cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
     // The sync works out what shows before it moves the layer; once more,

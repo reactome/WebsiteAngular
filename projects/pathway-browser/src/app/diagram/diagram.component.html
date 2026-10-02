@@ -28,19 +28,15 @@
   <!-- A disease pathway opens on the disease diagram alone: the layer below,
        the normal pathway, shows only where the handle has slid back from. -->
   @if (comparing()) {
-    <button
-      type="button"
-      class="compare-toggle"
-      [attr.aria-pressed]="compareMode()"
-      aria-label="Compare with the normal pathway"
-      (click)="toggleCompare()"
-    >
+    <!-- Named for what it will do, so the name a voice user reads is the one
+         the button says. -->
+    <button type="button" class="compare-toggle" [class.active]="compareMode()" (click)="toggleCompare()">
       <mat-icon fontSet="symbols">compare</mat-icon>
       {{ compareMode() ? 'Close comparison' : 'Compare with normal' }}
     </button>
   }
   <div id="disease-container" class="drag-container" #compareLayer [style.display]="comparing() ? 'flex' : 'none'">
-    @if (compareMode()) {
+    @if (compareShown()) {
       <span
         id="disease-handle"
         class="drag-handle"
@@ -52,6 +48,7 @@
         (pointermove)="handleMove($event)"
         (pointerup)="handleUp($event)"
         (pointercancel)="handleUp($event)"
+        (lostpointercapture)="compareDragging.set(false)"
       ></span>
     }
 
@@ -60,7 +57,7 @@
       #cytoscapeCompare
       class="drag-content"
       [class.pointer]="hovering()"
-      [class.comparing]="compareMode()"
+      [class.comparing]="compareShown()"
     ></div>
   </div>
 

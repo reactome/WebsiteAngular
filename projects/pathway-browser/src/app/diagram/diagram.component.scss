@@ -209,7 +209,7 @@
   color: var(--on-surface);
   cursor: pointer;
 
-  &[aria-pressed='true'] {
+  &.active {
     background: var(--primary-container);
     color: var(--on-primary-container);
   }
