@@ -144,32 +144,15 @@
 
 .drag-container {
   position: absolute;
-  left: 10%; // Important: Initial position of compare drag handle
+  // Where the disease layer begins. 0 -- the disease diagram alone -- until the
+  // reader compares; set from the component from then on.
+  left: 0;
   width: 100%;
   pointer-events: all;
-  //position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   height: 100%;
-}
-
-#handle-limits {
-  --width: 500px;
-  --height: 500px;
-  position: absolute;
-  left: calc(-1 / 2 * var(--width));
-  top: calc(50% - 1 / 2 * var(--height));
-  width: var(--width);
-  height: var(--height);
-  //background:#000000aa;
-  z-index: 5;
-  pointer-events: none;
-
-  &.active {
-    pointer-events: all;
-    cursor: ew-resize;
-  }
 }
 
 .drag-handle {
@@ -177,8 +160,10 @@
   --height: 30px;
 
   position: absolute;
-  left: calc(50% - 1 / 2 * var(--width) - 4px);
+  // On the layer's left edge, which is the line between the two pathways.
+  left: calc(-1 / 2 * var(--width) - 4px);
   top: calc(50% - 1 / 2 * var(--height) - 4px);
+  z-index: 5;
 
   border-radius: var(--height);
   width: var(--width);
@@ -187,34 +172,81 @@
   cursor: ew-resize;
   color: var(--on-surface);
   pointer-events: all;
+  // The handle, not the page, gets a touch drag.
+  touch-action: none;
   filter: drop-shadow(-2px 0px 0px var(--primary-container))
     drop-shadow(2px 0px 0px var(--error-container));
   background: var(--surface);
+
+  // A larger target than the bar itself, so it is easy to grab.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -16px -14px;
+  }
+
+  &.active {
+    border-color: var(--primary);
+    filter: none;
+  }
+}
+
+.compare-toggle {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  box-shadow: var(--mat-sys-level1);
+  font: var(--mat-sys-label-large);
+  color: var(--on-surface);
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+
+  mat-icon {
+    color: var(--primary);
+  }
 }
 
 #cytoscape-compare {
   box-sizing: border-box;
   position: absolute;
-  //border-left: 4px solid var(--error);
   height: 100%;
   width: 100%;
   inset: 0 0 0 0;
-  background-color: color-mix(
-    in srgb,
-    var(--error) 5%,
-    color-mix(in srgb, var(--surface) 50%, transparent)
-  );
 
-  &:before {
-    content: '';
-    height: 100%;
-    width: 4px;
-    background-color: var(--primary);
-    filter: drop-shadow(-2px 0px 0px var(--primary-container))
-      drop-shadow(2px 0px 0px var(--error-container));
-    position: absolute;
-    left: -2px;
-    z-index: 4;
+  // Comparing, the disease side is tinted and set off by a line, so it reads
+  // as the other side of the comparison. Not comparing, the layer is clear:
+  // its tint over the whole width is what greyed the disease pathway out.
+  &.comparing {
+    background-color: color-mix(
+      in srgb,
+      var(--error) 5%,
+      color-mix(in srgb, var(--surface) 50%, transparent)
+    );
+
+    &:before {
+      content: '';
+      height: 100%;
+      width: 4px;
+      background-color: var(--primary);
+      filter: drop-shadow(-2px 0px 0px var(--primary-container))
+        drop-shadow(2px 0px 0px var(--error-container));
+      position: absolute;
+      left: -2px;
+      z-index: 4;
+    }
   }
 }
 

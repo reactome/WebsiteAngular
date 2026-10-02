@@ -62,6 +62,7 @@ import { Interactor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
 import { EntityPopupComponent } from './entity-popup/entity-popup.component';
 import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-popup.component';
@@ -88,6 +89,7 @@ const FIT_PADDING = 100;
     MatSlider,
     MatSliderThumb,
     MatTooltip,
+    MatIcon,
     FlagBannerComponent,
     AnalysisLegendComponent,
     EntityPopupComponent,
@@ -115,7 +117,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   title = 'pathway-browser';
   readonly cytoscapeContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscape');
+  // The compare diagram's own canvas: cytoscape's container, which the layer
+  // below holds.
   readonly compareContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscapeCompare');
+  /** The disease layer: slides to set where the normal pathway ends. */
+  readonly compareLayer = viewChild<ElementRef<HTMLDivElement>>('compareLayer');
   readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legend');
   readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
@@ -146,7 +152,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   readonly controlRange = computed(() => this.controlMaxZoom() - this.controlMinZoom());
 
-  comparing: boolean = false;
+  /** The diagram is a disease pathway drawn over its normal one. */
+  readonly comparing = signal(false);
+  /**
+   * The reader is comparing it with the normal pathway: the handle is in, and
+   * the normal pathway shows to its left. Off, the disease layer covers the
+   * whole diagram -- the disease pathway alone, as it opens.
+   */
+  readonly compareMode = signal(false);
   isInitialLoad: boolean = true;
 
   private readonly hierarchyHover = inject(HierarchyHoverService);
@@ -864,9 +877,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(
       tap((elements) => {
-        this.comparing =
+        this.comparing.set(
           elements.nodes.some((node) => node.data['isFadeOut']) ||
-          elements.edges.some((edge) => edge.data['isFadeOut']);
+            elements.edges.some((edge) => edge.data['isFadeOut'])
+        );
+        // Each disease pathway opens on its own, not compared -- including
+        // the next one after a comparison, whose layer would start where that
+        // one's handle was left.
+        this.compareMode.set(false);
+        const layer = this.compareLayer()?.nativeElement;
+        if (layer) layer.style.left = '0px';
 
         this.cy = cytoscape({
           container: container,
@@ -1014,7 +1034,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   public initialiseReplaceElements() {
-    if (this.comparing)
+    if (this.comparing())
       this.cy.batch(() => {
         this.cy.elements('[!isBackground]').style('visibility', 'hidden');
         this.cy.edges('.shadow').style('underlay-padding', 0);
@@ -1027,7 +1047,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private loadCompare(elements: cytoscape.ElementsDefinition, container: HTMLDivElement) {
     const getPosition = (e: cytoscape.SingularElementArgument) =>
       e.is('.Shadow') ? e.data('triggerPosition') : e.boundingBox().x1;
-    if (this.comparing) {
+    if (this.comparing()) {
       this.cy.elements('[!isBackground]').style('visibility', 'hidden');
       this.replacedElements = this.cy!.elements('[?replacedBy]')
         .add('[?isCrossed]')
@@ -1089,6 +1109,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.syncViewports(this.cy!, container, this.cyCompare, compareContainer);
         this.initialiseReplaceElements();
+        // The disease layer from the left edge: the disease pathway alone.
+        this.setComparePosition(0);
       });
     }
   }
@@ -1560,31 +1582,74 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.legend ? setTimeout(() => this.reactomeStyle?.update(this.legend), 5) : null;
   }
 
-  compareDragging = false;
+  readonly compareDragging = signal(false);
 
-  dragStart() {
-    this.compareDragging = true;
+  /**
+   * The handle follows the pointer from the moment it is grabbed until it is
+   * let go, wherever the pointer goes: pointer capture sends every move to the
+   * handle. It used to listen inside a box around itself, which ended the drag
+   * as soon as a quick movement, or one that drifted off the handle's row, took
+   * the pointer out of the box -- so the handle did not move.
+   */
+  handleDown(event: PointerEvent) {
+    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    event.preventDefault();
+    this.compareDragging.set(true);
   }
 
-  dragEnd() {
-    this.compareDragging = false;
+  handleMove(event: PointerEvent) {
+    if (!this.compareDragging()) return;
+    const area = this.compareArea();
+    if (area) this.setComparePosition(event.clientX - area.getBoundingClientRect().x);
   }
 
-  dragMove(
-    $event: MouseEvent | TouchEvent,
-    compareContainer: HTMLDivElement,
-    container: HTMLDivElement
-  ) {
-    if (!this.compareDragging) return;
-    const x = $event instanceof TouchEvent ? $event.touches[0].clientX : $event.x;
-    compareContainer.style['left'] = x - container.getBoundingClientRect().x + 'px';
+  handleUp(event: PointerEvent) {
+    const handle = event.target as HTMLElement;
+    if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+    this.compareDragging.set(false);
+  }
+
+  /** Into the comparison and out of it, sliding the handle in or back. */
+  toggleCompare() {
+    const area = this.compareArea();
+    if (!area) return;
+    const entering = !this.compareMode();
+    if (entering) this.compareMode.set(true);
+    const from = this.comparePosition();
+    const to = entering ? area.clientWidth / 2 : 0;
+    const started = performance.now();
+    const duration = 400;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.setComparePosition(from + (to - from) * eased);
+      if (t < 1) requestAnimationFrame(step);
+      else if (!entering) this.compareMode.set(false);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /** The element the disease layer is placed in, and measured against. */
+  private compareArea(): HTMLElement | null {
+    return (this.compareLayer()?.nativeElement.offsetParent as HTMLElement | null) ?? null;
+  }
+
+  private comparePosition(): number {
+    return parseFloat(this.compareLayer()?.nativeElement.style.left || '0') || 0;
+  }
+
+  /** Puts the line between the normal and disease pathways `x` pixels in. */
+  private setComparePosition(x: number) {
+    const layer = this.compareLayer()?.nativeElement;
+    const canvas = this.compareContainer()?.nativeElement;
+    const area = this.compareArea();
+    if (!layer || !canvas || !area || !this.cyCompare) return;
+    layer.style.left = `${Math.max(0, Math.min(x, area.clientWidth))}px`;
     this.cyCompare.resize();
-    this.syncViewports(
-      this.cy!,
-      this.cytoscapeContainer()!.nativeElement,
-      this.cyCompare!,
-      this.compareContainer()!.nativeElement
-    );
+    this.syncViewports(this.cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
+    // The sync works out what shows before it moves the layer; once more,
+    // for where the layer is now.
+    this.updateReplacementVisibility();
   }
 
   readonly legendPosition = signal<Point>({ x: 0, y: 0 });
@@ -1650,7 +1715,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   compareBackgroundSync = this.reactomeEvents$
     .pipe(
-      filter(() => this.comparing),
+      filter(() => this.comparing()),
       filter((e) => e.detail.cy !== this.legend)
     )
     .subscribe((event) => {
@@ -1704,7 +1769,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           style.interactivity.triggerZoom();
         });
 
-      if (this.comparing) {
+      if (this.comparing()) {
         this.initialiseReplaceElements();
       }
 

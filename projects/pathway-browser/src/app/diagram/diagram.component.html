@@ -25,21 +25,43 @@
       (dismissed)="popupTarget.set(null)"
     />
   }
-  <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex' : 'none'">
-    <div
-      id="handle-limits"
-      (mouseup)="dragEnd()"
-      (mouseleave)="dragEnd()"
-      (touchend)="dragEnd()"
-      (touchcancel)="dragEnd()"
-      (mousemove)="dragMove($event, compareContainer, container)"
-      (touchmove)="dragMove($event, compareContainer, container)"
-      [class.active]="compareDragging"
+  <!-- A disease pathway opens on the disease diagram alone: the layer below,
+       the normal pathway, shows only where the handle has slid back from. -->
+  @if (comparing()) {
+    <button
+      type="button"
+      class="compare-toggle"
+      [attr.aria-pressed]="compareMode()"
+      aria-label="Compare with the normal pathway"
+      (click)="toggleCompare()"
     >
-      <span id="disease-handle" class="drag-handle" (mousedown)="dragStart()" (touchstart)="dragStart()"></span>
-    </div>
+      <mat-icon fontSet="symbols">compare</mat-icon>
+      {{ compareMode() ? 'Close comparison' : 'Compare with normal' }}
+    </button>
+  }
+  <div id="disease-container" class="drag-container" #compareLayer [style.display]="comparing() ? 'flex' : 'none'">
+    @if (compareMode()) {
+      <span
+        id="disease-handle"
+        class="drag-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Normal pathway on the left, disease pathway on the right"
+        [class.active]="compareDragging()"
+        (pointerdown)="handleDown($event)"
+        (pointermove)="handleMove($event)"
+        (pointerup)="handleUp($event)"
+        (pointercancel)="handleUp($event)"
+      ></span>
+    }
 
-    <div id="cytoscape-compare" #cytoscapeCompare class="drag-content" [class.pointer]="hovering()"></div>
+    <div
+      id="cytoscape-compare"
+      #cytoscapeCompare
+      class="drag-content"
+      [class.pointer]="hovering()"
+      [class.comparing]="compareMode()"
+    ></div>
   </div>
 
   @let legendWidth = ratio * container.clientHeight;
