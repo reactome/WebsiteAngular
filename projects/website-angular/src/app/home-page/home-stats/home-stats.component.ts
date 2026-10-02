@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { StatsService } from '../../../services/stats.service';
@@ -36,14 +36,20 @@ export class HomeStatsComponent implements OnInit {
    */
   readonly versionLabel = this.statsService.versionLabel;
   releaseDate: Date = new Date();
-  stats: Stats = {
+  /**
+   * A signal, for the same reason: the numbers arrive after the first render,
+   * and in this zoneless app a plain field written then is not drawn -- the
+   * counters stayed at 0 unless something else redrew the page, and in
+   * development a reply landing mid-check threw NG0100.
+   */
+  readonly stats = signal<Stats>({
     human_pathways: 0,
     reactions: 0,
     proteins: 0,
     small_molecules: 0,
     drugs: 0,
     references: 0,
-  };
+  });
 
   ngOnInit() {
     this.getVersionAndDate();
@@ -60,14 +66,14 @@ export class HomeStatsComponent implements OnInit {
       .then((resp) => {
         resp.subscribe({
           next: (data) => {
-            this.stats = {
+            this.stats.set({
               human_pathways: data.pathways,
               reactions: data.reactions,
               proteins: data.proteins,
               small_molecules: data.smallMolecules,
               drugs: data.drugs,
               references: data.references,
-            };
+            });
           },
           error: (err) => {
             console.error('Error while fetching stats: ', err);
