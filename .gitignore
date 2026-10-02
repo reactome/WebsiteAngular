@@ -12,6 +12,9 @@
 # Node
 /node_modules
 npm-debug.log
+# Build and tool logs: a failed build's log, with a contributor's paths in it,
+# was committed once (npm.log).
+*.log
 yarn-error.log
 
 # IDEs and editors
