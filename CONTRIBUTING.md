@@ -90,4 +90,20 @@ npm run build:libs
 
 The diagram style library and the theme come built from
 [ngx-reactome-base](https://github.com/reactome/ngx-reactome-base); change them
-there.
+there. Each passing push to its `main` publishes a build, and
+`npm update ngx-reactome-cytoscape-style ngx-reactome-style` brings it here.
+
+To try a library change in the site before it is merged there, install a
+packed build of it -- not `npm link` or a folder install: a symlinked library
+resolves `cytoscape` from ngx-reactome-base's own `node_modules`, not this
+repo's fork, and the build fails on mismatched types.
+
+```bash
+# in ngx-reactome-base
+npx ng build ngx-reactome-cytoscape-style
+(cd dist/ngx-reactome-cytoscape-style && npm pack --pack-destination /tmp)
+# here
+npm install --no-save /tmp/ngx-reactome-cytoscape-style-0.1.0.tgz
+# and afterwards, back to the pinned build
+npm install
+```
