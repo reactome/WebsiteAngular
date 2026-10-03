@@ -908,8 +908,8 @@ export class EventService {
     return this.hasChild(0, event);
   }
 
-  getPathwayWithDiagram(event: Event): Event | undefined {
-    const parents = [...event.ancestors].reverse();
+  getPathwayWithDiagram(event: Event, lineage: Event[] = event.ancestors): Event | undefined {
+    const parents = [...(lineage ?? [])].reverse();
     return parents.find((p) => isPathway(p) && p.stId !== event.stId && p.hasDiagram);
   }
 
