@@ -12,7 +12,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import type cytoscape from 'cytoscape';
-import { ReactomeEventTypes } from 'reactome-cytoscape-style';
+import { ReactomeEventTypes } from 'ngx-reactome-cytoscape-style';
 import { DiagramComponent } from '../../pathway-browser/src/app/diagram/diagram.component';
 import { IllustrationComponent } from './illustration.component';
 import { DataStateService } from '../../pathway-browser/src/app/services/data-state.service';

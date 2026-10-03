@@ -81,10 +81,13 @@ fail.
 
 ## Workspace libraries
 
-`projects/` holds four libraries that build to `dist/` and are consumed from
+`projects/` holds two libraries that build to `dist/` and are consumed from
 there, not from `node_modules`. Build them before the app will compile:
 
 ```bash
 npm run build:libs
-ng build reactome-cytoscape-style
 ```
+
+The diagram style library and the theme come built from
+[ngx-reactome-base](https://github.com/reactome/ngx-reactome-base); change them
+there.

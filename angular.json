@@ -171,59 +171,6 @@
         }
       }
     },
-    "reactome-cytoscape-style": {
-      "projectType": "library",
-      "root": "projects/reactome-cytoscape-style",
-      "sourceRoot": "projects/reactome-cytoscape-style/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
-          "options": {
-            "project": "projects/reactome-cytoscape-style/ng-package.json"
-          },
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/reactome-cytoscape-style/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/reactome-cytoscape-style/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "tsConfig": "projects/reactome-cytoscape-style/tsconfig.spec.json"
-          }
-        }
-      }
-    },
-    "ngx-reactome-style": {
-      "projectType": "library",
-      "root": "projects/ngx-reactome-style",
-      "sourceRoot": "projects/ngx-reactome-style/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
-          "options": {
-            "project": "projects/ngx-reactome-style/ng-package.json",
-            "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.json"
-          },
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/ngx-reactome-style/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        }
-      }
-    },
     "reactome-table": {
       "projectType": "library",
       "root": "projects/reactome-table",
@@ -375,7 +322,7 @@
             "assets": [
               {
                 "glob": "**/*.{gif,webm,svg,png}",
-                "input": "dist/reactome-cytoscape-style/assets",
+                "input": "node_modules/ngx-reactome-cytoscape-style/assets",
                 "output": "/"
               },
               {

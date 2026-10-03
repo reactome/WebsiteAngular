@@ -15,7 +15,7 @@ import { environment } from '../../environments/environment';
 import type { Analysis } from '../model/analysis.model';
 import { UrlStateService } from './url-state.service';
 import chroma, { Color, Scale } from 'chroma-js';
-import { extract, Style } from 'reactome-cytoscape-style';
+import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
 import { Params } from '@angular/router';

@@ -15,7 +15,7 @@ import {
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
 import { clampThreshold, DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
-import { INTERACTOR_BADGE_MIN_ZOOM } from 'reactome-cytoscape-style';
+import { INTERACTOR_BADGE_MIN_ZOOM } from 'ngx-reactome-cytoscape-style';
 import { UrlStateService } from '../../services/url-state.service';
 
 /**

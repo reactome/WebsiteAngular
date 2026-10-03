@@ -23,7 +23,7 @@ import {
   ReactomeEvent,
   ReactomeEventTypes,
   Style,
-} from 'reactome-cytoscape-style';
+} from 'ngx-reactome-cytoscape-style';
 import cytoscape, { BoundingBox12, BoundingBoxWH, ElementsDefinition } from 'cytoscape';
 import { InteractorService } from '../interactors/services/interactor.service';
 import {

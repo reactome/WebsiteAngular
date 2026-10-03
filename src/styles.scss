@@ -1,5 +1,5 @@
 @use '@angular/material' as mat;
-@use 'reactome-cytoscape-style/assets' as reactome-cytoscape-style;
+@use 'ngx-reactome-cytoscape-style/assets' as reactome-cytoscape-style;
 @use 'ngx-reactome-style';
 @use '../projects/pathway-browser/src/app/diagram/controls' as diagram-controls;
 @use 'reactome-table';

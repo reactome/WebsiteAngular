@@ -25,5 +25,11 @@
     ".claude/**",
     "projects/*/src/types/**"
   ],
-  "ignoreDependencies": ["@angular/localize", "zone.js", "tinacms", "swagger-ui-dist"]
+  "ignoreDependencies": [
+    "@angular/localize",
+    "zone.js",
+    "tinacms",
+    "swagger-ui-dist",
+    "ngx-reactome-style"
+  ]
 }

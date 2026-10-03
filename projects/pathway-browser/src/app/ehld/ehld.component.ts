@@ -19,7 +19,7 @@ import { UrlStateService } from '../services/url-state.service';
 import SvgPanZoom from 'svg-pan-zoom';
 import { AnalysisService } from '../services/analysis.service';
 import { isDefined } from '../services/utils';
-import { Style } from 'reactome-cytoscape-style';
+import { Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DataStateService } from '../services/data-state.service';
 import { Point } from '@angular/cdk/drag-drop';

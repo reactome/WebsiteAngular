@@ -12,17 +12,15 @@ offered upstream; `svg-export-dist` is the same thing plus a built `dist/`,
 which is what npm installs.
 
 This harness lives here rather than in the fork because it needs
-`reactome-cytoscape-style`, and a Reactome dependency has no business in a pull
+`ngx-reactome-cytoscape-style`, and a Reactome dependency has no business in a pull
 request to cytoscape. The fork keeps a Reactome-free equivalent at
 `debug/svg-export/`.
 
 ## Running it
 
 ```bash
-npm run build:libs                       # reactome-cytoscape-style into dist/
 npx esbuild tools/svg-export-harness/harness.mjs --bundle --format=esm \
-  --outfile=tools/svg-export-harness/harness.bundle.js \
-  --alias:reactome-cytoscape-style=./dist/reactome-cytoscape-style
+  --outfile=tools/svg-export-harness/harness.bundle.js
 npx http-server tools/svg-export-harness -p 3334 -s -c -1
 ```
 

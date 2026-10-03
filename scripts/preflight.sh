@@ -158,7 +158,7 @@ if [ "$mode" != "fast" ]; then
   # Only when the push touches what a figure is made from -- it adds minutes,
   # and a pre-push that runs long enough makes GitHub drop the waiting push.
   # PREFLIGHT_RENDER=always runs it regardless.
-  render_paths='^(tools/render/|projects/pathway-browser/src/app/(render|diagram|ehld|reacfoam)/|projects/pathway-browser/src/app/details/tabs/download-tab/|projects/reactome-cytoscape-style/|e2e/(downloads|download-feedback|detail-contents)\.spec\.ts$|e2e/fixtures/serves\.ts$|proxy\.conf\.js$|scripts/preflight\.sh$)'
+  render_paths='^(tools/render/|projects/pathway-browser/src/app/(render|diagram|ehld|reacfoam)/|projects/pathway-browser/src/app/details/tabs/download-tab/|package-lock\.json$|e2e/(downloads|download-feedback|detail-contents)\.spec\.ts$|e2e/fixtures/serves\.ts$|proxy\.conf\.js$|scripts/preflight\.sh$)'
   # With no origin/main to compare against, what changed is unknown: run it.
   if render_base=$(git merge-base HEAD origin/main 2>/dev/null); then
     render_touched=$(
