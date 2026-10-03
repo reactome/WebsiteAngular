@@ -11,7 +11,7 @@ import {
   Rectangle,
 } from '../model/diagram.model';
 import { Graph } from '../model/graph.model';
-import { Style, Types } from 'reactome-cytoscape-style';
+import { Style, Types } from 'ngx-reactome-cytoscape-style';
 import legend from '../../assets/json/legend.json';
 import { array } from 'vectorious';
 

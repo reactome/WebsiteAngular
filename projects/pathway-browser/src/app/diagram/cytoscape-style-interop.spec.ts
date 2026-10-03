@@ -1,5 +1,5 @@
 /**
- * `reactome-cytoscape-style` can be imported under vitest.
+ * `ngx-reactome-cytoscape-style` can be imported under vitest.
  *
  * Its published ESM does `import { isArray } from 'lodash'`, and lodash is
  * CommonJS only. Vite's interop rejects that named import -- "Named export
@@ -18,7 +18,7 @@
  * about the library rather than as a bare module error.
  */
 import { describe, expect, it } from 'vitest';
-import { ReactomeEventTypes, Style } from 'reactome-cytoscape-style';
+import { ReactomeEventTypes, Style } from 'ngx-reactome-cytoscape-style';
 
 describe('the cytoscape style library under vitest', () => {
   it('imports, despite its lodash interop', () => {

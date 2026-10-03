@@ -1,8 +1,8 @@
-// Harness that renders Reactome's legend pathway with reactome-cytoscape-style
+// Harness that renders Reactome's legend pathway with ngx-reactome-cytoscape-style
 // against this repo's modified cytoscape (so cy.svg() is exercised).
 
 import cytoscape from 'cytoscape';
-import { Style } from 'reactome-cytoscape-style';
+import { Style } from 'ngx-reactome-cytoscape-style';
 
 window.cytoscape = cytoscape;
 

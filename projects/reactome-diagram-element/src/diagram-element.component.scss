@@ -3,7 +3,7 @@
 // properties inherit into the shadow root, and the diagram's style library
 // reads them from its container (getComputedStyle), so tokens here reach it.
 @use 'ngx-reactome-style';
-@use 'reactome-cytoscape-style/assets' as reactome-cytoscape-style;
+@use 'ngx-reactome-cytoscape-style/assets' as reactome-cytoscape-style;
 @use '../../pathway-browser/src/app/diagram/controls' as diagram-controls;
 
 @include ngx-reactome-style.theme($root: ':host', $dark: ':host(.dark)', $vars: ':host');

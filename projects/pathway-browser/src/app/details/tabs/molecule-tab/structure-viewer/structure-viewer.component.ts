@@ -14,7 +14,7 @@ import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { extract, Style } from 'reactome-cytoscape-style';
+import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { DarkService } from '../../../../services/dark.service';
 import { ReferenceEntity } from '../../../../model/graph/reference-entity/reference-entity.model';
 import { catchError, map, of } from 'rxjs';

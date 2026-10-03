@@ -11,7 +11,7 @@ import chroma from 'chroma-js';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import type { Analysis } from '../model/analysis.model';
-import { extract, Style } from 'reactome-cytoscape-style';
+import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { isArray } from 'lodash';
 
 const LAYOUT_URL = 'assets/reacfoam/layout.tsv';
