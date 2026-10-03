@@ -582,6 +582,14 @@ test.describe('the embeddable diagram', () => {
     page,
   }) => {
     // R-HSA-69541, Stabilization of p53, is drawn in its parent's diagram.
+    // The page's own copy of its ancestors held back (the request with a
+    // query; the diagram fetches them again without one). The diagram looked
+    // for the parent in that copy, not its own: when its fetch won the race,
+    // it found none -- a diagramerror and no drawing, one load in three or so.
+    await page.route('**/data/event/R-HSA-69541/ancestors?*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await route.fallback();
+    });
     await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69541`);
     await drawn(page);
     await page.waitForTimeout(1500);

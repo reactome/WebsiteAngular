@@ -1025,8 +1025,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   loadSubpathwayWithDiagram(event: EventModel) {
     return this.event.fetchEventAncestors(this.pathwayId()!).pipe(
       map((ancestors) => this.event.getFinalAncestor(ancestors)),
-      switchMap((_ancestors) => {
-        const pathwayWithDiagram = this.event.getPathwayWithDiagram(event);
+      switchMap((lineage) => {
+        // In the ancestors just fetched, not the event's own copy, which the
+        // page fills from a fetch of its own: when that one was still on its
+        // way, no parent was found and the pathway was reported missing.
+        const pathwayWithDiagram = this.event.getPathwayWithDiagram(
+          event,
+          lineage.length ? lineage : event.ancestors
+        );
         if (pathwayWithDiagram) {
           const newDiagramId = pathwayWithDiagram.stId;
           const diagramId = this.pathwayId();
