@@ -4,22 +4,16 @@
   "type": "module",
   "peerDependencies": {
     "cytoscape": "^3.30.0",
-    "lodash.memoize": "^4.1.2",
-    "chroma-js": "^3.1.2"
+    "cytoscape-layers": "^3.0.0",
+    "chroma-js": "^3.1.2",
+    "lodash": "^4.17.21"
   },
   "dependencies": {
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@types/chroma-js": "^3.1.1"
+    "@types/chroma-js": "^3.1.1",
+    "@types/lodash": "^4.17.0"
   },
-  "sideEffects": false,
-  "exports": {
-    ".": {
-      "types": "./index.d.ts",
-      "esm2022": "./esm2022/reactome-cytoscape-style.mjs",
-      "esm": "./esm2022/reactome-cytoscape-style.mjs",
-      "default": "./fesm2022/reactome-cytoscape-style.mjs"
-    }
-  }
+  "sideEffects": false
 }

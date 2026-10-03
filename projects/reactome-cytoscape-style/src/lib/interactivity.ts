@@ -4,7 +4,6 @@ import { Properties } from './properties';
 import { ReactomeEvent, ReactomeEventTypes } from './model/reactome-event.model';
 import Layers, { IHTMLLayer, layers, LayersPlugin } from 'cytoscape-layers';
 import * as _ from 'lodash';
-import { isPromise } from 'rxjs/internal/util/isPromise';
 
 cytoscape.use(Layers);
 type RenderableHTMLElement = HTMLElement & {
@@ -427,7 +426,17 @@ export class Interactivity {
     // console.log('Remove diagram structure container because not found', loadingContainer, node)
     loadingContainer.classList.remove('loading');
     this.removeLoading(loadingContainer);
-    node.removeStyle();
+    // Only what the structure set. All of the node's inline style went before,
+    // the zoom's opacity with it, and a trivial molecule then fell back to its
+    // stylesheet opacity of 0 until the next zoom -- which never came in a
+    // diagram that cannot be zoomed.
+    for (const property of [
+      'background-position-x',
+      'background-position-y',
+      'background-width',
+      'background-height',
+    ])
+      node.removeStyle(property);
     this.structureContainers = this.structureContainers.not(node);
   }
 
@@ -456,7 +465,8 @@ export class Interactivity {
           elem.style.height = h - 2 * margin + 'px';
           elem.style.display = 'flex';
 
-          const structure = node.data('chebiStructure') as string;
+          // The structure's SVG, or its load while it is still on the way.
+          const structure = node.data('chebiStructure') as string | PromiseLike<string>;
           const initStructure = (svgData: string) => {
             if (svgData === undefined) return this.removeStructureContainer(elem, node);
             elem.innerHTML = svgData;
@@ -476,10 +486,16 @@ export class Interactivity {
             this.removeLoading(elem);
           };
 
-          if (isPromise(structure)) {
-            structure.then(initStructure);
+          // A thenable -- not `instanceof Promise`, which is false for a native
+          // promise where zone.js has replaced the global, as in an app that
+          // uses it -- and not rxjs's internal isPromise, no part of its API.
+          if (typeof (structure as PromiseLike<string>)?.then === 'function') {
+            // A structure that fails to load is one that could not be found.
+            (structure as PromiseLike<string>).then(initStructure, () =>
+              this.removeStructureContainer(elem, node)
+            );
           } else {
-            initStructure(structure);
+            initStructure(structure as string);
           }
         },
         transform: `translate(-100%, -50%)`,

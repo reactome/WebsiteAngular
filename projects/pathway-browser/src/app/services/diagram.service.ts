@@ -483,7 +483,9 @@ export class DiagramService {
     //entity nodes
     const entityNodes: cytoscape.NodeDefinition[] = diagram?.nodes.flatMap((item) => {
       let classes = [
-        ...(this.nodeTypeMap.get(item.renderableClass) || item.renderableClass.toLowerCase()),
+        // An array: spreading the bare string spread an unknown type's name
+        // into one class per letter.
+        ...(this.nodeTypeMap.get(item.renderableClass) || [item.renderableClass.toLowerCase()]),
       ];
       let unitId = undefined;
       if (item.schemaClass === SchemaClasses.POLYMER) {

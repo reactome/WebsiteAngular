@@ -6,11 +6,6 @@
   },
   "assets": [
     {
-      "input": "types",
-      "glob": "*",
-      "output": "**/*"
-    },
-    {
       "input": "src/assets/",
       "glob": "**/*",
       "output": "/assets/"
