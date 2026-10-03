@@ -31,9 +31,16 @@ export class Interactivity {
     this.initHover(cy);
     this.initSelect(cy);
     this.initClick(cy);
-    this.initZoom(cy);
+    // Before the layers: a structure that cannot be found removes its node
+    // from this collection as the layer is drawn.
+    this.withoutStructure = cy.collection();
+    this.updateProteins();
     this.initStructureVideo(cy);
     this.initStructureMolecule(cy);
+    // After the layers, so its first run sets their opacity for this zoom.
+    // It ran first, and the molecule layer stayed at full opacity until the
+    // reader zoomed.
+    this.initZoom(cy);
   }
 
   expandReaction(reactionNode: cytoscape.NodeCollection) {
@@ -430,13 +437,19 @@ export class Interactivity {
     // the zoom's opacity with it, and a trivial molecule then fell back to its
     // stylesheet opacity of 0 until the next zoom -- which never came in a
     // diagram that cannot be zoomed.
+    // The zoom moved the label aside to make room for the structure; with no
+    // structure it goes back to the middle.
     for (const property of [
       'background-position-x',
       'background-position-y',
       'background-width',
       'background-height',
+      'font-size',
+      'text-margin-x',
+      'text-max-width',
     ])
       node.removeStyle(property);
+    this.withoutStructure = this.withoutStructure.union(node);
     this.structureContainers = this.structureContainers.not(node);
   }
 
@@ -451,7 +464,9 @@ export class Interactivity {
 
     layers.renderPerNode(
       this.moleculeLayer,
-      (_elem: HTMLElement, _node: cytoscape.NodeSingular) => {},
+      (elem: HTMLElement, node: cytoscape.NodeSingular) => {
+        elem.style.visibility = node.visible() ? 'visible' : 'hidden';
+      },
       {
         init: (elem: HTMLElement, node: cytoscape.NodeSingular) => {
           elem.classList.add('molecule-structure');
@@ -503,6 +518,9 @@ export class Interactivity {
         uniqueElements: true,
         checkBounds: false,
         selector: '.Molecule',
+        // Not only when a node moves: a node hidden or shown changes no
+        // position, and its structure has to follow it.
+        updateOn: 'position style',
         queryEachTime: false,
       }
     );
@@ -522,16 +540,17 @@ export class Interactivity {
   }
 
   structureContainers!: cytoscape.NodeCollection;
+  /** Nodes whose structure could not be found: never counted back in. */
+  private withoutStructure!: cytoscape.NodeCollection;
 
   updateProteins() {
-    this.structureContainers = this.cy.nodes('.Protein').or('.Molecule');
+    this.structureContainers = this.cy.nodes('.Protein').or('.Molecule').not(this.withoutStructure);
   }
 
   initZoom(cy: cytoscape.Core) {
     const allShadows = cy.edges('[?pathway]');
     const shadowLabels = cy.nodes('.Shadow');
     const trivial = cy.elements('.trivial');
-    this.updateProteins();
 
     cy.minZoom(Math.min(cy.zoom(), extract(this.properties.shadow.labelOpacity)[0][0] / 100));
     cy.maxZoom(15);
@@ -693,7 +712,7 @@ export class Interactivity {
     const handler = (e: cytoscape.EventObject) => updateDecorationPosition(e.target);
     cy.on('mouseover', '.drug', handler)
       .on('mouseout', '.drug', handler)
-      .on('deselect', '.drug', handler)
+      .on('unselect', '.drug', handler)
       .on('select', '.drug', handler);
 
     this.triggerZoom();

@@ -2,6 +2,14 @@
   "name": "reactome-cytoscape-style",
   "version": "0.0.2",
   "type": "module",
+  "exports": {
+    "./assets": {
+      "sass": "./assets/index.scss",
+      "style": "./assets/index.scss",
+      "default": "./assets/index.scss"
+    },
+    "./assets/*": "./assets/*"
+  },
   "peerDependencies": {
     "cytoscape": "^3.30.0",
     "cytoscape-layers": "^3.0.0",

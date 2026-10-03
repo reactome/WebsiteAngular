@@ -52,13 +52,13 @@ export class Style {
     this.initSubPathwayColors();
   }
 
-  initSubPathwayColors() {
-    const subPathways = this.cy?.nodes('.Shadow');
+  initSubPathwayColors(cy = this.cy) {
+    const subPathways = cy?.nodes('.Shadow');
     if (!subPathways) return;
     const dH = 360 / subPathways.length;
 
     subPathways.forEach((subPathway, i) => {
-      const edges = this.cy!.edges(`[pathway=${subPathway.data('reactomeId')}]`);
+      const edges = cy!.edges(`[pathway=${subPathway.data('reactomeId')}]`);
       subPathway.data('edges', edges);
 
       const color = chroma.hsl(dH * i, 1, extract(this.properties.shadow.luminosity) / 100);
@@ -917,8 +917,10 @@ export class Style {
   update(cy: cytoscape.Core) {
     this.clearCache();
     cy.style(this.getStyleSheet());
-    this.initSubPathwayColors();
-    this.interactivity.triggerZoom();
+    // The graph asked for: one Style is bound to several, and this.cy and
+    // this.interactivity are only the last of them.
+    this.initSubPathwayColors(cy);
+    interactivityOf(cy)?.triggerZoom();
   }
 
   loadAnalysis(cy: cytoscape.Core, palette: Scale) {
