@@ -1,5 +1,6 @@
-import BackgroundImage = cytoscape.Css.BackgroundImage;
-import PropertyValueNode = cytoscape.Css.PropertyValueNode;
+import type cytoscape from 'cytoscape';
+type BackgroundImage = cytoscape.Css.BackgroundImage;
+type PropertyValueNode<T> = cytoscape.Css.PropertyValueNode<T>;
 import _ from 'lodash';
 import { Properties } from '../properties';
 
