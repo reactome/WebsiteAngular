@@ -1818,8 +1818,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             );
           } else this.interactorsService.removeInteractorNodes(occurrenceNode);
 
-          style.interactivity.updateProteins();
-          style.interactivity.triggerZoom();
+          if (!cy) return;
+          const interactivity = interactivityOf(cy);
+          interactivity?.updateProteins();
+          interactivity?.triggerZoom();
         });
 
       if (this.comparing()) {

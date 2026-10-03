@@ -44,7 +44,7 @@ export function defaultable<T>(object: T): Defaultable<T> {
     key: KA,
     defaultValue: VA
   ): Defaultable<T, K | KA> {
-    if (!object[key]) object[key] = defaultValue;
+    if (object[key] === undefined || object[key] === null) object[key] = defaultValue;
     return defaultable as Defaultable<T, K | KA>;
   };
 

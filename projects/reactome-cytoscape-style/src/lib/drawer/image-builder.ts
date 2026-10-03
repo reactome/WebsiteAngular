@@ -14,7 +14,7 @@ import { diseaseInteractor } from './shape/disease-interactor-shape';
 import { subPathway } from './shape/sub-pathway-shape';
 import { extract } from '../properties-utils';
 import { Node } from '../types';
-import { Aggregated, DrawerParameters, DrawerProvider, Image, Memo } from './types';
+import { Aggregated, DrawerParameters, DrawerProvider, Image } from './types';
 import { Properties } from '../properties';
 import { Style } from '../style';
 import chroma from 'chroma-js';
@@ -41,30 +41,31 @@ export const imageBuilder = (properties: Properties, style: Style) =>
 
       const drawer = provider(properties, drawerParams);
 
+      // A polymer is its shape with an offset copy behind it: the copies only.
+      // The shape's own layers are added below like any other node's -- added
+      // here as well, they were drawn twice.
       if (node.hasClass('Polymer')) {
-        [drawer.background, ...(drawer.decorators || [])]
-          .filter((layer) => !!layer)
-          .map((originalLayer) => {
-            const polymerLayer = { ...originalLayer };
-            polymerLayer['background-position-x'] =
-              ((polymerLayer['background-position-x'] || 0) as number) +
-              extract(properties.polymer.distance);
-            polymerLayer['background-position-y'] =
-              ((polymerLayer['background-position-y'] || 0) as number) +
-              extract(properties.polymer.distance);
-            polymerLayer['bounds-expansion'] =
-              ((polymerLayer['bounds-expansion'] || 0) as number) +
-              extract(properties.polymer.distance) * 2;
-            polymerLayer['background-image'] =
-              `<g style="filter: ${extract(properties.polymer.filter)}">` +
-              polymerLayer['background-image'] +
-              '</g>';
-            layers.push(polymerLayer);
-            return originalLayer as Image;
-          })
-          .forEach((layer) => {
-            layers.push(layer);
-          });
+        const drawn = [
+          drawer.background && !drawer.background.optional ? drawer.background : undefined,
+          ...(drawer.decorators || []),
+        ].filter((layer) => !!layer);
+        for (const originalLayer of drawn) {
+          const polymerLayer = { ...originalLayer };
+          polymerLayer['background-position-x'] =
+            ((polymerLayer['background-position-x'] || 0) as number) +
+            extract(properties.polymer.distance);
+          polymerLayer['background-position-y'] =
+            ((polymerLayer['background-position-y'] || 0) as number) +
+            extract(properties.polymer.distance);
+          polymerLayer['bounds-expansion'] =
+            ((polymerLayer['bounds-expansion'] || 0) as number) +
+            extract(properties.polymer.distance) * 2;
+          polymerLayer['background-image'] =
+            `<g style="filter: ${extract(properties.polymer.filter)}">` +
+            polymerLayer['background-image'] +
+            '</g>';
+          layers.push(polymerLayer);
+        }
       }
 
       if (node.hasClass('flag') && drawer.flag) layers.push(drawer.flag);
@@ -93,11 +94,13 @@ export const imageBuilder = (properties: Properties, style: Style) =>
 
       // Convert raw HTML to string encoded images
       layers = layers
-        .map((l) => {
-          if (l.requireGradient && gradient)
-            l['background-image'] = addGradient(l['background-image'] as string, gradient);
-          return l;
-        })
+        // On a copy: the layer belongs to a cached drawer, and writing the
+        // gradient into it added another one on every redraw.
+        .map((l) =>
+          l.requireGradient && gradient
+            ? { ...l, 'background-image': addGradient(l['background-image'] as string, gradient) }
+            : l
+        )
         .map((l) => ({
           ...l,
           'background-image': svgStr(
@@ -165,13 +168,17 @@ function _expToGradient(
     width: number;
   }[] = [];
   const size = exps.reduce((l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1), 0);
+  // Nothing to divide the width between: no gradient, not NaN widths.
+  if (!(size > 0)) return undefined;
   const delta = 1 / size;
   exps.forEach((exp, _i) => {
     const p = stops.length - 1;
     const realExp = isArray(exp) ? exp[0]! : exp;
     if (stops.length !== 0 && stops[p].exp === realExp) {
-      stops[p].stop += delta;
-      stops[p].width += delta;
+      // A [value, count] pair is count shares of the width, merged or not.
+      const share = isArray(exp) ? delta * exp[1] : delta;
+      stops[p].stop += share;
+      stops[p].width += share;
     } else {
       if (isArray(exp)) {
         stops.push({
@@ -219,9 +226,30 @@ function _expToGradient(
   return pattern;
 }
 
-const expToGradient = memoize(_expToGradient, (id) => id);
+/**
+ * Kept per palette, and keyed on the node's values as well as its id: keyed on
+ * the id alone it was shared by every diagram on the page, so a node took the
+ * colours of whichever node with that id was drawn first, and kept them after
+ * its values changed.
+ */
+let gradients = new WeakMap<chroma.Scale, Map<string, string | undefined>>();
+function expToGradient(
+  id: string,
+  exps: (number | [number, number] | undefined)[],
+  properties: Properties,
+  palette: chroma.Scale
+): string | undefined {
+  if (!exps || !palette) return undefined;
+  let cache = gradients.get(palette);
+  if (!cache) gradients.set(palette, (cache = new Map<string, string | undefined>()));
+  const key = `${id}|${JSON.stringify(exps)}`;
+  if (!cache.has(key)) cache.set(key, _expToGradient(id, exps, properties, palette));
+  return cache.get(key);
+}
 
-export const resetGradients = () => expToGradient.cache.clear!();
+export const resetGradients = () => {
+  gradients = new WeakMap();
+};
 
 function svg(svgStr: string, width = 100, height = 100) {
   // const cleanedStr = svgStr.replaceAll(/  {2,}|\n/g, " "); // TODO examine performance impact
@@ -237,24 +265,56 @@ function svgStr(svgText: string, viewPortWidth: number, viewPortHeight: number) 
   );
 }
 
-const dim = (_properties: Properties, { id }: DrawerParameters) => id;
-const classToDrawers = new Map<Node, Memo<DrawerProvider>>([
-  ['Protein', memoize(protein, dim)],
-  ['GenomeEncodedEntity', memoize(genomeEncodedEntity, dim)],
-  ['RNA', memoize(rna, dim)],
-  ['Gene', memoize(gene, dim)],
-  ['Molecule', memoize(molecule, dim)],
-  ['Complex', memoize(complex, dim)],
-  ['EntitySet', memoize(entitySet, dim)],
-  ['Cell', memoize(cell, dim)],
-  ['Interacting', memoize(interactingPathway, dim)],
-  ['SUB', memoize(subPathway, dim)],
-  ['Interactor', memoize(diseaseInteractor, dim)],
+/**
+ * A drawer's output depends on the style's properties and the node's size and
+ * flags -- not on its id. Keyed on the id it was shared by every Style, and a
+ * node got the drawing of whichever node with that id was drawn first: another
+ * diagram's, or the compare view's, at another size, flags or colours.
+ */
+type CachedDrawer = DrawerProvider & { cache: { clear(): void } };
+function cached(provider: DrawerProvider): CachedDrawer {
+  let byProperties = new WeakMap<Properties, Map<string, ReturnType<DrawerProvider>>>();
+  const drawer = ((properties: Properties, p: DrawerParameters) => {
+    let cache = byProperties.get(properties);
+    if (!cache)
+      byProperties.set(properties, (cache = new Map<string, ReturnType<DrawerProvider>>()));
+    const key = [
+      p.width,
+      p.height,
+      p.drug,
+      p.disease,
+      p.interactor,
+      p.crossed,
+      p.lossOfFunction,
+    ].join('|');
+    let drawn = cache.get(key);
+    if (!drawn) cache.set(key, (drawn = provider(properties, p)));
+    return drawn;
+  }) as CachedDrawer;
+  drawer.cache = {
+    clear: () => {
+      byProperties = new WeakMap();
+    },
+  };
+  return drawer;
+}
+const classToDrawers = new Map<Node, CachedDrawer>([
+  ['Protein', cached(protein)],
+  ['GenomeEncodedEntity', cached(genomeEncodedEntity)],
+  ['RNA', cached(rna)],
+  ['Gene', cached(gene)],
+  ['Molecule', cached(molecule)],
+  ['Complex', cached(complex)],
+  ['EntitySet', cached(entitySet)],
+  ['Cell', cached(cell)],
+  ['Interacting', cached(interactingPathway)],
+  ['SUB', cached(subPathway)],
+  ['Interactor', cached(diseaseInteractor)],
 ]);
 
 export function clearDrawersCache() {
   for (const value of classToDrawers.values()) {
-    value.cache.clear!();
+    value.cache.clear();
   }
   OMMITED_ICON.cache.clear!();
 }

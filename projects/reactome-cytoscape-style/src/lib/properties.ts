@@ -117,6 +117,30 @@ export interface Properties extends PropertiesType {
   };
 }
 
+/** A CSS variable as a number, or the default when it is unset or not a number. 0 is a number. */
+function cssNumber(css: CSSStyleDeclaration, name: string, defaultValue: number): number {
+  const value = Number.parseFloat(css.getPropertyValue(name));
+  return Number.isFinite(value) ? value : defaultValue;
+}
+
+/**
+ * A CSS variable holding JSON, or the default when it is unset or unreadable.
+ * Stylesheets quote with single quotes as readily as double, so
+ * `[[0, '#FFFFE0']]` and `'viridis'` are read as JSON would read them double-quoted.
+ */
+function cssJson<T>(css: CSSStyleDeclaration, name: string, defaultValue: T): T {
+  const value = css.getPropertyValue(name).trim();
+  if (!value) return defaultValue;
+  for (const text of [value, value.replace(/'/g, '"')]) {
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      // Try the next reading.
+    }
+  }
+  return defaultValue;
+}
+
 export function setDefaults(properties: UserProperties = {}, css: CSSStyleDeclaration): Properties {
   const global: Properties['global'] = defaultable(properties.global || {})
     .setDefault('thickness', 4)
@@ -139,44 +163,26 @@ export function setDefaults(properties: UserProperties = {}, css: CSSStyleDeclar
     .setDefault('flag', () => css.getPropertyValue('--flag') || '#DE75B4');
 
   const compartment: Properties['compartment'] = defaultable(properties.compartment || {})
-    .setDefault(
-      'opacity',
-      () => Number.parseFloat(css.getPropertyValue('--compartment-opacity')) || 0.06
-    )
+    .setDefault('opacity', () => cssNumber(css, '--compartment-opacity', 0.06))
     .setDefault('fill', () => css.getPropertyValue('--compartment') || '#E5834A');
 
   const shadow: Properties['shadow'] = defaultable(properties.shadow || {})
-    .setDefault(
-      'luminosity',
-      () => Number.parseFloat(css.getPropertyValue('--shadow-luminosity')) || 40
+    .setDefault('luminosity', () => cssNumber(css, '--shadow-luminosity', 40))
+    .setDefault('padding', () => cssNumber(css, '--shadow-padding', 20))
+    .setDefault('fontSize', () => cssNumber(css, '--shadow-font-size', 80))
+    .setDefault('fontPadding', () => cssNumber(css, '--shadow-font-padding', 15))
+    .setDefault('opacity', () =>
+      cssJson(css, '--shadow-opacity', [
+        [20, 20],
+        [40, 0],
+      ])
     )
-    .setDefault('padding', () => Number.parseFloat(css.getPropertyValue('--shadow-padding')) || 20)
-    .setDefault(
-      'fontSize',
-      () => Number.parseFloat(css.getPropertyValue('--shadow-font-size')) || 80
-    )
-    .setDefault(
-      'fontPadding',
-      () => Number.parseFloat(css.getPropertyValue('--shadow-font-padding')) || 15
-    )
-    .setDefault('opacity', () => {
-      const p = css.getPropertyValue('--shadow-opacity');
-      return p
-        ? JSON.parse(p)
-        : [
-            [20, 20],
-            [40, 0],
-          ];
-    })
-    .setDefault('labelOpacity', () => {
-      const p = css.getPropertyValue('--shadow-label-opacity');
-      return p
-        ? JSON.parse(p)
-        : [
-            [20, 100],
-            [40, 0],
-          ];
-    });
+    .setDefault('labelOpacity', () =>
+      cssJson(css, '--shadow-label-opacity', [
+        [20, 100],
+        [40, 0],
+      ])
+    );
 
   const protein: Properties['protein'] = defaultable(properties.protein || {})
     .setDefault('fill', () => css.getPropertyValue('--primary-contrast-1') || '#001F29')
@@ -226,10 +232,7 @@ export function setDefaults(properties: UserProperties = {}, css: CSSStyleDeclar
     .setDefault('filter', () => css.getPropertyValue('--polymer-filter') || 'invert(0.2)');
 
   const cell: Properties['cell'] = defaultable(properties.cell || {})
-    .setDefault(
-      'thickness',
-      () => Number.parseFloat(css.getPropertyValue('--cell-thickness')) || 16
-    )
+    .setDefault('thickness', () => cssNumber(css, '--cell-thickness', 16))
     .setDefault('fill', () => css.getPropertyValue('--tertiary-contrast-2') || '#004882')
     .setDefault('stroke', () => css.getPropertyValue('--on-tertiary') || '#FFFFFF');
 
@@ -244,68 +247,48 @@ export function setDefaults(properties: UserProperties = {}, css: CSSStyleDeclar
   const interactor: Properties['interactor'] = defaultable(properties.interactor || {})
     .setDefault('fill', () => css.getPropertyValue('--interactor-fill') || '#68297C')
     .setDefault('stroke', () => css.getPropertyValue('--interactor-stroke') || '#9f5cb5')
-    .setDefault(
-      'decorationWidth',
-      () => Number.parseFloat(css.getPropertyValue('--decorationWidth')) || 20
-    );
+    .setDefault('decorationWidth', () => cssNumber(css, '--decorationWidth', 20));
 
   const trivial: Properties['trivial'] = defaultable(properties.trivial || {}).setDefault(
     'opacity',
-    () => {
-      const p = css.getPropertyValue('--trivial-opacity');
-      return p
-        ? JSON.parse(p)
-        : [
-            [40, 0],
-            [60, 100],
-          ];
-    }
+    () =>
+      cssJson(css, '--trivial-opacity', [
+        [40, 0],
+        [60, 100],
+      ])
   );
 
   const structure: Properties['structure'] = defaultable(properties.structure || {}).setDefault(
     'opacity',
-    () => {
-      const p = css.getPropertyValue('--structure-opacity');
-      return p
-        ? JSON.parse(p)
-        : [
-            [130, 0],
-            [150, 100],
-          ];
-    }
+    () =>
+      cssJson(css, '--structure-opacity', [
+        [130, 0],
+        [150, 100],
+      ])
   );
 
   const font: Properties['font'] = defaultable(properties.font || {}).setDefault('size', 12);
 
   const analysis: Properties['analysis'] = defaultable(properties.analysis || {})
-    .setDefault('min', Number.parseFloat(css.getPropertyValue('--analysis-min')) || 0)
-    .setDefault('max', Number.parseFloat(css.getPropertyValue('--analysis-max')) || 1)
+    .setDefault('min', cssNumber(css, '--analysis-min', 0))
+    .setDefault('max', cssNumber(css, '--analysis-max', 1))
     .setDefault(
       'notFound',
       () => css.getPropertyValue('--analysis-not-found') || extract(global.onSurface)
     )
-    .setDefault('unidirectionalPalette', () => {
-      const p = css.getPropertyValue('--analysis-uni-palette');
-      console.error(p, typeof p);
-      return p
-        ? JSON.parse(p)
-        : [
-            [0.0, '#FFFFE0'],
-            [1.0, '#00429D'],
-          ];
-    })
-    .setDefault('bidirectionalPalette', () => {
-      const p = css.getPropertyValue('--analysis-bi-palette');
-      console.error(p, typeof p);
-
-      return p
-        ? JSON.parse(p)
-        : [
-            [0.0, '#93003A'],
-            [0.5, '#FFFFE0'],
-            [1.0, '#00429D'],
-          ];
-    });
+    .setDefault('unidirectionalPalette', () =>
+      cssJson(css, '--analysis-uni-palette', [
+        [0.0, '#FFFFE0'],
+        [1.0, '#00429D'],
+      ])
+    )
+    .setDefault('bidirectionalPalette', () =>
+      cssJson(css, '--analysis-bi-palette', [
+        [0.0, '#93003A'],
+        [0.5, '#FFFFE0'],
+        [1.0, '#00429D'],
+      ])
+    );
 
   const features: Properties['features'] = defaultable(properties.features || {})
     .setDefault('edit', false)

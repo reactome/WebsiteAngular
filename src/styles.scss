@@ -338,7 +338,6 @@ p:first-child {
 @include diagram-controls.diagram-controls();
 
 body {
-  --opacity: 0.08;
   --structure-opacity: [[130, 0], [150, 100]];
   --shadow-padding: 20;
 
@@ -384,7 +383,6 @@ body {
   --analysis-not-found: #d6d6d6;
 
   &.dark {
-    --opacity: 0.08;
     --shadow-luminosity: 70;
     --shadow-opacity: [[20, 40], [40, 0]];
 
