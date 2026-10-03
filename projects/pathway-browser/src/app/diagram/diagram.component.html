@@ -25,21 +25,40 @@
       (dismissed)="popupTarget.set(null)"
     />
   }
-  <div id="disease-container" class="drag-container" #compareContainer [style.display]="comparing ? 'flex' : 'none'">
-    <div
-      id="handle-limits"
-      (mouseup)="dragEnd()"
-      (mouseleave)="dragEnd()"
-      (touchend)="dragEnd()"
-      (touchcancel)="dragEnd()"
-      (mousemove)="dragMove($event, compareContainer, container)"
-      (touchmove)="dragMove($event, compareContainer, container)"
-      [class.active]="compareDragging"
-    >
-      <span id="disease-handle" class="drag-handle" (mousedown)="dragStart()" (touchstart)="dragStart()"></span>
-    </div>
+  <!-- A disease pathway opens on the disease diagram alone: the layer below,
+       the normal pathway, shows only where the handle has slid back from. -->
+  @if (comparing()) {
+    <!-- Named for what it will do, so the name a voice user reads is the one
+         the button says. -->
+    <button type="button" class="compare-toggle" [class.active]="compareMode()" (click)="toggleCompare()">
+      <mat-icon fontSet="symbols">compare</mat-icon>
+      {{ compareMode() ? 'Close comparison' : 'Compare with normal' }}
+    </button>
+  }
+  <div id="disease-container" class="drag-container" #compareLayer [style.display]="comparing() ? 'flex' : 'none'">
+    @if (compareShown()) {
+      <span
+        id="disease-handle"
+        class="drag-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Normal pathway on the left, disease pathway on the right"
+        [class.active]="compareDragging()"
+        (pointerdown)="handleDown($event)"
+        (pointermove)="handleMove($event)"
+        (pointerup)="handleUp($event)"
+        (pointercancel)="handleUp($event)"
+        (lostpointercapture)="compareDragging.set(false)"
+      ></span>
+    }
 
-    <div id="cytoscape-compare" #cytoscapeCompare class="drag-content" [class.pointer]="hovering()"></div>
+    <div
+      id="cytoscape-compare"
+      #cytoscapeCompare
+      class="drag-content"
+      [class.pointer]="hovering()"
+      [class.comparing]="compareShown()"
+    ></div>
   </div>
 
   @let legendWidth = ratio * container.clientHeight;
