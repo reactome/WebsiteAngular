@@ -11,7 +11,7 @@ import { createCustomElement } from '@angular/elements';
 export class AppModule implements DoBootstrap {
   private injector = inject(Injector);
 
-  ngDoBootstrap(appRef: ApplicationRef): void {
+  ngDoBootstrap(_appRef: ApplicationRef): void {
     customElements.define(
       'reactome-table-wc',
       createCustomElement(TableComponent, { injector: this.injector })

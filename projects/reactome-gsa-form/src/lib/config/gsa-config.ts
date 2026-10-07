@@ -3,7 +3,8 @@ import { InjectionToken, Signal, signal } from '@angular/core';
 export interface GsaConfig {
   apiRoot: string;
   apiSecretRoot: string;
-  server: 'production' | 'dev';
+  /** ReactomeGSA's names for the Reactome servers it can deliver results to. */
+  server: 'production' | 'dev' | 'release';
 }
 
 export const DEFAULT_GSA_CONFIG: GsaConfig = {

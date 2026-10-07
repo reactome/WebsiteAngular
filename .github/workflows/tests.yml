@@ -17,28 +17,31 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # `.nvmrc`, not a second copy of the number: git hooks and preflight
+          # read that file too, so a bump reaches CI and local checks together.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
-      # No build step needed: no remaining spec imports the workspace libraries
-      # from dist/, so this passes on a clean checkout.
-      - name: Test
-        run: npm test
-
-      # The type-aware lint rules and knip both need the workspace libraries to
-      # resolve. Without dist/ they report against a different graph than they do
-      # locally, so the baselines drift -- which already failed one run with
-      # "Cannot find module 'reactome-gsa-form'". Build them first so CI and a
-      # developer's machine are looking at the same code.
+      # Before the tests, not after. tsconfig maps the workspace libraries to
+      # their builds in dist/, so a spec importing one -- reactome-gsa-form has
+      # no npm copy to fall back on -- resolves only once they are built. With
+      # the build after the tests, such a spec passed on any machine that had
+      # built them and failed to resolve here. The type-aware lint rules and knip
+      # need them too: without dist/ they report against a different graph than
+      # they do locally, which already failed one run with "Cannot find module
+      # 'reactome-gsa-form'". About 16s.
       - name: Build workspace libraries
         run: npm run build:libs
+
+      - name: Test
+        run: npm test
 
       # The app build is the only thing that runs Angular's template type
       # checking, and strictTemplates is on: a template referencing a member
@@ -48,16 +51,24 @@ jobs:
       # and passed every test. Without this step the only build was the deploy
       # job, so a broken template reached main and was found by a person.
       #
-      # reactome-cytoscape-style is built separately because build:libs does not
-      # cover it and styles.scss @use's it; content-dist is a gitignored asset
-      # input, so stage:content has to run or ng build cannot find it.
+      # content-dist is a gitignored asset input, so stage:content has to run or
+      # ng build cannot find it. The libraries no longer need a step of their
+      # own: `npm run build` builds them, because a build that does not produce
+      # what it links against is a build that can pass here and ship something
+      # else -- a fix to the diagram style library reached CI and never reached
+      # the dev server, which built the app without building the library. (That
+      # library and ngx-reactome-style now come built from ngx-reactome-base.)
       - name: Compile CMS content
         run: npm run stage:content
 
       - name: Build the app
-        run: |
-          npx ng build reactome-cytoscape-style
-          npm run build
+        run: npm run build
+
+      # The embeddable diagram (spec 009) is served to other sites' pages and is
+      # built by nothing else, so it is built here on every change, with its
+      # size budget. Two angular.json projects rotted unbuilt before (#339).
+      - name: Build the embeddable diagram
+        run: npm run build:embed
 
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.
@@ -80,6 +91,12 @@ jobs:
       - name: Check unreachable code has not increased
         run: npm run check:dead
 
+      # A recorded answer cut off after its headers replayed as a successful
+      # empty one, and the page quietly showed nothing. The harness aborts
+      # those now; this refuses a recording that has one.
+      - name: E2E recordings
+        run: npm run check:har
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news
@@ -96,25 +113,23 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # `.nvmrc`, not a second copy of the number: git hooks and preflight
+          # read that file too, so a bump reaches CI and local checks together.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
-      # src/styles.scss @use's all three of these from dist/, and the
-      # pathway-browser build copies reactome-cytoscape-style's assets, so the
-      # app cannot be served until they exist.
+      # The app links against reactome-table and reactome-gsa-form from dist/,
+      # so it cannot be served until they are built. The style libraries come
+      # built, from ngx-reactome-base.
       - name: Build workspace libraries
-        run: |
-          npx ng build reactome-cytoscape-style
-          npx ng build ngx-reactome-style
-          npx ng build reactome-table
-          npx ng build reactome-gsa-form
+        run: npm run build:libs
 
       # site-search-index.json is generated, not committed, and the search
       # specs depend on it.
@@ -127,22 +142,33 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # playwright.config.ts starts `ng serve` itself and waits for :4200.
-      # Backend calls go through proxy.conf.js, which defaults to the Tomcat on
-      # localhost:8080 that the Reactome dev host runs. A CI runner has no such
-      # backend, so point it at production or every data-dependent test hangs
-      # until the job's 30 minute limit -- which is exactly what happened when
-      # the default was switched to localhost.
+      # Backend data comes from the recordings in e2e/har, replayed inside the
+      # browser by e2e/support/backend.ts -- nothing here talks to a server.
       #
-      # Production lacks the content-page endpoints that only exist on the dev
-      # host's unreleased branch; the specs needing those skip themselves rather
-      # than fail here.
+      # This used to set REACTOME_BACKEND to https://reactome.org, so every push
+      # ran the suite against the public site: roughly 1,400 requests a run, and
+      # a red build whenever production had a bad minute. It now names a closed
+      # port on purpose. The fixtures serve every recorded call, so the port is
+      # never reached; if a request ever escapes the recordings it fails at once
+      # instead of quietly reaching production again.
       - name: Run e2e
         env:
-          REACTOME_BACKEND: https://reactome.org
+          REACTOME_BACKEND: http://127.0.0.1:9
         run: npm run e2e -- --shard=${{ matrix.shard }}/4
 
+      # A test that fails and then passes is reported flaky and the build goes
+      # green, with the fact only in the log. This puts it in the job summary
+      # and ratchets the count, the same way check:lint and check:dead work.
+      # Skips too: every one is listed with its reason, and one missing from
+      # e2e/expected-skips.json fails the shard -- a skip reports green while
+      # checking nothing. Runs even when the suite failed, because a failing
+      # run still has flakiness worth seeing.
+      - name: Report flaky and skipped tests
+        if: ${{ !cancelled() }}
+        run: node scripts/check-flaky.mjs playwright-report/report.json
+
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           # One name per shard: artifacts with the same name collide and the

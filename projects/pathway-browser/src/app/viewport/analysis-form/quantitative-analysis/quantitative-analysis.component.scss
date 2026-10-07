@@ -57,6 +57,13 @@ svg.background {
 }
 
 .header {
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .title {
     font: var(--mat-sys-title-medium);
     color: var(--primary);
@@ -69,4 +76,13 @@ svg.background {
     color: var(--on-surface);
     font: var(--mat-sys-body-medium);
   }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

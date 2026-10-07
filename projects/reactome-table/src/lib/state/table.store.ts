@@ -318,7 +318,7 @@ export class TableStore extends ComponentStore<TableState> {
       for (let xFrom = 0; xFrom < table[yFrom].length; xFrom++) {
         const xTo = range.x.min + xFrom;
         if (isGenerated && xTo >= state.dataset[0].length) addColumn(state);
-        if (state.dataset[yTo] && state.dataset[yTo][xTo]) {
+        if (state.dataset[yTo]?.[xTo]) {
           const value = table[yFrom][xFrom].trim();
           const maxCol = state.maxCols[xTo];
           state.dataset[yTo][xTo].value = value;

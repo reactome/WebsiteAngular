@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A property set before the code</title>
+  </head>
+  <body>
+    <reactome-diagram id="diagram" style="width: 700px; height: 420px"></reactome-diagram>
+    <script>
+      // Set before the element's code has loaded: an own property of an
+      // element that is not yet a <reactome-diagram>.
+      document.getElementById('diagram').pathway = 'R-HSA-69620';
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      const script = document.createElement('script');
+      script.src = EMBED + 'reactome-diagram.js';
+      document.head.appendChild(script);
+    </script>
+  </body>
+</html>

@@ -172,8 +172,18 @@ $hamburger-breakpoint: 1100px;
 
 .dropdown-item {
   margin: 0;
-  border-bottom: 1px dashed var(--outline);
+  // Solid, not dashed. A dashed rule reads as a placeholder or an editable
+  // field rather than as a divider, which is what a reviewer picked up on --
+  // and at 1px the dashes are what the eye lands on instead of the labels.
+  border-bottom: 1px solid var(--outline);
   position: relative;
+
+  // No rule under the last one: it drew a line across the bottom of the menu
+  // with only the list's padding beneath it, which reads as a divider above
+  // something that is not there.
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .dropdown-link {
@@ -256,7 +266,11 @@ $hamburger-breakpoint: 1100px;
 
 .nested-dropdown-item {
   margin: 0;
-  border-bottom: 1px dashed var(--outline);
+  border-bottom: 1px solid var(--outline);
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .nested-dropdown-link {

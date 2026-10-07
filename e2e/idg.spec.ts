@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // The IDG page reads its data from idg.reactome.org, which is a different server
 // from everything else this suite exercises. These checks deliberately stop short

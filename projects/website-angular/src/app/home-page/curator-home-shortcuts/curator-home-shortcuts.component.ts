@@ -1,9 +1,8 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { Component, Input, inject } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
-import { NavOption } from '../../../types/link';
 import { environment } from '../../../../../pathway-browser/src/environments/environment';
 
 @Component({
@@ -15,7 +14,7 @@ import { environment } from '../../../../../pathway-browser/src/environments/env
 export class CuratorHomeShortcutsComponent {
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
-  @Input() dark: boolean = true;
+  readonly dark = input<boolean>(true);
   // WebBench is a separate app deployed alongside the curator site, so it has
   // no local equivalent: keying this off window.location.origin pointed it at
   // the dev server (http://localhost:4200/curatortool/home, a 404). Build it

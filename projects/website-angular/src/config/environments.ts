@@ -1,85 +1,324 @@
-export type EnvName = 'development' | 'production' | 'local' | 'github' | 'remote';
+/**
+ * The deployments this repository can build, one row each.
+ *
+ * A profile names both halves of a deployment: the backend it talks to and the
+ * UI variant it presents. They used to be chosen by separate mechanisms -- the
+ * backend by an APP_ENV define, the UI by swapping variant.ts through
+ * fileReplacements -- and nothing kept the two in step. The curator site could
+ * only reach its own backend by editing the *public* site's entry, so someone
+ * did, and beta.reactome.org served the curation database to the curators
+ * reviewing it. One row per deployment makes that particular mistake unsayable.
+ *
+ * Adding a deployment (Plant Reactome, say) is a row here plus whatever UI
+ * genuinely differs -- not a new environment file, and not a new boolean.
+ */
 
-export interface EnvConfig {
-  host: string;
-  // Full base URL of the graph content service, kept separate from `host`
-  // because the path segment differs per deployment: the curator site serves it
-  // under /GraphContentService, while a locally run curator-service serves the
-  // same routes (/data, /search, /exporter, /interactors) straight off its root.
-  contentService: string;
+type SiteVariant = 'main' | 'curator';
+
+export type ProfileName =
+  | 'production'
+  | 'beta'
+  | 'development'
+  | 'curator'
+  | 'curator-local'
+  | 'embed-production'
+  | 'embed-beta'
+  | 'embed-development';
+
+export interface SiteProfile {
+  /** Which UI this deployment presents. */
+  variant: SiteVariant;
+  /**
+   * Whether the DeltaSignal pathway-perturbation UI is offered here.
+   *
+   * A feature, not a variant: it is per deployment because it depends on a
+   * DeltaSignal backend that only some environments can reach, and because it
+   * is a research tool rather than something every audience should be shown.
+   * The note on SITE_VARIANT below -- that new deployments should compare the
+   * variant rather than grow a second boolean -- is about which UI a
+   * deployment presents, which is a different question from which features it
+   * turns on.
+   *
+   * Absent means off, so a new profile has to opt in rather than inherit it.
+   */
+  deltaSignal?: boolean;
+  /**
+   * Where the search page sends a question for a React-to-Me answer, or absent
+   * "this deployment does not offer one".
+   *
+   * A path, and it must name **our** proxy rather than the chatbot: the proxy is
+   * what holds the signing key for the caller token, so a browser able to reach
+   * the chatbot directly would need that key shipped to it. See
+   * `specs/005-search-page-answers/research.md`, D1 and D3.
+   *
+   * Absent means off, like `deltaSignal`, so a deployment opts in rather than
+   * inherits. Only `development` has it today: the endpoint is not deployed on
+   * beta yet, and no keypair has been exchanged, so every other profile would
+   * offer a button whose calls fail.
+   */
+  searchAnswerEndpoint?: string;
+  /**
+   * Where the analysis summary is asked for, or absent on a deployment that
+   * does not offer one. Same proxy and same gate as the answer above; a
+   * separate setting because a deployment may reasonably want one and not the
+   * other, and because an absent endpoint is how the panel stays hidden
+   * without a build flag.
+   */
+  analysisSummaryEndpoint?: string;
+  /**
+   * Where "Continue in chat" is minted (serve-prod's chat handoff route).
+   * Absent means no button: the chat and the route exist only where the
+   * summaries and answers do.
+   */
+  chatHandoffEndpoint?: string;
+  /**
+   * Where the services are, or `'origin'` for "wherever this bundle is served
+   * from".
+   *
+   * `'origin'` is what the public deployments want, and it is not a convenience.
+   * beta.reactome.org reverse-proxies its own /ContentService to the Tomcat on
+   * its box, and that Tomcat serves endpoints the public one does not -- the
+   * reaction-diagram exporter among them. Pointing beta at reactome.org by name
+   * therefore breaks reaction pages, which is precisely what happened while this
+   * field was a fixed string. A site should talk to itself.
+   */
+  host: 'origin' | string;
+  /** Used when `host` is `'origin'` and there is no window: SSR, unit tests. */
+  originFallback?: string;
+  /**
+   * Path appended to the host for the graph API. The curator site serves it
+   * under /GraphContentService rather than /ContentService.
+   */
+  contentServicePath?: string;
+  /**
+   * Absolute override, for when the graph API is not on `host` at all -- a
+   * locally run curator-service answers at its own root, with no path segment.
+   */
+  contentService?: string;
   s3: string;
-  gsaServer: string;
+  /**
+   * The Reactome server ReactomeGSA delivers this site's results to, by its
+   * name for it: production (www.reactome.org), dev (dev.reactome.org) or
+   * release (release.reactome.org). A result is stored in that server's Analysis
+   * Service, so it must be the one this site reads.
+   */
+  gsaServer: 'production' | 'dev' | 'release';
+  /**
+   * Google Analytics property, and only reactome.org has one.
+   *
+   * Absent everywhere else on purpose: a deployment with no property does not
+   * load gtag and reports nothing. Sending beta, dev or curation traffic to the
+   * public property would inflate the public site's numbers with hits it never
+   * received, and nobody reading them afterwards could separate the two.
+   */
   gtagId?: string;
-  preferS3?: boolean;
+  /**
+   * Take diagram JSON, EHLDs, figures and icons from the deployment's own host
+   * instead of the release bucket.
+   *
+   * Absent is the norm: released assets live in the bucket, keyed by release
+   * number, served by CloudFront with CORS. Only a deployment whose assets are
+   * not in a release needs this -- the curator site's diagram JSON is derived
+   * from the curation graph and is ahead of any release (18 nodes for Signal
+   * Transduction against release 97's 17), so no bucket path holds it.
+   *
+   * Named for the exception rather than the norm on purpose: the old flag was
+   * `preferS3`, which named the common case and read as a soft preference, and a
+   * deployment that failed to set it silently fell back to a host path that in
+   * some contexts nothing serves.
+   */
+  assetsFromHost?: true;
+  /**
+   * Where to ask for the database version when `contentService` cannot answer.
+   *
+   * Only a curation graph needs this: it has no released version, and one is
+   * required to build S3 diagram URLs. A released deployment answers for itself,
+   * so its "fallback" is its own service -- deliberately not another
+   * deployment's, which would mean quietly reporting someone else's release.
+   */
+  versionFallback: string;
+  /** Absolute, unless a proxy serves the assets at the root. */
+  downloadBase?: string;
+  /** Where the data-schema instance browser is mounted. */
+  schemaPath: string;
 }
 
-export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
-  development: {
-    host: 'https://curator.reactome.org',
-    contentService: 'https://curator.reactome.org/GraphContentService',
-    s3: 'https://download.reactome.org',
-    gsaServer: 'dev',
-    gtagId: 'G-96F1EYHQR3',
-    preferS3: false,
-  },
+const S3 = 'https://download.reactome.org';
+
+export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
-    host: 'https://curator.reactome.org',
-    contentService: 'https://curator.reactome.org/GraphContentService',
-    s3: 'https://download.reactome.org',
+    // The published artifact: `deploy.yml` builds this and syncs it to
+    // s3://<bucket>/<version>/website/. It is served from the bucket, not from a
+    // host that proxies the services -- so unlike the deployments below it
+    // cannot use its own origin. download.reactome.org answers 403 for
+    // /ContentService, and every call would fail.
+    //
+    // It names beta because beta is the only host serving the whole set the app
+    // needs. reactome.org has no /RenderService and no /overlays, so figure
+    // rendering and overlays would be dead there today. When those move to
+    // reactome.org this becomes one line.
+    //
+    // Cross-origin from the bucket works: ContentService and AnalysisService
+    // send Access-Control-Allow-Origin: *, and RenderService is only ever an
+    // <img src> or a download href, where CORS does not apply.
+    variant: 'main',
+    host: 'https://beta.reactome.org',
+    s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
-    preferS3: true,
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
   },
-  local: {
-    // Only the content service moves to the locally run curator-service; the
-    // analysis service, downloads, overlays and detail pages have no local
-    // equivalent, so they stay pointed at the curator host.
-    host: 'https://curator.reactome.org',
-    contentService: 'http://localhost:8686',
-    s3: 'https://download.reactome.org',
+  beta: {
+    // beta.reactome.org: a production-shaped build of the public site, served
+    // from its own origin against the dev backend behind it. It is a deployment
+    // in its own right and not "production served elsewhere" -- most visibly in
+    // analytics, where its traffic must not land in the public property.
+    variant: 'main',
+    // Beta is where React-to-Me is reviewed before it goes any further. The
+    // route is served by serve-prod.js, which holds the signing key; a
+    // deployment without that key answers 503 and the panel renders nothing, so
+    // this is safe to name even if the key is ever absent.
+    searchAnswerEndpoint: '/search-answer',
+    analysisSummaryEndpoint: '/analysis-summary',
+    chatHandoffEndpoint: '/chat-handoff',
+    host: 'origin',
+    originFallback: 'https://beta.reactome.org',
+    s3: S3,
+    // dev.reactome.org is this box, so results land in the Analysis Service
+    // beta reads -- and beta's test runs stay off the production server.
+    // Follows the Analysis Service beta reads: when beta runs on the production
+    // machine and reads reactome.org's, this becomes 'production'.
     gsaServer: 'dev',
-    preferS3: false,
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
   },
-  github: {
-    host: 'https://curator.reactome.org',
-    contentService: 'https://curator.reactome.org/GraphContentService',
-    s3: 'https://download.reactome.org',
-    gsaServer: 'production',
-    preferS3: true,
-  },
-  remote: {
-    host: 'https://curator.reactome.org',
-    contentService: 'https://curator.reactome.org/GraphContentService',
-    s3: 'https://download.reactome.org',
-    gsaServer: 'dev',
-    preferS3: false,
-  },
-} as const;
 
-// Build-time environment selector. The `define` option in angular.json replaces
-// this identifier with a string literal per build configuration, so it works in
-// the browser and under SSR without needing a `process` shim. When a build
-// configuration sets no define the identifier is absent, which is why this is
-// read through `typeof` rather than directly.
+  development: {
+    variant: 'main',
+    // The only deployment that can reach a DeltaSignal backend: proxy.conf.js
+    // routes /api to DELTASIGNAL_BACKEND, which is a dev-server proxy and does
+    // not exist in a built artifact. Turning this on elsewhere would offer a
+    // button whose every call fails, so the other profiles leave it absent.
+    deltaSignal: true,
+    // Same reasoning, and note the path: `/api` above already belongs to the
+    // DeltaSignal backend, so the answer proxy cannot live under it.
+    searchAnswerEndpoint: '/search-answer',
+    analysisSummaryEndpoint: '/analysis-summary',
+    chatHandoffEndpoint: '/chat-handoff',
+    host: 'origin',
+    originFallback: 'https://dev.reactome.org',
+    s3: S3,
+    gsaServer: 'dev',
+    versionFallback: 'https://dev.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  // The embeddable diagram (projects/reactome-diagram-element) runs on other
+  // sites' pages, so its host is never 'origin': that would be the partner's
+  // own site, and every request would go there. No gtagId, on purpose -- a
+  // partner's visitors are not this site's to count.
+  'embed-production': {
+    variant: 'main',
+    host: 'https://reactome.org',
+    s3: S3,
+    gsaServer: 'production',
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  'embed-beta': {
+    variant: 'main',
+    host: 'https://beta.reactome.org',
+    s3: S3,
+    gsaServer: 'dev',
+    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  // The e2e dev server: requests there are answered from recordings.
+  'embed-development': {
+    variant: 'main',
+    host: 'http://localhost:4330',
+    s3: S3,
+    gsaServer: 'dev',
+    versionFallback: 'http://localhost:4330/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+  curator: {
+    variant: 'curator',
+    host: 'https://newcurator.reactome.org',
+    contentServicePath: '/GraphContentService',
+    s3: S3,
+    gsaServer: 'production',
+    // No analytics property for the curator site yet. Deliberately absent rather
+    // than borrowed: pointing it at the public property would file curation
+    // traffic as public traffic, and nobody looking at those numbers would know.
+    assetsFromHost: true,
+    // A curation graph has no released version, so this asks the released
+    // instance on the same host -- not a different deployment.
+    // The curator host cannot report a release number: its GraphContentService
+    // answers 500 for the version, and the /ContentService this used to name does
+    // not exist there at all -- it 404s, so this fallback had never once worked.
+    // The number is needed to key bucket paths for the assets curator does take
+    // from the release (figures, icons, EHLDs), so it comes from the public site,
+    // which is the authority on which release is current.
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    schemaPath: '/curatorgraph/dataSchema',
+  },
+  'curator-local': {
+    variant: 'curator',
+    // Only the graph content API runs locally. The analysis and experiment
+    // services, downloads and detail pages have no local equivalent.
+    host: 'https://newcurator.reactome.org',
+    contentService: 'http://localhost:8686',
+    s3: S3,
+    gsaServer: 'dev',
+    assetsFromHost: true,
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
+    // Proxied at the root by proxy.curator-local.conf.json, because
+    // newcurator.reactome.org/download sends no Access-Control-Allow-Origin.
+    downloadBase: '/download/current',
+    schemaPath: '/curatorgraph/dataSchema',
+  },
+};
+
+// Build-time selector. The `define` option in angular.json replaces this
+// identifier with a string literal per build configuration, so it works in the
+// browser and under SSR without a `process` shim. A configuration that sets no
+// define leaves the identifier absent, which is why this is read through
+// `typeof`.
 declare const APP_ENV: string | undefined;
 
-function buildTimeEnvName(): string | undefined {
+function buildTimeProfileName(): string | undefined {
   return typeof APP_ENV !== 'undefined' ? APP_ENV : undefined;
 }
 
 // Runtime override, for host pages that embed the pathway-browser element and
-// need to choose an environment without rebuilding. Takes precedence over the
-// build-time define.
-function runtimeEnvName(): string | undefined {
-  return (typeof window !== 'undefined' && (window as any).__APP_ENV) || undefined;
+// need to choose a deployment without rebuilding. Takes precedence.
+function runtimeProfileName(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (window as Window & { __APP_ENV?: string }).__APP_ENV || undefined;
 }
 
-export const SELECTED_ENV_NAME: string | undefined =
-  runtimeEnvName() ?? buildTimeEnvName();
+export const SELECTED_PROFILE_NAME: string | undefined =
+  runtimeProfileName() ?? buildTimeProfileName();
 
-// Helper: pick environment at runtime (fallback to production)
-export function getEnv(envName?: string) {
-  if (!envName) return ENVIRONMENTS.production;
-  const key = envName as EnvName;
-  return ENVIRONMENTS[key] ?? ENVIRONMENTS.production;
+/**
+ * The deployment a build is for.
+ *
+ * No name means `production`: that is what a bare `ng build` is for, and the
+ * public site is the safe default to be wrong about. A name that is *not* a
+ * profile is a different matter -- a typo in a define, or a profile renamed
+ * while a configuration still asks for it. Answering that with production would
+ * point a build confidently at the wrong backend and say nothing, which is the
+ * shape of the failure that put curation data on the public beta. It throws
+ * instead, at startup, where it can be seen.
+ */
+export function getProfile(name?: string): SiteProfile {
+  if (!name) return SITE_PROFILES.production;
+  const profile = SITE_PROFILES[name as ProfileName];
+  if (!profile) {
+    throw new Error(
+      `Unknown APP_ENV "${name}". Known deployments: ${Object.keys(SITE_PROFILES).join(', ')}.`
+    );
+  }
+  return profile;
 }

@@ -17,9 +17,9 @@ export class IconDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private iconService = inject(IconService);
 
-  icon = signal<IconEntry | null>(null);
-  loading = signal(true);
-  error = signal(false);
+  readonly icon = signal<IconEntry | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal(false);
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');

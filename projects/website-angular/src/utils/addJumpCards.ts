@@ -61,8 +61,7 @@ export default function addJumpCards(html: string): string {
   let out = html.replace(pairRe, (_m, href, _level, label, desc) => {
     const text = clean(label);
     const icon = iconForLink(href, text);
-    const descSpan =
-      desc && desc.trim() ? `<span class="jump-card-desc">${desc.trim()}</span>` : '';
+    const descSpan = desc?.trim() ? `<span class="jump-card-desc">${desc.trim()}</span>` : '';
     return `<a class="jump-card" href="${href}"><span class="jump-card-icon material-symbols-rounded">${icon}</span><span class="jump-card-label">${text}</span>${descSpan}</a>`;
   });
 

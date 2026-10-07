@@ -117,3 +117,19 @@
 .rounded-corner {
   border-radius: 100px;
 }
+
+// What a resource held for this diagram, once it has been asked. Subdued,
+// because it is a hint rather than part of the name.
+.resource-count {
+  margin-left: 0.4rem;
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+
+  &.none {
+    // An answered nothing is worth more than a blank: it is what stops the
+    // reader trying this one again.
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+}

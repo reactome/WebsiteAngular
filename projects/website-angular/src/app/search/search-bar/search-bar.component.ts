@@ -3,16 +3,16 @@ import {
   Component,
   ElementRef,
   inject,
-  Input,
-  Output,
-  EventEmitter,
   OnChanges,
   SimpleChanges,
   HostListener,
-  ViewChild,
   signal,
+  linkedSignal,
   ChangeDetectorRef,
   OnInit,
+  input,
+  output,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -22,6 +22,15 @@ import {
   SearchService,
 } from 'projects/website-angular/src/services/search.service';
 import { DropdownToggleComponent } from '../../reactome-components/dropdown-toggle/dropdown-toggle.component';
+
+/**
+ * Every filter the search page understands.
+ *
+ * `pageCategories` was missing from the two copies of this list, so selecting a
+ * Pages facet and then searching again from the bar dropped it without saying
+ * so. Named once because two copies is how it went missing.
+ */
+const FILTER_KEYS = ['species', 'types', 'compartments', 'keywords', 'pageCategories'] as const;
 
 @Component({
   selector: 'app-search-bar',
@@ -34,11 +43,28 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
   private cdr = inject(ChangeDetectorRef);
-  @Input() query: string = '';
-  @Input() filters = false;
-  @Output() queryChange = new EventEmitter<string>();
+  /** The query the page is showing; it seeds, and resets, what the bar holds. */
+  readonly query = input<string | null | undefined>('');
+  /** What the bar holds: the page's query until the reader types or picks one. */
+  readonly text = linkedSignal(() => this.query() || '');
+  readonly filters = input(false);
 
-  @ViewChild('queryInput') queryInput?: ElementRef<HTMLTextAreaElement>;
+  /**
+   * The filters currently applied, read from the URL by the page.
+   *
+   * This used to be the bar's own state and nothing else's: `advancedFilters`
+   * started empty and was only ever changed by the bar's own controls. Since
+   * submitting *replaces* the query string, a reader who narrowed by species in
+   * the sidebar and then searched again from here had that narrowing written
+   * over with the bar's empty copy, silently.
+   *
+   * The URL is the one place both halves of the page agree on, so it is the
+   * source of truth and this is how it reaches the bar.
+   */
+  readonly activeFilters = input<SearchFilters>({});
+  readonly queryChange = output<string>();
+
+  readonly queryInput = viewChild<ElementRef<HTMLTextAreaElement>>('queryInput');
 
   suggestions: string[] = [];
   highlightedIndex: number = -1;
@@ -52,7 +78,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   readonly showSuggestions = signal(false);
 
   ngOnInit(): void {
-    if (this.filters) {
+    if (this.filters()) {
       this.getAllFacets();
     }
   }
@@ -64,9 +90,9 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
 
   onInput(event: Event): void {
     const ta = event.target as HTMLTextAreaElement;
-    this.query = ta.value;
+    this.text.set(ta.value);
     this.autoGrow();
-    this.getSuggestions(this.query);
+    this.getSuggestions(this.text());
   }
 
   onEnter(event: Event): void {
@@ -81,7 +107,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   // Resize the textarea to match its content so the bar looks like a
   // single-line input at rest and grows naturally for long boolean queries.
   private autoGrow(): void {
-    const ta = this.queryInput?.nativeElement;
+    const ta = this.queryInput()?.nativeElement;
     if (!ta) return;
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
@@ -91,8 +117,18 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     if (changes['suggestions']) {
       this.suggestions = this.suggestions ? [...this.suggestions] : [];
     }
+    if (changes['activeFilters']) {
+      // Each array is copied, not just the object. `toggleAdvancedFacet` edits
+      // in place with splice/push, so a shallow copy would share the arrays
+      // with the page's own `filters` -- and ticking a box here would silently
+      // rewrite what the page believes is applied, with no navigation and no
+      // change to the URL.
+      const applied = this.activeFilters() || {};
+      this.advancedFilters = Object.fromEntries(
+        Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
+      ) as SearchFilters;
+    }
     if (changes['query']) {
-      this.query = this.query || '';
       // Defer to next tick so the textarea has the bound value before measuring.
       setTimeout(() => this.autoGrow(), 0);
     }
@@ -102,7 +138,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     this.showSuggestions.set(false);
 
-    const q = this.query.trim();
+    const q = this.text().trim();
     if (!q) {
       return;
     }
@@ -112,7 +148,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of FILTER_KEYS) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
@@ -148,13 +184,13 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       page: null,
     };
 
-    for (const key of ['species', 'types', 'compartments', 'keywords'] as const) {
+    for (const key of FILTER_KEYS) {
       const values = this.advancedFilters[key];
       params[key] = values?.length ? values : null;
     }
 
     this.highlightedIndex = -1;
-    this.query = s;
+    this.text.set(s);
 
     void this.router.navigate(['/content/query'], { queryParams: params });
     this.queryChange.emit(s);
@@ -218,7 +254,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
-      this.query = this.suggestions[this.highlightedIndex];
+      this.text.set(this.suggestions[this.highlightedIndex]);
     }
   }
 
@@ -228,7 +264,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
-      this.query = this.suggestions[this.highlightedIndex];
+      this.text.set(this.suggestions[this.highlightedIndex]);
     }
   }
 }

@@ -26,14 +26,14 @@ export class LocationsTreeComponent {
   private http = inject(HttpClient);
   private iconService = inject(IconService);
 
-  id = input.required<string>();
-  trees = signal<PathwayBrowserNode[]>([]);
-  expanded = signal<Set<string>>(new Set());
-  allExpanded = signal(false);
-  loading = signal(false);
-  selectedSpecies = signal<string | null>(null);
+  readonly id = input.required<string>();
+  readonly trees = signal<PathwayBrowserNode[]>([]);
+  readonly expanded = signal<Set<string>>(new Set());
+  readonly allExpanded = signal(false);
+  readonly loading = signal(false);
+  readonly selectedSpecies = signal<string | null>(null);
 
-  availableSpecies = computed(() => {
+  readonly availableSpecies = computed(() => {
     const species = new Set<string>();
     for (const tree of this.trees()) {
       if (tree.species) species.add(tree.species);
@@ -41,7 +41,7 @@ export class LocationsTreeComponent {
     return [...species].sort();
   });
 
-  filteredTrees = computed(() => {
+  readonly filteredTrees = computed(() => {
     const selected = this.selectedSpecies();
     const all = this.trees();
     if (!selected || this.availableSpecies().length <= 1) return all;

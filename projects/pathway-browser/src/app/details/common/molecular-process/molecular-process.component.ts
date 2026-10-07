@@ -58,7 +58,7 @@ export class MolecularProcessComponent {
     return this.iconService.getIconDetails(obj);
   }
 
-  data = computed(() => this.getData());
+  readonly data = computed(() => this.getData());
 
   getData(): MolecularProcess[] {
     return this.objects().map((entry) => {
@@ -103,7 +103,7 @@ export class MolecularProcessComponent {
       reactions: entry.catalyzedEvent,
       type: 'Catalysis',
       activity: entry.activity,
-      ecNumber: entry.activity && entry.activity.ecNumber,
+      ecNumber: entry.activity?.ecNumber,
       activeUnit: entry.activeUnit,
       catalyst: entry.physicalEntity,
       catalystActivityReference: this.catalystActivityReference(),

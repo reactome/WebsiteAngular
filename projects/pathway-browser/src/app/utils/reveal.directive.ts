@@ -47,6 +47,13 @@ export class RevealDirective {
       // table that is still expanding rows, or paging to a different page, moves
       // after the first frame. Revealing then left it 28px past the edge of its
       // container. The second frame is after that layout has been painted.
+      //
+      // It is also what keeps the event hierarchy still. That tree rebuilds
+      // itself from scratch on every click and restores the reader's scroll
+      // position on frame one; arriving on frame two means `nearest` below is
+      // comparing against where the reader actually was, and so does nothing
+      // when the row was already on screen. Cut this to one frame and clicking
+      // a visible row jumps the hierarchy again.
       let frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(() => {
           this.element.nativeElement.scrollIntoView({

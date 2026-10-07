@@ -27,11 +27,9 @@ import {
 } from '@angular/cdk/drag-drop';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { add } from 'vectorious';
 type Summary = TissueExperiment.Summary;
 import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
 import { FormBuilder, FormControl } from '@angular/forms';
-import { AsyncPipe } from '@angular/common';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DarkService } from '../../../services/dark.service';
 
@@ -66,17 +64,17 @@ export class TissueAnalysisComponent {
   private darkService = inject(DarkService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
-  experiment = linkedSignal(() => this.summaries().at(0));
+  readonly summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
+  readonly experiment = linkedSignal(() => this.summaries().at(0));
 
-  tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
-  availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
-  selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
+  readonly tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
+  readonly availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
+  readonly selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
 
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
-  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
+  readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   selectTissuesControl: FormControl;
 
@@ -125,13 +123,29 @@ export class TissueAnalysisComponent {
     });
   }
 
-  interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
-  animate = signal(true);
+  readonly interval = signal<ReturnType<typeof setInterval> | undefined>(undefined);
+  /**
+   * Tissues placed by dragging, which are already where the pointer left them
+   * and so do not slide in. Each leaves the set only when it moves again:
+   * leaving earlier would restart the slide on a box standing still.
+   */
+  readonly dropped = signal<ReadonlySet<string>>(new Set());
+
+  private settle(tissue: string) {
+    if (!this.dropped().has(tissue)) return;
+    const next = new Set(this.dropped());
+    next.delete(tissue);
+    this.dropped.set(next);
+  }
+
+  /** The two lists, told apart by the lists themselves rather than their data. */
+  private readonly availableList = viewChild<CdkDropList<string[]>>('availableList');
 
   addOne() {
     const availableTissues = this.availableTissues();
     const shift = availableTissues.shift();
     if (shift) {
+      this.settle(shift);
       this.availableTissues.set([...availableTissues]);
       this.selectedTissues.set([...this.selectedTissues(), shift]);
     } else if (this.interval) {
@@ -144,6 +158,7 @@ export class TissueAnalysisComponent {
     const selectedTissues = this.selectedTissues();
     const shift = selectedTissues.shift();
     if (shift) {
+      this.settle(shift);
       this.selectedTissues.set([...selectedTissues]);
       this.availableTissues.set([...this.availableTissues(), shift]);
     } else if (this.interval) {
@@ -161,6 +176,7 @@ export class TissueAnalysisComponent {
   }
 
   moveRight(tissue: string) {
+    this.settle(tissue);
     const from = this.availableTissues();
     const i = from.indexOf(tissue);
     from.splice(i, 1);
@@ -172,6 +188,7 @@ export class TissueAnalysisComponent {
   }
 
   moveLeft(tissue: string) {
+    this.settle(tissue);
     const from = this.selectedTissues();
     const i = from.indexOf(tissue);
     from.splice(i, 1);
@@ -186,26 +203,36 @@ export class TissueAnalysisComponent {
     return `${summary.description} - ${summary.numberOfGenes} Genes - ${summary.timestamp} `;
   }
 
+  /**
+   * Through the signals, never in place. CDK's helpers mutate the arrays they
+   * are given, and these are the signals' own arrays: the page moved the box,
+   * but nothing downstream heard -- the form control stayed invalid, so the
+   * stepper would not advance to the analysis after a drag.
+   */
   drop(event: CdkDragDrop<string[]>) {
-    this.animate.set(false);
+    // Not by comparing data with the signals: the lists are bound to the
+    // arrays of the last render, which an "add all" tick can have replaced.
+    const fromAvailable = event.previousContainer === this.availableList();
+    const toAvailable = event.container === this.availableList();
+    const from = [...(fromAvailable ? this.availableTissues() : this.selectedTissues())];
+    const tissue = from[event.previousIndex];
     if (event.previousContainer === event.container) {
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      moveItemInArray(from, event.previousIndex, event.currentIndex);
+      (toAvailable ? this.availableTissues : this.selectedTissues).set(from);
     } else {
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
+      const to = [...(toAvailable ? this.availableTissues() : this.selectedTissues())];
+      transferArrayItem(from, to, event.previousIndex, event.currentIndex);
+      (fromAvailable ? this.availableTissues : this.selectedTissues).set(from);
+      (toAvailable ? this.availableTissues : this.selectedTissues).set(to);
     }
-    setTimeout(() => this.animate.set(true));
+    this.dropped.set(new Set(this.dropped()).add(tissue));
   }
 
   lottie?: DotLottie;
   token: string | null = null;
 
-  analysisLaunched = signal(false);
-  analysisAvailable = signal(false);
+  readonly analysisLaunched = signal(false);
+  readonly analysisAvailable = signal(false);
 
   analyse() {
     this.analysisLaunched.set(true);

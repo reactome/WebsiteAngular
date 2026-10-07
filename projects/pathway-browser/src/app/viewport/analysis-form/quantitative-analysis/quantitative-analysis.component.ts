@@ -1,12 +1,15 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal, viewChild } from '@angular/core';
 import { AnalysisResult } from 'reactome-gsa-form';
 import { AnalysisService } from '../../../services/analysis.service';
 import { UrlStateService } from '../../../services/url-state.service';
-import { GsaFormModule } from 'reactome-gsa-form';
+import { GsaFormComponent, GsaFormModule } from 'reactome-gsa-form';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'cr-quantitative-analysis',
-  imports: [GsaFormModule],
+  imports: [GsaFormModule, MatButton, MatIcon, MatTooltip],
   templateUrl: './quantitative-analysis.component.html',
   styleUrl: './quantitative-analysis.component.scss',
 })
@@ -15,9 +18,12 @@ export class QuantitativeAnalysisComponent {
   public analysis: AnalysisService = inject(AnalysisService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  gsaId = signal<string>('');
+  readonly gsaId = signal<string>('');
+
+  /** For its guided tour, which otherwise only a ?gsa-tour= parameter starts. */
+  readonly form = viewChild(GsaFormComponent);
 
   gsaFinished(token: string | undefined) {
     if (!token) return;

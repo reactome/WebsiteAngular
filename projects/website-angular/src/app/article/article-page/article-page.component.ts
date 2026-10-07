@@ -8,6 +8,7 @@ import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import stripFirstH from '../../../utils/stripFirstH';
 import { marked } from 'marked';
+import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 
 @Component({
   selector: 'app-article-page',
@@ -53,7 +54,6 @@ export class ArticlePageComponent implements OnInit {
         } else if (path_segments.includes('content')) {
           this.loadArticles('content/reactome-research-spotlight');
           this.pageTile = 'Reactome Research Spotlights';
-          this.pageDescription = 'Explore the latest research spotlights from Reactome.';
           this.articlePath = 'content/reactome-research-spotlight';
         }
       }
@@ -84,7 +84,7 @@ export class ArticlePageComponent implements OnInit {
           await Promise.all(
             this.articles.map(async (article) => {
               const html = await marked(article?.excerpt || '');
-              article.excerpt = stripFirstH(html);
+              article.excerpt = stripFirstH(rewriteContentUrls(html));
             })
           );
           this.loading = false;

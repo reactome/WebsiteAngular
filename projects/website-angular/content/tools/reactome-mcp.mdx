@@ -1,0 +1,115 @@
+---
+title: "Reactome MCP Server"
+category: "tools"
+---
+
+## Reactome MCP Server
+
+The Reactome MCP server connects an AI assistant — Claude, or any other client that
+speaks the [Model Context Protocol](https://modelcontextprotocol.io/) — directly to
+Reactome. Instead of describing a pathway to the assistant, you let it look the
+pathway up: search the knowledgebase, read reactions and entities, run a pathway
+enrichment analysis on a list of identifiers, and export diagrams, SBGN, SBML or a
+PDF report.
+
+It is an open-source wrapper around the same public Content and Analysis Services
+the website uses. It reads Reactome; it does not change it.
+
+### What it can do
+
+It registers 59 tools, in eight groups. The counts are the server's own, from a
+test that fails if a tool goes undocumented:
+
+  * **Search** (7) — find pathways, reactions and entities by name or identifier,
+    including diagram and fireworks searches.
+  * **Pathway** (8) — walk the event hierarchy, ancestors, and what a pathway
+    contains.
+  * **Entity** (8) — complex subunits, what a molecule is a component of, its
+    other forms, and the diagrams it appears in.
+  * **Analysis** (9) — submit identifiers for pathway enrichment, then read the
+    found and not-found entities, pathway sizes and filtered results.
+  * **Export** (9) — diagrams as PNG, SVG, JPG or GIF, plus SBGN, SBML, PDF
+    reports and analysis results as CSV or JSON.
+  * **Interactors** (6) — interaction partners and the pathways they implicate.
+  * **ReactomeGSA** (5) — methods, data types and example datasets for gene-set
+    analysis.
+  * **Utilities** (7) — database version and name, species lists, and the
+    lookups an assistant needs to answer questions about the knowledgebase
+    itself.
+
+### Using it
+
+There are two ways: connect to the server Reactome hosts, or run your own.
+
+#### Connect to the hosted server
+
+A hosted server is running on Reactome's pre-release site while this is being
+evaluated:
+
+```
+https://beta.reactome.org/mcp
+```
+
+It speaks MCP's streamable HTTP transport. A client that supports remote MCP
+servers takes that URL directly — the exact setting differs by client, so check
+yours for "remote server", "HTTP server" or "connector".
+
+A client that only launches local servers can bridge to it:
+
+```json
+{
+  "mcpServers": {
+    "reactome": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://beta.reactome.org/mcp"]
+    }
+  }
+}
+```
+
+Note which Reactome it reads: that host serves Reactome's pre-release data,
+which can differ from the current public release. If you need the public
+release, run the server yourself as below and leave `REACTOME_BASE_URL` at its
+default.
+
+#### Or run it yourself
+
+Useful if you want it pointed at a different Reactome, or offline. The server is
+on GitHub at [reactome/reactome-mcp](https://github.com/reactome/reactome-mcp) —
+clone and build it, then:
+
+```json
+{
+  "mcpServers": {
+    "reactome": {
+      "command": "node",
+      "args": ["/path/to/reactome-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+It runs on your own machine and talks to Reactome's public services over HTTPS,
+the same ones your browser uses. Set `REACTOME_BASE_URL` to read from somewhere
+other than `https://reactome.org`.
+
+### Things to ask for
+
+Once it is connected, ask your assistant things like:
+
+  * "What pathways is TP53 involved in?"
+  * "Run an enrichment analysis on these gene symbols and tell me what comes up."
+  * "Export the SBGN for pathway R-HSA-1640170."
+  * "Which species does Reactome cover, and which release is this?"
+
+### Things worth knowing
+
+An assistant using these tools is reading Reactome correctly, but it is still an
+assistant: it can summarise what it read inaccurately, and it can be confidently
+wrong about anything it did not look up. Treat what it tells you as a pointer into
+Reactome rather than as a citable source, and follow the stable identifiers it
+gives you back to the pathway pages here.
+
+Analyses you submit through the server are sent to Reactome's Analysis Service
+exactly as they would be from this website, and are subject to the same
+[privacy notice](/about/privacy-notice).

@@ -9,7 +9,7 @@ import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.mjs';
 import { pptx } from './pptx.mjs';
 
 /** Formats the render page can produce. */
-export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
+export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'];
 
 /**
  * Longest side of the raster PowerPoint falls back to when it cannot draw SVG.
@@ -23,7 +23,20 @@ export const FORMATS = ['svg', 'png', 'pdf', 'gif', 'pptx'];
 const FALLBACK_MAX_SIZE = 2000;
 
 /** Anything smaller than this is not a real render; see the Reacfoam notes. */
-const MIN_BYTES = { svg: 2000, png: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
+const MIN_BYTES = { svg: 2000, png: 5000, jpeg: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
+
+/**
+ * The floor for a PowerPoint built out of shapes.
+ *
+ * The 10KB above is right for a package carrying a picture, because the picture
+ * of any real diagram is far larger than that. A slide of shapes is not: the
+ * package boilerplate is around 4.9KB compressed and each shape adds tens of
+ * bytes, so a reaction framed down to a dozen glyphs came to 7.2KB and was
+ * rejected as "too small to be a real render". What makes that package real is
+ * that it has shapes in it, which is already established before it is built --
+ * this is left only as a guard against a truncated zip.
+ */
+const MIN_SHAPE_BYTES = 4000;
 
 /**
  * The URL of the render page for a pathway. Omit the pathway for the
@@ -36,7 +49,7 @@ function renderUrl({
   subpathways = true,
   dark = false,
   select = '',
-  view = '',
+  layout = '',
 }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
@@ -49,10 +62,10 @@ function renderUrl({
   // Frames the figure on one event -- what a reaction page wants, rather than
   // the whole diagram the reaction happens to live in.
   if (select) url.searchParams.set('select', select);
-  // view=reaction draws the reaction's own layout, which is the figure the
+  // layout=reaction draws the reaction's own layout, which is the figure the
   // reaction page shows -- so its downloads are that picture rather than the
   // pathway diagram the reaction sits in.
-  if (view) url.searchParams.set('view', view);
+  if (layout) url.searchParams.set('layout', layout);
   return url.toString();
 }
 
@@ -74,7 +87,7 @@ export async function render(
     subpathways = true,
     dark = false,
     select = '',
-    view = '',
+    layout = '',
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -93,7 +106,7 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, view }), {
+    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, layout }), {
       waitUntil: 'load',
       timeout,
     });
@@ -119,8 +132,8 @@ export async function render(
         await page.evaluate(async () => await window.__renderExport.svg()),
         'utf8'
       );
-    } else if (format === 'png') {
-      bytes = await pngBytes(page, scale);
+    } else if (format === 'png' || format === 'jpeg') {
+      bytes = await rasterBytes(page, scale, format);
     } else if (format === 'pdf') {
       bytes = await pdfFromSvg(page, timeout);
     } else if (format === 'gif') {
@@ -137,10 +150,14 @@ export async function render(
         truncated: gif.truncated,
       });
     } else {
-      bytes = await pptxFromPage(page, { scale, title: state?.name ?? '' });
+      const slide = await pptxFromPage(page, { scale, title: state?.name ?? '' });
+      bytes = slide.bytes;
+      // "430 shapes" against "one picture" is the whole difference between this
+      // export and the one it replaces, so it belongs in the line the run logs.
+      Object.assign(detail, slide.detail);
     }
 
-    const floor = MIN_BYTES[format];
+    const floor = detail.shapes ? MIN_SHAPE_BYTES : MIN_BYTES[format];
     if (bytes.length < floor) {
       throw new Error(
         `${format} came out at ${bytes.length} bytes, too small to be a real render ` +
@@ -155,9 +172,12 @@ export async function render(
   }
 }
 
-/** The diagram as PNG bytes, decoded from the data URL the page hands back. */
-async function pngBytes(page, scale) {
-  const dataUrl = await page.evaluate(async (s) => await window.__renderExport.png(s), scale);
+/** The diagram as raster bytes, decoded from the data URL the page hands back. */
+async function rasterBytes(page, scale, format = 'png') {
+  const dataUrl = await page.evaluate(
+    async ([s, f]) => await window.__renderExport[f](s),
+    [scale, format]
+  );
   return Buffer.from(dataUrl.split(',')[1], 'base64');
 }
 
@@ -177,15 +197,38 @@ function svgSize(svg) {
  * convert to shapes, and a PNG for everything that cannot.
  */
 async function pptxFromPage(page, { scale, title }) {
+  // Shapes first: a slide of shapes needs no picture, and the diagram is around
+  // 6000px wide, so rendering one to throw it away is the expensive half of the
+  // export.
+  const shapes = await page.evaluate(async () => (await window.__renderExport.shapes?.()) ?? null);
+  if (shapes?.shapes?.length) {
+    return {
+      bytes: pptx({ title, shapes, width: shapes.width, height: shapes.height }),
+      detail: { shapes: shapes.shapes.length },
+    };
+  }
+
   const svg = await page.evaluate(async () => await window.__renderExport.svg());
   const size = svgSize(svg);
+
   // The PNG is only what a viewer that cannot draw SVG falls back to, and a
   // diagram's own coordinate space is around 6000px wide -- at the requested
   // scale the fallback came out at 6MB, dwarfing the vector version PowerPoint
   // actually uses. Cap it at the same size the animation uses.
   const longest = Math.max(size.width, size.height);
-  const png = await pngBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
-  return pptx({ svg, png, title, ...size });
+  // The genome-wide view draws to a canvas and declines to export a PNG at all.
+  // It has an SVG, so it gets a slide; losing the fallback raster costs viewers
+  // older than PowerPoint 2016, and is better than losing the export.
+  let png = null;
+  try {
+    png = await rasterBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
+  } catch (error) {
+    if (!/cannot export PNG/i.test(String(error))) throw error;
+  }
+  return {
+    bytes: pptx({ svg, png, title, ...size }),
+    detail: { picture: png ? 'svg+png' : 'svg' },
+  };
 }
 
 /**

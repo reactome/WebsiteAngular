@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { BreadcrumbComponent } from '../breadcrumb/breadcrumb.component';
 
@@ -9,9 +9,9 @@ import { BreadcrumbComponent } from '../breadcrumb/breadcrumb.component';
   styleUrl: './page-layout.component.scss',
 })
 export class PageLayoutComponent {
-  @Input() showSidebar = true;
-  @Input() showBreadcrumb = true;
+  readonly showSidebar = input(true);
+  readonly showBreadcrumb = input(true);
   // When true, the page projects its own sidebar content via the
   // `[pageSidebar]` ng-content slot instead of the default nav sidebar.
-  @Input() customSidebar = false;
+  readonly customSidebar = input(false);
 }

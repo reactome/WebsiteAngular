@@ -69,16 +69,60 @@ Illustrated pathways animate too, through `EhldService.rasterise`. An EHLD is
 inline SVG, and its styling comes from the page's stylesheets rather than the
 markup, so it has to be inlined before a serialised copy means anything.
 
-**PPTX carries the SVG**, with a PNG beside it as the fallback. PowerPoint 2016
-and later draw the SVG and offer _Graphics Format → Convert to Shape_, which
-turns the diagram into ordinary editable shapes. The Java exporter emits
-DrawingML shapes directly — editable the moment the file opens — at the cost of
-a second renderer to keep in step with the first, and a commercial Aspose
-licence. One click is worth that trade; if curators disagree, that is the
-argument to have.
+**PPTX is built out of shapes** — one per compartment, connector, entity and
+sub-pathway tint, editable the moment the file opens. Curators reported that
+"the whole pathway diagram is treated as a single item", which is what a slide
+holding one picture is, however good the picture.
+
+The page decides every position, colour, opacity, dash and font from the live
+style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+a rectangle and nothing more, so it is not a second opinion about what the
+diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
+976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
+The slide is the size of the diagram, as production's is, so labels land at 5–53pt
+rather than the 1.65pt that fitting a 5976px diagram onto a 13.3in slide gives.
+
+Arrowheads are geometry rather than OOXML line ends. The diagram draws four and
+three of them mean something a triangle does not — catalysis is a hollow circle,
+positive regulation a hollow triangle, negative regulation a bar across the line
+— while a line end is always filled and always the line's own colour, and has no
+spelling for a bar at all. Drawn as line ends, inhibition came out as activation.
+
+Glyph bodies come from the images the style draws them with. A complex, a set
+and a gene set `background-opacity: 0` and carry their whole body in a
+`background-image`, so reading `background-color` alone exported 65 of this
+diagram's 203 nodes as empty outlined rectangles. Those images are SVG markup
+rather than rasters, so the path is flattened with the browser's own geometry
+(`getPointAtLength`, which walks arcs exactly), simplified, and handed over as a
+closed filled polygon — a shape the exporter already knew how to write. Each
+image keeps its own position and size, a masked outline is clipped to the pieces
+the mask reveals, and the contents of `defs`, `clipPath` and `mask` are
+definitions rather than content and are not drawn.
+
+One thing a slide of shapes does not carry yet:
+
+- **Rounded corners on connectors.** Edges with weights use `round-segments`;
+  the export draws the same points with square corners.
+
+Views that are not made of shapes fall back to the picture: an illustration is
+artwork, and the genome-wide view draws to a canvas. That view cannot produce a
+PNG at all, so its slide carries the SVG alone.
 
 The genome-wide view has no GIF: it draws to a canvas through FoamTree with no
 per-sample frame capture. It says so rather than producing a still.
+
+## Changing an exporter
+
+Two things are easy to miss, and both leave the site serving the old artefact
+while the code and its tests say otherwise:
+
+- **The service holds the code in memory.** It is a long-running node process,
+  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  from the site is the only check that says whether the running service has your
+  change — the CLI reads the files from disk and will happily agree with you.
+- **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
+  `service.mjs` when the output of a format changes, or every diagram rendered
+  before your change keeps its old file.
 
 ## Why this exists
 
@@ -166,16 +210,16 @@ curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
-| variable             | default               |                                                                     |
-| -------------------- | --------------------- | ------------------------------------------------------------------- |
-| `RENDER_PORT`        | 4310                  |                                                                     |
-| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work |
-| `RENDER_BASE`        | http://localhost:4200 | site to render against                                              |
-| `RENDER_CACHE`       | `.render-cache`       |                                                                     |
-| `RENDER_CACHE_KEY`   | `v1`                  | change to invalidate everything, e.g. per release                   |
-| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                |
-| `RENDER_QUEUE`       | 8                     | pending renders before 503                                          |
-| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                     |
+| variable             | default               |                                                                            |
+| -------------------- | --------------------- | -------------------------------------------------------------------------- |
+| `RENDER_PORT`        | 4310                  |                                                                            |
+| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work        |
+| `RENDER_BASE`        | http://localhost:4200 | site to render against                                                     |
+| `RENDER_CACHE`       | `.render-cache`       |                                                                            |
+| `RENDER_CACHE_KEY`   | the code's (`v9`)     | override only to invalidate by hand; the code bumps it when output changes |
+| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                       |
+| `RENDER_QUEUE`       | 8                     | pending renders before 503                                                 |
+| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                            |
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache

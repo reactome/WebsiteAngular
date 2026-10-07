@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { FoamTree } from '@carrotsearch/foamtree';
 import { PathwayGroup, ReacfoamService } from './reacfoam.service';
-import { Router } from '@angular/router';
 import { DarkService } from '../services/dark.service';
 import { UrlStateService } from '../services/url-state.service';
 import { AnalysisService } from '../services/analysis.service';
@@ -46,14 +45,13 @@ export class ReacfoamComponent implements OnDestroy {
   analysis = inject(AnalysisService);
   private species = inject(SpeciesService);
   private dark = inject(DarkService);
-  private router = inject(Router);
   private download = inject(DownloadService);
   private svgExporter = inject(SvgExporterService);
   private dialog = inject(MatDialog);
 
-  container = viewChild.required<ElementRef<HTMLDivElement>>('container');
+  readonly container = viewChild.required<ElementRef<HTMLDivElement>>('container');
 
-  options: Signal<FoamTree.InitialOptions<PathwayGroup>> = computed(
+  readonly options: Signal<FoamTree.InitialOptions<PathwayGroup>> = computed(
     () =>
       ({
         element: this.container().nativeElement,
@@ -150,10 +148,10 @@ export class ReacfoamComponent implements OnDestroy {
       }) as FoamTree.InitialOptions<PathwayGroup>
   );
 
-  foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
-  select = linkedSignal(() => this.state.select());
-  selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
-  correctedSelectedId = computed(() =>
+  readonly foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
+  readonly select = linkedSignal(() => this.state.select());
+  readonly selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
+  readonly correctedSelectedId = computed(() =>
     this.state.select()
       ? this.foamTree().get('hierarchy', this.selectedId())
         ? this.selectedId()
@@ -161,7 +159,7 @@ export class ReacfoamComponent implements OnDestroy {
       : null
   );
 
-  relaxing = signal(false);
+  readonly relaxing = signal(false);
 
   sizeObserver = new ResizeObserver(
     throttle(50, () => {
@@ -187,10 +185,10 @@ export class ReacfoamComponent implements OnDestroy {
     })
   );
 
-  cleanFlagIdentifiers = computed(
+  readonly cleanFlagIdentifiers = computed(
     () => new Set(this.data.flagIdentifiers().filter((id) => id.startsWith('R-')))
   );
-  flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
+  readonly flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
 
   setFlag(groups: PathwayGroup[]) {
     groups?.forEach((group: PathwayGroup) => {
@@ -235,12 +233,12 @@ export class ReacfoamComponent implements OnDestroy {
               this.species.currentSpecies().displayName
             )
           );
-          if (flaggingResult.matches && flaggingResult.matches.length === 1) {
+          if (flaggingResult.matches?.length === 1) {
             //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
             this.select.set(flaggingResult.matches[0]);
           }
         }
-      })().catch((error) => console.error('Reacfoam update failed', error));
+      })().catch((error) => console.error('Reacfoam selection update failed', error));
     });
     effect(
       () =>
@@ -262,7 +260,7 @@ export class ReacfoamComponent implements OnDestroy {
       this.foamTree().set({
         groupStrokePlainLightnessShift: this.dark.isDark() ? 70 : -70,
         groupStrokePlainSaturationShift: 0,
-        groupColorDecorator: (options, props, values) => {
+        groupColorDecorator: (_options, props, values) => {
           const depth = props.group.depth;
           // If child groups of some group doesn't have enough space to
           // render, draw the parent group in red.
@@ -341,7 +339,7 @@ export class ReacfoamComponent implements OnDestroy {
         // Two strokes: a dark one underneath so the flag colour reads against a
         // pale fill as well as a saturated one, and thinner at depth so a
         // flagged child inside a flagged parent stays legible.
-        groupContentDecorator: (options, props) => {
+        groupContentDecorator: (_options, props) => {
           if (!this.flagging() || !props.group.flag) return;
 
           const context = props.context;
@@ -406,7 +404,7 @@ export class ReacfoamComponent implements OnDestroy {
           this.download.resetDownload();
         }
         loader.close();
-      })().catch((error) => console.error('Reacfoam update failed', error));
+      })().catch((error) => this.download.failed(error, 'Genome-wide view export failed'));
     });
   }
 

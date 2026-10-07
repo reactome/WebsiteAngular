@@ -1,4 +1,3 @@
-
 :host {
   width: 100%;
 }
@@ -35,7 +34,7 @@
     flex-direction: column;
     align-items: flex-end;
     padding: 0;
-   // gap: 4px;
+    // gap: 4px;
     min-width: fit-content;
     height: 20px; // Fake height smaller than reality to ignore this section height (better looking)
   }
@@ -47,7 +46,6 @@
   flex-direction: row;
   align-items: flex-start;
   padding: 0;
-
 
   position: relative;
   min-height: fit-content;
@@ -69,7 +67,7 @@
 }
 
 .ribbon:after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   bottom: 0;
@@ -79,7 +77,6 @@
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
 }
-
 
 .quote-container {
   display: flex;
@@ -92,7 +89,6 @@
   height: 20px;
   border-radius: 50px;
   background: var(--primary);
-
 
   .quote-icon {
     color: var(--on-primary);
@@ -113,23 +109,21 @@
   align-items: flex-start;
   padding: 0 0 0 1.5px;
   gap: 5px;
-
 }
 
 .authors-container:before {
-  content: "•";
+  content: '•';
   vertical-align: middle;
   color: var(--primary);
   padding-top: 1.5px;
 }
-
 
 .ref-icon {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 12px;
-  height: 12px
+  height: 12px;
 }
 
 .additional-authors {

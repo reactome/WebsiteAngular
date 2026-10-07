@@ -80,6 +80,7 @@ import { InteractorsTableComponent } from '../../common/interactors-table/intera
 import { LocationsTreeComponent } from '../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component';
 import { ReactionDiagramComponent } from '../../common/reaction-diagram/reaction-diagram.component';
 import { Pathway } from '../../../model/graph/event/pathway.model';
+import type { Event as ReactomeEvent } from '../../../model/graph/event/event.model';
 import { doReleaseFlag } from '../../common/do-release';
 
 @Component({
@@ -175,7 +176,7 @@ export class DescriptionTabComponent implements OnDestroy {
     });
   }
 
-  otherPathways = computed<Pathway[]>(() => {
+  readonly otherPathways = computed<Pathway[]>(() => {
     const current = this.state.pathwayId();
     return (this._otherPathways.value() ?? []).filter((pathway) => pathway.stId !== current);
   });
@@ -251,7 +252,7 @@ export class DescriptionTabComponent implements OnDestroy {
     ];
   });
 
-  referenceEntity: Signal<ReferenceEntity> = computed(() =>
+  readonly referenceEntity: Signal<ReferenceEntity> = computed(() =>
     getProperty(this.obj(), DataKeys.REFERENCE_ENTITY)
   );
 
@@ -275,25 +276,39 @@ export class DescriptionTabComponent implements OnDestroy {
     ];
   });
 
-  inferences = computed(() => {
+  readonly inferences = computed(() => {
     const inferences: PhysicalEntity[] = getProperty(this.obj(), DataKeys.INFERRED_TO);
     if (!inferences) return new Map<string, PhysicalEntity[]>();
     return this.getGroupedInferences(inferences);
   });
 
-  otherForms = computed(() => {
+  /**
+   * The events Reactome predicted from this one in other species, by species.
+   *
+   * Events carry them as `orthologousEvent`. The Inferences section above keys
+   * on `inferredTo`, which only physical entities have, so no event ever showed
+   * its predictions -- the old browser listed them as "computationally
+   * predicted events".
+   */
+  readonly orthologousEvents = computed(() => {
+    const events: ReactomeEvent[] | undefined = getProperty(this.obj(), DataKeys.ORTHOLOGOUS_EVENT);
+    if (!events?.length) return new Map<string, ReactomeEvent[]>();
+    return this.entity.getGroupedData(events, (event) => event.speciesName ?? '');
+  });
+
+  readonly otherForms = computed(() => {
     const value = this._otherForms.value();
     if (!value) return new Map<string, PhysicalEntity[]>();
     return this.getGroupedOtherForms(value);
   });
 
-  selectedOtherFormsCategory = signal<OtherFormsCategory>('all');
-  selectedOtherFormsCompartment = signal<string>('all');
-  selectedOtherFormsDisease = signal<OtherFormsDisease>('all');
+  readonly selectedOtherFormsCategory = signal<OtherFormsCategory>('all');
+  readonly selectedOtherFormsCompartment = signal<string>('all');
+  readonly selectedOtherFormsDisease = signal<OtherFormsDisease>('all');
 
   // Flat list of all other forms (compartment + entity pairs) used as the
   // source for both the row list and facet count computations.
-  private otherFormsRows = computed<OtherFormsRow[]>(() => {
+  private readonly otherFormsRows = computed<OtherFormsRow[]>(() => {
     const rows: OtherFormsRow[] = [];
     for (const [compartment, entities] of this.otherForms()) {
       for (const entity of entities) rows.push({ entity, compartment });
@@ -306,7 +321,7 @@ export class DescriptionTabComponent implements OnDestroy {
   // (and so on). Each chip computes its own count by excluding only the
   // facet it lives on -- otherwise toggling a chip would zero its own count.
 
-  otherFormsCategories = computed<OtherFormsFacet<OtherFormsCategory>[]>(() => {
+  readonly otherFormsCategories = computed<OtherFormsFacet<OtherFormsCategory>[]>(() => {
     const crossRows = this.rowsFiltered({ excludeCategory: true });
     const crossCounts = new Map<OtherFormsCategory, number>();
     for (const r of crossRows) {
@@ -328,7 +343,7 @@ export class DescriptionTabComponent implements OnDestroy {
     return cats;
   });
 
-  otherFormsCompartmentFacets = computed<OtherFormsFacet<string>[]>(() => {
+  readonly otherFormsCompartmentFacets = computed<OtherFormsFacet<string>[]>(() => {
     const crossRows = this.rowsFiltered({ excludeCompartment: true });
     const crossCounts = new Map<string, number>();
     for (const r of crossRows)
@@ -346,7 +361,7 @@ export class DescriptionTabComponent implements OnDestroy {
     ];
   });
 
-  otherFormsDiseaseFacets = computed<OtherFormsFacet<OtherFormsDisease>[]>(() => {
+  readonly otherFormsDiseaseFacets = computed<OtherFormsFacet<OtherFormsDisease>[]>(() => {
     const rows = this.rowsFiltered({ excludeDisease: true });
     let disease = 0;
     for (const r of rows) if (r.entity.inDisease) disease++;
@@ -362,7 +377,7 @@ export class DescriptionTabComponent implements OnDestroy {
   // it only matters when the *full* dataset contains both kinds. Computed
   // off the unfiltered rows so the facet doesn't blink off when a single
   // selection (e.g. cytosol) happens to contain only one kind.
-  hasMixedDiseaseStatus = computed(() => {
+  readonly hasMixedDiseaseStatus = computed(() => {
     let hasD = false,
       hasR = false;
     for (const r of this.otherFormsRows()) {
@@ -373,7 +388,7 @@ export class DescriptionTabComponent implements OnDestroy {
     return false;
   });
 
-  filteredOtherFormsList = computed<OtherFormsRow[]>(() => this.rowsFiltered({}));
+  readonly filteredOtherFormsList = computed<OtherFormsRow[]>(() => this.rowsFiltered({}));
 
   private rowsFiltered(opts: {
     excludeCategory?: boolean;
@@ -395,37 +410,37 @@ export class DescriptionTabComponent implements OnDestroy {
     });
   }
 
-  interactors = computed(() => this._interactors.value() || []);
-  interactorsLength = computed(() => this._interactors.value()?.length || 0);
+  readonly interactors = computed(() => this._interactors.value() || []);
+  readonly interactorsLength = computed(() => this._interactors.value()?.length || 0);
 
-  catalystActivity: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivity: Signal<CatalystActivity[]> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY)
   );
-  catalystActivities: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivities: Signal<CatalystActivity[]> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITIES)
   );
-  catalystRef: Signal<CatalystActivityReference> = computed(() =>
+  readonly catalystRef: Signal<CatalystActivityReference> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY_REFERENCE)
   );
 
-  regulations: Signal<Regulation[]> = computed(() =>
+  readonly regulations: Signal<Regulation[]> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATED_BY)
   );
-  regulationRefs: Signal<RegulationReference[]> = computed(() =>
+  readonly regulationRefs: Signal<RegulationReference[]> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATION_REFERENCE)
   );
 
-  regulates: Signal<Regulation[]> = computed(() => [
+  readonly regulates: Signal<Regulation[]> = computed(() => [
     ...(getProperty(this.obj(), DataKeys.POSITIVELY_REGULATES) || []),
     ...(getProperty(this.obj(), DataKeys.NEGATIVELY_REGULATES) || []),
   ]);
 
-  modifications: Signal<HasModifiedResidue[]> = computed(() =>
+  readonly modifications: Signal<HasModifiedResidue[]> = computed(() =>
     getProperty(this.obj(), DataKeys.MODIFIED_RESIDUES)
   );
 
-  crossReference = computed(() => {
-    if (this.referenceEntity() && this.referenceEntity().crossReference) {
+  readonly crossReference = computed(() => {
+    if (this.referenceEntity()?.crossReference) {
       return this.referenceEntity().crossReference;
     }
 
@@ -433,56 +448,67 @@ export class DescriptionTabComponent implements OnDestroy {
     return crossReference ? [...crossReference] : [];
   });
 
-  proteinMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
+  readonly proteinMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
     () => getProperty(this.obj(), DataKeys.PROTEIN_MARKER) || []
   );
-  rnaMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
+  readonly rnaMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
     () => getProperty(this.obj(), DataKeys.RNA_MARKERS) || []
   );
-  markerReference: Signal<MarkerReference[]> = computed(() =>
+  readonly markerReference: Signal<MarkerReference[]> = computed(() =>
     getProperty(this.obj(), DataKeys.MARKER_REFERENCE)
   );
 
-  repeatedUnits: Signal<PhysicalEntity[]> = computed(() =>
+  readonly repeatedUnits: Signal<PhysicalEntity[]> = computed(() =>
     getProperty(this.obj(), DataKeys.REPEATED_UNIT)
   );
 
-  hasRhea = computed(() => ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName));
+  readonly hasRhea = computed(() =>
+    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName)
+  );
 
   // Disable the navigation control for inferred event when there is no associated pathway
   // https://reactome.org/beta/PathwayBrowser/R-HSA-9931510?select=R-HSA-9909400&path=R-HSA-9909396#inferredFrom
-  inferenceNavigationVisibility = computed(() => {
+  readonly inferenceNavigationVisibility = computed(() => {
     const isHuman = this.species.currentSpecies().taxId === this.species.defaultSpecies.taxId;
     const isInferred = this.obj().isInferred;
     return isHuman && isRLE(this.obj()) && isInferred;
   });
 
-  overview$ = viewChild<HTMLDivElement>('overview');
-  overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
-  referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
-  modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
-  crossReferencesTemplate$ = viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
-  markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
-  otherPathwaysTemplate$ = viewChild.required<TemplateRef<unknown>>('otherPathwaysTemplate');
-  regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
-  regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
-  catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivityTemplate');
-  catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>('catalystActivitiesTemplate');
-  inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
-  otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
-  literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
-  authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
-  interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
-  rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
-  locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
-  reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
+  readonly overview$ = viewChild<HTMLDivElement>('overview');
+  readonly overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
+  readonly referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
+  readonly modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
+  readonly crossReferencesTemplate$ =
+    viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
+  readonly markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
+  readonly otherPathwaysTemplate$ =
+    viewChild.required<TemplateRef<unknown>>('otherPathwaysTemplate');
+  readonly regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
+  readonly regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
+  readonly catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>(
+    'catalystActivityTemplate'
+  );
+  readonly catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>(
+    'catalystActivitiesTemplate'
+  );
+  readonly inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
+  readonly orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>(
+    'orthologousEventsTemplate'
+  );
+  readonly otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
+  readonly literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
+  readonly authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
+  readonly interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
+  readonly rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
+  readonly locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
+  readonly reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
 
   readonly isReaction = computed(() => isRLE(this.obj()));
 
   protected readonly Labels = Labels;
   protected readonly DataKeys = DataKeys;
 
-  selectedKey = signal<string>(DataKeys.OVERVIEW);
+  readonly selectedKey = signal<string>(DataKeys.OVERVIEW);
   private manualSelection = false;
   private observer?: () => void;
 
@@ -677,6 +703,13 @@ export class DescriptionTabComponent implements OnDestroy {
       template: this.inferencesTemplate$,
     },
     {
+      key: DataKeys.ORTHOLOGOUS_EVENT,
+      label: Labels.ORTHOLOGOUS_EVENTS,
+      manual: true,
+      template: this.orthologousEventsTemplate$,
+      isPresent: computed(() => this.orthologousEvents().size > 0),
+    },
+    {
       key: DataKeys.INFERRED_FROM,
       label: Labels.INFERRED_FROM,
       disableNavigation: computed(() => this.inferenceNavigationVisibility()),
@@ -766,6 +799,8 @@ export class DescriptionTabComponent implements OnDestroy {
         return this.hasRhea();
       case DataKeys.OTHER_FORMS:
         return this.otherForms() && this.otherForms().size > 0;
+      case DataKeys.ORTHOLOGOUS_EVENT:
+        return this.orthologousEvents().size > 0;
       case camelCase(Labels.AUTHORSHIP):
         return this.authorship() && this.authorship().length > 0;
       case DataKeys.INTERACTORS:

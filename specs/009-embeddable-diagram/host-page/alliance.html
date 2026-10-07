@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A gene page, written for the old widget</title>
+    <!--
+      AllianceGenome's pathwayWidget pattern, in plain JS: the old widget's
+      script, polled for until `Reactome` appears, then Reactome.Diagram.create
+      and loadDiagram at once. Only the script's address differs from what was
+      written for the old widget.
+    -->
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>Gene X: pathways</h1>
+    <select id="pathways">
+      <option value="R-HSA-69620">Cell Cycle Checkpoints</option>
+      <option value="R-HSA-1257604">PIP3 activates AKT signaling</option>
+    </select>
+    <div id="reactomePathwayHolder"></div>
+    <script>
+      // What the old widget's handlers were called with, for the tests.
+      window.__legacy = [];
+      window.__polls = 0;
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        window.__polls = tries;
+        if (typeof Reactome !== 'undefined') {
+          clearInterval(timer);
+          var diagram = Reactome.Diagram.create({
+            placeHolder: 'reactomePathwayHolder',
+            width: 1130,
+            height: 600,
+          });
+          window.widget = diagram;
+          diagram.onDiagramLoaded(function (stId) {
+            window.__legacy.push(['loaded', stId]);
+          });
+          diagram.onObjectSelected(function (obj) {
+            window.__legacy.push(['selected', obj]);
+          });
+          diagram.onObjectHovered(function (obj) {
+            window.__legacy.push(['hovered', obj]);
+          });
+          diagram.onFlagsReset(function () {
+            window.__legacy.push(['flagsReset']);
+          });
+          diagram.onAnalysisReset(function () {
+            window.__legacy.push(['analysisReset']);
+          });
+          diagram.loadDiagram(document.getElementById('pathways').value);
+        } else if (tries >= 15) {
+          clearInterval(timer);
+        }
+      }, 1000);
+      document.getElementById('pathways').addEventListener('change', function (event) {
+        if (window.widget) window.widget.loadDiagram(event.target.value);
+      });
+    </script>
+  </body>
+</html>

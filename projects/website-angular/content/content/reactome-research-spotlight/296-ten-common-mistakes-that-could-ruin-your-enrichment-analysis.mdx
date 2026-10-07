@@ -1,0 +1,14 @@
+---
+title: "Ten common mistakes that could ruin your enrichment analysis"
+category: "content"
+date: "2026-07-06T11:02:51-04:00"
+tags: ["content", "reactome-research-spotlight", "296-ten-common-mistakes-that-could-ruin-your-enrichment-analysis"]
+---
+
+## Ten common mistakes that could ruin your enrichment analysis
+
+In their April 2026 PLOS Computational Biology education article “[Ten common mistakes that could ruin your enrichment analysis](<https://doi.org/10.1371/journal.pcbi.1014122>)”, Bora, McKenzie, and Ziemann identify ten recurring methodological mistakes in functional enrichment analysis (FEA) and provide practical advice for avoiding them.
+
+Reactome is explicitly recommended as one of two comprehensive pathway databases that yield substantially richer results than alternative databases, and several of Reactome’s built-in features directly address the pitfalls the authors describe. Reactome’s [pathway analysis tool](</PathwayBrowser/#TOOL=AT>) applies Benjamini-Hochberg FDR correction by default, guarding against the most prevalent mistake — uncorrected p-values — without any user configuration (Rothfels et al., [2023](<https://doi.org/10.1002/cpz1.722>)). Results are ranked by FDR but also include entity and reaction coverage scores, giving users a multi-metric basis for prioritization rather than p-value ranking alone. A new “pathway grouping” filter in the redesigned interface further helps by displaying only the most granular reaction-level pathways in results, reducing the risk of stopping at uninformative top-level terms (Ragueneau et al., [2026](<https://doi.org/10.1093/nar/gkaf1223>)). For directional analysis, Reactome supports expression data submission with fold-change values for pathway-level visualization of up- and down-regulated components, while [ReactomeGSA](<https://reactome.org/gsa/home>) extends this to quantitative multi-omics datasets.
+
+On database currency, another key concern raised by the authors, Reactome’s quarterly release cycle continuously expands coverage of the literature, while automated workflows monitor cited evidence for retractions, flagging and correcting affected annotations to maintain data integrity (Ragueneau et al., [2026](<https://doi.org/10.1093/nar/gkaf1223>)). Stable pathway identifiers, versioned gene set downloads, and CoreTrustSeal-certified data preservation further support the full methods reproducibility the authors identify as the tenth and final common failure point.

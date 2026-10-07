@@ -6,6 +6,11 @@ export const routes: Routes = [
     redirectTo: 'PathwayBrowser',
     pathMatch: 'full',
   },
+  // Old addresses for the pathway browser. The redesigned browser was previewed
+  // at /beta/PathwayBrowser; Reacfoam, its genome-wide overview, had its own page.
+  { path: 'beta/PathwayBrowser', redirectTo: 'PathwayBrowser', pathMatch: 'full' },
+  { path: 'beta/PathwayBrowser/:id', redirectTo: 'PathwayBrowser/:id' },
+  { path: 'reacfoam', redirectTo: 'PathwayBrowser', pathMatch: 'full' },
   {
     path: 'PathwayBrowser',
     // src/app/app.config.ts. Registering it again here created a second,

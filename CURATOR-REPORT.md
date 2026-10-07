@@ -12,7 +12,130 @@ open an issue on the WebsiteAngular repository — either reaches us. A screensh
 and the URL is usually enough; if a diagram is involved, the pathway's stable id
 saves us guessing.
 
-Last updated: 2026-08-22
+Last updated: 2026-09-25
+
+## Answers to the 25 September review
+
+Seventeen items. Each will end either fixed and checked on beta, or said plainly
+to be waiting — on a decision, on another team, or on more detail from you. This
+section grows as the fixes land.
+
+### Fixed — please check
+
+| Item                                                             | What was wrong                                                                                                                                                                                                                                                                                                                                                                                | Where to look                                                                |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Digital Preservation heading                                     | The page was imported without a title and rendered "UNTITLED". Every page is now checked for one                                                                                                                                                                                                                                                                                              | About → Digital Preservation                                                 |
+| Logo downloads                                                   | Medium and Large imagotype PNGs had been saved as `.png.png`, so they opened the not-found page; no option downloaded; and the PNG sizes were in a menu that only opened on mouse hover. Each option now saves its file, and says its pixel size                                                                                                                                              | About → Our Logo                                                             |
+| Computationally inferred events showing V95                      | The chart was a saved copy of release 95's. It now comes from the current release's statistics. The curator guide and release SOP link the V97 documents                                                                                                                                                                                                                                      | Docs → Computationally inferred events                                       |
+| Circadian clock illustration                                     | It was read as HTML, not as the SVG it is; one of its gradients swallowed the rest of the drawing. Illustrations are now read as SVG, and one that cannot be drawn says so. Only one other published illustration had the same pattern, and it is not in the current release                                                                                                                  | `/PathwayBrowser/R-HSA-9909396`                                              |
+| GO biological process in Details                                 | Never shown. Now shown, linked to QuickGO, when the event has one                                                                                                                                                                                                                                                                                                                             | `/PathwayBrowser/R-HSA-109582` → Details                                     |
+| Analysis summary outliving its analysis, with no way to close it | Our earlier fix only worked while the summary panel stayed open, and opening the analysis form closes it. The check is now made against what the summary was written about. There is a close button                                                                                                                                                                                           | Run an example, summarise, run another                                       |
+| Example dataset buttons without names                            | On a laptop screen the column split in two and every name was cut to a few letters. The buttons stay in one column now, compact when space is short, and names wrap. Species names in the species comparison had the same fault and the same fix. The two analysis options can now also be chosen from the keyboard                                                                           | Analyze → Qualitative, on a laptop screen                                    |
+| Disease pathways: the compare slider, and opening on the disease | The slider's handle did not move on a quick drag, or one that drifted off its row. As Lincoln asked, a disease pathway now opens on the disease diagram alone, in full colour with its changes marked and no slider; **Compare with normal** slides the handle in to compare, and **Close comparison** slides it back out                                                                     | Any disease pathway, e.g. MPS IX, R-HSA-2206280                              |
+| V97 "other news" links, and links across the site                | The five links you found were five of more than eighty broken links to old reactome.org addresses, now corrected. Every build checks every internal link, including links to a section of another page. The ReactomeGSA links now open the quantitative analysis here; a few training-slide links wait on the slides being republished. Three news items that showed broken images are mended | About → News → V97 released                                                  |
+| Research Spotlight: duplicates, missing articles, no explanation | Forty left-over copies of older spotlights showed each one twice. They are gone, the 22 May and 6 July spotlights are imported word for word, and the page opens with reactome.org's explanation of what a spotlight is. The home page tile now shows the newest. A duplicate can no longer be published                                                                                      | Content → Research Spotlight                                                 |
+| Old reactome.org addresses                                       | Addresses such as `/userguide`, `/dev`, `/what-is-reactome`, `/license` and `/beta/PathwayBrowser` now open their new pages, for the links people have kept for years                                                                                                                                                                                                                         | Try any of them on beta                                                      |
+| Computationally predicted events in Details                      | A human pathway now lists the events predicted from it in other species, by species, and a predicted event says it was computationally inferred                                                                                                                                                                                                                                               | `/PathwayBrowser/R-HSA-109582` and `/PathwayBrowser/R-MMU-1640170` → Details |
+| Hovering a sub-pathway does not highlight it in the illustration | It does now, and the highlight clears when you move away                                                                                                                                                                                                                                                                                                                                      | `/PathwayBrowser/R-HSA-1640170`: hover "Cell Cycle Checkpoints"              |
+| Hovering sub-events in the hierarchy at diagram level            | Nothing reached the diagram. Now the hovered reaction or sub-pathway stands out: drawn thicker in its own colours, with the rest of the diagram faded. Not yellow: sub-pathways here are tinted in colours spread around the whole spectrum, so any single highlight colour would match one of them                                                                                           | Any pathway diagram: hover a reaction in the tree                            |
+| Tour and Layout buttons missing from the menu bar                | They had never been carried over to the new browser. Both are in the top bar now and behave as on reactome.org: Tour plays the same Pathway Browser tour video, and Layout shows or hides the hierarchy and details panels, or expands the centre view                                                                                                                                        | Any pathway: the two buttons left of Feedback, at the top right              |
+| Content Service and Analysis Service pages full of broken links  | Opened directly, as Tools and Download opened them, these addresses showed the backend's own page, wrapped in a copy of the old reactome.org menu whose links lead nowhere here. They now show this site's API pages, under the site's header, and the links open them in the site                                                                                                            | Tools → Content Service, or type `/ContentService` into the address bar      |
+| The ReactomeGSA link in news (reactome.org/gsa)                  | reactome.org's /gsa is a separate ReactomeGSA page; this site has the same analysis built into the Pathway Browser. /gsa now opens it, and the news links go straight there. Its Guided tour, which could not be started and sent you to a missing page when it was, has a button, and the method's citation is shown                                                                         | Any V97-era news link to ReactomeGSA, or type `/gsa`                         |
+| Quantitative results not appearing                               | ReactomeGSA hands each result to a Reactome server, and beta was asking for reactome.org, whose results beta cannot open. Beta now asks ReactomeGSA to use this server (dev.reactome.org), so results are stored where beta can open them, and beta's test runs no longer touch the production server. A result that still cannot be loaded says so rather than vanishing                     | Run Camera on the MelanomaRNA-seq example                                    |
+
+### Not ours
+
+- **The report email** is sent by the ReactomeGSA service, not by this site.
+  It will be raised with that team.
+
+### By design
+
+- **The pathway overview as Voronoi (Reacfoam), not nodes (Fireworks)**: this
+  release retires the Fireworks layout. Reacfoam is its replacement, so the
+  node view is gone deliberately rather than missing.
+
+### A question for you
+
+- **User guide images from reactome.org**: we could not reproduce this. All 244
+  images, videos and embeds in the user guide load from beta itself. Which page,
+  and which image? If it was on `reactome.org/beta`, that is a separate, older
+  build our changes never reach.
+
+## Answers to the 19 September round
+
+Everything you marked in purple on the report, answered. Where I could check it
+I did, and I say which; where I could not, I say that instead of guessing.
+
+### Right-click in the diagram — it works, and it is your trackpad
+
+Two of you reported no right-click menu, one noting "I use the touch pad
+though". That is almost certainly it. Driven on beta against
+`R-HSA-1368108`, a right-click on an entity opens the panel: 354x213 pixels,
+positioned over the diagram, carrying the entity name and the Molecule /
+Pathways / Interactors entries.
+
+A trackpad sends no right-click at all unless secondary click is switched on.
+On a Mac that is **System Settings -> Trackpad -> Secondary click**, or hold
+**Ctrl** and click. On Windows, a two-finger tap.
+
+If it still does nothing with Ctrl held, tell us, because then it is ours.
+
+### Still open, and we agree with you
+
+- **Which components of a complex or set are hit** — you said on 19 Sept you
+  still cannot see this in the diagram. #154 is open. The analysis _table_ can
+  flag each hit, which is the workaround you found; showing it on the complex
+  itself is the request ([#154](https://github.com/reactome/WebsiteAngular/issues/154)).
+- **Hit reaction count is one off**, which moves FDR and the entity ratios
+  ([#296](https://github.com/reactome/WebsiteAngular/issues/296)). The most
+  serious thing in the round, because every other finding is something being
+  hard to see and this one is a number being wrong. It needs the slide you
+  referenced, or any analysis token and the pathway where the count differs.
+- **PPTX granularity** — entities move now, but an icon's border and centre are
+  separate shapes, and each reaction line segment moves alone. Partially fixed
+  is a fair description ([#299](https://github.com/reactome/WebsiteAngular/issues/299)) — the fix is grouping each entity's parts, not fewer shapes.
+- **EHLD hover highlight** — hovering a subpathway in the hierarchy highlights
+  it on the live site and not here ([#297](https://github.com/reactome/WebsiteAngular/issues/297)).
+- **Trivial molecules at zoom** — H2O and H+ still disappear when zooming out,
+  which contradicts the OK on that row ([#298](https://github.com/reactome/WebsiteAngular/issues/298)). We will take yours.
+
+### Questions you asked
+
+- _"Do you mean search for something in the diagram?"_ — yes. Type in the
+  diagram's search box, then flag the result.
+- _"How do you opt to download the figure rather than the EHLD?"_ — a fair
+  question and we do not think the panel makes it clear. Treating it as a bug
+  in the panel rather than something to explain.
+- _"Will we know a GIF or PPTX failed, or must we open it?"_ — for **GIF and
+  PPTX**, you will know: those come from the render service, which builds the
+  whole file before it answers, and the page saves nothing unless the whole of
+  it arrived. A failure is an error on screen and no file.
+
+  **Not true of every format**, and the difference is worth knowing. **SBML,
+  SBGN and PDF** come from the Java exporters, which stream while they
+  generate: a failure partway produces a **truncated file that looks
+  complete**, with no size known in advance to check against. Those are the
+  ones to open and verify.
+
+  An earlier draft of this answer said "if a file arrives, it was produced",
+  full stop. That is right for the two you asked about and wrong for the other
+  three, which is the worse half to get wrong — so it is corrected rather than
+  left for somebody to trust.
+
+- _"I did not see an option to convert to editable shapes"_ — there is none to
+  find. PPTX shapes are already editable when the file opens; nothing needs
+  switching on.
+
+### Fixed since you last looked
+
+- **A searched entity being deselected when you navigate within a diagram**
+  (#168). Fixed. `select` was being overwritten with the pathway you were
+  leaving, so your own selection was discarded on one of the two ways out of a
+  diagram and kept on the other.
+- **An error thrown when deleting a custom interactor resource** (#231).
+- If you write a test URL by hand, the flag parameter is `flag=`. `FLG=` also
+  works. `flg=` is silently ignored and nothing will be flagged, which is worth
+  knowing before concluding flagging is broken.
 
 ## Please check on beta.reactome.org
 
@@ -20,18 +143,18 @@ Last updated: 2026-08-22
 > older build sitting on the production machine and is **not** updated by our
 > work — a fix will never appear there.
 
-| #                                                             | What to check                                                                                                                                                                                        | Why we are asking                                                                                                                                                                                                               |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [#150](https://github.com/reactome/WebsiteAngular/issues/150) | Flag something, then confirm trivial molecules (H₂O, ATP…) stay visible at every zoom, and that their chemical structures never appear without the molecule underneath                               | Two real defects were fixed, but the original reports say "sometimes, but not always", and we could not make the failure happen on demand. We need someone who has seen it to confirm                                           |
-| [#143](https://github.com/reactome/WebsiteAngular/issues/143) | Same as above, specifically while navigating between pathways with a flag active                                                                                                                     | As above                                                                                                                                                                                                                        |
-| [#154](https://github.com/reactome/WebsiteAngular/issues/154) | Right-click a complex or set after running an analysis: components are listed and the ones in your data are marked                                                                                   | Closed on the basis that the right-click panel delivers this. **Reopen if "within a diagram" meant drawing components as nodes inside the canvas** — that is a much larger piece, and the old GWT browser does not do it either |
-| [#81](https://github.com/reactome/WebsiteAngular/issues/81)   | Community → Events: confirm every attachment you expect is present                                                                                                                                   | All 5 "Poster" links on the page resolve, but if a specific event is missing an attachment we have not spotted it                                                                                                               |
-| **PowerPoint**                                                | Download a diagram as **PPTX**, open it in real PowerPoint, then right-click the diagram → _Graphics Format_ → **Convert to Shape**. Does it open cleanly, and do you get editable shapes?           | **We cannot test this — there is no PowerPoint on the build machine.** The file is validated structurally, but "opens in PowerPoint" is a different claim. See the decision below about what we chose here and why              |
-| **GIF**                                                       | Download a diagram as **GIF** with an expression analysis active. It should animate one frame per sample and look like the current site                                                              | New: it used to come from the old Java exporter, which is why it looked like the old diagrams. Also tell us whether ~1 MB for four samples is acceptable, and whether 1 second per sample is the right pace                     |
-| [#141](https://github.com/reactome/WebsiteAngular/issues/141) | **Animated SVG**: open the downloaded file in a browser or Inkscape, then click the play/pause button, click any segment of the timeline to jump to that sample, and hover a segment to see its name | New controls. They need the file **opened as a document** — inside an `<img>`, or in a viewer that blocks scripts, the buttons are inert by design and hovering the button still pauses                                         |
-| [#140](https://github.com/reactome/WebsiteAngular/issues/140) | Flag a gene in the **genome-wide view**, with and without an analysis running                                                                                                                        | Flagging is now an outline instead of a fill, so the analysis colours survive underneath. Previously a flagged pathway lost its result colour, and without an analysis everything else was washed out                           |
-| **Illustration downloads**                                    | Download an illustrated pathway (Apoptosis, say) as **PNG** or **JPEG**                                                                                                                              | It was scaled twice and you got the **top-left ninth** of the illustration blown up to fill the file. Fixed, but worth one look                                                                                                 |
-| [#137](https://github.com/reactome/WebsiteAngular/issues/137) | Selecting things: in the event hierarchy, the analysis results table, and the search results. The selection should come into view without the panel jumping to the top                               | One shared implementation now. Nothing should move at all when the selected thing is already visible                                                                                                                            |
+| #                                                             | What to check                                                                                                                                                                                        | Why we are asking                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#150](https://github.com/reactome/WebsiteAngular/issues/150) | Flag something, then confirm trivial molecules (H₂O, ATP…) stay visible at every zoom, and that their chemical structures never appear without the molecule underneath                               | Two real defects were fixed, but the original reports say "sometimes, but not always", and we could not make the failure happen on demand. We need someone who has seen it to confirm                                                                                                                                                                                                                 |
+| [#143](https://github.com/reactome/WebsiteAngular/issues/143) | Same as above, specifically while navigating between pathways with a flag active                                                                                                                     | As above                                                                                                                                                                                                                                                                                                                                                                                              |
+| [#154](https://github.com/reactome/WebsiteAngular/issues/154) | Right-click a complex or set after running an analysis: components are listed and the ones in your data are marked                                                                                   | Closed on the basis that the right-click panel delivers this. **Reopen if "within a diagram" meant drawing components as nodes inside the canvas** — that is a much larger piece, and the old GWT browser does not do it either                                                                                                                                                                       |
+| [#81](https://github.com/reactome/WebsiteAngular/issues/81)   | Community → Events: confirm every attachment you expect is present                                                                                                                                   | All 5 "Poster" links on the page resolve, but if a specific event is missing an attachment we have not spotted it                                                                                                                                                                                                                                                                                     |
+| **PowerPoint**                                                | Download a diagram as **PPTX** and open it in real PowerPoint. Every compartment, connector, entity and sub-pathway tint should be its own shape you can select and move, with no conversion step    | **We cannot test the opening — there is no PowerPoint on the build machine.** The package is checked structurally, its element order matches production's own file, and 974 shapes come out of R-HSA-109606; "opens in PowerPoint" is still a different claim                                                                                                                                         |
+| **GIF**                                                       | Download a diagram as **GIF** with an expression analysis active. It should animate one frame per sample and look like the current site                                                              | New: it used to come from the old Java exporter, which is why it looked like the old diagrams. Also tell us whether ~1 MB for four samples is acceptable, and whether 1 second per sample is the right pace                                                                                                                                                                                           |
+| [#141](https://github.com/reactome/WebsiteAngular/issues/141) | **Animated SVG**: open the downloaded file in a browser or Inkscape, then click the play/pause button, click any segment of the timeline to jump to that sample, and hover a segment to see its name | New controls. They need the file **opened as a document** — inside an `<img>`, or in a viewer that blocks scripts, the buttons are inert by design and hovering the button still pauses                                                                                                                                                                                                               |
+| [#140](https://github.com/reactome/WebsiteAngular/issues/140) | Flag a gene in the **genome-wide view**, with and without an analysis running                                                                                                                        | Flagging is now an outline instead of a fill, so the analysis colours survive underneath. Previously a flagged pathway lost its result colour, and without an analysis everything else was washed out                                                                                                                                                                                                 |
+| **Illustration downloads**                                    | Download an illustrated pathway as **SVG**, **PNG** and **JPEG** — **please not Apoptosis**. Cell Cycle, Signal Transduction or Developmental Biology are better                                     | Two faults, both now fixed, and both of which Apoptosis was immune to — which is why we are asking you to avoid it. The file used to be the **top-left ninth** of the illustration blown up to fill it; and every illustrated pathway's download went to a service that had no pictures to give, so nothing arrived at all. They are now made by the page itself, from what is already on your screen |
+| [#137](https://github.com/reactome/WebsiteAngular/issues/137) | Selecting things: in the event hierarchy, the analysis results table, and the search results. The selection should come into view without the panel jumping to the top                               | One shared implementation now. Nothing should move at all when the selected thing is already visible                                                                                                                                                                                                                                                                                                  |
 
 ## Fixed since 20 August — worth re-testing
 
@@ -39,6 +162,36 @@ Each of these was broken when curators last looked, and each is now covered by a
 test — `RELEASE-TESTING.md` names the spec for every row, and says plainly where
 a check can only be made by eye.
 
+- **Downloading an illustrated pathway produced nothing at all.** All 218
+  illustrated pathways sent their SVG, PNG and JPEG downloads to the content
+  service's exporter, which draws nothing and reads pre-made files from disk —
+  and the files are not on this machine. The page draws the illustration itself,
+  so it now makes the file from what is already on screen, at a higher
+  resolution than the server was offering. **Worth a click on any illustrated
+  pathway other than Apoptosis**, which is the one the tests happened to use and
+  the one that kept passing.
+- **96 of the 218 illustrations rendered as a picture of the zoom control.** A
+  140×140 image of four arrows where the pathway should be, on downloads and on
+  the picture a content detail page shows — Signal Transduction, Developmental
+  Biology and Cytokine Signaling in Immune System among them. The renderer
+  decided it was finished as soon as any drawing existed, and the zoom control
+  is drawn before the illustration arrives, so the heavier the illustration the
+  likelier it lost. It now waits for the illustration. Re-scanned after the fix:
+  1 of 218 left, and that one is the artwork question below.
+- **A person's page counted one of their reactions twice.** The contributor
+  pages listed an event once for every time that person had edited it, so a
+  reaction edited twice showed up twice and the total was correspondingly wrong
+  — 3,310 authored reactions where the contributors table said 3,309, for the
+  same person. Each event is now counted once. **Worth a look at any curator
+  with a long list**, and at whether the totals on a person's page now agree
+  with the contributors table.
+- **Downloading a pathway as SBGN failed for almost every pathway.** 9,548 of
+  the 9,559 pathways with a diagram returned a server error; the 11 that worked
+  were the ones our own tests use, so it looked healthy from the inside. The
+  export is built from each pathway's stored diagram, and those files had been
+  removed from the machine; they are back, and a test now checks a pathway that
+  is deliberately not one of our fixtures. **Worth downloading SBGN from any
+  pathway you like**, including non-human ones.
 - **Diagrams for every species other than human were blank.** One node without
   graph data threw for the whole diagram build, so switching species left an
   empty canvas with the rest of the page updated around it.
@@ -116,14 +269,23 @@ Not bugs, so as not to waste your time:
 
 ## Decisions they should know about
 
-- **PowerPoint files carry the diagram as a vector image, not as shapes.** The old
-  exporter emitted a PowerPoint shape per glyph, so a file was editable the moment
-  it opened. It did that through a second, independent reimplementation of the
-  diagram — the reason exports drifted from the site — and a commercial Aspose
-  licence. Ours embeds the SVG, which PowerPoint draws and converts to editable
-  shapes in one click (_Graphics Format → Convert to Shape_). **If that click is
-  unacceptable, say so** — it is the one place we traded a small amount of
-  convenience for removing the second renderer.
+- **PowerPoint files are built out of shapes**, one per compartment, connector,
+  entity and sub-pathway tint, editable the moment the file opens. They carried
+  the diagram as a single vector image until now, on the argument that one click
+  to convert it was worth not writing a second renderer. It was reported as "the
+  whole pathway diagram is treated as a single item", so the renderer is written.
+  The site's page still decides every position, colour, opacity, dash and font,
+  and hands them over as data — so this is a spelling of the diagram, not a
+  second opinion about it, which is what drifted before.
+  Complexes, sets and genes draw their body from an image rather than a fill, and
+  those now come through as their real shape — an octagon for a complex, a
+  braced box for a set, with the drug marker at its own size. Before that they
+  were empty rectangles: 65 of the 203 glyphs on one diagram. One thing it still
+  does not carry: edges with weights keep their points but not their rounded
+  corners. **Say if that matters** and it goes in next.
+- **The slide is the size of the diagram**, as production's is — 56 by 32 inches
+  for Apoptosis, with labels at 5 to 53pt. Fitting the diagram onto an ordinary
+  13.3in slide instead put every label at 1.65pt.
 - **GIF and PPTX now come from our own renderer**, so what you download is what the
   site draws. For **illustrated** pathways they still come from the content
   service, deliberately: it serves the same illustration file either way.
@@ -154,8 +316,17 @@ Not bugs, so as not to waste your time:
 ## Waiting on someone else
 
 - **The render service runs in a container now** (`restart: unless-stopped`), so a
-  reboot no longer stops GIF and PPTX. Still outstanding before this fronts
-  reactome.org: rate limiting in front of it.
+  reboot no longer stops GIF and PPTX. **Rate limiting is now in front of it**, so
+  the condition this listed is met: nginx gives `/RenderService/` its own budget
+  of 2 requests a second with a burst of 8 — the service's own queue depth, past
+  which it is rejecting anyway. The same budget now covers the Java exporters
+  that draw (`/ContentService/exporter/diagram|fireworks|document|event`), which
+  had none; the reaction-diagram JSON on the same prefix is deliberately outside
+  it, being 2.9 KB in 0.17s and on every reaction page's critical path. The site-wide limit it previously fell under is
+  100 a second, which is sized for page assets, not for a headless browser
+  drawing a 12000-pixel canvas. Crawlers on the old
+  `/ContentService/exporter/*` URLs are what exhausted Tomcat's heap and took the
+  origin down; this is the bound that stops that repeating.
 - **Cloudflare cache purge** — one-off, for figures cached before 2026-08-20.
   Nothing new is cached now.
 - **[#139](https://github.com/reactome/WebsiteAngular/issues/139) native cytoscape
@@ -164,63 +335,140 @@ Not bugs, so as not to waste your time:
   diagram.json conversion** touches the shared diagram library, so it needs
   beaversd and guanmingwu before anyone starts.
 
-- **ORCID "Claim Your Work" ([#114](https://github.com/reactome/WebsiteAngular/issues/114))** — blocked on a backend deploy, not on frontend work. The person-page endpoints return real data, but `/ContentService/orcid/authenticated`, `/orcid/login` and `/orcid/claim/*` all 404: the `org.reactome.server.orcid.*` package is not in the deployed WAR. Needs that build deployed plus ORCID credentials in `service.properties`. Deferred by agreement, 2026-08-19.
+- **ORCID "Claim Your Work" ([#114](https://github.com/reactome/WebsiteAngular/issues/114))** — blocked on a backend deploy, not on frontend work. The person-page endpoints return real data, but `/ContentService/orcid/authenticated`, `/orcid/login` and `/orcid/claim/*` all 404: the `org.reactome.server.orcid.*` package is not in the deployed WAR. Needs that build deployed plus ORCID credentials in `service.properties`, and a **new ORCID key**, which is what it is waiting on as of 19 Sep 2026. Deferred by agreement, 2026-08-19.
 
 ## Also waiting on you
 
-**Ten figures the database points at do not exist, and an eleventh is misnamed.** Ten are on no host we can
-reach; the eleventh is a naming mismatch. They render as broken images on
-reactome.org today, so this is not new with the redesign.
+**The eleven missing figures are fixed, and will appear at v98.** They were
+corrected upstream; release 97 — which is what beta serves — simply does not
+carry them yet. So the broken images on those pages are a release artefact
+rather than a website fault or an outstanding curation decision, and nothing
+here needs doing.
 
-| Figure dbId | File the database asks for                      |
-| ----------- | ----------------------------------------------- |
-| 387434      | `/figures/Dunn2005-ProinsulinZnCaComplex.jpg`   |
-| 387452      | `/figures/Kaufman2002-ATF6.jpg`                 |
-| 387454      | `/figures/Kaufman2002-IRE1.jpg`                 |
-| 387457      | `/figures/Kaufman2002-PERK.jpg`                 |
-| 387436      | `/figures/Rutter2006-KinesinVesicleComplex.jpg` |
-| 111218      | `/figures/linoleoylcoa.jpg`                     |
-| 396956      | `/figures/striatedmuscle1.jpg`                  |
-| 396954      | `/figures/striatedmuscle2.jpg`                  |
-| 396953      | `/figures/striatedmuscle3.jpg`                  |
-| 396952      | `/figures/striatedmuscle4.jpg`                  |
-| 1028823     | `/figures/man7a.png`                            |
+Recorded because the previous version of this report asked whether the five
+named after papers (Dunn2005, Kaufman2002 ×3, Rutter2006) had been withdrawn for
+licensing, and whether `man7a.png` should be renamed. Both questions are closed:
+the fix happened elsewhere.
 
-Two questions:
+**Circadian clock's illustration cannot be saved as PNG or JPEG, and this one
+needs an artwork change rather than a code change.**
+`R-HSA-9909396.svg` builds six of its shapes out of `<foreignObject>` — an
+element that embeds an HTML box inside the drawing, which is how a design tool
+exports a conic gradient, since SVG has no such gradient of its own. A browser
+refuses to turn any drawing containing one into a picture file; it is a security
+rule, not a bug we can work around. SVG downloads fine, and the page displays
+normally.
 
-- **The five named after papers** (Dunn2005, Kaufman2002 ×3, Rutter2006) look like
-  figures reproduced from publications. If they were withdrawn for licensing, the
-  fix is to clear the Figure reference rather than restore the file — otherwise
-  every release keeps pointing at an image that cannot be republished.
-- **`man7a.png` is almost certainly a typo.** The file on disk is `man7aa.png`
-  (one extra "a", dated 2018, referenced by nothing), and the rest of that series
-  — `man8a`, `man8b`, `man8c` — is present and referenced. Rename the file, or
-  correct the reference: either fixes it.
+It is the only one of the 218 that does this. If the file is re-exported with
+those six shapes flattened — or the gradient redrawn with the radial gradients
+SVG does have — every format works again. Until then the download says exactly
+that rather than failing with a browser error.
 
-The other six were searched for across the whole dev host, following symlinks,
-and are not on it. An old external drive is the remaining hope.
+**A protein page shows the experimental structure whenever there is one.**
+Decided on a sitewide call, 19 Sep 2026, and implemented: if the entity carries a
+PDB cross-reference the viewer opens on it, and AlphaFold's predicted model is
+shown only when no experimental structure exists.
 
-**Which structure should a protein page show?** The viewer can show an
-experimental PDB entry (from the entity's cross-references) or AlphaFold's
-predicted model (from AlphaFold's own endpoint), and today it shows whichever has
-resolved first — BCL2 has been seen with both `5JSN` and `AF-P10415-F1`. If an
-experimental structure should always win when one exists, that is a small change;
-we did not want to decide it for you.
+This was not the race the earlier version of this report described. The code
+preferred AlphaFold outright whenever AlphaFold had a model, so BCL2 — which has
+an experimental `5JSN` — opened on `AF-P10415-F1` every time rather than
+sometimes. Worth re-checking BCL2 on beta: it should now open on `5JSN`, and the
+source list should offer the experimental entry first.
 
 ## In the old browser, not in this one
 
-Found while turning the release checklist into tests. Neither is a regression from
-a working state here -- they were never built -- but the old browser has both, so
-curators will look for them:
+Found while turning the release checklist into tests, and **both are now built**
+(`specs/001-interactor-confidence-filter`). The confidence slider opens at 0.45,
+the value the old browser opens at, and is remembered per resource the way the old
+browser remembers it. The download beside it carries every interaction the
+resource holds for that entity, deliberately not the filtered view: a file named
+for what you can see is a file you cannot check anything against.
 
-- **No confidence threshold for interactors.** The old browser has a sliding scale
-  where raising the confidence score shows fewer interactors; there is no such
-  control here, and no threshold concept in the interactor services or the URL
-  state. The overlay is all-or-nothing per resource.
-- **No interactor download.** The old browser offers one beside that slider.
+Two things about them are worth a curator's eye, because they are judgements
+rather than parity:
 
-Both are small next to what they enable, and neither is on the critical path for
-the release. Say if they matter to you and they go on the list.
+- The count beside each resource is **interactions**, the same unit as the badge
+  on an entity, with the number of entities carrying them in the tooltip. It was
+  briefly entities, which made one resource read "15" beside a badge reading
+  "17".
+- The badge is not drawn below 0.6 zoom, where it is six pixels holding a
+  two-digit number. The old browser stops drawing it too, at its own 0.5 tier.
+
+**The count beside each resource now follows the pathway on screen.** It did not:
+the tally was cleared only when a new count was stored, and nothing was ever
+stored while the cache was full, so the second pathway you opened kept the first
+one's numbers for the rest of the session. Reported from the browser and fixed —
+worth one look, because the numbers were plausible rather than obviously wrong.
+
+**Your selection survives opening a pathway from inside the diagram.** Searching
+for an entity and then double-clicking a pathway box replaced your selection with
+the pathway you had just left, so a searched entity came back unselected. It is
+kept now. The flag was never the problem — that always survived.
+
+**Downloading an illustration as SVG, PNG or JPEG works again on beta.** It had
+been returning nothing at all: the exporter reads those from a directory on the
+dev box that had been cleared to reclaim space, so the request 404'd while
+ordinary diagram downloads carried on working (those are drawn in your browser,
+not on the server). Restored for the pathways we test with. **If you hit an
+illustration that still fails, that is why** — it is a gap in what is cached on
+this machine, not a fault in the site. Issue #230 carries the proper fix.
+
+**The search page can now answer a question, and it asks first.** Above the
+results there is an invitation — "Ask React-to-Me about …". Nothing happens
+until you click it: the answer takes about ten seconds, and the results below
+are ready immediately, so it never delays them. Clicking asks you to confirm you
+are a person, once per visit, and then the answer streams in with its sources as
+links you can follow.
+
+Three things worth knowing before you judge it. Long answers start collapsed, so
+they cannot bury the results — "Show more" opens them. Sources differ by what
+you asked: a pathway question cites entries you can open in Reactome, while a
+question about using the site cites userguide pages. An answer can also arrive
+with **no sources at all**, and that is correct rather than broken — the panel
+then shows no sources heading rather than an empty one. And the panel answers
+once; "Continue in React-to-Me" carries you into a conversation, though it does
+not yet carry your question with it.
+
+If it says nothing after you ask, that is a real answer too — it means nothing
+in Reactome matched, and the search results are unaffected.
+
+**A mistyped address in the analysis options is now caught.** `adam@` used to be
+accepted: the form knew it was malformed — the box turned red — but no message
+said why, and the analysis was submitted with it anyway, so no mail ever
+arrived. The box now explains itself and Continue waits until the address is
+either valid or empty.
+
+**Leaving the address empty is fine and always was.** The analysis runs, results
+appear as usual, and no mail is sent because none was asked for. The address is
+optional by design. What the GSA server does about a report it cannot mail is on
+a machine we do not control, and that remains #168.
+
+**The interactor overlay now survives you moving around.** Choosing a resource
+and then opening another pathway used to lose it, including coming back to the
+pathway you chose it on — so the three clicks had to be repeated every time. It
+persists now, and a link carrying it opens with it drawn.
+
+**The whole overlay is reachable from the keyboard.** The Species and Overlay
+controls could not be focused or activated without a mouse, and were announced to
+a screen reader as nothing at all. Both are operable now — Tab to them, Enter or
+Space to open, Escape to close — and closing returns you to where you were.
+
+**"Add overlay resource" now works, and keeps your data.** The button labelled
+Close did nothing at all -- a Material directive was missing, so the attribute
+sat inert and only Escape or a click outside would close the dialog. A rejected
+upload said nothing either: the spinner ran on and the dialog sat there, which is
+hard to tell from being stuck.
+
+Both are fixed, and with them the thing worth a curator's attention: a file or a
+paste is now read **in your browser**. Nothing is sent anywhere. Before, it was
+posted to the server, parsed there, stored on disk indefinitely -- the store
+holds uploads going back to 2019 -- and given a token that appeared in the page's
+address, so the link carried the data to anyone who had it.
+
+Uploading is still offered, as a tick-box, because that token is what lets an
+overlay survive a reload or open for a colleague. It is now a choice you make
+rather than one made for you, and the dialog says which you are getting. There is
+also a note explaining the format it expects, which nothing said before.
 
 ## Known and deliberately not fixed
 
@@ -251,10 +499,12 @@ notice:
   does not match the source word for word. It does not write prose.
 - **Figures**: `~/publish-figures.sh add` on the dev host publishes new figures to
   the bucket. Needs sudo; the credentials belong to `s3bot`.
-- **Verifying a release**: `E2E_BASE_URL=https://beta.reactome.org npm run e2e:release`
+- **Verifying a release**: `E2E_BASE_URL=https://<site> npm run e2e:release`
   runs the checks that only a finished release can answer — every top-level pathway
   draws, every download link resolves, the version and news and statistics match
-  what is being served. It also runs nightly against beta, so a data problem is
-  usually found by a machine before anyone reads this document.
+  what is being served. Run it against a site a release has just been published to;
+  there is a **Release verification** workflow that takes the site as an input. It
+  ran nightly against beta until 2026-09-15, which was a poor proxy for a
+  quarterly event and had quietly stopped reporting.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.

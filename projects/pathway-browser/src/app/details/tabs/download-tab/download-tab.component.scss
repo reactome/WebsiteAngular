@@ -76,3 +76,12 @@
   width: 100cqw;
   margin-top: 20px;
 }
+
+// A figure that could not be made says so here, in the panel the button is in.
+// `--negative` is the theme's own token for this and is redefined for dark
+// mode, so the text stays readable in both.
+.download-failure {
+  color: var(--negative);
+  font-size: 0.85rem;
+  margin: 8px 0 0;
+}

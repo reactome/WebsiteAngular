@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
+import { computed, inject, Injectable, Signal, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
@@ -48,8 +48,8 @@ export class CitationService {
 
   readonly dialog = inject(MatDialog);
 
-  currentCitationId = signal<string | undefined>(undefined);
-  currentCitationExportURLS = computed(() =>
+  readonly currentCitationId = signal<string | undefined>(undefined);
+  readonly currentCitationExportURLS = computed(() =>
     this.currentCitationId() ? this.getExportUrls(this.currentCitationId()!) : []
   );
   currentDate = new Date().toDateString();
@@ -77,7 +77,7 @@ export class CitationService {
     return StaticCitation.DIAGRAM_VIEWER_CITATION_ID;
   }
 
-  isStatic = computed(() => {
+  readonly isStatic = computed(() => {
     const id = this.updatedCitationId();
     if (!id) return false;
     return /^\d+$/.test(id); // is only digits

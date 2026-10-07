@@ -1,5 +1,8 @@
-import { test, expect, type Page, type Download } from '@playwright/test';
+import { renderServiceAvailable } from './fixtures/serves';
+import { type Page, type Download } from '@playwright/test';
+import { test, expect } from './support/backend';
 import { readFileSync } from 'node:fs';
+import { unzipSync, strFromU8 } from 'fflate';
 
 // Downloads, checked by what is *in* the file rather than that a file arrived.
 //
@@ -15,6 +18,24 @@ import { readFileSync } from 'node:fs';
 
 const DIAGRAM = 'R-HSA-109606'; // Intrinsic Pathway for Apoptosis: a cytoscape diagram
 const ILLUSTRATION = 'R-HSA-109581'; // Apoptosis: an EHLD
+
+/**
+ * A heavy illustration, which is the one that catches the bug this file missed.
+ *
+ * Apoptosis' illustration is 502 SVG elements and arrives quickly. Signal
+ * Transduction's is 2,490 and is one of the 96 illustrations out of 218 that the
+ * render service drew as a 140x140 picture of the zoom control instead of the
+ * pathway: the readiness probe accepted any `svg` inside `cr-ehld`, the control
+ * is in the DOM from the first frame, and a heavy illustration is still loading
+ * when the light one has arrived. Every existing test here used the light one
+ * and stayed green throughout.
+ */
+const HEAVY_ILLUSTRATION = 'R-HSA-162582'; // Signal Transduction: a large EHLD
+
+/** A PNG's own idea of its size, from the IHDR chunk. */
+function pngSize(bytes: Buffer) {
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
 
 /** What each format's bytes have to start with, and a floor for "not empty". */
 const SIGNATURES: Record<string, { magic: (bytes: Buffer) => boolean; floor: number }> = {
@@ -38,13 +59,39 @@ const SIGNATURES: Record<string, { magic: (bytes: Buffer) => boolean; floor: num
       bytes[0] === 0x50 &&
       bytes[1] === 0x4b &&
       bytes.toString('latin1').includes('ppt/presentation.xml'),
-    floor: 10_000,
+    // A slide of shapes is small: the package boilerplate is around 4.9KB and
+    // each shape adds tens of bytes, so a reaction's figure is 5.6KB. The 10KB
+    // this used to be was right when the package carried a picture of the
+    // diagram, and rejected a perfectly good reaction. `shapesIn` below is what
+    // now says whether there is a diagram in there.
+    floor: 4000,
   },
 };
 
+/**
+ * How many shapes a slide holds, and how large the slide is.
+ *
+ * A PowerPoint download is worth having because a person can take the diagram
+ * apart on the slide, and a byte count cannot tell you whether they can. This
+ * reads the slide itself.
+ */
+function slideOf(bytes: Buffer) {
+  const parts = unzipSync(new Uint8Array(bytes));
+  const slide = strFromU8(parts['ppt/slides/slide1.xml']);
+  const size = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(strFromU8(parts['ppt/presentation.xml']));
+  return {
+    shapes: (slide.match(/<p:sp>/g) ?? []).length,
+    pictures: (slide.match(/<p:pic>/g) ?? []).length,
+    width: Number(size?.[1] ?? 0),
+  };
+}
+
 async function openDownloadTab(page: Page, pathway: string) {
   await page.goto(`/PathwayBrowser/${pathway}`);
-  await page.waitForSelector('#cytoscape canvas, cr-ehld svg', { timeout: 90_000 });
+  // `#ehld` specifically: `cr-ehld svg` also matches the component's 70x70 zoom
+  // control, which is there from the first frame, so waiting on it returns
+  // before the illustration exists.
+  await page.waitForSelector('#cytoscape canvas, cr-ehld #ehld svg', { timeout: 90_000 });
   await page
     .locator('[role="tab"]')
     .filter({ hasText: /Download/i })
@@ -94,6 +141,41 @@ test.describe('Diagram downloads', () => {
     });
   }
 
+  test('a heavy illustration downloads the illustration, not the zoom control', async ({
+    page,
+  }) => {
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const bytes = await grab(page, 'PNG');
+    assertLooksLike('PNG', bytes);
+
+    // The failure had a shape: the control is 70x70 CSS pixels, so it came out
+    // at 140x140 and 8,091 bytes -- comfortably over the 5,000-byte floor this
+    // file already applied, which is why a size check alone never caught it.
+    // An illustration is 1600x1000 before scaling.
+    const { width, height } = pngSize(bytes);
+    expect(
+      Math.min(width, height),
+      `the PNG is ${width}x${height}, which is the zoom control rather than the illustration`
+    ).toBeGreaterThan(500);
+  });
+
+  test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
+    // Circadian clock builds six of its shapes out of <foreignObject>, which is
+    // how a design tool exports a conic gradient. Chromium taints a canvas the
+    // moment one is drawn onto it and refuses toDataURL, so this illustration
+    // cannot be turned into a picture in any browser.
+    //
+    // That part is not fixable here. What was fixable: the click produced no
+    // file, no message and no sign it had registered, because every client-side
+    // exporter reported failure with console.error and nothing else.
+    await openDownloadTab(page, 'R-HSA-9909396');
+    await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
+
+    const reason = page.locator('.download-failure');
+    await expect(reason, 'the reader is told why no file arrived').toBeVisible({ timeout: 30_000 });
+    await expect(reason).toContainText('foreignObject');
+  });
+
   test('leaving out sub-pathway highlighting changes the figure', async ({ page }) => {
     await openDownloadTab(page, DIAGRAM);
     const withTints = await grab(page, 'SVG');
@@ -113,16 +195,75 @@ test.describe('Server-rendered figures', () => {
 
   for (const format of ['GIF', 'PPTX']) {
     test(`a diagram's ${format} contains ${format}`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
+      const renderServiceUp = await renderServiceAvailable(request);
       test.skip(
-        !health?.ok(),
+        !renderServiceUp,
         'the render service is not running; GIF and PPTX come from it, so this says nothing about the build'
       );
 
       await openDownloadTab(page, DIAGRAM);
-      assertLooksLike(format, await grab(page, format));
+      const bytes = await grab(page, format);
+      assertLooksLike(format, bytes);
+
+      if (format === 'PPTX') {
+        // The point of the format. Curators reported the diagram arriving as
+        // "a single item", which is what one picture on a slide is, so a slide
+        // with a picture on it is the failure this guards.
+        const slide = slideOf(bytes);
+        expect(slide.shapes, 'a shape per glyph, not a picture of all of them').toBeGreaterThan(
+          100
+        );
+        expect(slide.pictures, 'no picture of the diagram').toBe(0);
+      }
     });
   }
+
+  for (const ext of ['jpeg', 'jpg']) {
+    test(`a server-rendered .${ext} contains JPEG, not PNG under another name`, async ({
+      request,
+    }) => {
+      const renderServiceUp = await renderServiceAvailable(request);
+      test.skip(!renderServiceUp, 'the render service is not running');
+
+      // The specific trap this guards, already once shipped from the in-page
+      // exporter: cytoscape-layers replaces png/jpg/jpeg on any instance with a
+      // custom layer -- every diagram here -- and its jpg() ends with
+      // `output(o, this.toCanvas(o), 'image/png')`. The response is the right
+      // size, the right status and the wrong format, so only the bytes say so.
+      const response = await request.get(`/RenderService/render/${DIAGRAM}.${ext}`);
+      expect(response.status(), `.${ext} is served`).toBe(200);
+      expect(response.headers()['content-type']).toContain('image/jpeg');
+
+      const bytes = Buffer.from(await response.body());
+      assertLooksLike('JPEG', bytes);
+      // Said twice deliberately: the magic-byte check above is what would have
+      // caught it, and naming PNG here is what a reader of a failure needs.
+      expect(
+        bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])),
+        `.${ext} contains PNG bytes`
+      ).toBe(false);
+    });
+  }
+
+  test('a heavy illustration renders as the illustration', async ({ request }) => {
+    const renderServiceUp = await renderServiceAvailable(request);
+    test.skip(!renderServiceUp, 'the render service is not running');
+
+    // Not only the download tab: a content detail page takes its picture from
+    // this service too, so 96 of 218 illustrated pathways showed a 140x140
+    // zoom control where the pathway should be. Asked here rather than through
+    // the page because the service caches by URL, and a wrong render was kept
+    // and served for as long as the cache lived.
+    const response = await request.get(`/RenderService/render/${HEAVY_ILLUSTRATION}.png`);
+    expect(response.ok(), 'the render service answers for a heavy illustration').toBe(true);
+
+    const bytes = Buffer.from(await response.body());
+    const { width, height } = pngSize(bytes);
+    expect(
+      Math.min(width, height),
+      `rendered ${width}x${height}, which is the zoom control rather than the illustration`
+    ).toBeGreaterThan(500);
+  });
 });
 
 // The reaction page's own downloads.
@@ -218,7 +359,7 @@ test.describe('Reaction page downloads', () => {
       expect(href, `${format} comes from the render service`).toContain(
         `/RenderService/render/${REACTION}.${format}`
       );
-      expect(href, `${format} asks for the reaction's own layout`).toContain('view=reaction');
+      expect(href, `${format} asks for the reaction's own layout`).toContain('layout=reaction');
     }
   });
 
@@ -243,9 +384,9 @@ test.describe('Reaction page downloads', () => {
 
   for (const format of ['SVG', 'PPTX']) {
     test(`a reaction's ${format} is the reaction's own figure`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
+      const renderServiceUp = await renderServiceAvailable(request);
       test.skip(
-        !health?.ok(),
+        !renderServiceUp,
         'the render service is not running; a reaction figure comes from it, so this says nothing about the build'
       );
 
@@ -260,6 +401,19 @@ test.describe('Reaction page downloads', () => {
         const width = Number(/\bwidth="([\d.]+)"/.exec(bytes.toString('utf8'))?.[1] ?? 0);
         expect(width, 'the figure is the reaction, not its containing diagram').toBeLessThan(2500);
       }
+
+      if (format === 'PPTX') {
+        // The same claim, made the way a slide can be asked it: a handful of
+        // shapes on a slide a few inches across, rather than the hundreds on
+        // the 56in slide a whole pathway needs.
+        const slide = slideOf(bytes);
+        expect(slide.shapes, 'the reaction is drawn as shapes').toBeGreaterThan(2);
+        expect(slide.pictures, 'no picture of the reaction').toBe(0);
+        expect(
+          slide.width / 914400,
+          'the slide is the reaction, not its containing diagram'
+        ).toBeLessThan(30);
+      }
     });
   }
 
@@ -267,8 +421,8 @@ test.describe('Reaction page downloads', () => {
   // offers Low, Medium and High and returns the same bytes for each is worse
   // than one that offers a single PNG.
   test('the PNG tiers are three different sizes', async ({ page, request }) => {
-    const health = await request.get('/RenderService/health').catch(() => null);
-    test.skip(!health?.ok(), 'the render service is not running; the tiers come from it');
+    const renderServiceUp = await renderServiceAvailable(request);
+    test.skip(!renderServiceUp, 'the render service is not running; the tiers come from it');
 
     await openReaction(page);
     const tools = page.locator('.figure-tools').first();
@@ -289,5 +443,66 @@ test.describe('Reaction page downloads', () => {
     expect(new Set(widths).size, `three distinct widths, got ${widths.join(', ')}`).toBe(3);
     expect(widths[0], 'Low is the smallest').toBeLessThan(widths[1]);
     expect(widths[1], 'High is the largest').toBeLessThan(widths[2]);
+  });
+});
+
+test.describe('Logo downloads', () => {
+  // The site answers 200 with its own HTML for a file that does not exist, so a
+  // status check passes a missing logo. Two of these were saved as `.png.png`
+  // and served the not-found page for months; the bytes are what tell.
+  const PNG = [0x89, 0x50, 0x4e, 0x47];
+
+  test('every option saves a real file of the named format', async ({ page, request, baseURL }) => {
+    await page.goto('/about/logo');
+    const triggers = page.getByRole('button', { name: /PNG/ });
+    await expect(triggers.first()).toBeVisible({ timeout: 45_000 });
+    expect(await triggers.count()).toBe(4);
+
+    const links: { href: string; download: string | null; label?: string }[] = [];
+    for (let i = 0; i < 4; i++) {
+      await triggers.nth(i).click();
+      const items = page.getByRole('menuitem');
+      await expect(items).toHaveCount(3);
+      links.push(
+        ...(await items.evaluateAll((els) =>
+          els.map((e) => ({
+            href: e.getAttribute('href') ?? '',
+            download: e.getAttribute('download'),
+            label: e.textContent ?? '',
+          }))
+        ))
+      );
+      await page.keyboard.press('Escape');
+    }
+    links.push(
+      ...(await page.locator('.logo-options a.inline-link').evaluateAll((els) =>
+        els.map((e) => ({
+          href: e.getAttribute('href') ?? '',
+          download: e.getAttribute('download'),
+        }))
+      ))
+    );
+    expect(links).toHaveLength(16);
+
+    for (const { href, download, label } of links) {
+      expect(download, `${href} opens as a page instead of saving`).toBeTruthy();
+      const body = await (await request.get(new URL(href, `${baseURL}/`).href)).body();
+      if (href.endsWith('.png')) {
+        expect([...body.subarray(0, 4)], `${href} is not a PNG`).toEqual(PNG);
+        // The size the menu states is the size in the file's header.
+        const size = `${body.readUInt32BE(16)} × ${body.readUInt32BE(20)} px`;
+        expect(label, `${href} is labelled with the wrong size`).toContain(size);
+      } else {
+        expect(body.toString('utf8', 0, 400), `${href} is not an SVG`).toContain('<svg');
+      }
+    }
+
+    // And a click really saves it, rather than navigating.
+    await triggers.first().click();
+    const [file] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('menuitem', { name: 'Large' }).click(),
+    ]);
+    expect(file.suggestedFilename()).toBe('Reactome_Imagotype_Positive_100mm.png');
   });
 });

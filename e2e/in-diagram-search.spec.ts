@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Searching inside a diagram, and across all of them.
 //

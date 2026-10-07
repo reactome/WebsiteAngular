@@ -1,14 +1,16 @@
 import {
-  AfterViewInit,
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
   linkedSignal,
   model,
   signal,
+  untracked,
   viewChild,
   WritableSignal,
 } from '@angular/core';
@@ -16,6 +18,7 @@ import { DiagramComponent } from '../diagram/diagram.component';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { SpeciesService } from '../services/species.service';
 import { InteractorService } from '../interactors/services/interactor.service';
+import { InteractorThresholdComponent } from '../interactors/interactor-threshold/interactor-threshold.component';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
@@ -29,7 +32,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment, IS_CURATOR } from '../../environments/environment';
+import { environment, IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
 import { FigureService } from '../details/tabs/description-tab/figure/figure.service';
 // angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
 // shape ({gutterNum, sizes}).
@@ -44,13 +47,21 @@ import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatRipple } from '@angular/material/core';
 import { MatTooltip } from '@angular/material/tooltip';
+import {
+  MatSnackBar,
+  type MatSnackBarRef,
+  type TextOnlySnackBar,
+} from '@angular/material/snack-bar';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
-import { CompareFormComponent } from './compare-form/compare-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
+import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
+import { MatDialog } from '@angular/material/dialog';
+import { ALL_PANELS, type LayoutControl, togglePanels } from './layout';
+import { TourDialogComponent } from './tour-dialog/tour-dialog.component';
 
 const DETAIL_MIN_HEIGHT = 0;
 
@@ -87,42 +98,68 @@ const DROPDOWN_DURATION = 500;
     ReacfoamComponent,
     DetailsComponent,
     AnalysisFormComponent,
-    CompareFormComponent,
+    InteractorThresholdComponent,
+    DeltaSignalPanelComponent,
   ],
 })
 @UntilDestroy()
-export class ViewportComponent implements AfterViewInit {
+export class ViewportComponent {
   public speciesService: SpeciesService = inject(SpeciesService);
   private interactorService: InteractorService = inject(InteractorService);
   private figure: FigureService = inject(FigureService);
   public analysis: AnalysisService = inject(AnalysisService);
+  private readonly snackBar = inject(MatSnackBar);
+  private loadFailureNotice?: MatSnackBarRef<TextOnlySnackBar>;
   public dark: DarkService = inject(DarkService);
   public eventService: EventService = inject(EventService);
   public state: UrlStateService = inject(UrlStateService);
   public general: GeneralService = inject(GeneralService);
   public dataState: DataStateService = inject(DataStateService);
   public citation: CitationService = inject(CitationService);
+  private readonly dialog = inject(MatDialog);
+
+  /** Which panels the reader has chosen to show from the Layout menu. */
+  readonly panels = signal(ALL_PANELS);
+
+  /**
+   * The hierarchy's share of the width, as last dragged. Bound rather than left
+   * to the library, which re-derives both areas' sizes whenever one is hidden
+   * and would put a dragged width back to the default.
+   */
+  readonly hierarchyShare = signal(20);
+
+  onSideDragEnd($event: SplitGutterInteractionEvent) {
+    this.hierarchyShare.set($event.sizes[0] as number);
+  }
+
+  toggleLayout(control: LayoutControl) {
+    this.panels.update((layout) => togglePanels(layout, control));
+  }
+
+  openTour() {
+    this.dialog.open(TourDialogComponent, { maxWidth: '95vw', autoFocus: 'dialog' });
+  }
 
   readonly pathwayId = this.state.pathwayId as WritableSignal<string>;
 
   // Ancestors are part of deciding what to draw (see hasDiagram), so keep the
   // spinner up until they have settled too - otherwise the "no diagram" notice
   // flashes for pathways that do have one further up their lineage.
-  loadingPathwayData = computed(
+  readonly loadingPathwayData = computed(
     () => this.dataState._currentPathway.isLoading() || this.dataState.ancestorsLoading()
   );
-  hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
+  readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
   // A pathway without a diagram of its own is still drawable when an ancestor
   // has one - cr-diagram walks up and renders the parent, e.g. /R-HSA-69541.
   // An event with neither, such as a newly cloned curation pathway that hangs
   // off no top-level pathway, has nothing to draw and gets a notice instead.
-  hasDiagram = computed(() => {
+  readonly hasDiagram = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (!pathway || !isPathway(pathway)) return false;
     if (pathway.hasDiagram) return true;
     return (pathway.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
   });
-  title = computed(() => this.dataState.currentPathway()?.displayName);
+  readonly title = computed(() => this.dataState.currentPathway()?.displayName);
 
   /**
    * Switch the diagram to another pathway for comparison.
@@ -150,14 +187,14 @@ export class ViewportComponent implements AfterViewInit {
    * than offered and then quietly doing nothing; if that empties the list the
    * button disables itself.
    */
-  diseasePathways = computed(() => {
+  readonly diseasePathways = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (pathway && isPathway(pathway)) {
       return (pathway.diseasePathways || []).filter((diseasePathway) => !diseasePathway.hasEHLD);
     }
     return [] as Pathway[];
   });
-  normalPathway = computed(() => {
+  readonly normalPathway = computed(() => {
     const pathway = this.dataState.currentPathway();
     if (pathway && isPathway(pathway)) {
       return pathway.normalPathway;
@@ -167,12 +204,24 @@ export class ViewportComponent implements AfterViewInit {
 
   dropdownDuration = DROPDOWN_DURATION;
   readonly isCurator = IS_CURATOR;
+  /** Whether this deployment offers DeltaSignal at all. */
+  readonly showDeltaSignal = SHOW_DELTASIGNAL;
 
-  dropdown = signal<'analysis' | 'compare' | null>(null);
+  // The analysis form and the DeltaSignal panel open here. There was a 'compare' state too, with a
+  // panel of its own in the template, and nothing anywhere set it -- the form
+  // behind it was the CLI's `<p>compare-form works!</p>` scaffold, shipped in
+  // the initial commit and never written. Comparing against a disease variant
+  // is the Compare button in the toolbar, which navigates rather than opening a
+  // panel.
+  readonly dropdown = signal<'analysis' | 'deltasignal' | null>(null);
 
   toggleAnalysis() {
     this.dropdown.set(this.dropdown() ? null : 'analysis');
     if (this.dropdown() !== 'analysis') this.closeAnalysis();
+  }
+
+  toggleDeltaSignal() {
+    this.dropdown.update((open) => (open === 'deltasignal' ? null : 'deltasignal'));
   }
 
   closeAnalysis() {
@@ -180,25 +229,34 @@ export class ViewportComponent implements AfterViewInit {
     if (this.state.analysisTab()) this.state.analysisTab.set(null);
   }
 
-  contentHeight = linkedSignal(() => this.content().nativeElement.clientHeight);
+  readonly contentHeight = linkedSignal(() => this.content().nativeElement.clientHeight);
   sizeObserver = new ResizeObserver(() => {
     this.contentHeight.set(this.content().nativeElement.clientHeight);
   });
 
-  detailMinSize = computed(() => (DETAIL_MIN_HEIGHT * 100) / this.contentHeight());
+  readonly detailMinSize = computed(() => (DETAIL_MIN_HEIGHT * 100) / this.contentHeight());
   // Use bellow when fixed layout solution found
-  detailDraggedSize = signal(20);
-  detailShare = signal(20);
-  detailVisible = signal(true);
+  readonly detailDraggedSize = signal(20);
+  readonly detailShare = signal(20);
+  readonly detailVisible = signal(true);
   // detailShare = computed(() => 20)
-  viewShare = computed(() => 100 - this.detailShare());
+  // All of it when the details panel is not there, so the view is not left
+  // sized as though it were (the library would only warn and share it out).
+  readonly viewShare = computed(() =>
+    this.detailVisible() && this.panels().details ? 100 - this.detailShare() : 100
+  );
 
-  diagram = viewChild(DiagramComponent);
-  content = viewChild.required<ElementRef<HTMLDivElement>>('content');
-  interactors = viewChild.required(InteractorsComponent);
-  darkToggle = viewChild.required<MatSlideToggle>('darkToggle');
+  readonly diagram = viewChild(DiagramComponent);
+  readonly content = viewChild.required<ElementRef<HTMLDivElement>>('content');
+  readonly interactors = viewChild.required(InteractorsComponent);
+  readonly darkToggle = viewChild.required<MatSlideToggle>('darkToggle');
 
   currentInteractorResource = this.interactorService.currentResource;
+  /** Whether any interactors are drawn, which is when the threshold matters. */
+  readonly showingInteractors = this.interactorService.showingInteractors;
+  /** A chosen resource that had nothing for this diagram, which is worth saying. */
+  readonly badgesHiddenByZoom = this.interactorService.badgesHiddenByZoom;
+  readonly resourceFoundNothing = this.interactorService.resourceFoundNothing;
 
   exampleAnalysis = rxResource({
     params: this.state.example,
@@ -206,7 +264,13 @@ export class ViewportComponent implements AfterViewInit {
     stream: ({ params }) => (params ? this.analysis.loadDefaultExample(params) : of(undefined)),
   });
 
-  analysisLoading = computed(() => this.exampleAnalysis.isLoading() || this.analysis.isLoading());
+  readonly analysisLoading = computed(
+    () => this.exampleAnalysis.isLoading() || this.analysis.isLoading()
+  );
+
+  /** The two header controls, so focus can be put back where it came from. */
+  readonly speciesControl = viewChild<ElementRef<HTMLElement>>('speciesControl');
+  readonly interactorControl = viewChild<ElementRef<HTMLElement>>('interactorControl');
 
   visibility = {
     species: false,
@@ -219,6 +283,29 @@ export class ViewportComponent implements AfterViewInit {
     'M12.5 19.5001C10.4167 19.5001 8.646 18.7708 7.188 17.3121C5.72933 15.8541 5 14.0834 5 12.0001C5 10.1254 5.57633 8.51775 6.729 7.17708C7.88167 5.83708 9.361 5.00042 11.167 4.66708C11.6943 4.56975 12.0797 4.66342 12.323 4.94808C12.5663 5.23275 12.549 5.63908 12.271 6.16708C12.1043 6.48642 11.9757 6.81975 11.885 7.16708C11.795 7.51442 11.75 7.87542 11.75 8.25008C11.75 9.50008 12.1873 10.5627 13.062 11.4381C13.9373 12.3127 15 12.7501 16.25 12.7501C16.6247 12.7501 16.9857 12.7051 17.333 12.6151C17.6803 12.5244 18.0137 12.3958 18.333 12.2291C18.875 11.9511 19.2883 11.9234 19.573 12.1461C19.8577 12.3681 19.9513 12.7431 19.854 13.2711C19.5487 15.0491 18.7327 16.5318 17.406 17.7191C16.08 18.9064 14.4447 19.5001 12.5 19.5001Z';
 
   constructor() {
+    // Stays until dismissed: a reader who has just run an analysis and sees no
+    // results needs to be able to read why, not catch it in a few seconds. But
+    // it belongs to this page and this moment: however it goes -- dismissed,
+    // replaced by another notice, or the reader leaving the pathway browser --
+    // the message is forgotten, so it does not reappear over some later page.
+    effect(() => {
+      const message = this.analysis.loadFailure();
+      untracked(() => {
+        this.loadFailureNotice?.dismiss();
+        this.loadFailureNotice = undefined;
+        if (!message) return;
+        const notice = this.snackBar.open(message, 'Dismiss', { politeness: 'assertive' });
+        notice.afterDismissed().subscribe(() => {
+          // Only the notice still on show may clear the message: an older one
+          // closing because a newer message replaced it must not erase that.
+          if (this.loadFailureNotice !== notice) return;
+          this.loadFailureNotice = undefined;
+          this.analysis.dismissLoadFailure();
+        });
+        this.loadFailureNotice = notice;
+      });
+    });
+    inject(DestroyRef).onDestroy(() => this.loadFailureNotice?.dismiss());
     effect(() => this.detailShare.set(this.figure.expanded() ? 100 : this.detailDraggedSize()));
     effect(() => {
       if (this.dropdown() === null) {
@@ -248,17 +335,58 @@ export class ViewportComponent implements AfterViewInit {
     // effect(() => this.dropdown() === null && this.detailVisible.set(true));
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.darkToggle()
-        ._switchElement.nativeElement?.querySelector('.mdc-switch__icon--on')
-        ?.querySelector('path')
-        ?.setAttribute('d', this.moon);
-      this.darkToggle()
-        ._switchElement.nativeElement?.querySelector('.mdc-switch__icon--off')
-        ?.querySelector('path')
-        ?.setAttribute('d', this.sun);
-    }, 200);
+  /**
+   * Swap Material's switch glyphs for a moon and a sun.
+   *
+   * Deferred because the switch renders its own SVG after this hook, and run
+   * through `afterNextRender` rather than `setTimeout(..., 200)`.
+   *
+   * The timeout outlived the view. `darkToggle` is a **required** query, so a
+   * timer that fired after this component was torn down read a query with no
+   * value and threw `NG0951: Child query result is required but no value is
+   * available` -- intermittently, because it needs a teardown inside a 200ms
+   * window. It surfaced in an e2e test that asserts nothing threw, on a run under
+   * load, and would not reproduce in isolation: five runs of that test, the whole
+   * spec, and 37 tests across four workers were all clean (#231).
+   *
+   * `afterNextRender` is tied to the injector, so it does not run after
+   * destruction, and it waits for a render rather than guessing at 200ms.
+   */
+  readonly glyphs = afterNextRender(() => {
+    const element = this.darkToggle()._switchElement.nativeElement;
+    element
+      ?.querySelector('.mdc-switch__icon--on')
+      ?.querySelector('path')
+      ?.setAttribute('d', this.moon);
+    element
+      ?.querySelector('.mdc-switch__icon--off')
+      ?.querySelector('path')
+      ?.setAttribute('d', this.sun);
+  });
+
+  /**
+   * Put both panels away.
+   *
+   * Escape, from the control or from inside the panel. One that opens with a key
+   * and closes only by shift-tabbing back to the control is a trap of a mild
+   * kind: every other disclosure on the page closes this way, so a reader will
+   * try it and be surprised when nothing happens.
+   */
+  closePanels() {
+    // Which one was open, before it is not.
+    const control = this.visibility.species
+      ? this.speciesControl()
+      : this.visibility.interactor
+        ? this.interactorControl()
+        : undefined;
+
+    this.visibility.species = false;
+    this.visibility.interactor = false;
+
+    // Focus goes back to the control that opened it. Without this it falls to
+    // <body> -- measured -- and a reader who closed the panel from inside has
+    // lost their place entirely and must tab from the top of the page.
+    control?.nativeElement.focus();
   }
 
   toggleVisibility(type: string) {
@@ -272,10 +400,12 @@ export class ViewportComponent implements AfterViewInit {
   }
 
   interval?: number;
-  isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
-  isLastProfile = computed(() => this.analysis.sampleIndex() >= this.analysis.samples().length - 1);
-  hasMultipleProfile = computed(() => this.analysis.samples().length > 1);
-  playSpeed = model(2);
+  readonly isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
+  readonly isLastProfile = computed(
+    () => this.analysis.sampleIndex() >= this.analysis.samples().length - 1
+  );
+  readonly hasMultipleProfile = computed(() => this.analysis.samples().length > 1);
+  readonly playSpeed = model(2);
 
   updateSpeed = effect(() => {
     // console.log('Update play speed', this.playSpeed());
@@ -329,7 +459,7 @@ export class ViewportComponent implements AfterViewInit {
     this.citation.openDialog();
   }
 
-  formerPathwayBrowserURL = computed(() => {
+  readonly formerPathwayBrowserURL = computed(() => {
     let url = `${environment.host}/PathwayBrowser/#/`;
     if (this.state.pathwayId() || this.state.select())
       url += this.state.pathwayId() || this.state.select();

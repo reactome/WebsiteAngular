@@ -19,15 +19,26 @@ export default defineConfig({
     // src/test-setup.ts over to Analog's zone setup and BrowserTestingModule.
     // Worth doing when we next add component-level unit tests; today every
     // component is covered through e2e/ instead.
-    include: ['{src,projects}/**/*.spec.ts'],
+    // tools/ too, and .mjs as well as .ts: the render service and its
+    // exporters are plain modules, and tools/svg-export-harness/harness.spec.mjs
+    // sat in the repo without being run by anything at all.
+    include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
     css: false,
+    // ngx-reactome-cytoscape-style's ESM does `import { isArray } from
+    // 'lodash'`, and lodash is CommonJS only, so vite's interop rejects the named
+    // import ("Named export 'isArray' not found") before any test touching the
+    // library can run. Inlining it makes vite transform the library and resolve
+    // the interop.
+    //
+    // The library is installed built, from ngx-reactome-base, so a local run and
+    // CI resolve the same copy. (When it was built here, a machine with dist/
+    // passed without this option and CI failed on four spec files.)
+    //
+    // diagram/cytoscape-style-interop.spec.ts imports the library directly, so
+    // this is covered by a test rather than only by whichever spec happens to
+    // pull the library in first.
     server: {
       deps: {
-        // reactome-cytoscape-style resolves to its built output in dist/, whose
-        // ESM does `import { isArray } from 'lodash'`. lodash is CommonJS-only,
-        // so vite's interop rejects the named import ("Named export 'isArray'
-        // not found") before the test can run. Inlining the library makes vite
-        // transform it and resolve the interop.
         inline: [/reactome-cytoscape-style/],
       },
     },

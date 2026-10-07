@@ -21,7 +21,6 @@ import { FormControl } from '@angular/forms';
 import { LottieService } from '../../../services/lottie.service';
 import { MatRipple } from '@angular/material/core';
 import { MatTooltip } from '@angular/material/tooltip';
-import { switchMap, take } from 'rxjs';
 import { DarkService } from '../../../services/dark.service';
 import { IconService } from '../../../services/icon.service';
 
@@ -49,14 +48,14 @@ export class SpeciesAnalysisComponent {
   private iconService = inject(IconService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
 
-  comparableSpecies = computed(() =>
+  readonly comparableSpecies = computed(() =>
     (this.speciesService.allShortenSpecies() || []).filter((s) => s.taxId !== '9606')
   );
-  selectedSpecies = signal<Species | null>(null);
+  readonly selectedSpecies = signal<Species | null>(null);
   speciesControl = new FormControl<Species | null>(null, (control) =>
     control.getRawValue() !== undefined ? null : { invalid: true }
   );
@@ -65,7 +64,7 @@ export class SpeciesAnalysisComponent {
     this.selectedSpecies.update((s) => (s === species ? null : species));
   }
 
-  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
+  readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   constructor() {
     this.availableSpeciesIcons = new Set(
@@ -117,8 +116,8 @@ export class SpeciesAnalysisComponent {
   token: string | null = null;
   private readonly availableSpeciesIcons = new Set<string>();
 
-  analysisLaunched = signal(false);
-  analysisAvailable = signal(false);
+  readonly analysisLaunched = signal(false);
+  readonly analysisAvailable = signal(false);
 
   analyse() {
     if (this.selectedSpecies() === null) return;

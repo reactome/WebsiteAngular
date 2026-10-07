@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { serves } from './fixtures/serves';
+import { test, expect } from './support/backend';
 
 // Coverage for the content pages and shared navigation chrome.
 //
@@ -66,14 +67,10 @@ test.describe('Content pages render backend data', () => {
   let contentEndpoints: boolean | undefined;
   test.beforeEach(async ({ request, baseURL }) => {
     if (contentEndpoints === undefined) {
-      try {
-        const res = await request.get(`${baseURL}/ContentService/data/content/toc`, {
-          timeout: 30_000,
-        });
-        contentEndpoints = res.ok();
-      } catch {
-        contentEndpoints = false;
-      }
+      // Not wrapped in try/catch on purpose: a backend without the endpoint
+      // answers 404 and these tests stand down, but a timeout used to land here
+      // too and quietly disabled all four for the whole run.
+      contentEndpoints = await serves(request, `${baseURL}/ContentService/data/content/toc`);
     }
   });
 
@@ -83,6 +80,39 @@ test.describe('Content pages render backend data', () => {
     await expect(
       page.getByText(/Metabolism|Signal Transduction|Immune System/).first()
     ).toBeVisible({
+      timeout: LOAD,
+    });
+  });
+
+  test('a subpathway shows its DOI, which its parent does not carry', async ({ page }) => {
+    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+    // This page asks for two lists, and under replay they are ~1 MB of recorded
+    // JSON together (250 kB of contents, 796 kB of DOIs). Alone it takes about
+    // 35 seconds, which used to exceed playwright's 30s default and report as a
+    // timeout rather than as a failed assertion.
+    //
+    // No `test.slow()` any more: the per-test timeout is 60s in
+    // playwright.config.ts, set there because `LOAD` in this file is 45s and
+    // could never be reached under the old default. Fixed where the mismatch
+    // was rather than here.
+
+    // `/data/content/toc` sends three fields for a child -- stId, displayName,
+    // speciesName -- and no `doi`, so the DOI link the template renders behind
+    // `@if (sub.doi)` could never appear. That is not markup for a case that
+    // never existed: production's own /content/toc carries 44 DOIs, and 41 of
+    // them are subpathways. All but three were missing here.
+    //
+    // Autophagy is the case that shows it clearly. It has no DOI of its own,
+    // and three of its children do, so a DOI appearing under it can only have
+    // come from the join against /data/content/doi.
+    await page.goto('/content/toc');
+    const autophagy = page.locator('tr.pathway-row', { hasText: 'Autophagy' }).first();
+    await expect(autophagy).toBeVisible({ timeout: LOAD });
+    await autophagy.locator('button.expand-btn').click();
+
+    const child = page.locator('tr', { hasText: 'Chaperone Mediated Autophagy' }).first();
+    await expect(child).toBeVisible({ timeout: LOAD });
+    await expect(child.locator('a.doi-link')).toHaveText(/10\.3180\/R-HSA-9613829/, {
       timeout: LOAD,
     });
   });
@@ -124,6 +154,83 @@ test.describe('Content pages render backend data', () => {
   test('release calendar renders entries', async ({ page }) => {
     await page.goto('/about/release-calendar');
     await expect(page.getByText(/20\d\d/).first()).toBeVisible({ timeout: LOAD });
+  });
+});
+
+test.describe('Authored page headings', () => {
+  // page.component.html renders the frontmatter title as the page's h1, so a
+  // page imported with `title: Untitled` showed "UNTITLED" as its heading.
+  test('Digital Preservation is headed by its name', async ({ page }) => {
+    await page.goto('/about/digital-preservation');
+    await expect(page.locator('h1').first()).toHaveText('Digital Preservation', {
+      timeout: LOAD,
+    });
+    await expect(page.locator('body')).not.toContainText(/untitled/i);
+  });
+});
+
+test.describe('Release-stamped figures', () => {
+  // The inferred-events chart was a copy of release 95's saved into the repo, so
+  // it kept saying "Reactome Version 95" while the site served 97. The chart is
+  // republished with every release; the page has to point at the current one.
+  test("the inferred-events chart is the current release's", async ({ page }) => {
+    await page.goto('/documentation/inferred-events');
+    const chart = page.locator('app-page img[src*="reaction_release_stats"]');
+    await expect(chart).toHaveAttribute(
+      'src',
+      /download\.reactome\.org\/\d+\/stats\/reaction_release_stats\.png$/,
+      { timeout: LOAD }
+    );
+  });
+});
+
+test.describe('Links from news', () => {
+  // Twenty-two release notes send readers to the documentation page's training
+  // section. The heading had no id -- only headings the same page links to got
+  // one -- so they landed at the top of a long page.
+  test('the training section can be linked to from another page', async ({ page }) => {
+    await page.goto('/documentation#Reactome_Training_Materials');
+    await expect(page.locator('h3#Reactome_Training_Materials')).toBeInViewport({ timeout: LOAD });
+  });
+
+  // reactome.org/gsa was ReactomeGSA's separate landing page; its wizard is
+  // built into the Pathway Browser here, and the news links go straight to it.
+  test('an old link to ReactomeGSA opens the quantitative analysis', async ({ page }) => {
+    await page.goto('/about/news/238-version-87-released');
+    const link = page.locator('article a[href="PathwayBrowser?analysisTab=quantitative"]').first();
+    await expect(link).toBeAttached({ timeout: LOAD });
+    await expect(page.locator('article a[href*="reactome.org/gsa"]')).toHaveCount(0);
+  });
+});
+
+test.describe('Research Spotlight', () => {
+  // The list showed half its spotlights twice (40 scrape leftovers beside the
+  // real articles), stopped at April 2026 while reactome.org had May and July,
+  // and never said what a spotlight is.
+  test('explains itself, starts with the newest, and lists each once', async ({ page }) => {
+    await page.goto('/content/reactome-research-spotlight');
+    const titles = page.locator('.news-card h2');
+    await expect(titles.first()).toHaveText(
+      'Ten common mistakes that could ruin your enrichment analysis',
+      {
+        timeout: LOAD,
+      }
+    );
+    await expect(page.locator('.page-header')).toContainText('Each month, Reactome highlights');
+    await expect(page.locator('.page-header a')).toHaveAttribute('href', '/');
+
+    const all = (await titles.allInnerTexts()).map((t) => t.trim().toLowerCase());
+    expect(all.length).toBeGreaterThanOrEqual(44);
+    expect(all.filter((t, i) => all.indexOf(t) !== i)).toEqual([]);
+    expect(all.some((t) => t.startsWith('central role of glycosylation'))).toBe(true);
+  });
+
+  test('the home page shows the newest one', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.home-spotlight-text').first()).toContainText(
+      'Ten common mistakes that could ruin your enrichment analysis',
+      { timeout: LOAD }
+    );
   });
 });
 
@@ -241,11 +348,6 @@ test.describe('Tools page', () => {
   });
 
   test('"Analyse Gene Expression" opens the quantitative analysis', async ({ page }) => {
-    // This test cares where the link goes, not whether GSAServer answers, so it
-    // does not call that shared service -- analysis.spec.ts covers it for real.
-    await page.route('**/GSAServer/**/methods', (route) =>
-      route.fulfill({ contentType: 'application/json', body: '[]' })
-    );
     await page.goto('/tools');
     await page
       .locator('a.module-card')
@@ -347,4 +449,56 @@ test.describe('Release calendar', () => {
     await expect(page).toHaveURL(new RegExp(href.replace(/\//g, '\\/')), { timeout: 60_000 });
     await expect(page.locator('app-page-layout')).toContainText(/Released/i, { timeout: 60_000 });
   });
+});
+
+test.describe('Section sidebar', () => {
+  // A page inside a section was headed only if the section's own page had been
+  // shown first, and reached from another section it kept that section's name.
+  test('heads a page with its own section, however it is reached', async ({ page }) => {
+    const heading = page.locator('app-sidebar .section-title');
+    await page.goto('/about/team');
+    await expect(heading).toHaveText('About', { timeout: LOAD });
+
+    await page.goto('/documentation');
+    await expect(heading).toHaveText('Docs', { timeout: LOAD });
+    // In the app, not a fresh load: the sidebar is the same one.
+    await page.locator('app-sidebar .sidebar-item a').first().click();
+    await expect(page).not.toHaveURL(/\/documentation$/);
+    await expect(heading).toHaveText('Docs');
+  });
+
+  // An article's sidebar lists its siblings from the section's index. The list
+  // was written into plain fields when the index arrived, after change
+  // detection had been asked for, so Angular found the view changed after
+  // checking it (NG0100) -- intermittently, whenever the index was slow.
+  for (const [section, page, title, heading] of [
+    ['about/news', '238-version-87-released', 'V87 released', 'News & Updates'],
+    ['content/reactome-research-spotlight', null, null, 'Reactome Research Spotlights'],
+  ] as const) {
+    test(`lists ${heading} beside an article, however late the list arrives`, async ({
+      page: browser,
+    }) => {
+      await browser.route(`**/content/${section}/index.json`, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await route.continue();
+      });
+      let slug: string = page ?? '';
+      let label: string = title ?? '';
+      if (!page) {
+        // Whichever spotlight the index lists first; they change.
+        type Entry = { slug: string; title: string };
+        const data = (await (
+          await browser.request.get(`/content/${section}/index.json`)
+        ).json()) as Entry[] | { articles: Entry[] };
+        const first = (Array.isArray(data) ? data : data.articles)[0];
+        slug = first.slug;
+        label = first.title;
+      }
+      await browser.goto(`/${section}/${slug}`);
+      const sidebar = browser.locator('app-sidebar');
+      await expect(sidebar.locator('.section-title')).toHaveText(heading, { timeout: LOAD });
+      await expect(sidebar.locator('.sidebar-item.active')).toHaveText(label, { timeout: LOAD });
+      expect(await sidebar.locator('.sidebar-item').count()).toBeGreaterThan(1);
+    });
+  }
 });

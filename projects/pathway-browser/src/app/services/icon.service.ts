@@ -22,7 +22,7 @@ import { Search } from '../viewport/search/search.component';
  * website's -- and they must not disagree about where icons live.
  */
 export function iconArtworkBase(version: number | undefined) {
-  return environment.preferS3 && version
+  return !environment.assetsFromHost && version
     ? `${environment.s3}/${version}/icons/svg`
     : `${ICON_BASE}/icon`;
 }
@@ -41,7 +41,7 @@ export class IconService {
     return `${this.iconBase()}/${stId}.svg`;
   }
 
-  currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
+  readonly currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
 
   protein = { name: 'protein', tooltip: 'Protein', route: 'protein' };
   negativeRegulation = {

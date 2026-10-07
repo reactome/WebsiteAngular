@@ -49,8 +49,21 @@ async function waitForBuild(timeoutMs = 15 * 60 * 1000) {
   return false;
 }
 
+const {
+  mountSearchAnswerProxy,
+  mountAnalysisSummaryProxy,
+  mountChatHandoffProxy,
+} = require('./search-answer-proxy');
+
 const app = express();
 app.disable('x-powered-by');
+
+// Before the proxy table and the static handler: this is our own route, not a
+// pass-through, because it has to mint a caller token with a key the browser
+// must never see.
+mountSearchAnswerProxy(app);
+mountAnalysisSummaryProxy(app);
+mountChatHandoffProxy(app);
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
@@ -61,7 +74,13 @@ for (const [context, options] of Object.entries(proxyConfig)) {
   // so /ContentService/data/... would reach the backend as /data/... and 404.
   app.use(
     createProxyMiddleware({
-      pathFilter: `${context}/**`,
+      // The dev server's `bypass` hook, honoured here too: a path it claims for
+      // the app falls through to the static handler, which serves the app. The
+      // function is the glob below spelled out, for a context that is a prefix.
+      pathFilter: options.bypass
+        ? (pathname, req) =>
+            (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
+        : `${context}/**`,
       target: options.target,
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,
@@ -78,6 +97,152 @@ for (const [context, options] of Object.entries(proxyConfig)) {
     })
   );
 }
+
+/**
+ * Which build is actually being served.
+ *
+ * "Is beta running main?" was being answered all day by fetching the site and
+ * eyeballing the `main-<hash>.js` filename out of the markup. That hash is the
+ * right signal -- Angular derives it from the bundle's contents, so it changes
+ * exactly when the code does -- it simply was not addressable. Now it is.
+ *
+ * Read per request rather than at boot: `ng build --watch` rewrites this
+ * directory underneath a running server, so a value captured at startup would
+ * confidently describe a build that has since been replaced. That is the very
+ * failure this exists to catch, and it would be reporting it about itself.
+ */
+app.get('/health', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  let html = '';
+  try {
+    html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+  } catch {
+    // Mid-rebuild, or pointed at a directory with no build in it. Both are
+    // worth saying plainly rather than answering 500.
+    return res.status(503).json({ ok: false, reason: 'no build in the output directory' });
+  }
+  const bundle = /\bmain-([A-Z0-9]+)\.js\b/.exec(html)?.[1] ?? null;
+  let built = null;
+  try {
+    built = fs.statSync(path.join(DIST, 'index.html')).mtime.toISOString();
+  } catch {
+    // Not worth failing the check over.
+  }
+  const services = await surveyServices();
+  // `ok` stays the *site's* answer, not the estate's. A monitor pointed here to
+  // ask "is the website up" must not be told no because a sibling it does not
+  // serve is down -- the site renders without the render service, and saying
+  // otherwise would page somebody for the wrong thing. What is wrong is in
+  // `services`, named.
+  res.json({ ok: true, bundle, built, dist: DIST, services });
+});
+
+/**
+ * The services behind this one, asked rather than assumed.
+ *
+ * Every deployment fault on this box has had the same shape: something merged,
+ * something else kept running the version from before it, and nothing said so.
+ * A route was added to nginx pointing at content-node while content-node still
+ * ran the image built before the endpoints existed, so a path Java used to
+ * answer returned 404 until somebody happened to try it.
+ *
+ * So this reports what each one *is*, not merely that it answered: the build it
+ * is running, the release it holds, how many endpoints it serves. Two services
+ * disagreeing about the release is the thing to notice, and it is invisible if
+ * all you have is a green tick each.
+ *
+ * Asked in parallel with a short timeout, because this is polled and must not
+ * become the slow thing. A service that is down is reported as down; it is not
+ * an error here, and it never makes the site's own answer false.
+ */
+async function surveyServices() {
+  // Addresses, not assumptions. They default to where these run beside the site
+  // today and are overridable, because a deployment that moves one should not
+  // have to edit this file -- and because a test can then point them at a dead
+  // port and assert what "down" looks like, which is the case that matters and
+  // the one that cannot be observed on a box where they are all running.
+  const targets = [
+    {
+      name: 'content-node',
+      url: process.env.HEALTH_CONTENT_NODE || 'http://127.0.0.1:4400/health',
+    },
+    { name: 'render', url: process.env.HEALTH_RENDER || 'http://127.0.0.1:4310/health' },
+    { name: 'mcp', url: process.env.HEALTH_MCP || 'http://127.0.0.1:4320/health' },
+  ];
+  const entries = await Promise.all(
+    targets.map(async ({ name, url }) => {
+      try {
+        const response = await fetch(url, { signal: AbortSignal.timeout(2000) });
+        if (!response.ok) return [name, { up: false, status: response.status }];
+        const body = await response.json();
+        return [
+          name,
+          {
+            up: true,
+            // Each service names these differently and there is no value in
+            // pretending otherwise -- what matters is that the fields exist to
+            // compare between them, not that they share a schema.
+            build: body.build ?? body.version ?? null,
+            release: body.release ?? null,
+            endpoints: Array.isArray(body.endpoints) ? body.endpoints.length : undefined,
+          },
+        ];
+      } catch (error) {
+        // Down, unreachable, or slower than the budget. All three are the same
+        // answer to whoever is reading this, and none of them is this route's
+        // failure.
+        return [
+          name,
+          { up: false, reason: error?.name === 'TimeoutError' ? 'timeout' : 'unreachable' },
+        ];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+}
+
+/**
+ * The embeddable diagram (specs/009-embeddable-diagram), loaded by other sites.
+ *
+ * Its files are fetched from the partner's origin -- main.js as a module script,
+ * which the browser refuses without the CORS header -- and they are replaced in
+ * place on each release under the same names, so those revalidate; only its
+ * content-named chunks are cached as immutable, like the site's. A file it does
+ * not have is a 404: the site's index.html with a 200, which is what the
+ * catch-all below would send, is a page a partner's browser would try to run.
+ */
+const EMBED_DIST = process.env.EMBED_DIST_DIR
+  ? path.resolve(process.env.EMBED_DIST_DIR)
+  : path.join(ROOT, 'dist/reactome-diagram/browser');
+const embedHeaders = (res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+};
+app.use(
+  '/embed/diagram/v1',
+  express.static(EMBED_DIST, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      embedHeaders(res);
+      // Chunks are named by their content, so a name never changes meaning;
+      // main.js and its source map, the loader and the demo keep their names
+      // across releases.
+      const name = path.basename(filePath);
+      res.setHeader(
+        'Cache-Control',
+        /^chunk-[A-Z0-9]+\.js$/.test(name)
+          ? 'public, max-age=31536000, immutable'
+          : /\.(js|html|map)$/.test(name)
+            ? 'no-cache'
+            : 'public, max-age=86400'
+      );
+    },
+  }),
+  (_req, res) => {
+    embedHeaders(res);
+    res.status(404).type('text/plain').send('Not found');
+  }
+);
 
 // Hashed build artefacts are immutable; index.html must never be cached or a
 // redeploy leaves browsers pinned to chunks that no longer exist.

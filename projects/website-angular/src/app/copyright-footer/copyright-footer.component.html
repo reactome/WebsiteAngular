@@ -2,6 +2,18 @@
   <div class="copyright">
     © 2026
     <a class="link" href="https://reactome.org">Reactome</a>
+    <!--
+      In the copyright bar rather than the navigation above it: somebody looks
+      for this when the site is misbehaving, and the bottom of the page is
+      where it is reached for. It is the one link here that is most useful when
+      the rest of the page is not working.
+    -->
+    @if (externalLinks['status']; as status) {
+      <span class="separator" aria-hidden="true">·</span>
+      <a class="link" [href]="status.link" target="_blank" rel="noopener noreferrer">
+        {{ status.label }}
+      </a>
+    }
   </div>
   <div class="socials">
     @if (externalLinks['twitter']) {

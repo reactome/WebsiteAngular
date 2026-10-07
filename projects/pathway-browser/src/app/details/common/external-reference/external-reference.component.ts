@@ -11,7 +11,6 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
 import { Labels } from '../../../constants/constants';
-import { StructureService } from '../../../services/structure.service';
 import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
 
 @Component({
@@ -32,23 +31,22 @@ export class ExternalReferenceComponent {
   private entity = inject(EntityService);
   private state = inject(UrlStateService);
   data = inject(DataStateService);
-  private structure = inject(StructureService);
 
   readonly referenceEntity = input.required<ReferenceEntity>();
   readonly xRefs = input<DatabaseIdentifier[]>([]);
 
   readonly displayReference = input<boolean>(true);
 
-  externalRef = computed(() => {
+  readonly externalRef = computed(() => {
     return this.entity.getTransformedExternalRef(this.referenceEntity());
   });
 
-  moleculeType = computed(() => {
+  readonly moleculeType = computed(() => {
     const entity = this.referenceEntity();
     return entity ? entity.moleculeType : null;
   });
 
-  hasStructure = computed(() =>
+  readonly hasStructure = computed(() =>
     [MoleculeType.CHEMICAL, MoleculeType.CHEMICAL_DRUG, MoleculeType.PROTEIN].includes(
       this.moleculeType() as MoleculeType
     )

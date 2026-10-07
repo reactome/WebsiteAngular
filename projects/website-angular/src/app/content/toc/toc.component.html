@@ -92,7 +92,7 @@
               @for (pathway of filteredPathways; track pathway.stId) {
                 <tr class="pathway-row" [class.expanded]="isExpanded(pathway.stId)">
                   <td class="col-expand">
-                    @if (pathway.subpathways?.length) {
+                    @if (pathway.subpathways.length) {
                       <button
                         class="expand-btn"
                         (click)="toggleExpand(pathway.stId)"
@@ -114,9 +114,9 @@
                         <span class="status-badge updated">UPDATED</span>
                       }
                       <span class="species-name">{{ pathway.species }}</span>
-                      @if (pathway.doi) {
-                        <a class="doi-link" [href]="doiUrl(pathway.doi)" target="_blank" rel="noopener">
-                          {{ pathway.doi }}
+                      @if (doiFor(pathway); as doi) {
+                        <a class="doi-link" [href]="doiUrl(doi)" target="_blank" rel="noopener">
+                          {{ doi }}
                         </a>
                       }
                     </div>
@@ -149,7 +149,7 @@
                 </tr>
 
                 <!-- Sub-pathways -->
-                @if (isExpanded(pathway.stId) && pathway.subpathways?.length) {
+                @if (isExpanded(pathway.stId) && pathway.subpathways.length) {
                   @for (sub of pathway.subpathways; track sub.stId) {
                     <tr class="sub-pathway-row">
                       <td class="col-expand"></td>
@@ -158,9 +158,9 @@
                           <span class="sub-indicator">&#8627;</span>
                           <span class="pathway-name">{{ sub.displayName }}</span>
                           <span class="species-name">{{ sub.speciesName }}</span>
-                          @if (sub.doi) {
-                            <a class="doi-link" [href]="doiUrl(sub.doi)" target="_blank" rel="noopener">
-                              {{ sub.doi }}
+                          @if (doiFor(sub); as doi) {
+                            <a class="doi-link" [href]="doiUrl(doi)" target="_blank" rel="noopener">
+                              {{ doi }}
                             </a>
                           }
                         </div>

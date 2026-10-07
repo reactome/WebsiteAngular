@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { computed, Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
@@ -31,13 +32,21 @@ import {
 
 @Component({
   selector: 'app-download-data',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, RouterLink],
   templateUrl: './download-data.component.html',
   styleUrl: './download-data.component.scss',
 })
 export class DownloadDataComponent implements OnInit, OnDestroy {
   private stats = inject(StatsService);
   private platformId = inject(PLATFORM_ID);
+
+  // The curator badge names the database rather than claiming a release, since
+  // the downloads it links to are release artefacts either way.
+  readonly isCurator = IS_CURATOR;
+
+  // What the badge shows. Separate from `version` because the curator site has
+  // no release number to display, but still links to release artefacts.
+  readonly versionLabel = this.stats.versionLabel;
 
   /**
    * The release these files belong to, followed reactively.
@@ -49,11 +58,6 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
    */
   readonly version = computed(() => this.stats.versionNow());
   readonly baseUrl = APP_CONFIG.downloadUrl;
-
-  // The curation graph is not a release, so the badge names the database rather
-  // than announcing a release number.
-  readonly isCurator = IS_CURATOR;
-  readonly versionLabel = this.stats.versionLabel;
 
   // Data
   readonly tocItems = TOC_ITEMS;

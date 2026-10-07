@@ -31,10 +31,18 @@ test.describe('Release currency', () => {
   });
 
   test('the computationally-inferred-events page shows its figure', async ({ page }) => {
+    const release = await servedRelease(page);
     await page.goto('/documentation/inferred-events');
 
-    const figure = page.locator('img[src*="inferred-events"]');
+    // By what it shows, not its file name. The page used a saved copy named
+    // for the page, which was release 95's; it now draws the current release's
+    // own statistics chart, and this looked for the old name ever since.
+    const figure = page.getByRole('img', { name: /human reactions inferred/i });
     await expect(figure).toBeVisible({ timeout: 60_000 });
+    await expect(figure, "the release's own figure").toHaveAttribute(
+      'src',
+      new RegExp(`/${release.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/stats/`)
+    );
     // Really drawn, not a broken link with alt text: the figure is republished
     // per release, so a missing file is the failure mode.
     const drawn = await figure.evaluate(

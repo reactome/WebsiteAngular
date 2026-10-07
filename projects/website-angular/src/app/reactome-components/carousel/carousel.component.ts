@@ -3,10 +3,10 @@ import {
   Component,
   ElementRef,
   HostListener,
-  Input,
   OnDestroy,
-  ViewChild,
   signal,
+  input,
+  viewChild,
 } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
@@ -17,8 +17,8 @@ import { MatIcon } from '@angular/material/icon';
   styleUrl: './carousel.component.scss',
 })
 export class CarouselComponent implements AfterViewInit, OnDestroy {
-  @Input() dark: boolean = true;
-  @ViewChild('carouselContainer') carouselContainer!: ElementRef<HTMLDivElement>;
+  readonly dark = input<boolean>(true);
+  readonly carouselContainer = viewChild.required<ElementRef<HTMLDivElement>>('carouselContainer');
 
   // Signals rather than plain fields: these are recomputed from a
   // ResizeObserver, which Angular has no visibility into. The observer used to
@@ -43,7 +43,7 @@ export class CarouselComponent implements AfterViewInit, OnDestroy {
     setTimeout(() => this.checkOverflow());
 
     this.resizeObserver = new ResizeObserver(() => this.checkOverflow());
-    this.resizeObserver.observe(this.carouselContainer.nativeElement);
+    this.resizeObserver.observe(this.carouselContainer().nativeElement);
   }
 
   ngOnDestroy(): void {
@@ -55,24 +55,24 @@ export class CarouselComponent implements AfterViewInit, OnDestroy {
   }
 
   private checkOverflow(): void {
-    const el = this.carouselContainer.nativeElement;
+    const el = this.carouselContainer().nativeElement;
     this.showButtons.set(el.scrollWidth > el.clientWidth);
     this.updateScrollButtons();
   }
 
   private updateScrollButtons(): void {
-    const el = this.carouselContainer.nativeElement;
+    const el = this.carouselContainer().nativeElement;
     this.canScrollLeft.set(el.scrollLeft > 0);
     this.canScrollRight.set(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
   }
 
   scrollLeft(): void {
-    const container = this.carouselContainer.nativeElement;
+    const container = this.carouselContainer().nativeElement;
     container.scrollBy({ left: -container.clientWidth, behavior: 'smooth' });
   }
 
   scrollRight(): void {
-    const container = this.carouselContainer.nativeElement;
+    const container = this.carouselContainer().nativeElement;
     container.scrollBy({ left: container.clientWidth, behavior: 'smooth' });
   }
 }

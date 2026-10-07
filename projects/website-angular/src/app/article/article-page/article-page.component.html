@@ -2,7 +2,18 @@
   <main class="article-page">
     <header class="page-header">
       <h1>{{ pageTile }}</h1>
-      <p>{{ pageDescription }}</p>
+      @if (articlePath === 'content/reactome-research-spotlight') {
+        <!-- reactome.org's own explanation of what a spotlight is, verbatim. -->
+        <p>
+          Each month, Reactome highlights a recently published scientific article that makes particularly interesting or
+          innovative use of Reactome data or tools. A summary of the featured study appears in the
+          <strong>Spotlight</strong> section of the <a routerLink="/">Reactome home page</a>, showcasing how researchers
+          apply Reactome resources to advance biological discovery. This page provides access to the current and all
+          past Spotlight features.
+        </p>
+      } @else {
+        <p>{{ pageDescription }}</p>
+      }
     </header>
 
     @if (loading) {

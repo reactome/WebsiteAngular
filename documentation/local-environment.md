@@ -26,7 +26,7 @@ Node is the tool that will compile and run the Reactome project. You can downloa
 Once node is installed run the following commands in the `WebsiteAngular/` directory.
 
 ```
-npm install --legacy-peer-deps
+npm install
 npm start
 ```
 

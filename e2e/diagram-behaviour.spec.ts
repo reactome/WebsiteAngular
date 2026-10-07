@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Diagram behaviours from the release checklist that are not about a single
 // pathway drawing: the key being on screen, and the species switch still drawing
@@ -6,6 +7,11 @@ import { test, expect, type Page } from '@playwright/test';
 //
 // A sub-pathway is used deliberately: a top-level pathway renders an EHLD
 // illustration rather than the interactive diagram.
+/** The cytoscape instance the diagram hangs on the host element. */
+interface CytoscapeHost extends HTMLElement {
+  _cyreg?: { cy?: import('cytoscape').Core };
+}
+
 const PATHWAY = '/PathwayBrowser/R-HSA-109606?tab=info';
 const BOOT = 90_000;
 
@@ -28,6 +34,55 @@ async function drawnDiagram(page: Page) {
 }
 
 test.describe('Diagram behaviour', () => {
+  /**
+   * Navigating into a pathway box keeps what the reader had selected.
+   *
+   * It used to replace it with the pathway being left, to orient the reader in
+   * the diagram they arrived in. A curator searched for an entity, double-clicked
+   * a pathway box and found it unselected (#168) -- and the sibling handler for
+   * `.SUB.Pathway` did not do this, so the two ways out of a diagram disagreed.
+   *
+   * Asserted on the address rather than on the handler, because `select` in the
+   * URL is what survives a reload and what the reader can share.
+   */
+  test('keeps the selection when you open a pathway from inside the diagram', async ({ page }) => {
+    test.setTimeout(6 * 60 * 1000);
+
+    await page.goto('/PathwayBrowser/R-HSA-70171?FLG=PKM', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
+    await page.waitForTimeout(6000);
+
+    // R-HSA-70171 has no diagram of its own, so the browser opens its parent and
+    // selects it -- which is exactly the state a search leaves behind.
+    const selected = new URL(page.url()).searchParams.get('select');
+    expect(selected, 'something is selected to begin with').toBeTruthy();
+
+    const target = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      const node = cy?.nodes('.Interacting.Pathway').first();
+      return node?.length ? (node.data('graph.stId') as string) : null;
+    });
+    // Asserted, not skipped. The recordings make this deterministic, so a diagram
+    // with no pathway box means the fixture changed under us -- and a test that
+    // skips itself there would report green while checking nothing, which is the
+    // failure this suite keeps finding elsewhere.
+    expect(target, 'the diagram offers a pathway box to open').toBeTruthy();
+    if (!target) return;
+
+    await page.evaluate((stId) => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      cy?.nodes('.Interacting.Pathway')
+        .filter((n) => n.data('graph.stId') === stId)
+        .emit('dblclick');
+    }, target);
+
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 60_000 }).toContain(target);
+
+    const after = new URL(page.url());
+    expect(after.searchParams.get('select'), 'the reader keeps what they selected').toBe(selected);
+    expect(after.searchParams.get('flag'), 'and the flag they set').toBe('PKM');
+  });
+
   test.describe.configure({ timeout: 5 * 60 * 1000 });
 
   test('the diagram key is on screen', async ({ page }) => {
@@ -79,4 +134,185 @@ test.describe('Diagram behaviour', () => {
       await drawnDiagram(page);
     });
   }
+});
+
+test.describe('Hierarchy and diagram together', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  /** Pixels of the selection's blue (`--select-edge`, #0561a6). */
+  async function selectionPixels(page: Page, png: Buffer): Promise<number> {
+    return page.evaluate(async (data) => {
+      const image = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${data}`)).blob()
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context to read the screenshot with');
+      context.drawImage(image, 0, 0);
+      const p = context.getImageData(0, 0, image.width, image.height).data;
+      let blue = 0;
+      for (let i = 0; i < p.length; i += 4) {
+        if (
+          Math.abs(p[i] - 5) < 40 &&
+          Math.abs(p[i + 1] - 97) < 40 &&
+          Math.abs(p[i + 2] - 166) < 40
+        )
+          blue++;
+      }
+      return blue;
+    }, png.toString('base64'));
+  }
+
+  async function openAndHover(page: Page, url: string, row: string) {
+    await page.goto(url);
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(6000);
+    const diagram = page.locator('#cytoscape');
+    const before = await diagram.screenshot();
+    await page.locator('.tree-node', { hasText: row }).first().hover();
+    await page.waitForTimeout(1500);
+    return { before, during: await diagram.screenshot() };
+  }
+
+  /** Pixels of the diagram's own dark ink: its lines and boxes. */
+  async function darkPixels(page: Page, png: Buffer): Promise<number> {
+    return page.evaluate(async (data) => {
+      const image = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${data}`)).blob()
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context to read the screenshot with');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height).data;
+      let dark = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] + pixels[i + 1] + pixels[i + 2] < 200) dark++;
+      }
+      return dark;
+    }, png.toString('base64'));
+  }
+
+  // Pointing at a reaction in the hierarchy makes it stand out in the diagram,
+  // as the old browser drew it in yellow; only the row itself used to change.
+  // It stands out by the rest fading -- no colour can be told apart from every
+  // sub-pathway tint -- so the measure is the diagram's ink dropping, then
+  // coming back when the pointer leaves.
+  test('hovering a reaction row makes it stand out, and leaving restores the diagram', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-HSA-1368108');
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(5000);
+    const diagram = page.locator('#cytoscape');
+    const before = await darkPixels(page, await diagram.screenshot());
+    expect(before).toBeGreaterThan(1000);
+
+    await page.locator('.tree-node', { hasText: 'binds AVP gene' }).first().hover();
+    await expect
+      .poll(async () => darkPixels(page, await diagram.screenshot()))
+      .toBeLessThan(before * 0.5);
+
+    await page.mouse.move(5, 5);
+    await expect
+      .poll(async () => darkPixels(page, await diagram.screenshot()))
+      .toBeGreaterThan(before * 0.9);
+  });
+
+  // Sweeping the pointer down the tree must not hide the reader's selection.
+  test('the selection stays visible while another row is hovered', async ({ page }) => {
+    const { before, during } = await openAndHover(
+      page,
+      '/PathwayBrowser/R-HSA-156580?select=R-HSA-175983',
+      'Acetylation'
+    );
+    const selected = await selectionPixels(page, before);
+    expect(selected).toBeGreaterThan(500);
+    expect(await selectionPixels(page, during)).toBeGreaterThan(selected * 0.75);
+  });
+
+  // With something flagged the sub-pathway bands are off and fall back to black;
+  // strengthening the hovered one drew a black halo, so the diagram got darker.
+  test('hovering a sub-pathway while something is flagged draws no black halo', async ({
+    page,
+  }) => {
+    const { before, during } = await openAndHover(
+      page,
+      '/PathwayBrowser/R-HSA-156580?flag=R-HSA-175983',
+      'Glucuronidation'
+    );
+    expect(await darkPixels(page, during)).toBeLessThan(await darkPixels(page, before));
+  });
+});
+
+test.describe('Flagging a reaction', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // The halo went on the reaction's lines only if they were in the flagged set,
+  // and a reaction is found as its node alone -- so the lines never got it, and
+  // a flagged reaction was a speck of pink on its small node (#311).
+  test('draws the flag halo along the reaction, not just on its node', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-156580?flag=R-HSA-175983');
+    const container = await drawnDiagram(page);
+
+    // The lines also carry a sub-pathway band, and the zoom handler writes band
+    // opacity inline -- over the halo -- on every restyle. Whether a restyle came
+    // after the flag was a race the live backend lost and the recordings won, so
+    // one is forced here: what a theme change or a loading analysis does. Then
+    // brought close enough to see; fitted to the whole diagram the halo is a
+    // couple of pixels wide.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+            const reaction = cy?.nodes('.reaction.flag');
+            if (!cy || !reaction?.length) return false;
+            cy.data('reactome').update(cy);
+            // The shared Style restyles whichever graph was bound last, which can
+            // be the legend; this diagram's own handler is run explicitly too.
+            cy.scratch('_reactomeInteractivity')?.triggerZoom();
+            cy.fit(reaction.closedNeighborhood(), 80);
+            return true;
+          }),
+        { timeout: 60_000 }
+      )
+      .toBe(true);
+    await page.waitForTimeout(1500);
+
+    const node = await page.evaluate(() => {
+      const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
+      if (!cy) throw new Error('no cytoscape instance on #cytoscape');
+      const box = cy.nodes('.reaction.flag').renderedBoundingBox({});
+      // In screenshot pixels, which are device pixels.
+      const r = window.devicePixelRatio;
+      return { x1: box.x1 * r, x2: box.x2 * r, y1: box.y1 * r, y2: box.y2 * r };
+    });
+    const png = await container.screenshot();
+    const pink = await page.evaluate(
+      async ({ data, node }) => {
+        const image = await createImageBitmap(
+          await (await fetch(`data:image/png;base64,${data}`)).blob()
+        );
+        const canvas = new OffscreenCanvas(image.width, image.height);
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('no 2d context to read the screenshot with');
+        context.drawImage(image, 0, 0);
+        const p = context.getImageData(0, 0, image.width, image.height).data;
+        let n = 0;
+        for (let i = 0; i < p.length; i += 4) {
+          const x = (i / 4) % image.width;
+          const y = Math.floor(i / 4 / image.width);
+          // The node's own outline is pink either way; only the lines count.
+          if (x >= node.x1 - 8 && x <= node.x2 + 8 && y >= node.y1 - 8 && y <= node.y2 + 8)
+            continue;
+          // --flag, #ff009a, as drawn.
+          if (p[i] > 200 && p[i + 1] < 80 && p[i + 2] > 110 && p[i + 2] < 200) n++;
+        }
+        return n;
+      },
+      { data: png.toString('base64'), node }
+    );
+    expect(pink).toBeGreaterThan(2000);
+  });
 });

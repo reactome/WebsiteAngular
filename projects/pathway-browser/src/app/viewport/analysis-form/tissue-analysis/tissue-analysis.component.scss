@@ -261,3 +261,10 @@
     animation: none;
   }
 }
+
+// A dragged tissue is already where the pointer left it; sliding it in again
+// would be wrong. On that box alone, and kept until it moves again: removing
+// `animation: none` from a box standing still would restart its slide.
+.tissue-box.no-animate {
+  animation: none;
+}

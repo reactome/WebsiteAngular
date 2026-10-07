@@ -40,24 +40,34 @@ export class NotFoundTableComponent {
   public analysis: AnalysisService = inject(AnalysisService);
   public state: UrlStateService = inject(UrlStateService);
 
-  isGSA = computed(() => this.analysis.result()?.summary?.type === 'GSA_REGULATION');
+  readonly isGSA = computed(() => this.analysis.result()?.summary?.type === 'GSA_REGULATION');
 
-  expressionColumnNames = computed(() => this.analysis.result()?.expression?.columnNames || []);
+  readonly expressionColumnNames = computed(
+    () => this.analysis.result()?.expression?.columnNames || []
+  );
 
-  expressionColumnIds = computed(() => this.expressionColumnNames().map((_, i) => `exp-${i}`));
+  readonly expressionColumnIds = computed(() =>
+    this.expressionColumnNames().map((_, i) => `exp-${i}`)
+  );
 
-  displayedColumns: Signal<string[]> = computed(() => ['id', ...this.expressionColumnIds()]);
+  readonly displayedColumns: Signal<string[]> = computed(() => [
+    'id',
+    ...this.expressionColumnIds(),
+  ]);
 
-  data = linkedSignal<Analysis.NotFoundIdentifier[] | undefined, Analysis.NotFoundIdentifier[]>({
+  readonly data = linkedSignal<
+    Analysis.NotFoundIdentifier[] | undefined,
+    Analysis.NotFoundIdentifier[]
+  >({
     source: this.analysis.notFoundIdentifiersResource.value,
     computation: (source, previous?) => source || previous?.value || [],
   });
 
   dataSource = new MatTableDataSource<Analysis.NotFoundIdentifier>();
 
-  sort = viewChild.required(MatSort);
-  headerRow = viewChild.required<HTMLTableRowElement>('headerRow');
-  scrollOffset = computed(() => (this.headerRow().clientHeight || 56) + 'px');
+  readonly sort = viewChild.required(MatSort);
+  readonly headerRow = viewChild.required<HTMLTableRowElement>('headerRow');
+  readonly scrollOffset = computed(() => (this.headerRow().clientHeight || 56) + 'px');
 
   constructor() {
     effect(() => (this.dataSource.data = this.data()));

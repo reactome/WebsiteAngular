@@ -3,13 +3,12 @@ import {
   AfterViewInit,
   OnDestroy,
   ElementRef,
-  ViewChild,
   PLATFORM_ID,
   inject,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
-import { APP_CONFIG } from '../../config/config';
 
 declare const SwaggerUIBundle: any;
 
@@ -21,7 +20,7 @@ declare const SwaggerUIBundle: any;
 export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
-  @ViewChild('swaggerContainer', { static: true }) swaggerContainer!: ElementRef<HTMLDivElement>;
+  readonly swaggerContainer = viewChild.required<ElementRef<HTMLDivElement>>('swaggerContainer');
 
   private serviceName = '';
   private isBrowser: boolean;
@@ -44,19 +43,27 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     await this.loadCss('assets/swagger-ui/swagger-ui.css');
     await this.loadScript('assets/swagger-ui/swagger-ui-bundle.js');
 
-    // Fetch the OpenAPI spec from the same origin we're served from, not
-    // APP_CONFIG.swaggerSpecBaseUrl. dev.reactome.org sits behind
-    // mod_auth_openidc which 302s /AnalysisService/v3/api-docs to Keycloak;
-    // that login response carries no Access-Control-Allow-Origin, so the
-    // browser blocks the cross-origin XHR even after the user has logged
-    // in. Every public host (beta, release, reactome.org) reverse-proxies
-    // its own /AnalysisService and /ContentService, so same-origin works.
-    const baseUrl =
-      typeof window !== 'undefined' ? window.location.origin : APP_CONFIG.swaggerSpecBaseUrl;
-    const url = `${baseUrl}/${this.serviceName}/v3/api-docs`;
+    // The spec comes from the origin we are served from, and from nowhere else.
+    // Every public host (beta, release, reactome.org, the curator site)
+    // reverse-proxies its own /AnalysisService and /ContentService, so
+    // same-origin always resolves -- and where it does not, a visible failure is
+    // the right outcome. Showing someone another deployment's API docs while
+    // they believe they are reading this one's is worse than showing nothing.
+    //
+    // It also sidesteps a real trap: dev.reactome.org sits behind
+    // mod_auth_openidc, which 302s /AnalysisService/v3/api-docs to Keycloak, and
+    // that login response carries no Access-Control-Allow-Origin, so the browser
+    // blocks the cross-origin XHR even for a logged-in user.
+    //
+    // ngAfterViewInit returns early off-browser, so window is always defined by
+    // the time this runs.
+    const url = `${window.location.origin}/${this.serviceName}/v3/api-docs`;
     SwaggerUIBundle({
-      domNode: this.swaggerContainer.nativeElement,
+      domNode: this.swaggerContainer().nativeElement,
       url,
+      // Follows `#/{tag}/{operationId}` in the address, so a link to one
+      // operation opens it rather than the top of a 98-operation page.
+      deepLinking: true,
     });
   }
 
@@ -83,8 +90,9 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.swaggerContainer?.nativeElement) {
-      this.swaggerContainer.nativeElement.innerHTML = '';
+    const swaggerContainer = this.swaggerContainer();
+    if (swaggerContainer?.nativeElement) {
+      swaggerContainer.nativeElement.innerHTML = '';
     }
   }
 }

@@ -1,0 +1,196 @@
+@if (summary.available) {
+  <section class="analysis-summary">
+    <!-- Closable, leaving the results in place. Asking again for a summary that
+         was written is answered from the cache; closing a request still in
+         flight, or a refusal, means asking afresh. -->
+    @if (closable()) {
+      <button
+        type="button"
+        mat-icon-button
+        class="close"
+        aria-label="Close summary"
+        matTooltip="Close summary"
+        (click)="close()"
+      >
+        <mat-icon fontSet="symbols" aria-hidden="true">close</mat-icon>
+      </button>
+    }
+    <!-- Opt-in, not automatic. A summary is a model call against a rate-limited
+         service, and a reader opens a result far more often than they want one
+         written about. Asking on every view would spend the budget on people
+         who never read it and make the ones who do wait behind them. -->
+    @if (offering()) {
+      <button type="button" class="ask" (click)="ask()">
+        <mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>
+        Summarise this result
+      </button>
+      <!--
+        Before the click, not after. What the reader consents to is their
+        analysis result leaving Reactome for a third party, and "AI-generated"
+        under the finished text names a technology after the fact. The company
+        that ends up with the data is the thing to say, and to say first.
+      -->
+      <p class="pre-disclosure">
+        Sends this result to a third party to be summarised.
+        <button
+          type="button"
+          class="how"
+          [attr.aria-expanded]="howOpen()"
+          aria-controls="summary-how"
+          (click)="toggleHow()"
+        >
+          <span class="info" aria-hidden="true">i</span>
+          What gets sent, and to whom
+        </button>
+      </p>
+    }
+
+    @if (summary.challenge()) {
+      <!-- The check where the reader is. Sending somebody who has just run an
+           analysis off to a different feature to unlock this one is not a thing
+           to ask, however accurately it is phrased. -->
+      <div class="challenge">
+        <p class="challenge-note">One quick check that you are a person, then the summary.</p>
+        <div #turnstile class="widget"></div>
+      </div>
+    }
+
+    <!--
+      Progress, not a spinner, and `&& !visible()` because the stream stays open
+      while prose arrives: once there is text the text is the progress, and a
+      bar above something the reader is already reading is noise.
+    -->
+    @if (summary.asking() && !summary.visible()) {
+      <div class="waiting">
+        <div class="progress" aria-hidden="true"><span></span></div>
+        <p class="waiting-text" role="status" aria-live="polite">
+          {{ waitingMessage() }}
+          <!--
+            Outside the announcement: the count changes every second, and a live
+            region holding it would have a screen reader read the line once a
+            second for as long as the wait lasts.
+          -->
+          <span class="elapsed" aria-hidden="true">
+            @if (elapsed() > 0) {
+              {{ elapsed() }}s — usually a few
+            } @else {
+              Usually a few seconds
+            }
+          </span>
+        </p>
+      </div>
+    }
+
+    <!-- Prose only when we know what it is allowed to claim. An analysis type
+         outside the three we have copy for is a contract change, and the safe
+         reading of a contract change is to show nothing rather than to show a
+         reader text with no idea what it may and may not be saying -- which is
+         the whole reason the headings differ. Same rule as an unrecognised
+         terminal state. -->
+    @if (summary.visible() && heading()) {
+      @if (heading(); as head) {
+        <h3>{{ head.title }}</h3>
+        <!-- The constraint said out loud, next to the text it constrains. A
+             reader who knows enrichment carries no direction cannot misread the
+             summary as saying something went up. -->
+        <p class="constraint">{{ head.note }}</p>
+      }
+
+      <p class="prose">{{ summary.text() }}</p>
+
+      @if (summary.incomplete()) {
+        <!-- The text stays. What arrived was real, and nothing about generation
+             stopping makes it wrong. -->
+        <p class="incomplete" role="status">This summary stopped before it was finished.</p>
+      }
+
+      @if (summary.downgraded()) {
+        <p class="downgraded" role="status">
+          Your identifiers could not be retrieved, so this summarises the result without them.
+        </p>
+      }
+
+      @if (summary.citations().length) {
+        <ul class="citations">
+          @for (citation of summary.citations(); track citation.stId ?? citation.displayName) {
+            <li>
+              <a [href]="'/content/detail/' + citation.stId">{{ citation.displayName }}</a>
+            </li>
+          }
+        </ul>
+      }
+
+      <!--
+        Said plainly and in the reader's path, not as small print. Somebody
+        deciding whether this can go in a paper needs to know what wrote it
+        before they decide, and the detail of how belongs behind the toggle
+        rather than in a paragraph most readers do not need.
+      -->
+      <p class="provenance">
+        <span class="badge"
+          ><mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>AI-generated</span
+        >
+        <button
+          type="button"
+          class="how"
+          [attr.aria-expanded]="howOpen()"
+          aria-controls="summary-how"
+          (click)="toggleHow()"
+        >
+          <span class="info" aria-hidden="true">i</span>
+          How this was made
+        </button>
+      </p>
+
+      <!-- The chat continues from exactly this summary, in a new tab, so the
+           results stay where they are. -->
+      @if (canContinue()) {
+        <p class="continue">
+          <button type="button" class="continue-chat" [disabled]="continuing()" (click)="continueInChat()">
+            <mat-icon fontSet="symbols" class="sparkle" aria-hidden="true">auto_awesome</mat-icon>
+            Continue in chat
+          </button>
+          <span class="continue-note">Opens a new tab with this summary, to ask follow-up questions.</span>
+        </p>
+      }
+      @if (continueFailure(); as why) {
+        <p class="explanation" role="status">{{ why }}</p>
+      }
+    }
+
+    <!--
+      One note, read before the click and after it, which is why it sits outside
+      the summary block rather than under the prose. Consent after the fact is
+      not consent: this used to appear only beneath a finished summary, telling
+      the reader what had already left the building.
+    -->
+    @if (showHow()) {
+      <div class="how-note" id="summary-how">
+        <p>{{ recipientNote() }}</p>
+        <p>{{ provenance() }}</p>
+        <p>
+          A language model writes it, not a curator, and nobody reviews it before you see it. It can be wrong or
+          incomplete. Check it against the pathways it cites, and in a publication cite those pathways and the Reactome
+          release rather than this text.
+        </p>
+      </div>
+    }
+
+    @if (summary.expired()) {
+      <!-- The only outcome the reader can act on, so it gets a button rather
+           than a sentence. The analysis itself is gone: results are deleted on
+           a release, and re-running is what gets one back. -->
+      <p class="expired">This analysis was run against an earlier release and its result has since been removed.</p>
+      <a class="rerun" href="/PathwayBrowser/#/ANALYSIS">Run the analysis again</a>
+    }
+
+    @if (explanation(); as why) {
+      <p class="explanation" role="status">{{ why }}</p>
+      <!-- An action rather than a sentence pointing at another page, for the
+           same reason the check itself moved here. -->
+      @if (retryable()) {
+        <button type="button" class="ask" (click)="ask()">Try again</button>
+      }
+    }
+  </section>
+}

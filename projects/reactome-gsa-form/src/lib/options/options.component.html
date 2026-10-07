@@ -4,7 +4,11 @@
       @for (param of parameters$ | async; track param.name) {
         <div class="param-line width-eighty">
           @if (param.display_name !== 'Reactome server') {
-            <gsa-method-parameter (parameterChange)="updateParam($event)" [parameter]="param"></gsa-method-parameter>
+            <gsa-method-parameter
+              (parameterChange)="updateParam($event)"
+              (validityChange)="setOptionValidity(param, $event)"
+              [parameter]="param"
+            ></gsa-method-parameter>
           }
         </div>
       }

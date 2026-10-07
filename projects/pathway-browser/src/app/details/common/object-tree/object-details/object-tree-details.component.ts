@@ -39,7 +39,7 @@ export class ObjectTreeDetailsComponent {
   readonly isMoleculeView = input.required<boolean>();
   readonly isLoading = input<boolean>(false);
 
-  moleculeType = computed(() => {
+  readonly moleculeType = computed(() => {
     const entity = this.refEntity() || this.obj();
     if (isRefEntity(entity)) {
       return entity.moleculeType;
@@ -47,14 +47,14 @@ export class ObjectTreeDetailsComponent {
     return null;
   });
 
-  hasStructure = computed(
+  readonly hasStructure = computed(
     () =>
       this.moleculeType() === MoleculeType.PROTEIN || this.moleculeType() === MoleculeType.CHEMICAL
   );
 
-  hasStructureData = computed(() => this.structure.hasAnyStructure());
+  readonly hasStructureData = computed(() => this.structure.hasAnyStructure());
 
-  displayNotice = computed(() => {
+  readonly displayNotice = computed(() => {
     if (!isMolecule(this.obj())) return false;
 
     const referenceEntity = this.refEntity();

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Smoke coverage for the Pathway Browser shell.
 //
@@ -119,7 +119,10 @@ test('publication authors link to their person pages', async ({ page }) => {
   );
   if (!href) throw new Error('no href to follow');
 
-  // and it has to actually land on a person
+  // and it has to actually land on a person -- once this page has finished
+  // loading, or leaving it cuts its requests off mid-response and the
+  // recording keeps the truncated answers (scripts/check-har.mjs refuses them).
+  await page.waitForLoadState('networkidle');
   await page.goto(href);
   await expect(page.locator('app-person-detail')).toContainText(/Publications|Authored/, {
     timeout: 25_000,
@@ -168,7 +171,38 @@ test.describe('Details panel deep links', () => {
   });
 });
 
-test('the Expression tab renders the Expression Atlas heatmap', async ({ page }) => {
+/**
+ * Whether EBI's Expression Atlas is answering at all.
+ *
+ * Deliberately not `serves()`: that helper treats a timeout as a failure,
+ * because for *our* backend a slow response is a broken service and must not
+ * read as a missing feature. This is somebody else's service on the public
+ * internet, where unreachable is an ordinary Tuesday and not evidence about this
+ * repository.
+ *
+ * The test below was reported flaky in CI and retried into green. A third party
+ * being down should stand the test down with a reason, not spend three attempts
+ * and pass on the one that got through.
+ */
+async function expressionAtlasAnswers(
+  request: import('@playwright/test').APIRequestContext
+): Promise<boolean> {
+  try {
+    const response = await request.get('https://www.ebi.ac.uk/gxa/json/suggestions?query=BRCA2', {
+      timeout: 20_000,
+    });
+    return response.status() < 500;
+  } catch {
+    return false;
+  }
+}
+
+test('the Expression tab renders the Expression Atlas heatmap', async ({ page, request }) => {
+  test.skip(
+    !(await expressionAtlasAnswers(request)),
+    'EBI Expression Atlas is not answering from here'
+  );
+
   // It rendered an empty box because the EBI widget's bundles live in the
   // standalone pathway-browser index.html, and the deployed app has its own,
   // which never loaded them. They are fetched when the tab opens now, so the
@@ -189,5 +223,85 @@ test('the Expression tab renders the Expression Atlas heatmap', async ({ page })
   await expect(page.locator('#expressionContainer *').first()).toBeAttached({ timeout: 45_000 });
   await expect(page.locator('cr-expression-tab')).toContainText(/genes found|RNA-seq|expression/i, {
     timeout: 45_000,
+  });
+});
+
+test.describe('Illustrations', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // An illustration is SVG and is now parsed as XML, so a file that is not
+  // well-formed is refused. Refused has to mean told, not a blank panel: before,
+  // anything the HTML parser could not make sense of simply drew nothing.
+  test('one that cannot be drawn says so', async ({ page }) => {
+    await page.route('**/ehld/R-HSA-109581.svg', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg><g></svg>' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-109581');
+    await expect(page.locator('cr-ehld [role="alert"]')).toHaveText(
+      'This illustration could not be drawn.',
+      { timeout: 90_000 }
+    );
+    await expect(page.locator('cr-ehld #ehld svg')).toHaveCount(0);
+  });
+
+  test('one that cannot be fetched says so, once the pathway is known to have one', async ({
+    page,
+  }) => {
+    await page.route('**/ehld/R-HSA-109581.svg', (route) => route.fulfill({ status: 404 }));
+    await page.goto('/PathwayBrowser/R-HSA-109581');
+    await expect(page.locator('cr-ehld [role="alert"]')).toHaveText(
+      'This illustration could not be loaded.',
+      { timeout: 90_000 }
+    );
+  });
+});
+
+test.describe('Hierarchy and illustration together', () => {
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
+
+  // Hovering a sub-pathway in the tree should light up its region in the
+  // illustration, as the old browser did. The tree marked its own row and
+  // told nothing else (#297).
+  test('hovering a sub-pathway row lights up its region, and leaving clears it', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-HSA-1640170');
+    await page.waitForSelector('cr-ehld #ehld svg g[id="REGION-R-HSA-69620"]', { timeout: 90_000 });
+    const region = () =>
+      page.evaluate(
+        () => (document.querySelector('g[id="REGION-R-HSA-69620"]') as SVGGElement).style.filter
+      );
+    expect(await region()).not.toContain('drop-shadow');
+
+    const row = page.locator('.tree-node button', { hasText: 'Cell Cycle Checkpoints' }).first();
+    await row.hover();
+    await expect.poll(region).toContain('drop-shadow');
+
+    await page.mouse.move(5, 5);
+    await expect.poll(region).not.toContain('drop-shadow');
+  });
+
+  test('an expanded sub-pathway keeps its highlight after visiting a child row', async ({
+    page,
+  }) => {
+    // Selecting something inside Cell Cycle Checkpoints expands its row beside
+    // the illustration without selecting the row itself. Its node contains the
+    // child rows, so hover bound on the node was cleared by a child's leave and
+    // never set again on the way back up.
+    await page.goto('/PathwayBrowser/R-HSA-1640170?select=R-HSA-69615');
+    await page.waitForSelector('cr-ehld #ehld svg g[id="REGION-R-HSA-69620"]', { timeout: 90_000 });
+    const region = () =>
+      page.evaluate(
+        () => (document.querySelector('g[id="REGION-R-HSA-69620"]') as SVGGElement).style.filter
+      );
+    const header = page.locator('mat-nested-tree-node[st-id="R-HSA-69620"] > .tree-node').first();
+    const child = page.locator('[st-id="R-HSA-69615"] .tree-node').first();
+    await expect(child).toBeVisible({ timeout: 60_000 });
+
+    await header.hover();
+    await expect.poll(region).toContain('drop-shadow');
+    await child.hover();
+    await header.hover();
+    await expect.poll(region).toContain('drop-shadow');
   });
 });

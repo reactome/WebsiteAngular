@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { EMBED_PORT, HOST_PAGE_PORT } from './e2e/support/embed-ports';
 
 // By default the suite spins up its own `ng serve` on :4200. Set E2E_BASE_URL to
 // run against something already running instead -- another local port, or a
@@ -12,7 +13,23 @@ import { defineConfig, devices } from '@playwright/test';
 // /AnalysisService and /GSAServer entries in proxy.conf.json to reach a real
 // backend. A deployed environment already routes those itself.
 const externalBaseURL = process.env['E2E_BASE_URL'];
-const baseURL = externalBaseURL || 'http://localhost:4200';
+
+// E2E_PORT asks for a server of our own on a port nothing else is using, and is
+// what the pre-push gate sets.
+//
+// The default of 4200 reuses whatever is already serving there, which is what
+// you want while developing -- one `ng serve` with hot reload, many test runs.
+// It is emphatically not what a gate wants. On a host that keeps a deployed
+// build on 4200, reuse means the suite tests that build and not the working
+// tree: `diagram-behaviour.spec.ts` failed for eight hours against a `dist/`
+// that predated the fix it asserts, while CI was green (#243). The dangerous
+// direction is the other one -- passing on a tree that is broken.
+//
+// A distinct port rather than `reuseExistingServer: false` on 4200, because the
+// latter makes playwright abort on "port already in use", which on this host
+// would mean stopping beta before every push.
+const ownPort = process.env['E2E_PORT'];
+const baseURL = externalBaseURL || `http://localhost:${ownPort || '4200'}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,7 +37,32 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
   workers: process.env['CI'] ? 1 : undefined,
-  reporter: 'html',
+  // html for a person, json for `scripts/check-flaky.mjs`. Flakiness is
+  // otherwise only in the log, where nobody reads it -- see #217.
+  reporter: [
+    ['html'],
+    [
+      'json',
+      { outputFile: process.env['PLAYWRIGHT_JSON_REPORT'] || 'playwright-report/report.json' },
+    ],
+  ],
+  /**
+   * Longer than playwright's 30s default, because two specs wait up to 45s for
+   * a page and could never reach it.
+   *
+   * `content-pages.spec.ts` and `interactive-state.spec.ts` both define
+   * `LOAD = 45_000` and pass it to assertions. Under a 30s per-test ceiling
+   * that budget was unreachable: the test was killed first, and what the report
+   * said was `TIMEDOUT` rather than which assertion failed and what it saw. A
+   * stated timeout that cannot be used is worse than a short one, because it
+   * reads as deliberate.
+   *
+   * 60s leaves room for the slowest of those plus the page load they share it
+   * with. The cost is that a genuinely hung test takes a minute rather than
+   * thirty seconds to say so, which is paid only by runs that were going to be
+   * red anyway.
+   */
+  timeout: 60_000,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -51,18 +93,56 @@ export default defineConfig({
       name: 'release',
       use: { ...devices['Desktop Chrome'] },
       testMatch: '**/release/**',
+      // One retry, not the suite's two. These are sweeps against a published
+      // site -- twenty-one diagram loads in one case -- so a second attempt is
+      // worth having for a dropped connection, and a third only costs another
+      // twelve minutes to reach the same answer. Retrying was a large part of
+      // why the release job never finished inside its budget.
+      retries: process.env['CI'] ? 1 : 0,
     },
   ],
   // Only manage a server when we're the ones who started it.
   ...(externalBaseURL
     ? {}
     : {
-        webServer: {
-          command: 'npm run start:simple',
-          url: baseURL,
-          reuseExistingServer: !process.env['CI'],
-          // A cold Angular build well exceeds playwright's 60s default.
-          timeout: 180_000,
-        },
+        webServer: [
+          {
+            // npm appends extra args to the end of the script string, so this
+            // becomes `... && ng serve --port <n>` and still runs the content
+            // staging that the search specs need.
+            command: ownPort ? `npm run start:simple -- --port ${ownPort}` : 'npm run start:simple',
+            url: baseURL,
+            // Never reuse when we asked for our own port: the point is to serve
+            // the tree under test.
+            reuseExistingServer: !process.env['CI'] && !ownPort,
+            // A cold Angular build well exceeds playwright's 60s default, and the
+            // gate always pays for one because it never reuses.
+            timeout: ownPort ? 300_000 : 180_000,
+          },
+          // The embeddable diagram and a partner's page, each on an origin of its
+          // own (e2e/embed-diagram.spec.ts): the point is to test it where it
+          // runs, which is never the site's own origin. The development build
+          // asks http://localhost:4330 for data, which the harness answers from
+          // recordings on whatever port the site is on.
+          //
+          // Built into a directory of its own: dist/reactome-diagram is what
+          // serve-prod publishes at /embed/diagram/v1/, so building the
+          // development configuration there replaced beta's embed with one that
+          // loads its code from localhost:4340 -- on every e2e run and every
+          // pre-push preflight on this machine.
+          {
+            command:
+              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram && ' +
+              `node e2e/support/static-server.mjs dist/e2e/reactome-diagram/browser ${EMBED_PORT}`,
+            url: `http://localhost:${EMBED_PORT}/reactome-diagram.js`,
+            reuseExistingServer: false,
+            timeout: 300_000,
+          },
+          {
+            command: `node e2e/support/static-server.mjs specs/009-embeddable-diagram/host-page ${HOST_PAGE_PORT}`,
+            url: `http://localhost:${HOST_PAGE_PORT}/`,
+            reuseExistingServer: false,
+          },
+        ],
       }),
 });

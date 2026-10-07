@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
-import { ExternalLink, NavOption } from '../../../types/link';
+import { ExternalLink } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 
 @Component({

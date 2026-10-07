@@ -13,19 +13,106 @@
  */
 const backend = process.env.REACTOME_BACKEND || 'http://localhost:8080';
 const secure = backend.startsWith('https');
+// DeltaSignal's own compose binds 8080, but so does the Tomcat on the Reactome
+// dev host that serves ContentService and AnalysisService. Defaulting to 8080
+// therefore sends /api/pathways, /api/parse and /api/solve to Tomcat, which
+// answers 404 -- a real server denying a real request, which looks like a broken
+// feature rather than an unconfigured one.
+//
+// 8090 is where DeltaSignal is published on the dev host; the container still
+// listens on 8080 inside. Override DELTASIGNAL_BACKEND for anything else.
+const deltaSignalBackend = process.env.DELTASIGNAL_BACKEND || 'http://localhost:8090';
 
 const localService = (context) => [context, { target: backend, secure, changeOrigin: true }];
 
+/**
+ * The bare API roots are this site's API page, not the service's.
+ *
+ * Opened directly, `/ContentService/` reached Tomcat's legacy Swagger page,
+ * wrapped in a copy of the old reactome.org header whose menu leads to pages
+ * this site does not have. The site's own page shows the same spec (read from
+ * `v3/api-docs`, which is still the service's) under the site header. Only the
+ * roots: every path beneath them is the API itself and stays proxied.
+ *
+ * `bypass` is the dev server's (Vite) hook: returning a path serves the app
+ * instead of proxying. serve-prod.js honours the same hook, so the two cannot
+ * disagree.
+ */
+const API_PAGE = /^\/(ContentService|AnalysisService)\/?(\?.*)?$/;
+const apiPage = (context) => [
+  context,
+  {
+    target: backend,
+    secure,
+    changeOrigin: true,
+    bypass: (req) => (API_PAGE.test(req.url ?? '') ? '/index.html' : undefined),
+  },
+];
+
+const personList = {
+  target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
+  secure: false,
+  changeOrigin: true,
+};
+
 module.exports = {
+  '/api': {
+    target: deltaSignalBackend,
+    secure: deltaSignalBackend.startsWith('https'),
+    changeOrigin: true,
+  },
   '/reactome': {
     target: 'https://download.reactome.org',
     secure: true,
     changeOrigin: true,
     pathRewrite: { '^/reactome': '' },
   },
+  // The content endpoints served by the node port (tools/content-node), listed
+  // **before** the general /ContentService rule because the first match wins and
+  // the general one would swallow them. These are all three of Java's
+  // /data/content/ endpoints.
+  //
+  // Byte-identical to Java except two declared differences: a subpathway's DOI,
+  // which ContentPageManager discards by passing null into TocSubpathway, and
+  // the order of the contributors array, which nobody reads because the page
+  // sorts by name before rendering. The DOI one is why the contents page had 3
+  // of production's 44 DOIs, and why this repo carries a client-side join
+  // against /content/doi to work around it. The join comes out once this is
+  // serving everywhere, not before -- it is what keeps those links visible today.
+  //
+  // Reversible by deleting these entries. The node service holds the lists in
+  // memory and answers in ~4ms, the same as Java; see specs/006 D9.
   ...Object.fromEntries(
-    ['/ContentService', '/AnalysisService', '/ExperimentDigester'].map(localService)
+    [
+      '/ContentService/data/content/toc',
+      '/ContentService/data/content/doi',
+      '/ContentService/data/content/contributors',
+      // The species lists. Exact contexts, not a `/data/species` prefix: Java
+      // also serves `/data/species/{taxId}` shapes that node does not, and a
+      // prefix would claim them and 404 what currently works.
+      '/ContentService/data/species/main',
+      '/ContentService/data/species/all',
+    ].map((context) => [
+      context,
+      {
+        target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
+        secure: false,
+        changeOrigin: true,
+      },
+    ])
   ),
+  // The person page's four lists. A path pattern rather than a prefix: these
+  // take an id in the middle, and `/ContentService/data/person` would also
+  // claim `/data/person/{id}` and `/publications`, which node does not serve.
+  '/ContentService/data/person/*/authoredPathways': personList,
+  '/ContentService/data/person/*/authoredReactions': personList,
+  '/ContentService/data/person/*/reviewedPathways': personList,
+  '/ContentService/data/person/*/reviewedReactions': personList,
+  ...Object.fromEntries([
+    apiPage('/ContentService'),
+    apiPage('/AnalysisService'),
+    localService('/ExperimentDigester'),
+  ]),
   // The headless render service (tools/render/service.mjs), which produces the
   // formats the Java exporters used to: GIF, PPTX and anything else a document
   // needs. It binds to loopback and is reached only through this proxy, so

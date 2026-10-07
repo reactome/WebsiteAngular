@@ -7,8 +7,8 @@ import {
   model,
   signal,
   TrackByFunction,
-  ViewChild,
   inject,
+  viewChild,
 } from '@angular/core';
 import {
   isChemical,
@@ -111,26 +111,26 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return exp?.[this.analysis.sampleIndex()];
   }
 
-  hasDepthControl = input<boolean>(false);
-  depthIndex = model<number | undefined>();
-  depthChangeSource = model<'controller' | 'tree' | undefined>(undefined);
-  scope = input<'entity' | 'event'>('entity');
-  disableNavigation = input<boolean>(false);
+  readonly hasDepthControl = input<boolean>(false);
+  readonly depthIndex = model<number | undefined>();
+  readonly depthChangeSource = model<'controller' | 'tree' | undefined>(undefined);
+  readonly scope = input<'entity' | 'event'>('entity');
+  readonly disableNavigation = input<boolean>(false);
 
-  moleculeView = input<boolean>(false);
-  stoichiometry = input<number>();
-  highlight = input<boolean>(false);
+  readonly moleculeView = input<boolean>(false);
+  readonly stoichiometry = input<number>();
+  readonly highlight = input<boolean>(false);
 
-  _selectedTreeNode = signal<E | undefined>(undefined);
-  selectedTreeNode = computed(() => this._selectedTreeNode());
+  readonly _selectedTreeNode = signal<E | undefined>(undefined);
+  readonly selectedTreeNode = computed(() => this._selectedTreeNode());
   initialData: R[] = [];
 
-  @ViewChild(MatTree) tree!: MatTree<R>;
+  readonly tree = viewChild.required(MatTree);
 
   readonly type = input.required<string>();
   readonly data = input.required<(R | E)[] | E | R>();
 
-  treeData = computed<R[]>(() => {
+  readonly treeData = computed<R[]>(() => {
     let data = this.data();
     const moleculeStoichiometry = this.stoichiometry();
     const moleculeView = this.moleculeView();
@@ -181,8 +181,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const index = this.depthIndex();
       const source = this.depthChangeSource();
 
-      if (index === 1 && this.tree) {
-        this.tree.collapseAll();
+      const tree = this.tree();
+      if (index === 1 && tree) {
+        tree.collapseAll();
         return;
       }
 
@@ -245,7 +246,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
           .pipe(
             map((entityResult) => {
               if (entityResult && entityResult.composedOf) {
-                entityResult.composedOf = entityResult.composedOf.map((composed, index, array) => ({
+                entityResult.composedOf = entityResult.composedOf.map((composed, index) => ({
                   ...composed,
                   element: {
                     ...composed.element,
@@ -278,7 +279,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   // Fetch children data when user click to expand, no need to send API call when tree node already exists
   loadChildren(node: R) {
     // manually toggle the expand and collapse behaviour, the matTreeNodeToggle conflicts with the dynamic highlight css class
-    this.tree.toggle(node);
+    this.tree().toggle(node);
 
     const alreadyLoaded = node.element.isLoaded;
     const hasNoChildren = alreadyLoaded && node.element.composedOf?.length === 0; // For nested entity which already exists but no children data
@@ -338,7 +339,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       ...nodes.map((node) => {
         const children = node.element?.composedOf || [];
 
-        const isExpanded = this.tree?.isExpanded(node);
+        const isExpanded = this.tree()?.isExpanded(node);
         const isNested = this.isNestedView(node.element);
 
         // Stop if not expanded or not nested
@@ -355,7 +356,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     for (const node of nodes) {
       if (!node.element.composedOf) return;
       if (node.element.composedOf.length > 0) {
-        this.tree.expand(node);
+        this.tree().expand(node);
         this.expandNestedTreeNodes(node.element.composedOf as R[]);
       }
     }
@@ -410,7 +411,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   // Important to use the updateCounter to trigger the update on the parent node when the child node is updated
-  trackBy: TrackByFunction<R> = (index, node) =>
+  trackBy: TrackByFunction<R> = (_index, node) =>
     node.element.dbId + '-' + node.element._updateCounter;
 
   updateMatTreeDataSource(node: E) {
@@ -528,10 +529,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const parent = parents[i];
       const grandParent = i > 0 ? parents[i - 1] : null;
 
-      const grandParentChildCount =
-        grandParent?.element.composedOf && grandParent.element.composedOf.length
-          ? grandParent.element.composedOf.length
-          : null;
+      const grandParentChildCount = grandParent?.element.composedOf?.length
+        ? grandParent.element.composedOf.length
+        : null;
       // Compare the order of current parent with the size of previous parent composedOf to determine if the parent is the last kid, adding empty string as connector
       if (grandParentChildCount && parent.index === grandParentChildCount - 1) {
         connectorClasses.push(null);
@@ -625,7 +625,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return `${CONTENT_DETAIL}/${element.stId}`;
   }
 
-  getDisplayName(node: R, element: E): string {
+  getDisplayName(_node: R, element: E): string {
     if (this.moleculeView() && isMolecule(element) && element.identifier) {
       const displayName = element.formattedName;
       return `${displayName}`;
@@ -662,7 +662,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    */
 
   getSpeciesName(element: E): string | null {
-    const speciesName: string = isSelectableObject(element) ? element.speciesName : null;
+    const speciesName: string | null | undefined = isSelectableObject(element)
+      ? element.speciesName
+      : null;
     const species: Species = isSelectableObject(element) ? element.species : null;
 
     if (!speciesName) return null;

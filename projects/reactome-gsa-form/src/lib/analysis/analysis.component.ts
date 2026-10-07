@@ -1,4 +1,4 @@
-import { Component, output, input, computed, inject } from '@angular/core';
+import { Component, output, input, inject } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -8,15 +8,7 @@ import {
 } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { analysisFeature } from '../state/analysis/analysis.selector';
-import {
-  formatDate,
-  NgSwitch,
-  NgSwitchCase,
-  NgIf,
-  NgFor,
-  AsyncPipe,
-  DecimalPipe,
-} from '@angular/common';
+import { formatDate, AsyncPipe, DecimalPipe } from '@angular/common';
 import { methodFeature } from '../state/method/method.selector';
 import { combineLatest, map } from 'rxjs';
 import { datasetFeature } from '../state/dataset/dataset.selector';
@@ -39,15 +31,11 @@ import { MatProgressBar } from '@angular/material/progress-bar';
     ReactiveFormsModule,
     MatCard,
     MatCardTitle,
-    NgSwitch,
-    NgSwitchCase,
     MatProgressSpinner,
     MatIcon,
     MatButton,
-    NgIf,
     MatCardFooter,
     MatProgressBar,
-    NgFor,
     AsyncPipe,
     DecimalPipe,
   ],
@@ -82,7 +70,7 @@ export class AnalysisComponent {
   readonly datasetId = input<number>();
   readonly restart = output<void>();
 
-  seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>();
+  readonly seeResultAction = input.required<'link' | ((result: AnalysisResult) => void)>();
 
   constructor() {
     this.analysisStep = this.formBuilder.group({

@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { ChangeDetectorRef, Component, inject, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
@@ -8,7 +8,7 @@ import formatDate from '../../../utils/formatDate';
 import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
-import { NavOption } from '../../../types/link';
+import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 
 @Component({
   selector: 'app-home-spotlight',
@@ -62,10 +62,12 @@ export class HomeSpotlightComponent implements OnInit {
               // Callback kept synchronous: an async one hands a promise to code
               // that ignores it, so any rejection in here would vanish.
               void (async () => {
-                const html = await marked(article?.body || '');
+                const html = rewriteContentUrls(await marked(article?.body || ''));
                 this.renderedContent = truncateHtml(stripFirstH(html), 150);
+                // After the await, not before it: marking first left the view
+                // to be refreshed by whatever happened to check it next.
+                this.cdr.markForCheck();
               })().catch((error) => console.error('Could not render spotlight', error));
-              this.cdr.markForCheck();
             },
           });
         this.cdr.markForCheck();

@@ -1,55 +1,53 @@
 import { Routes } from '@angular/router';
 import { ViewportComponent } from './viewport/viewport.component';
 import { RenderComponent } from './render/render.component';
-import { ENVIRONMENT_INITIALIZER, inject } from '@angular/core';
+import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
 import { IconService } from './services/icon.service';
 import { provideUiTour } from 'ngx-ui-tour-md-menu';
+import { provideGsaServer } from './viewport/analysis-form/gsa-config';
+import { environment } from '../environments/environment';
 
 const registerPathwayBrowserIcons = () => {
   const matIconRegistry = inject(MatIconRegistry);
   const domSanitizer = inject(DomSanitizer);
   const iconService = inject(IconService);
 
-  return () => {
-    const speciesIcon = iconService.getSpeciesIcons();
-    const generalIcons = iconService.getGeneralIcons();
-    const reactomeSubjectIcons = iconService.getReactomeSubjectIcons();
-    const connectors = iconService.getConnectors();
+  const speciesIcon = iconService.getSpeciesIcons();
+  const generalIcons = iconService.getGeneralIcons();
+  const reactomeSubjectIcons = iconService.getReactomeSubjectIcons();
+  const connectors = iconService.getConnectors();
 
-    matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');
+  matIconRegistry.registerFontClassAlias('symbols', 'material-symbols-rounded');
 
-    speciesIcon.forEach((icon) => {
-      matIconRegistry.addSvgIcon(
-        icon.name,
-        domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/species/${icon.route}.svg`)
-      );
-    });
+  speciesIcon.forEach((icon) => {
+    matIconRegistry.addSvgIcon(
+      icon.name,
+      domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/species/${icon.route}.svg`)
+    );
+  });
 
-    generalIcons.forEach((icon) => {
-      matIconRegistry.addSvgIcon(
-        icon.name,
-        domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/general/${icon.route}.svg`)
-      );
-    });
+  generalIcons.forEach((icon) => {
+    matIconRegistry.addSvgIcon(
+      icon.name,
+      domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/general/${icon.route}.svg`)
+    );
+  });
 
-    connectors.forEach((connector) => {
-      matIconRegistry.addSvgIcon(
-        connector.name,
-        domSanitizer.bypassSecurityTrustResourceUrl(`assets/connector/${connector.route}.svg`)
-      );
-    });
+  connectors.forEach((connector) => {
+    matIconRegistry.addSvgIcon(
+      connector.name,
+      domSanitizer.bypassSecurityTrustResourceUrl(`assets/connector/${connector.route}.svg`)
+    );
+  });
 
-    Object.values(reactomeSubjectIcons).forEach((icon) => {
-      matIconRegistry.addSvgIcon(
-        icon.name,
-        domSanitizer.bypassSecurityTrustResourceUrl(
-          `assets/icons/reactome-subject/${icon.route}.svg`
-        )
-      );
-    });
-  };
+  Object.values(reactomeSubjectIcons).forEach((icon) => {
+    matIconRegistry.addSvgIcon(
+      icon.name,
+      domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/reactome-subject/${icon.route}.svg`)
+    );
+  });
 };
 
 export const routes: Routes = [
@@ -59,13 +57,7 @@ export const routes: Routes = [
   // below, which would otherwise read "render" as a stable identifier.
   {
     path: 'render',
-    providers: [
-      {
-        provide: ENVIRONMENT_INITIALIZER,
-        multi: true,
-        useFactory: registerPathwayBrowserIcons,
-      },
-    ],
+    providers: [provideEnvironmentInitializer(registerPathwayBrowserIcons)],
     children: [
       { path: '', component: RenderComponent },
       { path: ':pathwayId', component: RenderComponent },
@@ -84,11 +76,11 @@ export const routes: Routes = [
       // Pathway Browser, and providing it at the root pulled ngx-ui-tour +
       // ngx-ui-tour-core (~275 kB) into the initial bundle.
       provideUiTour(),
-      {
-        provide: ENVIRONMENT_INITIALIZER,
-        multi: true,
-        useFactory: registerPathwayBrowserIcons,
-      },
+      // Where ReactomeGSA delivers this deployment's results. Here for the same
+      // reason: the form lives behind this route, and configuring it at the root
+      // pulled the whole library into the initial bundle.
+      provideGsaServer(environment.gsaServer),
+      provideEnvironmentInitializer(registerPathwayBrowserIcons),
     ],
     component: ViewportComponent,
   },

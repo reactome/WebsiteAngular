@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A page with aggressive styles</title>
+    <!-- Everything a careless partner stylesheet might do. None of it may reach
+         inside the diagram. -->
+    <style>
+      * {
+        font-family: serif !important;
+        color: red !important;
+        background: yellow !important;
+      }
+      div,
+      p,
+      span,
+      button {
+        border: 3px solid lime !important;
+        padding: 7px !important;
+      }
+      /* Inherited, so they would flow into the diagram through its element. */
+      html,
+      body,
+      reactome-diagram {
+        letter-spacing: 3px !important;
+        word-spacing: 12px !important;
+        text-transform: uppercase !important;
+        line-height: 3 !important;
+        text-align: right !important;
+        font-style: italic !important;
+      }
+      canvas {
+        opacity: 0.2 !important;
+      }
+      :root {
+        --surface: magenta;
+        --primary: magenta;
+        --on-surface: magenta;
+      }
+    </style>
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <h1>Gene X: pathways</h1>
+    <p>Content the partner owns, above the diagram.</p>
+    <!-- Fixed at the same whole-pixel position as in plain.html, so the two pages
+         are compared on the diagram alone. -->
+    <reactome-diagram
+      id="diagram"
+      pathway="R-HSA-69620"
+      style="position: absolute; top: 200px; left: 20px; width: 900px; height: 520px"
+    ></reactome-diagram>
+  </body>
+</html>

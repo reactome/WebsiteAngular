@@ -6,7 +6,6 @@ import { InDepth } from '../../../model/graph/in-depth.model';
 import type { Relationship } from '../../../model/graph/relationship.model';
 import { MatPaginator } from '@angular/material/paginator';
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';
-import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
@@ -46,17 +45,17 @@ export class ControllerTreeComponent<
 
   readonly pageSize = input(30);
 
-  depthIndex = signal(1);
-  depthChangeSource = signal<'controller' | 'tree' | undefined>(undefined);
-  maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth))!);
+  readonly depthIndex = signal(1);
+  readonly depthChangeSource = signal<'controller' | 'tree' | undefined>(undefined);
+  readonly maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth))!);
 
-  hasPagination = computed(() => this.data().length > this.pageSize());
-  currentPage = linkedSignal<PageEvent>(() => ({
+  readonly hasPagination = computed(() => this.data().length > this.pageSize());
+  readonly currentPage = linkedSignal<PageEvent>(() => ({
     pageIndex: 0,
     pageSize: this.pageSize(),
     length: 0,
   }));
-  displayedData: Signal<R[]> = computed(() => {
+  readonly displayedData: Signal<R[]> = computed(() => {
     return this.hasPagination()
       ? this.data().slice(
           this.currentPage().pageIndex * this.currentPage().pageSize,

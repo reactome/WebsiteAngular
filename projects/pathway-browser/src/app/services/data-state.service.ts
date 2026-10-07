@@ -52,12 +52,18 @@ export class DataStateService {
       }),
   });
 
-  public currentPathway = computed(() => {
-    const currentPathway = this._currentPathway.value();
+  public readonly currentPathway = computed(() => {
+    // Reading value() on a resource in the error state throws, which would
+    // propagate out of this computed and take down every view that depends on
+    // it -- a pathway id the service does not know is exactly that state. It
+    // stopped an embedded diagram's view refreshing, so its "could not be
+    // shown" never appeared. No pathway is the answer; the lookup's own status
+    // is what says it failed.
+    const currentPathway = this._currentPathway.hasValue()
+      ? this._currentPathway.value()
+      : undefined;
     if (currentPathway) {
-      // Reading value() on a resource in the error state throws, which would
-      // propagate out of this computed and take down every view that depends on
-      // it. Ancestors are supplementary, so fall back to none.
+      // Ancestors are supplementary, so on the same error fall back to none.
       currentPathway.ancestors = (this._ancestors.hasValue() && this._ancestors.value()) || [];
     }
     return currentPathway;
@@ -87,16 +93,16 @@ export class DataStateService {
   public selectedElement = this._selectedElement.asReadonly().value;
   public selectedElementLoading = this._selectedElement.asReadonly().isLoading;
 
-  hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
-  selectIsSummary = computed(() => isReferenceEntityStId(this.state.select()));
+  readonly hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
+  readonly selectIsSummary = computed(() => isReferenceEntityStId(this.state.select()));
 
-  private _selectionData = computed<SelectionData>(() => ({
+  private readonly _selectionData = computed<SelectionData>(() => ({
     selectedElement: this.selectedElement(),
     selectedElementLoading: this.selectedElementLoading(),
     currentPathway: this.state.pathwayId(),
   }));
 
-  selectedPathwayStId = linkedSignal<SelectionData, string | undefined>({
+  readonly selectedPathwayStId = linkedSignal<SelectionData, string | undefined>({
     source: this._selectionData,
     computation: (
       source: SelectionData,
@@ -109,7 +115,7 @@ export class DataStateService {
     },
   });
 
-  flagRequest = computed(() => {
+  readonly flagRequest = computed(() => {
     const params = {
       tokens: this.state.flag().filter((token) => !token.startsWith('class:')),
       diagram: this.state.pathwayId(),
@@ -173,7 +179,7 @@ export class DataStateService {
       );
   }
 
-  flagIdentifiers = computed(() => {
+  readonly flagIdentifiers = computed(() => {
     const identifiers: string[] = this.state.flag().filter((token) => token.startsWith('class:'));
     const match = this.flagResource.value();
     if (match?.matches) identifiers.push(...match.matches);

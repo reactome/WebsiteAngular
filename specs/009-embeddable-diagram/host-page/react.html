@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A React page</title>
+    <!--
+      <reactome-diagram> in a React app, the way a partner's React page would
+      use it (AllianceGenome's is one): `pathway` from React state, events
+      through a ref, in StrictMode -- which mounts, unmounts and remounts on
+      purpose. React comes from the test (vendor/), not a CDN.
+    -->
+    <script src="vendor/react.js"></script>
+    <script src="vendor/react-dom.js"></script>
+    <script>
+      window.EMBED = new URLSearchParams(location.search).get('embed') || 'http://localhost:4340/';
+      document.write('<script src="' + EMBED + 'reactome-diagram.js"><\/script>');
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.__loaded = [];
+      var h = React.createElement;
+
+      function Diagram(props) {
+        var ref = React.useRef(null);
+        var onLoaded = props.onLoaded;
+        React.useEffect(
+          function () {
+            var element = ref.current;
+            function handler(event) {
+              onLoaded(event.detail.pathway);
+            }
+            element.addEventListener('diagramloaded', handler);
+            return function () {
+              element.removeEventListener('diagramloaded', handler);
+            };
+          },
+          [onLoaded]
+        );
+        return h('reactome-diagram', {
+          id: 'diagram',
+          ref: ref,
+          pathway: props.pathway,
+          style: { width: '900px', height: '520px' },
+        });
+      }
+
+      function onLoaded(pathway) {
+        window.__loaded.push(pathway);
+      }
+
+      function App() {
+        var state = React.useState('R-HSA-69620');
+        var shown = React.useState(true);
+        return h(
+          'div',
+          null,
+          h('h1', null, 'Gene X: pathways'),
+          h(
+            'button',
+            {
+              id: 'switch',
+              onClick: function () {
+                state[1]('R-HSA-1257604');
+              },
+            },
+            'Show PIP3 activates AKT signaling'
+          ),
+          h(
+            'button',
+            {
+              id: 'toggle',
+              onClick: function () {
+                shown[1](!shown[0]);
+              },
+            },
+            'Toggle the diagram'
+          ),
+          shown[0] ? h(Diagram, { pathway: state[0], onLoaded: onLoaded }) : null
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(h(React.StrictMode, null, h(App)));
+    </script>
+  </body>
+</html>

@@ -2,14 +2,17 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  computed,
   effect,
+  signal,
   input,
   OnDestroy,
-  Output,
   viewChild,
+  DestroyRef,
   inject,
 } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
+import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { methodFeature } from './state/method/method.selector';
 import { combineLatest, filter, firstValueFrom, map, Observable, take } from 'rxjs';
@@ -28,6 +31,7 @@ import { AnalysisResult } from './model/analysis-result.model';
 import { MatIconRegistry } from '@angular/material/icon';
 import { ActivatedRoute } from '@angular/router';
 import { TourComponent } from './tour/tour.component';
+import { OptionsComponent } from './options/options.component';
 
 @Component({
   selector: 'gsa-form',
@@ -45,11 +49,32 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   readonly stepper = viewChild.required<MatStepper>('stepper');
+  // The stepper is moved on the next tick after a cancel or a restart. The
+  // stepper is inside *ngrxLet and its queries are required, so a move that
+  // lands after the form is destroyed would throw NG0951; each is cancelled
+  // on destroy instead.
+  private readonly destroyRef = inject(DestroyRef);
+  private later(move: () => void) {
+    // Also after destroy: onDestroy on a destroyed view throws (NG0911), and
+    // there is no stepper left to move.
+    if (this.destroyRef.destroyed) return;
+    const timer = setTimeout(() => {
+      unregister();
+      move();
+    });
+    const unregister = this.destroyRef.onDestroy(() => clearTimeout(timer));
+  }
 
   readonly setMethodStep = viewChild.required<CdkStep>('setMethodStep');
   readonly addDataStep = viewChild.required<CdkStep>('addDataStep');
   readonly optionStep = viewChild.required<CdkStep>('optionStep');
   readonly analysisStep = viewChild.required<CdkStep>('analysisStep');
+
+  /**
+   * Resolves only while the options step is the selected one, which is the
+   * only time its validity gates anything.
+   */
+  readonly options = viewChild(OptionsComponent);
 
   selectedMethod$ = this.store.select(methodFeature.selectSelectedMethod);
   methodSelected$ = this.selectedMethod$.pipe(map((method) => method !== null));
@@ -63,13 +88,13 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   datasetIds$ = this.store.select(datasetFeature.selectIds) as Observable<number[]>;
   datasets$ = this.store.select(datasetFeature.selectAll) as Observable<Dataset[]>;
   allSaved$: Observable<boolean> = this.store.select(datasetFeature.selectAllSaved);
-  @Output('analysisId')
   analysisId$: Observable<string> = this.store
     .select(analysisFeature.selectAnalysisId)
     .pipe(filter(isDefined));
-  @Output()
-  analysisResult = this.store.select(analysisFeature.selectAnalysisResult);
-  @Output('reportsRequired')
+  readonly analysisId = outputFromObservable(this.analysisId$);
+  readonly analysisResult = outputFromObservable(
+    this.store.select(analysisFeature.selectAnalysisResult)
+  );
   reportRequired$ = this.commonParameters$.pipe(
     map(
       (parameters) =>
@@ -77,11 +102,11 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
           false) as boolean
     )
   );
-  @Output()
-  analysisReports = this.store.select(analysisFeature.selectReports);
+  readonly reportsRequired = outputFromObservable(this.reportRequired$);
+  readonly analysisReports = outputFromObservable(this.store.select(analysisFeature.selectReports));
 
-  seeResultAction = input<'link' | ((result: AnalysisResult) => void)>('link');
-  tourComponent = viewChild.required(TourComponent);
+  readonly seeResultAction = input<'link' | ((result: AnalysisResult) => void)>('link');
+  readonly tourComponent = viewChild.required(TourComponent);
   editable = true;
 
   constructor() {
@@ -107,7 +132,23 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
     this.store.dispatch(datasetActions.add());
   }
 
+  private readonly stepIndex = signal(0);
+  private readonly tourState = toSignal(this.tour.state$, { initialValue: 'off' as const });
+
+  /**
+   * Whether the guided tour can start now: from the first step only, where it
+   * begins -- later steps keep the first one's panels in the page, hidden, so
+   * the tour would point at something the reader cannot see, and going back to
+   * it resets their datasets -- and not while it is already running.
+   */
+  readonly canStartTour = computed(() => this.stepIndex() === 0 && this.tourState() === 'off');
+
+  startTour() {
+    if (this.canStartTour()) this.tour.start();
+  }
+
   async stepChange($event: StepperSelectionEvent, vm: any) {
+    this.stepIndex.set($event.selectedIndex);
     switch ($event.selectedStep) {
       case this.setMethodStep():
         this.store.dispatch(datasetActions.reset());
@@ -139,20 +180,22 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
       });
       const cancel = await firstValueFrom(dialogRef.afterClosed());
       if (cancel) {
-        this.editable = true;
-        setTimeout(() => this.stepper().previous());
+        // The analysis is cancelled first, so nothing about the form -- it may
+        // have been closed while the dialog was open -- can stop it.
         this.analysisId$
           .pipe(take(1))
           .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+        this.editable = true;
+        this.later(() => this.stepper().previous());
       }
     }
   }
 
   restartAnalysis() {
-    this.editable = true;
-    setTimeout(() => (this.stepper().selected = this.setMethodStep()));
     this.analysisId$
       .pipe(take(1))
       .subscribe((analysisId) => this.store.dispatch(analysisActions.cancel({ analysisId })));
+    this.editable = true;
+    this.later(() => (this.stepper().selected = this.setMethodStep()));
   }
 }

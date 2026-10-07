@@ -17,10 +17,12 @@
     <div class="block">
       <h1>How to Use Our Logo</h1>
       <p>
-        We invite you to use the brand <a href="about/logo/#imagotype" class="inline-link">(imagotype)</a> or the logo
-        <a class="inline-link" href="about/logo/#isotype">(isotype)</a> as you decide. We suggest the usage of our image
-        against a white background but we understand that sometimes it is just not possible, that is why you have as
-        well the negative of our image, that fits nicely against a coloured background.
+        We invite you to use the brand
+        <a href="/about/logo#imagotype" class="inline-link" (click)="jumpTo($event, 'imagotype')">(imagotype)</a> or the
+        logo <a href="/about/logo#isotype" class="inline-link" (click)="jumpTo($event, 'isotype')">(isotype)</a> as you
+        decide. We suggest the usage of our image against a white background but we understand that sometimes it is just
+        not possible, that is why you have as well the negative of our image, that fits nicely against a coloured
+        background.
       </p>
     </div>
   </div>
@@ -28,60 +30,45 @@
     <div class="block">
       <h1>Download Our Logo</h1>
       <div class="logo-wrapper">
-        <div>
-          <h2 id="imagotype">Imagotype</h2>
-          <div class="logo-container">
-            <div class="logo-item">
-              <img class="imagotype" src="uploads/about/logo/Reactome_Imagotype_Positive.svg" />
-              <div class="logo-options">
-                <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
-                  <a href="uploads/about/logo/Reactome_Imagotype_Positive_25mm.png" class="dropdown-link">Small</a>
-                  <a href="uploads/about/logo/Reactome_Imagotype_Positive_50mm.png" class="dropdown-link">Medium</a>
-                  <a href="uploads/about/logo/Reactome_Imagotype_Positive_100mm.png" class="dropdown-link">Large</a>
-                </app-dropdown>
-                <a href="uploads/about/logo/Reactome_Imagotype_Positive.svg" class="inline-link">SVG</a>
-              </div>
-            </div>
-            <div class="logo-item negative">
-              <img class="imagotype" src="uploads/about/logo/Reactome_Imagotype_Negative.svg" />
-              <div class="logo-options">
-                <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
-                  <a href="uploads/about/logo/Reactome_Imagotype_Negative_25mm.png" class="dropdown-link">Small</a>
-                  <a href="uploads/about/logo/Reactome_Imagotype_Negative_50mm.png" class="dropdown-link">Medium</a>
-                  <a href="uploads/about/logo/Reactome_Imagotype_Negative_100mm.png" class="dropdown-link">Large</a>
-                </app-dropdown>
-                <a href="uploads/about/logo/Reactome_Imagotype_Negative.svg" class="inline-link">SVG</a>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h2 id="isotype">Isotype</h2>
-          <div class="logo-container">
-            <div class="logo-item">
-              <img class="isotype" src="uploads/about/logo/Reactome_Isotype_Positive.svg" />
-              <div class="logo-options">
-                <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
-                  <a href="uploads/about/logo/Reactome_Isotype_Positive_10mm.png" class="dropdown-link">Small</a>
-                  <a href="uploads/about/logo/Reactome_Isotype_Positive_25mm.png" class="dropdown-link">Medium</a>
-                  <a href="uploads/about/logo/Reactome_Isotype_Positive_50mm.png" class="dropdown-link">Large</a>
-                </app-dropdown>
-                <a href="uploads/about/logo/Reactome_Isotype_Positive.svg" class="inline-link">SVG</a>
-              </div>
-            </div>
-            <div class="logo-item negative">
-              <img class="isotype" src="uploads/about/logo/Reactome_Isotype_Negative.svg" />
-              <div class="logo-options">
-                <app-dropdown buttonLabel="PNG" buttonStyle="color: var(--primary)">
-                  <a href="uploads/about/logo/Reactome_Isotype_Negative_10mm.png" class="dropdown-link">Small</a>
-                  <a href="uploads/about/logo/Reactome_Isotype_Negative_25mm.png" class="dropdown-link">Medium</a>
-                  <a href="uploads/about/logo/Reactome_Isotype_Negative_50mm.png" class="dropdown-link">Large</a>
-                </app-dropdown>
-                <a href="uploads/about/logo/Reactome_Isotype_Negative.svg" class="inline-link">SVG</a>
-              </div>
+        @for (group of groups; track group.id) {
+          <div>
+            <h2 [id]="group.id">{{ group.name }}</h2>
+            <div class="logo-container">
+              @for (variant of group.variants; track variant.file) {
+                <div class="logo-item" [class.negative]="variant.negative">
+                  <img [class]="group.id" [src]="dir + variant.file + '.svg'" [alt]="variant.alt" />
+                  <div class="logo-options">
+                    <button
+                      type="button"
+                      class="png-trigger"
+                      [matMenuTriggerFor]="pngMenu"
+                      [attr.aria-label]="'PNG sizes of the ' + variant.alt"
+                    >
+                      PNG<mat-icon fontSet="symbols">arrow_drop_down</mat-icon>
+                    </button>
+                    <mat-menu #pngMenu="matMenu">
+                      @for (size of group.sizes; track size.mm) {
+                        <a
+                          mat-menu-item
+                          [href]="dir + variant.file + '_' + size.mm + 'mm.png'"
+                          [download]="variant.file + '_' + size.mm + 'mm.png'"
+                          >{{ size.label }} <span class="px">{{ size.px }} px</span></a
+                        >
+                      }
+                    </mat-menu>
+                    <a
+                      class="inline-link"
+                      [href]="dir + variant.file + '.svg'"
+                      [download]="variant.file + '.svg'"
+                      [attr.aria-label]="'SVG of the ' + variant.alt"
+                      >SVG</a
+                    >
+                  </div>
+                </div>
+              }
             </div>
           </div>
-        </div>
+        }
       </div>
     </div>
   </div>

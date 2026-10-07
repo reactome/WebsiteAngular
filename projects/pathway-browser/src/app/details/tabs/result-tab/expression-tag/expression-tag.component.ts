@@ -28,31 +28,31 @@ export class ExpressionTagComponent {
   private state = inject(UrlStateService);
   private dark = inject(DarkService);
 
-  value = input.required<number>();
-  scientificFormat = input.required<boolean>();
+  readonly value = input.required<number>();
+  readonly scientificFormat = input.required<boolean>();
 
-  fdr = input<number>(0);
-  isFDR = input<boolean>(false);
-  isSignificant = computed(
+  readonly fdr = input<number>(0);
+  readonly isFDR = input<boolean>(false);
+  readonly isSignificant = computed(
     () => ((this.isFDR() && this.value()) || this.fdr()) <= this.state.significance()
   );
 
-  isRegulation = input<boolean>(false);
+  readonly isRegulation = input<boolean>(false);
 
-  format = input<string | undefined>('1.3-3');
+  readonly format = input<string | undefined>('1.3-3');
 
-  palette = computed(() =>
+  readonly palette = computed(() =>
     this.isFDR() && this.analysis.type() !== 'OVERREPRESENTATION'
       ? this.analysis.fdrPalette()
       : this.analysis.palette()
   );
-  scale = computed(() => {
+  readonly scale = computed(() => {
     this.dark.isDark(); // Update on dark change
     return this.palette().scale;
   });
-  color = computed(() => this.scale()(this.value()));
-  onColor = computed(() => (this.color().get('oklch.l') > 0.7 ? 'black' : 'white'));
-  style = computed(() =>
+  readonly color = computed(() => this.scale()(this.value()));
+  readonly onColor = computed(() => (this.color().get('oklch.l') > 0.7 ? 'black' : 'white'));
+  readonly style = computed(() =>
     this.isSignificant()
       ? {
           background: this.color().hex(),

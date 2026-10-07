@@ -14,7 +14,7 @@ import { DatabaseIdentifier } from '../../../../model/graph/database-identifier.
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { extract, Style } from 'reactome-cytoscape-style';
+import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { DarkService } from '../../../../services/dark.service';
 import { ReferenceEntity } from '../../../../model/graph/reference-entity/reference-entity.model';
 import { catchError, map, of } from 'rxjs';
@@ -119,20 +119,20 @@ export class StructureViewerComponent {
   readonly obj = input.required<ReferenceEntity | SelectableObject>();
   readonly xRefs = input.required<DatabaseIdentifier[]>();
   readonly moleculeType = input.required<string | null>();
-  viewer = viewChild<ElementRef<HTMLElement>>('viewer');
-  isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
-  isChemical = computed(
+  readonly viewer = viewChild<ElementRef<HTMLElement>>('viewer');
+  readonly isProtein = computed(() => this.moleculeType() === MoleculeType.PROTEIN);
+  readonly isChemical = computed(
     () =>
       this.moleculeType() === MoleculeType.CHEMICAL ||
       this.moleculeType() === MoleculeType.CHEMICAL_DRUG
   );
-  chebiIdentifier = signal<string | undefined>(undefined);
+  readonly chebiIdentifier = signal<string | undefined>(undefined);
 
-  pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
+  readonly pdbIdentifiers = computed(() => this.getPDBIdentifiers(this.xRefs()));
 
   reactomeStyle: Style = new Style(document.body);
 
-  alphaFoldEntryId = linkedSignal(() => {
+  readonly alphaFoldEntryId = linkedSignal(() => {
     if (!this.isProtein()) return null;
     const summary = this.alphafoldSummary.value();
     if (summary?.structures?.[0]?.summary?.model_url) {
@@ -142,22 +142,24 @@ export class StructureViewerComponent {
     return null;
   });
 
-  selected = signal<string | null>(null);
+  readonly selected = signal<string | null>(null);
 
-  sourceLabel = computed(() => {
+  readonly sourceLabel = computed(() => {
     return this.selected()?.startsWith('AF-') ? Source.ALPHA_FOLD : Source.PDB;
   });
 
   /** protein structure data from AlphaFold and PDB */
-  proteinStructureData = computed(() => {
+  readonly proteinStructureData = computed(() => {
     if (!this.isProtein()) return null;
     const result = [];
 
-    const afId = this.alphaFoldEntryId();
-    if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
-
+    // Experimental first, so the list a reader sees is ordered the same way the
+    // default is chosen rather than contradicting it.
     const pdbIdentifiers = this.pdbIdentifiers();
     if (pdbIdentifiers.length > 0) result.push({ source: Source.PDB, identifiers: pdbIdentifiers });
+
+    const afId = this.alphaFoldEntryId();
+    if (afId) result.push({ source: Source.ALPHA_FOLD, identifiers: [afId] });
 
     return result;
   });
@@ -175,9 +177,9 @@ export class StructureViewerComponent {
     },
   });
 
-  isChebiLoading = computed(() => this.chebiStructureSVGData.isLoading());
+  readonly isChebiLoading = computed(() => this.chebiStructureSVGData.isLoading());
 
-  isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
+  readonly isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
   bestPdbStructure = rxResource({
     params: () => this.obj().identifier,
@@ -208,17 +210,17 @@ export class StructureViewerComponent {
     },
   });
 
-  alphafoldUrl = computed(
+  readonly alphafoldUrl = computed(
     () =>
       this.alphafoldSummary.value()?.structures?.[0]?.summary?.model_url ||
       `https://alphafold.ebi.ac.uk/files/${this.alphaFoldEntryId()}-model_v6.cif`
   );
 
-  hasAnyStructure = computed(
+  readonly hasAnyStructure = computed(
     () => this.chebiStructureSVGData.hasValue() || !!this.proteinStructureData()?.length
   );
 
-  bgColor = computed(() => {
+  readonly bgColor = computed(() => {
     this.dark.isDark(); // Compute on dark update
     return extract(this.reactomeStyle.properties.global.surface);
   });
@@ -250,14 +252,36 @@ export class StructureViewerComponent {
         return;
       }
 
-      const afId = this.alphaFoldEntryId();
+      // An experimental structure always wins when the entity has one, and
+      // AlphaFold's prediction is what you get when it does not. Decided on a
+      // sitewide call, 19 Sep 2026.
+      //
+      // This used to prefer AlphaFold whenever AlphaFold had a model, so a
+      // protein with both showed the prediction -- BCL2 has an experimental
+      // 5JSN and was showing AF-P10415-F1. It also means the choice no longer
+      // waits on AlphaFold's summary request: a PDB cross-reference is already
+      // in hand from the entity, so there is nothing to wait for.
+      // `pdbIdentifiers()` is re-sorted when EBI's best_structures ranking
+      // arrives, so this can pick one entry and then move to a better one a
+      // moment later -- a second viewer load, visible as a flicker on proteins
+      // with several structures. That happened before this change too, on
+      // proteins with no AlphaFold model; it is simply reached more often now.
+      //
+      // Not waited on deliberately: both candidates are experimental structures,
+      // so the decision this implements is satisfied either way, and waiting
+      // would make the first render depend on a third-party request that has no
+      // timeout. Showing the right kind of structure promptly beats showing the
+      // best-ranked one eventually.
+      const pdbId = this.pdbIdentifiers()?.[0];
+      if (pdbId) {
+        this.selected.set(pdbId);
+        return;
+      }
+
       if (!this.isAlphafoldSummaryLoading()) {
-        if (afId) {
-          this.selected.set(afId);
-        } else {
-          // finished loading but no data → fallback to PDB
-          this.selected.set(this.pdbIdentifiers()?.[0] ?? null);
-        }
+        // No experimental structure. AlphaFold's model if it has one, and
+        // nothing if it does not.
+        this.selected.set(this.alphaFoldEntryId() ?? null);
       }
     });
   }

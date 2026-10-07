@@ -32,14 +32,14 @@
         <a
           class="toc-item"
           (click)="scrollTo(group.category)"
-          [class.selected]="selectedKey() == sanitizeId(group.category)"
+          [class.selected]="selectedKey() === sanitizeId(group.category)"
         >
           {{ group.category }}
         </a>
       }
       @if (moleculeData().length > 0) {
         <!-- Add download link -->
-        <a class="toc-item" (click)="scrollTo('download')" [class.selected]="selectedKey() == sanitizeId('download')"
+        <a class="toc-item" (click)="scrollTo('download')" [class.selected]="selectedKey() === sanitizeId('download')"
           >Download
         </a>
       }

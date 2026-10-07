@@ -69,20 +69,20 @@ export class InteractorDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
 
-  acc = signal('');
-  interactions = signal<CustomInteraction[]>([]);
-  loading = signal(true);
-  error = signal(false);
+  readonly acc = signal('');
+  readonly interactions = signal<CustomInteraction[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal(false);
 
   // Summary fields
-  displayName = signal('');
-  interactorType = signal('');
-  species = signal('');
-  synonyms = signal<string[]>([]);
-  referenceURL = signal('');
+  readonly displayName = signal('');
+  readonly interactorType = signal('');
+  readonly species = signal('');
+  readonly synonyms = signal<string[]>([]);
+  readonly referenceURL = signal('');
 
   // Reactome entity mapping: interactor identifier -> ReactomeEntity[]
-  entityMap = signal<Record<string, ReactomeEntity[]>>({});
+  readonly entityMap = signal<Record<string, ReactomeEntity[]>>({});
 
   ngOnInit() {
     const acc = this.route.snapshot.paramMap.get('acc');

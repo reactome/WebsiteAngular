@@ -7,8 +7,10 @@ import {
   inject,
   linkedSignal,
   model,
+  output,
   OnDestroy,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { EhldService, LegendGroup } from '../services/ehld.service';
@@ -17,7 +19,7 @@ import { UrlStateService } from '../services/url-state.service';
 import SvgPanZoom from 'svg-pan-zoom';
 import { AnalysisService } from '../services/analysis.service';
 import { isDefined } from '../services/utils';
-import { Style } from 'reactome-cytoscape-style';
+import { Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DataStateService } from '../services/data-state.service';
 import { Point } from '@angular/cdk/drag-drop';
@@ -32,7 +34,8 @@ import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
-import { NgClass } from '@angular/common';
+import { parseEhldSvg } from './ehld-svg';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
 @Component({
   selector: 'cr-ehld',
@@ -49,10 +52,35 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private data: DataStateService = inject(DataStateService);
   private download: DownloadService = inject(DownloadService);
   private svgExporter: SvgExporterService = inject(SvgExporterService);
+  private hierarchyHover = inject(HierarchyHoverService);
 
-  ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
+  readonly ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
-  hovering = signal(false);
+  readonly hovering = signal(false);
+  /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
+  readonly drawError = signal<string | null>(null);
+  /** The illustration is on screen, for its pathway id. */
+  readonly illustrationLoaded = output<string>();
+  /** It could not be shown: its file failed to arrive, or failed to draw. */
+  readonly illustrationFailed = output<string>();
+
+  /**
+   * Whether the pathway on screen is known to have an illustration.
+   *
+   * Double-clicking a region sets `pathwayId` at once, but whether that pathway
+   * has an illustration arrives later with its data; most sub-pathways have a
+   * diagram instead, and their illustration request fails. Until the data says
+   * this pathway has an illustration, a failed fetch is expected, not an error
+   * to announce -- the viewport is about to swap this component out.
+   */
+  private readonly expectsIllustration = computed(() => {
+    const pathway = this.data.currentPathway();
+    const id = this.pathwayId();
+    return !!pathway?.hasEHLD && (pathway.stId === id || String(pathway.dbId) === id);
+  });
+
+  /** A fetch that failed for a pathway that should have had an illustration. */
+  readonly loadError = computed(() => !!this.svgData.error() && this.expectsIllustration());
 
   readonly svgData = rxResource({
     params: () => ({ id: this.pathwayId() }),
@@ -71,12 +99,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   style!: Style;
   ratio = 0.384;
 
-  stIdToSVGGElement = signal(new Map<string, SVGGElement>());
-  subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
-  selectedElement = linkedSignal(() =>
+  readonly stIdToSVGGElement = signal(new Map<string, SVGGElement>());
+  readonly subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
+  readonly selectedElement = linkedSignal(() =>
     this.state.select() ? this.stIdToSVGGElement().get(this.state.select()!) : undefined
   );
-  flaggedElements = computed(() =>
+  readonly flaggedElements = computed(() =>
     this.data
       .flagIdentifiers()
       .map((stId) => this.stIdToSVGGElement().get(stId))
@@ -100,13 +128,51 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.ehldService.applyOutline(this.selectedElement()!, this.flaggedElements())
     );
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
+    // A sub-pathway hovered in the hierarchy lights up here as if hovered here.
+    effect((onCleanup) => {
+      const stId = this.hierarchyHover.hovered();
+      const region = stId ? this.stIdToSVGGElement().get(stId) : undefined;
+      // Tracked, so flagging the region while it is hovered redraws the shadow
+      // with the flag outline rather than leaving the old one.
+      const flagged = this.flaggedElements();
+      if (!region || region === this.selectedElement()) return;
+      untracked(() => this.ehldService.applyShadow(region, flagged));
+      onCleanup(() => {
+        if (region !== untracked(this.selectedElement)) {
+          this.ehldService.removeShadow(region, untracked(this.flaggedElements));
+        }
+      });
+    });
     effect(() => {
-      if (this.svgData.value() && this.ehldContainer()) {
-        this.ehldContainer().nativeElement.innerHTML = this.svgData.value()!;
+      const text = this.svgData.value();
+      if (text && this.ehldContainer()) {
+        let svg: SVGSVGElement;
+        try {
+          svg = parseEhldSvg(text);
+        } catch (error) {
+          this.clearDrawing();
+          this.drawError.set(error instanceof Error ? error.message : String(error));
+          return;
+        }
+        this.drawError.set(null);
+        this.ehldContainer().nativeElement.replaceChildren(svg);
         this.stIdToSVGGElement.set(this.ehldService.setStIdToSVGGElementMap(this.ehldContainer()));
         this.addEventListenerToSvg();
         this.initializePanAndZoom();
+        this.illustrationLoaded.emit(untracked(this.pathwayId));
       }
+    });
+    effect(() => {
+      if (this.loadError() || this.drawError())
+        this.illustrationFailed.emit(untracked(this.pathwayId));
+    });
+    // A file that fails to arrive must not leave the previous pathway's drawing
+    // on screen under a message saying this one could not be loaded.
+    effect(() => this.loadError() && untracked(() => this.clearDrawing()));
+    // A message about one pathway's file says nothing about the next one's.
+    effect(() => {
+      this.pathwayId();
+      untracked(() => this.drawError.set(null));
     });
     effect(() => {
       this.loadAnalysis();
@@ -124,7 +190,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         void this.ehldService
           .downloadImage(request.format)
           .then(() => this.download.resetDownload())
-          .catch((error) => console.error('EHLD image export failed', error));
+          .catch((error) => this.download.failed(error, 'EHLD image export failed'));
       } else if (request?.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)
@@ -132,9 +198,16 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
             this.download.export(svg, request.format, pathwayId);
             this.download.resetDownload();
           })
-          .catch((error) => console.error('EHLD SVG export failed', error));
+          .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
       }
     });
+  }
+
+  private clearDrawing(): void {
+    this.panZoomInstance?.destroy();
+    this.panZoomInstance = undefined;
+    this.ehldContainer().nativeElement.replaceChildren();
+    this.stIdToSVGGElement.set(new Map());
   }
 
   ngAfterViewInit(): void {
@@ -148,8 +221,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver.observe(this.ehldContainer().nativeElement);
   }
 
-  legendPosition = signal<Point>({ x: 0, y: 0 });
-  animateLegend = signal(false);
+  readonly legendPosition = signal<Point>({ x: 0, y: 0 });
+  readonly animateLegend = signal(false);
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);

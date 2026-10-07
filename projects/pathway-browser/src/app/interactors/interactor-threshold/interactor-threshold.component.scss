@@ -1,0 +1,164 @@
+// A floating bar over the foot of the diagram, centred, the way the old browser
+// places it. Not a full-width strip: the diagram is the thing being read, and a
+// control that spans it competes with it.
+:host {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
+  // A fixed width, because the bar is centred: any change to its contents moved
+  // both edges at once, so writing "the threshold is hiding every interactor
+  // here" made the whole control jump and take the download button with it. The
+  // messages change; the frame does not.
+  // Wide enough for its contents at their minimums, which 44rem was not: label
+  // 173 + track (192 min, plus 48 of margin) + status 176 + two buttons 64 +
+  // gaps 80 + padding 40 comes to ~793px against 704, so the close button was
+  // pushed past the rounded edge and clipped.
+  width: min(52rem, calc(100vw - 4rem));
+  font-size: 0.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+  pointer-events: auto;
+}
+
+.threshold-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.threshold-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+// The track carries the marks behind the slider, so both share one coordinate
+// space and a mark at 0.6 sits under the thumb at 0.6.
+.threshold-track {
+  position: relative;
+  // The track takes whatever is left, so it is the only part that changes size
+  // and it changes only with the window.
+  flex: 1 1 auto;
+  // The thumb's travel is the track plus its own radius at each end, so at 0 and
+  // 1 it sits proud of the drawn track. Measured at the extreme: 0.5rem left it
+  // 15px from the status text, which still reads as crowded. 1.5rem clears it.
+  margin-inline: 1.5rem;
+  min-width: 10rem;
+  max-width: 22rem;
+  display: flex;
+  align-items: center;
+}
+
+.threshold-marks {
+  position: absolute;
+  // 8px is the slider track's own inset, measured from
+  // `.mdc-slider__track` against its container rather than guessed -- a mark for
+  // 0.6 has to sit under the thumb at 0.6 or the whole point of drawing them is
+  // lost. The first attempt used 1rem and was two pixels out at each end.
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 1.1rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.threshold-mark {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  // Below the cutoff: still there, no longer drawn. Kept visible so the reader
+  // can see how much they have put away and how far back it is.
+  background: var(--outline, rgba(0, 0, 0, 0.35));
+  opacity: 0.35;
+
+  &.kept {
+    background: var(--primary, #1c6ea4);
+    opacity: 0.9;
+  }
+}
+
+.threshold-slider {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+// One slot for whatever the control has to say, so a message appearing cannot
+// resize anything around it. Two lines' worth of room is reserved: the longest
+// message wraps to two at the narrow end of the range.
+.threshold-status {
+  // A fixed share, never a growing one. As `flex: 1 1 auto` this claimed more
+  // width for a longer message and took it from the track: at 0.7 the status
+  // began at x=1070 and at 1.00 it began at 1031, so the slider shrank by 39px
+  // exactly when the long message appeared. The thumb then sat right against the
+  // words, which is what "the words start in the middle of the slider" was.
+  flex: 0 0 11rem;
+  min-width: 0;
+  // Fixed, not a minimum. "The threshold is hiding every interactor here" wraps
+  // to two lines where "18 of 46 shown" is one, so a minimum still let the bar
+  // grow as the reader slid to the right-hand end.
+  height: 2.4em;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+.threshold-empty {
+  font-weight: 600;
+}
+
+// Material's icon buttons are 40px with a 48px touch target, which is taller
+// than this bar and pushed the icons out of line with the label and the track.
+.threshold-download,
+.threshold-close {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 2rem;
+
+  .mat-icon,
+  .mat-mdc-button-touch-target {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1.25rem;
+    line-height: 1.25rem;
+  }
+}
+
+.threshold-close {
+  // A dismiss sits apart from the thing it acts on, not beside the download as
+  // though it were another action on the file.
+  margin-left: 0.25rem;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+// With nothing to filter there is no track and no tally, so the message takes
+// the width the controls would have had rather than sitting in their slot.
+.threshold-nothing {
+  flex: 1 1 auto;
+  height: auto;
+  white-space: normal;
+}
+
+/*
+  The way out of the state where badges exist but none can be drawn. It sits
+  where the download does in the normal state, so the bar keeps one shape.
+*/
+.threshold-reveal {
+  flex: 0 0 auto;
+  margin-left: 0.75rem;
+  white-space: nowrap;
+}

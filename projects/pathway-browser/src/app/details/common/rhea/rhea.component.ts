@@ -12,7 +12,6 @@ import { DatabaseIdentifier } from '../../../model/graph/database-identifier.mod
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RheaService } from '../../../services/rhea.service';
 import { forkJoin } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { template } from 'lodash';
 import { layers } from 'cytoscape-layers';
 import '@swissprot/rhea-reaction-viz-test';
@@ -23,15 +22,6 @@ export type Layout = {
   areas: string;
 };
 
-interface LabelLayout {
-  left: number; // horizontal center position
-  width: number; // width of the g element scaled
-}
-
-interface SvgLayout {
-  labels: LabelLayout[];
-}
-
 @Component({
   selector: 'cr-rhea',
   imports: [],
@@ -41,13 +31,12 @@ interface SvgLayout {
 })
 export class RheaComponent {
   private rheaService = inject(RheaService);
-  private http = inject(HttpClient);
   private dark = inject(DarkService);
 
   readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
 
   //todo: custom layout, remove it when dropping this layout
-  reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
+  readonly reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
 
   //layouts = signal<Layout[]>([{columns: '', areas: ''}]);
 
@@ -165,7 +154,7 @@ export class RheaComponent {
     },
   });
 
-  rheaResources = computed(() => this._rheaResources.value());
+  readonly rheaResources = computed(() => this._rheaResources.value());
 
   //todo: custom layout, remove it when dropping this layout
 
@@ -193,7 +182,7 @@ export class RheaComponent {
   //   }
   // })
 
-  allParticipantStructures = computed(() => {
+  readonly allParticipantStructures = computed(() => {
     return this.rheaResources()?.flatMap((rheaJson) => rheaJson.participants);
   });
 

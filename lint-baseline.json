@@ -1,3 +1,25 @@
 {
-  "warnings": 657
+  "warnings": 1480,
+  "rules": {
+    "@angular-eslint/no-input-rename": 7,
+    "@angular-eslint/no-output-native": 6,
+    "@angular-eslint/prefer-standalone": 4,
+    "@angular-eslint/template/button-has-type": 210,
+    "@typescript-eslint/ban-ts-comment": 1,
+    "@typescript-eslint/no-empty-object-type": 48,
+    "@typescript-eslint/no-explicit-any": 119,
+    "@typescript-eslint/no-namespace": 15,
+    "@typescript-eslint/no-non-null-assertion": 232,
+    "@typescript-eslint/no-unsafe-argument": 85,
+    "@typescript-eslint/no-unsafe-assignment": 194,
+    "@typescript-eslint/no-unsafe-call": 239,
+    "@typescript-eslint/no-unsafe-member-access": 242,
+    "@typescript-eslint/no-unsafe-return": 57,
+    "@typescript-eslint/no-unused-expressions": 9,
+    "@typescript-eslint/prefer-as-const": 1,
+    "no-empty-pattern": 1,
+    "no-useless-assignment": 5,
+    "no-useless-escape": 4,
+    "prefer-const": 1
+  }
 }

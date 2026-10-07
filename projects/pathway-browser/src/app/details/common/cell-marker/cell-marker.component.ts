@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, signal } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { EntityWithAccessionedSequence } from '../../../model/graph/physical-entity/entity-with-accessioned-sequence.model';
 import { DataKeys, SchemaClasses } from '../../../constants/constants';
 import { MarkerReference } from '../../../model/graph/control-reference/marker-reference.model';
@@ -19,7 +19,7 @@ export class CellMarkerComponent {
 
   constructor() {}
 
-  refs = computed(() => {
+  readonly refs = computed(() => {
     const map = new Map<number, MarkerReference>();
     for (const ref of this.markerRefs()) {
       const dbId = ref.marker?.dbId;

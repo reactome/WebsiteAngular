@@ -23,4 +23,8 @@ export const EXTERNAL_LINKS = {
     link: `${environment.host}${APP_CONFIG.releaseNotesPath}`,
   },
   feedback: { label: 'Feedback', link: 'https://forms.gle/TPBxaWnnVLLZj66p8' },
+  // Deliberately absolute and not derived from `environment.host`: the whole
+  // point of a status page is to be reachable when the site it reports on is
+  // not, so it must not be built from the host that might be down.
+  status: { label: 'Service status', link: 'https://status.reactome.org' },
 } as const;

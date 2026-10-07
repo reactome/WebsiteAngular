@@ -12,8 +12,8 @@ import { MatIcon } from '@angular/material/icon';
 export class FlagButtonComponent {
   state = inject(UrlStateService);
 
-  id = input.required<string>();
-  flagged = computed(() => this.state.flag().includes(this.id()));
+  readonly id = input.required<string>();
+  readonly flagged = computed(() => this.state.flag().includes(this.id()));
 
   toggle(): void {
     if (!this.flagged()) {

@@ -18,7 +18,7 @@ interface PathwayLike extends DatabaseObject {
   styleUrl: './detail-diagram.component.scss',
 })
 export class DetailDiagramComponent {
-  obj = input.required<DatabaseObject>();
+  readonly obj = input.required<DatabaseObject>();
 
   /**
    * The pathway's own figure, drawn by the site's renderer.
@@ -34,7 +34,7 @@ export class DetailDiagramComponent {
    * the exporter's PNG endpoint used to 500 on top-level pathways that have an
    * illustration.
    */
-  diagramUrl = computed<string | null>(() => {
+  readonly diagramUrl = computed<string | null>(() => {
     const p = this.obj() as PathwayLike;
     if (!p?.stId || !p.hasDiagram) return null;
     return `${RENDER_SERVICE}/render/${p.stId}.svg`;
@@ -43,10 +43,17 @@ export class DetailDiagramComponent {
   /**
    * Where the picture comes from when the renderer cannot answer.
    *
-   * A cold render takes seconds and a service can be down; the old exporter is
-   * still there and still draws something for every pathway. Falling back keeps
-   * the page useful rather than blank -- and once, not repeatedly, because the
-   * fallback failing would fire error again.
+   * A cold render takes seconds and a service can be down, so falling back
+   * keeps the page useful rather than blank -- and once, not repeatedly,
+   * because the fallback failing would fire error again.
+   *
+   * How much it is worth depends on the machine. The Java exporter reads its
+   * pictures from `download/current/` on disk rather than drawing them, so it
+   * answers for exactly the pathways whose files are there: all of them on
+   * production, and on a dev box with a pruned download directory, close to
+   * none. Worth knowing before treating a green page here as proof the fallback
+   * works -- 11 of 9,559 diagram files and no illustrations at all, on the box
+   * this was written on.
    */
   fallback(event: Event) {
     const image = event.target as HTMLImageElement;
@@ -56,5 +63,5 @@ export class DetailDiagramComponent {
     image.src = exporter;
   }
 
-  alt = computed(() => `${this.obj().displayName} diagram`);
+  readonly alt = computed(() => `${this.obj().displayName} diagram`);
 }

@@ -71,3 +71,17 @@ describe('importing an announcement', () => {
     expect(sameWords('One two four', body).equal).toBe(false);
   });
 });
+
+describe('where an imported link points', () => {
+  it('brings reactome.org links home', () => {
+    expect(forTests.localise('https://reactome.org/userguide')).toBe('/userguide');
+  });
+
+  it("brings ReactomeGSA's landing page home, to the quantitative analysis", () => {
+    // The July spotlight linked /gsa/home.
+    expect(forTests.localise('/gsa/home')).toBe('/PathwayBrowser?analysisTab=quantitative');
+    expect(forTests.localise('https://reactome.org/gsa')).toBe(
+      '/PathwayBrowser?analysisTab=quantitative'
+    );
+  });
+});

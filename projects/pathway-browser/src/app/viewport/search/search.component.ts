@@ -75,11 +75,11 @@ export class SearchComponent {
   public icons: IconService = inject(IconService);
   private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  searchText = signal('');
-  hasFocus = signal<boolean>(false);
+  readonly searchText = signal('');
+  readonly hasFocus = signal<boolean>(false);
 
-  inputBox = viewChild.required<ElementRef<HTMLDivElement>>('inputBox');
-  query = viewChild.required<ElementRef<HTMLInputElement>>('query');
+  readonly inputBox = viewChild.required<ElementRef<HTMLDivElement>>('inputBox');
+  readonly query = viewChild.required<ElementRef<HTMLInputElement>>('query');
 
   suggestions = rxResource({
     params: this.searchText,
@@ -91,26 +91,28 @@ export class SearchComponent {
         : of([]),
   });
 
-  suggestionResults = linkedSignal<{ value?: string[]; loading: boolean }, string[]>({
+  readonly suggestionResults = linkedSignal<{ value?: string[]; loading: boolean }, string[]>({
     source: () => ({ value: this.suggestions.value(), loading: this.suggestions.isLoading() }),
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
   });
 
-  suggestionIndex: WritableSignal<number> = linkedSignal(() => this.suggestionResults() && -1);
-  currentSuggest = computed(() =>
+  readonly suggestionIndex: WritableSignal<number> = linkedSignal(
+    () => this.suggestionResults() && -1
+  );
+  readonly currentSuggest = computed(() =>
     this.suggestionIndex() !== -1
       ? this.searchText() +
         this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
       : undefined
   );
 
-  resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll');
-  resultPathways = viewChild<ShadowScrollComponent>('resultPathways');
+  readonly resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll');
+  readonly resultPathways = viewChild<ShadowScrollComponent>('resultPathways');
 
-  localHasNoResult = signal<boolean>(false);
-  globalHasNoResult = signal<boolean>(false);
-  searchErrorMessage = signal<string>('');
-  searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
+  readonly localHasNoResult = signal<boolean>(false);
+  readonly globalHasNoResult = signal<boolean>(false);
+  readonly searchErrorMessage = signal<string>('');
+  readonly searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
 
   constructor() {
     effect(
@@ -126,7 +128,9 @@ export class SearchComponent {
         )
     );
     effect(() => {
-      const subs = [this.resultHeight(), this.resultsScroll()];
+      // Read to subscribe: the effect re-runs when the results panel is resized or replaced.
+      this.resultHeight();
+      this.resultsScroll();
       setTimeout(() => this.resultsScroll()?.checkViewportSize(), 500); // After opening animation
     });
     effect(() => {
@@ -212,12 +216,12 @@ export class SearchComponent {
       this.hasFocus.set(false);
   }
 
-  typeFilter = signal<string[]>([]);
+  readonly typeFilter = signal<string[]>([]);
   diagram = this.state.pathwayId;
-  searchParams = signal<Search.Params | undefined>(undefined);
+  readonly searchParams = signal<Search.Params | undefined>(undefined);
   searchParams$ = toObservable(this.searchParams);
 
-  currentScopeName = signal<Scope>('local');
+  readonly currentScopeName = signal<Scope>('local');
 
   scopes: Record<Scope, SearchDataSource> = {
     local: new SearchDataSource(this.searchParams$, (page, pageSize, params) => {
@@ -270,10 +274,10 @@ export class SearchComponent {
     }),
   };
 
-  currentScope = computed(() => this.scopes[this.currentScopeName()]);
+  readonly currentScope = computed(() => this.scopes[this.currentScopeName()]);
 
-  resultHeight = computed(() => {
-    const [scope, ...sources] = [
+  readonly resultHeight = computed(() => {
+    const [scope] = [
       this.currentScopeName(),
       this.scopes.local.found(),
       this.scopes.global.found(),
@@ -281,14 +285,14 @@ export class SearchComponent {
     return Math.min(this.scopes[scope].found(), 10) * this.entryHeight();
   });
 
-  resultPathwaysHeight = computed(
+  readonly resultPathwaysHeight = computed(
     () =>
       AVAILABLE_IN_HEIGHT +
       Math.min(this.selectedResultPathwaysStable().length, 10) * this.entryHeight()
   );
 
-  selectedResult = signal<Search.Entry | undefined>(undefined);
-  selectedResultId = computed(() => this.selectedResult()?.dbId);
+  readonly selectedResult = signal<Search.Entry | undefined>(undefined);
+  readonly selectedResultId = computed(() => this.selectedResult()?.dbId);
   selectedResultPathways = rxResource({
     params: this.selectedResultId,
     stream: ({ params }) =>
@@ -302,7 +306,7 @@ export class SearchComponent {
       }),
   });
 
-  selectedResultPathwaysStable = linkedSignal<
+  readonly selectedResultPathwaysStable = linkedSignal<
     { results?: Search.Entry[]; loading: boolean },
     Search.Entry[]
   >({
@@ -318,7 +322,7 @@ export class SearchComponent {
     this.state.pathwayId.set(pathwayId);
   }
 
-  entryHeight = input(24);
+  readonly entryHeight = input(24);
   trackEntry = (index: number, value: Search.Entry | undefined) => value?.dbId || index;
 
   toggleTypeFacet(name: string) {
@@ -330,7 +334,7 @@ export class SearchComponent {
     );
   }
 
-  collapsed = signal<'collapsed' | 'opened'>('opened');
+  readonly collapsed = signal<'collapsed' | 'opened'>('opened');
 
   toggleCollapse() {
     this.collapsed.update((c) => (c === 'collapsed' ? 'opened' : 'collapsed'));
@@ -364,10 +368,10 @@ export class SearchComponent {
 
 // TODO find a way to avoid the break in scroll when loading a new page
 export class SearchDataSource extends DataSource<Search.Entry | undefined> {
-  private _result = signal<Search.Result | undefined>(undefined);
-  facets = computed(() => this._result()?.facets || []);
-  found = computed(() => this._result()?.found || 0);
-  isLoading = signal<boolean>(false);
+  private readonly _result = signal<Search.Result | undefined>(undefined);
+  readonly facets = computed(() => this._result()?.facets || []);
+  readonly found = computed(() => this._result()?.found || 0);
+  readonly isLoading = signal<boolean>(false);
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -430,7 +434,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         switchMap((param) =>
           param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
         ),
-        catchError((err) => of(Search.EMPTY_RESULTS))
+        catchError((_err) => of(Search.EMPTY_RESULTS))
       )
       .subscribe((result) => {
         this._result.set(result);

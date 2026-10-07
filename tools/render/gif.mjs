@@ -108,7 +108,10 @@ export async function gifFromPage(
       const fit = maxSize && longest > maxSize ? (scale * maxSize) / longest : scale;
       const size = fit === scale ? probe : await capture(frames[0], null, fit);
       // A full-size frame is tens of megabytes; do not hold one that is not
-      // going into the animation.
+      // going into the animation. The value is deliberately never read again --
+      // dropping the reference *is* the point, which is the one thing
+      // no-useless-assignment cannot tell from a mistake.
+      // eslint-disable-next-line no-useless-assignment
       probe = null;
       // Enough pixels to characterise the colours without quantising the whole
       // animation: colours here come from a continuous scale over a fixed set

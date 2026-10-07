@@ -11,6 +11,17 @@
   overflow-y: hidden;
 }
 
+.ehld-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-width: 32em;
+  text-align: center;
+  color: var(--on-surface);
+}
+
 #legend-boundary {
   --legend-width: 400px;
   --border-width: 2px;

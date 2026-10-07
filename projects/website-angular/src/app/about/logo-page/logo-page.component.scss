@@ -65,22 +65,26 @@ $spacing-unit: 16px;
   border-top: solid 1px #000000;
 }
 
-.dropdown-link {
-  background: var(--on-primary);
+.png-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--primary);
-  text-decoration: none;
-  display: block;
-  padding: 4px 16px;
-  border-bottom: dashed 1px var(--primary);
-
-  &:hover {
-    background: var(--primary);
-    color: var(--on-primary);
-  }
+  font: inherit;
+  cursor: pointer;
 }
 
 .imagotype,
 .isotype {
   max-height: 100px;
   width: auto;
+}
+
+.px {
+  margin-left: 8px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
 }

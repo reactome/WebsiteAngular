@@ -12,22 +12,33 @@ offered upstream; `svg-export-dist` is the same thing plus a built `dist/`,
 which is what npm installs.
 
 This harness lives here rather than in the fork because it needs
-`reactome-cytoscape-style`, and a Reactome dependency has no business in a pull
+`ngx-reactome-cytoscape-style`, and a Reactome dependency has no business in a pull
 request to cytoscape. The fork keeps a Reactome-free equivalent at
 `debug/svg-export/`.
 
 ## Running it
 
 ```bash
-npm run build:libs                       # reactome-cytoscape-style into dist/
 npx esbuild tools/svg-export-harness/harness.mjs --bundle --format=esm \
-  --outfile=tools/svg-export-harness/harness.bundle.js \
-  --alias:reactome-cytoscape-style=./dist/reactome-cytoscape-style
+  --outfile=tools/svg-export-harness/harness.bundle.js
 npx http-server tools/svg-export-harness -p 3334 -s -c -1
 ```
 
 Then open <http://127.0.0.1:3334/index.html>. The page reports how many nodes
 and edges rendered and whether anything threw.
+
+`harness.check.mjs` drives the same page with Playwright and saves the three
+renderings to `test-results/reactome-pathway/` for comparison:
+
+```bash
+npx playwright test --config= tools/svg-export-harness/harness.check.mjs
+```
+
+It is deliberately not part of `npm run e2e`, and deliberately not named
+`*.spec.*`: it needs a built bundle and a static server on port 3334, neither of
+which CI has, and the comparison it exists for is one a person makes by looking.
+It was named `harness.spec.mjs` until a widened test glob picked it up, which is
+what a runner does with a file called a spec.
 
 `harness.bundle.js` is generated and gitignored — it is 1.4 MB, and rebuilding
 it is one command.

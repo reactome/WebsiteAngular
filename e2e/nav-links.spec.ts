@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Every link in the site navigation, visited.
 //
@@ -15,7 +15,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Site navigation', () => {
   test('every link in the navigation reaches a real page', async ({ page }) => {
     // 70-odd navigations. Slow, and the alternative is a person doing it.
-    test.setTimeout(6 * 60 * 1000);
+    // Up to 15s a page if every page stalled, so it still ends with the list of
+    // what broke rather than a timeout; a healthy run is a few minutes.
+    test.setTimeout(20 * 60 * 1000);
 
     await page.goto('/');
     await expect(page.locator('app-navigation-bar')).toBeVisible();
@@ -39,21 +41,36 @@ test.describe('Site navigation', () => {
     // means the navigation failed to render, which is worth failing over.
     expect(hrefs.length, 'links found in the navigation').toBeGreaterThan(50);
 
+    // 400 characters is well under the smallest real page (1,299 at the time of
+    // writing) and well over an empty shell, which is the "blank panel" the
+    // curators reported.
+    const ENOUGH = 400;
     const broken: string[] = [];
     for (const href of hrefs) {
       await page.goto(href, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(900);
+      // Until the page has rendered -- enough text, or the not-found page -- or
+      // the ceiling. This slept a fixed 900ms, and the Pathway Browser, the
+      // heaviest page here, was sometimes still blank then under load: the test
+      // failed on a slow page, not a missing one. A page that never renders
+      // reaches the ceiling and is judged below exactly as before.
+      await page
+        .waitForFunction(
+          (enough) =>
+            !!document.querySelector('.not-found') ||
+            document.body.innerText.replace(/\s+/g, ' ').trim().length >= enough,
+          ENOUGH,
+          { timeout: 15_000 }
+        )
+        .catch(() => undefined);
 
       // The app answers 200 for everything -- it is a single page -- so the
       // status says nothing. What matters is whether a page rendered.
       const notFound = await page.locator('.not-found').count();
       const text = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
 
-      // 400 characters is well under the smallest real page (1,299 at the time of
-      // writing) and well over an empty shell, which is the "blank panel" the
-      // curators reported.
       if (notFound) broken.push(`${href} — not-found page`);
-      else if (text.length < 400) broken.push(`${href} — only ${text.length} characters rendered`);
+      else if (text.length < ENOUGH)
+        broken.push(`${href} — only ${text.length} characters rendered`);
     }
 
     expect(broken, 'navigation links that do not render a page').toEqual([]);

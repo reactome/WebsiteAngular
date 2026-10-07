@@ -27,20 +27,135 @@ The Reactome Pathway Diagram Viewer provides an intuitive means of viewing and i
 
 Reactome is a curated database of pathways and reactions (pathway steps) in human biology. The Reactome definition of a ‘reaction’ includes many events in biology that are changes in state, such as binding, activation, translocation and degradation, in addition to classical biochemical reactions. Information in the database is authored by expert biologist researchers, maintained by Reactome editorial staff, and extensively cross-referenced to other resources e.g. NCBI, Ensembl, UniProt, UCSC Genome Browser, HapMap, KEGG (Gene and Compound), ChEBI, PubMed and GO. Inferred orthologous reactions are available for a number of non-human species including mouse, rat, chicken, puffer fish, worm, fly, yeast, rice and Arabidopsis.
 
-The diagram viewer retrieves the information directly from Reactome server, which mean that for third party resources it will be straight forward to include it in browser supporting CORS, or it will just work by adding a proxy mechanism in order to avoid SOP. Another important feature of the diagram viewer that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</documentation/dev/analysis>) and later on have a look to the Diagram viewer [API](<#API>).
+The diagram viewer can be embedded in other websites: it retrieves its information directly from Reactome's servers, which allow cross-origin requests, so a page on any site can show a live diagram without a proxy (see [Get Started](<#GetStarted>)). Another important feature of the diagram viewer that can also be used from third party applications is the analysis result overlay. If you are interested in learning more about Reactome’s Analysis Service, please check out the [Analysis Service developers’ guide](</documentation/dev/analysis>) and later on have a look to the Diagram viewer [API](<#API>).
 
 ### [__Get Started](<#GetStarted>)
 
-The diagram viewer is implemented as part of the Reactome [Pathway Browser](</PathwayBrowser>). There are two supported ways to use it from a third-party page:
+A live, interactive Reactome pathway diagram can be put on any web page with one script and one element. It works with any framework, or none, and from any site: the diagram reads its data from Reactome's public services, which allow cross-origin requests, so no proxy is needed.
 
-1. **Embed the Pathway Browser** (which exposes the diagram viewer as part of its standard UI) by linking to or iframing `https://reactome.org/PathwayBrowser/#/{stId}`.
-2. **Render a static diagram image** by calling the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
+```html
+<script src="https://reactome.org/embed/diagram/v1/reactome-diagram.js"></script>
 
-The previous Diagram JS and Diagram GWT widgets have been retired. New integrations should target the embedded Pathway Browser or the diagram exporter API directly.
+<reactome-diagram pathway="R-HSA-69620"></reactome-diagram>
+```
+
+That is all a page needs to show one pathway. Readers can zoom, pan, select and hover as on reactome.org; the diagram never changes the page's address, title or styles, and several diagrams on one page are independent.
+
+**To try it before it is on reactome.org**, use the pre-release server: `https://beta.reactome.org/embed/diagram/v1/reactome-diagram.js`, which shows the upcoming release's data. There is a working example at [beta.reactome.org/embed/diagram/v1/demo.html](<https://beta.reactome.org/embed/diagram/v1/demo.html>).
+
+#### Showing the pathway your page is about
+
+Set `pathway` to the pathway's stable identifier (`R-HSA-…`), or change it later from code. The diagram draws the new pathway in place.
+
+```html
+<reactome-diagram id="diagram" style="width: 100%; height: 600px"></reactome-diagram>
+
+<script>
+  const diagram = document.getElementById('diagram');
+  // For example, when a reader picks one of a gene's pathways:
+  diagram.pathway = 'R-HSA-1257604';
+</script>
+```
+
+A gene page usually has several pathways to offer. The pathways a gene takes part in come from the [Content Service](</documentation/dev/content-service>) — for example `GET /ContentService/data/mapping/UniProt/P31749/pathways?species=9606` for AKT1 — and each one's `stId` is what `pathway` takes. To show where the gene is, flag it as well:
+
+```js
+diagram.pathway = 'R-HSA-1257604';
+diagram.flag = 'AKT1';
+```
+
+In React, the element is used like any other tag. Give it `pathway` from state, and listen for its events through a ref — this works in React 18 and 19 alike:
+
+```jsx
+function PathwayDiagram({ stId, onLoaded }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const element = ref.current;
+    const handler = (event) => onLoaded(event.detail.pathway);
+    element.addEventListener('diagramloaded', handler);
+    return () => element.removeEventListener('diagramloaded', handler);
+  }, [onLoaded]);
+  return <reactome-diagram ref={ref} pathway={stId} style={{ width: '100%', height: 600 }} />;
+}
+```
+
+Load the script once, anywhere on the page. Loading it more than once is harmless.
+
+#### Size
+
+The diagram fills the box the page gives the element: give it a width and a height, as for an image. With neither, it takes 800 × 500 pixels.
 
 ### [__API](<#API>)
 
-For interactive embedding, the Pathway Browser accepts URL fragments to set the displayed pathway and selected event (e.g. `/PathwayBrowser/#/R-HSA-69620?SEL=R-HSA-69231`). For programmatic image generation, see the diagram-exporter endpoints under the [Content Service](</documentation/dev/content-service>).
+#### Attributes
+
+Each attribute has a property of the same meaning (`analysis-token` is `analysisToken`, `analysis-resource` is `analysisResource`). Setting a property is the same as setting its attribute; removing the attribute, or setting the property to `null`, clears it.
+
+| Attribute | Meaning |
+| --- | --- |
+| `pathway` | The pathway to show: a stable identifier (`R-HSA-69620`), or a database id. Required. |
+| `select` | An entity to select and bring into view, by stable identifier. |
+| `flag` | A term — a gene name or an identifier — whose matching entities are flagged, as in the Pathway Browser. |
+| `analysis-token` | An [Analysis Service](</documentation/dev/analysis>) result to overlay. The diagram only reads it; nothing is submitted. |
+| `analysis-resource` | The resource the overlay is filtered to, such as `UNIPROT`; `TOTAL` when unset. |
+| `theme` | `light` (the default) or `dark`. |
+
+Setting an attribute to the value it already has applies it again — for example, to flag a term again after the reader has cleared it.
+
+#### Methods
+
+| Method | Effect |
+| --- | --- |
+| `fit()` | Fits the whole diagram in view. |
+| `resetSelection()` | Clears the selection, including one the reader made. |
+| `resetFlag()`, `resetAnalysis()` | Clear the flag or the overlay, the same as removing the attribute. |
+
+#### Events
+
+Each is a DOM `CustomEvent` dispatched on the element, with its information in `event.detail`.
+
+| Event | `detail` | When |
+| --- | --- | --- |
+| `diagramloaded` | `{ pathway }` | A pathway has finished drawing. `pathway` is its stable identifier, even when a database id was given. |
+| `diagramerror` | `{ pathway, reason }` | It could not be shown. The element also says so in its box. |
+| `entityselected` | `{ id, name, schemaClass }` | The reader selected an entity, or deselected, with `id: null`. Not fired for a `select` set from code. |
+| `entityhovered` | `{ id, name, schemaClass }` | The reader's pointer entered an entity, or left it, with `id: null`. |
+| `flagcleared` | `{}` | The term in `flag` is no longer flagged: removed, or cleared by the reader. |
+| `analysiscleared` | `{}` | The analysis overlay was cleared. |
+
+```js
+diagram.addEventListener('entityselected', (event) => {
+  const { id, name } = event.detail;
+  if (id) console.log(`Selected ${name} (${id})`);
+});
+```
+
+#### What the page loads
+
+The script and the diagram's code come from `reactome.org/embed/diagram/v1/`. Its data comes from `reactome.org` (the Content and Analysis Services) and `download.reactome.org` (the diagram files); the structures of small molecules come from EBI's ChEBI (`www.ebi.ac.uk`), and its fonts from Google Fonts. A page with a Content Security Policy needs to allow those.
+
+For a page that loads ES modules itself, `https://reactome.org/embed/diagram/v1/main.js` can be loaded as a module in place of the script above. The fonts are then the page's to add: Roboto, Material Symbols Rounded and Material Icons, from Google Fonts.
+
+#### Other ways in
+
+- **A link or a frame** to the Pathway Browser: `https://reactome.org/PathwayBrowser/{stId}`, with `?select=` for an entity.
+- **A static image** from the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
+
+#### Sites written for the previous widget
+
+The previous Diagram JS widget is retired, but its interface is kept: a page written for it switches by changing only the script's address, to the one above.
+
+```js
+function onReactomeDiagramReady() {
+  var diagram = Reactome.Diagram.create({ placeHolder: 'holder', width: 1130, height: 600 });
+  diagram.loadDiagram('R-HSA-69620');
+  diagram.onObjectSelected(function (obj) {
+    // obj is { stId, displayName, schemaClass }, or null when nothing is selected
+  });
+}
+```
+
+`onReactomeDiagramReady` is called as before, and `Reactome` is there as soon as the script has run, for pages that wait for it instead. `create`, `loadDiagram`, `selectItem`, `flagItems`, `highlightItem`, `setAnalysisToken`, `resize`, the `reset…` methods and the `on…` handlers work as before, and calls made before the diagram is ready are applied, in order, once it is. The objects given to the handlers no longer carry `identifier` or `geneNames`, and `onCanvasNotSupported` is only called by a browser too old to show the diagram at all. `proxyPrefix` is accepted and ignored: no proxy is needed. New pages should use the element directly.
 
 ### [__Resources](<#Resources>)
 

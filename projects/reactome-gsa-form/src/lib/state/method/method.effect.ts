@@ -4,7 +4,7 @@ import { AnalysisMethodsService, typeToParse } from '../../services/analysis-met
 import { methodActions } from './method.action';
 import { catchError, exhaustMap, map, of } from 'rxjs';
 import { ParameterType } from '../../model/methods.model';
-import { ConfigProvider, GsaConfig, REACTOME_GSA_CONFIG } from '../../config/gsa-config';
+import { ConfigProvider, REACTOME_GSA_CONFIG } from '../../config/gsa-config';
 
 @Injectable({ providedIn: 'root' })
 export class MethodEffects {

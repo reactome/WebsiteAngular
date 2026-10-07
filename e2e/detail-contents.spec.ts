@@ -1,4 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import { renderServiceAvailable, serves } from './fixtures/serves';
+import { type Page } from '@playwright/test';
+import { test, expect } from './support/backend';
 
 // Contents of the panels curators read, rather than the presence of the panels.
 // `release-checklist.spec.ts` already asserts the six tabs exist; these assert
@@ -18,10 +20,7 @@ const BOOT = 90_000;
  * ask once and skip with a reason instead.
  */
 async function servesReactionDiagram(request: import('@playwright/test').APIRequestContext) {
-  const response = await request
-    .get(`/ContentService/exporter/reaction/${REACTION}/diagram`)
-    .catch(() => null);
-  return !!response?.ok();
+  return serves(request, `/ContentService/exporter/reaction/${REACTION}/diagram`);
 }
 
 async function openDiagram(page: Page, id = PATHWAY, query = '') {
@@ -169,8 +168,10 @@ test.describe('Pathway page figure', () => {
     ['R-HSA-109581', 'an illustration'],
   ] as const) {
     test(`${kind} is drawn by the site's own renderer`, async ({ page, request }) => {
-      const health = await request.get('/RenderService/health').catch(() => null);
-      test.skip(!health?.ok(), 'the render service is not running; the figure comes from it');
+      test.skip(
+        !(await renderServiceAvailable(request)),
+        'the render service is not running; the figure comes from it'
+      );
 
       await page.goto(`/content/detail/${pathway}`);
       const figure = page.locator('.detail-diagram img').first();
@@ -261,4 +262,67 @@ test.describe('Reaction diagram frame', () => {
       expect(past, 'the frame reaches past its column').toBeLessThanOrEqual(0);
     });
   }
+});
+
+test.describe('Details overview', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // Events carry a GO biological process and the old browser showed it; this
+  // panel never did. Hemostasis is annotated to blood coagulation.
+  test("shows an event's GO biological process, linked to the term", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109582?tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-HSA-109582', { timeout: BOOT });
+
+    const row = overview.locator('.row').filter({ hasText: 'GO biological process' });
+    await expect(row).toContainText('blood coagulation (GO:0007596)');
+    await expect(row.locator('a')).toHaveAttribute('href', /QuickGO\/term\/GO:0007596/);
+  });
+
+  test('has no GO row for an event without one', async ({ page }) => {
+    // TP53RK phosphorylates TP53 has no GO biological process.
+    await page.goto(`/PathwayBrowser/R-HSA-6804756?select=${REACTION}&tab=details`);
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText(REACTION, { timeout: BOOT });
+    await expect(overview).not.toContainText('GO biological process');
+  });
+});
+
+test.describe('Computationally predicted events', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  // Human events carry the events Reactome predicted from them in other
+  // species, and the old browser listed them. This one never did: its
+  // Inferences section keys on a property only physical entities have.
+  test('a human event lists its predictions, by species', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109582?tab=details');
+    await expect(page.locator('#orthologousEvent')).toContainText(
+      'Computationally predicted events',
+      {
+        timeout: BOOT,
+      }
+    );
+    const section = page.locator('.orthologous-events');
+    await expect(section).toContainText('Mus musculus');
+    await expect(section.locator('a[href$="/R-MMU-109582"]')).toBeAttached();
+  });
+
+  test("a curator's inference from another species is not called a prediction", async ({
+    page,
+  }) => {
+    // Inferred from rat by a curator (isInferred, no electronic evidence).
+    await page.goto('/PathwayBrowser/R-HSA-9613829?select=R-HSA-9626034&tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-HSA-9626034', { timeout: BOOT });
+    await expect(overview).not.toContainText('Computationally inferred');
+  });
+
+  test('a predicted event says it is one', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-MMU-1640170?tab=details');
+    const overview = page.locator('cr-description-overview').first();
+    await expect(overview).toContainText('R-MMU-1640170', { timeout: BOOT });
+    await expect(overview.locator('.row').filter({ hasText: 'Evidence' })).toContainText(
+      'Computationally inferred'
+    );
+  });
 });

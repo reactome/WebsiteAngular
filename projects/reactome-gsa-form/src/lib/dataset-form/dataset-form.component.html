@@ -17,7 +17,7 @@
         </div>
       }
       <div class="flex-container width-hundred horizontal align-center justify-between no-wrap ellipsis">
-        @if (!(summaryComplete$ | async)) {
+        @if ((summaryComplete$ | async) !== true) {
           <div class="italic">New Dataset</div>
         } @else {
           <div class="flex-container vertical justify-center flex-one ellipsis">
@@ -50,7 +50,7 @@
         }
         <div class="flex-container horizontal align-center justify-center no-wrap" style="flex-shrink: 0">
           <a
-            [disabled]="!(summaryComplete$ | async)"
+            [disabled]="(summaryComplete$ | async) !== true"
             (click)="$event.stopPropagation()"
             matTooltip="Download input dataset"
             class="primary-color"
@@ -103,7 +103,7 @@
           <button class="nav-button-margin" color="accent" mat-fab matStepperPrevious>
             <mat-icon fontSet="gsa">keyboard_arrow_up</mat-icon>
           </button>
-          @if (nestedStepper.selected == statisticalDesignStep) {
+          @if (nestedStepper.selected === statisticalDesignStep) {
             <gsa-statistical-design [datasetId]="datasetId()" class="width-hundred" />
           }
           <div class="nav-button-area nav-button-margin" tourAnchor="annotate.done" clickable>
@@ -119,7 +119,7 @@
           <button class="nav-button-margin" color="accent" mat-fab matStepperPrevious>
             <mat-icon fontSet="gsa">keyboard_arrow_up</mat-icon>
           </button>
-          @if (nestedStepper.selected == parameterStep) {
+          @if (nestedStepper.selected === parameterStep) {
             <gsa-param-dataset [datasetId]="datasetId()" class="width-hundred margin-bottom-30" />
           }
           <button

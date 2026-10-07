@@ -40,24 +40,24 @@ export class CitationComponent {
   citationContent = this.data.content;
   downloadItems = this.data.downloadItems;
 
-  copyLabel = signal('Copy');
-  copyIcon = signal('content_copy');
+  readonly copyLabel = signal('Copy');
+  readonly copyIcon = signal('content_copy');
 
-  staticCitation = computed(() => {
+  readonly staticCitation = computed(() => {
     return !this.citation.isPathwayCitation(this.citationContent()) ? this.citationContent() : null;
   });
 
-  imageCitation = computed(() => {
+  readonly imageCitation = computed(() => {
     const content = this.citationContent();
     return this.citation.isPathwayCitation(content) ? content.imageCitation : null;
   });
 
-  pathwayCitation = computed(() => {
+  readonly pathwayCitation = computed(() => {
     const content = this.citationContent();
     return this.citation.isPathwayCitation(content) ? content.pathwayCitation : null;
   });
 
-  citationToCopy = computed(() => {
+  readonly citationToCopy = computed(() => {
     if (this.staticCitation()) return (this.staticCitation() as string) ?? '';
     const content = [];
     if (this.pathwayCitation()) content.push('Pathway: ' + this.pathwayCitation());
@@ -65,7 +65,7 @@ export class CitationComponent {
     return content.join('\n');
   });
 
-  citationToMail = computed(() => encodeURI(this.citationToCopy()));
+  readonly citationToMail = computed(() => encodeURI(this.citationToCopy()));
 
   onCopyClick() {
     this.copyLabel.set('Copied');

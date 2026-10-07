@@ -30,14 +30,16 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Deploy the commit that was tested, not whatever main points at now.
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # `.nvmrc`, not a second copy of the number: git hooks and preflight
+          # read that file too, so a bump reaches CI and local checks together.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Determine version
@@ -55,7 +57,7 @@ jobs:
           echo "Deploying to version $VERSION"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # site-search-index.json and the compiled content JSON are both generated
       # and gitignored. Without these the deployed bundle has no site-page
@@ -67,14 +69,12 @@ jobs:
 
       - name: Build
         run: |
-          npx ng build reactome-cytoscape-style
-          npx ng build ngx-reactome-style
           npx ng build reactome-table
           npx ng build reactome-gsa-form
           npx ng build reactome --configuration production --base-href /${{ steps.version.outputs.version }}/website/
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_ROLE }}
           aws-region: us-east-1

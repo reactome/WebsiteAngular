@@ -1,0 +1,177 @@
+@if (available) {
+  <section class="search-answer" aria-labelledby="search-answer-heading">
+    @if (showButton()) {
+      <!--
+        The invitation, not an answer. Says what it will do and roughly how long
+        it takes, because ten seconds with no warning reads as a broken page.
+      -->
+      <button type="button" class="search-answer__ask" (click)="ask()">
+        <span class="search-answer__ask-label"
+          ><mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>Ask
+          React-to-Me about "{{ query() }}"</span
+        >
+        <span class="search-answer__ask-note">Takes around ten seconds. Results below are ready now.</span>
+      </button>
+    } @else if (noAnswer()) {
+      <!--
+        Feedback that the ask completed, not an error. D4 says an outcome with
+        no answer renders nothing, and that holds for a reader who never asked
+        -- but once they have clicked, showing nothing leaves the click looking
+        broken, and a second click hits the cache and changes nothing at all.
+        One neutral line, and no invitation to re-ask something settled.
+      -->
+      <p class="search-answer__none" role="status">
+        No React-to-Me answer for this search. The results below are unaffected.
+        <!--
+          The one dead end worth turning into a door: the reader asked, got
+          nothing, and the chat can take a differently-worded question where
+          this panel cannot.
+        -->
+        <a class="search-answer__continue" [href]="chatUrl"
+          ><mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>Try
+          asking React-to-Me</a
+        >
+      </p>
+    } @else if (challenge()) {
+      <!--
+        The server will not answer until it knows a human is asking. The widget
+        appears only here, and the script is only fetched at this point -- most
+        readers never ask for an answer and should not pay for it.
+      -->
+      <div class="search-answer__challenge">
+        <p class="search-answer__challenge-note">One quick check that you are a person, then the answer.</p>
+        <div #turnstile class="search-answer__widget"></div>
+      </div>
+    } @else if (asking() && !visible()) {
+      <!--
+        Progress, not a spinner. The message changes when something real has
+        happened -- citations arrive before any prose, so a source count is a
+        milestone rather than reassurance -- and the elapsed count is measured
+        rather than guessed, because the spread by question type is too wide to
+        fake a percentage honestly.
+
+        `&& !visible()` because the stream is still open while prose arrives:
+        the answer begins at ~10s and `done` lands at ~16s, so without this a
+        progress bar would sit above text the reader is already reading for
+        several seconds. Once there is prose, the prose is the progress.
+      -->
+      <div class="search-answer__waiting">
+        <div class="search-answer__progress" aria-hidden="true"><span></span></div>
+        <p class="search-answer__waiting-text" role="status" aria-live="polite">
+          {{ waitingMessage() }}
+          <!--
+            Outside the announcement. The count changes every second, and a live
+            region containing it would have a screen reader read the whole line
+            once a second for ten seconds.
+          -->
+          <span class="search-answer__elapsed" aria-hidden="true">
+            @if (elapsed() > 0) {
+              {{ elapsed() }}s — usually about ten
+            } @else {
+              Usually about ten seconds
+            }
+          </span>
+        </p>
+      </div>
+    }
+
+    @if (visible()) {
+      <article class="search-answer__panel">
+        <h2 id="search-answer-heading" class="search-answer__heading">
+          <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+          React-to-Me answer
+        </h2>
+
+        @if (incomplete()) {
+          <!--
+            Says it stopped; does not take it back. The reader has been reading
+            real retrieved text, and generation stopping early does not make
+            what arrived wrong.
+          -->
+          <p class="search-answer__incomplete" role="status">
+            This answer stopped early, which is unusual. What is above is worth reading; you can ask again for the rest.
+          </p>
+        }
+
+        <!--
+          A plain string, so Angular's sanitiser runs on it. See the note on
+          `html` in the component: bypassing it here would defeat the point.
+
+          Clamped when long, with a fade rather than a hard cut, so it is
+          obvious there is more instead of looking as though the answer simply
+          ends mid-thought.
+        -->
+        <div class="search-answer__prose" [class.is-clamped]="clamped()" [innerHTML]="html()"></div>
+
+        @if (collapsible()) {
+          <button type="button" class="search-answer__more" (click)="toggle()">
+            {{ expanded() ? 'Show less' : 'Show more' }}
+          </button>
+        }
+
+        @if (citations().length) {
+          <footer class="search-answer__sources">
+            <h3 class="search-answer__sources-heading">Sources</h3>
+            <!--
+              Chips rather than a bulleted list. Twelve names in a list ran
+              longer than the answer's own closing paragraph and made the panel
+              look mostly bibliographic. The count does the work the old "most
+              relevant" wording did: it says this is a selection.
+            -->
+            <ul class="search-answer__chips">
+              @for (citation of visibleCitations(); track key(citation)) {
+                <li>
+                  <a class="search-answer__chip" [href]="href(citation)">{{ citation.displayName }}</a>
+                </li>
+              }
+              @if (hiddenSourceCount() > 0) {
+                <li>
+                  <button
+                    type="button"
+                    class="search-answer__chip search-answer__chip--more"
+                    (click)="showAllSources()"
+                  >
+                    +{{ hiddenSourceCount() }} more
+                  </button>
+                </li>
+              }
+            </ul>
+          </footer>
+        }
+
+        <!--
+          The disclaimer and the way onward, together and last. A reader who has
+          finished the answer is the one most likely to want to keep asking, and
+          this panel cannot take a follow-up -- the chat can.
+        -->
+        <p class="search-answer__footnote">
+          <span class="search-answer__disclaimer"
+            >Generated from Reactome pathways and can be wrong — check the sources.</span
+          >
+          <!--
+            An affordance rather than small print. This is the only route from a
+            one-shot answer to a conversation, and a reader who has read to the
+            end is the one most likely to want it.
+          -->
+          @if (canHandOff()) {
+            <!-- Carries this answer across, so the chat can take a follow-up. -->
+            <button type="button" class="search-answer__continue" [disabled]="continuing()" (click)="continueInChat()">
+              <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+              Continue in React-to-Me with this answer
+              <span aria-hidden="true">→</span>
+            </button>
+          } @else {
+            <a class="search-answer__continue" [href]="chatUrl">
+              <mat-icon fontSet="symbols" class="search-answer__sparkle" aria-hidden="true">auto_awesome</mat-icon>
+              Continue in React-to-Me
+              <span aria-hidden="true">→</span>
+            </a>
+          }
+        </p>
+        @if (continueFailure(); as why) {
+          <p class="search-answer__incomplete" role="status">{{ why }}</p>
+        }
+      </article>
+    }
+  </section>
+}

@@ -7,7 +7,6 @@ import {
 } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { defaultDownloadOptions, DownloadOptions } from '../../../../services/download.service';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { MatError, MatFormField, MatLabel, MatSuffix } from '@angular/material/select';
 import { MatInput } from '@angular/material/input';
@@ -33,12 +32,12 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
   styleUrl: './animated-download-form.component.scss',
 })
 export class AnimatedDownloadFormComponent {
-  includeTimeline = signal(defaultDownloadOptions.includeTimeline);
-  includeLegend = signal(defaultDownloadOptions.includeLegend);
-  timePerFrame = signal(defaultDownloadOptions.timePerFrame);
-  transitionTime = signal(defaultDownloadOptions.transitionTime);
+  readonly includeTimeline = signal(defaultDownloadOptions.includeTimeline);
+  readonly includeLegend = signal(defaultDownloadOptions.includeLegend);
+  readonly timePerFrame = signal(defaultDownloadOptions.timePerFrame);
+  readonly transitionTime = signal(defaultDownloadOptions.transitionTime);
 
-  options = computed<DownloadOptions>(() => ({
+  readonly options = computed<DownloadOptions>(() => ({
     animate: true,
     includeTimeline: this.includeTimeline(),
     includeLegend: this.includeLegend(),

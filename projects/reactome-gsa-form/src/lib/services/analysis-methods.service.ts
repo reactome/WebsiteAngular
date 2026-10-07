@@ -22,7 +22,7 @@ export class AnalysisMethodsService {
   private snackBar = inject(MatSnackBar);
   private config = inject<ConfigProvider>(REACTOME_GSA_CONFIG);
 
-  methodsUrl = computed(() => `${this.config().apiRoot}/methods`);
+  readonly methodsUrl = computed(() => `${this.config().apiRoot}/methods`);
 
   getAll(): Observable<Method[]> {
     return this.http.get<Method[]>(this.methodsUrl()).pipe(

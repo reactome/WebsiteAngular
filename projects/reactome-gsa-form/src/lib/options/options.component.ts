@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -44,5 +44,24 @@ export class OptionsComponent {
 
   updateParam(param: Parameter) {
     this.store.dispatch(methodActions.updateCommonParam({ param }));
+  }
+
+  /**
+   * Names of the options whose current value is invalid. A malformed e-mail
+   * address used to be submitted regardless; the step now refuses to advance
+   * while anything here is non-empty.
+   */
+  private readonly invalidOptions = signal<ReadonlySet<string>>(new Set());
+
+  readonly allOptionsValid = computed(() => this.invalidOptions().size === 0);
+
+  setOptionValidity(param: Parameter, valid: boolean) {
+    this.invalidOptions.update((invalid) => {
+      if (valid === !invalid.has(param.name)) return invalid;
+      const next = new Set(invalid);
+      if (valid) next.delete(param.name);
+      else next.add(param.name);
+      return next;
+    });
   }
 }

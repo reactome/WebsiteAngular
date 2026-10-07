@@ -8,7 +8,12 @@
     }
     <!-- Search bar + filters above the two-column layout -->
     <div class="search-top">
-      <app-search-bar [query]="query" (queryChange)="onQueryInput($event)" [filters]="!(query && searchSubmitted)" />
+      <app-search-bar
+        [query]="query"
+        [activeFilters]="filters"
+        (queryChange)="onQueryInput($event)"
+        [filters]="!(query && searchSubmitted)"
+      />
     </div>
 
     <!-- Active filter chips -->
@@ -138,6 +143,31 @@
         }
 
         <!-- Keywords facet -->
+        @if (pageCategoryCounts.length) {
+          <div class="facet-section">
+            <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
+              <span>Pages</span>
+              <span class="facet-toggle">{{ collapsedFacets['pageCategories'] ? '+' : '−' }}</span>
+            </button>
+            @if (!collapsedFacets['pageCategories']) {
+              <div class="facet-options">
+                @for (item of pageCategoryCounts; track item.name) {
+                  <label class="facet-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isFacetSelected('pageCategories', item.name)"
+                      (change)="toggleFacet('pageCategories', item.name)"
+                    />
+                    <span class="facet-name">{{ item.name }}</span>
+                    <span class="facet-count">({{ item.count }})</span>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Pages facet: page-category counts from merged site-search hits -->
         @if (getFacetItems(facets?.keywordFacet); as items) {
           @if (items.length) {
             <div class="facet-section">
@@ -163,35 +193,19 @@
             </div>
           }
         }
-
-        <!-- Pages facet: page-category counts from merged site-search hits -->
-        @if (pageCategoryCounts.length) {
-          <div class="facet-section">
-            <button class="facet-title" (click)="toggleFacetSection('pageCategories')">
-              <span>Pages</span>
-              <span class="facet-toggle">{{ collapsedFacets['pageCategories'] ? '+' : '−' }}</span>
-            </button>
-            @if (!collapsedFacets['pageCategories']) {
-              <div class="facet-options">
-                @for (item of pageCategoryCounts; track item.name) {
-                  <label class="facet-option">
-                    <input
-                      type="checkbox"
-                      [checked]="isFacetSelected('pageCategories', item.name)"
-                      (change)="toggleFacet('pageCategories', item.name)"
-                    />
-                    <span class="facet-name">{{ item.name }}</span>
-                    <span class="facet-count">({{ item.count }})</span>
-                  </label>
-                }
-              </div>
-            }
-          </div>
-        }
       </aside>
 
       <!-- Results area -->
       <div class="results-area">
+        <!--
+          Above the results and outside every loading branch, so it can never
+          delay them: the answer takes about ten seconds and the results are
+          already here. Renders nothing at all unless the reader asks and the
+          answer comes back usable.
+        -->
+        @if (query && searchSubmitted && !hasNoResults) {
+          <app-search-answer [query]="query" />
+        }
         @if (loading) {
           <div class="loading">Searching...</div>
         }
@@ -437,7 +451,7 @@ NOTE: This is an automatically generated message.
                                 }
                                 @if (entry.compartmentNames?.length) {
                                   <div class="entry-compartments">
-                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                    Compartments: {{ entry.compartmentNames?.join(', ') }}
                                   </div>
                                 }
                                 @if (entry.iconCuratorName) {
@@ -497,7 +511,9 @@ NOTE: This is an automatically generated message.
                                           ></a>
                                           <span class="form-id">{{ form.id || form.stId }}</span>
                                           @if (form.compartmentNames?.length) {
-                                            <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                            <span class="form-compartment">{{
+                                              form.compartmentNames?.join(', ')
+                                            }}</span>
                                           }
                                         </div>
                                       }
@@ -619,7 +635,7 @@ NOTE: This is an automatically generated message.
                                 }
                                 @if (entry.compartmentNames?.length) {
                                   <div class="entry-compartments">
-                                    Compartments: {{ entry.compartmentNames.join(', ') }}
+                                    Compartments: {{ entry.compartmentNames?.join(', ') }}
                                   </div>
                                 }
                                 @if (entry.iconCuratorName) {
@@ -694,7 +710,7 @@ NOTE: This is an automatically generated message.
                         </div>
                       }
                       @if (entry.compartmentNames?.length) {
-                        <div class="entry-compartments">Compartments: {{ entry.compartmentNames.join(', ') }}</div>
+                        <div class="entry-compartments">Compartments: {{ entry.compartmentNames?.join(', ') }}</div>
                       }
                       @if (entry.summation) {
                         <p class="entry-summation" [innerHTML]="entry.summation"></p>
@@ -728,7 +744,7 @@ NOTE: This is an automatically generated message.
                                 <a class="form-name" [routerLink]="getDetailLink(form)" [innerHTML]="form.name"></a>
                                 <span class="form-id">{{ form.id || form.stId }}</span>
                                 @if (form.compartmentNames?.length) {
-                                  <span class="form-compartment">{{ form.compartmentNames.join(', ') }}</span>
+                                  <span class="form-compartment">{{ form.compartmentNames?.join(', ') }}</span>
                                 }
                               </div>
                             }

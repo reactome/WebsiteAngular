@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Style } from 'reactome-cytoscape-style';
+import { Style } from 'ngx-reactome-cytoscape-style';
 import cytoscape from 'cytoscape';
 import { Diagram } from '../../../model/diagram.model';
 import { Graph } from '../../../model/graph.model';
@@ -35,7 +35,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
 
   readonly stId = input.required<string>();
 
-  private containerRef = viewChild.required<ElementRef<HTMLDivElement>>('container');
+  private readonly containerRef = viewChild.required<ElementRef<HTMLDivElement>>('container');
   private cy?: cytoscape.Core;
   private reactomeStyle?: Style;
   private resizeObserver?: ResizeObserver;

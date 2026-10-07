@@ -159,30 +159,32 @@
 
       button {
         width: 100%;
+        height: auto;
+        min-height: var(--mat-button-protected-container-height, 40px);
 
         &:last-child {
           margin-bottom: 4px;
         }
 
+        // Names wrap rather than being cut. At laptop heights this column used
+        // to split into two, leaving each button ~89px and every name reduced
+        // to "UniP…", "Gen…" -- the buttons were there and said nothing.
         ::ng-deep .mdc-button__label {
           width: 100%;
-          text-wrap: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
+          white-space: normal;
+          line-height: 1.2;
         }
       }
     }
 
+    // Short screens: one column still, with compact buttons, and scrolling as
+    // the last resort rather than truncation.
     @container data-example-column (max-height: 600px) {
       .example-buttons {
-        grid-template-columns: 1fr 1fr;
+        gap: 8px;
         font: var(--mat-sys-label-medium);
-        overflow: auto;
-        align-items: center;
-
-        > :nth-last-child(1):nth-child(odd) {
-          grid-column: span 2;
-        }
+        overflow-y: auto;
+        --mat-button-protected-container-height: 32px;
       }
 
       .space-holder {
@@ -231,6 +233,12 @@
     .card-checkbox {
       border-radius: 20px;
       transition: all 500ms ease-in-out;
+
+      &:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+
       border: 1px solid var(--outline);
       background: var(--surface);
       margin-bottom: 15px;

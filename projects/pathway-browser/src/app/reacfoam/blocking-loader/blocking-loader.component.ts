@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { MatDialogContent, MatDialogTitle } from '@angular/material/dialog';
+import { MatDialogContent } from '@angular/material/dialog';
 
 @Component({
   selector: 'cr-blocking-loader',

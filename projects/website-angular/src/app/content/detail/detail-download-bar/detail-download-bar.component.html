@@ -3,22 +3,41 @@
     <div class="tool-group">
       <mat-icon fontSet="symbols" class="tool-icon">description</mat-icon>
 
-      <a class="dl-link" [href]="sbmlUrl()" [download]="stId() + '.sbml'" matTooltip="Export as SBML">SBML</a>
+      <a crManagedDownload class="dl-link" [href]="sbmlUrl()" [download]="stId() + '.sbml'" matTooltip="Export as SBML"
+        >SBML</a
+      >
 
       <!-- Level 3 only, and called what it is. Level 2 has been superseded for
            years; offering both put a menu in the way of the one people want. -->
-      <a class="dl-link" [href]="biopaxUrl()" [download]="stId() + '.owl'" matTooltip="Export as BioPAX Level 3"
+      <a
+        crManagedDownload
+        class="dl-link"
+        [href]="biopaxUrl()"
+        [download]="stId() + '.owl'"
+        matTooltip="Export as BioPAX Level 3"
         >BioPAX</a
       >
 
-      <a class="dl-link" [href]="pdfUrl()" [download]="stId() + '.pdf'" matTooltip="Export as a PDF document">PDF</a>
+      <a
+        crManagedDownload
+        class="dl-link"
+        [href]="pdfUrl()"
+        [download]="stId() + '.pdf'"
+        matTooltip="Export as a PDF document"
+        >PDF</a
+      >
     </div>
 
     @if (showFigureExports()) {
       <div class="tool-group figure-group">
         <mat-icon fontSet="symbols" class="tool-icon">download</mat-icon>
 
-        <a class="dl-link" [href]="svgUrl()" [download]="stId() + '.svg'" matTooltip="Download the figure as SVG"
+        <a
+          crManagedDownload
+          class="dl-link"
+          [href]="svgUrl()"
+          [download]="stId() + '.svg'"
+          matTooltip="Download the figure as SVG"
           >SVG</a
         >
 
@@ -32,11 +51,14 @@
         </button>
         <mat-menu #pngMenu="matMenu">
           @for (tier of tiers; track tier.label) {
-            <a mat-menu-item [href]="pngUrl(tier.scale)" [download]="stId() + '.png'">{{ tier.label }}</a>
+            <a crManagedDownload mat-menu-item [href]="pngUrl(tier.scale)" [download]="stId() + '.png'">{{
+              tier.label
+            }}</a>
           }
         </mat-menu>
 
         <a
+          crManagedDownload
           class="dl-link"
           [href]="pptxUrl()"
           [download]="stId() + '.pptx'"
@@ -44,7 +66,14 @@
           >PPTX</a
         >
 
-        <a class="dl-link" [href]="sbgnUrl()" [download]="stId() + '.sbgn'" matTooltip="Export as SBGN">SBGN</a>
+        <a
+          crManagedDownload
+          class="dl-link"
+          [href]="sbgnUrl()"
+          [download]="stId() + '.sbgn'"
+          matTooltip="Export as SBGN"
+          >SBGN</a
+        >
       </div>
     }
   </div>

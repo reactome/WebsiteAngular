@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { SearchService, SearchFilters } from './search.service';
+import { SearchService, SearchFilters, usableSpellCheckTerms } from './search.service';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 describe('SearchService', () => {
@@ -85,5 +85,45 @@ describe('SearchService', () => {
       expect(req.request.url).toContain('query=foo%20bar%26baz');
       req.flush([]);
     });
+  });
+});
+
+describe('spelling corrections that are really tokeniser artefacts', () => {
+  // Measured against beta: a single mistyped word comes back with the correct
+  // word *and* with the word chopped into pieces, offered as equals.
+  const asMeasured = ['apoptosis', 'ap opt sis', 'apo pt sis'];
+
+  it('keeps the correction and drops the pieces', () => {
+    expect(usableSpellCheckTerms('apoptsis', asMeasured)).toEqual(['apoptosis']);
+  });
+
+  it('keeps a genuine multi-word correction for a multi-word query', () => {
+    // The rule is token count, not "contains a space". Filtering on spaces
+    // would throw away real corrections for real phrases.
+    expect(usableSpellCheckTerms('cel cycle', ['cell cycle', 'cellcycle'])).toEqual(['cell cycle']);
+  });
+
+  it('leaves single-token suggestions alone, even poor ones', () => {
+    // `Tello` suggesting `ttll3` is the other complaint about this endpoint and
+    // this is deliberately not the fix for it: those are legitimate by edit
+    // distance, and telling a surname from a gene symbol needs vocabulary
+    // rather than string distance.
+    expect(usableSpellCheckTerms('Tello', ['ttll3', 'ttll8', 'ttlls'])).toEqual([
+      'ttll3',
+      'ttll8',
+      'ttlls',
+    ]);
+  });
+
+  it('survives an empty or absent response', () => {
+    expect(usableSpellCheckTerms('apoptsis', [])).toEqual([]);
+    expect(usableSpellCheckTerms('apoptsis', null)).toEqual([]);
+  });
+
+  it('does not filter when the query is empty, having nothing to compare against', () => {
+    expect(usableSpellCheckTerms('   ', ['anything', 'any thing'])).toEqual([
+      'anything',
+      'any thing',
+    ]);
   });
 });

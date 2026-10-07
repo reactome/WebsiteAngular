@@ -57,16 +57,13 @@ export class StatsService {
   );
 
   /**
-   * Display text for the current database version, already prefixed, or '' when
-   * there is nothing to say yet.
+   * Display text for the current database version, already prefixed, or '' until
+   * the database says.
    *
    * The curation graph is not a release and has no release number to show, so it
-   * is named instead of numbered -- and named immediately, since that answer does
-   * not depend on the database.
-   *
-   * A signal rather than a method so templates re-render when the release lands.
-   * There is deliberately no build-time fallback here, for the reason versionNow
-   * gives above.
+   * is named instead of numbered. Everywhere else this tracks `versionNow`, and
+   * so inherits its refusal to guess: no build-time fallback, nothing shown
+   * until the answer lands.
    */
   readonly versionLabel = computed(() => {
     if (IS_CURATOR) return 'curator';

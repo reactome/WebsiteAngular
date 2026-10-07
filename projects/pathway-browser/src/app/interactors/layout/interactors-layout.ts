@@ -12,7 +12,21 @@ export interface Segment {
 }
 
 class InteractorsLayout {
-  public static MAX_INTERACTORS = 18;
+  /**
+   * A ceiling, not a design.
+   *
+   * This was 18, which quietly dropped 28 of KLF15's 46 interactors and 55 of
+   * BHLHE40's 73. Nothing about the layout required it: LayoutParameter.calculate
+   * distributes n round four edges and derives the ring's width and height from
+   * n, so it already grows to fit. Drawn at 46 the ring is 1532x894 in a diagram
+   * 3459 wide, and every name is legible.
+   *
+   * 100 is high enough that almost nothing is cut, and low enough that an
+   * interactor with thousands of partners cannot produce a ring nobody can read.
+   * When it does bite, the control says "n of m shown" rather than leaving the
+   * badge's number unexplained.
+   */
+  public static MAX_INTERACTORS = 100;
   public static BOX_WIDTH = 45;
   public static BOX_HEIGHT = 20;
   public static SEPARATION = Math.round(this.BOX_HEIGHT * 1.5);

@@ -8,7 +8,7 @@ import {
   input,
   model,
   OnDestroy,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { Event } from '../model/graph/event/event.model';
 import { EventService, SelectableObject } from '../services/event.service';
@@ -35,7 +35,6 @@ import {
 import { UrlStateService } from '../services/url-state.service';
 import { SplitComponent } from 'angular-split';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { NavigationEnd, Router } from '@angular/router';
 import { EhldService } from '../services/ehld.service';
 import { AnalysisService } from '../services/analysis.service';
 import { IconService } from '../services/icon.service';
@@ -45,12 +44,13 @@ import { DatabaseObjectService } from '../services/database-object.service';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { MatTreeNode, MatNestedTreeNode } from '@angular/material/tree';
+import { MatNestedTreeNode } from '@angular/material/tree';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
 import { RevealDirective } from '../utils/reveal.directive';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
 @Component({
   selector: 'cr-event-hierarchy',
@@ -79,7 +79,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   private speciesService: SpeciesService = inject(SpeciesService);
   public state: UrlStateService = inject(UrlStateService);
   private el: ElementRef = inject(ElementRef);
-  private router: Router = inject(Router);
+  protected readonly hierarchyHover = inject(HierarchyHoverService);
   private ehldService: EhldService = inject(EhldService);
   private analysis: AnalysisService = inject(AnalysisService);
   private iconService: IconService = inject(IconService);
@@ -100,9 +100,9 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    */
   readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
   readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
-  @ViewChild('treeControlButton', { read: ElementRef }) treeControlButton?: ElementRef;
-  @ViewChild('eventIcon', { read: ElementRef }) eventIcon?: ElementRef<HTMLElement>;
-  @ViewChild(MatTree) tree!: MatTree<Event, string>;
+  readonly treeControlButton = viewChild('treeControlButton', { read: ElementRef });
+  readonly eventIcon = viewChild('eventIcon', { read: ElementRef });
+  readonly tree = viewChild.required(MatTree);
 
   private _SCROLL_SPEED = 50; // pixels per second
   private _ICON_PADDING = 16;
@@ -120,6 +120,9 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     }
     return [];
   };
+
+  /** The element that scrolls, so its position can survive a tree rebuild. */
+  private readonly eventsContainer = viewChild<ElementRef<HTMLElement>>('eventsContainer');
 
   treeDataSource = new MatTreeNestedDataSource<Event>();
 
@@ -148,7 +151,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     pathwayId: toObservable(this.pathwayId),
   })
     .pipe(
-      tap(({ select, pathwayId }) => (this.selectedIdFromUrl = select!)),
+      tap(({ select }) => (this.selectedIdFromUrl = select!)),
       //todo: revisit here to check the logic
       filter(
         () => !this._ignore && !this._isInitialLoad
@@ -176,11 +179,11 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           .getHitReactions(this.pathwayId()!, token)
           .pipe(map((hitReactions) => ({ idToUse, enhancedEvent, hitReactions })));
       }),
-      switchMap(({ idToUse, enhancedEvent, hitReactions }) => {
+      switchMap(({ enhancedEvent, hitReactions }) => {
         return this.eventService.adjustTreeFromUrlSelectUpdate(
           enhancedEvent,
           this.pathwayId(),
-          this.tree,
+          this.tree(),
           hitReactions
         );
       }),
@@ -218,12 +221,35 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     this.eventService.treeData$.pipe(untilDestroyed(this)).subscribe((events) => {
       // Save expanded node stIds before resetting the data source
       const expandedIds = this.collectExpandedIds(this.treeDataSource.data);
+      // The workaround below empties the tree, which destroys every row: the
+      // container collapses to nothing and the browser resets its scroll to the
+      // top. Clicking a sub-event near the bottom of the hierarchy therefore
+      // jumped to the top and scrolled back -- measured at 274px, then 0, then
+      // 6. Expansion state is already carried across this rebuild; the scroll
+      // position has to be carried the same way.
+      const scroller = this.eventsContainer()?.nativeElement;
+      const scrollTop = scroller?.scrollTop ?? 0;
       // Mat tree has a bug causing children to not be rendered in the UI without first setting the data to null
       // This is a workaround to add child data to tree and update the view. see details: https://github.com/angular/components/issues/11381
       this.treeDataSource.data = []; //todo: check performance issue
       this.treeDataSource.data = events as Event[];
       // Restore expansion state
       this.restoreExpandedIds(events as Event[], expandedIds);
+      if (scroller && scrollTop > 0) {
+        scroller.scrollTop = scrollTop;
+        // Again once the rows have been laid out: the height is not final until
+        // the restored branches have rendered, and the browser clamps a
+        // scrollTop set against a container that is still short.
+        //
+        // One frame, and it has to stay one: RevealDirective brings a selected
+        // row into view on its *second* frame, so restoring first is what lets
+        // its `block: 'nearest'` see the reader's real position and decide the
+        // row is already visible. Restore on a later frame than reveal and every
+        // click scrolls twice again.
+        requestAnimationFrame(() => {
+          if (scroller.scrollTop !== scrollTop) scroller.scrollTop = scrollTop;
+        });
+      }
       this.adjustWidths();
     });
 
@@ -241,7 +267,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
     this.split()
       .dragProgress$.pipe(untilDestroyed(this))
-      .subscribe((data) => {
+      .subscribe((_data) => {
         this.adjustWidths();
       });
 
@@ -267,7 +293,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       take(1),
       switchMap((diagramPathway) => {
         if (!idToUse) return of({ enhancedEvent: undefined });
-        if (diagramPathway && diagramPathway.stId === idToUse) {
+        if (diagramPathway?.stId === idToUse) {
           return of({ enhancedEvent: diagramPathway });
         } else {
           return this.dboService
@@ -314,7 +340,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
         // Build the tree with all data
         switchMap(({ enhancedEvent, hitReactions }) =>
-          this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree, hitReactions)
+          this.eventService.buildTree(enhancedEvent, this.pathwayId(), this.tree(), hitReactions)
         )
         //tap(d => console.log('Final data', d)),
       )
@@ -341,6 +367,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // A row removed under the pointer never fires its leave.
+    this.hierarchyHover.enter(undefined);
     clearTimeout(this.scrollTimeout);
   }
 
@@ -459,7 +487,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       });
   }
 
-  trackById(index: number, event: Event): string {
+  trackById(_index: number, event: Event): string {
     return event.stId;
   }
 
@@ -494,7 +522,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   }
 
   onTagHover(event: Event) {
-    if (event.isSelected || (this.tree.isExpanded(event) && isPathway(event))) return;
+    if (event.isSelected || (this.tree().isExpanded(event) && isPathway(event))) return;
     event.isHovered = true;
   }
 
@@ -518,10 +546,10 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
   private calculateContentWidth(targetElement: HTMLElement, event: Event): number {
     const iconWidth =
-      this.eventIcon?.nativeElement.getBoundingClientRect().width ||
+      this.eventIcon()?.nativeElement.getBoundingClientRect().width ||
       18 + this._ICON_PADDING + this._ICON_MARGIN; // width and padding
     const treeControlButtonWidth =
-      this.treeControlButton?.nativeElement.getBoundingClientRect().width ||
+      this.treeControlButton()?.nativeElement.getBoundingClientRect().width ||
       20 + this._EXPAND_ICON_MARGIN;
     const baseWidth =
       targetElement.offsetWidth + iconWidth + this._GRADIENT_WIDTH + 2 * this._NAME_TAG_PADDING;
@@ -536,7 +564,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     targetElement.style.left = `-${distanceToScroll}px`;
   }
 
-  onNameHoverLeave($event: MouseEvent, event: Event) {
+  onNameHoverLeave($event: MouseEvent, _event: Event) {
     const nameElement = $event.target as HTMLElement;
     nameElement.style.left = '0'; // Reset position
   }
@@ -581,7 +609,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const expanded = new Set<string>();
     const traverse = (items: Event[]) => {
       for (const node of items) {
-        if (this.tree?.isExpanded(node)) {
+        if (this.tree()?.isExpanded(node)) {
           expanded.add(node.stId);
         }
         if (isPathway(node) && node.events) {
@@ -598,7 +626,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const traverse = (items: Event[]) => {
       for (const node of items) {
         if (expandedIds.has(node.stId)) {
-          this.tree?.expand(node);
+          this.tree()?.expand(node);
         }
         if (isPathway(node) && node.events) {
           traverse(node.events.map((e) => e.element));

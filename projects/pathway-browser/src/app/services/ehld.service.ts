@@ -1,4 +1,4 @@
-import { computed, ElementRef, Injectable, inject } from '@angular/core';
+import { computed, ElementRef, Injectable, InjectionToken, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import type { Analysis } from '../model/analysis.model';
@@ -20,6 +20,16 @@ export interface LegendGroup {
   items: LegendItem[];
 }
 
+/**
+ * Where the illustration legend's arrow images are: relative on the site, and
+ * absolute in an embedded diagram (spec 009), where a relative path would
+ * resolve against the partner's page.
+ */
+export const EHLD_LEGEND_BASE = new InjectionToken<string>('EHLD_LEGEND_BASE', {
+  providedIn: 'root',
+  factory: () => 'assets/EHLD-legend/',
+});
+
 @Injectable({
   providedIn: 'root',
 })
@@ -31,25 +41,27 @@ export class EhldService {
   private general = inject(GeneralService);
   private download = inject(DownloadService);
 
-  hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
-  select = computed(() => this.state.select());
+  readonly hasEHLD = computed(() => this.data.currentPathway()?.hasEHLD);
+  readonly select = computed(() => this.state.select());
 
   overlay = 'OVERLAY-';
   analysisInfoId = 'ANALINFO';
   analysisInfoContainer = 'analysis-info-container';
   pattern = 'pattern-';
 
+  private readonly legendBase = inject(EHLD_LEGEND_BASE);
+
   legendItems: LegendGroup[] = [
     {
       type: 'Arrow Type',
       items: [
-        { name: 'Indication', src: 'assets/EHLD-legend/R-ICO-012345.svg', alt: 'indication arrow' },
-        { name: 'Motion', src: 'assets/EHLD-legend/R-ICO-012347.svg', alt: 'motion arrow' },
-        { name: 'Process', src: 'assets/EHLD-legend/R-ICO-012348.svg', alt: 'process arrow' },
-        { name: 'Inhibition', src: 'assets/EHLD-legend/R-ICO-012346.svg', alt: 'inhibition arrow' },
+        { name: 'Indication', src: `${this.legendBase}R-ICO-012345.svg`, alt: 'indication arrow' },
+        { name: 'Motion', src: `${this.legendBase}R-ICO-012347.svg`, alt: 'motion arrow' },
+        { name: 'Process', src: `${this.legendBase}R-ICO-012348.svg`, alt: 'process arrow' },
+        { name: 'Inhibition', src: `${this.legendBase}R-ICO-012346.svg`, alt: 'inhibition arrow' },
         {
           name: 'Transformation',
-          src: 'assets/EHLD-legend/R-ICO-012349.svg',
+          src: `${this.legendBase}R-ICO-012349.svg`,
           alt: 'transformation arrow',
         },
       ],
@@ -59,12 +71,12 @@ export class EhldService {
       items: [
         {
           name: 'Not happening',
-          src: 'assets/EHLD-legend/R-ICO-012339.svg',
+          src: `${this.legendBase}R-ICO-012339.svg`,
           alt: 'not happening arrow',
         },
         {
           name: 'Disease related',
-          src: 'assets/EHLD-legend/R-ICO-012342.svg',
+          src: `${this.legendBase}R-ICO-012342.svg`,
           alt: 'disease-related arrow',
         },
       ],
@@ -142,7 +154,7 @@ export class EhldService {
   getStableId(identifier: string) {
     const STID_PATTERN_LITE = /R-[A-Z]{3}-[0-9]{3,}/;
 
-    if (identifier && identifier.trim()) {
+    if (identifier?.trim()) {
       const result = STID_PATTERN_LITE.exec(identifier);
 
       if (result && result.length > 0) {
@@ -189,7 +201,7 @@ export class EhldService {
   getDbId(identifier: string) {
     const DBID_PATTERN_LITE = /\d+$/;
 
-    if (identifier && identifier.trim()) {
+    if (identifier?.trim()) {
       const result = DBID_PATTERN_LITE.exec(identifier);
       if (result && result.length > 0) {
         return result[0]; // First match
@@ -326,7 +338,7 @@ export class EhldService {
     );
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
-    values.forEach((exp, i) => {
+    values.forEach((exp, _i) => {
       const p = stops.length - 1;
       const realExp = isArray(exp) ? exp[0] : exp;
       if (stops.length !== 0 && stops[p].exp === realExp) {
@@ -347,7 +359,7 @@ export class EhldService {
       `<pattern id="${this.pattern}${stId}-${type}" patternUnits="objectBoundingBox" width="1" height="1" viewBox="0 0 1 1" preserveAspectRatio="none">` +
       stops
         .map(
-          (stop, i) =>
+          (stop, _i) =>
             `<rect fill="${stop.color}" x="${stop.start}" height="1" width="${stop.width + 0.01}"/>`
         )
         .join('') +
@@ -363,7 +375,26 @@ export class EhldService {
     ) as SVGGElement;
 
     if (analysisInfoElement) {
-      // Make it visible
+      // The label is the whole point of this box, so find it before revealing
+      // anything.
+      //
+      // Illustrations ship the box as artwork with an "xxx/yyy" placeholder
+      // baked in as vector outlines, and the label this writes into has to be a
+      // <text> element. None of them carry one -- checked across
+      // R-HSA-162582, -1640170, -109581 and -8953897: 28 ANALINFO groups, zero
+      // with a <text>. So this used to make the box visible and then return at
+      // the guard below, putting the placeholder on screen. On Signal
+      // Transduction that was 14 boxes reading "xxx/yyy", which is what curators
+      // reported as "odd shadow boxes on pathway labels in EHLDs".
+      //
+      // Production draws nothing here at all: the same analysis on
+      // reactome.org leaves the illustration undecorated and reports the counts
+      // in the event hierarchy, which this site does too. So a box we cannot
+      // label is a box that should stay hidden -- and if an illustration ever
+      // ships with a label, this fills it as it always meant to.
+      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
+      if (!textInfoElement) return;
+
       analysisInfoElement.classList.add(`${this.analysisInfoContainer}`);
 
       const entities = analysisPathway.entities;
@@ -389,15 +420,10 @@ export class EhldService {
       container.style.fill = `url(#${this.pattern}${analysisPathway.stId}-fdr)`;
       container.style.opacity = entities.fdr <= this.state.significance() ? '1' : '0.5';
 
-      // Not every illustration's analysis-info group has a label in it. Every
-      // other lookup here is guarded; this one was not, and an illustration
-      // without one threw part-way through, leaving the region half-decorated.
-      const textInfoElement = analysisInfoElement.getElementsByTagName('text')[0];
-      if (!textInfoElement) return;
-      textInfoElement.innerHTML = `Hit: ${entities.found}/${entities.total}`;
+      textInfoElement.textContent = `Hit: ${entities.found}/${entities.total}`;
       // "1.23E4";
       if (this.analysis.hasPValues())
-        textInfoElement.innerHTML += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
+        textInfoElement.textContent += ` - FDR: ${entities.fdr.toExponential(2).replace('e', 'E')}`;
       textInfoElement.removeAttribute('transform');
       textInfoElement.classList.add('analysis-text');
 
@@ -442,7 +468,7 @@ export class EhldService {
   }
 
   clearAnalysisInfo(elementsMap: Map<string, SVGGElement>) {
-    elementsMap.forEach((region: SVGGElement, stId: string) => {
+    elementsMap.forEach((region: SVGGElement, _stId: string) => {
       const analysisInfoElement = region.querySelector(`g[id^="${this.analysisInfoId}"]`);
       if (analysisInfoElement) {
         analysisInfoElement.classList.remove(`${this.analysisInfoContainer}`);
@@ -508,6 +534,24 @@ export class EhldService {
 
   async rasterise(svg: SVGSVGElement, scale: number, background?: string) {
     const { markup, width, height } = this.svgMarkup(svg);
+
+    // Chromium marks a canvas tainted once an SVG carrying a `foreignObject` is
+    // drawn onto it, because that element renders arbitrary HTML. `toDataURL`
+    // then throws a SecurityError, several frames away from the cause, and the
+    // render service answered a bare "Tainted canvases may not be exported".
+    //
+    // One illustration does this: Circadian clock (R-HSA-9909396) carries six,
+    // each a div with a conic-gradient, which is how a drawing tool exports a
+    // gradient SVG has no primitive for. The other 217 have none. There is no
+    // way to rasterise it in a browser -- so this says which file and why,
+    // rather than leaving a stack trace to be traced back.
+    if (markup.includes('<foreignObject')) {
+      throw new Error(
+        'this illustration embeds HTML in a <foreignObject>, which a browser refuses to ' +
+          'rasterise; download it as SVG, and ask for the artwork to be re-exported without one'
+      );
+    }
+
     const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
 
     try {
@@ -539,7 +583,7 @@ export class EhldService {
 
   // collect filter for a selected pathway when exporting EHLD
   private applyDynamicFilters(svg: SVGSVGElement, select: string | null) {
-    if (!select || !select.startsWith('R-')) return;
+    if (!select?.startsWith('R-')) return;
 
     const id = `REGION-${select}`;
     const selectedElement = svg.querySelector(`#${id}`) as HTMLElement;

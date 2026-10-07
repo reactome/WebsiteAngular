@@ -271,17 +271,19 @@
       },
       "analysis-service": {
         "label": "Analysis Service",
-        "link": "/AnalysisService",
-        "external": true
+        "link": "/AnalysisService"
       },
       "content-service": {
         "label": "Content Service",
-        "link": "/ContentService",
-        "external": true
+        "link": "/ContentService"
       },
       "reactome-fiviz": {
         "label": "ReactomeFIViz",
         "link": "/tools/reactome-fiviz"
+      },
+      "reactome-mcp": {
+        "label": "MCP Server",
+        "link": "/tools/reactome-mcp"
       }
     }
   },

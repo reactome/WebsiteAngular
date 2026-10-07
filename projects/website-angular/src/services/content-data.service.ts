@@ -4,29 +4,64 @@ import { Observable, timer } from 'rxjs';
 import { retry, timeout } from 'rxjs/operators';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
+/**
+ * The five fields Java's SimplePerson carries -- three of which are not always
+ * there.
+ *
+ * `spring.jackson.default-property-inclusion=non_empty` in the content service
+ * means a null or empty field is omitted from the JSON rather than sent as
+ * null, so an absent value arrives as `undefined` and never as `null`. Measured
+ * over all 9,503 person entries the three content endpoints return: `dbId`,
+ * `displayName` and `surname` are always present; `firstname` is missing on 619
+ * of them and `orcidId` on 3,961, and neither is ever null.
+ *
+ * The declaration used to say otherwise, and three separate call sites had
+ * already worked around it -- `p.firstname?.toLowerCase()` in the contributors,
+ * contents and DOI searches, where `?.` on a required `string` is dead syntax
+ * that quietly says the author knew better than the type.
+ */
 export interface SimplePerson {
   dbId: number;
   displayName: string;
   surname: string;
-  firstname: string;
-  orcidId: string | null;
+  firstname?: string;
+  orcidId?: string;
 }
 
 export interface TocSubpathway {
   stId: string;
   displayName: string;
-  doi: string | null;
+  /**
+   * Never sent, as far as anything here can tell.
+   *
+   * `/data/content/toc` returns `stId`, `displayName` and `speciesName` for a
+   * child and nothing else -- measured over 215 nested subpathways, none of
+   * which carried a `doi`. `toc.component.html:161` renders a DOI link behind
+   * `@if (sub.doi)`, so that markup cannot fire today.
+   *
+   * Left optional rather than deleted because it is not clear which side is
+   * wrong: the endpoint's child projection may be missing a field it should
+   * send, or the link may be markup for a case that never existed. Deleting the
+   * field would settle that question by forgetting it.
+   */
+  doi?: string | null;
   speciesName: string;
 }
 
 export interface TocPathway {
   stId: string;
   displayName: string;
-  doi: string | null;
+  /**
+   * Omitted rather than sent null when there is none. Measured over the 34
+   * top-level pathways `/data/content/toc` returns: `doi` absent in 29,
+   * `reviseDate` in 30, `releaseStatus` in 19. Declaring them required let
+   * `pathway.doi !== null` read as true for a field that is not there.
+   */
+  doi?: string | null;
   species: string;
   releaseDate: string;
-  reviseDate: string;
-  releaseStatus: string | null;
+  reviseDate?: string;
+  releaseStatus?: string | null;
   authors: SimplePerson[];
   reviewers: SimplePerson[];
   editors: SimplePerson[];

@@ -1,8 +1,36 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
+/**
+ * One search hit, as `/search/query` actually returns it.
+ *
+ * Solr omits a field rather than sending it empty, so most of this is optional
+ * -- and it was all declared required, which is worse than it sounds. A field
+ * the type promises is always there can be dereferenced anywhere without
+ * complaint, so `strictTemplates` agrees right up until the page renders
+ * `undefined`. The templates already knew better and guarded with `?.`, which
+ * is why the build emitted seventeen NG8107/NG8102 diagnostics telling us to
+ * remove guards that are load-bearing. The type was the thing that was wrong.
+ *
+ * Measured against the running service, 444 entries over three queries
+ * (`TP53`, `insulin`, `membrane`), so it can be re-measured rather than
+ * believed:
+ *
+ *     always present   dbId, stId, id, name, type, exactType
+ *     referenceName    absent in 81%
+ *     databaseName     absent in 73%   referenceIdentifier  73%
+ *     referenceURL     absent in 73%   summation            58%
+ *     compartmentNames absent in 21%   isDisease            11%
+ *     species          absent in 0.5%  -- rare, not never
+ *     deleted, date    absent in 100%  -- they arrive only on deleted entries
+ *
+ * The service also returns `compartmentAccession`, `hasReferenceEntity`,
+ * `disease`, `hasEHLD` and `explanation`, which nothing here reads. They are
+ * left undeclared deliberately: adding a field nobody uses invites somebody to
+ * use it without checking whether it is always sent.
+ */
 export interface SearchEntry {
   dbId: number;
   stId: string;
@@ -10,16 +38,16 @@ export interface SearchEntry {
   name: string;
   type: string;
   exactType: string;
-  species: string[];
-  summation: string;
-  compartmentNames: string[];
-  isDisease: boolean;
-  referenceName: string;
-  referenceIdentifier: string;
-  databaseName: string;
-  referenceURL: string;
-  deleted: boolean;
-  date: number;
+  species?: string[];
+  summation?: string;
+  compartmentNames?: string[];
+  isDisease?: boolean;
+  referenceName?: string;
+  referenceIdentifier?: string;
+  databaseName?: string;
+  referenceURL?: string;
+  deleted?: boolean;
+  date?: number;
 
   // Present only on deleted entries: where the object went, so the result can
   // link on to its replacement.
@@ -76,8 +104,6 @@ export interface SearchFilters {
   pageCategories?: string[];
 }
 
-import { APP_CONFIG } from '../config/config';
-
 @Injectable({
   providedIn: 'root',
 })
@@ -111,7 +137,9 @@ export class SearchService {
   }
 
   getSpellCheckTerms(query: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`);
+    return this.http
+      .get<string[]>(`${this.baseUrl}/spellcheck?query=${encodeURIComponent(query)}`)
+      .pipe(map((terms) => usableSpellCheckTerms(query, terms)));
   }
 
   private buildParams(
@@ -150,4 +178,36 @@ export class SearchService {
 
     return params;
   }
+}
+
+/**
+ * Drops the tokeniser artefacts Solr offers as spelling corrections.
+ *
+ * `spellcheck` answers a single mistyped word with the word *and* with the word
+ * chopped up, offered as equals. Measured against beta:
+ *
+ *     apoptsis -> ["apoptosis", "ap opt sis", "apo pt sis"]
+ *
+ * The pieces are not words, and the reason nobody noticed is that clicking one
+ * does not fail. The terms are split and OR'd, so it returns a *bigger* result
+ * set than the correct spelling and looks like it worked:
+ *
+ *     "apoptosis"   1058 matches      <- the right answer
+ *     "ap opt sis"  2793 matches      <- nonsense, and more of it
+ *
+ * The rule is token count rather than "contains a space": a genuine multi-word
+ * correction for a multi-word query is legitimate and must survive. Only a
+ * suggestion split into a different number of pieces than was asked for is an
+ * artefact.
+ *
+ * This does **not** address the other complaint about this endpoint -- `Tello`
+ * suggests `ttll3`, `ttll8`, `ttlls` -- because those are single tokens and
+ * legitimate by edit distance. Nothing here can tell that a person's surname
+ * should not be corrected to a gene symbol; that needs vocabulary rather than
+ * string distance.
+ */
+export function usableSpellCheckTerms(query: string, terms: string[] | null): string[] {
+  const asked = (query ?? '').trim().split(/\s+/).filter(Boolean).length;
+  if (!terms || asked === 0) return terms ?? [];
+  return terms.filter((term) => term.trim().split(/\s+/).filter(Boolean).length === asked);
 }

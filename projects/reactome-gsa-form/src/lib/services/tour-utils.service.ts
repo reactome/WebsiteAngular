@@ -8,6 +8,23 @@ import { IStepOption as IMdStepOption } from 'ngx-ui-tour-md-menu';
 
 export type TourStatus = 'on' | 'off' | 'pause';
 
+/**
+ * How every step of the GSA tour behaves unless the step says otherwise. Given
+ * to `initialize` with the steps rather than set on TourService, which is
+ * shared: set there, it applied to any tour in the host app once this form had
+ * loaded.
+ */
+export const GSA_TOUR_DEFAULTS: IMdStepOption = {
+  placement: { yPosition: 'above', xPosition: 'after' },
+  enableBackdrop: false,
+  smoothScroll: true,
+  centerAnchorOnScroll: true,
+  disablePageScrolling: true,
+  closeOnOutsideClick: false,
+  duplicateAnchorHandling: 'registerFirst',
+  showArrow: false,
+};
+
 @UntilDestroy()
 // Deliberately not providedIn: 'root'. This service injects TourService, and a
 // root-scoped service can only resolve root-scoped dependencies -- which would
@@ -29,17 +46,6 @@ export class TourUtilsService {
   ).pipe(startWith('off' as TourStatus), shareReplay(1));
 
   constructor() {
-    this.tourService.setDefaults({
-      placement: { yPosition: 'above', xPosition: 'after' },
-      enableBackdrop: false,
-      smoothScroll: true,
-      centerAnchorOnScroll: true,
-      disablePageScrolling: true,
-      closeOnOutsideClick: false,
-      duplicateAnchorHandling: 'registerFirst',
-      showArrow: false,
-    });
-
     this.tourService.start$.pipe(untilDestroyed(this)).subscribe(() => {
       this.on = true;
       this.paused = false;

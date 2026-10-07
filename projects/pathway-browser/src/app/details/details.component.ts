@@ -46,8 +46,8 @@ export class DetailsComponent {
   public state: UrlStateService = inject(UrlStateService);
 
   obj = this.dataState.selectedElement;
-  hasResult = computed(() => !!this.analysis.result());
-  hasDetail = computed(() => this.dataState.hasDetail());
+  readonly hasResult = computed(() => !!this.analysis.result());
+  readonly hasDetail = computed(() => this.dataState.hasDetail());
 
   /**
    * The tab names, in the order the template renders them.
@@ -67,7 +67,7 @@ export class DetailsComponent {
     ...(this.isCurator ? [] : ['download']),
   ]);
 
-  selectedTabIndex = linkedSignal<number>(() =>
+  readonly selectedTabIndex = linkedSignal<number>(() =>
     Math.max(0, this.tabs().indexOf(this.state.tab() || 'info'))
   );
 
@@ -90,10 +90,15 @@ export class DetailsComponent {
       // when an analysis finishes, which is the point of running one.
       if (tabCameFromUrl) return;
 
-      if (this.state.section()) this.state.tab.set('details');
-      else if (this.hasResult()) this.state.tab.set('results');
-      else if (this.hasDetail()) this.state.tab.set('details');
-      else this.state.tab.set('info');
+      // A default, not a choice. The URL still has to say what is on screen so a
+      // link is shareable, but being given a tab should not cost the reader a
+      // press of Back the way choosing one does.
+      this.state.settle(() => {
+        if (this.state.section()) this.state.tab.set('details');
+        else if (this.hasResult()) this.state.tab.set('results');
+        else if (this.hasDetail()) this.state.tab.set('details');
+        else this.state.tab.set('info');
+      });
     });
   }
 }

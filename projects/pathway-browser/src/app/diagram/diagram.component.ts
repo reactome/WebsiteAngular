@@ -2,18 +2,20 @@ import {
   AfterViewInit,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   input,
   model,
+  output,
   OnDestroy,
-  Output,
   signal,
   viewChild,
-  ViewChild,
   inject,
   HostListener,
+  untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DiagramService } from '../services/diagram.service';
 import {
   extract,
@@ -21,7 +23,7 @@ import {
   ReactomeEvent,
   ReactomeEventTypes,
   Style,
-} from 'reactome-cytoscape-style';
+} from 'ngx-reactome-cytoscape-style';
 import cytoscape, { BoundingBox12, BoundingBoxWH, ElementsDefinition } from 'cytoscape';
 import { InteractorService } from '../interactors/services/interactor.service';
 import {
@@ -41,12 +43,13 @@ import {
   tap,
 } from 'rxjs';
 import { UrlStateService } from '../services/url-state.service';
+import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
 import { average, isDefined, isPathwayWithDiagram, isReferenceEntityStId } from '../services/utils';
 import type { Analysis } from '../model/analysis.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
@@ -59,14 +62,14 @@ import { Interactor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
 import { AnalysisLegendComponent } from '../legend/analysis-legend/analysis-legend.component';
-import {
-  EntityPopupComponent,
-  EntityPopupTab,
-  EntityPopupTarget,
-} from './entity-popup/entity-popup.component';
+import { EntityPopupComponent } from './entity-popup/entity-popup.component';
+import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
+import { DeltaSignalService } from '../deltasignal/deltasignal.service';
+import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 import {
   DiagramSearchComponent,
   DiagramSearchTarget,
@@ -90,6 +93,7 @@ const FIT_PADDING = 100;
     MatSlider,
     MatSliderThumb,
     MatTooltip,
+    MatIcon,
     FlagBannerComponent,
     AnalysisLegendComponent,
     EntityPopupComponent,
@@ -103,26 +107,37 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly isCurator = IS_CURATOR;
 
   private diagram = inject(DiagramService);
+  private readonly destroyRef = inject(DestroyRef);
   dark = inject(DarkService);
   private interactorsService = inject(InteractorService);
   protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  // Optional: the embeddable diagram (projects/reactome-diagram-element) has no
+  // router -- it must never read or write its host page's address.
+  private router = inject(Router, { optional: true });
   private download = inject(DownloadService);
   private data = inject(DataStateService);
+  private deltaSignal = inject(DeltaSignalService);
 
   title = 'pathway-browser';
-  @ViewChild('cytoscape') cytoscapeContainer?: ElementRef<HTMLDivElement>;
-  @ViewChild('cytoscapeCompare') compareContainer?: ElementRef<HTMLDivElement>;
-  @ViewChild('legend') legendContainer?: ElementRef<HTMLDivElement>;
+  readonly cytoscapeContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscape');
+  // The compare diagram's own canvas: cytoscape's container, which the layer
+  // below holds.
+  readonly compareContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscapeCompare');
+  /** The disease layer: slides to set where the normal pathway ends. */
+  readonly compareLayer = viewChild<ElementRef<HTMLDivElement>>('compareLayer');
+  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legend');
   readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
   readonly interactorsComponent = input<InteractorsComponent>(undefined, {
     alias: 'interactor',
   });
   readonly pathwayId = model.required<string>();
+  /** A diagram has been drawn, with the stable id of the pathway it shows. */
+  readonly diagramLoaded = output<string>();
+  /** The pathway's diagram could not be loaded. */
+  readonly diagramFailed = output<string>();
 
   /** The entity a right-click landed on, or null when no popup is open. */
   readonly popupTarget = signal<EntityPopupTarget | null>(null);
@@ -142,15 +157,95 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   readonly controlRange = computed(() => this.controlMaxZoom() - this.controlMinZoom());
 
-  comparing: boolean = false;
+  /** The diagram is a disease pathway drawn over its normal one. */
+  readonly comparing = signal(false);
+  /**
+   * The reader is comparing it with the normal pathway: the handle is in, and
+   * the normal pathway shows to its left. Off, the disease layer covers the
+   * whole diagram -- the disease pathway alone, as it opens.
+   */
+  readonly compareMode = signal(false);
+  /**
+   * The handle and the disease side's tint are showing: from the moment a
+   * comparison starts until the layer has slid back out of it. Not the same
+   * as `compareMode`, which says where it is going and turns at once.
+   */
+  readonly compareShown = signal(false);
+  private compareAnimation = 0;
+  /** Where the line is, as a share of the width, so a resize keeps it in view. */
+  private compareFraction = 0;
   isInitialLoad: boolean = true;
 
+  private readonly hierarchyHover = inject(HierarchyHoverService);
+
   constructor() {
-    this.isInitialLoad = Boolean(!this.router.getCurrentNavigation()?.previousNavigation);
+    this.isInitialLoad = Boolean(!this.router?.currentNavigation()?.previousNavigation);
     effect(() => this.pathwayId() && this.loadDiagram());
+    // A reaction or sub-pathway pointed at in the hierarchy stands out here,
+    // as the old browser drew it in yellow; nothing reached the diagram before.
+    // It stands out by fading the rest (see `.hierarchy-dim` in the style), so
+    // it reads on any sub-pathway tint.
+    effect((onCleanup) => {
+      const stId = this.hierarchyHover.hovered();
+      if (!stId?.startsWith('R-')) return;
+      const changed = untracked(() =>
+        this.cys.filter(Boolean).flatMap((cy) => {
+          const found = cy.collection().union(this.getElements([stId], cy));
+          // A reaction is its node, the lines through it, and what they connect:
+          // faded participants would leave a bold line between unreadable names.
+          const lines = found.union(found.nodes('.reaction').connectedEdges());
+          const lit = lines.union(lines.connectedNodes());
+          if (lit.empty()) return [];
+          // The reader's own selection and flags stay: sweeping down the tree
+          // must not hide them. The hovered sub-pathway's name stays too.
+          const litPathways = new Set(lit.edges().map((edge) => edge.data('pathway')));
+          const dimmed = cy
+            .elements()
+            .not(lit)
+            .not('.Compartment')
+            .not('.flag')
+            .not('.always-visible')
+            .not(':selected')
+            .filter(
+              (element) =>
+                !element.hasClass('Shadow') || !litPathways.has(element.data('reactomeId'))
+            );
+          cy.batch(() => {
+            lit.addClass('hierarchy-hover');
+            dimmed.addClass('hierarchy-dim');
+          });
+          // The zoom handler owns the sub-pathway bands; let it redraw them.
+          // Only that handler: the others (structures, badges) cost as much and
+          // have nothing to do with this.
+          interactivityOf(cy)?.onZoom.shadow();
+          return [{ cy, lit, dimmed }];
+        })
+      );
+      onCleanup(() =>
+        changed.forEach(({ cy, lit, dimmed }) => {
+          cy.batch(() => {
+            lit.removeClass('hierarchy-hover');
+            dimmed.removeClass('hierarchy-dim');
+          });
+          interactivityOf(cy)?.onZoom.shadow();
+        })
+      );
+    });
+    // Redraw the interactors whenever the reader moves the confidence control.
+    // Both diagrams, because the comparison view has its own graph and an
+    // interactor hidden in one but not the other would be a difference the
+    // reader did not ask for.
+    effect(() => {
+      const threshold = clampThreshold(this.state.interactorScore());
+      for (const style of [this.reactomeStyle, this.reactomeStyleCompare]) {
+        const cy = style?.cy;
+        if (cy) this.interactorsService.applyInteractorThreshold(cy, threshold);
+      }
+    });
     effect(
       () => {
-        const flag = this.data.flagIdentifiers();
+        // Read to subscribe: the effect re-runs when the flagged identifiers change.
+        this.data.flagIdentifiers();
         if (!this.data.flagResource.isLoading())
           this.avoidSideEffect(() =>
             this.cys.forEach((cy) => this.flag(this.data.flagIdentifiers(), cy))
@@ -181,13 +276,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     effect(
       () =>
         this.analysis.sampleIndex() !== undefined &&
-        this._loadAnalysisFn &&
-        this._loadAnalysisFn(this.analysis.sampleIndex())
+        this._loadAnalysisFn?.(this.analysis.sampleIndex())
     );
     effect(() => {
       // Update style upon dark change
       this.dark.isDark();
       this.updateStyle();
+    });
+    effect(() => {
+      const overlay = this.deltaSignal.overlay();
+      const palette = this.deltaSignal.palette();
+      this.avoidSideEffect(() => this.applyDeltaSignalOverlay(overlay, palette));
     });
 
     effect(() => {
@@ -196,7 +295,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
         void this.export(request.format).catch((error) =>
-          console.error('Diagram export failed', request.format, error)
+          this.download.failed(error, `Diagram ${request.format} export failed`)
         );
         this.download.resetDownload();
       }
@@ -460,31 +559,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.controlMinZoom() +
     this.controlRange() *
       (Math.log(zoomCy / this.minZoom()) / Math.log(this.maxZoom() / this.minZoom()));
-  thumbnailImg = signal<string>('');
+  readonly thumbnailImg = signal<string>('');
   sizeObserver!: ResizeObserver;
-  containerSize = signal<{ width: number; height: number }>({
+  readonly containerSize = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
-  thumbnailSize = signal<{ width: number; height: number }>({
+  readonly thumbnailSize = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
-  boundingBox = signal<BoundingBoxWH>({ x1: 0, y1: 1, w: 1, h: 1 });
+  readonly boundingBox = signal<BoundingBoxWH>({ x1: 0, y1: 1, w: 1, h: 1 });
 
-  thumbnailViewBox = computed(
+  readonly thumbnailViewBox = computed(
     () => `0 0 ${this.thumbnailSize().width} ${this.thumbnailSize().height}`
   );
-  viewportPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
-  zoomLevel = signal<number>(0.1);
-  minZoom = signal<number>(0.1);
-  maxZoom = signal<number>(15);
+  readonly viewportPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly zoomLevel = signal<number>(0.1);
+  readonly minZoom = signal<number>(0.1);
+  readonly maxZoom = signal<number>(15);
 
-  thumbnailRxA = computed(() => (END_RX - INIT_RX) / (this.maxZoom() - this.minZoom()));
-  thumbnailRxB = computed(() => INIT_RX - this.thumbnailRxA() * this.minZoom());
-  thumbnailRx = computed(() => this.zoomLevel() * this.thumbnailRxA() + this.thumbnailRxB());
+  readonly thumbnailRxA = computed(() => (END_RX - INIT_RX) / (this.maxZoom() - this.minZoom()));
+  readonly thumbnailRxB = computed(() => INIT_RX - this.thumbnailRxA() * this.minZoom());
+  readonly thumbnailRx = computed(
+    () => this.zoomLevel() * this.thumbnailRxA() + this.thumbnailRxB()
+  );
 
-  shrunkViewport = computed(() => {
+  readonly shrunkViewport = computed(() => {
     // Get bounding box of the entire graph
     const bbox = this.boundingBox();
 
@@ -536,14 +637,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   leafIdToParentIds = new Map<string, string[]>();
 
-  hovering = signal(false);
+  readonly hovering = signal(false);
   selecting = false; // Avoid zooming in diagram when selection came from in diagram
   flagging = false; // Avoid flagging in diagram when flagging came from in diagram
 
   ngAfterViewInit(): void {
-    const container = this.cytoscapeContainer!.nativeElement;
-    const compareContainer = this.compareContainer!.nativeElement;
-    const legendContainer = this.legendContainer!.nativeElement;
+    const container = this.cytoscapeContainer()!.nativeElement;
+    const compareContainer = this.compareContainer()!.nativeElement;
+    const legendContainer = this.legendContainer()!.nativeElement;
 
     Object.values(ReactomeEventTypes).forEach((type) => {
       container.addEventListener(type, (e) => this._reactomeEvents$.next(e as ReactomeEvent));
@@ -557,25 +658,32 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     this.underlayPadding = extract(this.reactomeStyle.properties.shadow.padding);
 
-    this.diagram.getLegend().subscribe((legend) => {
-      this.legend = cytoscape({
-        container: legendContainer,
-        elements: legend,
-        style: this.reactomeStyle?.getStyleSheet(),
-        layout: { name: 'preset' },
-        boxSelectionEnabled: false,
-      });
-      this.reactomeStyle?.bindToCytoscape(this.legend);
+    // Cancelled with the component: a diagram removed while these load would
+    // otherwise make its cytoscape instance afterwards, with nothing left to
+    // destroy it (see ngOnDestroy).
+    this.diagram
+      .getLegend()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((legend) => {
+        this.legend = cytoscape({
+          container: legendContainer,
+          elements: legend,
+          style: this.reactomeStyle?.getStyleSheet(),
+          layout: { name: 'preset' },
+          boxSelectionEnabled: false,
+        });
+        this.reactomeStyle?.bindToCytoscape(this.legend);
 
-      this.legend.zoomingEnabled(false);
-      this.legend.panningEnabled(false);
-      this.legend.minZoom(0);
-    });
+        this.legend.zoomingEnabled(false);
+        this.legend.panningEnabled(false);
+        this.legend.minZoom(0);
+      });
 
     this.sizeObserver = new ResizeObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.target === container) {
           this.containerSize.set(entry.contentRect);
+          this.keepComparePosition();
 
           // Update min zoom to be able to fit the whole diagram in the resized viewport
           if (this.cy) {
@@ -691,6 +799,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    // Cytoscape binds resize, scroll and pointer listeners on window, and only
+    // destroy() removes them. A new instance in the same container destroys the
+    // old one itself, so this is only for the last: without it, every diagram
+    // removed from a page -- an embedded one on a partner's single-page app, or
+    // this one on leaving the browser -- left its listeners and canvases behind.
+    const instances: (cytoscape.Core | undefined)[] = [this.cy, this.cyCompare, this.legend];
+    for (const cy of instances) cy?.destroy();
   }
 
   // Needs Input event binding to react to mouse drag instead of mouse drop on slider
@@ -751,22 +866,45 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // no visible error anywhere -- not in the UI, not in the console.
           console.error('Failed to load diagram for', this.pathwayId(), err);
           return of(null);
-        })
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(() => {
+      .subscribe((drawn) => {
         this.isInitialLoad = false;
+        if (drawn) this.diagramLoaded.emit(this.pathwayId());
+        else this.diagramFailed.emit(this.pathwayId());
       });
   }
 
-  loadElvDiagram(): Observable<ElementsDefinition> {
-    if (!this.cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+  /**
+   * The pathway being drawn, or last drawn.
+   *
+   * loadDiagram runs from two places on a first render -- the pathwayId effect
+   * and ngAfterViewInit, the second there because the first can run before the
+   * container exists -- and both reached this point, so every diagram was
+   * fetched and drawn twice (four file requests, two draws). The first one to
+   * get here draws; a second for the same pathway has nothing to do.
+   */
+  private drawing?: string;
 
-    const container = this.cytoscapeContainer.nativeElement;
+  loadElvDiagram(): Observable<ElementsDefinition> {
+    const cytoscapeContainer = this.cytoscapeContainer();
+    if (!cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+    const pathwayId = this.pathwayId();
+    if (this.drawing === pathwayId) return EMPTY;
+    this.drawing = pathwayId;
+
+    const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(
       tap((elements) => {
-        this.comparing =
+        this.comparing.set(
           elements.nodes.some((node) => node.data['isFadeOut']) ||
-          elements.edges.some((edge) => edge.data['isFadeOut']);
+            elements.edges.some((edge) => edge.data['isFadeOut'])
+        );
+        // Each disease pathway opens on its own, not compared -- including
+        // the next one after a comparison, whose layer would start where that
+        // one's handle was left.
+        this.resetCompare();
 
         this.cy = cytoscape({
           container: container,
@@ -776,6 +914,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         });
         this.cys[0] = this.cy;
         this.reactomeStyles[0] = this.reactomeStyle;
+        // A pathway with no disease has no compare layer: the previous
+        // disease pathway's must not stay in the list exports draw from.
+        if (!this.comparing()) {
+          this.cys.length = 1;
+          this.reactomeStyles.length = 1;
+        }
         this.reactomeStyle.bindToCytoscape(this.cy);
 
         this.leafIdToParentIds.clear();
@@ -831,10 +975,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (e.target === this.cy) this.popupTarget.set(null);
         });
 
+        // Keeps what the reader selected, like the `.SUB.Pathway` handler above.
+        //
+        // This used to set `select` to the pathway being left, to orient the
+        // reader in the diagram they arrived in. It also discarded their own
+        // selection: a curator searched for an entity, double-clicked a pathway
+        // box, and found it unselected (#168). The two ways out of a diagram
+        // disagreed about this, and only one of them told you.
+        //
+        // Where you came from is still one Back away; what you were looking at
+        // was not recoverable at all.
         this.cy.on('dblclick', '.Interacting.Pathway', (e) => {
           void this.state.navigateTo(e.target.data('graph.stId'), {
-            queryParams: { select: this.pathwayId() },
-            queryParamsHandling: 'merge',
+            queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
         });
@@ -882,21 +1035,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   loadSubpathwayWithDiagram(event: EventModel) {
     return this.event.fetchEventAncestors(this.pathwayId()!).pipe(
       map((ancestors) => this.event.getFinalAncestor(ancestors)),
-      switchMap((ancestors) => {
-        const pathwayWithDiagram = this.event.getPathwayWithDiagram(event);
+      switchMap((lineage) => {
+        // In the ancestors just fetched, not the event's own copy, which the
+        // page fills from a fetch of its own: when that one was still on its
+        // way, no parent was found and the pathway was reported missing.
+        const pathwayWithDiagram = this.event.getPathwayWithDiagram(
+          event,
+          lineage.length ? lineage : event.ancestors
+        );
         if (pathwayWithDiagram) {
           const newDiagramId = pathwayWithDiagram.stId;
           const diagramId = this.pathwayId();
-          if (newDiagramId !== diagramId) {
-            this.pathwayId.set(newDiagramId);
-            // this.router.navigate([diagramId], {
-            //   queryParamsHandling: "preserve"
-            // }).then(() => {
-            this.state.select.set(event.stId);
-            // });
+          // The same diagram: another load of this pathway is drawing it, so
+          // there is nothing to do -- which is not a failure.
+          if (newDiagramId === diagramId) return EMPTY;
+          this.pathwayId.set(newDiagramId);
+          // this.router.navigate([diagramId], {
+          //   queryParamsHandling: "preserve"
+          // }).then(() => {
+          this.state.select.set(event.stId);
+          // });
 
-            return this.loadElvDiagram();
-          }
+          return this.loadElvDiagram();
         }
         return of(null);
       })
@@ -904,7 +1064,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   public initialiseReplaceElements() {
-    if (this.comparing)
+    if (this.comparing())
       this.cy.batch(() => {
         this.cy.elements('[!isBackground]').style('visibility', 'hidden');
         this.cy.edges('.shadow').style('underlay-padding', 0);
@@ -917,7 +1077,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private loadCompare(elements: cytoscape.ElementsDefinition, container: HTMLDivElement) {
     const getPosition = (e: cytoscape.SingularElementArgument) =>
       e.is('.Shadow') ? e.data('triggerPosition') : e.boundingBox().x1;
-    if (this.comparing) {
+    if (this.comparing()) {
       this.cy.elements('[!isBackground]').style('visibility', 'hidden');
       this.replacedElements = this.cy!.elements('[?replacedBy]')
         .add('[?isCrossed]')
@@ -949,7 +1109,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      const compareContainer = this.compareContainer!.nativeElement;
+      const compareContainer = this.compareContainer()!.nativeElement;
       this.cyCompare = cytoscape({
         container: compareContainer,
         elements: elements,
@@ -979,6 +1139,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.syncViewports(this.cy!, container, this.cyCompare, compareContainer);
         this.initialiseReplaceElements();
+        // The disease layer from the left edge: the disease pathway alone.
+        this.setComparePosition(0);
       });
     }
   }
@@ -1081,9 +1243,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (!running) return;
           this.syncViewports(
             this.cy,
-            this.cytoscapeContainer!.nativeElement,
+            this.cytoscapeContainer()!.nativeElement,
             this.cyCompare,
-            this.compareContainer!.nativeElement,
+            this.compareContainer()!.nativeElement,
             true
           );
           requestAnimationFrame(syncFrame);
@@ -1135,15 +1297,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       cy.batch(() => {
         this.setSubPathwayVisibility(false, cy);
         cy.elements().removeClass('flag');
-        toFlag.addClass('flag').edges().style({ 'underlay-opacity': 1 });
+        // A flagged reaction is found as its node, and `.edges()` of a node is
+        // empty: its lines never got the halo, and a flagged reaction showed as
+        // a speck on its small node (#311). The lines through it are flagged too.
+        const flagged = cy
+          .collection()
+          .union(toFlag)
+          .union(cy.collection().union(toFlag).nodes('.reaction').connectedEdges());
+        // The stylesheet's `edge.flag` rule draws the halo; any inline opacity
+        // left from before would beat it.
+        flagged.addClass('flag').edges().removeStyle('underlay-opacity');
       });
 
       return toFlag;
     } else {
       cy.batch(() => {
-        this.setSubPathwayVisibility(true, cy);
+        // Unflagged first, so the zoom handler this hands the bands back to
+        // writes their opacity too; it leaves flagged lines alone.
         cy.elements().removeClass('flag');
         cy.edges().not('[?color]').style({ 'underlay-opacity': 0 });
+        this.setSubPathwayVisibility(true, cy);
       });
 
       return cy.collection();
@@ -1182,7 +1355,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // place is what pins the molecules at whatever opacity the zoom level
       // happened to have when flagging started.
       trivials.removeStyle('opacity').addClass('always-visible');
-      cy.edges().style({ 'underlay-opacity': 0 });
+      // Not a flagged reaction's lines: hiding the bands for an export must not
+      // take the flag's halo with them.
+      cy.edges().not('.flag').style({ 'underlay-opacity': 0 });
     }
   }
 
@@ -1222,6 +1397,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const extent = this.cyCompare!.extent();
     let limitIndex = this.replacedElementsPosition.findIndex((x1) => x1 >= extent.x1);
     if (limitIndex === -1) limitIndex = this.replacedElements.length;
+    // The layer across the whole width is the disease pathway alone, wherever
+    // the reader has panned: measured in the diagram, its edge is just the
+    // viewport's, and panning used to bring the normal versions back.
+    if (this.comparePosition() <= 0) limitIndex = 0;
 
     /// Alternative calculation. In theory more optimised, but seems worse when console is opened for some reason
 
@@ -1284,7 +1463,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (!overrideIgnore) this.syncing = false;
   };
 
-  private loadAnalysis(token: string | null) {
+  private loadAnalysis(token: string | null, force = false) {
+    if (!force && this.deltaSignal.hasOverlay()) return;
     const diagramId = this.pathwayId();
     if (!token || !diagramId) {
       this._loadAnalysisFn = undefined;
@@ -1319,6 +1499,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
     }).subscribe(({ entities, pathways, result }) => {
       this._loadAnalysisFn = (analysisIndex) => {
+        if (this.deltaSignal.hasOverlay()) return;
         const analysisEntityMap = new Map<string, number>(
           entities.entities.flatMap((entity) =>
             entity.mapsTo
@@ -1392,6 +1573,38 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   private _loadAnalysisFn: ((analysisIndex: number) => void) | undefined;
 
+  private applyDeltaSignalOverlay(
+    overlay: Map<string, number[]>,
+    palette: ReturnType<DeltaSignalService['palette']>
+  ) {
+    if (!this.cy) return;
+    if (!overlay.size) {
+      this.loadAnalysis(this.state.analysis(), true);
+      return;
+    }
+
+    this.cys.filter(Boolean).forEach((cy) => {
+      cy.batch(() => {
+        cy.nodes('.PhysicalEntity').forEach((node) => {
+          const graph = node.data('graph') as Graph.Node | undefined;
+          const leaves: Graph.Node[] = node.data('graph.leaves') || (graph ? [graph] : []);
+          const stableIds = new Set([
+            node.data('graph.stId') as string,
+            ...leaves.flatMap((leaf) => [leaf.stId, leaf.identifier, leaf.standardIdentifier]),
+          ]);
+          const values = [...stableIds]
+            .filter(isDefined)
+            .flatMap((stableId) => overlay.get(stableId) ?? []);
+          node.data('exp', values.length ? values : [undefined]);
+        });
+        cy.nodes('.Pathway, .InteractorOccurrences').data('exp', [undefined]);
+        const style: Style = cy.data('reactome');
+        style.loadAnalysis(cy, palette);
+      });
+    });
+    setTimeout(() => this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 })), 5);
+  }
+
   updateStyle() {
     this.cy
       ? setTimeout(() => {
@@ -1403,35 +1616,107 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.legend ? setTimeout(() => this.reactomeStyle?.update(this.legend), 5) : null;
   }
 
-  compareDragging = false;
+  readonly compareDragging = signal(false);
 
-  dragStart() {
-    this.compareDragging = true;
+  /**
+   * The handle follows the pointer from the moment it is grabbed until it is
+   * let go, wherever the pointer goes: pointer capture sends every move to the
+   * handle. It used to listen inside a box around itself, which ended the drag
+   * as soon as a quick movement, or one that drifted off the handle's row, took
+   * the pointer out of the box -- so the handle did not move.
+   */
+  handleDown(event: PointerEvent) {
+    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    event.preventDefault();
+    this.compareDragging.set(true);
   }
 
-  dragEnd() {
-    this.compareDragging = false;
+  handleMove(event: PointerEvent) {
+    if (!this.compareDragging()) return;
+    const area = this.compareArea();
+    if (area) this.setComparePosition(event.clientX - area.getBoundingClientRect().x);
   }
 
-  dragMove(
-    $event: MouseEvent | TouchEvent,
-    compareContainer: HTMLDivElement,
-    container: HTMLDivElement
-  ) {
-    if (!this.compareDragging) return;
-    const x = $event instanceof TouchEvent ? $event.touches[0].clientX : $event.x;
-    compareContainer.style['left'] = x - container.getBoundingClientRect().x + 'px';
+  handleUp(event: PointerEvent) {
+    const handle = event.target as HTMLElement;
+    if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+    this.compareDragging.set(false);
+  }
+
+  /** Into the comparison and out of it, sliding the handle in or back. */
+  toggleCompare() {
+    const area = this.compareArea();
+    if (!area) return;
+    // Says at once where it is going -- a second click while it slides
+    // reverses it, rather than starting the same slide again.
+    const entering = !this.compareMode();
+    this.compareMode.set(entering);
+    if (entering) this.compareShown.set(true);
+    cancelAnimationFrame(this.compareAnimation);
+    const from = this.comparePosition();
+    const to = entering ? area.clientWidth / 2 : 0;
+    const started = performance.now();
+    const duration = 400;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.setComparePosition(from + (to - from) * eased);
+      if (t < 1) this.compareAnimation = requestAnimationFrame(step);
+      else if (!entering) this.hideCompare();
+    };
+    this.compareAnimation = requestAnimationFrame(step);
+  }
+
+  /** Back to the disease pathway alone, at once: each pathway opens so. */
+  private resetCompare() {
+    cancelAnimationFrame(this.compareAnimation);
+    this.compareMode.set(false);
+    this.hideCompare();
+    this.compareFraction = 0;
+    const layer = this.compareLayer()?.nativeElement;
+    if (layer) layer.style.left = '0px';
+  }
+
+  private hideCompare() {
+    this.compareShown.set(false);
+    // The handle goes with it, and a pointer it had captured never sends up.
+    this.compareDragging.set(false);
+  }
+
+  /** After a resize, the line stays where it was across the width. */
+  private keepComparePosition() {
+    const area = this.compareArea();
+    if (this.compareShown() && area)
+      this.setComparePosition(this.compareFraction * area.clientWidth);
+  }
+
+  /** The element the disease layer is placed in, and measured against. */
+  private compareArea(): HTMLElement | null {
+    return (this.compareLayer()?.nativeElement.offsetParent as HTMLElement | null) ?? null;
+  }
+
+  private comparePosition(): number {
+    return parseFloat(this.compareLayer()?.nativeElement.style.left || '0') || 0;
+  }
+
+  /** Puts the line between the normal and disease pathways `x` pixels in. */
+  private setComparePosition(x: number) {
+    const layer = this.compareLayer()?.nativeElement;
+    const canvas = this.compareContainer()?.nativeElement;
+    const area = this.compareArea();
+    if (!layer || !canvas || !area || !this.cyCompare) return;
+    const clamped = Math.max(0, Math.min(x, area.clientWidth));
+    layer.style.left = `${clamped}px`;
+    this.compareFraction = area.clientWidth ? clamped / area.clientWidth : 0;
     this.cyCompare.resize();
-    this.syncViewports(
-      this.cy!,
-      this.cytoscapeContainer!.nativeElement,
-      this.cyCompare!,
-      this.compareContainer!.nativeElement
-    );
+    this.syncViewports(this.cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
+    // The sync works out what shows before it moves the layer; once more,
+    // for where the layer is now.
+    this.updateReplacementVisibility();
   }
 
-  legendPosition = signal<Point>({ x: 0, y: 0 });
-  animateLegend = signal(false);
+  readonly legendPosition = signal<Point>({ x: 0, y: 0 });
+  readonly animateLegend = signal(false);
   updateLegend() {
     this.legend.resize();
     this.legend.panningEnabled(true);
@@ -1461,7 +1746,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this._ignore = false;
   }
 
-  @Output()
   public reactomeEvents$: Observable<ReactomeEvent> = this._reactomeEvents$.asObservable().pipe(
     distinctUntilChanged(
       (prev, current) =>
@@ -1480,16 +1764,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const resource = this.state.overlay();
     if (resource) {
-      //console.log('Resource not null', resource)
-      this.interactorsComponent()?.getInteractors(resource);
+      // Not chosen by the reader: this is the address being honoured. Passing
+      // that on matters, because the same call with a resource already current
+      // means "put it away" when a reader makes it.
+      this.interactorsComponent()?.getInteractors(resource, false);
     }
 
     this.loadAnalysis(this.state.analysis());
+    if (this.deltaSignal.hasOverlay()) {
+      this.applyDeltaSignalOverlay(this.deltaSignal.overlay(), this.deltaSignal.palette());
+    }
   }
 
   compareBackgroundSync = this.reactomeEvents$
     .pipe(
-      filter(() => this.comparing),
+      filter(() => this.comparing()),
       filter((e) => e.detail.cy !== this.legend)
     )
     .subscribe((event) => {
@@ -1524,19 +1813,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     )
     .subscribe((e) => {
       [this.reactomeStyle, this.reactomeStyleCompare]
-        .filter((s) => s !== undefined && e.detail.cy === s.cy)
+        .filter((s) => e.detail.cy === s?.cy)
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
 
-          if (e.type === ReactomeEventTypes.open)
-            this.interactorsService.addInteractorNodes(occurrenceNode, style.cy!);
-          else this.interactorsService.removeInteractorNodes(occurrenceNode);
+          const cy = style.cy;
+          if (e.type === ReactomeEventTypes.open && cy) {
+            this.interactorsService.addInteractorNodes(occurrenceNode, cy);
+            // The reader may have moved the control before opening this one, and
+            // newly drawn interactors know nothing about it.
+            this.interactorsService.applyInteractorThreshold(
+              cy,
+              clampThreshold(this.state.interactorScore())
+            );
+          } else this.interactorsService.removeInteractorNodes(occurrenceNode);
 
-          style.interactivity.updateProteins();
-          style.interactivity.triggerZoom();
+          if (!cy) return;
+          const interactivity = interactivityOf(cy);
+          interactivity?.updateProteins();
+          interactivity?.triggerZoom();
         });
 
-      if (this.comparing) {
+      if (this.comparing()) {
         this.initialiseReplaceElements();
       }
 

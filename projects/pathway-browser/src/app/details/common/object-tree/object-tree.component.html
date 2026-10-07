@@ -145,7 +145,7 @@
               <!--To create an array of a specific length-->
               @for (index of getArray(treeNodeRef.level, true); track index) {
                 @let connector =
-                  index != getArray(treeNodeRef.level, true).length - 1
+                  index !== getArray(treeNodeRef.level, true).length - 1
                     ? getParentsConnector(node, true)[index]
                     : { type: 'is', shape: 'L' };
                 <div

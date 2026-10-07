@@ -1,4 +1,4 @@
-import { Directive, Input } from '@angular/core';
+import { Directive, input } from '@angular/core';
 
 import { CdkCellDef } from '@angular/cdk/table';
 import { MatCellDef, MatTableDataSource } from '@angular/material/table';
@@ -10,13 +10,13 @@ import { Observable } from 'rxjs';
 })
 export class TypeSafeMatCellDef<T> extends MatCellDef {
   // leveraging syntactic-sugar syntax when we use *matCellDef
-  @Input({ required: true }) matCellDefDataSource!: T[] | Observable<T[]> | MatTableDataSource<T>;
+  readonly matCellDefDataSource = input.required<T[] | Observable<T[]> | MatTableDataSource<T>>();
 
   // ngTemplateContextGuard flag to help with the Language Service
   static ngTemplateContextGuard<T>(
-    dir: TypeSafeMatCellDef<T>,
-    ctx: unknown
-  ): ctx is { $implicit: T; index: number } {
+    _dir: TypeSafeMatCellDef<T>,
+    _ctx: unknown
+  ): _ctx is { $implicit: T; index: number } {
     return true;
   }
 }

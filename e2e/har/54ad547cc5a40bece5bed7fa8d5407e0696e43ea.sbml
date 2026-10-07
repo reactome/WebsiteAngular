@@ -1,0 +1,257 @@
+<?xml version='1.0' encoding='utf-8' standalone='no'?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" level="3" version="1">
+  <notes>
+    <annotation>
+      <p xmlns="http://www.w3.org/1999/xhtml">SBML generated from Reactome version 97 on 9/3/26, 2:19 PM using JSBML version 1.5.</p>
+    </annotation>
+  </notes>
+  <model id="no_parent_pathway" metaid="metaid_0" name="No parent pathway detected">
+    <listOfCompartments>
+      <compartment constant="true" id="compartment_7660" metaid="metaid_2" name="nucleoplasm" sboTerm="SBO:0000290">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_2">
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/GO:0005654" />
+                </rdf:Bag>
+              </bqbiol:is>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </compartment>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species boundaryCondition="false" compartment="compartment_7660" constant="false" hasOnlySubstanceUnits="false" id="species_113582" metaid="metaid_1" name="ADP [nucleoplasm]" sboTerm="SBO:0000247">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">Derived from a Reactome SimpleEntity. This is a small compound</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_1">
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:456216" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-ALL-113582" />
+                </rdf:Bag>
+              </bqbiol:is>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </species>
+      <species boundaryCondition="false" compartment="compartment_7660" constant="false" hasOnlySubstanceUnits="false" id="species_349474" metaid="metaid_3" name="p-S15-TP53 Tetramer [nucleoplasm]" sboTerm="SBO:0000253">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">Derived from a Reactome Complex. Here is Reactomes nested structure for this complex: (4xP04637). Reactome uses a nested structure for complexes, which cannot be fully represented in SBML Level 3 Version 1 core</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_3">
+              <bqbiol:isDescribedBy>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/pubmed:7850419" />
+                </rdf:Bag>
+              </bqbiol:isDescribedBy>
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-HSA-349474" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:hasPart>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/uniprot:P04637" />
+                </rdf:Bag>
+              </bqbiol:hasPart>
+              <bqbiol:isHomologTo>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-MMU-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-RNO-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-CFA-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-BTA-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-SSC-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DRE-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-XTR-349474" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DME-349474" />
+                </rdf:Bag>
+              </bqbiol:isHomologTo>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </species>
+      <species boundaryCondition="false" compartment="compartment_7660" constant="false" hasOnlySubstanceUnits="false" id="species_29358" metaid="metaid_4" name="ATP [nucleoplasm]" sboTerm="SBO:0000247">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">Derived from a Reactome SimpleEntity. This is a small compound</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_4">
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:30616" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-ALL-29358" />
+                </rdf:Bag>
+              </bqbiol:is>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </species>
+      <species boundaryCondition="false" compartment="compartment_7660" constant="false" hasOnlySubstanceUnits="false" id="species_6784489" metaid="metaid_5" name="TP53RK [nucleoplasm]" sboTerm="SBO:0000297">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">Derived from a Reactome EntityWithAccessionedSequence. This is a protein</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_5">
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/uniprot:Q96S44" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-HSA-6784489" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:isHomologTo>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-MMU-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-RNO-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-RNO-6784489-2" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-RNO-6784489-3" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-CFA-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-BTA-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-SSC-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DRE-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-XTR-6784489" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DME-6784489" />
+                </rdf:Bag>
+              </bqbiol:isHomologTo>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </species>
+      <species boundaryCondition="false" compartment="compartment_7660" constant="false" hasOnlySubstanceUnits="false" id="species_3209194" metaid="metaid_6" name="TP53 Tetramer [nucleoplasm]" sboTerm="SBO:0000253">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">Derived from a Reactome Complex. Here is Reactomes nested structure for this complex: (4xP04637). Reactome uses a nested structure for complexes, which cannot be fully represented in SBML Level 3 Version 1 core</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_6">
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-HSA-3209194" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:hasPart>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/uniprot:P04637" />
+                </rdf:Bag>
+              </bqbiol:hasPart>
+              <bqbiol:isHomologTo>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-MMU-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-RNO-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-CFA-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-BTA-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-SSC-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DRE-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-XTR-3209194" />
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-DME-3209194" />
+                </rdf:Bag>
+              </bqbiol:isHomologTo>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+      </species>
+    </listOfSpecies>
+    <listOfReactions>
+      <reaction compartment="compartment_7660" fast="false" id="reaction_6805479" metaid="metaid_7" name="TP53RK phosphorylates TP53" reversible="false">
+        <notes>
+          <p xmlns="http://www.w3.org/1999/xhtml">The atypical protein serine/threonine kinase TP53RK (TP53-regulating kinase), also known as PRPK (p53-related protein kinase), phosphorylates TP53 (p53) on serine residue S15 (Abe et al. 2001, Facchin et al. 2003).</p>
+        </notes>
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/">
+            <rdf:Description rdf:about="#metaid_7">
+              <dc:creator>
+                <rdf:Bag>
+                  <rdf:li rdf:parseType="Resource">
+                    <vCard:N rdf:parseType="Resource">
+                      <vCard:Family>Orlic-Milacic</vCard:Family>
+                      <vCard:Given>Marija</vCard:Given>
+                    </vCard:N>
+                    <vCard:ORG rdf:parseType="Resource">
+                      <vCard:Orgname>OICR</vCard:Orgname>
+                    </vCard:ORG>
+                  </rdf:li>
+                  <rdf:li rdf:parseType="Resource">
+                    <vCard:N rdf:parseType="Resource">
+                      <vCard:Family>Orlic-Milacic</vCard:Family>
+                      <vCard:Given>Marija</vCard:Given>
+                    </vCard:N>
+                    <vCard:ORG rdf:parseType="Resource">
+                      <vCard:Orgname>OICR</vCard:Orgname>
+                    </vCard:ORG>
+                  </rdf:li>
+                  <rdf:li rdf:parseType="Resource">
+                    <vCard:N rdf:parseType="Resource">
+                      <vCard:Family>Weiser</vCard:Family>
+                      <vCard:Given>Joel</vCard:Given>
+                    </vCard:N>
+                    <vCard:ORG rdf:parseType="Resource">
+                      <vCard:Orgname>OICR</vCard:Orgname>
+                    </vCard:ORG>
+                  </rdf:li>
+                </rdf:Bag>
+              </dc:creator>
+              <dcterms:created rdf:parseType="Resource">
+                <dcterms:W3CDTF>2015-10-19T23:31:33Z</dcterms:W3CDTF>
+              </dcterms:created>
+              <dcterms:modified rdf:parseType="Resource">
+                <dcterms:W3CDTF>2026-06-12T02:27:09Z</dcterms:W3CDTF>
+              </dcterms:modified>
+              <dcterms:modified rdf:parseType="Resource">
+                <dcterms:W3CDTF>2015-10-14T19:01:11Z</dcterms:W3CDTF>
+              </dcterms:modified>
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-HSA-6805479" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:isDescribedBy>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/pubmed:11546806" />
+                  <rdf:li rdf:resource="https://identifiers.org/pubmed:12914926" />
+                </rdf:Bag>
+              </bqbiol:isDescribedBy>
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/reactome:R-HSA-6805479" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/GO:0004674" />
+                </rdf:Bag>
+              </bqbiol:is>
+              <bqbiol:is>
+                <rdf:Bag>
+                  <rdf:li rdf:resource="https://identifiers.org/ec-code:2.7.11.1" />
+                  <rdf:li rdf:resource="https://identifiers.org/ec-code:2.7.11.28" />
+                  <rdf:li rdf:resource="https://identifiers.org/ec-code:2.7.11.29" />
+                  <rdf:li rdf:resource="https://identifiers.org/ec-code:2.7.11.3" />
+                  <rdf:li rdf:resource="https://identifiers.org/ec-code:2.7.11.9" />
+                </rdf:Bag>
+              </bqbiol:is>
+            </rdf:Description>
+          </rdf:RDF>
+        </annotation>
+        <listOfReactants>
+          <speciesReference constant="true" id="speciesreference_6805479_input_29358" sboTerm="SBO:0000010" species="species_29358" stoichiometry="4" />
+          <speciesReference constant="true" id="speciesreference_6805479_input_3209194" sboTerm="SBO:0000010" species="species_3209194" stoichiometry="1" />
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference constant="true" id="speciesreference_6805479_output_113582" sboTerm="SBO:0000011" species="species_113582" stoichiometry="4" />
+          <speciesReference constant="true" id="speciesreference_6805479_output_349474" sboTerm="SBO:0000011" species="species_349474" stoichiometry="1" />
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference id="modifierspeciesreference_6805479_catalyst_6784489" sboTerm="SBO:0000013" species="species_6784489" />
+        </listOfModifiers>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>

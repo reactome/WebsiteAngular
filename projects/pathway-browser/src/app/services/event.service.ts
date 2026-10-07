@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import {
   BehaviorSubject,
@@ -101,7 +101,9 @@ export class EventService {
   fetchEventAncestors(stId: string): Observable<Pathway[][]> {
     const url = `${this._ANCESTORS}${stId}/ancestors`;
     return this.http.get<Pathway[][]>(url).pipe(
-      map((ancestorsOptions) => ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())),
+      map((ancestorsOptions) =>
+        ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
+      ),
       // The backend 404s instead of returning an empty list for an event with
       // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
       // callers still emit and can render the event on its own.
@@ -271,7 +273,7 @@ export class EventService {
         tree,
         allVisibleTreeNodes
       ).pipe(
-        map(([treeData, treeEvent]) => {
+        map(([treeData]) => {
           this.setCurrentEventAndObj(diagramTreeEvent, event);
           return treeData;
         })
@@ -324,7 +326,7 @@ export class EventService {
     diagramId: string | undefined,
     allVisibleTreeNodes: Event[],
     tree: MatTree<Event, string>,
-    hitReactions: number[]
+    _hitReactions: number[]
   ): void {
     const reactionDiagramStId = [...selectedReaction.ancestors]
       .reverse()
@@ -589,7 +591,7 @@ export class EventService {
         }
 
         // Use existing selectedEvent data if stId matches
-        if (object && object.stId === ancestor.stId) {
+        if (object?.stId === ancestor.stId) {
           this.processHasEventData(
             object,
             targetTreeEvent,
@@ -906,8 +908,8 @@ export class EventService {
     return this.hasChild(0, event);
   }
 
-  getPathwayWithDiagram(event: Event): Event | undefined {
-    const parents = [...event.ancestors].reverse();
+  getPathwayWithDiagram(event: Event, lineage: Event[] = event.ancestors): Event | undefined {
+    const parents = [...(lineage ?? [])].reverse();
     return parents.find((p) => isPathway(p) && p.stId !== event.stId && p.hasDiagram);
   }
 

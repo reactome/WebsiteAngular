@@ -1,3 +1,4 @@
+import { serves } from '../fixtures/serves';
 import { test, expect } from '@playwright/test';
 
 // The download page is a catalogue of files that live somewhere else: the
@@ -96,8 +97,10 @@ test.describe('Download catalogue', () => {
     // and production 404s -- so on a production backend the page has no icons to
     // draw and there is nothing to attribute. Ask first rather than assert about
     // an empty page.
-    const listing = await request.get('/ContentService/search/icon/facet').catch(() => null);
-    test.skip(!listing?.ok(), 'this backend does not serve the icon library');
+    test.skip(
+      !(await serves(request, '/ContentService/search/icon/facet')),
+      'this backend does not serve the icon library'
+    );
 
     const hosts = new Set<string>();
     page.on('response', (response) => {

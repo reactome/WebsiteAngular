@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal, Signal, WritableSignal } from '@angular/core';
 import { UrlStateService } from '../../../services/url-state.service';
-import { HttpClient } from '@angular/common/http';
 import { DataStateService } from '../../../services/data-state.service';
 import { isPathway } from '../../../services/utils';
 import { AnalysisService } from '../../../services/analysis.service';
@@ -24,6 +23,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
+import { analysisReportUrl } from './analysis-report-url';
 
 /**
  * An analysis token in its raw form.
@@ -74,15 +74,23 @@ type DiagramItem = {
 })
 export class DownloadTabComponent {
   private state: UrlStateService = inject(UrlStateService);
-  private http: HttpClient = inject(HttpClient);
   private dataState: DataStateService = inject(DataStateService);
   public analysis: AnalysisService = inject(AnalysisService);
   private download: DownloadService = inject(DownloadService);
+
+  /**
+   * Why the last figure did not download, if it did not.
+   *
+   * A figure made in the browser can fail for a reason worth reading -- one
+   * illustration cannot be rasterised at all -- and until this was here the
+   * button simply did nothing and said so only to the console.
+   */
+  readonly downloadFailure = this.download.failure;
   protected readonly includeSubpathways = includeSubpathways;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 
-  newtUrl = computed(() => {
+  readonly newtUrl = computed(() => {
     const reactomeUrl = new URL(
       `${CONTENT_SERVICE}/exporter/event/${this.finalEventId()}.sbgn&inferNestingOnLoad=true&mapColorScheme=opposed_red_blue&fitLabelsToNodes=true`,
       window.location.origin
@@ -92,7 +100,7 @@ export class DownloadTabComponent {
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   selectedElement = this.dataState.selectedElement;
 
-  finalEventId = computed(() => {
+  readonly finalEventId = computed(() => {
     const pathwayId = this.pathwayId();
     const selected = this.selectedElement();
     if (pathwayId) return pathwayId;
@@ -100,9 +108,9 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
+  readonly biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
 
-  finalPathwayName = computed(() => {
+  readonly finalPathwayName = computed(() => {
     const pathway = this.dataState.currentPathway();
     const selected = this.selectedElement();
     if (pathway) return pathway.displayName;
@@ -110,30 +118,26 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  hasResult = computed(() => !!this.analysis.result());
-  hasDetail = computed(() => this.dataState.hasDetail());
-  hasEHLD = computed(() => this.ehld.hasEHLD());
+  readonly hasResult = computed(() => !!this.analysis.result());
+  readonly hasDetail = computed(() => this.dataState.hasDetail());
+  readonly hasEHLD = computed(() => this.ehld.hasEHLD());
 
-  hasDownload = computed(() => {
+  readonly hasDownload = computed(() => {
     if (this.hasResult()) return true;
     return this.hasDetail();
   });
 
-  token = computed(() => this.analysis.result()?.summary.token);
-  currentAnalysisResource = computed(() => {
+  readonly token = computed(() => this.analysis.result()?.summary.token);
+  readonly currentAnalysisResource = computed(() => {
     return this.analysis.resourceFilterActive() ? this.analysis.resourceFilter() : 'TOTAL';
   });
-  currentAnalysisSpecies = computed(() => {
-    return this.analysis.speciesFilterActive() ? this.state.speciesFilter() : 'Homo Sapiens';
-  });
-
-  hasGSAReports = computed(() => this.analysis.gsaReportsRequired());
-  gsaReports = computed(() => this.analysis.gsaReports());
+  readonly hasGSAReports = computed(() => this.analysis.gsaReportsRequired());
+  readonly gsaReports = computed(() => this.analysis.gsaReports());
 
   formats: DownloadFormat[] = Object.values(DownloadFormat) as DownloadFormat[];
   reacfoamFormats = [DownloadFormat.SVG, DownloadFormat.PNG, DownloadFormat.JPEG];
 
-  diagramItems = computed<DiagramItem[]>(() => {
+  readonly diagramItems = computed<DiagramItem[]>(() => {
     return this.hasEHLD() ? this.getDiagramItems(true) : this.getDiagramItems(false);
   });
 
@@ -144,20 +148,27 @@ export class DownloadTabComponent {
     const formats = isEHLD ? this.reacfoamFormats : this.formats;
 
     return formats.map((format) => {
-      const hasAnalysis = isEHLD && !this.hasResult() ? format : false;
-      const isExportable = isEHLD
-        ? hasAnalysis
-        : [DownloadFormat.PPTX, DownloadFormat.GIF].includes(format);
+      // An illustration is drawn in the page as inline SVG, so the browser can
+      // always produce the file itself and does it better: `downloadImage`
+      // rasterises at scale 3 against the render service's 2, and handles
+      // JPEG's lack of an alpha channel. That path was already taken whenever
+      // an analysis was running; the other branch sent an illustration with no
+      // analysis to the content service instead.
+      //
+      // Which was a 404 for all 218 illustrated pathways on a box where
+      // `download/current/ehld/` is empty -- the exporter reads those files
+      // from disk and cannot draw anything without them. Asking the page, which
+      // already has the illustration on screen, depends on nothing being
+      // present anywhere.
+      const isExportable = !isEHLD && [DownloadFormat.PPTX, DownloadFormat.GIF].includes(format);
       // server side
       if (isExportable) {
         return {
           format,
-          // A diagram's GIF and PowerPoint come from the render service, which
-          // drives the site's own renderer; an illustration's still go through
-          // the content service, which serves the same illustration file either
-          // way. That is why a downloaded GIF used to look like the old site
-          // and no longer does.
-          url: signal(isEHLD ? this.getExportUrl(format) : this.getRenderUrl(format)),
+          // GIF and PowerPoint come from the render service, which drives the
+          // site's own renderer. That is why a downloaded GIF used to look like
+          // the old site and no longer does.
+          url: signal(this.getRenderUrl(format)),
           icon: { id: 'image' },
           download: true,
         };
@@ -228,9 +239,13 @@ export class DownloadTabComponent {
       title: 'PDF Result',
       description:
         'Download a detailed report with the most significant pathway analysis results in PDF format',
-      url: computed(
-        () =>
-          `${ANALYSIS_SERVICE}/report/${this.token()}/${this.currentAnalysisSpecies()}/report.pdf`
+      url: computed(() =>
+        analysisReportUrl(
+          ANALYSIS_SERVICE,
+          this.token(),
+          this.state.speciesFilter(),
+          this.analysis.result()?.summary.species
+        )
       ),
       icon: { id: 'docs' },
       isShown: computed(() => !this.analysis.isGSA()),
@@ -300,12 +315,6 @@ export class DownloadTabComponent {
     // and the service's cache is not split by a parameter that says nothing.
     if (!includeSubpathways()) url.searchParams.set('subpathways', 'false');
     return url.toString();
-  }
-
-  getExportUrl(format: string) {
-    const analysisUrl = `${CONTENT_SERVICE}/exporter/diagram/${this.pathwayId()}.${format}?token=${this.token()}`;
-    const url = `${CONTENT_SERVICE}/exporter/diagram/${this.pathwayId()}.${format}`;
-    return this.hasResult() ? analysisUrl : url;
   }
 
   onReacfoamDownload(format: DownloadFormat) {

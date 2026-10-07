@@ -17,7 +17,7 @@ import { environment } from '../../../../../environments/environment';
  * FigureService and the two must not disagree about where figures live.
  */
 export function figureSrc(figure: Figure) {
-  return environment.preferS3 ? `${environment.s3}${figure.url}` : figureOnOrigin(figure);
+  return !environment.assetsFromHost ? `${environment.s3}${figure.url}` : figureOnOrigin(figure);
 }
 
 /** Where figures have always been served from: the legacy document root. */

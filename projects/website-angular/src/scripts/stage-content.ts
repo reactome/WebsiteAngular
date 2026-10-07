@@ -22,9 +22,51 @@
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import parseFrontmatter from '../utils/parseFrontmatter';
+import imageSize from '../utils/imageSize';
 
 const SOURCE = path.join('projects', 'website-angular', 'content');
 const DEST = path.join('projects', 'website-angular', 'content-dist');
+const PUBLIC = path.join('projects', 'website-angular', 'public');
+
+/**
+ * Every image a page shows, with the space it will need.
+ *
+ * Content images carry no dimensions, so each occupies nothing until it loads
+ * and then expands. Measured on `documentation/userguide/reactome-fiviz`: 116
+ * images, the document growing from 27,496px to 78,312px as they arrived, and a
+ * reader who clicked a table-of-contents link left 2,793px above the section
+ * they asked for -- the browser scrolled correctly and then the page grew under
+ * them. Six pages carry twenty or more images and behave this way.
+ *
+ * These files are in this repository and change when the content does, so the
+ * sizes are known here and there is no reason to make a reader's browser
+ * discover them. Attached per page rather than as one manifest: a page needs
+ * only its own, and a shared file would be a second request to render the
+ * first paragraph.
+ *
+ * An image that cannot be measured is simply absent from the map, and the
+ * renderer leaves it as it is.
+ */
+async function sizesFor(body: string): Promise<Record<string, [number, number]>> {
+  const sources = new Set<string>();
+  for (const [, src] of body.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)) sources.add(src);
+  for (const [, src] of body.matchAll(/<img[^>]*\ssrc\s*=\s*["']([^"']+)["']/gi)) sources.add(src);
+
+  const sizes: Record<string, [number, number]> = {};
+  for (const src of sources) {
+    if (!src.startsWith('/')) continue; // remote or relative; not ours to measure
+    try {
+      const bytes = await fs.readFile(path.join(PUBLIC, decodeURIComponent(src)));
+      const size = imageSize(bytes);
+      if (size) sizes[src] = [size.width, size.height];
+    } catch {
+      // A reference to a file that is not there. That is a content problem and
+      // this is not the place to report it -- the page still renders, with the
+      // broken image it already had.
+    }
+  }
+  return sizes;
+}
 
 async function compile(from: string, to: string): Promise<{ pages: number; assets: number }> {
   let pages = 0;
@@ -44,9 +86,14 @@ async function compile(from: string, to: string): Promise<{ pages: number; asset
       const raw = await fs.readFile(src, 'utf8');
       const { frontmatter, body } = parseFrontmatter(raw);
       const slug = entry.name.replace(/\.mdx?$/, '');
+      const imageSizes = await sizesFor(body ?? '');
       await fs.writeFile(
         path.join(to, `${slug}.json`),
-        JSON.stringify({ ...frontmatter, body: body ?? '' })
+        JSON.stringify({
+          ...frontmatter,
+          body: body ?? '',
+          ...(Object.keys(imageSizes).length ? { imageSizes } : {}),
+        })
       );
       pages++;
     } else {

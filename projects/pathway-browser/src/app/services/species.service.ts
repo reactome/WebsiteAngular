@@ -1,10 +1,10 @@
 import { computed, effect, Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
-import { CONTENT_SERVICE, environment } from '../../environments/environment';
+import { CONTENT_SERVICE } from '../../environments/environment';
 import { OrthologousMap, Species } from '../model/graph/species.model';
 import { Event } from '../model/graph/event/event.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { UrlStateService } from './url-state.service';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { isDefined } from './utils';
@@ -16,8 +16,9 @@ import { SelectableObject } from './event.service';
 export class SpeciesService {
   private http = inject(HttpClient);
   private state = inject(UrlStateService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  // Optional: the embeddable diagram has no router. It is read only when the
+  // reader switches species in the browser, which the embed does not offer.
+  private route = inject(ActivatedRoute, { optional: true });
 
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
   private readonly _ORTHOLOGIES = `${CONTENT_SERVICE}/data/orthologies/ids/species/`;
@@ -31,14 +32,14 @@ export class SpeciesService {
     schemaClass: 'Species',
   };
 
-  currentSpecies = signal<Species>(this.defaultSpecies);
+  readonly currentSpecies = signal<Species>(this.defaultSpecies);
 
   private allSpecies = rxResource({
     params: () => null,
     stream: () => this.http.get<Species[]>(this._MAIN_SPECIES),
   });
 
-  allShortenSpecies = computed(() =>
+  readonly allShortenSpecies = computed(() =>
     this.allSpecies
       .value()
       ?.map(this.setShortName)
@@ -54,7 +55,7 @@ export class SpeciesService {
   //   return speciesList?.filter((specie: Species) => orthologs.has(specie.displayName)) || []
   // })
 
-  abbreviationToSpecies = computed(
+  readonly abbreviationToSpecies = computed(
     () => new Map(this.allShortenSpecies()?.map((s) => [s.abbreviation, s]))
   );
 
@@ -114,7 +115,7 @@ export class SpeciesService {
           (mapping) =>
             new Map(identifiers.map((i) => [i, i.startsWith('R-ALL') ? i : mapping[i]?.stId]))
         ),
-        catchError((e) => of(new Map(identifiers.map((i) => [i, undefined]))))
+        catchError((_e) => of(new Map(identifiers.map((i) => [i, undefined]))))
       );
   }
 
@@ -131,7 +132,7 @@ export class SpeciesService {
   }
 
   updateQueryParams(map: OrthologousMap, pathwayId: string | undefined) {
-    const params = { ...this.route.snapshot.queryParams };
+    const params = { ...this.route?.snapshot.queryParams };
     for (const [key, value] of Object.entries(params)) {
       let newValue = JSON.stringify(value);
       for (const [initial, replacement] of map) {

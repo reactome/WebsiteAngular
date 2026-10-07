@@ -1,0 +1,1 @@
+{"code":400,"reason":"BAD_REQUEST","url":"http://localhost:8080/ContentService/search/diagram/R-HSA-70171/flag","messages":["'R-HSA-70171' the pathway does not have diagram"],"targets":null}

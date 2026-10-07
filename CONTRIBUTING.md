@@ -24,8 +24,11 @@ ratchets, and one rule about severity.
 **Severity records whether the codebase is already clean of a rule.**
 
 - `error` — no existing violations. Any error is therefore new, and CI fails.
-- `warn` — violations exist. The count is recorded in `lint-baseline.json` and
-  can only go down.
+- `warn` — violations exist. Each rule's count is recorded in
+  `lint-baseline.json` and can only go down, rule by rule: fixing one rule does
+  not buy room to add to another. A rule the baseline does not list is held at
+  zero, so a newly warned rule is recorded with `npm run check:lint -- --update`
+  when it is added.
 
 When you fix a warned rule's last violation, promote it to `error` in
 `eslint.config.js`. That is how the list shrinks rather than sitting at its
@@ -78,10 +81,29 @@ fail.
 
 ## Workspace libraries
 
-`projects/` holds four libraries that build to `dist/` and are consumed from
+`projects/` holds two libraries that build to `dist/` and are consumed from
 there, not from `node_modules`. Build them before the app will compile:
 
 ```bash
 npm run build:libs
-ng build reactome-cytoscape-style
+```
+
+The diagram style library and the theme come built from
+[ngx-reactome-base](https://github.com/reactome/ngx-reactome-base); change them
+there. Each passing push to its `main` publishes a build, and
+`npm update ngx-reactome-cytoscape-style ngx-reactome-style` brings it here.
+
+To try a library change in the site before it is merged there, install a
+packed build of it -- not `npm link` or a folder install: a symlinked library
+resolves `cytoscape` from ngx-reactome-base's own `node_modules`, not this
+repo's fork, and the build fails on mismatched types.
+
+```bash
+# in ngx-reactome-base
+npx ng build ngx-reactome-cytoscape-style
+(cd dist/ngx-reactome-cytoscape-style && npm pack --pack-destination /tmp)
+# here
+npm install --no-save /tmp/ngx-reactome-cytoscape-style-0.1.0.tgz
+# and afterwards, back to the pinned build
+npm install
 ```

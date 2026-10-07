@@ -50,7 +50,9 @@ function describeAnalysisFailure(error: unknown): string {
       return 'The analysis service could not read the submitted data. Check that the table has at least one column of identifiers.';
     }
     const reason = (error.error as { reason?: string } | null)?.reason;
-    return reason ?? `The analysis failed (${error.status} ${error.statusText}). Please try again.`;
+    // Not statusText: over HTTP/2 and later there is none, and Angular reports
+    // "OK" whatever the status, which would read "failed (500 OK)".
+    return reason ?? `The analysis failed (HTTP ${error.status}). Please try again.`;
   }
   return 'The analysis failed for an unknown reason. Please try again.';
 }
@@ -82,11 +84,11 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   private darkService: DarkService = inject(DarkService);
 
   close = output<{ status: 'finished' | 'premature' }>();
-  status = input.required<'open' | 'closed'>();
+  readonly status = input.required<'open' | 'closed'>();
 
-  table = viewChild<TableComponent>('table');
-  data = signal<string[][]>([['']]);
-  theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
+  readonly table = viewChild<TableComponent>('table');
+  readonly data = signal<string[][]>([['']]);
+  readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
   settings: Partial<Settings> = {
     renameCols: true,
@@ -111,7 +113,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   dataStepForm = new FormControl(null);
-  interactorsIllustrationCanvas =
+  readonly interactorsIllustrationCanvas =
     viewChild<ElementRef<HTMLCanvasElement>>('interactorsIllustration');
   interactorsIllustrationLottie?: DotLottie;
 
@@ -188,7 +190,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.dataStepForm.setAsyncValidators((control) =>
+    this.dataStepForm.setAsyncValidators((_control) =>
       this.table()!.hasData$.pipe(
         map((hasData) => (hasData ? null : { invalid: true })),
         untilDestroyed(this)
@@ -215,15 +217,22 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     booleanSignal.set(!booleanSignal());
   }
 
+  /** Space or Enter on an option card, as on a checkbox: once per press, not per key repeat. */
+  toggleByKey(event: Event, booleanSignal: WritableSignal<boolean>) {
+    event.preventDefault();
+    if ((event as KeyboardEvent).repeat) return;
+    this.toggle(booleanSignal);
+  }
+
   projectToHumanIllustration = this.http.get('assets/animations/orthology-animation.svg', {
     responseType: 'text',
   });
 
   // STEP 3 Analysis
-  analysisLaunched = signal(false);
-  analysisAvailable = signal(false);
-  analysisError = signal<string | null>(null);
-  lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
+  readonly analysisLaunched = signal(false);
+  readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
+  readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
   lottieEnd?: DotLottie;
   token: string | null = null;
 

@@ -8,7 +8,6 @@ import {
   OnChanges,
   OnDestroy,
   OnInit,
-  Output,
   signal,
   Signal,
   SimpleChanges,
@@ -36,24 +35,9 @@ import {
 import { isDefined } from '../../model/utils.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { safeInput } from '../../utils/web-component-utils';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { downloadTable } from '../download-table/download-table.component';
-
-interface SelectedCellRange {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-}
-
-type Direction = 'up' | 'down' | 'left' | 'right';
-/**
- * [x,y]
- */
-type Coord = [number, number];
-type Range = { start: Coord; stop?: Coord };
-
 @UntilDestroy()
 @Component({
   selector: 'reactome-table',
@@ -66,7 +50,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   private clipboard = inject(Clipboard);
   readonly tableStore = inject(TableStore);
 
-  readonly input = viewChild.required<ElementRef<HTMLInputElement>>('flyingRename');
+  // Optional: the input is rendered only once there are start coordinates, and
+  // focusInput() can run before it is -- a required query threw NG0951 there.
+  readonly input = viewChild<ElementRef<HTMLInputElement>>('flyingRename');
   readonly rootRef = viewChild.required<ElementRef<HTMLDivElement>>('root');
   readonly cornerRef = viewChild<ElementRef<HTMLTableCellElement>>('corner');
   readonly viewport = viewChild.required<CdkVirtualScrollViewport>('scrollViewport');
@@ -88,20 +74,20 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   readonly minBufferRows = input<number>(50);
   readonly maxBufferRows = input<number>(100);
 
-  minBufferPx = computed(() => this.minBufferRows() * this.rowHeight());
-  maxBufferPx = computed(() => this.maxBufferRows() * this.rowHeight());
+  readonly minBufferPx = computed(() => this.minBufferRows() * this.rowHeight());
+  readonly maxBufferPx = computed(() => this.maxBufferRows() * this.rowHeight());
 
-  height = computed(() => {
+  readonly height = computed(() => {
     let height =
       (this.data().length + (this.settings()?.addRow ? 1 : 0)) * this.rowHeight() +
       this.scrollDimensions().bottom;
     if (this.maxHeight()) height = height < this.maxHeight()! ? height : this.maxHeight()!;
     return height;
   });
-  scrollOffset = signal(0);
+  readonly scrollOffset = signal(0);
 
   // Styling logic reactive to resize
-  scrollDimensions = linkedSignal(() => this.getScrollDimensions());
+  readonly scrollDimensions = linkedSignal(() => this.getScrollDimensions());
   scrollDimensionsObserver = new ResizeObserver(() =>
     this.scrollDimensions.set(this.getScrollDimensions())
   );
@@ -114,12 +100,12 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     };
   }
 
-  cornerRect = linkedSignal(() => this.cornerRef()?.nativeElement.getBoundingClientRect());
+  readonly cornerRect = linkedSignal(() => this.cornerRef()?.nativeElement.getBoundingClientRect());
   cornerObserver = new ResizeObserver(() =>
     this.cornerRect.set(this.cornerRef()?.nativeElement.getBoundingClientRect())
   );
 
-  stickyOffset = linkedSignal(() => {
+  readonly stickyOffset = linkedSignal(() => {
     const cornerRect = this.cornerRect();
     return {
       top: cornerRect?.height || 0,
@@ -128,11 +114,11 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     };
   });
 
-  edgeVisibility = signal({ top: true, bottom: true, left: true, right: true });
+  readonly edgeVisibility = signal({ top: true, bottom: true, left: true, right: true });
 
   // Core logic
-  data: Signal<Cell[][]>;
-  settings: Signal<Settings | undefined>;
+  readonly data: Signal<Cell[][]>;
+  readonly settings: Signal<Settings | undefined>;
   data$: Observable<Cell[][]> = this.tableStore.data$;
   hasData$: Observable<boolean> = this.tableStore.hasData$;
   cleanData$: Observable<string[][]> = this.tableStore.cleanData$;
@@ -196,7 +182,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   settings$: Observable<Settings> = this.tableStore.settings$;
   value!: string;
 
-  @Output() tableChange: Observable<string[][]> = this.cleanData$.pipe(skip(1));
+  readonly tableChange = outputFromObservable<string[][]>(this.cleanData$.pipe(skip(1)));
 
   constructor() {
     this.data = toSignal(this.tableStore.data$, {
@@ -213,11 +199,17 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.settings = toSignal(this.tableStore.settings$);
   }
 
+  // Cleared on destroy: the viewport query is required and the table sits
+  // inside *ngrxLet, so a callback that lands after the table has gone would
+  // throw NG0951.
+  private afterViewInitTimer?: ReturnType<typeof setTimeout>;
+
   ngAfterViewInit(): void {
-    setTimeout(() => {
+    this.afterViewInitTimer = setTimeout(() => {
       this.updateEdgeVisibility();
-      this.scrollDimensionsObserver.observe(this.viewport()!.elementRef.nativeElement);
-      this.cornerObserver.observe(this.cornerRef()!.nativeElement);
+      this.scrollDimensionsObserver.observe(this.viewport().elementRef.nativeElement);
+      const corner = this.cornerRef();
+      if (corner) this.cornerObserver.observe(corner.nativeElement);
     });
   }
 
@@ -246,6 +238,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.afterViewInitTimer);
     this.cornerObserver.disconnect();
     this.scrollDimensionsObserver.disconnect();
   }
@@ -304,7 +297,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.tableStore.deleteRow({ y });
   }
 
-  focusLastCell($event: any) {
+  focusLastCell(_$event: any) {
     this.tableStore.focusLast();
   }
 
@@ -390,7 +383,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.scrollOffset.set(this.viewport().getRenderedRange().start * this.rowHeight());
   }
 
-  trackByIndex: TrackByFunction<any> = <T>(index: number, element: T) => {
+  trackByIndex: TrackByFunction<any> = <T>(index: number, _element: T) => {
     return index;
   };
 
@@ -414,7 +407,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
   onDragEnter($event: DragEvent) {
     this.dragCounter++;
-    if ($event.dataTransfer && $event.dataTransfer.files) this.isDraggingFile = true;
+    if ($event.dataTransfer?.files) this.isDraggingFile = true;
   }
 
   onDragLeave() {

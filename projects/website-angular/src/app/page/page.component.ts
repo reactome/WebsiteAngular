@@ -4,15 +4,16 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ContentService } from '../../services/content.service';
 import { marked } from 'marked';
-import stripFirstH from '../../utils/stripFirstH';
-import addAnchorIds from '../../utils/addAnchorIds';
-import addJumpCards from '../../utils/addJumpCards';
-import wrapCodeBlocks from '../../utils/wrapCodeBlocks';
+import addImageSizes from '../../utils/addImageSizes';
+import renderContentBody from '../../utils/renderContentBody';
 import sanitize from '../../utils/sanitize';
 import { StatsService } from '../../services/stats.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
+import { applyRelease, needsRelease, releaseWithin } from './release-placeholder';
+import rewriteContentUrls from '../../utils/rewriteContentUrls';
+import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-page',
@@ -51,58 +52,6 @@ export class PageComponent implements OnInit {
     if (fragment) this.viewportScroller.scrollToAnchor(fragment);
   }
 
-  /**
-   * Whether this page's body names a release, and so has to wait for one.
-   *
-   * Checked before awaiting so that the overwhelming majority of pages -- which
-   * mention no release at all -- render without waiting on the content service.
-   */
-  private needsRelease(html: string) {
-    return /\{release\}|download\.reactome\.org\/\d+\//.test(html);
-  }
-
-  /**
-   * Point release artefacts at the release the database is serving.
-   *
-   * Authors write `{release}`; this substitutes it. A hardcoded number in a
-   * bucket path is rewritten too, because that is how the statistics page came
-   * to embed release 95's figures while the site served 97 -- the number was
-   * typed into the content once and nothing brings it forward. Everything under
-   * the versioned bucket is republished per release, so the current one is
-   * always the right answer.
-   */
-  private applyRelease(html: string, release: string): string {
-    return html
-      .replace(/\{release\}/g, release)
-      .replace(
-        /(download\.reactome\.org\/)\d+(\/)/g,
-        (_match, before, after) => `${before}${release}${after}`
-      );
-  }
-
-  private rewriteContentUrls(html: string): string {
-    return html.replace(
-      /\b(href|src)=("([^"]*)"|'([^']*)')/g,
-      (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
-        const value = doubleQuoted ?? singleQuoted ?? '';
-        return `${attr}="${this.normalizeContentUrl(value)}"`;
-      }
-    );
-  }
-
-  private normalizeContentUrl(url: string): string {
-    const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
-    if (reactomeUrlMatch) {
-      return reactomeUrlMatch[1].replace(/^\//, '');
-    }
-
-    if (url.startsWith('/')) {
-      return url.replace(/^\/+/, '');
-    }
-
-    return url;
-  }
-
   ngOnInit() {
     this.route.url.subscribe((segments) => {
       if (segments.length === 0) {
@@ -139,19 +88,19 @@ export class PageComponent implements OnInit {
           if (page) {
             this.page = page;
             let html = await marked(page.body);
-            if (this.needsRelease(html)) {
-              html = this.applyRelease(html, await this.stats.getVersion());
+            if (needsRelease(html)) {
+              const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });
+              if (release) html = applyRelease(html, release);
             }
-            html = this.rewriteContentUrls(html);
-            // Keep this chain intact. Each step was added by a specific fix and
-            // the imports alone do nothing: wrapCodeBlocks collapses long code
-            // blocks (#98), addJumpCards builds the dev-page cards, and
-            // addAnchorIds gives headings the ids that same-page "#" links --
-            // including the table of contents at the top of the long userguide
-            // pages -- need to jump to (#89). Dropping the calls but keeping the
-            // imports is exactly how those regressed once already.
+            html = rewriteContentUrls(html);
+            // renderContentBody holds the chain every content body needs, and
+            // why each step is there. `addImageSizes` last of the html steps, so it sees every `<img>`
+            // the others produced. Without it a content image reserves no space
+            // until it loads, and a reader who clicks a heading in the table of
+            // contents is carried away from it as the images above arrive --
+            // measured at 2,793px off on the FIViz page, which has 116.
             this.renderedContent = sanitize(
-              stripFirstH(addAnchorIds(addJumpCards(wrapCodeBlocks(html)))),
+              addImageSizes(renderContentBody(html), this.page?.imageSizes),
               this.sanitizer
             );
             this.loading = false;
