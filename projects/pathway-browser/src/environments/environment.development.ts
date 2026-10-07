@@ -7,7 +7,7 @@ const env = ENVIRONMENTS.development;
 
 export const environment = {
   production: true,
-  host: IS_CURATOR ? 'https://newcurator.reactome.org' : env.host,
+  host: IS_CURATOR ? 'https://curator.reactome.org' : env.host,
   s3: env.s3,
   gsaServer: env.gsaServer,
   gtagId: env.gtagId,
@@ -23,7 +23,7 @@ export const ICON_HOST = 'https://dev.reactome.org';
 export const ICON_BASE = IS_CURATOR ? environment.host : ICON_HOST;
 
 export const CONTENT_SERVICE = `${environment.host}/${IS_CURATOR ? 'GraphContentService' : 'ContentService'}`;
-export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
+export const VERSION_FALLBACK = `https://curator.reactome.org/ContentService/data/database/version`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 // The headless render service: diagram figures for documents (GIF, PPTX, PDF),
 // rendered by the site's own renderer rather than by the Java exporters'

@@ -15,16 +15,16 @@ export interface EnvConfig {
 
 export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
   development: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://curator.reactome.org',
+    contentService: 'https://curator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     gtagId: 'G-96F1EYHQR3',
     preferS3: false,
   },
   production: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://curator.reactome.org',
+    contentService: 'https://curator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
@@ -34,22 +34,22 @@ export const ENVIRONMENTS: Record<EnvName, EnvConfig> = {
     // Only the content service moves to the locally run curator-service; the
     // analysis service, downloads, overlays and detail pages have no local
     // equivalent, so they stay pointed at the curator host.
-    host: 'https://newcurator.reactome.org',
+    host: 'https://curator.reactome.org',
     contentService: 'http://localhost:8686',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     preferS3: false,
   },
   github: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://curator.reactome.org',
+    contentService: 'https://curator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'production',
     preferS3: true,
   },
   remote: {
-    host: 'https://newcurator.reactome.org',
-    contentService: 'https://newcurator.reactome.org/GraphContentService',
+    host: 'https://curator.reactome.org',
+    contentService: 'https://curator.reactome.org/GraphContentService',
     s3: 'https://download.reactome.org',
     gsaServer: 'dev',
     preferS3: false,

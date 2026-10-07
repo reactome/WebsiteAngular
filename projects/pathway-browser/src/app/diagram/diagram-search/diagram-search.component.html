@@ -1,0 +1,48 @@
+<!-- Keys stop here: the diagram pans on the arrows and zooms on + and -, and
+     both are keys you type in a search box or use to move through its list. -->
+<div class="diagram-search" (keydown)="$event.stopPropagation()">
+  <mat-icon fontSet="symbols" class="diagram-search-icon">search</mat-icon>
+  <input
+    #box
+    type="text"
+    class="diagram-search-input"
+    placeholder="Search diagram"
+    aria-label="Search the diagram by name"
+    [matAutocomplete]="auto"
+    (focus)="refresh()"
+    (input)="onInput($event)"
+  />
+  @if (query()) {
+    <button
+      mat-icon-button
+      class="diagram-search-clear"
+      (click)="clear(box)"
+      matTooltip="Clear search"
+      aria-label="Clear search"
+    >
+      <mat-icon fontSet="symbols">close</mat-icon>
+    </button>
+  }
+</div>
+
+<mat-autocomplete
+  #auto="matAutocomplete"
+  [autoActiveFirstOption]="true"
+  [displayWith]="displayName"
+  (optionSelected)="onSelected($event)"
+  class="diagram-search-panel"
+>
+  @for (target of options(); track target.kind + target.name) {
+    <mat-option [value]="target">
+      <span class="diagram-search-option">
+        <span class="diagram-search-name">{{ target.name }}</span>
+        <span class="diagram-search-kind">
+          {{ target.kind }}
+          @if (target.elements.nodes().length > 1 && target.kind !== 'Reaction') {
+            ×{{ target.elements.nodes().length }}
+          }
+        </span>
+      </span>
+    </mat-option>
+  }
+</mat-autocomplete>

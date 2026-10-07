@@ -8,8 +8,8 @@ export const IS_CURATOR = SITE_VARIANT === 'curator';
 //
 // `host` stays on the deployed curator backend: only the graph content API is
 // available locally, so icons, the analysis/experiment services and the
-// content/detail links still have to resolve against newcurator.
-const host = 'https://newcurator.reactome.org';
+// content/detail links still have to resolve against curator.reactome.org.
+const host = 'https://curator.reactome.org';
 
 export const environment = {
   production: false,
@@ -31,7 +31,7 @@ export const ICON_BASE = environment.host;
 export const LOCAL_CONTENT_SERVICE_PORT = 8686;
 export const CONTENT_SERVICE = `http://localhost:${LOCAL_CONTENT_SERVICE_PORT}`;
 // data/database/version has nothing meaningful to return on a curation graph,
-// so the version falls back to the public content service. newcurator's own
+// so the version falls back to the public content service. curator.reactome.org's own
 // /ContentService is a 404 (it only serves GraphContentService), so use
 // reactome.org, which sends Access-Control-Allow-Origin: *.
 export const VERSION_FALLBACK = `https://reactome.org/ContentService/data/database/version`;
@@ -63,9 +63,9 @@ export const EXPERIMENT_SERVICE = `${environment.host}/experiment`;
 export const DIGESTER_FOR_BACKEND = 'http://localhost:8080/ExperimentDigester';
 export const RESTFUL_API = `${environment.host}/ReactomeRESTfulAPI/RESTfulWS`;
 // EHLDs and pre-generated diagram JSON aren't served by a local content
-// service, and newcurator's /download sends no Access-Control-Allow-Origin,
+// service, and curator.reactome.org's /download sends no Access-Control-Allow-Origin,
 // so go through the dev server: proxy.curator-local.conf.json forwards
-// /download to newcurator, keeping these requests same-origin.
+// /download to curator.reactome.org, keeping these requests same-origin.
 export const DOWNLOAD = `/download/current`;
 export const OVERLAYS = `${environment.host}/overlays`;
 export const CONTENT_DETAIL = `${environment.host}/content/detail`;

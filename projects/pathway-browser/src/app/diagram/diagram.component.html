@@ -14,6 +14,8 @@
 
   <cr-flag-banner />
 
+  <cr-diagram-search [collect]="collectSearchTargets" (picked)="onSearchPicked($event)" (cleared)="onSearchCleared()" />
+
   <cr-entity-popup
     [target]="popupTarget()"
     (navigate)="onPopupNavigate($event)"

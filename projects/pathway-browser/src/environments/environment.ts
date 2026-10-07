@@ -39,11 +39,11 @@ export const CONTENT_SERVICE = selectedEnv.contentService.replace(/\/+$/, '');
 // CORS-enabled public endpoint used only as a fallback to resolve the current
 // database version when the primary CONTENT_SERVICE version call fails. The
 // version is needed to build CORS-enabled S3 diagram URLs.
-export const VERSION_FALLBACK = `https://newcurator.reactome.org/ContentService/data/database/version`;
+export const VERSION_FALLBACK = `https://curator.reactome.org/ContentService/data/database/version`;
 // CORS-enabled public content service. Used as a fallback for version-static
 // metadata endpoints (e.g. the data-schema model) when the primary curator
 // CONTENT_SERVICE is slow or unavailable, so those pages still render.
-export const CONTENT_SERVICE_FALLBACK = `https://newcurator.reactome.org/ContentService`;
+export const CONTENT_SERVICE_FALLBACK = `https://curator.reactome.org/ContentService`;
 export const ANALYSIS_SERVICE = `${environment.host}/AnalysisService`;
 // The headless render service: diagram figures for documents (GIF, PPTX, PDF),
 // rendered by the site's own renderer rather than by the Java exporters'

@@ -18,8 +18,8 @@ export const APP_CONFIG = {
   // CORS / SSO 302 trap on cross-host AnalysisService). This value
   // only matters during server-side rendering and for any laptop dev
   // workflow that doesn't run a local tomcat on :8080.
-  swaggerSpecBaseUrl: 'https://newcurator.reactome.org',
-  contentServiceBaseUrl: 'https://newcurator.reactome.org/ContentService',
+  swaggerSpecBaseUrl: 'https://curator.reactome.org',
+  contentServiceBaseUrl: 'https://curator.reactome.org/ContentService',
 
   // pathway browser config
   pathwayBrowser: {

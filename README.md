@@ -80,7 +80,7 @@ The single source of truth for backend URLs (`CONTENT_SERVICE`, `ANALYSIS_SERVIC
 This app builds as one of two variants, controlled by `projects/pathway-browser/src/environments/variant.ts` (`variant.curator.ts` is swapped in via the `curator` Angular build configuration's `fileReplacements`):
 
 - **main** (default) — the public reactome.org/beta.reactome.org site. Host resolves dynamically from `window.location.origin`.
-- **curator** — a scaled-down build for `newcurator.reactome.org`, pointing at the curation graph database (`GraphContentService` instead of `ContentService`) rather than the released production graph. Host is fixed to `https://newcurator.reactome.org` regardless of what domain the frontend bundle is served from, since it's always the same backend. Several UI elements (Analyze/Compare/Overlay/Feedback/the old-browser link) are hidden for this variant, and the homepage renders a different, curator-specific layout (`curator-home-shortcuts` instead of `home-shortcuts`).
+- **curator** — a scaled-down build for `curator.reactome.org`, pointing at the curation graph database (`GraphContentService` instead of `ContentService`) rather than the released production graph. Host is fixed to `https://curator.reactome.org` regardless of what domain the frontend bundle is served from, since it's always the same backend. Several UI elements (Analyze/Compare/Overlay/Feedback/the old-browser link) are hidden for this variant, and the homepage renders a different, curator-specific layout (`curator-home-shortcuts` instead of `home-shortcuts`).
 
 `environment.ts` exports `IS_CURATOR` (derived from `variant.ts`) for any code that needs to branch on the variant — gate curator-only UI with `@if (!isCurator)` / `@if (isCurator)` (see `viewport.component.ts`/`.html` for the pattern), don't check `SITE_VARIANT` directly outside `environment.ts`.
 
@@ -90,11 +90,11 @@ To build/serve the curator variant locally: `ng build reactome --configuration d
 
 `npm run start:curator-local` serves the curator variant with the graph content API pointed at a content service running on your own machine at `http://localhost:8686` (the `curator-local` build configuration in `angular.json`, which pairs `variant.curator.ts` with `environment.curator-local.ts`). Add `-- --port 4300` if 4200 is taken.
 
-A locally-run content service is a bare Spring Boot app, so its endpoints sit at the root (`/data/query/...`), not under the `/ContentService` or `/GraphContentService` context path the deployed instances are proxied onto — hence the separate `CONTENT_SERVICE` value rather than a different `host`. Everything a local instance can't serve still comes from newcurator, routed through `proxy.curator-local.conf.json` because `newcurator.reactome.org/download` sends no `Access-Control-Allow-Origin`:
+A locally-run content service is a bare Spring Boot app, so its endpoints sit at the root (`/data/query/...`), not under the `/ContentService` or `/GraphContentService` context path the deployed instances are proxied onto — hence the separate `CONTENT_SERVICE` value rather than a different `host`. Everything a local instance can't serve still comes from curator.reactome.org, routed through `proxy.curator-local.conf.json` because `curator.reactome.org/download` sends no `Access-Control-Allow-Origin`:
 
-- `/download/current/**` (EHLDs, pre-generated diagram JSON) and `/figures/**` → `newcurator.reactome.org`
+- `/download/current/**` (EHLDs, pre-generated diagram JSON) and `/figures/**` → `curator.reactome.org`
 - `/ContentService/**` → the local service on `:8686`, with the context path stripped, so the ContentService Swagger page documents your local API
-- the database-version fallback → `https://reactome.org/ContentService/data/database/version`, since a curation graph has no released version and newcurator serves no `/ContentService`
+- the database-version fallback → `https://reactome.org/ContentService/data/database/version`, since a curation graph has no released version and curator.reactome.org serves no `/ContentService`
 
 Expect one console error on startup: `data/database/version` 500s on a curation graph. That's the fallback above kicking in, not a misconfiguration.
 

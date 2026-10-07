@@ -16,12 +16,12 @@
     }
   },
   "/download": {
-    "target": "https://newcurator.reactome.org",
+    "target": "https://curator.reactome.org",
     "secure": true,
     "changeOrigin": true
   },
   "/figures": {
-    "target": "https://newcurator.reactome.org",
+    "target": "https://curator.reactome.org",
     "secure": true,
     "changeOrigin": true
   },

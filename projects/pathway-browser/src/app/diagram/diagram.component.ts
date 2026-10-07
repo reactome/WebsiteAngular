@@ -67,6 +67,10 @@ import {
 } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
+import {
+  DiagramSearchComponent,
+  DiagramSearchTarget,
+} from './diagram-search/diagram-search.component';
 
 const INIT_RX = 2;
 
@@ -89,6 +93,7 @@ const FIT_PADDING = 100;
     FlagBannerComponent,
     AnalysisLegendComponent,
     EntityPopupComponent,
+    DiagramSearchComponent,
   ],
 })
 export class DiagramComponent implements AfterViewInit, OnDestroy {
@@ -1640,6 +1645,99 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     console.debug(
       new Set(this.cy.nodes('.Protein').map((node) => node.data('acc') || node.data('iAcc')))
     );
+  }
+
+  /**
+   * Every name drawn in the diagram, for the search box.
+   *
+   * Grouped by name and kind, because the same molecule is usually drawn in
+   * several places and picking it should light up all of them. Reactions draw
+   * no label of their own -- the style labels any reaction node that has a
+   * displayName, which is why the diagram leaves it off -- so their name comes
+   * from the graph instead. Modifications and compartments are left out: the
+   * former are one-letter tags, the latter are not things you select.
+   */
+  readonly collectSearchTargets = (): DiagramSearchTarget[] => {
+    const cy = this.cy;
+    if (!cy) return [];
+
+    const targets = new Map<string, DiagramSearchTarget>();
+    const add = (
+      name: string | undefined,
+      kind: string,
+      elements: cytoscape.CollectionArgument
+    ) => {
+      // The diagram puts zero-width spaces in long names so they wrap.
+      const clean = name?.replace(/\u200b/g, '').trim();
+      if (!clean || elements.empty()) return;
+      const key = `${kind}\t${clean}`;
+      const target = targets.get(key);
+      if (target) target.elements.merge(elements);
+      else targets.set(key, { name: clean, kind, elements: cy.collection().merge(elements) });
+    };
+
+    cy.nodes('.PhysicalEntity, .Pathway').forEach((node) => {
+      const kind = node.hasClass('Pathway') ? 'Pathway' : node.classes()[0];
+      add(node.data('displayName') || node.data('graph.displayName'), kind, node);
+    });
+
+    cy.nodes('.reaction').forEach((reaction) => {
+      add(
+        reaction.data('graph.displayName'),
+        'Reaction',
+        reaction.union(cy.edges(`[reactionId = ${reaction.data('reactionId')}]`))
+      );
+    });
+
+    // The style hands each sub-pathway shadow the reaction edges it covers.
+    cy.nodes('.Shadow').forEach((shadow) => {
+      const edges: cytoscape.EdgeCollection | undefined = shadow.data('edges');
+      add(shadow.data('displayName'), 'Subpathway', edges?.nonempty() ? edges : shadow);
+    });
+
+    return [...targets.values()];
+  };
+
+  /**
+   * A name was picked in the search box: select what is drawn under it and
+   * fly there.
+   *
+   * When everything under the name is one database object, that goes through
+   * the shared selection, so the details panel follows along just as it does
+   * for a click. Anything else -- a sub-pathway, or two objects that happen to
+   * share a name -- has no single id to select, so the diagram is selected
+   * directly.
+   */
+  onSearchPicked(target: DiagramSearchTarget): void {
+    const stIds = new Set(target.elements.map((ele) => ele.data('graph.stId')));
+    const [stId] = stIds;
+    if (stIds.size === 1 && stId) {
+      // Already selected means the select effect will not fire again, but the
+      // user still asked to be taken there.
+      if (this.state.select() === stId) this.select(stId, this.cy);
+      else this.state.select.set(stId);
+      return;
+    }
+
+    this.avoidSideEffect(() => {
+      this.cy.elements(':selected').unselect();
+      target.elements.select();
+    });
+    this.cy.animate({
+      fit: {
+        eles: target.elements.union(target.elements.edges().connectedNodes()),
+        padding: FIT_PADDING,
+      },
+      duration: 1000,
+      easing: 'ease-in-out',
+    });
+  }
+
+  /** The search box was emptied: drop whatever it selected. */
+  onSearchCleared(): void {
+    // The select effect ignores null, so the diagram is unselected here.
+    this.avoidSideEffect(() => this.cy?.elements(':selected').unselect());
+    if (this.state.select()) this.state.select.set(null);
   }
 
   /**

@@ -1,12 +1,12 @@
 import { chromium } from '@playwright/test';
 
 // Drives the `development,curator` build (ng serve --port 4300) against the
-// deployed curation backend at newcurator.reactome.org.
+// deployed curation backend at curator.reactome.org.
 //
 // Chromium runs with web security disabled: environment.ts builds DOWNLOAD /
-// figures URLs absolute against newcurator, which sends no
+// figures URLs absolute against curator.reactome.org, which sends no
 // Access-Control-Allow-Origin. In production the curator bundle is served from
-// newcurator itself so those are same-origin; only serving it from localhost
+// curator.reactome.org itself so those are same-origin; only serving it from localhost
 // makes them cross-origin. Set STRICT=1 to see the browser-default behaviour.
 const BASE = 'http://localhost:4300/curatorgraph';
 const OUT = '/tmp/curator-shots';
@@ -35,7 +35,7 @@ page.on('requestfailed', (r) =>
 page.on('response', (r) => {
   const u = r.url();
   if (
-    /newcurator|GraphContentService|ContentService|AnalysisService|ExperimentDigester|\/download\/|\/figures\//.test(
+    /curator\.reactome\.org|GraphContentService|ContentService|AnalysisService|ExperimentDigester|\/download\/|\/figures\//.test(
       u
     )
   )

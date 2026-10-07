@@ -1,0 +1,70 @@
+// Overlays the diagram top-left, clear of the flag banner in the centre and
+// the legend on the right.
+:host {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+}
+
+.diagram-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: min(300px, 40vw);
+  height: 36px;
+  padding: 0 2px 0 10px;
+
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  box-shadow: var(--mat-sys-level1);
+  font: var(--mat-sys-body-medium);
+  color: var(--on-surface);
+
+  &:focus-within {
+    border-color: var(--primary);
+  }
+}
+
+.diagram-search-icon {
+  color: var(--primary);
+  flex: none;
+}
+
+.diagram-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.diagram-search-clear {
+  flex: none;
+}
+
+// The panel renders in the overlay container, outside this component.
+::ng-deep .diagram-search-panel {
+  .diagram-search-option {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .diagram-search-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .diagram-search-kind {
+    flex: none;
+    font: var(--mat-sys-label-small);
+    color: var(--on-surface-variant);
+  }
+}
