@@ -305,6 +305,25 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await page.waitForTimeout(500);
   });
 
+  // "Every dataset is saved" was true of no datasets at all, so a reader who
+  // deleted every card could Continue with nothing to analyse (#308).
+  test('will not continue with no dataset, and says to add one', async ({ page }) => {
+    await stubGsa(page);
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    const forms = page.locator('gsa-dataset-form');
+    await expect(forms).toHaveCount(1, { timeout: 20_000 });
+
+    await page.locator('gsa-dataset-form button[mattooltip="Delete dataset"]').click();
+    await expect(forms).toHaveCount(0, { timeout: 10_000 });
+
+    const onward = page.getByRole('button', { name: 'Add a dataset to continue' });
+    await expect(onward).toBeDisabled();
+    await expect(page.getByText('Add a dataset to continue')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
+  });
+
   // Continue stays disabled until the dataset is saved, and it used to say only
   // "Continue" -- so a reader who had chosen a dataset saw a dead button, with
   // the Save button several steps down inside the dataset card.

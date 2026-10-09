@@ -21,9 +21,11 @@ export const datasetFeature = createFeature({
     selectDataset: (id: number) => createSelector(selectEntities, (entities) => entities[id]),
     selectIsSaved: (id: number) =>
       createSelector(selectEntities, (entities) => !!entities[id]?.saved),
-    selectAllSaved: createSelector(selectEntities, (entities) =>
-      Object.values(entities).every((entity) => entity?.saved)
-    ),
+    // At least one, all saved: `every` is true of no datasets at all (#308).
+    selectAllSaved: createSelector(selectEntities, (entities) => {
+      const datasets = Object.values(entities);
+      return datasets.length > 0 && datasets.every((entity) => entity?.saved);
+    }),
 
     selectLoadingComplete: (id: number) =>
       createSelector(
