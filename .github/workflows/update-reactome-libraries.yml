@@ -1,0 +1,90 @@
+name: Update the ngx-reactome-base libraries
+
+# The diagram style library and the theme come from reactome/ngx-reactome-base:
+# each passing push to its main publishes a build to a dist/<library> branch,
+# and this app installs those branches, pinned by package-lock.json. There are
+# no releases. This keeps the pin following main: once a day (or on demand) it
+# runs `npm update` for the two libraries and, when a newer build exists, opens
+# a pull request -- reviewed and merged like any other.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  # To start Tests and the CMS guard on the pull request: a pull request opened
+  # with this workflow's token starts no workflows by itself.
+  actions: write
+
+concurrency:
+  group: update-reactome-libraries
+  cancel-in-progress: false
+
+env:
+  BRANCH: update/ngx-reactome-base
+  # Also listed in tools/library-update/check-library-update.mjs.
+  LIBRARIES: ngx-reactome-cytoscape-style ngx-reactome-style
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Resolve only: nothing is installed, and no install script runs.
+      - name: Update the pins
+        run: npm update $LIBRARIES --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      # Only these two may move. Anything else in the lockfile changing would be
+      # npm re-resolving the tree, which is never what this job is for.
+      - name: Check nothing else moved
+        id: check
+        run: |
+          node tools/library-update/check-library-update.mjs
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the pull request
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # What each build was made from, for the commit and the PR: a build's
+          # commit message names the ngx-reactome-base commit it was built from.
+          nrb=https://github.com/reactome/ngx-reactome-base
+          sources=""
+          for l in $LIBRARIES; do
+            sha=$(node -p "require('./package-lock.json').packages['node_modules/$l'].resolved.split('#')[1]")
+            git fetch -q --depth 1 "$nrb.git" "$sha"
+            from=$(git log -1 --format=%s FETCH_HEAD | awk '{print $NF}')
+            sources+="- \`$l\`: build \`${sha:0:7}\`, from $nrb/commit/$from"$'\n'
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -q -C "$BRANCH"
+          git add package.json package-lock.json
+          git commit -q -m "Update the ngx-reactome-base libraries to their newest builds" -m "$sources"
+          # The branch is this job's alone, rebuilt from main each time.
+          git push -q -f origin "$BRANCH"
+          body="Newer builds of the libraries from [ngx-reactome-base](https://github.com/reactome/ngx-reactome-base) are published on its \`dist/*\` branches:"$'\n\n'"$sources"$'\n'"Only these two lockfile entries changed (checked by this workflow). Opened by the daily update workflow; review and merge as any other pull request."
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "Update the ngx-reactome-base libraries to their newest builds" --body "$body"
+          fi
+          # A pull request opened with this token starts no workflows; a dispatch
+          # does, and its checks attach to the branch's commit, so they show on the
+          # pull request as the required checks.
+          gh workflow run tests.yml --ref "$BRANCH"
+          gh workflow run guardrail.yml --ref "$BRANCH"
