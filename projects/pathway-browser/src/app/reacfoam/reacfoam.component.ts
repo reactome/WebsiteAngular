@@ -115,6 +115,11 @@ export class ReacfoamComponent implements OnDestroy {
         groupLabelMaxFontSize: 20,
         // Lower the minimum label font size a bit to show more labels
         groupLabelMinFontSize: 3,
+        // Name every pathway under the pointer. FoamTree's default shows the
+        // title bar only for labels drawn smaller than 8px, so hovering named
+        // some pathways and not others -- the ones whose label happened to be
+        // large enough to read in place (#381).
+        maxLabelSizeForTitleBar: Number.MAX_VALUE,
 
         // Roll out in groups
         rolloutMethod: 'groups',
