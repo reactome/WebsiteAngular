@@ -2,6 +2,11 @@ name: CMS Branch Guard
 
 on:
   pull_request:
+  # Dispatched on its branch by the library-update workflow, whose pull request
+  # starts no workflows. A dispatched run has no pull request, so it reads the
+  # branch from the ref and checks against main: a cms/* branch is held to the
+  # same rules either way, and a dispatch cannot be used to skip them.
+  workflow_dispatch:
 
 jobs:
   restrict-cms-branches:
@@ -15,8 +20,8 @@ jobs:
 
       - name: Validate CMS branch changes
         run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          BASE_REF="${{ github.base_ref }}"
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BASE_REF="${{ github.base_ref || 'main' }}"
 
           echo "Branch: $BRANCH_NAME"
           echo "Base: $BASE_REF"
