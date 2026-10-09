@@ -148,15 +148,16 @@ export class ViewportComponent {
     () => this.dataState._currentPathway.isLoading() || this.dataState.ancestorsLoading()
   );
   readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
-  // A pathway without a diagram of its own is still drawable when an ancestor
-  // has one - cr-diagram walks up and renders the parent, e.g. /R-HSA-69541.
+  // An event without a diagram of its own is still drawable when an ancestor
+  // has one - cr-diagram walks up, renders the parent and selects the event,
+  // e.g. the subpathway /R-HSA-69541 or the reaction /R-HSA-9824849.
   // An event with neither, such as a newly cloned curation pathway that hangs
   // off no top-level pathway, has nothing to draw and gets a notice instead.
   readonly hasDiagram = computed(() => {
-    const pathway = this.dataState.currentPathway();
-    if (!pathway || !isPathway(pathway)) return false;
-    if (pathway.hasDiagram) return true;
-    return (pathway.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
+    const event = this.dataState.currentPathway();
+    if (!event) return false;
+    if (isPathway(event) && event.hasDiagram) return true;
+    return (event.ancestors || []).some((ancestor) => isPathway(ancestor) && ancestor.hasDiagram);
   });
   readonly title = computed(() => this.dataState.currentPathway()?.displayName);
 
