@@ -73,17 +73,16 @@ test.describe('Analysis results', () => {
     const fdr = page.locator('.mat-mdc-menu-panel input[type="range"]').first();
     await fdr.focus();
     // Arrow keys, because a mat-slider thumb is not filled like an input.
-    for (let step = 0; step < 6; step++) {
-      await page.keyboard.press('ArrowLeft');
-      await page.waitForTimeout(150);
-    }
-    expect(await fdr.inputValue(), 'the strictest FDR').toBe('0');
+    for (let step = 0; step < 6; step++) await page.keyboard.press('ArrowLeft');
+    await expect(fdr, 'the strictest FDR').toHaveValue('0');
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(2000);
 
-    const after = await rows.count();
-    expect(after, 'a stricter FDR keeps fewer pathways').toBeLessThan(before);
-    expect(after, 'but not none of them').toBeGreaterThan(0);
+    // Waited for rather than counted after a fixed pause, which a slow
+    // re-render could outrun (#321).
+    await expect
+      .poll(() => rows.count(), { message: 'a stricter FDR keeps fewer pathways' })
+      .toBeLessThan(before);
+    await expect.poll(() => rows.count(), { message: 'but not none of them' }).toBeGreaterThan(0);
   });
 
   test('the result files download', async ({ page }) => {
