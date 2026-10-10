@@ -359,10 +359,12 @@ test.describe('The threshold a resource was left at', () => {
       .locator('cr-interactors button.psicquic-button')
       .filter({ has: page.locator('.resource-count:not(.none)') })
       .first();
-    // Waited for, then skipped on. The counts arrive as the third-party
+    // Waited for, then skipped on. Live, the counts arrive as the third-party
     // servers answer -- six to seventeen seconds each -- so one read raced them
     // and skipped while they were still coming (#321). Which servers hold
-    // anything is theirs to decide, so finding none is a skip, not a failure.
+    // anything is theirs to decide, so against a live site finding none is a
+    // skip. In CI the counts are replayed, and a skip is not in
+    // expected-skips.json, so it still fails the shard there.
     const found = await expect
       .poll(() => other.count(), { timeout: 60_000 })
       .toBeGreaterThan(0)
