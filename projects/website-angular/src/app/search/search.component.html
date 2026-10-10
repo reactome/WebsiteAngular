@@ -209,6 +209,13 @@
         @if (loading) {
           <div class="loading">Searching...</div>
         }
+        <!-- Above both outcomes: with no data results, the pages are the half
+             that might have had some. -->
+        @if (!loading && pagesFailed) {
+          <p class="search-load-error" role="alert">
+            Couldn't search the website's pages, so only Reactome data is shown. Please try again later.
+          </p>
+        }
         @if (!loading && (error || hasNoResults)) {
           <div class="no-results">
             @if (error) {
@@ -377,11 +384,6 @@ NOTE: This is an automatically generated message.
           </div>
         }
         @if (!loading && !error && !hasNoResults && results) {
-          @if (pagesFailed) {
-            <p class="search-load-error" role="alert">
-              Couldn't search the website's pages, so only Reactome data is shown. Please try again later.
-            </p>
-          }
           @if (results.results && results.results.length) {
             @if (grouped) {
               <!-- Grouped view -->

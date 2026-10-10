@@ -86,6 +86,40 @@ test.describe('Search', () => {
     await expect(page.locator('.result-group').first()).toBeVisible();
     expect(thrown).toEqual([]);
   });
+
+  test("says so when the website's pages could not be searched and the data has nothing", async ({
+    page,
+  }) => {
+    await page.route('**/site-search-index.json', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'failed' })
+    );
+    await page.goto('/content/query?q=xyzzy_no_match_99999');
+    // The pages are the half that might have had something.
+    await expect(page.getByRole('alert')).toContainText(
+      "Couldn't search the website's pages, so only Reactome data is shown.",
+      { timeout: LOAD }
+    );
+  });
+
+  test("pages through the website's pages without asking the search service", async ({ page }) => {
+    const thrown = collectThrown(page);
+    await page.goto('/content/query?q=pathway');
+    const group = page
+      .locator('.result-group')
+      .filter({ has: page.getByRole('heading', { name: /^Pages\b/ }) });
+    const pager = group.locator('nav.group-pagination');
+    await expect(pager).toBeVisible({ timeout: LOAD });
+    const first = await group.locator('.search-entry').allTextContents();
+    await pager.getByRole('button', { name: '2', exact: true }).click();
+    await expect(pager.locator('.page-btn.active')).toHaveText('2');
+    await expect(group.getByRole('alert')).toHaveCount(0);
+    const second = await group.locator('.search-entry').allTextContents();
+    expect(second.length).toBeGreaterThan(0);
+    expect(second).not.toEqual(first);
+    // Pages, every one: not whatever the search service had for "Pages".
+    await expect(group.locator('.search-entry .page-icon')).toHaveCount(second.length);
+    expect(thrown).toEqual([]);
+  });
 });
 
 test('search results ask only for icons that exist', async ({ page }) => {
@@ -99,11 +133,15 @@ test('search results ask only for icons that exist', async ({ page }) => {
     )
       missing.push(response.url());
   });
+  const asked: string[] = [];
+  page.on('request', (request) => asked.push(request.url()));
   // Its results include Reactome's icon library, a type of its own.
   await page.goto('/content/query?q=apoptosis');
   await expect(page.locator('.result-group').first()).toBeVisible({ timeout: LOAD });
   await page.waitForLoadState('networkidle');
   expect(missing).toEqual([]);
+  // Not vacuous: the icon library's own icon was drawn.
+  expect(asked.some((url) => url.endsWith('/assets/icons/general/icon.svg'))).toBe(true);
   expect(thrown).toEqual([]);
 });
 
@@ -119,8 +157,13 @@ test.describe('The help form shown when nothing is found', () => {
     await page.route('https://js.hcaptcha.com/**', (route) =>
       route.fulfill({
         contentType: 'text/javascript',
-        body: `window.hcaptcha = {
-          render(el, options) { setTimeout(() => options.callback('test-token')); return 1; },
+        body: `window.__renders = 0;
+        window.hcaptcha = {
+          render(el, options) {
+            window.__renders++;
+            setTimeout(() => options.callback('test-token'));
+            return window.__renders;
+          },
           reset() {},
         };`,
       })
@@ -157,5 +200,31 @@ test.describe('The help form shown when nothing is found', () => {
     // What they wrote is still there to send again.
     await expect(form.locator('textarea#message')).toHaveValue(message);
     expect(thrown).toEqual([]);
+  });
+
+  test('starts afresh for the next search that finds nothing', async ({ page }) => {
+    const { form, posts } = await openForm(page, 500);
+    await form.getByRole('button', { name: 'Send' }).click();
+    await expect(form.getByRole('alert')).toBeVisible({ timeout: LOAD });
+
+    const box = page.locator('textarea.search-input');
+    await box.fill('xyzzy_no_match_88888');
+    await box.press('Enter');
+    const next = page.locator('#contact-form');
+    await expect(next.locator('input[name="subject"]')).toHaveValue(/xyzzy_no_match_88888/, {
+      timeout: LOAD,
+    });
+    // Nothing of the last form carries over: not its failure, nor its being
+    // ready to send while this one's email is empty.
+    await expect(next.getByRole('alert')).toHaveCount(0);
+    await expect(next.locator('input[name="mailAddress"]')).toHaveValue('');
+    await expect(next.getByRole('button', { name: 'Send' })).toBeDisabled();
+    // And it has a captcha of its own, so it can be sent.
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __renders: number }).__renders))
+      .toBe(2);
+    await next.locator('input[name="mailAddress"]').fill('reader@example.org');
+    await expect(next.getByRole('button', { name: 'Send' })).toBeEnabled();
+    expect(posts).toEqual(['POST']);
   });
 });

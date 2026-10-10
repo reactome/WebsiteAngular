@@ -3,11 +3,12 @@ import {
   inject,
   OnInit,
   OnDestroy,
-  AfterViewInit,
   ElementRef,
   ChangeDetectorRef,
   viewChild,
   signal,
+  effect,
+  untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -52,7 +53,7 @@ import { SearchAnswerComponent } from './answer/search-answer.component';
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
-export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
+export class SearchComponent implements OnInit, OnDestroy {
   private icons = inject(IconService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -75,6 +76,25 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   captchaToken: string | null = null;
   private captchaWidgetId: string | null = null;
+
+  constructor() {
+    // A widget per form: a search that finds nothing again draws a new form,
+    // whose container had no captcha when it was drawn only once.
+    effect(() => {
+      const container = this.captchaContainer()?.nativeElement;
+      untracked(() => {
+        // Whatever the last form's captcha said does not belong to this one.
+        this.captchaToken = null;
+        this.captchaWidgetId = null;
+        if (!container) return;
+        this.loadHCaptchaScript()
+          .then(() => this.renderCaptcha(container))
+          // Without the widget the form cannot be submitted at all, so say so
+          // rather than leaving an empty box.
+          .catch((error) => console.error('Could not load hCaptcha', error));
+      });
+    });
+  }
 
   query = '';
   searchSubmitted = false;
@@ -191,12 +211,21 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.renderCaptchaWhenReady();
-  }
-
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
+    this.cancelSearchRequests();
+  }
+
+  /** Requests of an earlier search, which must not write into this one. */
+  private searchSub?: Subscription;
+  private proteinSub?: Subscription;
+  private groupPageSubs: Record<string, Subscription> = {};
+
+  private cancelSearchRequests(): void {
+    this.searchSub?.unsubscribe();
+    this.proteinSub?.unsubscribe();
+    Object.values(this.groupPageSubs).forEach((sub) => sub.unsubscribe());
+    this.groupPageSubs = {};
   }
 
   private getSuggestions(query: string): void {
@@ -216,24 +245,11 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  private renderCaptchaWhenReady(): void {
-    // Wait until the captcha container is available in the DOM
-    const checkContainer = () => {
-      if (this.captchaContainer()?.nativeElement) {
-        this.loadHCaptchaScript()
-          .then(() => this.renderCaptcha())
-          // Without the widget the form cannot be submitted at all, so say so
-          // rather than leaving an empty box.
-          .catch((error) => console.error('Could not load hCaptcha', error));
-      } else {
-        setTimeout(checkContainer, 200);
-      }
-    };
-    checkContainer();
-  }
+  private hCaptchaScript?: Promise<void>;
 
+  /** Loads the script once, for every form; a failure is retried by the next. */
   private loadHCaptchaScript(): Promise<void> {
-    return new Promise((resolve) => {
+    this.hCaptchaScript ??= new Promise<void>((resolve, reject) => {
       if ((window as any).hcaptcha) {
         resolve();
         return;
@@ -243,16 +259,22 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
+      script.onerror = () => {
+        script.remove();
+        this.hCaptchaScript = undefined;
+        reject(new Error('hCaptcha script failed to load'));
+      };
       document.head.appendChild(script);
     });
+    return this.hCaptchaScript;
   }
 
-  private renderCaptcha(): void {
+  private renderCaptcha(container: HTMLDivElement): void {
     const hcaptcha = (window as any).hcaptcha;
-    const captchaContainer = this.captchaContainer();
-    if (!hcaptcha || !captchaContainer?.nativeElement) return;
+    // Gone already: a later search replaced the form while the script loaded.
+    if (!hcaptcha || this.captchaContainer()?.nativeElement !== container) return;
 
-    this.captchaWidgetId = hcaptcha.render(captchaContainer.nativeElement, {
+    this.captchaWidgetId = hcaptcha.render(container, {
       sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
       theme: 'light',
       callback: (token: string) => {
@@ -280,11 +302,17 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private doSearch(): void {
+    this.cancelSearchRequests();
     this.loading = true;
     this.error = '';
     this.hasNoResults = false;
+    // A new search shows a new help form, if any.
+    this.formSubmitted = false;
+    this.contactFailed = false;
+    this.contactReady.set(false);
+    this.groupLoading = {};
 
-    forkJoin({
+    this.searchSub = forkJoin({
       results: this.searchService
         .search(this.query, this.filters, this.currentPage, this.pageSize)
         .pipe(catchError((err) => this.handleSearchError(err))),
@@ -471,7 +499,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       );
     }
 
-    forkJoin(batchRequests).subscribe((results) => {
+    this.proteinSub = forkJoin(batchRequests).subscribe((results) => {
       // null is a batch that failed, rather than one that found nothing.
       this.proteinsIncomplete = results.some((result) => result === null);
       const allProteins: SearchEntry[] = [];
@@ -736,6 +764,10 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       const start = page * this.groupPageSize;
       return this.uniqueProteins.slice(start, start + this.groupPageSize);
     }
+    if (group.typeName === 'Pages') {
+      const start = (this.groupPages['Pages'] || 0) * this.groupPageSize;
+      return group.entries.slice(start, start + this.groupPageSize);
+    }
     return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
@@ -743,31 +775,32 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const total = this.getGroupTotalPages(group);
     if (page < 0 || page >= total) return;
 
-    // Protein group is paginated client-side — no server call needed
-    if (group.typeName === 'Protein') {
+    // Protein and Pages groups are paginated client-side — no server call
+    // needed, and Pages are not in the search service to be asked for.
+    if (group.typeName === 'Protein' || group.typeName === 'Pages') {
       this.groupPages[group.typeName] = page;
       return;
     }
 
+    // Only the last page asked for may answer.
+    this.groupPageSubs[group.typeName]?.unsubscribe();
     this.groupLoading[group.typeName] = true;
-    this.searchService
+    this.groupPageSubs[group.typeName] = this.searchService
       .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
       .pipe(catchError((err) => this.handleSearchError(err)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        // Failed: the page number stays on the entries still shown.
-        this.groupPageFailed[group.typeName] = result === null;
-        if (result === null) {
+        // Failed, or empty although the count said otherwise: the page number
+        // stays on the entries still shown.
+        const entries = result?.results?.[0]?.entries;
+        this.groupPageFailed[group.typeName] = !entries?.length;
+        if (!entries?.length) {
           this.cdr.markForCheck();
           return;
         }
         // The number moves with the entries, not ahead of them.
         this.groupPages[group.typeName] = page;
-        if (!result.results?.length) {
-          this.cdr.markForCheck();
-          return;
-        }
-        this.groupPageEntries[group.typeName] = result.results[0].entries;
+        this.groupPageEntries[group.typeName] = entries;
         this.cdr.markForCheck();
       });
   }
