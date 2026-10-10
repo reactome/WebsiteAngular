@@ -87,6 +87,14 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
       state
     )
   ),
+  // The progress dialog shows this until it closes, so a failure must say so
+  // rather than leave it on "Sending request" or "Dataset loaded".
+  on(datasetActions.uploadError, (state, { id }) =>
+    failed(state, id, 'Your data could not be uploaded')
+  ),
+  on(datasetActions.loadSubmittedError, datasetActions.getSummaryError, (state, { id }) =>
+    failed(state, id, 'The dataset could not be loaded')
+  ),
   on(datasetActions.setLoadStatus, (state, { loadingStatus, id }) =>
     datasetAdapter.updateOne(
       {
@@ -302,3 +310,19 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
     }))
   )
 );
+
+function failed(state: DatasetState, id: number, description: string): DatasetState {
+  return datasetAdapter.updateOne(
+    {
+      id,
+      changes: {
+        loadingStatus: {
+          id: state.entities[id]?.loadingStatus?.id ?? 'unknown',
+          status: 'failed',
+          description,
+        },
+      },
+    },
+    state
+  );
+}

@@ -156,9 +156,17 @@ export class DatasetEffects {
   loadError = createEffect(
     () =>
       this.actions$.pipe(
-        ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
+        ofType(
+          datasetActions.uploadError,
+          datasetActions.loadSubmittedError,
+          datasetActions.getLoadStatusError,
+          datasetActions.getSummaryError
+        ),
+        // The dialog open now, not whichever is open two seconds later: a reader
+        // may have cancelled this one and started another load by then.
+        map(() => this.dialogRef),
         delay(2000),
-        tap(() => this.dialogRef?.close())
+        tap((dialogRef) => dialogRef?.close())
       ),
     { dispatch: false }
   );
@@ -182,7 +190,7 @@ export class DatasetEffects {
       exhaustMap(({ datasetId, id }) =>
         this.loadDatasetService.getSummary(datasetId).pipe(
           map((summary) => datasetActions.setSummary({ summary, id })),
-          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+          catchError((error) => of(datasetActions.getSummaryError({ error, id })))
         )
       )
     )
@@ -191,7 +199,10 @@ export class DatasetEffects {
   summaryToAnnotate = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setSummary),
-      tap(() => setTimeout(() => this.dialogRef?.close(), 500)),
+      tap(() => {
+        const dialogRef = this.dialogRef; // as loadError: this one, not a later one
+        setTimeout(() => dialogRef?.close(), 500);
+      }),
       map(({ summary, id }) => {
         setTimeout(() => (this.tour.paused ? this.tour.resume() : null), 1000);
         const table: string[][] = !summary.sample_metadata

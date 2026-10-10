@@ -2,7 +2,7 @@ import { computed, Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { DataSummary, LoadingStatus, PLoadingStatus } from '../model/load-dataset.model';
 import { UploadData } from '../model/upload-dataset-model';
-import { catchError, EMPTY, Observable, of, throwError } from 'rxjs';
+import { catchError, Observable, of, throwError } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { extractErrorMessage } from '../utilities/utils';
 import { ConfigProvider, REACTOME_GSA_CONFIG } from '../config/gsa-config';
@@ -24,7 +24,7 @@ export class LoadDatasetService {
 
   snackError<T>(err: HttpErrorResponse, failValue$: Observable<T>): Observable<T> {
     this.snackBar.open(
-      'The chosen dataset could not been loaded: \n' + extractErrorMessage(err),
+      'The chosen dataset could not be loaded: \n' + extractErrorMessage(err),
       'Close',
       {
         panelClass: ['warning-snackbar'],
@@ -43,7 +43,7 @@ export class LoadDatasetService {
       .pipe(
         catchError((err: HttpErrorResponse) => {
           this.snackBar.open(
-            'The chosen dataset could not been loaded: \n' + extractErrorMessage(err),
+            'The chosen dataset could not be loaded: \n' + extractErrorMessage(err),
             'Close',
             {
               panelClass: ['warning-snackbar'],
@@ -71,9 +71,16 @@ export class LoadDatasetService {
   }
 
   getSummary(datasetId: string): Observable<DataSummary> {
-    return this.http
-      .get<DataSummary>(this.summaryDataUrl() + datasetId)
-      .pipe(catchError((err) => this.snackError(err, EMPTY)));
+    // Rethrown, not swallowed: the effect turns the error into the action that
+    // closes the progress dialog. EMPTY left it open with nothing to close it.
+    return this.http.get<DataSummary>(this.summaryDataUrl() + datasetId).pipe(
+      catchError((err: HttpErrorResponse) =>
+        this.snackError(
+          err,
+          throwError(() => err)
+        )
+      )
+    );
   }
 
   uploadFile(file: File): Observable<UploadData> {
@@ -82,7 +89,7 @@ export class LoadDatasetService {
     return this.http.post<UploadData>(this.uploadDataUrl(), formData).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The chosen dataset could not been uploaded: \n' + extractErrorMessage(err),
+          'The chosen dataset could not be uploaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],
@@ -101,7 +108,7 @@ export class LoadDatasetService {
     return this.http.post<UploadData>(this.uploadRiboDataUrl(), formData).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The chosen dataset could not been uploaded: \n' + extractErrorMessage(err),
+          'The chosen dataset could not be uploaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],

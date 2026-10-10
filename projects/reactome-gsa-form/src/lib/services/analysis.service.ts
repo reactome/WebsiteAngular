@@ -96,7 +96,7 @@ export class AnalysisService {
     return this.http.get<AnalysisResult>(this.analysisResultUrl() + analysisId).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The analysis could not been performed: \n' + extractErrorMessage(err),
+          'The analysis could not be performed: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],
@@ -111,7 +111,7 @@ export class AnalysisService {
     return this.http.get<LoadingStatus>(this.reportStatusUrl() + analysisId).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The reports could not been loaded: \n' + extractErrorMessage(err),
+          'The reports could not be loaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],

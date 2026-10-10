@@ -353,6 +353,87 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
   });
 
+  // The progress dialog cannot be closed by the reader, so every way a load can
+  // fail has to end it. A failed summary (fetched once the load completes) was
+  // swallowed into nothing, and a failed upload was dispatched to nobody: both
+  // left the dialog up, one saying the dataset had loaded (#321).
+  async function expectDialogToFailAndClose(page: Page, says: string) {
+    const dialog = page.locator('mat-dialog-container');
+    await expect(dialog.getByRole('heading', { name: says })).toBeVisible({ timeout: 20_000 });
+    await expect(dialog).toHaveCount(0, { timeout: 10_000 });
+  }
+
+  test('closes the progress dialog and says so when the summary fails', async ({ page }) => {
+    await stubGsa(page);
+    await page.route('**/GSAServer/0.1/data/summary/**', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'summary failed' })
+    );
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+
+    await expectDialogToFailAndClose(page, 'The dataset could not be loaded');
+  });
+
+  test('closes the progress dialog and says so when an upload fails', async ({ page }) => {
+    await stubGsa(page);
+    await page.route('**/GSAServer/upload', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'upload failed' })
+    );
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page
+      .locator('gsa-local-data input.file-input')
+      .first()
+      .setInputFiles({
+        name: 'counts.tsv',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('gene\tA\nTP53\t1\n'),
+      });
+
+    await expectDialogToFailAndClose(page, 'Your data could not be uploaded');
+  });
+
+  // A failure closes its dialog two seconds later. It closed whichever dialog
+  // was open by then, so a reader who cancelled and started another load lost
+  // that load's progress dialog while it was still running.
+  test("a failure's late close leaves the next load's dialog open", async ({ page }) => {
+    await stubGsa(page);
+    await page.route('**/GSAServer/upload', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'upload failed' })
+    );
+    // The next load stays running, so only the stale close could end its dialog.
+    await page.route('**/GSAServer/0.1/data/status/**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'running-load', status: 'running', completed: 0.5 }),
+      })
+    );
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page
+      .locator('gsa-local-data input.file-input')
+      .first()
+      .setInputFiles({
+        name: 'counts.tsv',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('gene\tA\nTP53\t1\n'),
+      });
+    const dialog = page.locator('mat-dialog-container');
+    await dialog.getByRole('button', { name: 'Cancel' }).click({ timeout: 20_000 });
+    await expect(dialog).toHaveCount(0);
+
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+    await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible({
+      timeout: 20_000,
+    });
+    await page.waitForTimeout(3000);
+    await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible();
+  });
+
   // ReactomeGSA delivers the result to the Reactome server the request names,
   // and only a site reading that server's Analysis Service can open it. The
   // profile named one all along -- `dev` here, the development profile -- but

@@ -25,7 +25,7 @@ export class FetchDatasetService {
     return this.http.get<DatasetSource[]>(this.exampleDataUrl()).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The dataset options could not been loaded: \n' + extractErrorMessage(err),
+          'The dataset options could not be loaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],
@@ -41,7 +41,7 @@ export class FetchDatasetService {
     return this.http.get<DatasetSource[]>(this.inputDataUrl()).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The dataset options could not been loaded: \n' + extractErrorMessage(err),
+          'The dataset options could not be loaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],
@@ -57,7 +57,7 @@ export class FetchDatasetService {
     return this.http.get<DatasetSource[]>(this.localDataUrl()).pipe(
       catchError((err: HttpErrorResponse) => {
         this.snackBar.open(
-          'The dataset options could not been loaded: \n' + extractErrorMessage(err),
+          'The dataset options could not be loaded: \n' + extractErrorMessage(err),
           'Close',
           {
             panelClass: ['warning-snackbar'],
