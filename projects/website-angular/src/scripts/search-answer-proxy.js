@@ -684,12 +684,17 @@ function makeLimiter(perKey, global) {
       return seconds;
     },
     /**
-     * For a route that counts a call only once it knows what it was: `wait`
-     * first, then `record` -- so calls that cost nothing cannot spend the
-     * budget that everyone shares.
+     * For a route that adds a call to the shared total only once it knows what
+     * it was: the call counts against its own key here, at once -- so calls
+     * made together cannot all slip past the check before any is counted --
+     * and against the total with `countShared`, later, if it earns it.
      */
-    wait: (key, now = Date.now()) => wait(key, now),
-    record: (key, options, now = Date.now()) => record(key, now, options),
+    reserve(key, now = Date.now()) {
+      const seconds = wait(key, now);
+      if (!seconds) record(key, now, { global: false });
+      return seconds;
+    },
+    countShared: (now = Date.now()) => all.push(now),
     reset() {
       seenKeys.clear();
       all = [];

@@ -23,6 +23,7 @@
  * cannot send rather than sending unchecked or nowhere.
  */
 const { spawn } = require('node:child_process');
+const net = require('node:net');
 const express = require('express');
 const gate = require('./human-gate.js');
 const { clientKey, makeLimiter } = require('./search-answer-proxy.js');
@@ -226,15 +227,16 @@ function mountContactRoute(
       return;
     }
     const key = clientKey(req);
-    const wait = contactLimiter.wait(key);
+    const wait = contactLimiter.reserve(key);
     if (wait) {
       res.set('Retry-After', String(wait)).status(429).json({ detail: 'Too many messages' });
       return;
     }
-    // Counted once checked: a refused token spends only its sender's budget,
-    // so unverified calls cannot use up the total and close the form for all.
-    const verified = await verify(read.token, key);
-    contactLimiter.record(key, { global: verified });
+    // Added to the shared total only once checked: a refused token spends
+    // only its sender's budget, so unverified calls cannot use up the total
+    // and close the form for everyone.
+    const verified = await verify(read.token, net.isIP(key) ? key : '');
+    if (verified) contactLimiter.countShared();
     if (!verified) {
       res.status(403).json({ detail: 'Verification failed' });
       return;

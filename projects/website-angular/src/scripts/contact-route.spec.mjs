@@ -197,6 +197,22 @@ describe('a deployment that can send', () => {
     expect((await post(GOOD, { 'X-Forwarded-For': '203.0.113.9' })).status).toBe(200);
   });
 
+  it('holds one address to its limit when it sends several at once', async () => {
+    const slow = verifyAnswer;
+    verifyAnswer = new Promise((resolve) => setTimeout(() => resolve(slow), 200));
+    const statuses = (await Promise.all(Array.from({ length: 6 }, () => post(GOOD)))).map(
+      (response) => response.status
+    );
+    expect(statuses.filter((status) => status === 200)).toHaveLength(3);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(3);
+    expect(sent).toHaveLength(3);
+  });
+
+  it('does not pass Cloudflare an address that is not one', async () => {
+    await post(GOOD, { 'X-Forwarded-For': 'not-an-address' });
+    expect(remoteips).toEqual(['']);
+  });
+
   it('counts refused tokens against the address sending them', async () => {
     verifyAnswer = false;
     for (let i = 0; i < 3; i++) await post(GOOD);
@@ -261,7 +277,7 @@ describe('handing a message to sendmail', () => {
 
   it('gives up on an MTA that does not finish', async () => {
     const script = path.join(dir, 'sendmail-hangs');
-    fs.writeFileSync(script, '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+    fs.writeFileSync(script, '#!/bin/sh\nexec sleep 30\n', { mode: 0o755 });
     await expect(
       sendmail('To: desk@example.org\n\n', 'site@example.org', script, 300)
     ).rejects.toThrow(/did not finish/);
