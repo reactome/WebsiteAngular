@@ -51,11 +51,26 @@ test('the release counters say so when the numbers cannot be loaded', async ({ p
   const stats = page.locator('app-home-stats');
   await expect(stats.getByText('Human Pathways')).toBeVisible({ timeout: 60_000 });
   // Not yet known is not zero.
-  await expect(stats.locator('.stat-item span').first()).not.toHaveText('0');
+  await expect(stats.locator('.stat-item span').first()).toHaveText('–');
 
   answer();
   await expect(stats.getByRole('alert')).toContainText("Couldn't load the release statistics", {
     timeout: 30_000,
   });
   await expect(stats).not.toContainText('Human Pathways');
+});
+
+// The statistics file is named by release, so a release number that cannot be
+// had means no statistics either -- and reading the failed number threw on
+// every redraw, which left the message an icon with no words.
+test('the release counters say so when the release cannot be had', async ({ page }) => {
+  await page.route(/\/data\/database\/version/, (route) =>
+    route.fulfill({ status: 500, contentType: 'text/plain', body: 'version failed' })
+  );
+  await page.goto('/');
+  const stats = page.locator('app-home-stats');
+  await expect(stats.getByRole('alert')).toContainText("Couldn't load the release statistics", {
+    timeout: 60_000,
+  });
+  await expect(stats.getByRole('heading')).toContainText('Released on');
 });

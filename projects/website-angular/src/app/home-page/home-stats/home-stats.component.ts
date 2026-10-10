@@ -85,8 +85,11 @@ export class HomeStatsComponent implements OnInit {
       });
   }
 
-  /** A count, or a dash while it is not known yet: unknown is not zero. */
-  formatNumber(num: number | undefined): string {
-    return num === undefined ? '–' : num.toLocaleString('en-US');
+  /**
+   * A count, or a dash while it is not known yet: unknown is not zero. Null as
+   * well as undefined: a template's `stats()?.x` gives null, not undefined.
+   */
+  formatNumber(num: number | null | undefined): string {
+    return num == null ? '–' : num.toLocaleString('en-US');
   }
 }

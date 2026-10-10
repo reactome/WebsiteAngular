@@ -39,7 +39,7 @@ export class StatsService {
    * wrong number looks just as authoritative as the right one, and every file
    * link built from it points at the previous release.
    */
-  readonly versionNow = computed(() => this.generalService.version.value()?.toString() ?? '');
+  readonly versionNow = computed(() => this.generalService.current()?.toString() ?? '');
 
   /**
    * The release, once the database has answered. For callers that cannot wait on
@@ -49,6 +49,9 @@ export class StatsService {
     return (await this.versionSettled).toString();
   }
 
+  // Reads `version.value` itself, not `current`, on purpose: it throws when the
+  // version request fails, which rejects this, so callers can say so rather
+  // than wait for a number that is not coming.
   private readonly versionSettled: Promise<number> = firstValueFrom(
     toObservable(this.generalService.version.value).pipe(
       filter((version): version is number => !!version),
@@ -94,7 +97,7 @@ export class StatsService {
     const url = `${baseUrl}/${version}/stats/summary_stats.json`;
 
     return this.http.get<RawStatItem[]>(url).pipe(
-      timeout(5000), // 5 second timeout
+      timeout(10_000), // a 577-byte file: past this, say it failed rather than wait
       map((data) => this.parseStats(data))
     );
   }
