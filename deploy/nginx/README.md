@@ -67,9 +67,12 @@ Found by asking the running config rather than by reading it.
 ## Local is not runnable yet, and says so
 
 `local.conf` expects compose services named `app`, `content-service`,
-`deltasignal` and `chatbot`. **Only `app` exists** in `docker-compose.yml` today.
-So this file is the shape of the answer, not the answer: starting the site
-locally still needs those services defined.
+`content-node`, `deltasignal` and `chatbot`, all reachable by name on one compose
+network. `docker-compose.yml` does not provide that today: `content-service` and
+the two others are not defined, and `content-node` and `nginx` run on the host's
+network, where no service name resolves. So this file is the shape of the answer,
+not the answer: starting the site locally still needs those services defined on
+a shared network.
 
 DeltaSignal and the chatbot are resolved _per request_ rather than at startup,
 through a variable and a resolver, so their absence gives a 502 on those two
