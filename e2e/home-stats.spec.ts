@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
 /**
@@ -10,7 +11,7 @@ import { test, expect } from './support/backend';
  */
 test('the release counters show the numbers once they arrive, however late', async ({ page }) => {
   // Held back until the page has settled, so nothing else redraws it -- and
-  // answered here, not fetched: the service gives up after 5 seconds, and a
+  // answered here, not fetched: the service gives up after 10 seconds, and a
   // slow fetch on top of the wait failed this for reasons of its own. The
   // file's own shape, from download.reactome.org.
   await page.route('**/stats/summary_stats.json', async (route) => {
@@ -62,15 +63,38 @@ test('the release counters say so when the numbers cannot be loaded', async ({ p
 
 // The statistics file is named by release, so a release number that cannot be
 // had means no statistics either -- and reading the failed number threw on
-// every redraw, which left the message an icon with no words.
-test('the release counters say so when the release cannot be had', async ({ page }) => {
+// every redraw, which left the message an icon with no words. Whether the words
+// made it depended on timing, so the throw itself is what is checked.
+async function failTheRelease(page: Page) {
+  const thrown: string[] = [];
+  page.on('console', (message) => {
+    // Angular reports a throw during rendering as "ERROR <error>".
+    if (message.type() === 'error' && /^ERROR\b.*ResourceValueError/s.test(message.text()))
+      thrown.push(message.text());
+  });
   await page.route(/\/data\/database\/version/, (route) =>
     route.fulfill({ status: 500, contentType: 'text/plain', body: 'version failed' })
   );
+  return thrown;
+}
+
+test('the release counters say so when the release cannot be had', async ({ page }) => {
+  const thrown = await failTheRelease(page);
   await page.goto('/');
   const stats = page.locator('app-home-stats');
   await expect(stats.getByRole('alert')).toContainText("Couldn't load the release statistics", {
     timeout: 60_000,
   });
-  await expect(stats.getByRole('heading')).toContainText('Released on');
+  expect(thrown).toEqual([]);
+});
+
+test('the pathway browser header draws without the release', async ({ page }) => {
+  const thrown = await failTheRelease(page);
+  // No pathway: a diagram cannot be had without the release either (its files
+  // are named by it), and that is a separate failure from the header's.
+  await page.goto('/PathwayBrowser');
+  await expect(page.locator('.version-container .beta')).toBeVisible({ timeout: 60_000 });
+  // Long enough for redraws after the version has failed.
+  await page.waitForTimeout(3000);
+  expect(thrown).toEqual([]);
 });
