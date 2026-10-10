@@ -57,9 +57,10 @@ test('the pathway browser still writes its URL when a parameter says "content"',
     .locator('[role="tab"]')
     .filter({ hasText: /Molecule/i })
     .first();
-  test.skip((await molecule.count()) === 0, 'this pathway offers no Molecule tab');
+  // Asserted, not skipped on: the pathway is chosen for having one, and a
+  // missing tab is a regression, not a reason to report green (#321).
+  await expect(molecule, 'this pathway offers a Molecule tab').toBeVisible();
   await molecule.click();
-  await page.waitForTimeout(2500);
 
-  expect(new URL(page.url()).search, 'choosing a tab reached the URL').toContain('tab=molecule');
+  await expect(page, 'choosing a tab reached the URL').toHaveURL(/[?&]tab=molecule/);
 });

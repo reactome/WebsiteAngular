@@ -85,7 +85,11 @@ test.describe('Event hierarchy scrolling', () => {
     await openDeepHierarchy(page);
 
     const marked = await markVisibleRowNearBottom(page);
-    test.skip(!marked || marked.scrollTop === 0, 'the hierarchy here does not scroll');
+    // Asserted, not skipped on: this pathway and window are chosen so the tree
+    // scrolls, and a tree that does not is a regression in the setup, not a
+    // reason to report green (#321).
+    expect(marked, 'a row in view near the bottom').not.toBeNull();
+    expect(marked?.scrollTop, 'the hierarchy scrolls').toBeGreaterThan(0);
 
     const before = await scrollTop(page);
     await page.locator(`${TREE} [data-pick="1"]`).click();
@@ -114,7 +118,8 @@ test.describe('Event hierarchy scrolling', () => {
       return { scrollTop: Math.round(scroller.scrollTop), above: above.length };
     }, SCROLLER);
 
-    test.skip(!target || target.above === 0, 'nothing is scrolled out of view here');
+    // Asserted, not skipped on, as above.
+    expect(target?.above, 'rows scrolled out of view above').toBeGreaterThan(0);
 
     const before = await scrollTop(page);
     // It is off-screen, so dispatch the click rather than asking Playwright to
