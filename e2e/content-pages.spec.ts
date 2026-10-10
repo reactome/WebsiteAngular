@@ -1,4 +1,5 @@
 import { serves } from './fixtures/serves';
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect } from './support/backend';
 
 // Coverage for the content pages and shared navigation chrome.
@@ -45,22 +46,25 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
-  // ToC, DOI and Contributors read /data/content/* on the content service.
-  // Those endpoints exist only on the dev host, from an unmerged backend branch
-  // -- production still 404s them. Skip rather than fail where they are absent,
-  // so a red run always means a real regression. Checked once per worker.
-  let contentEndpoints: boolean | undefined;
-  test.beforeEach(async ({ request, baseURL }) => {
-    if (contentEndpoints === undefined) {
-      // Not wrapped in try/catch on purpose: a backend without the endpoint
-      // answers 404 and these tests stand down, but a timeout used to land here
-      // too and quietly disabled all four for the whole run.
-      contentEndpoints = await serves(request, `${baseURL}/ContentService/data/content/toc`);
-    }
-  });
+  // ToC, DOI and Contributors read /data/content/* on the content service,
+  // which node serves and Java's ContentService does not: production's still
+  // 404s them. Skip rather than fail where they are absent, so a red run always
+  // means a real regression.
+  //
+  // Asked by each test that needs them, not once per worker. A cached answer
+  // came from whichever test ran first, and a test that never probes has no
+  // recording of the probe -- so when sharding put the icon library first, it
+  // read as absent and the four tests below skipped (#321).
+  async function skipUnlessContentEndpoints(request: APIRequestContext, baseURL?: string) {
+    // Not wrapped in try/catch on purpose: a backend without the endpoint
+    // answers 404 and these tests stand down, but a timeout used to land here
+    // too and quietly disabled all four for the whole run.
+    const present = await serves(request, `${baseURL}/ContentService/data/content/toc`);
+    test.skip(!present, 'content-page endpoints absent on this backend');
+  }
 
-  test('table of contents lists pathways', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('table of contents lists pathways', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/content/toc');
     await expect(
       page.getByText(/Metabolism|Signal Transduction|Immune System/).first()
@@ -69,8 +73,12 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
-  test('a subpathway shows its DOI, which its parent does not carry', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('a subpathway shows its DOI, which its parent does not carry', async ({
+    page,
+    request,
+    baseURL,
+  }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     // This page asks for two lists, and under replay they are ~1 MB of recorded
     // JSON together (250 kB of contents, 796 kB of DOIs). Alone it takes about
     // 35 seconds, which used to exceed playwright's 30s default and report as a
@@ -102,15 +110,15 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
-  test('DOI page lists pathways', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('DOI page lists pathways', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/content/doi');
     // Every row is a DOI-registered pathway; the prefix is stable.
     await expect(page.getByText(/10\.\d{4,}/).first()).toBeVisible({ timeout: LOAD });
   });
 
-  test('contributors page lists people', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('contributors page lists people', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/community/contributors');
     const links = page.locator('a[href*="/content/detail/person/"]');
     await expect(links.first()).toBeVisible({ timeout: LOAD });
