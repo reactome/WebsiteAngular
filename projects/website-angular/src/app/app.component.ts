@@ -10,7 +10,7 @@ import { CiteUsComponent } from './cite-us/cite-us.component';
 import { ScrollToTopComponent } from './scroll-to-top/scroll-to-top.component';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { SUBJECT_ICONS } from '../utils/subjectIcons';
+import { SUBJECT_ICONS, subjectIconUrl } from '../utils/subjectIcons';
 import { IS_CURATOR } from '../../../pathway-browser/src/environments/environment';
 
 @Component({
@@ -74,9 +74,7 @@ export class AppComponent implements OnInit {
       registered.add(icon.name);
       this.matIconRegistry.addSvgIcon(
         icon.name,
-        this.domSanitizer.bypassSecurityTrustResourceUrl(
-          `assets/icons/reactome-subject/${icon.route}.svg`
-        )
+        this.domSanitizer.bypassSecurityTrustResourceUrl(subjectIconUrl(icon))
       );
     }
   }

@@ -3,14 +3,16 @@ import {
   inject,
   OnInit,
   OnDestroy,
-  AfterViewInit,
   ElementRef,
   ChangeDetectorRef,
   viewChild,
+  signal,
+  effect,
+  untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
+import { Subscription, forkJoin, catchError, map, Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { IconService } from '../../services/icon.service';
 import { HttpClient } from '@angular/common/http';
@@ -31,7 +33,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
-import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import { ChallengeWidget, renderWidget } from './answer/turnstile';
+
+/** Our own route: ContentService's /contact takes only an hCaptcha token. */
+const CONTACT_ROUTE = '/contact';
 import { SearchAnswerComponent } from './answer/search-answer.component';
 
 @Component({
@@ -51,7 +56,7 @@ import { SearchAnswerComponent } from './answer/search-answer.component';
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
-export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
+export class SearchComponent implements OnInit, OnDestroy {
   private icons = inject(IconService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -73,7 +78,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly captchaContainer = viewChild<ElementRef<HTMLDivElement>>('captchaContainer');
 
   captchaToken: string | null = null;
-  private captchaWidgetId: string | null = null;
+  private challenge?: ChallengeWidget;
+  private challengeSub?: Subscription;
+  /** A message is on its way: Send waits for its answer, so it goes once. */
+  contactSending = false;
+
+  constructor() {
+    // A widget per form: a search that finds nothing again draws a new form,
+    // whose container had no challenge when it was drawn only once.
+    effect(() => {
+      const container = this.captchaContainer()?.nativeElement;
+      untracked(() => this.prepareChallenge(container));
+    });
+  }
 
   query = '';
   searchSubmitted = false;
@@ -96,6 +113,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   error = '';
   hasNoResults = false;
   formSubmitted = false;
+  /** The help-desk message could not be sent; the form stays, with what was written. */
+  contactFailed = false;
+  /**
+   * The form cannot be sent from here: this deployment does not send, or the
+   * check that the reader is a person could not be loaded.
+   */
+  contactUnavailable = false;
+  /**
+   * Email and message are filled in. Held as a signal set on input: the button
+   * read the fields directly, and with nothing to re-check it when they were
+   * typed in, solving the captcha first left Send disabled for good.
+   */
+  readonly contactReady = signal(false);
 
   currentPage = 0;
   pageSize = 30;
@@ -130,6 +160,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   uniqueProteins: SearchEntry[] = [];
   proteinTotalForms = 0;
   proteinLoading = false;
+  /** Some batches of the protein list failed, so it is short of them. */
+  proteinsIncomplete = false;
+  /** Groups whose last page change failed, and stayed on the page they show. */
+  groupPageFailed: Record<string, boolean> = {};
+  /** The website's pages could not be searched; only data results are shown. */
+  pagesFailed = false;
 
   // Unified search now always uses reference-style aggregation: one row per
   // reference entity (e.g. one TP53) with modified forms / isoforms collapsed
@@ -176,12 +212,23 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.renderCaptchaWhenReady();
-  }
-
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
+    this.cancelSearchRequests();
+    this.prepareChallenge(undefined);
+  }
+
+  /** Requests of an earlier search, which must not write into this one. */
+  private searchSub?: Subscription;
+  private proteinSub?: Subscription;
+  private groupPageSubs: Record<string, Subscription> = {};
+
+  private cancelSearchRequests(): void {
+    this.searchSub?.unsubscribe();
+    this.proteinSub?.unsubscribe();
+    this.proteinLoading = false;
+    Object.values(this.groupPageSubs).forEach((sub) => sub.unsubscribe());
+    this.groupPageSubs = {};
   }
 
   private getSuggestions(query: string): void {
@@ -201,84 +248,66 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  private renderCaptchaWhenReady(): void {
-    // Wait until the captcha container is available in the DOM
-    const checkContainer = () => {
-      if (this.captchaContainer()?.nativeElement) {
-        this.loadHCaptchaScript()
-          .then(() => this.renderCaptcha())
-          // Without the widget the form cannot be submitted at all, so say so
-          // rather than leaving an empty box.
-          .catch((error) => console.error('Could not load hCaptcha', error));
-      } else {
-        setTimeout(checkContainer, 200);
-      }
-    };
-    checkContainer();
-  }
-
-  private loadHCaptchaScript(): Promise<void> {
-    return new Promise((resolve) => {
-      if ((window as any).hcaptcha) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-  }
-
-  private renderCaptcha(): void {
-    const hcaptcha = (window as any).hcaptcha;
-    const captchaContainer = this.captchaContainer();
-    if (!hcaptcha || !captchaContainer?.nativeElement) return;
-
-    this.captchaWidgetId = hcaptcha.render(captchaContainer.nativeElement, {
-      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-      theme: 'light',
-      callback: (token: string) => {
-        this.captchaToken = token;
-        this.cdr.markForCheck();
-      },
-      'expired-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-      'error-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  private resetCaptcha(): void {
-    const hcaptcha = (window as any).hcaptcha;
-    if (hcaptcha && this.captchaWidgetId != null) {
-      hcaptcha.reset(this.captchaWidgetId);
-    }
+  /**
+   * Readies the help form drawn into `container`, or clears up after the one
+   * that has gone. The reader proves they are a person with Turnstile, whose
+   * sitekey comes from the route the message goes to: a deployment that cannot
+   * send says so there.
+   */
+  private prepareChallenge(container: HTMLDivElement | undefined): void {
+    // Whatever the last form's challenge said does not belong to this one, and
+    // its widget must not go on writing into this form's token.
+    this.challengeSub?.unsubscribe();
+    this.challenge?.remove();
+    this.challenge = undefined;
     this.captchaToken = null;
-    this.cdr.markForCheck();
+    this.contactUnavailable = false;
+    if (!container) return;
+    const unavailable = (error: unknown) => {
+      console.error('The help form cannot be sent from here', error);
+      if (this.captchaContainer()?.nativeElement !== container) return;
+      this.contactUnavailable = true;
+      this.cdr.markForCheck();
+    };
+    this.challengeSub = this.http.get<{ sitekey: string }>(CONTACT_ROUTE).subscribe({
+      next: ({ sitekey }) =>
+        void renderWidget(container, sitekey, (token) => {
+          this.captchaToken = token;
+          this.cdr.markForCheck();
+        }).then((widget) => {
+          // Gone already: a later search replaced the form while this loaded.
+          if (this.captchaContainer()?.nativeElement !== container) widget.remove();
+          else this.challenge = widget;
+        }, unavailable),
+      error: unavailable,
+    });
   }
 
   private doSearch(): void {
+    this.cancelSearchRequests();
     this.loading = true;
     this.error = '';
     this.hasNoResults = false;
+    // A new search shows a new help form, if any.
+    this.formSubmitted = false;
+    this.contactFailed = false;
+    this.contactReady.set(false);
+    this.groupLoading = {};
 
-    forkJoin({
+    this.searchSub = forkJoin({
       results: this.searchService
         .search(this.query, this.filters, this.currentPage, this.pageSize)
         .pipe(catchError((err) => this.handleSearchError(err))),
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
-      pages: this.siteSearch.search(this.query).pipe(catchError(() => of([] as SitePageHit[]))),
+      pages: this.siteSearch.search(this.query).pipe(
+        map((hits) => ({ hits, failed: false })),
+        catchError(() => of({ hits: [] as SitePageHit[], failed: true }))
+      ),
     }).subscribe({
-      next: ({ results, facets, pages }) => {
+      next: ({ results, facets, pages: { hits: pages, failed: pagesFailed } }) => {
+        this.pagesFailed = pagesFailed;
         // If either API call failed, show error
         if (!results || !facets) {
           this.error = 'An error occurred while searching. Please try again.';
@@ -390,6 +419,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.groupPages = {};
           this.groupPageEntries = {};
           this.groupLoading = {};
+          this.groupPageFailed = {};
           this.expandedForms = {};
 
           // If there's a Protein group, fetch ALL protein entries for deduplication
@@ -433,6 +463,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private fetchAllProteins(totalCount: number): void {
     this.proteinLoading = true;
+    this.proteinsIncomplete = false;
     this.proteinForms = new Map();
     this.uniqueProteins = [];
     this.proteinTotalForms = 0;
@@ -446,11 +477,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       batchRequests.push(
         this.searchService
           .search(this.query, proteinFilters, batchPage, batchSize)
-          .pipe(catchError(() => of(null)))
+          .pipe(catchError((err) => this.handleSearchError(err)))
       );
     }
 
-    forkJoin(batchRequests).subscribe((results) => {
+    this.proteinSub = forkJoin(batchRequests).subscribe((results) => {
+      // null is a batch that failed, rather than one that found nothing.
+      this.proteinsIncomplete = results.some((result) => result === null);
       const allProteins: SearchEntry[] = [];
       for (const result of results) {
         if (!result?.results?.length) continue;
@@ -713,28 +746,43 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       const start = page * this.groupPageSize;
       return this.uniqueProteins.slice(start, start + this.groupPageSize);
     }
+    if (group.typeName === 'Pages') {
+      const start = (this.groupPages['Pages'] || 0) * this.groupPageSize;
+      return group.entries.slice(start, start + this.groupPageSize);
+    }
     return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
   goToGroupPage(group: ResultGroup, page: number): void {
     const total = this.getGroupTotalPages(group);
     if (page < 0 || page >= total) return;
-    this.groupPages[group.typeName] = page;
 
-    // Protein group is paginated client-side — no server call needed
-    if (group.typeName === 'Protein') return;
+    // Protein and Pages groups are paginated client-side — no server call
+    // needed, and Pages are not in the search service to be asked for.
+    if (group.typeName === 'Protein' || group.typeName === 'Pages') {
+      this.groupPages[group.typeName] = page;
+      return;
+    }
 
+    // Only the last page asked for may answer.
+    this.groupPageSubs[group.typeName]?.unsubscribe();
     this.groupLoading[group.typeName] = true;
-    this.searchService
+    this.groupPageSubs[group.typeName] = this.searchService
       .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError((err) => this.handleSearchError(err)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        if (!result?.results?.length) {
+        // Failed, or empty although the count said otherwise: the page number
+        // stays on the entries still shown.
+        const entries = result?.results?.[0]?.entries;
+        this.groupPageFailed[group.typeName] = !entries?.length;
+        if (!entries?.length) {
           this.cdr.markForCheck();
           return;
         }
-        this.groupPageEntries[group.typeName] = result.results[0].entries;
+        // The number moves with the entries, not ahead of them.
+        this.groupPages[group.typeName] = page;
+        this.groupPageEntries[group.typeName] = entries;
         this.cdr.markForCheck();
       });
   }
@@ -747,24 +795,37 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.captchaToken) {
+    if (!this.captchaToken || this.contactSending) {
       return;
     }
 
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    formData.set('h-captcha-response', this.captchaToken);
+    const form = new FormData(event.target as HTMLFormElement);
+    const field = (name: string) => String(form.get(name) ?? '');
+    const message = {
+      contactName: field('contactName'),
+      mailAddress: field('mailAddress'),
+      subject: field('subject'),
+      message: field('message'),
+      token: this.captchaToken,
+    };
 
-    this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
+    this.contactFailed = false;
+    this.contactSending = true;
+    // A token is good for one try; this one is spent whatever the answer.
+    this.captchaToken = null;
+    this.http.post(CONTACT_ROUTE, message).subscribe({
       next: () => {
+        this.contactSending = false;
         this.formSubmitted = true;
-        this.resetCaptcha();
         this.cdr.markForCheck();
       },
       error: (err) => {
+        this.contactSending = false;
         console.error('Error submitting contact form:', err);
-        this.formSubmitted = true; // Still show thank you message even if there's an error
-        this.resetCaptcha();
+        // Not sent, so not thanked for: the form stays, with what was written,
+        // and a fresh challenge, as a token is good for one try.
+        this.contactFailed = true;
+        this.challenge?.reset();
         this.cdr.markForCheck();
       },
     });

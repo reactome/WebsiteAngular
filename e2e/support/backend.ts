@@ -138,10 +138,9 @@ const BLOCKED = new Map<string, string>([
   ['www.googletagmanager.com', 'test runs must not appear in the public property'],
   ['www.google-analytics.com', 'test runs must not appear in the public property'],
   [
-    'js.hcaptcha.com',
-    'the widget is never solved by a test; loading it only tells hCaptcha we ran',
+    'challenges.cloudflare.com',
+    'Turnstile: tests stand in for the widget; loading it only tells Cloudflare we ran',
   ],
-  ['newassets.hcaptcha.com', 'assets for that widget'],
   ['www.youtube.com', 'see below: the player is a doorway to ten more hosts'],
   ['www.youtube-nocookie.com', 'the pathway browser tour video; the same player, privacy-enhanced'],
   ['static.hsappstatic.net', 'the HubSpot meetings widget, same reason'],

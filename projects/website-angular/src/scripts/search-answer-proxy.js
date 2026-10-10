@@ -651,28 +651,50 @@ function makeLimiter(perKey, global) {
   const seenKeys = new Map();
   let all = [];
   const longest = perKey[perKey.length - 1].windowMs;
+  /** The seconds to wait, or 0, without counting the call. */
+  function wait(key, now) {
+    all = all.filter((at) => now - at < global.windowMs);
+    if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
+    const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
+    seenKeys.set(key, times);
+    for (const { windowMs, max } of perKey) {
+      const inWindow = times.filter((at) => now - at < windowMs);
+      if (inWindow.length >= max) return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
+    }
+    return 0;
+  }
+
+  /** Counts a call against its key, and against the total unless told not to. */
+  function record(key, now, { global: counted = true } = {}) {
+    const times = seenKeys.get(key) ?? [];
+    times.push(now);
+    seenKeys.set(key, times);
+    if (counted) all.push(now);
+    if (seenKeys.size > 5000) {
+      for (const [k, stamps] of seenKeys) {
+        if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
+      }
+    }
+  }
+
   return {
     retryAfter(key, now = Date.now()) {
-      all = all.filter((at) => now - at < global.windowMs);
-      if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
-      const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
-      for (const { windowMs, max } of perKey) {
-        const inWindow = times.filter((at) => now - at < windowMs);
-        if (inWindow.length >= max) {
-          seenKeys.set(key, times);
-          return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
-        }
-      }
-      times.push(now);
-      seenKeys.set(key, times);
-      all.push(now);
-      if (seenKeys.size > 5000) {
-        for (const [k, stamps] of seenKeys) {
-          if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
-        }
-      }
-      return 0;
+      const seconds = wait(key, now);
+      if (!seconds) record(key, now);
+      return seconds;
     },
+    /**
+     * For a route that adds a call to the shared total only once it knows what
+     * it was: the call counts against its own key here, at once -- so calls
+     * made together cannot all slip past the check before any is counted --
+     * and against the total with `countShared`, later, if it earns it.
+     */
+    reserve(key, now = Date.now()) {
+      const seconds = wait(key, now);
+      if (!seconds) record(key, now, { global: false });
+      return seconds;
+    },
+    countShared: (now = Date.now()) => all.push(now),
     reset() {
       seenKeys.clear();
       all = [];
@@ -832,6 +854,7 @@ module.exports = {
   retryAfter,
   verifyRetryAfter,
   clientKey,
+  makeLimiter,
   LIMITS,
   GLOBAL_LIMIT,
   // Test-only: the counters are process-wide, so a spec needs to start clean.

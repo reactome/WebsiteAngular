@@ -7,7 +7,13 @@
 export interface SubjectIcon {
   name: string; // svgIcon name used in <mat-icon [svgIcon]="...">
   tooltip: string; // human-readable label
-  route: string; // filename under /assets/icons/reactome-subject/<route>.svg
+  route: string; // filename under /assets/icons/<folder>/<route>.svg
+  folder?: 'general'; // when not reactome-subject
+}
+
+/** Where an icon's SVG is served. */
+export function subjectIconUrl(icon: SubjectIcon): string {
+  return `assets/icons/${icon.folder ?? 'reactome-subject'}/${icon.route}.svg`;
 }
 
 const protein: SubjectIcon = { name: 'protein', tooltip: 'Protein', route: 'protein' };
@@ -120,7 +126,9 @@ export const SUBJECT_ICONS: Record<string, SubjectIcon> = {
   Protein: protein,
   Gene: { name: 'gene', tooltip: 'Gene', route: 'gene' },
   RNA: { name: 'RNA', tooltip: 'RNA', route: 'RNA' },
-  Icon: { name: 'icon', tooltip: 'Icon', route: 'icon' },
+  // Not a schema class, so not in reactome-subject: there was no icon.svg there,
+  // and every search with icon results asked for it.
+  Icon: { name: 'icon', tooltip: 'Icon', route: 'icon', folder: 'general' },
 };
 
 const FALLBACK: SubjectIcon = { name: 'pathway', tooltip: 'Pathway', route: 'pathway' };

@@ -179,18 +179,22 @@ function identityDetailsFromRequest(req, now = Date.now()) {
 }
 
 /**
- * Asks hCaptcha whether a response token is genuine.
+ * Asks Cloudflare Turnstile whether a response token is genuine.
  *
  * Failure of any kind is a failed verification. A network error here must not
  * become an accidental pass.
  */
-async function verifyCaptcha(token, fetchImpl = fetch) {
+async function verifyCaptcha(token, fetchImpl = fetch, remoteip = '') {
   if (!TURNSTILE_SECRET || typeof token !== 'string' || token === '') return false;
   try {
+    const form = { secret: TURNSTILE_SECRET, response: token };
+    if (remoteip) form.remoteip = remoteip;
     const response = await fetchImpl(SITEVERIFY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ secret: TURNSTILE_SECRET, response: token }).toString(),
+      body: new URLSearchParams(form).toString(),
+      // A Cloudflare that does not answer is a failed check, not a held request.
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return false;
     const body = await response.json();
@@ -212,8 +216,12 @@ function setIdentityCookie(res, value) {
   );
 }
 
+/** Both Turnstile keys are present, whether or not the answer gate is on. */
+const TURNSTILE_CONFIGURED = Boolean(TURNSTILE_SECRET && TURNSTILE_SITEKEY);
+
 module.exports = {
   COOKIE,
+  TURNSTILE_CONFIGURED,
   SITEVERIFY,
   TURNSTILE_SITEKEY,
   IDENTITY_TTL_MS,

@@ -73,9 +73,14 @@ export class SiteSearchService {
         mini.addAll(items);
         this.index$.next(mini);
       },
-      error: () => {
-        // Resolve with an empty index so subscribers don't hang on failure.
-        this.index$.next(new MiniSearch<SiteSearchIndexItem>({ fields: ['title', 'body'] }));
+      error: (error: unknown) => {
+        // Fail the searches waiting on it, rather than answer them from an
+        // empty index -- which read as "no pages match" -- and let the next
+        // search load it again.
+        const failed = this.index$;
+        this.index$ = new ReplaySubject<MiniSearch<SiteSearchIndexItem>>(1);
+        this.loaded = false;
+        failed.error(error);
       },
     });
   }

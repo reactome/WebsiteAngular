@@ -655,7 +655,7 @@ $border-radius: 8px;
     }
   }
 
-  .h-captcha {
+  .challenge {
     display: flex;
     justify-content: center;
   }
@@ -885,4 +885,12 @@ $border-radius: 8px;
   .pagination {
     flex-wrap: wrap;
   }
+}
+
+// A part of the search that failed, said where its results would be.
+.search-load-error {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--error);
+  color: var(--error);
 }
