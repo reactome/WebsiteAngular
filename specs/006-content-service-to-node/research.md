@@ -156,6 +156,14 @@ they are ready. Decided 20 Sep 2026.
   in the response is the subpathway DOIs Java drops. That removes most of what
   D8 was protecting against -- the failure mode it feared was a curator meeting
   a broken page and reporting it as a website fault.
+
+  **Reversed 10 Oct 2026: no fallback.** A path routed to node is answered by
+  node or fails visibly. Falling back hid which backend had answered, and these
+  routes are how Java's ContentService is retired: an endpoint is done when node
+  serves it alone, and Tomcat is switched off once every endpoint is. The
+  `backup` server is gone from every `content_node` upstream, and so is the
+  retry rule that only it used (#390).
+
 - **The curator round is no longer a single gate.** The blocking issues are
   fixed; what comes back now is smaller and rarer, and fixing it and rolling it
   out as we go is a better fit than batching behind a freeze.
