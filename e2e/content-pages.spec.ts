@@ -263,6 +263,18 @@ test.describe('When an article list fails to load', () => {
     });
     await expect(page.getByText('No news articles available')).toHaveCount(0);
   });
+
+  // The other half: a list that is not there is empty, not an error. The site's
+  // fallback answers a missing file with index.html and a 200.
+  test('a missing list is still "no news", not an error', async ({ page }) => {
+    await page.route('**/content/about/news/index.json', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html></html>' })
+    );
+    await page.goto('/');
+    const news = page.locator('app-home-latest-news');
+    await expect(news).toContainText('No news to show right now', { timeout: LOAD });
+    await expect(news.getByRole('alert')).toHaveCount(0);
+  });
 });
 
 test.describe('In-page table of contents', () => {
