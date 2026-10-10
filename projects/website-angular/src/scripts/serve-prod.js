@@ -72,15 +72,18 @@ for (const [context, options] of Object.entries(proxyConfig)) {
   // Selected with pathFilter rather than mounted with app.use(context, ...):
   // mounting makes Express strip the prefix before the proxy sees the request,
   // so /ContentService/data/... would reach the backend as /data/... and 404.
+  //
+  // Contexts read the way the dev server (Vite) reads them: one starting with
+  // `^` is a regex over the path and query, any other is a path prefix.
+  const pattern = context.startsWith('^') ? new RegExp(context) : undefined;
+  const inContext = pattern
+    ? (_pathname, req) => pattern.test(req.url ?? '')
+    : (pathname) => pathname === context || pathname.startsWith(`${context}/`);
   app.use(
     createProxyMiddleware({
       // The dev server's `bypass` hook, honoured here too: a path it claims for
-      // the app falls through to the static handler, which serves the app. The
-      // function is the glob below spelled out, for a context that is a prefix.
-      pathFilter: options.bypass
-        ? (pathname, req) =>
-            (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
-        : `${context}/**`,
+      // the app falls through to the static handler, which serves the app.
+      pathFilter: (pathname, req) => inContext(pathname, req) && !options.bypass?.(req),
       target: options.target,
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,
