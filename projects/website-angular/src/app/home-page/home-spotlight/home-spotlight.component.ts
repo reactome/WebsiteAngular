@@ -1,5 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
@@ -9,29 +9,27 @@ import { marked } from 'marked';
 import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 
 @Component({
   selector: 'app-home-spotlight',
   standalone: true,
-  imports: [RouterModule, ButtonComponent],
+  imports: [RouterModule, ButtonComponent, LoadErrorComponent],
   templateUrl: './home-spotlight.component.html',
   styleUrl: './home-spotlight.component.scss',
 })
 export class HomeSpotlightComponent implements OnInit {
   contentService = inject(ContentService);
-  // Plain fields assigned from an async callback: the app is zoneless, so
-  // nothing notices them changing without being told.
-  private cdr = inject(ChangeDetectorRef);
 
-  loading = true;
-  spotLightArticle: ArticleIndexItem = {
-    title: '',
-    date: new Date(),
-    author: '',
-    slug: '',
-    excerpt: '',
-  };
-  renderedContent: string = '';
+  /**
+   * The newest spotlight; null while loading and when there is none. It used
+   * to start as a blank placeholder dated today, so a list that failed or came
+   * back empty showed that placeholder with a "Learn More" link to nothing.
+   */
+  readonly spotlight = signal<ArticleIndexItem | null>(null);
+  readonly loading = signal(true);
+  readonly failed = signal(false);
+  readonly renderedContent = signal('');
   /** Shared, loaded once by NavOptionsService (a signal, so it renders when it arrives). */
   readonly navOptions = inject(NavOptionsService).navOptions;
 
@@ -40,43 +38,35 @@ export class HomeSpotlightComponent implements OnInit {
   }
 
   loadSpotLightArticle() {
-    this.loading = true;
-    // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getLatestArticles('content/reactome-research-spotlight', 1).subscribe({
-      next: (result) => {
-        this.spotLightArticle = result.map((item: ArticleIndexItem) => ({
+      next: ([item]) => {
+        this.loading.set(false);
+        if (!item) return;
+        this.spotlight.set({
           title: item.title,
           date: new Date(item.date),
           author: item.author,
           tags: item.tags || [],
           slug: item.slug,
           excerpt: item.excerpt,
-        }))[0];
-        this.loading = false;
+        });
 
         // Load the full article content using the slug
-        this.contentService
-          .getArticle('content/reactome-research-spotlight', this.spotLightArticle.slug)
-          .subscribe({
-            next: (article) => {
-              // Callback kept synchronous: an async one hands a promise to code
-              // that ignores it, so any rejection in here would vanish.
-              void (async () => {
-                const html = rewriteContentUrls(await marked(article?.body || ''));
-                this.renderedContent = truncateHtml(stripFirstH(html), 150);
-                // After the await, not before it: marking first left the view
-                // to be refreshed by whatever happened to check it next.
-                this.cdr.markForCheck();
-              })().catch((error) => console.error('Could not render spotlight', error));
-            },
-          });
-        this.cdr.markForCheck();
+        this.contentService.getArticle('content/reactome-research-spotlight', item.slug).subscribe({
+          next: (article) => {
+            // Callback kept synchronous: an async one hands a promise to code
+            // that ignores it, so any rejection in here would vanish.
+            void (async () => {
+              const html = rewriteContentUrls(await marked(article?.body || ''));
+              this.renderedContent.set(truncateHtml(stripFirstH(html), 150));
+            })().catch((error) => console.error('Could not render spotlight', error));
+          },
+        });
       },
       error: (err) => {
         console.error('Error loading articles:', err);
-        this.spotLightArticle = { title: '', date: new Date(), author: '', slug: '', excerpt: '' };
-        this.loading = false;
-        this.cdr.markForCheck();
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
   }

@@ -227,6 +227,56 @@ test.describe('Research Spotlight', () => {
   });
 });
 
+test.describe('When an article list fails to load', () => {
+  // A failed index was turned into an empty list, so the home page said there
+  // was no news, the news page said there were no articles, and the Spotlight
+  // tile read the date of an article that did not exist and broke (#321).
+  // Missing is still "none"; failing says so.
+  const failIndex = (page: import('@playwright/test').Page, list: string) =>
+    page.route(`**/content/${list}/index.json`, (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'index failed' })
+    );
+
+  test('the home page says news and the spotlight could not be loaded', async ({ page }) => {
+    const crashes: string[] = [];
+    page.on('pageerror', (error) => crashes.push(error.message));
+    await failIndex(page, 'about/news');
+    await failIndex(page, 'content/reactome-research-spotlight');
+    await page.goto('/');
+
+    const news = page.locator('app-home-latest-news');
+    await expect(news.getByRole('alert')).toContainText("Couldn't load the latest news", {
+      timeout: LOAD,
+    });
+    await expect(news).not.toContainText('No news to show');
+    await expect(page.locator('app-home-spotlight').getByRole('alert')).toContainText(
+      "Couldn't load the research spotlight"
+    );
+    expect(crashes).toEqual([]);
+  });
+
+  test('the news page says the list could not be loaded', async ({ page }) => {
+    await failIndex(page, 'about/news');
+    await page.goto('/about/news');
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the news", {
+      timeout: LOAD,
+    });
+    await expect(page.getByText('No news articles available')).toHaveCount(0);
+  });
+
+  // The other half: a list that is not there is empty, not an error. The site's
+  // fallback answers a missing file with index.html and a 200.
+  test('a missing list is still "no news", not an error', async ({ page }) => {
+    await page.route('**/content/about/news/index.json', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html></html>' })
+    );
+    await page.goto('/');
+    const news = page.locator('app-home-latest-news');
+    await expect(news).toContainText('No news to show right now', { timeout: LOAD });
+    await expect(news.getByRole('alert')).toHaveCount(0);
+  });
+});
+
 test.describe('In-page table of contents', () => {
   // The long userguide pages open with a table of contents linking each
   // section. Those ids are added at render time by addAnchorIds; the call was

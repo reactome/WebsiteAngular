@@ -50,7 +50,11 @@
           </app-tile>
         } @empty {
           <app-tile variant="light" class="no-news">
-            <p>No news articles available.</p>
+            @if (failed) {
+              <app-load-error [what]="articlePath === 'about/news' ? 'the news' : 'the research spotlights'" />
+            } @else {
+              <p>No news articles available.</p>
+            }
           </app-tile>
         }
       </div>

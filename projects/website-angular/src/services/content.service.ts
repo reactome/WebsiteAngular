@@ -1,6 +1,6 @@
 import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map, catchError, of, throwError } from 'rxjs';
 import { Article, ArticleIndexItem, FaqIndex } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
 
@@ -148,7 +148,9 @@ export class ContentService {
         if (data?.articles && Array.isArray(data.articles)) return data.articles;
         return [];
       }),
-      catchError(() => of([]))
+      // A missing index is an empty list; a failed one is not, and its readers
+      // say so rather than claiming there is nothing to show.
+      catchError((error: unknown) => (isMissingContent(error) ? of([]) : throwError(() => error)))
     );
   }
 

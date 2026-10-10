@@ -1,14 +1,20 @@
 <h1 class="home-spotlight-title">Reactome Research Spotlight</h1>
-<span class="home-spotlight-text">{{ '[' + formatD(spotLightArticle.date) + '] ' + spotLightArticle.title }}</span>
-<p class="home-spotlight-text" [innerHTML]="renderedContent"></p>
-<a
-  [routerLink]="
-    (navOptions()['content']?.dropdownLinks?.['reactome-research-spotlight']?.link ||
-      '/content/reactome-research-spotlight') +
-    '/' +
-    spotLightArticle.slug
-  "
-  class="home-spotlight-link"
->
-  <app-button style="width: fit-content; height: min-content; padding: 16px">Learn More</app-button>
-</a>
+@if (spotlight(); as article) {
+  <span class="home-spotlight-text">{{ '[' + formatD(article.date) + '] ' + article.title }}</span>
+  <p class="home-spotlight-text" [innerHTML]="renderedContent()"></p>
+  <a
+    [routerLink]="
+      (navOptions()['content']?.dropdownLinks?.['reactome-research-spotlight']?.link ||
+        '/content/reactome-research-spotlight') +
+      '/' +
+      article.slug
+    "
+    class="home-spotlight-link"
+  >
+    <app-button style="width: fit-content; height: min-content; padding: 16px">Learn More</app-button>
+  </a>
+} @else if (failed()) {
+  <app-load-error class="home-spotlight-text" what="the research spotlight" />
+} @else if (!loading()) {
+  <p class="home-spotlight-text">No spotlight to show right now.</p>
+}

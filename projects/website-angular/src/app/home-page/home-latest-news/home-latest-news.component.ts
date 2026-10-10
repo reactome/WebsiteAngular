@@ -5,11 +5,12 @@ import { ArticleIndexItem } from '../../../types/article';
 import { RouterModule } from '@angular/router';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 
 @Component({
   selector: 'app-home-latest-news',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, LoadErrorComponent],
   templateUrl: './home-latest-news.component.html',
   styleUrl: './home-latest-news.component.scss',
 })
@@ -21,6 +22,7 @@ export class HomeLatestNewsComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   loading = true;
+  failed = false;
   newsList: ArticleIndexItem[] = [];
 
   /** Where the news index lives, per the nav config, with a sane fallback. */
@@ -87,6 +89,7 @@ export class HomeLatestNewsComponent implements OnInit {
       error: (err) => {
         console.error('Error loading articles:', err);
         this.newsList = [];
+        this.failed = true;
         this.loading = false;
         this.cdr.markForCheck();
       },
