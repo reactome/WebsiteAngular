@@ -82,15 +82,15 @@ test.describe('The back button', () => {
       .locator('[role="tab"]')
       .filter({ hasText: /Molecule/i })
       .first();
-    test.skip((await molecule.count()) === 0, 'this pathway offers no Molecule tab');
+    // Asserted, not skipped on: the pathway is chosen for having one, and a
+    // missing tab is a regression, not a reason to report green (#321).
+    await expect(molecule, 'this pathway offers a Molecule tab').toBeVisible();
     await molecule.click();
-    await page.waitForTimeout(2500);
 
-    const chosen = new URL(page.url()).search;
-    expect(chosen, 'choosing a tab changes the URL').not.toBe(settled);
+    const search = () => new URL(page.url()).search;
+    await expect.poll(search, { message: 'choosing a tab changes the URL' }).not.toBe(settled);
 
     await page.goBack({ waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2500);
-    expect(new URL(page.url()).search, 'a choice the reader made is undoable').toBe(settled);
+    await expect.poll(search, { message: 'a choice the reader made is undoable' }).toBe(settled);
   });
 });
