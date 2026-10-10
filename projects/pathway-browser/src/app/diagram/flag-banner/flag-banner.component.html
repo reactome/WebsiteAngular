@@ -12,4 +12,16 @@
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
   </div>
+  @if (searchFailed()) {
+    <p class="flag-banner-error" role="alert">
+      <mat-icon fontSet="symbols" aria-hidden="true">warning</mat-icon>
+      <span>Couldn't search this diagram for the flagged items. Try again in a moment.</span>
+    </p>
+  }
+}
+@if (notice(); as notice) {
+  <p class="flag-banner-error" role="alert">
+    <mat-icon fontSet="symbols" aria-hidden="true">warning</mat-icon>
+    <span>{{ notice }}</span>
+  </p>
 }

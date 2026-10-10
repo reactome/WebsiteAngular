@@ -12,7 +12,7 @@
   <!-- Suppress the browser's own menu so the diagram's can take its place. -->
   <div id="cytoscape" #cytoscape [class.pointer]="hovering()" (contextmenu)="$event.preventDefault()"></div>
 
-  <cr-flag-banner />
+  <cr-flag-banner [notice]="analysisNotice()" />
 
   <!-- Loaded on the first right-click: its tabs and trees are most of the
        diagram's Material weight, which a reader who never right-clicks, and the

@@ -38,6 +38,7 @@ import {
   of,
   share,
   Subject,
+  Subscription,
   switchMap,
   take,
   tap,
@@ -1453,31 +1454,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (!overrideIgnore) this.syncing = false;
   };
 
+  /**
+   * The analysis results for this diagram could not be loaded. Said on the
+   * diagram, which is left uncoloured: before, every element was greyed as
+   * though the analysis had hit nothing in it.
+   */
+  readonly analysisFailed = signal(false);
+  readonly analysisNotice = computed(() =>
+    this.analysisFailed()
+      ? "Couldn't load the analysis results for this diagram, so nothing is coloured. Try again in a moment."
+      : null
+  );
+
+  private analysisLoad?: Subscription;
+
   private loadAnalysis(token: string | null, force = false) {
     if (!force && this.deltaSignal.hasOverlay()) return;
+    // A load for an earlier token or diagram must neither colour this one nor
+    // report its failure here.
+    this.analysisLoad?.unsubscribe();
+    this.analysisFailed.set(false);
     const diagramId = this.pathwayId();
     if (!token || !diagramId) {
-      this._loadAnalysisFn = undefined;
-
-      this.cys.forEach((cy) => {
-        cy.batch(() => {
-          cy.nodes().removeData('exp');
-          cy.edges('[?color]').style({
-            'underlay-padding': extract(this.reactomeStyle.properties.shadow.padding),
-          });
-          cy.nodes('.Shadow').style({
-            'font-size': extract(this.reactomeStyle.properties.shadow.fontSize),
-            'text-outline-width': extract(this.reactomeStyle.properties.shadow.fontPadding),
-          });
-        });
-      });
-      this.reactomeStyles.forEach((style) =>
-        style.loadAnalysis(style.cy!, this.analysis.palette().scale)
-      );
+      this.clearAnalysis();
       return;
     }
 
-    forkJoin({
+    const load$ = forkJoin({
       entities: this.analysis.foundEntities(
         this.data.currentPathway()?.normalPathway?.stId || diagramId,
         token
@@ -1487,7 +1490,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         token
       ),
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
-    }).subscribe(({ entities, pathways, result }) => {
+    }).pipe(
+      catchError((error: unknown) => {
+        console.warn('Analysis results for the diagram could not be loaded', error);
+        this.clearAnalysis();
+        this.analysisFailed.set(true);
+        return EMPTY;
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+    this.analysisLoad = load$.subscribe(({ entities, pathways, result }) => {
       this._loadAnalysisFn = (analysisIndex) => {
         if (this.deltaSignal.hasOverlay()) return;
         const analysisEntityMap = new Map<string, number>(
@@ -1559,6 +1571,27 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
       this._loadAnalysisFn(this.analysis.sampleIndex());
     });
+  }
+
+  /** Takes any analysis colouring off the diagram. */
+  private clearAnalysis() {
+    this._loadAnalysisFn = undefined;
+
+    this.cys.forEach((cy) => {
+      cy.batch(() => {
+        cy.nodes().removeData('exp');
+        cy.edges('[?color]').style({
+          'underlay-padding': extract(this.reactomeStyle.properties.shadow.padding),
+        });
+        cy.nodes('.Shadow').style({
+          'font-size': extract(this.reactomeStyle.properties.shadow.fontSize),
+          'text-outline-width': extract(this.reactomeStyle.properties.shadow.fontPadding),
+        });
+      });
+    });
+    this.reactomeStyles.forEach((style) =>
+      style.loadAnalysis(style.cy!, this.analysis.palette().scale)
+    );
   }
 
   private _loadAnalysisFn: ((analysisIndex: number) => void) | undefined;

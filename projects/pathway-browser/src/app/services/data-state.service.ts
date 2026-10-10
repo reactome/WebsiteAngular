@@ -1,6 +1,6 @@
 import { computed, effect, Injectable, linkedSignal, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, forkJoin, map, Observable, of, throwError } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { UrlStateService } from './url-state.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
@@ -9,6 +9,8 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { Pathway } from '../model/graph/event/pathway.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
+
+const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
 import { SpeciesService } from './species.service';
 
 type SelectionData = {
@@ -157,7 +159,10 @@ export class DataStateService {
         params: { query, species, scope: 'REFERENCE_ENTITY', includeInteractors: false },
       })
       .pipe(
-        catchError(() => of({} as FireworksFlagResult)),
+        // 404 is ContentService's "no match"; anything else is a failure.
+        catchError((error: unknown) =>
+          isNotFound(error) ? of({} as FireworksFlagResult) : throwError(() => error)
+        ),
         map((r) => ({
           matches: r.llps,
           interactsWith: r.interactsWith,
@@ -171,7 +176,11 @@ export class DataStateService {
         params: { query, scope: 'REFERENCE_ENTITY', includeInteractors: false },
       })
       .pipe(
-        catchError(() => of({} as DiagramFlagResult)),
+        // 404 is ContentService's "no match"; anything else is a failure,
+        // which the flag banner reports rather than flagging nothing.
+        catchError((error: unknown) =>
+          isNotFound(error) ? of({} as DiagramFlagResult) : throwError(() => error)
+        ),
         map((r) => ({
           matches: r.occurrences,
           interactsWith: r.interactsWith,
@@ -181,7 +190,8 @@ export class DataStateService {
 
   readonly flagIdentifiers = computed(() => {
     const identifiers: string[] = this.state.flag().filter((token) => token.startsWith('class:'));
-    const match = this.flagResource.value();
+    // value() throws while the search is in error; the banner reports that.
+    const match = this.flagResource.hasValue() ? this.flagResource.value() : undefined;
     if (match?.matches) identifiers.push(...match.matches);
     if (this.state.flagInteractors() && match?.interactsWith)
       identifiers.push(...match.interactsWith);

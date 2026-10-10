@@ -9,7 +9,7 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
-import { catchError, Observable, of, switchMap, tap } from 'rxjs';
+import { catchError, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import type { Analysis } from '../model/analysis.model';
@@ -87,6 +87,14 @@ export function defaultResource(
     .filter((resource) => resource !== 'TOTAL');
   return specific.length === 1 ? specific[0] : null;
 }
+
+/**
+ * The Analysis Service's "not here": 404 for a pathway the analysis did not
+ * hit, 404 or 410 for a result it does not hold, which the result's own load
+ * reports to the reader.
+ */
+const isNotFound = (error: unknown) =>
+  error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410);
 
 /**
  * What to tell the reader when an analysis result cannot be loaded.
@@ -435,7 +443,9 @@ export class AnalysisService {
 
   readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
     const map = new Map<string, number[]>();
-    for (const entity of this.foundForExpression.value()?.entities ?? []) {
+    // value() throws while the request is in error.
+    const found = this.foundForExpression.hasValue() ? this.foundForExpression.value() : undefined;
+    for (const entity of found?.entities ?? []) {
       const exp = (entity.exp ?? []).map(Number).filter((value) => Number.isFinite(value));
       if (!exp.length) continue;
       const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
@@ -679,16 +689,20 @@ export class AnalysisService {
         }
       )
       .pipe(
-        catchError(() =>
-          of({
-            pathway,
-            foundEntities: 0,
-            foundInteractors: 0,
-            expNames: [],
-            entities: [],
-            interactors: [],
-            resources: [resource],
-          })
+        // Anything but "not here" is a failure, which an empty answer would
+        // draw as an analysis that hit nothing in this pathway.
+        catchError((error: unknown) =>
+          isNotFound(error)
+            ? of({
+                pathway,
+                foundEntities: 0,
+                foundInteractors: 0,
+                expNames: [],
+                entities: [],
+                interactors: [],
+                resources: [resource],
+              })
+            : throwError(() => error)
         )
       );
   }
@@ -710,7 +724,7 @@ export class AnalysisService {
           params: { resource },
         }
       )
-      .pipe(catchError(() => of([])));
+      .pipe(catchError((error: unknown) => (isNotFound(error) ? of([]) : throwError(() => error))));
   }
 
   getHitReactions(pathwayId: string, token: string, params?: Partial<Analysis.Parameters>) {

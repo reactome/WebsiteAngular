@@ -1,8 +1,12 @@
+@if (pathwayFoundEntities.status() === 'error') {
+  <p class="found-error" role="alert">Couldn't load the identifiers found in this pathway. Try again in a moment.</p>
+}
 <table
   mat-table
   [dataSource]="dataSource"
   recycleRows
   id="result-table"
+  [style.display]="pathwayFoundEntities.status() === 'error' ? 'none' : null"
   matSort
   [style.--header-row-height]="headerRowHeight()"
   [style.--row-height]="parentRowHeight()"
