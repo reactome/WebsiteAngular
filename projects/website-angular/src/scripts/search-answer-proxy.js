@@ -651,28 +651,45 @@ function makeLimiter(perKey, global) {
   const seenKeys = new Map();
   let all = [];
   const longest = perKey[perKey.length - 1].windowMs;
+  /** The seconds to wait, or 0, without counting the call. */
+  function wait(key, now) {
+    all = all.filter((at) => now - at < global.windowMs);
+    if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
+    const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
+    seenKeys.set(key, times);
+    for (const { windowMs, max } of perKey) {
+      const inWindow = times.filter((at) => now - at < windowMs);
+      if (inWindow.length >= max) return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
+    }
+    return 0;
+  }
+
+  /** Counts a call against its key, and against the total unless told not to. */
+  function record(key, now, { global: counted = true } = {}) {
+    const times = seenKeys.get(key) ?? [];
+    times.push(now);
+    seenKeys.set(key, times);
+    if (counted) all.push(now);
+    if (seenKeys.size > 5000) {
+      for (const [k, stamps] of seenKeys) {
+        if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
+      }
+    }
+  }
+
   return {
     retryAfter(key, now = Date.now()) {
-      all = all.filter((at) => now - at < global.windowMs);
-      if (all.length >= global.max) return Math.ceil((global.windowMs - (now - all[0])) / 1000);
-      const times = (seenKeys.get(key) ?? []).filter((at) => now - at < longest);
-      for (const { windowMs, max } of perKey) {
-        const inWindow = times.filter((at) => now - at < windowMs);
-        if (inWindow.length >= max) {
-          seenKeys.set(key, times);
-          return Math.ceil((windowMs - (now - inWindow[0])) / 1000);
-        }
-      }
-      times.push(now);
-      seenKeys.set(key, times);
-      all.push(now);
-      if (seenKeys.size > 5000) {
-        for (const [k, stamps] of seenKeys) {
-          if (stamps.every((stamp) => stamp < now - longest)) seenKeys.delete(k);
-        }
-      }
-      return 0;
+      const seconds = wait(key, now);
+      if (!seconds) record(key, now);
+      return seconds;
     },
+    /**
+     * For a route that counts a call only once it knows what it was: `wait`
+     * first, then `record` -- so calls that cost nothing cannot spend the
+     * budget that everyone shares.
+     */
+    wait: (key, now = Date.now()) => wait(key, now),
+    record: (key, options, now = Date.now()) => record(key, now, options),
     reset() {
       seenKeys.clear();
       all = [];

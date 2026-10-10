@@ -79,6 +79,9 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   captchaToken: string | null = null;
   private challenge?: ChallengeWidget;
+  private challengeSub?: Subscription;
+  /** A message is on its way: Send waits for its answer, so it goes once. */
+  contactSending = false;
 
   constructor() {
     // A widget per form: a search that finds nothing again draws a new form,
@@ -212,6 +215,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
     this.cancelSearchRequests();
+    this.prepareChallenge(undefined);
   }
 
   /** Requests of an earlier search, which must not write into this one. */
@@ -253,6 +257,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   private prepareChallenge(container: HTMLDivElement | undefined): void {
     // Whatever the last form's challenge said does not belong to this one, and
     // its widget must not go on writing into this form's token.
+    this.challengeSub?.unsubscribe();
     this.challenge?.remove();
     this.challenge = undefined;
     this.captchaToken = null;
@@ -264,7 +269,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.contactUnavailable = true;
       this.cdr.markForCheck();
     };
-    this.http.get<{ sitekey: string }>(CONTACT_ROUTE).subscribe({
+    this.challengeSub = this.http.get<{ sitekey: string }>(CONTACT_ROUTE).subscribe({
       next: ({ sitekey }) =>
         void renderWidget(container, sitekey, (token) => {
           this.captchaToken = token;
@@ -790,7 +795,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.captchaToken) {
+    if (!this.captchaToken || this.contactSending) {
       return;
     }
 
@@ -805,12 +810,17 @@ export class SearchComponent implements OnInit, OnDestroy {
     };
 
     this.contactFailed = false;
+    this.contactSending = true;
+    // A token is good for one try; this one is spent whatever the answer.
+    this.captchaToken = null;
     this.http.post(CONTACT_ROUTE, message).subscribe({
       next: () => {
+        this.contactSending = false;
         this.formSubmitted = true;
         this.cdr.markForCheck();
       },
       error: (err) => {
+        this.contactSending = false;
         console.error('Error submitting contact form:', err);
         // Not sent, so not thanked for: the form stays, with what was written,
         // and a fresh challenge, as a token is good for one try.

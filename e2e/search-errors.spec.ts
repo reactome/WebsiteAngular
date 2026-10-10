@@ -95,10 +95,11 @@ test.describe('Search', () => {
     );
     await page.goto('/content/query?q=xyzzy_no_match_99999');
     // The pages are the half that might have had something.
-    await expect(page.getByRole('alert')).toContainText(
-      "Couldn't search the website's pages, so only Reactome data is shown.",
-      { timeout: LOAD }
-    );
+    await expect(
+      page.getByRole('alert').filter({ hasText: "Couldn't search the website's pages" })
+    ).toContainText("Couldn't search the website's pages, so only Reactome data is shown.", {
+      timeout: LOAD,
+    });
   });
 
   test('says only that the search failed when it all failed', async ({ page }) => {
@@ -167,7 +168,10 @@ test.describe('The help form shown when nothing is found', () => {
    * Stands in for Cloudflare's challenge, solved as soon as it is drawn, and
    * for our /contact route, whose GET gives the sitekey: nothing is ever sent.
    */
-  async function standIn(page: Page, { sitekeyStatus = 200, postStatus = 200 } = {}) {
+  async function standIn(
+    page: Page,
+    { sitekeyStatus = 200, postStatus = 200, postDelayMs = 0 } = {}
+  ) {
     const posts: Record<string, unknown>[] = [];
     const elsewhere: string[] = [];
     page.on('request', (request) => {
@@ -190,7 +194,7 @@ test.describe('The help form shown when nothing is found', () => {
         };`,
       })
     );
-    await page.route(isContact, (route) => {
+    await page.route(isContact, async (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: sitekeyStatus,
@@ -199,13 +203,14 @@ test.describe('The help form shown when nothing is found', () => {
         });
       }
       posts.push(route.request().postDataJSON());
+      await new Promise((resolve) => setTimeout(resolve, postDelayMs));
       return route.fulfill({ status: postStatus, contentType: 'application/json', body: '{}' });
     });
     return { posts, elsewhere };
   }
 
-  async function openForm(page: Page, postStatus: number) {
-    const { posts, elsewhere } = await standIn(page, { postStatus });
+  async function openForm(page: Page, postStatus: number, postDelayMs = 0) {
+    const { posts, elsewhere } = await standIn(page, { postStatus, postDelayMs });
     await page.goto('/content/query?q=xyzzy_no_match_99999');
     const form = page.locator('#contact-form');
     await form.locator('input[name="mailAddress"]').fill('reader@example.org', { timeout: LOAD });
@@ -232,6 +237,13 @@ test.describe('The help form shown when nothing is found', () => {
       ['contactName', 'mailAddress', 'message', 'subject', 'token'].sort()
     );
     expect(elsewhere).toEqual([]);
+  });
+
+  test('sends once when Send is clicked twice', async ({ page }) => {
+    const { form, posts } = await openForm(page, 200, 1500);
+    await form.getByRole('button', { name: 'Send' }).dblclick();
+    await expect(page.getByText('Thank you for contacting us.')).toBeVisible({ timeout: LOAD });
+    expect(posts).toHaveLength(1);
   });
 
   test('does not thank the reader for a message that was not sent', async ({ page }) => {

@@ -363,7 +363,7 @@ NOTE: This is an automatically generated message.
                       type="submit"
                       id="send"
                       class="btn btn-default"
-                      [disabled]="!contactReady() || !captchaToken"
+                      [disabled]="!contactReady() || !captchaToken || contactSending"
                     >
                       Send
                     </button>

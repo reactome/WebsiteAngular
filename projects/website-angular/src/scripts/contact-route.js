@@ -59,15 +59,66 @@ function oneLine(value) {
     .trim();
 }
 
-/** RFC 2047, for a subject that is not plain ASCII. */
+/**
+ * RFC 2047, for a subject that is not plain ASCII: encoded words short enough
+ * that even the first, after "Subject: ", keeps to 78 characters, folded onto
+ * lines of their own, never splitting a character.
+ */
 function encodeHeader(value) {
-  return /^[\x20-\x7e]*$/.test(value)
-    ? value
-    : `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`;
+  if (/^[\x20-\x7e]*$/.test(value)) return value;
+  const words = [];
+  let chunk = '';
+  for (const char of value) {
+    if (Buffer.byteLength(chunk + char, 'utf8') > 42) {
+      words.push(chunk);
+      chunk = '';
+    }
+    chunk += char;
+  }
+  if (chunk) words.push(chunk);
+  return words
+    .map((word) => `=?UTF-8?B?${Buffer.from(word, 'utf8').toString('base64')}?=`)
+    .join('\n ');
+}
+
+const hex = (byte) => `=${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+
+/**
+ * Quoted-printable (RFC 2045), so a long paragraph is not broken by the MTA at
+ * 998 characters: lines soft-wrapped at 76, anything but printable ASCII
+ * escaped.
+ */
+function quotedPrintable(text) {
+  return text
+    .split('\n')
+    .map((line) => {
+      const bytes = [...Buffer.from(line, 'utf8')];
+      let encoded = bytes
+        .map((byte, index) => {
+          const last = index === bytes.length - 1;
+          const printable = byte >= 33 && byte <= 126 && byte !== 61;
+          // White space is kept, except at a line's end, where transit strips it.
+          const space = (byte === 32 || byte === 9) && !last;
+          return printable || space ? String.fromCharCode(byte) : hex(byte);
+        })
+        .join('');
+      const out = [];
+      while (encoded.length > 76) {
+        // Never cut an escape in two.
+        let cut = 75;
+        const escape = encoded.lastIndexOf('=', cut - 1);
+        if (escape > cut - 3) cut = escape;
+        out.push(`${encoded.slice(0, cut)}=`);
+        encoded = encoded.slice(cut);
+      }
+      out.push(encoded);
+      return out.join('\n');
+    })
+    .join('\n');
 }
 
 /** The whole message, headers and body, as the MTA reads it. */
-function compose({ to, from, contactName, mailAddress, subject, message, site }) {
+function compose({ to, from, contactName, mailAddress, subject, message }) {
   return [
     `From: Reactome website <${from}>`,
     `To: ${to}`,
@@ -75,12 +126,16 @@ function compose({ to, from, contactName, mailAddress, subject, message, site })
     `Subject: ${encodeHeader(subject)}`,
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: 8bit',
+    'Content-Transfer-Encoding: quoted-printable',
     '',
-    message.replace(/\r\n?/g, '\n'),
-    '',
-    '--',
-    `Sent from the search page of ${site} by ${contactName ? `${contactName} <${mailAddress}>` : mailAddress}.`,
+    quotedPrintable(
+      [
+        message.replace(/\r\n?/g, '\n'),
+        '',
+        '--',
+        `Sent from the website's search page by ${contactName ? `${contactName} <${mailAddress}>` : mailAddress}.`,
+      ].join('\n')
+    ),
     '',
   ].join('\n');
 }
@@ -89,17 +144,31 @@ function compose({ to, from, contactName, mailAddress, subject, message, site })
  * Hands a composed message to sendmail. `-t` takes the recipients from the
  * headers, `-i` keeps a line of a lone "." from ending the message early.
  */
-function sendmail(raw, from, sendmailPath = '/usr/sbin/sendmail') {
+function sendmail(raw, from, sendmailPath = '/usr/sbin/sendmail', timeoutMs = 30_000) {
   return new Promise((resolve, reject) => {
     const child = spawn(sendmailPath, ['-t', '-i', '-f', from], {
       stdio: ['pipe', 'ignore', 'pipe'],
     });
     let stderr = '';
+    const fail = (error) => {
+      clearTimeout(timer);
+      reject(error);
+    };
+    // A sendmail that never finishes must not hold the request, or the child.
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error(`sendmail did not finish in ${timeoutMs} ms`));
+    }, timeoutMs);
     child.stderr.on('data', (chunk) => (stderr += chunk));
-    child.on('error', reject);
-    child.on('close', (code) =>
-      code === 0 ? resolve() : reject(new Error(`sendmail exited ${code}: ${stderr.trim()}`))
-    );
+    child.on('error', fail);
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve();
+      else reject(new Error(`sendmail exited ${code}: ${stderr.trim()}`));
+    });
+    // Unheard, a sendmail that exits before reading all of this (EPIPE) would
+    // be an uncaught error, and take the whole server down with it.
+    child.stdin.on('error', fail);
     child.stdin.end(raw);
   });
 }
@@ -131,7 +200,12 @@ function readMessage(body) {
 
 function mountContactRoute(
   app,
-  { route = '/contact', verify = gate.verifyCaptcha, send = sendmail, env = process.env } = {}
+  {
+    route = '/contact',
+    verify = (token, remoteip) => gate.verifyCaptcha(token, fetch, remoteip),
+    send = sendmail,
+    env = process.env,
+  } = {}
 ) {
   app.get(route, (_req, res) => {
     if (!canSend(env)) {
@@ -151,21 +225,23 @@ function mountContactRoute(
       res.status(400).json({ detail: read.error });
       return;
     }
-    const wait = contactLimiter.retryAfter(clientKey(req));
+    const key = clientKey(req);
+    const wait = contactLimiter.wait(key);
     if (wait) {
       res.set('Retry-After', String(wait)).status(429).json({ detail: 'Too many messages' });
       return;
     }
-    if (!(await verify(read.token))) {
+    // Counted once checked: a refused token spends only its sender's budget,
+    // so unverified calls cannot use up the total and close the form for all.
+    const verified = await verify(read.token, key);
+    contactLimiter.record(key, { global: verified });
+    if (!verified) {
       res.status(403).json({ detail: 'Verification failed' });
       return;
     }
     const { to, from } = settings(env);
     try {
-      await send(
-        compose({ ...read, to, from, site: oneLine(req.headers.host || 'reactome.org') }),
-        from
-      );
+      await send(compose({ ...read, to, from }), from);
     } catch (error) {
       console.error('Contact message could not be handed to the MTA', error);
       res.status(502).json({ detail: 'The message could not be sent' });

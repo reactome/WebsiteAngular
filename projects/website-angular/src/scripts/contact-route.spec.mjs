@@ -30,6 +30,7 @@ let server;
 let base;
 let sent;
 let verified;
+let remoteips;
 let verifyAnswer;
 let sendFails;
 
@@ -37,8 +38,9 @@ async function start(env = CONFIGURED) {
   const app = express();
   mountContactRoute(app, {
     env,
-    verify: async (token) => {
+    verify: async (token, remoteip) => {
       verified.push(token);
+      remoteips.push(remoteip);
       return verifyAnswer;
     },
     send: async (raw, from) => {
@@ -52,17 +54,31 @@ async function start(env = CONFIGURED) {
   base = `http://127.0.0.1:${server.address().port}/contact`;
 }
 
-const post = (body) =>
+const post = (body, headers = {}) =>
   fetch(base, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
+
+/** The body as the reader wrote it, undoing quoted-printable. */
+function decodeBody(raw) {
+  const body = raw.slice(raw.indexOf('\n\n') + 2).replace(/=\n/g, '');
+  const bytes = [];
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === '=' && /^[0-9A-F]{2}$/.test(body.slice(i + 1, i + 3))) {
+      bytes.push(parseInt(body.slice(i + 1, i + 3), 16));
+      i += 2;
+    } else bytes.push(...Buffer.from(body[i], 'utf8'));
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
 
 beforeEach(() => {
   __resetLimits();
   sent = [];
   verified = [];
+  remoteips = [];
   verifyAnswer = true;
   sendFails = false;
 });
@@ -140,6 +156,53 @@ describe('a deployment that can send', () => {
     expect(sent).toEqual([]);
   });
 
+  it("passes the reader's address to Cloudflare with the token", async () => {
+    await post(GOOD, { 'X-Forwarded-For': '203.0.113.7' });
+    expect(remoteips).toEqual(['203.0.113.7']);
+  });
+
+  it('wraps a long paragraph, so the MTA does not break it', async () => {
+    const paragraph = 'Ünïcödé and a long paragraph. '.repeat(200);
+    await post({ ...GOOD, message: paragraph });
+    const { raw } = sent[0];
+    expect(raw).toContain('Content-Transfer-Encoding: quoted-printable\n');
+    const body = raw.slice(raw.indexOf('\n\n') + 2);
+    expect(Math.max(...body.split('\n').map((line) => line.length))).toBeLessThanOrEqual(76);
+    expect(decodeBody(raw)).toContain(paragraph.trimEnd());
+  });
+
+  it('folds a long subject into encoded words a header can carry', async () => {
+    const subject = '反应组'.repeat(66);
+    await post({ ...GOOD, subject });
+    const header = sent[0].raw.slice(
+      sent[0].raw.indexOf('Subject: '),
+      sent[0].raw.indexOf('\nMIME')
+    );
+    const lines = header.split('\n');
+    expect(Math.max(...lines.map((line) => line.length))).toBeLessThanOrEqual(78);
+    const words = [...header.matchAll(/=\?UTF-8\?B\?([^?]+)\?=/g)].map((m) => m[1]);
+    expect(words.every((word) => `=?UTF-8?B?${word}?=`.length <= 75)).toBe(true);
+    expect(Buffer.concat(words.map((word) => Buffer.from(word, 'base64'))).toString('utf8')).toBe(
+      subject
+    );
+  });
+
+  it('lets refused tokens spend only their own budget, not everyone else', async () => {
+    verifyAnswer = false;
+    for (let i = 0; i < 200; i++) {
+      await post(GOOD, { 'X-Forwarded-For': `198.51.100.${i % 250}, 10.0.0.${i}` });
+    }
+    verifyAnswer = true;
+    // Someone else still gets through: unverified calls did not close the form.
+    expect((await post(GOOD, { 'X-Forwarded-For': '203.0.113.9' })).status).toBe(200);
+  });
+
+  it('counts refused tokens against the address sending them', async () => {
+    verifyAnswer = false;
+    for (let i = 0; i < 3; i++) await post(GOOD);
+    expect((await post(GOOD)).status).toBe(429);
+  });
+
   it('says so when the mail cannot be handed on', async () => {
     sendFails = true;
     expect((await post(GOOD)).status).toBe(502);
@@ -194,6 +257,21 @@ describe('handing a message to sendmail', () => {
     await expect(
       sendmail('To: desk@example.org\n\n', 'site@example.org', fake(75))
     ).rejects.toThrow(/exited 75/);
+  });
+
+  it('gives up on an MTA that does not finish', async () => {
+    const script = path.join(dir, 'sendmail-hangs');
+    fs.writeFileSync(script, '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+    await expect(
+      sendmail('To: desk@example.org\n\n', 'site@example.org', script, 300)
+    ).rejects.toThrow(/did not finish/);
+  });
+
+  it('fails, rather than taking the server down, when the MTA does not read it all', async () => {
+    const script = path.join(dir, 'sendmail-deaf');
+    fs.writeFileSync(script, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    const large = `To: desk@example.org\n\n${'x'.repeat(4_000_000)}\n`;
+    await expect(sendmail(large, 'site@example.org', script)).rejects.toThrow();
   });
 
   it('fails when there is no MTA', async () => {

@@ -184,13 +184,17 @@ function identityDetailsFromRequest(req, now = Date.now()) {
  * Failure of any kind is a failed verification. A network error here must not
  * become an accidental pass.
  */
-async function verifyCaptcha(token, fetchImpl = fetch) {
+async function verifyCaptcha(token, fetchImpl = fetch, remoteip = '') {
   if (!TURNSTILE_SECRET || typeof token !== 'string' || token === '') return false;
   try {
+    const form = { secret: TURNSTILE_SECRET, response: token };
+    if (remoteip) form.remoteip = remoteip;
     const response = await fetchImpl(SITEVERIFY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ secret: TURNSTILE_SECRET, response: token }).toString(),
+      body: new URLSearchParams(form).toString(),
+      // A Cloudflare that does not answer is a failed check, not a held request.
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return false;
     const body = await response.json();
