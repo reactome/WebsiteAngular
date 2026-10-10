@@ -77,10 +77,15 @@ for (const [context, options] of Object.entries(proxyConfig)) {
       // The dev server's `bypass` hook, honoured here too: a path it claims for
       // the app falls through to the static handler, which serves the app. The
       // function is the glob below spelled out, for a context that is a prefix.
-      pathFilter: options.bypass
-        ? (pathname, req) =>
-            (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
-        : `${context}/**`,
+      //
+      // A context starting with `^` is a regex over the path and query, which
+      // is how the dev server (Vite) reads it.
+      pathFilter: context.startsWith('^')
+        ? (_pathname, req) => new RegExp(context).test(req.url ?? '')
+        : options.bypass
+          ? (pathname, req) =>
+              (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
+          : `${context}/**`,
       target: options.target,
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,

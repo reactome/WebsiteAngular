@@ -101,13 +101,16 @@ module.exports = {
       },
     ])
   ),
-  // The person page's four lists. A path pattern rather than a prefix: these
-  // take an id in the middle, and `/ContentService/data/person` would also
-  // claim `/data/person/{id}` and `/publications`, which node does not serve.
-  '/ContentService/data/person/*/authoredPathways': personList,
-  '/ContentService/data/person/*/authoredReactions': personList,
-  '/ContentService/data/person/*/reviewedPathways': personList,
-  '/ContentService/data/person/*/reviewedReactions': personList,
+  // The person page's four lists. A pattern rather than a prefix: these take an
+  // id in the middle, and `/ContentService/data/person` would also claim
+  // `/data/person/{id}` and `/publications`, which node does not serve.
+  //
+  // A `^` regex, not a glob. The dev server moves every glob key to the end of
+  // the table, after the general /ContentService rule, and the first match
+  // wins -- so under `ng serve` these went to Java (#318). A `^` key stays
+  // where it is written. It is matched against the path and query, as Vite
+  // does; serve-prod.js reads it the same way. Same pattern as nginx's.
+  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)(\\?|$)': personList,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
