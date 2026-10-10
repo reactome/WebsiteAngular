@@ -353,10 +353,17 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
   });
 
-  // The summary is fetched once the load completes. Its failure was swallowed
-  // into nothing, so neither a summary nor an error followed, and the progress
-  // dialog -- which cannot be closed by the reader -- stayed up saying the
-  // dataset had loaded (#321).
+  // The progress dialog cannot be closed by the reader, so every way a load can
+  // fail has to end it. A failed summary (fetched once the load completes) was
+  // swallowed into nothing, and a failed upload was dispatched to nobody: both
+  // left the dialog up, one saying the dataset had loaded (#321).
+  async function expectDialogToFailAndClose(page: Page, says: string) {
+    const dialog = page.locator('mat-dialog-container');
+    await expect(dialog.getByRole('heading', { name: says })).toBeVisible({ timeout: 20_000 });
+    await expect(dialog).not.toContainText('Dataset loaded');
+    await expect(dialog).toHaveCount(0, { timeout: 10_000 });
+  }
+
   test('closes the progress dialog and says so when the summary fails', async ({ page }) => {
     await stubGsa(page);
     await page.route('**/GSAServer/0.1/data/summary/**', (route) =>
@@ -367,9 +374,27 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await page.locator('button.mat-mdc-fab').first().click();
     await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
 
-    await expect(page.locator('mat-dialog-container')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('could not be loaded')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('mat-dialog-container')).toHaveCount(0, { timeout: 10_000 });
+    await expectDialogToFailAndClose(page, 'The dataset could not be loaded');
+  });
+
+  test('closes the progress dialog and says so when an upload fails', async ({ page }) => {
+    await stubGsa(page);
+    await page.route('**/GSAServer/upload', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'upload failed' })
+    );
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page
+      .locator('gsa-local-data input.file-input')
+      .first()
+      .setInputFiles({
+        name: 'counts.tsv',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('gene\tA\nTP53\t1\n'),
+      });
+
+    await expectDialogToFailAndClose(page, 'Your data could not be uploaded');
   });
 
   // ReactomeGSA delivers the result to the Reactome server the request names,

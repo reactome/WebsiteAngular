@@ -156,7 +156,12 @@ export class DatasetEffects {
   loadError = createEffect(
     () =>
       this.actions$.pipe(
-        ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
+        ofType(
+          datasetActions.uploadError,
+          datasetActions.loadSubmittedError,
+          datasetActions.getLoadStatusError,
+          datasetActions.getSummaryError
+        ),
         delay(2000),
         tap(() => this.dialogRef?.close())
       ),
@@ -182,7 +187,7 @@ export class DatasetEffects {
       exhaustMap(({ datasetId, id }) =>
         this.loadDatasetService.getSummary(datasetId).pipe(
           map((summary) => datasetActions.setSummary({ summary, id })),
-          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+          catchError((error) => of(datasetActions.getSummaryError({ error, id })))
         )
       )
     )
