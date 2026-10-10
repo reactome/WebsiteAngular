@@ -101,6 +101,19 @@ test.describe('Search', () => {
     );
   });
 
+  test('says only that the search failed when it all failed', async ({ page }) => {
+    await page.route('**/site-search-index.json', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'failed' })
+    );
+    await failSearchesOf(page, 30);
+    await page.goto('/content/query?q=apoptosis');
+    await expect(page.getByText('An error occurred while searching.')).toBeVisible({
+      timeout: LOAD,
+    });
+    // Not also that "only Reactome data is shown", when none is.
+    await expect(page.getByText("Couldn't search the website's pages")).toHaveCount(0);
+  });
+
   test("pages through the website's pages without asking the search service", async ({ page }) => {
     const thrown = collectThrown(page);
     await page.goto('/content/query?q=pathway');
@@ -148,43 +161,77 @@ test('search results ask only for icons that exist', async ({ page }) => {
 test.describe('The help form shown when nothing is found', () => {
   test.describe.configure({ timeout: 3 * 60_000 });
 
+  const isContact = (url: URL) => url.pathname === '/contact';
+
   /**
-   * Opens the form with hCaptcha stood in for, already solved, and every
-   * message to the help desk answered here: nothing is ever sent.
+   * Stands in for Cloudflare's challenge, solved as soon as it is drawn, and
+   * for our /contact route, whose GET gives the sitekey: nothing is ever sent.
    */
-  async function openForm(page: Page, status: number) {
-    const posts: string[] = [];
-    await page.route('https://js.hcaptcha.com/**', (route) =>
+  async function standIn(page: Page, { sitekeyStatus = 200, postStatus = 200 } = {}) {
+    const posts: Record<string, unknown>[] = [];
+    const elsewhere: string[] = [];
+    page.on('request', (request) => {
+      if (/hcaptcha\.com|\/ContentService\/contact/.test(request.url()))
+        elsewhere.push(request.url());
+    });
+    await page.route('https://challenges.cloudflare.com/**', (route) =>
       route.fulfill({
         contentType: 'text/javascript',
         body: `window.__renders = 0;
-        window.hcaptcha = {
+        window.__resets = 0;
+        window.turnstile = {
           render(el, options) {
             window.__renders++;
-            setTimeout(() => options.callback('test-token'));
-            return window.__renders;
+            setTimeout(() => options.callback('test-token-' + window.__renders));
+            return 'widget-' + window.__renders;
           },
-          reset() {},
+          reset() { window.__resets++; },
+          remove() {},
         };`,
       })
     );
-    await page.route('**/ContentService/contact', (route) => {
-      posts.push(route.request().method());
-      return route.fulfill({ status, contentType: 'application/json', body: '{}' });
+    await page.route(isContact, (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: sitekeyStatus,
+          contentType: 'application/json',
+          body: JSON.stringify(sitekeyStatus === 200 ? { sitekey: 'test-sitekey' } : {}),
+        });
+      }
+      posts.push(route.request().postDataJSON());
+      return route.fulfill({ status: postStatus, contentType: 'application/json', body: '{}' });
     });
+    return { posts, elsewhere };
+  }
+
+  async function openForm(page: Page, postStatus: number) {
+    const { posts, elsewhere } = await standIn(page, { postStatus });
     await page.goto('/content/query?q=xyzzy_no_match_99999');
     const form = page.locator('#contact-form');
     await form.locator('input[name="mailAddress"]').fill('reader@example.org', { timeout: LOAD });
     await expect(form.getByRole('button', { name: 'Send' })).toBeEnabled();
-    return { form, posts };
+    return { form, posts, elsewhere };
   }
 
-  test('sends the message once', async ({ page }) => {
-    const { form, posts } = await openForm(page, 200);
+  test('sends the message once, to our own route, with its Cloudflare token', async ({ page }) => {
+    const { form, posts, elsewhere } = await openForm(page, 200);
+    await form.locator('input[name="contactName"]').fill('Ada Lovelace');
     await form.getByRole('button', { name: 'Send' }).click();
     await expect(page.getByText('Thank you for contacting us.')).toBeVisible();
     await page.waitForTimeout(1000);
-    expect(posts).toEqual(['POST']);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({
+      contactName: 'Ada Lovelace',
+      mailAddress: 'reader@example.org',
+      subject: 'No results found for xyzzy_no_match_99999',
+      token: 'test-token-1',
+    });
+    expect(String(posts[0]['message'])).toContain('xyzzy_no_match_99999');
+    // No copy to the reader, and nothing to hCaptcha or ContentService.
+    expect(Object.keys(posts[0]).sort()).toEqual(
+      ['contactName', 'mailAddress', 'message', 'subject', 'token'].sort()
+    );
+    expect(elsewhere).toEqual([]);
   });
 
   test('does not thank the reader for a message that was not sent', async ({ page }) => {
@@ -197,8 +244,10 @@ test.describe('The help form shown when nothing is found', () => {
       { timeout: LOAD }
     );
     await expect(page.getByText('Thank you for contacting us.')).toHaveCount(0);
-    // What they wrote is still there to send again.
+    // What they wrote is still there to send again, with a fresh challenge:
+    // a token is good for one try.
     await expect(form.locator('textarea#message')).toHaveValue(message);
+    expect(await page.evaluate(() => (window as unknown as { __resets: number }).__resets)).toBe(1);
     expect(thrown).toEqual([]);
   });
 
@@ -219,12 +268,38 @@ test.describe('The help form shown when nothing is found', () => {
     await expect(next.getByRole('alert')).toHaveCount(0);
     await expect(next.locator('input[name="mailAddress"]')).toHaveValue('');
     await expect(next.getByRole('button', { name: 'Send' })).toBeDisabled();
-    // And it has a captcha of its own, so it can be sent.
+    // And it has a challenge of its own, so it can be sent.
     await expect
       .poll(() => page.evaluate(() => (window as unknown as { __renders: number }).__renders))
       .toBe(2);
     await next.locator('input[name="mailAddress"]').fill('reader@example.org');
     await expect(next.getByRole('button', { name: 'Send' })).toBeEnabled();
-    expect(posts).toEqual(['POST']);
+    expect(posts).toHaveLength(1);
   });
+
+  for (const [why, setUp] of [
+    [
+      'the challenge cannot be loaded',
+      (page: Page) =>
+        standIn(page).then(() =>
+          page.route('https://challenges.cloudflare.com/**', (route) => route.abort())
+        ),
+    ],
+    ['this deployment cannot send', (page: Page) => standIn(page, { sitekeyStatus: 503 })],
+  ] as const) {
+    test(`says where to write instead when ${why}`, async ({ page }) => {
+      await setUp(page);
+      await page.goto('/content/query?q=xyzzy_no_match_99999');
+      const form = page.locator('#contact-form');
+      await expect(form.getByRole('alert')).toContainText("This form can't be sent right now.", {
+        timeout: LOAD,
+      });
+      await expect(form.getByRole('link', { name: 'help@reactome.org' })).toHaveAttribute(
+        'href',
+        'mailto:help@reactome.org'
+      );
+      await form.locator('input[name="mailAddress"]').fill('reader@example.org');
+      await expect(form.getByRole('button', { name: 'Send' })).toBeDisabled();
+    });
+  }
 });

@@ -33,7 +33,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
-import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import { ChallengeWidget, renderWidget } from './answer/turnstile';
+
+/** Our own route: ContentService's /contact takes only an hCaptcha token. */
+const CONTACT_ROUTE = '/contact';
 import { SearchAnswerComponent } from './answer/search-answer.component';
 
 @Component({
@@ -75,24 +78,14 @@ export class SearchComponent implements OnInit, OnDestroy {
   readonly captchaContainer = viewChild<ElementRef<HTMLDivElement>>('captchaContainer');
 
   captchaToken: string | null = null;
-  private captchaWidgetId: string | null = null;
+  private challenge?: ChallengeWidget;
 
   constructor() {
     // A widget per form: a search that finds nothing again draws a new form,
-    // whose container had no captcha when it was drawn only once.
+    // whose container had no challenge when it was drawn only once.
     effect(() => {
       const container = this.captchaContainer()?.nativeElement;
-      untracked(() => {
-        // Whatever the last form's captcha said does not belong to this one.
-        this.captchaToken = null;
-        this.captchaWidgetId = null;
-        if (!container) return;
-        this.loadHCaptchaScript()
-          .then(() => this.renderCaptcha(container))
-          // Without the widget the form cannot be submitted at all, so say so
-          // rather than leaving an empty box.
-          .catch((error) => console.error('Could not load hCaptcha', error));
-      });
+      untracked(() => this.prepareChallenge(container));
     });
   }
 
@@ -119,6 +112,11 @@ export class SearchComponent implements OnInit, OnDestroy {
   formSubmitted = false;
   /** The help-desk message could not be sent; the form stays, with what was written. */
   contactFailed = false;
+  /**
+   * The form cannot be sent from here: this deployment does not send, or the
+   * check that the reader is a person could not be loaded.
+   */
+  contactUnavailable = false;
   /**
    * Email and message are filled in. Held as a signal set on input: the button
    * read the fields directly, and with nothing to re-check it when they were
@@ -224,6 +222,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   private cancelSearchRequests(): void {
     this.searchSub?.unsubscribe();
     this.proteinSub?.unsubscribe();
+    this.proteinLoading = false;
     Object.values(this.groupPageSubs).forEach((sub) => sub.unsubscribe());
     this.groupPageSubs = {};
   }
@@ -245,60 +244,38 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  private hCaptchaScript?: Promise<void>;
-
-  /** Loads the script once, for every form; a failure is retried by the next. */
-  private loadHCaptchaScript(): Promise<void> {
-    this.hCaptchaScript ??= new Promise<void>((resolve, reject) => {
-      if ((window as any).hcaptcha) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => {
-        script.remove();
-        this.hCaptchaScript = undefined;
-        reject(new Error('hCaptcha script failed to load'));
-      };
-      document.head.appendChild(script);
-    });
-    return this.hCaptchaScript;
-  }
-
-  private renderCaptcha(container: HTMLDivElement): void {
-    const hcaptcha = (window as any).hcaptcha;
-    // Gone already: a later search replaced the form while the script loaded.
-    if (!hcaptcha || this.captchaContainer()?.nativeElement !== container) return;
-
-    this.captchaWidgetId = hcaptcha.render(container, {
-      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-      theme: 'light',
-      callback: (token: string) => {
-        this.captchaToken = token;
-        this.cdr.markForCheck();
-      },
-      'expired-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-      'error-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  private resetCaptcha(): void {
-    const hcaptcha = (window as any).hcaptcha;
-    if (hcaptcha && this.captchaWidgetId != null) {
-      hcaptcha.reset(this.captchaWidgetId);
-    }
+  /**
+   * Readies the help form drawn into `container`, or clears up after the one
+   * that has gone. The reader proves they are a person with Turnstile, whose
+   * sitekey comes from the route the message goes to: a deployment that cannot
+   * send says so there.
+   */
+  private prepareChallenge(container: HTMLDivElement | undefined): void {
+    // Whatever the last form's challenge said does not belong to this one, and
+    // its widget must not go on writing into this form's token.
+    this.challenge?.remove();
+    this.challenge = undefined;
     this.captchaToken = null;
-    this.cdr.markForCheck();
+    this.contactUnavailable = false;
+    if (!container) return;
+    const unavailable = (error: unknown) => {
+      console.error('The help form cannot be sent from here', error);
+      if (this.captchaContainer()?.nativeElement !== container) return;
+      this.contactUnavailable = true;
+      this.cdr.markForCheck();
+    };
+    this.http.get<{ sitekey: string }>(CONTACT_ROUTE).subscribe({
+      next: ({ sitekey }) =>
+        void renderWidget(container, sitekey, (token) => {
+          this.captchaToken = token;
+          this.cdr.markForCheck();
+        }).then((widget) => {
+          // Gone already: a later search replaced the form while this loaded.
+          if (this.captchaContainer()?.nativeElement !== container) widget.remove();
+          else this.challenge = widget;
+        }, unavailable),
+      error: unavailable,
+    });
   }
 
   private doSearch(): void {
@@ -817,22 +794,28 @@ export class SearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    formData.set('h-captcha-response', this.captchaToken);
+    const form = new FormData(event.target as HTMLFormElement);
+    const field = (name: string) => String(form.get(name) ?? '');
+    const message = {
+      contactName: field('contactName'),
+      mailAddress: field('mailAddress'),
+      subject: field('subject'),
+      message: field('message'),
+      token: this.captchaToken,
+    };
 
     this.contactFailed = false;
-    this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
+    this.http.post(CONTACT_ROUTE, message).subscribe({
       next: () => {
         this.formSubmitted = true;
-        this.resetCaptcha();
         this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error submitting contact form:', err);
-        // Not sent, so not thanked for: the form stays, with what was written.
+        // Not sent, so not thanked for: the form stays, with what was written,
+        // and a fresh challenge, as a token is good for one try.
         this.contactFailed = true;
-        this.resetCaptcha();
+        this.challenge?.reset();
         this.cdr.markForCheck();
       },
     });

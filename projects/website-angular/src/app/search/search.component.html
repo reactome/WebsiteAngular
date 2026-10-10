@@ -211,7 +211,7 @@
         }
         <!-- Above both outcomes: with no data results, the pages are the half
              that might have had some. -->
-        @if (!loading && pagesFailed) {
+        @if (!loading && !error && pagesFailed) {
           <p class="search-load-error" role="alert">
             Couldn't search the website's pages, so only Reactome data is shown. Please try again later.
           </p>
@@ -344,20 +344,16 @@ NOTE: This is an automatically generated message.
 </textarea>
                   </div>
                 </div>
-                <div class="favth-form-group">
-                  <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                    <div class="checkbox">
-                      <label>
-                        <input type="checkbox" id="sendEmailCopy" name="sendEmailCopy" checked="" />
-                        Send me a copy
-                      </label>
-                    </div>
-                  </div>
-                </div>
 
                 <div class="favth-form-group">
                   <div class="favth-col-sm-offset-2 favth-col-sm-10">
-                    <div #captchaContainer class="h-captcha"></div>
+                    <div #captchaContainer class="challenge"></div>
+                    @if (contactUnavailable) {
+                      <p class="search-load-error" role="alert">
+                        This form can't be sent right now. Please email
+                        <a href="mailto:help@reactome.org">help&#64;reactome.org</a> instead.
+                      </p>
+                    }
                   </div>
                 </div>
 

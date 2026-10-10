@@ -12,9 +12,18 @@
  * of its own accord.
  */
 interface Turnstile {
-  render(el: HTMLElement, options: { sitekey: string; callback: (token: string) => void }): string;
+  render(
+    el: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      'expired-callback'?: () => void;
+      'error-callback'?: () => void;
+    }
+  ): string;
   /** Re-arms a spent widget in place. Cloudflare's own remedy for a refused token. */
   reset(widgetId: string): void;
+  remove?(widgetId: string): void;
 }
 
 let turnstileScript: Promise<void> | null = null;
@@ -88,4 +97,47 @@ export async function renderChallenge(
       });
     },
   });
+}
+
+/** A widget the caller holds on to, to re-arm after a token is spent or take away. */
+export interface ChallengeWidget {
+  reset(): void;
+  remove(): void;
+}
+
+/**
+ * Renders a challenge whose token the caller keeps until it is used, as a form
+ * does until it is sent.
+ *
+ * Unlike `renderChallenge`, a script that cannot be loaded is the caller's to
+ * report, by rejecting: a form that cannot be sent without it must say so.
+ */
+export async function renderWidget(
+  host: HTMLElement,
+  sitekey: string,
+  onToken: (token: string | null) => void
+): Promise<ChallengeWidget> {
+  await loadTurnstile();
+  const turnstile = (window as unknown as { turnstile?: Turnstile }).turnstile;
+  if (!turnstile) throw new Error('turnstile is not available');
+  const widgetId = turnstile.render(host, {
+    sitekey,
+    callback: (token: string) => onToken(token),
+    // A token that lapses, or a widget that errs, leaves nothing to send.
+    'expired-callback': () => onToken(null),
+    'error-callback': () => onToken(null),
+  });
+  return {
+    reset: () => {
+      onToken(null);
+      turnstile.reset(widgetId);
+    },
+    remove: () => {
+      try {
+        turnstile.remove?.(widgetId);
+      } catch {
+        // Already gone with its host.
+      }
+    },
+  };
 }

@@ -179,7 +179,7 @@ function identityDetailsFromRequest(req, now = Date.now()) {
 }
 
 /**
- * Asks hCaptcha whether a response token is genuine.
+ * Asks Cloudflare Turnstile whether a response token is genuine.
  *
  * Failure of any kind is a failed verification. A network error here must not
  * become an accidental pass.
@@ -212,8 +212,12 @@ function setIdentityCookie(res, value) {
   );
 }
 
+/** Both Turnstile keys are present, whether or not the answer gate is on. */
+const TURNSTILE_CONFIGURED = Boolean(TURNSTILE_SECRET && TURNSTILE_SITEKEY);
+
 module.exports = {
   COOKIE,
+  TURNSTILE_CONFIGURED,
   SITEVERIFY,
   TURNSTILE_SITEKEY,
   IDENTITY_TTL_MS,

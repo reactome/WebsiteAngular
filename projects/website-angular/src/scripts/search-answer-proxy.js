@@ -832,6 +832,7 @@ module.exports = {
   retryAfter,
   verifyRetryAfter,
   clientKey,
+  makeLimiter,
   LIMITS,
   GLOBAL_LIMIT,
   // Test-only: the counters are process-wide, so a spec needs to start clean.

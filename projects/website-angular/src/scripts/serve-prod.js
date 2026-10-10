@@ -54,6 +54,7 @@ const {
   mountAnalysisSummaryProxy,
   mountChatHandoffProxy,
 } = require('./search-answer-proxy');
+const { mountContactRoute } = require('./contact-route');
 
 const app = express();
 app.disable('x-powered-by');
@@ -64,6 +65,9 @@ app.disable('x-powered-by');
 mountSearchAnswerProxy(app);
 mountAnalysisSummaryProxy(app);
 mountChatHandoffProxy(app);
+// The help-desk message from a search that found nothing: our own route, as
+// ContentService's only takes an hCaptcha token.
+mountContactRoute(app);
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
