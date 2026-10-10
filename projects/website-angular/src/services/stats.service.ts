@@ -2,7 +2,7 @@ import { computed, Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of, timeout, filter, firstValueFrom, take } from 'rxjs';
+import { EMPTY, Observable, map, timeout, filter, firstValueFrom, take } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
 import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
@@ -39,7 +39,7 @@ export class StatsService {
    * wrong number looks just as authoritative as the right one, and every file
    * link built from it points at the previous release.
    */
-  readonly versionNow = computed(() => this.generalService.version.value()?.toString() ?? '');
+  readonly versionNow = computed(() => this.generalService.current()?.toString() ?? '');
 
   /**
    * The release, once the database has answered. For callers that cannot wait on
@@ -49,6 +49,9 @@ export class StatsService {
     return (await this.versionSettled).toString();
   }
 
+  // Reads `version.value` itself, not `current`, on purpose: it throws when the
+  // version request fails, which rejects this, so callers can say so rather
+  // than wait for a number that is not coming.
   private readonly versionSettled: Promise<number> = firstValueFrom(
     toObservable(this.generalService.version.value).pipe(
       filter((version): version is number => !!version),
@@ -79,22 +82,14 @@ export class StatsService {
   }
 
   /**
-   * Fetch stats from the S3/CloudFront download directory
+   * Fetch stats from the S3/CloudFront download directory.
+   *
+   * Errors reach the caller. They used to become a set of zeros, which the home
+   * page showed as a release of nothing (#321).
    */
   async getStats(): Promise<Observable<ReactomeStats>> {
-    const defaultStats: ReactomeStats = {
-      pathways: 0,
-      reactions: 0,
-      proteins: 0,
-      smallMolecules: 0,
-      drugs: 0,
-      references: 0,
-    };
-
-    // During SSR, return default stats to avoid blocking
-    if (!this.isBrowser) {
-      return of(defaultStats);
-    }
+    // Nothing to show until a browser fetches it.
+    if (!this.isBrowser) return EMPTY;
 
     const baseUrl = await this.getDownloadBaseUrl();
     const version = await this.getVersion();
@@ -102,13 +97,8 @@ export class StatsService {
     const url = `${baseUrl}/${version}/stats/summary_stats.json`;
 
     return this.http.get<RawStatItem[]>(url).pipe(
-      timeout(5000), // 5 second timeout
-      map((data) => this.parseStats(data)),
-      catchError((error) => {
-        console.error('Error fetching stats:', error);
-        // Return default values if fetch fails
-        return of(defaultStats);
-      })
+      timeout(10_000), // a 577-byte file: past this, say it failed rather than wait
+      map((data) => this.parseStats(data))
     );
   }
 

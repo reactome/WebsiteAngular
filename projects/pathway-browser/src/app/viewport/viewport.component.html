@@ -347,7 +347,9 @@
                 @if (isCurator) {
                   <span class="beta">curator</span>
                 } @else {
-                  <span class="version">v{{ general.version.value() }}</span>
+                  @if (general.current(); as version) {
+                    <span class="version">v{{ version }}</span>
+                  }
                   <span class="beta">beta</span>
                 }
               </div>

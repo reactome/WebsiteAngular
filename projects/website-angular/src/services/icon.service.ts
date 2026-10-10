@@ -61,7 +61,7 @@ export interface IconResult {
 export class IconService {
   private general = inject(GeneralService);
 
-  private readonly iconBase = computed(() => iconArtworkBase(this.general.version.value()));
+  private readonly iconBase = computed(() => iconArtworkBase(this.general.current()));
 
   /** The URL of an icon's SVG, wherever icons are being served from. */
   iconUrl(stId: string) {
