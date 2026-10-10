@@ -504,7 +504,12 @@ export const test = base.extend({
     }
 
     const harDir = path.dirname(har);
-    const entries = existsSync(har) ? load(har) : new Map<string, HarEntry>();
+    const own = existsSync(har);
+    const entries = own ? load(har) : new Map<string, HarEntry>();
+    // The first backend request answered from the pool by a test that has no
+    // recording of its own (#321). Such a test runs entirely on other tests'
+    // recordings, so re-recording one of them silently changes it.
+    let borrowed: string | undefined;
 
     const ownOrigin = new URL(baseURL ?? 'http://localhost:4200').origin;
     // host -> the first URL that asked for it, so the message can show one.
@@ -568,6 +573,7 @@ export const test = base.extend({
       // A miss on a write is an abort, and an abort is visible.
       const shareable = method === 'GET' || method === 'HEAD';
       const entry = entries.get(asked) ?? (shareable ? pool(harDir).get(asked) : undefined);
+      if (entry && !own) borrowed ??= asked;
       if (!entry) {
         // Aborted, never passed through. Falling back to the network would
         // quietly restore the thing this removes, and the first sign would be an
@@ -597,6 +603,15 @@ export const test = base.extend({
     // handler cannot fail a test -- it can only abort a request, which surfaces
     // as whatever the page does when an asset is missing. That is how IDG stayed
     // invisible. Naming the host and what to do about it is the whole point.
+    if (borrowed) {
+      throw new Error(
+        `This test has no recording of its own, and was answered from other tests'\n` +
+          `recordings (first: ${borrowed}). Re-recording one of those would change it\n` +
+          'without anyone touching it. Record it:\n\n' +
+          `  npm run e2e:record -- ${path.relative(process.cwd(), testInfo.file)} -g ${JSON.stringify(testInfo.title)}`
+      );
+    }
+
     if (undeclared.size) {
       const lines = [...undeclared].map(([host, url]) => `  ${host}  (first asked for ${url})`);
       throw new Error(
