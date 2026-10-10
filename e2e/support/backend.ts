@@ -504,8 +504,10 @@ export const test = base.extend({
     }
 
     const harDir = path.dirname(har);
-    const own = existsSync(har);
-    const entries = own ? load(har) : new Map<string, HarEntry>();
+    const entries = existsSync(har) ? load(har) : new Map<string, HarEntry>();
+    // Counted by entries, not by the file: a test recorded while it skipped
+    // leaves a HAR with nothing in it, which is no recording at all.
+    const own = entries.size > 0;
     // The first backend request answered from the pool by a test that has no
     // recording of its own (#321). Such a test runs entirely on other tests'
     // recordings, so re-recording one of them silently changes it.
@@ -599,19 +601,29 @@ export const test = base.extend({
     await angular.check(testInfo);
     gsa.check(testInfo);
 
-    // Thrown from the fixture rather than inside the handler, because a route
-    // handler cannot fail a test -- it can only abort a request, which surfaces
-    // as whatever the page does when an asset is missing. That is how IDG stayed
-    // invisible. Naming the host and what to do about it is the whole point.
-    if (borrowed) {
+    // Only when the test otherwise did what it expected, as the Angular check
+    // does: a test that failed or skipped has a better thing to report.
+    if (borrowed && testInfo.status === testInfo.expectedStatus) {
+      // -g is a regular expression, matched against the file, the describe
+      // path and the title together, so the titles are escaped: a `?` or `(` in
+      // one would break the command. The describe path with the title keeps it
+      // to this test rather than every test whose title contains this one's.
+      const pattern = testInfo.titlePath
+        .slice(1)
+        .join(' ')
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       throw new Error(
         `This test has no recording of its own, and was answered from other tests'\n` +
           `recordings (first: ${borrowed}). Re-recording one of those would change it\n` +
           'without anyone touching it. Record it:\n\n' +
-          `  npm run e2e:record -- ${path.relative(process.cwd(), testInfo.file)} -g ${JSON.stringify(testInfo.title)}`
+          `  npm run e2e:record -- ${path.relative(process.cwd(), testInfo.file)} -g ${JSON.stringify(pattern)}`
       );
     }
 
+    // Thrown from the fixture rather than inside the handler, because a route
+    // handler cannot fail a test -- it can only abort a request, which surfaces
+    // as whatever the page does when an asset is missing. That is how IDG stayed
+    // invisible. Naming the host and what to do about it is the whole point.
     if (undeclared.size) {
       const lines = [...undeclared].map(([host, url]) => `  ${host}  (first asked for ${url})`);
       throw new Error(
