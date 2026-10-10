@@ -45,6 +45,13 @@ const analysed = (page: Page) =>
     return cy ? cy.nodes().filter((n) => n.data('exp') !== undefined).length : -1;
   })()`);
 
+/** How many nodes are drawn: the analysis may fail before the diagram is. */
+const drawn = (page: Page) =>
+  page.evaluate<number>(`(() => {
+    const cy = document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy;
+    return cy ? cy.nodes().length : 0;
+  })()`);
+
 const diagram = (page: Page) => page.locator('cr-diagram');
 
 test.describe('The analysis overlay', () => {
@@ -60,6 +67,7 @@ test.describe('The analysis overlay', () => {
       "Couldn't load the analysis results for this diagram, so nothing is coloured.",
       { timeout: LOAD }
     );
+    await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
@@ -72,6 +80,7 @@ test.describe('The analysis overlay', () => {
       "Couldn't load the analysis results for this diagram, so nothing is coloured.",
       { timeout: LOAD }
     );
+    await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
@@ -113,7 +122,7 @@ test.describe('Flagging', () => {
     await page.goto(`/PathwayBrowser/${PATHWAY}?flag=${FLAG}`);
     const banner = diagram(page).locator('cr-flag-banner');
     await expect(banner.getByRole('alert')).toContainText(
-      "Couldn't search this diagram for the flagged items.",
+      "Couldn't search for the flagged items.",
       { timeout: LOAD }
     );
     // What is flagged, and the way out of it, are still there.

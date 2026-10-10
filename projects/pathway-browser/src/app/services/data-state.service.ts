@@ -9,9 +9,10 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { Pathway } from '../model/graph/event/pathway.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
-
-const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
 import { SpeciesService } from './species.service';
+
+/** ContentService's flag search answers 404 for a term with no match. */
+const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
 
 type SelectionData = {
   selectedElement: SelectableObject | undefined;

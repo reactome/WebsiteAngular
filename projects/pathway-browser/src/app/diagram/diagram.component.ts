@@ -1471,11 +1471,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private loadAnalysis(token: string | null, force = false) {
     if (!force && this.deltaSignal.hasOverlay()) return;
     // A load for an earlier token or diagram must neither colour this one nor
-    // report its failure here.
+    // report its failure here. The notice is left until this load settles, so
+    // loading the same failing token again does not announce it twice.
     this.analysisLoad?.unsubscribe();
-    this.analysisFailed.set(false);
     const diagramId = this.pathwayId();
     if (!token || !diagramId) {
+      this.analysisFailed.set(false);
       this.clearAnalysis();
       return;
     }
@@ -1500,6 +1501,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       takeUntilDestroyed(this.destroyRef)
     );
     this.analysisLoad = load$.subscribe(({ entities, pathways, result }) => {
+      this.analysisFailed.set(false);
       this._loadAnalysisFn = (analysisIndex) => {
         if (this.deltaSignal.hasOverlay()) return;
         const analysisEntityMap = new Map<string, number>(
@@ -1605,6 +1607,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       this.loadAnalysis(this.state.analysis(), true);
       return;
     }
+    // The overlay replaces the analysis colouring: an analysis load still in
+    // flight must not clear it when it fails, nor its notice stay up.
+    this.analysisLoad?.unsubscribe();
+    this.analysisFailed.set(false);
 
     this.cys.filter(Boolean).forEach((cy) => {
       cy.batch(() => {
