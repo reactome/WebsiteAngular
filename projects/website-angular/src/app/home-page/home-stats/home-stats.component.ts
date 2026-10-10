@@ -4,6 +4,7 @@ import { CarouselComponent } from '../../reactome-components/carousel/carousel.c
 import { StatsService } from '../../../services/stats.service';
 import { APP_CONFIG } from '../../../config/config'; // NEW import
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 
 interface Stats {
   human_pathways: number;
@@ -17,7 +18,7 @@ interface Stats {
 @Component({
   selector: 'app-home-stats',
   standalone: true,
-  imports: [MatIcon, CarouselComponent],
+  imports: [MatIcon, CarouselComponent, LoadErrorComponent],
   templateUrl: './home-stats.component.html',
   styleUrl: './home-stats.component.scss',
 })
@@ -41,15 +42,12 @@ export class HomeStatsComponent implements OnInit {
    * and in this zoneless app a plain field written then is not drawn -- the
    * counters stayed at 0 unless something else redrew the page, and in
    * development a reply landing mid-check threw NG0100.
+   *
+   * Null until they arrive. It used to start at zeros, so the page announced a
+   * release of nothing while it waited, and for good when the file failed.
    */
-  readonly stats = signal<Stats>({
-    human_pathways: 0,
-    reactions: 0,
-    proteins: 0,
-    small_molecules: 0,
-    drugs: 0,
-    references: 0,
-  });
+  readonly stats = signal<Stats | null>(null);
+  readonly failed = signal(false);
 
   ngOnInit() {
     this.getVersionAndDate();
@@ -77,15 +75,18 @@ export class HomeStatsComponent implements OnInit {
           },
           error: (err) => {
             console.error('Error while fetching stats: ', err);
+            this.failed.set(true);
           },
         });
       })
-      // A failed stats load leaves the homepage counters blank; at least say
-      // why rather than showing nothing.
-      .catch((error) => console.error('Could not load homepage statistics', error));
+      .catch((error) => {
+        console.error('Could not load homepage statistics', error);
+        this.failed.set(true);
+      });
   }
 
-  formatNumber(num: number): string {
-    return num.toLocaleString('en-US');
+  /** A count, or a dash while it is not known yet: unknown is not zero. */
+  formatNumber(num: number | undefined): string {
+    return num === undefined ? '–' : num.toLocaleString('en-US');
   }
 }

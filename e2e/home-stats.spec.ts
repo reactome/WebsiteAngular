@@ -37,3 +37,25 @@ test('the release counters show the numbers once they arrive, however late', asy
     })
     .toBe(2883);
 });
+
+// A failed statistics file was shown as a release of nothing: "0 Human
+// Pathways, 0 Reactions ..." (#321). The counters also read 0 while it loaded.
+test('the release counters say so when the numbers cannot be loaded', async ({ page }) => {
+  let answer!: () => void;
+  const asked = new Promise<void>((resolve) => (answer = resolve));
+  await page.route('**/stats/summary_stats.json', async (route) => {
+    await asked;
+    await route.fulfill({ status: 500, contentType: 'text/plain', body: 'stats failed' });
+  });
+  await page.goto('/');
+  const stats = page.locator('app-home-stats');
+  await expect(stats.getByText('Human Pathways')).toBeVisible({ timeout: 60_000 });
+  // Not yet known is not zero.
+  await expect(stats.locator('.stat-item span').first()).not.toHaveText('0');
+
+  answer();
+  await expect(stats.getByRole('alert')).toContainText("Couldn't load the release statistics", {
+    timeout: 30_000,
+  });
+  await expect(stats).not.toContainText('Human Pathways');
+});

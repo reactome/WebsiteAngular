@@ -2,7 +2,7 @@ import { computed, Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of, timeout, filter, firstValueFrom, take } from 'rxjs';
+import { EMPTY, Observable, map, timeout, filter, firstValueFrom, take } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
 import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
@@ -79,22 +79,14 @@ export class StatsService {
   }
 
   /**
-   * Fetch stats from the S3/CloudFront download directory
+   * Fetch stats from the S3/CloudFront download directory.
+   *
+   * Errors reach the caller. They used to become a set of zeros, which the home
+   * page showed as a release of nothing (#321).
    */
   async getStats(): Promise<Observable<ReactomeStats>> {
-    const defaultStats: ReactomeStats = {
-      pathways: 0,
-      reactions: 0,
-      proteins: 0,
-      smallMolecules: 0,
-      drugs: 0,
-      references: 0,
-    };
-
-    // During SSR, return default stats to avoid blocking
-    if (!this.isBrowser) {
-      return of(defaultStats);
-    }
+    // Nothing to show until a browser fetches it.
+    if (!this.isBrowser) return EMPTY;
 
     const baseUrl = await this.getDownloadBaseUrl();
     const version = await this.getVersion();
@@ -103,12 +95,7 @@ export class StatsService {
 
     return this.http.get<RawStatItem[]>(url).pipe(
       timeout(5000), // 5 second timeout
-      map((data) => this.parseStats(data)),
-      catchError((error) => {
-        console.error('Error fetching stats:', error);
-        // Return default values if fetch fails
-        return of(defaultStats);
-      })
+      map((data) => this.parseStats(data))
     );
   }
 
