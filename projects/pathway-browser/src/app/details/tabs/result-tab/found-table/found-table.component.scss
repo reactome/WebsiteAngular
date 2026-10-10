@@ -53,3 +53,9 @@ td.mat-column-name {
   @include flag-button.configure-flag-button(20px, 24px, 0.75);
   cursor: pointer;
 }
+
+.found-error {
+  margin: 0;
+  padding: 8px 16px;
+  color: var(--error);
+}

@@ -274,7 +274,8 @@ export class EntityPopupComponent {
 
   private readonly analysisHits = computed<Map<string, number[]> | undefined>(() => {
     if (!this.state.analysis()) return undefined;
-    const entities = this.found.value()?.entities;
+    // value() throws while the request is in error: no markers, as without one.
+    const entities = this.found.hasValue() ? this.found.value()?.entities : undefined;
     if (!entities) return undefined;
     const map = new Map<string, number[]>();
     for (const entity of entities) {

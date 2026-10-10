@@ -68,7 +68,7 @@ export class FoundTableComponent {
     effect(() => (this.dataSource.data = this.foundEntities()));
     effect(() => (this.dataSource.sort = this.sort()));
     effect(() => {
-      this.pathwayFoundEntities.value(); // When found entity finished loading
+      this.found(); // When found entity finished loading
       const stId = untracked(this.pathway).stId;
       setTimeout(() => {
         document.getElementById(`pathway-${stId}-row`)?.scrollIntoView({
@@ -93,8 +93,13 @@ export class FoundTableComponent {
         : of(undefined),
   });
 
+  /** What was found; undefined while loading or failed, as value() throws then. */
+  private readonly found = computed(() =>
+    this.pathwayFoundEntities.hasValue() ? this.pathwayFoundEntities.value() : undefined
+  );
+
   readonly foundEntities: Signal<FoundIdentifier[]> = computed(() => {
-    const found = this.pathwayFoundEntities.value();
+    const found = this.found();
     if (!found) return [];
     return [
       ...found.entities.map((entity) => ({
@@ -114,7 +119,7 @@ export class FoundTableComponent {
     ];
   });
 
-  readonly resources = computed(() => this.pathwayFoundEntities.value()?.resources || []);
+  readonly resources = computed(() => this.found()?.resources || []);
   readonly resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
   readonly expressionColumnNames = computed(
     () => this.analysis.result()?.expression?.columnNames || []
@@ -124,7 +129,7 @@ export class FoundTableComponent {
   );
 
   readonly expandedColumns = computed(() =>
-    this.pathwayFoundEntities.value()
+    this.found()
       ? [
           'id',
           ...(this.analysis.hasInteractors() ? ['interactors'] : []),
