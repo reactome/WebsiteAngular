@@ -32,6 +32,8 @@
         </li>
       }
     </ol>
+  } @else if (failed) {
+    <app-load-error class="news-empty" what="the latest news" />
   } @else if (!loading) {
     <p class="news-empty">No news to show right now.</p>
   }
