@@ -61,9 +61,20 @@ test.describe('Analysis results', () => {
     await runGeneList(page);
     await openTab(page, 'Results');
 
-    const rows = page.locator('cr-result-tab table tbody tr');
-    await expect(rows.first()).toBeVisible({ timeout: 60_000 });
-    const before = await rows.count();
+    // The paginator's total, "1 – 20 of N", not the rows on screen: the table
+    // shows 20 a page, and each pathway also has a hidden row of its found
+    // entities, so a row count tops out and does not count pathways. The
+    // results table's own paginator: the not-found identifiers below have one
+    // too.
+    await expect(page.locator('cr-result-tab tr.pathway-row').first()).toBeVisible({
+      timeout: 60_000,
+    });
+    const label = page.locator(
+      'cr-result-tab .controls.mat-elevation-z2 .mat-mdc-paginator-range-label'
+    );
+    const pathways = async () =>
+      Number(/of\s+([\d,]+)/.exec(await label.innerText())?.[1]?.replace(/,/g, '') ?? NaN);
+    const before = await pathways();
     expect(before, 'pathways before filtering').toBeGreaterThan(20);
 
     // The FDR slider rather than the Diseases toggle or a species facet: the
@@ -80,9 +91,9 @@ test.describe('Analysis results', () => {
     // Waited for rather than counted after a fixed pause, which a slow
     // re-render could outrun (#321).
     await expect
-      .poll(() => rows.count(), { message: 'a stricter FDR keeps fewer pathways' })
+      .poll(pathways, { message: 'a stricter FDR keeps fewer pathways' })
       .toBeLessThan(before);
-    await expect.poll(() => rows.count(), { message: 'but not none of them' }).toBeGreaterThan(0);
+    await expect.poll(pathways, { message: 'but not none of them' }).toBeGreaterThan(0);
   });
 
   test('the result files download', async ({ page }) => {
