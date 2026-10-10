@@ -67,11 +67,12 @@ test('the release counters say so when the numbers cannot be loaded', async ({ p
 // made it depended on timing, so the throw itself is what is checked.
 async function failTheRelease(page: Page) {
   const thrown: string[] = [];
+  // Anything Angular reports ("ERROR <error>"), not just ResourceValueError by
+  // name: a production build minifies that class away. And anything uncaught.
   page.on('console', (message) => {
-    // Angular reports a throw during rendering as "ERROR <error>".
-    if (message.type() === 'error' && /^ERROR\b.*ResourceValueError/s.test(message.text()))
-      thrown.push(message.text());
+    if (message.type() === 'error' && /^ERROR\b/.test(message.text())) thrown.push(message.text());
   });
+  page.on('pageerror', (error) => thrown.push(String(error)));
   await page.route(/\/data\/database\/version/, (route) =>
     route.fulfill({ status: 500, contentType: 'text/plain', body: 'version failed' })
   );
@@ -97,4 +98,6 @@ test('the pathway browser header draws without the release', async ({ page }) =>
   // Long enough for redraws after the version has failed.
   await page.waitForTimeout(3000);
   expect(thrown).toEqual([]);
+  // No version is shown rather than a "v" with nothing after it.
+  await expect(page.locator('.version-container .version')).toHaveCount(0);
 });
