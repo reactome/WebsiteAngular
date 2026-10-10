@@ -498,25 +498,6 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     return !!this.expandedForms[key];
   }
 
-  getSpriteClass(entry: SearchEntry): string {
-    const reactionSubtypes = new Set([
-      'association',
-      'binding',
-      'dissociation',
-      'omitted',
-      'transition',
-      'uncertain',
-      'depolymerisation',
-      'polymerisation',
-    ]);
-
-    const rawType = (entry.exactType || entry.type || '').trim();
-    const spriteType = reactionSubtypes.has(rawType.toLowerCase())
-      ? 'Reaction'
-      : rawType || 'Pathway';
-    return `sprite sprite-resize sprite-${spriteType}`;
-  }
-
   // Resolve the Reactome subject icon (Protein, Pathway, Complex, …) for a
   // search result so the row renders the same SVG icon as the pathway-browser
   // search.
