@@ -353,6 +353,25 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await expect(page.getByText('Step 3: Analysis Options')).toBeVisible({ timeout: 20_000 });
   });
 
+  // The summary is fetched once the load completes. Its failure was swallowed
+  // into nothing, so neither a summary nor an error followed, and the progress
+  // dialog -- which cannot be closed by the reader -- stayed up saying the
+  // dataset had loaded (#321).
+  test('closes the progress dialog and says so when the summary fails', async ({ page }) => {
+    await stubGsa(page);
+    await page.route('**/GSAServer/0.1/data/summary/**', (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'summary failed' })
+    );
+    await page.goto('/PathwayBrowser?analysisTab=quantitative');
+    await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
+    await page.locator('button.mat-mdc-fab').first().click();
+    await page.getByText('Melanoma RNA-seq example').first().click({ timeout: 20_000 });
+
+    await expect(page.locator('mat-dialog-container')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('could not be loaded')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0, { timeout: 10_000 });
+  });
+
   // ReactomeGSA delivers the result to the Reactome server the request names,
   // and only a site reading that server's Analysis Service can open it. The
   // profile named one all along -- `dev` here, the development profile -- but
