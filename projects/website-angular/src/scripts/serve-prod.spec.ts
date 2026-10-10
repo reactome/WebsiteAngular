@@ -220,6 +220,7 @@ describe('serve-prod and the API roots', () => {
   let base = '';
   let server: ChildProcess | undefined;
   let backend: Server | undefined;
+  let contentNode: Server | undefined;
   const reached: string[] = [];
 
   beforeAll(async () => {
@@ -235,6 +236,14 @@ describe('serve-prod and the API roots', () => {
     backend = upstream;
     await new Promise<void>((resolve) => upstream.listen(backendPort, '127.0.0.1', resolve));
 
+    const contentNodePort = await freePort();
+    const node = createHttpServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(`content-node ${req.url}`);
+    });
+    contentNode = node;
+    await new Promise<void>((resolve) => node.listen(contentNodePort, '127.0.0.1', resolve));
+
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
     server = spawn('node', [SCRIPT], {
@@ -244,6 +253,7 @@ describe('serve-prod and the API roots', () => {
         PORT: String(port),
         HOST: '127.0.0.1',
         REACTOME_BACKEND: `http://127.0.0.1:${backendPort}`,
+        CONTENT_NODE_TARGET: `http://127.0.0.1:${contentNodePort}`,
         HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
         HEALTH_RENDER: 'http://127.0.0.1:9/health',
         HEALTH_MCP: 'http://127.0.0.1:9/health',
@@ -256,8 +266,23 @@ describe('serve-prod and the API roots', () => {
   afterAll(async () => {
     server?.kill('SIGTERM');
     backend?.close();
+    contentNode?.close();
     if (dist) await rm(dist, { recursive: true, force: true });
   });
+
+  // The same routes the dev server's are checked against (proxy-order.spec.ts):
+  // the four lists go to node, and nothing else under a person does.
+  for (const [url, to] of [
+    ['/ContentService/data/person/68285/authoredPathways', 'content-node'],
+    ['/ContentService/data/person/68285/reviewedReactions?page=1', 'content-node'],
+    ['/ContentService/data/person/68285', 'backend'],
+    ['/ContentService/data/person/68285/publications', 'backend'],
+    ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'backend'],
+  ]) {
+    it(`sends ${url} to ${to}`, async () => {
+      expect(await (await fetch(base + url)).text()).toBe(`${to} ${url}`);
+    });
+  }
 
   for (const root of [
     '/ContentService',
