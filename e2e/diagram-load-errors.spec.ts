@@ -68,6 +68,8 @@ test.describe('The analysis overlay', () => {
       { timeout: LOAD }
     );
     await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
+    // The drawn diagram loads the analysis again: count after that has failed too.
+    await page.waitForLoadState('networkidle');
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
@@ -81,6 +83,8 @@ test.describe('The analysis overlay', () => {
       { timeout: LOAD }
     );
     await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
+    // The drawn diagram loads the analysis again: count after that has failed too.
+    await page.waitForLoadState('networkidle');
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
