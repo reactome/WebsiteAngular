@@ -505,6 +505,13 @@ export const test = base.extend({
 
     const harDir = path.dirname(har);
     const entries = existsSync(har) ? load(har) : new Map<string, HarEntry>();
+    // Counted by entries, not by the file: a test recorded while it skipped
+    // leaves a HAR with nothing in it, which is no recording at all.
+    const own = entries.size > 0;
+    // The first backend request answered from the pool by a test that has no
+    // recording of its own (#321). Such a test runs entirely on other tests'
+    // recordings, so re-recording one of them silently changes it.
+    let borrowed: string | undefined;
 
     const ownOrigin = new URL(baseURL ?? 'http://localhost:4200').origin;
     // host -> the first URL that asked for it, so the message can show one.
@@ -568,6 +575,7 @@ export const test = base.extend({
       // A miss on a write is an abort, and an abort is visible.
       const shareable = method === 'GET' || method === 'HEAD';
       const entry = entries.get(asked) ?? (shareable ? pool(harDir).get(asked) : undefined);
+      if (entry && !own) borrowed ??= asked;
       if (!entry) {
         // Aborted, never passed through. Falling back to the network would
         // quietly restore the thing this removes, and the first sign would be an
@@ -592,6 +600,25 @@ export const test = base.extend({
     await use(context);
     await angular.check(testInfo);
     gsa.check(testInfo);
+
+    // Only when the test otherwise did what it expected, as the Angular check
+    // does: a test that failed or skipped has a better thing to report.
+    if (borrowed && testInfo.status === testInfo.expectedStatus) {
+      // -g is a regular expression, matched against the file, the describe
+      // path and the title together, so the titles are escaped: a `?` or `(` in
+      // one would break the command. The describe path with the title keeps it
+      // to this test rather than every test whose title contains this one's.
+      const pattern = testInfo.titlePath
+        .slice(1)
+        .join(' ')
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      throw new Error(
+        `This test has no recording of its own, and was answered from other tests'\n` +
+          `recordings (first: ${borrowed}). Re-recording one of those would change it\n` +
+          'without anyone touching it. Record it:\n\n' +
+          `  npm run e2e:record -- ${path.relative(process.cwd(), testInfo.file)} -g ${JSON.stringify(pattern)}`
+      );
+    }
 
     // Thrown from the fixture rather than inside the handler, because a route
     // handler cannot fail a test -- it can only abort a request, which surfaces
