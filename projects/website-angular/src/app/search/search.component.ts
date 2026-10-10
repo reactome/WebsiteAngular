@@ -7,10 +7,11 @@ import {
   ElementRef,
   ChangeDetectorRef,
   viewChild,
+  signal,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
+import { Subscription, forkJoin, catchError, map, Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { IconService } from '../../services/icon.service';
 import { HttpClient } from '@angular/common/http';
@@ -96,6 +97,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   error = '';
   hasNoResults = false;
   formSubmitted = false;
+  /** The help-desk message could not be sent; the form stays, with what was written. */
+  contactFailed = false;
+  /**
+   * Email and message are filled in. Held as a signal set on input: the button
+   * read the fields directly, and with nothing to re-check it when they were
+   * typed in, solving the captcha first left Send disabled for good.
+   */
+  readonly contactReady = signal(false);
 
   currentPage = 0;
   pageSize = 30;
@@ -130,6 +139,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   uniqueProteins: SearchEntry[] = [];
   proteinTotalForms = 0;
   proteinLoading = false;
+  /** Some batches of the protein list failed, so it is short of them. */
+  proteinsIncomplete = false;
+  /** Groups whose last page change failed, and stayed on the page they show. */
+  groupPageFailed: Record<string, boolean> = {};
+  /** The website's pages could not be searched; only data results are shown. */
+  pagesFailed = false;
 
   // Unified search now always uses reference-style aggregation: one row per
   // reference entity (e.g. one TP53) with modified forms / isoforms collapsed
@@ -276,9 +291,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
-      pages: this.siteSearch.search(this.query).pipe(catchError(() => of([] as SitePageHit[]))),
+      pages: this.siteSearch.search(this.query).pipe(
+        map((hits) => ({ hits, failed: false })),
+        catchError(() => of({ hits: [] as SitePageHit[], failed: true }))
+      ),
     }).subscribe({
-      next: ({ results, facets, pages }) => {
+      next: ({ results, facets, pages: { hits: pages, failed: pagesFailed } }) => {
+        this.pagesFailed = pagesFailed;
         // If either API call failed, show error
         if (!results || !facets) {
           this.error = 'An error occurred while searching. Please try again.';
@@ -390,6 +409,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.groupPages = {};
           this.groupPageEntries = {};
           this.groupLoading = {};
+          this.groupPageFailed = {};
           this.expandedForms = {};
 
           // If there's a Protein group, fetch ALL protein entries for deduplication
@@ -433,6 +453,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private fetchAllProteins(totalCount: number): void {
     this.proteinLoading = true;
+    this.proteinsIncomplete = false;
     this.proteinForms = new Map();
     this.uniqueProteins = [];
     this.proteinTotalForms = 0;
@@ -446,11 +467,13 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       batchRequests.push(
         this.searchService
           .search(this.query, proteinFilters, batchPage, batchSize)
-          .pipe(catchError(() => of(null)))
+          .pipe(catchError((err) => this.handleSearchError(err)))
       );
     }
 
     forkJoin(batchRequests).subscribe((results) => {
+      // null is a batch that failed, rather than one that found nothing.
+      this.proteinsIncomplete = results.some((result) => result === null);
       const allProteins: SearchEntry[] = [];
       for (const result of results) {
         if (!result?.results?.length) continue;
@@ -719,18 +742,28 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   goToGroupPage(group: ResultGroup, page: number): void {
     const total = this.getGroupTotalPages(group);
     if (page < 0 || page >= total) return;
-    this.groupPages[group.typeName] = page;
 
     // Protein group is paginated client-side — no server call needed
-    if (group.typeName === 'Protein') return;
+    if (group.typeName === 'Protein') {
+      this.groupPages[group.typeName] = page;
+      return;
+    }
 
     this.groupLoading[group.typeName] = true;
     this.searchService
       .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError((err) => this.handleSearchError(err)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        if (!result?.results?.length) {
+        // Failed: the page number stays on the entries still shown.
+        this.groupPageFailed[group.typeName] = result === null;
+        if (result === null) {
+          this.cdr.markForCheck();
+          return;
+        }
+        // The number moves with the entries, not ahead of them.
+        this.groupPages[group.typeName] = page;
+        if (!result.results?.length) {
           this.cdr.markForCheck();
           return;
         }
@@ -755,6 +788,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     const formData = new FormData(form);
     formData.set('h-captcha-response', this.captchaToken);
 
+    this.contactFailed = false;
     this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
       next: () => {
         this.formSubmitted = true;
@@ -763,7 +797,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       error: (err) => {
         console.error('Error submitting contact form:', err);
-        this.formSubmitted = true; // Still show thank you message even if there's an error
+        // Not sent, so not thanked for: the form stays, with what was written.
+        this.contactFailed = true;
         this.resetCaptcha();
         this.cdr.markForCheck();
       },
