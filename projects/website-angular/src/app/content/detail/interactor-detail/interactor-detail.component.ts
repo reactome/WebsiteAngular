@@ -72,8 +72,8 @@ export class InteractorDetailComponent implements OnInit {
   readonly acc = signal('');
   readonly interactions = signal<CustomInteraction[]>([]);
   readonly loading = signal(true);
-  // Only a 404 means Reactome has no interactions for the accession; any other
-  // failure says nothing about it.
+  // A 404 means Reactome has no interactions for the accession, and a 400 that
+  // the address is no accession at all; any other failure says nothing about it.
   readonly notFound = signal(false);
   readonly failed = signal(false);
 
@@ -178,7 +178,8 @@ export class InteractorDetailComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error: unknown) => {
-        if (error instanceof HttpErrorResponse && error.status === 404) this.notFound.set(true);
+        if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 400))
+          this.notFound.set(true);
         else this.failed.set(true);
         this.loading.set(false);
       },

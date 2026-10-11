@@ -17,6 +17,8 @@ const KNOWN = 'P38398';
 const FAILING = 'O15151';
 // Not an accession: the service answers 404.
 const UNKNOWN = 'ZZZ999';
+// Not an accession either, and not even a valid address: the service answers 400.
+const MALFORMED = 'P04637%2F1';
 
 const interactions = (acc: string) =>
   new RegExp(`/interactors/static/molecule/${acc}/withEntities(\\?|$)`);
@@ -31,6 +33,15 @@ test.describe('The interactor page', () => {
 
   test('says an accession with no interactions was not found', async ({ page }) => {
     await page.goto(`/content/detail/interactor/${UNKNOWN}`);
+    await expect(page.getByRole('heading', { name: 'Interactor not found' })).toBeVisible({
+      timeout: LOAD,
+    });
+  });
+
+  test('says an address that is not an accession was not found', async ({ page }) => {
+    // An encoded slash: Tomcat refuses the request outright, and asking again
+    // will never help.
+    await page.goto(`/content/detail/interactor/${MALFORMED}`);
     await expect(page.getByRole('heading', { name: 'Interactor not found' })).toBeVisible({
       timeout: LOAD,
     });
