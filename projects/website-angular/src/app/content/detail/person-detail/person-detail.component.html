@@ -3,7 +3,12 @@
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>
     </div>
-  } @else if (error() || !person()) {
+  } @else if (failed()) {
+    <div class="error-container" role="alert">
+      <h2>Couldn't load this contributor</h2>
+      <p>Please try again later.</p>
+    </div>
+  } @else if (notFound() || !person()) {
     <div class="error-container">
       <h2>Person not found</h2>
       <p>The requested contributor could not be loaded.</p>
@@ -47,6 +52,13 @@
           </dd>
         }
       </dl>
+
+      @if (contributionsFailed()) {
+        <p class="person-load-error" role="alert">
+          Some of this contributor's pathways and reactions couldn't be loaded, so these lists may be incomplete. Please
+          try again later.
+        </p>
+      }
 
       @if (
         authoredPathways().length +

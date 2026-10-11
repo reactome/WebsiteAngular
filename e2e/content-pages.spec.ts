@@ -33,6 +33,14 @@ test.describe('Shared navigation chrome', () => {
       expect(await crumbs.count()).toBeGreaterThanOrEqual(minCrumbs);
     });
   }
+
+  test('the breadcrumb names the entity on a detail page', async ({ page }) => {
+    // The leaf starts as the id and is replaced once the entity's name arrives.
+    await page.goto('/content/detail/R-HSA-69620');
+    await expect(page.locator('app-breadcrumb')).toContainText('Cell Cycle Checkpoints', {
+      timeout: LOAD,
+    });
+  });
 });
 
 test.describe('Content pages render backend data', () => {
