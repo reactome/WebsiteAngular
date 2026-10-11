@@ -127,7 +127,12 @@ export class SearchComponent {
       this.scopes.local.failed() && !this.scopes.local.found() && !!this.state.pathwayId();
     const global = this.scopes.global.failed() && !this.scopes.global.found();
     if (local && global) return "Couldn't search right now.";
+    // The other scope's answer is said too, when it was "nothing".
+    if (global && this.localHasNoResult())
+      return "Nothing was found in the current pathway, and couldn't search all pathways.";
     if (global) return "Couldn't search all pathways.";
+    if (local && this.globalHasNoResult())
+      return "Nothing was found in any pathway, and couldn't search the current pathway.";
     if (local) return "Couldn't search the current pathway.";
     return '';
   });
@@ -393,8 +398,12 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   readonly facets = computed(() => this._result()?.facets || []);
   readonly found = computed(() => this._result()?.found || 0);
   readonly isLoading = signal<boolean>(false);
-  /** The last request failed: what is shown may be short of what there is. */
-  readonly failed = signal<boolean>(false);
+  /** Pages that could not be loaded, until asked for again. */
+  private readonly failedPages = signal<ReadonlySet<number>>(new Set());
+  /** Some page could not be loaded: what is shown is short of what there is. */
+  readonly failed = computed(() => this.failedPages().size > 0);
+  /** Bumped by every new search: answers to an earlier one are dropped. */
+  private generation = 0;
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -416,7 +425,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   clear(): void {
-    this.failed.set(false);
+    this.generation++;
+    this.failedPages.set(new Set());
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
     this.fetchPage(0);
@@ -451,6 +461,15 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
     }
     this.isLoading.set(true);
     this.fetchedPages.add(page);
+    const generation = this.generation;
+    const current = () => generation === this.generation;
+    const markFailed = (failed: boolean) =>
+      this.failedPages.update((pages) => {
+        const next = new Set(pages);
+        if (failed) next.add(page);
+        else next.delete(page);
+        return next;
+      });
     // Use `setTimeout` to simulate fetching data from server.
     this.param$
       .pipe(
@@ -461,23 +480,25 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
       )
       .subscribe({
         next: (result) => {
+          if (!current()) return;
           this._result.set(result);
           if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
           this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
           this.dataStream.next(this.cachedEntries);
-          this.failed.set(false);
+          markFailed(false);
           this.isLoading.set(false);
         },
         // Not an empty page: that wiped the whole list, and the page was never
         // asked for again. What was found stays, and the next scroll retries.
         error: () => {
+          if (!current()) return;
           this.fetchedPages.delete(page);
           if (page === 0) {
             this._result.set(undefined);
             this.cachedEntries.length = 0;
             this.dataStream.next(this.cachedEntries);
           }
-          this.failed.set(true);
+          markFailed(true);
           this.isLoading.set(false);
         },
       });

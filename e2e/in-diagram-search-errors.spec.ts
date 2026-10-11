@@ -72,6 +72,23 @@ test.describe('In-diagram search', () => {
     await expect(alert(page)).toContainText("Couldn't search the current pathway.");
   });
 
+  test('says what one scope found when the other could not be searched', async ({ page }) => {
+    // The service's own answer for no match in a diagram.
+    await page.route(local, (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 404, messages: ['No entries found'] }),
+      })
+    );
+    await fail(page, global);
+    await search(page, 'USP10');
+    await expect(alert(page)).toContainText(
+      "Nothing was found in the current pathway, and couldn't search all pathways.",
+      { timeout: LOAD }
+    );
+  });
+
   test('keeps what it found when a later page fails, and asks for it again', async ({ page }) => {
     // 188 hits across all pathways: more than the first page of 30.
     const restore = await fail(page, global, {

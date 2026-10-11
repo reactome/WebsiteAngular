@@ -67,6 +67,39 @@ describe('SearchDataSource', () => {
     expect(data.failed()).toBe(true);
   });
 
+  it('ignores a failure from a search that has since been replaced', () => {
+    const first = new Subject<Search.Result>();
+    let calls = 0;
+    const { data, params, rows } = source((n) => (calls++ === 0 ? first : of(page(n * 30, 45))));
+    params.next({ query: 'BRCA1' });
+    expect(data.found()).toBe(45);
+    first.error(new Error('502'));
+    expect(data.failed()).toBe(false);
+    expect(data.found()).toBe(45);
+    expect(rows()[0]).toEqual(entry(0));
+  });
+
+  it('ignores an answer from a search that has since been cleared', () => {
+    const first = new Subject<Search.Result>();
+    const { data, params } = source(() => first);
+    params.next(undefined);
+    first.error(new Error('502'));
+    expect(data.failed()).toBe(false);
+    expect(data.found()).toBe(0);
+  });
+
+  it('stays failed while any page is missing, whatever loads after it', () => {
+    let fail = true;
+    const { data, scroll } = source((n) => (n === 1 && fail ? down() : of(page(n * 30, 90))));
+    // Pages 1 and 2 at once: 1 fails, then 2 arrives.
+    scroll(35);
+    scroll(55);
+    expect(data.failed()).toBe(true);
+    fail = false;
+    scroll(36);
+    expect(data.failed()).toBe(false);
+  });
+
   it('is no longer failed once a search succeeds', () => {
     let fail = true;
     const { data, params } = source((n) => (fail ? down() : of(page(n * 30, 45))));
