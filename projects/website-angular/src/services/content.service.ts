@@ -187,9 +187,8 @@ export class ContentService {
    * Get all FAQ categories
    */
   getFaqIndex(): Observable<FaqIndex> {
-    return this.http.get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`).pipe(
-      // As for getAllArticles: missing is empty, failed is said by the page.
-      catchError((error: unknown) => (isMissingContent(error) ? of({}) : throwError(() => error)))
-    );
+    // Every failure reaches the page, a missing index included: the index
+    // always ships with the site, so its absence means the content did not.
+    return this.http.get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`);
   }
 }

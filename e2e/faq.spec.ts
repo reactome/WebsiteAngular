@@ -56,12 +56,12 @@ test.describe('FAQ', () => {
     expect(crashes).toEqual([]);
   });
 
-  test('says nothing failed when there is no FAQ index', async ({ page }) => {
+  test('says the questions could not be loaded when the index is missing', async ({ page }) => {
+    // The index always ships with the site: missing, the content did not.
     await answerIndex(page, 404);
-    const answered = page.waitForResponse('**/content/documentation/faq/index.json');
     await page.goto('/documentation/faq');
-    await answered;
-    await expect(page.getByRole('heading', { name: 'Frequently Asked Questions' })).toBeVisible();
-    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the questions", {
+      timeout: 60_000,
+    });
   });
 });

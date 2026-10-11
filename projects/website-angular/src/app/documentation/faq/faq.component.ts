@@ -31,7 +31,7 @@ export class FaqComponent {
   /** The index could not be loaded: said, rather than shown as no questions. */
   readonly failed = signal(false);
 
-  // A missing index is empty; a failed one is caught here and said.
+  // Without the index there is nothing to show: any failure is said.
   private readonly faqIndex = toSignal(
     inject(ContentService)
       .getFaqIndex()
