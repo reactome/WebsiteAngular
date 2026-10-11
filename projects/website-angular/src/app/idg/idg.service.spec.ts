@@ -60,7 +60,7 @@ describe('IdgService', () => {
           { stId: 'R-HSA-1640170', name: 'Cell Cycle' },
           { stId: ID, name: 'Cell Cycle Checkpoints' },
         ],
-        incomplete: false,
+        failed: { summation: false, hierarchy: false },
       });
     });
 
@@ -71,7 +71,7 @@ describe('IdgService', () => {
       await expect(detail).resolves.toEqual({
         summation: undefined,
         hierarchy: [{ stId: ID, name: 'Cell Cycle Checkpoints' }],
-        incomplete: true,
+        failed: { summation: true, hierarchy: false },
       });
     });
 
@@ -82,7 +82,7 @@ describe('IdgService', () => {
       await expect(detail).resolves.toEqual({
         summation: 'Checks.',
         hierarchy: [],
-        incomplete: true,
+        failed: { summation: false, hierarchy: true },
       });
     });
   });

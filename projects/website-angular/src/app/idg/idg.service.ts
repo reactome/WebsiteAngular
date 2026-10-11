@@ -99,8 +99,8 @@ export interface IdgPathwayDetail {
   summation?: string;
   /** Root first, the pathway itself last, as a breadcrumb reads. */
   hierarchy: { stId: string; name: string }[];
-  /** Part of it could not be loaded, so what is missing may yet exist. */
-  incomplete: boolean;
+  /** The parts that could not be loaded, so may yet exist. */
+  failed: { summation: boolean; hierarchy: boolean };
 }
 
 /**
@@ -329,7 +329,7 @@ export class IdgService {
       map(([summation, hierarchy]) => ({
         summation: summation?.value,
         hierarchy: hierarchy?.value ?? [],
-        incomplete: !summation || !hierarchy,
+        failed: { summation: !summation, hierarchy: !hierarchy },
       }))
     );
   }

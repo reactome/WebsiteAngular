@@ -119,9 +119,13 @@
             No pathway is enriched at this threshold. The IDG service couldn't confirm whether it knows {{ term() }}, so
             it is also worth checking the spelling.
           </p>
-        } @else {
+        } @else if (known.hasValue() && known.value()) {
           <h2>Nothing found for {{ term() }}</h2>
           <p>{{ term() }} is known, but no pathway is enriched at this threshold. Try lowering it.</p>
+        } @else {
+          <!-- Still checking the name: say nothing about it yet. -->
+          <h2>Nothing found for {{ term() }}</h2>
+          <p>No pathway is enriched at this threshold. Try lowering it.</p>
         }
       </div>
     } @else {
@@ -325,13 +329,17 @@
                       <p class="quiet">Loading…</p>
                     } @else if (detail.hasValue()) {
                       @let open = detail.value();
-                      @if (open.incomplete) {
+                      @if (open.failed.summation && open.failed.hierarchy) {
                         <p class="failed" role="status">
-                          @if (open.summation || open.hierarchy.length) {
-                            Some of this pathway's details couldn't be loaded. Please try again later.
-                          } @else {
-                            Couldn't load this pathway's details. Please try again later.
-                          }
+                          Couldn't load this pathway's details. Please try again later.
+                        </p>
+                      } @else if (open.failed.summation) {
+                        <p class="failed" role="status">
+                          Couldn't load this pathway's description. Please try again later.
+                        </p>
+                      } @else if (open.failed.hierarchy) {
+                        <p class="failed" role="status">
+                          Couldn't load where this pathway sits in the hierarchy. Please try again later.
                         </p>
                       } @else if (!open.summation && !open.hierarchy.length) {
                         <p class="quiet">No description available.</p>
