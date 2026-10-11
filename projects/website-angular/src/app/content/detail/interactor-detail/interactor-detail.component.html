@@ -3,7 +3,12 @@
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>
     </div>
-  } @else if (error()) {
+  } @else if (failed()) {
+    <div class="error-container" role="alert">
+      <h2>Couldn't load this interactor</h2>
+      <p>Please try again later.</p>
+    </div>
+  } @else if (notFound()) {
     <div class="error-container">
       <h2>Interactor not found</h2>
       <p>No interaction data could be found for "{{ acc() }}".</p>

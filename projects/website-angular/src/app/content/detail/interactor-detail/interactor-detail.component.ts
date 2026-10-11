@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -72,7 +72,10 @@ export class InteractorDetailComponent implements OnInit {
   readonly acc = signal('');
   readonly interactions = signal<CustomInteraction[]>([]);
   readonly loading = signal(true);
-  readonly error = signal(false);
+  // Only a 404 means Reactome has no interactions for the accession; any other
+  // failure says nothing about it.
+  readonly notFound = signal(false);
+  readonly failed = signal(false);
 
   // Summary fields
   readonly displayName = signal('');
@@ -88,7 +91,7 @@ export class InteractorDetailComponent implements OnInit {
     const acc = this.route.snapshot.paramMap.get('acc');
     if (!acc) {
       this.loading.set(false);
-      this.error.set(true);
+      this.notFound.set(true);
       return;
     }
 
@@ -100,11 +103,9 @@ export class InteractorDetailComponent implements OnInit {
     // out a /references/mapping/{id}/xrefs call per interactor (TP53 has
     // ~250) plus a batch /data/query/ids POST, all stitched client-side.
     forkJoin({
-      interactions: this.http
-        .get<InteractionWithEntities[]>(
-          `${CONTENT_SERVICE}/interactors/static/molecule/${encodeURIComponent(acc)}/withEntities`
-        )
-        .pipe(catchError(() => of<InteractionWithEntities[] | null>(null))),
+      interactions: this.http.get<InteractionWithEntities[]>(
+        `${CONTENT_SERVICE}/interactors/static/molecule/${encodeURIComponent(acc)}/withEntities`
+      ),
       search: this.http
         .get<SearchResult>(`${CONTENT_SERVICE}/search/query`, {
           params: { query: acc, types: 'Interactor', cluster: 'true' },
@@ -117,12 +118,6 @@ export class InteractorDetailComponent implements OnInit {
         .pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ interactions, search, uniprot }) => {
-        if (!interactions) {
-          this.error.set(true);
-          this.loading.set(false);
-          return;
-        }
-
         // Project the backend rows into the template's CustomInteraction
         // shape and build the entityMap inline.
         const projected: CustomInteraction[] = [];
@@ -182,8 +177,9 @@ export class InteractorDetailComponent implements OnInit {
 
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set(true);
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 404) this.notFound.set(true);
+        else this.failed.set(true);
         this.loading.set(false);
       },
     });
