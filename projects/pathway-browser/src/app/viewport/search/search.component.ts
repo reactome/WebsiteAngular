@@ -20,6 +20,7 @@ import { CONTENT_SERVICE } from '../../../environments/environment';
 import {
   BehaviorSubject,
   catchError,
+  throwError,
   Observable,
   of,
   Subscription,
@@ -113,6 +114,28 @@ export class SearchComponent {
   readonly globalHasNoResult = signal<boolean>(false);
   readonly searchErrorMessage = signal<string>('');
   readonly searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
+
+  /**
+   * What could not be searched at all, said as such, or empty when nothing failed.
+   *
+   * Only a failure that left a scope with nothing: a failed later page is told
+   * apart below the results. A failed search of the current pathway also hides
+   * its tab, so it is named even while the other scope's results show.
+   */
+  readonly searchFailed = computed(() => {
+    const local =
+      this.scopes.local.failed() && !this.scopes.local.found() && !!this.state.pathwayId();
+    const global = this.scopes.global.failed() && !this.scopes.global.found();
+    if (local && global) return "Couldn't search right now.";
+    // The other scope's answer is said too, when it was "nothing".
+    if (global && this.localHasNoResult())
+      return "Nothing was found in the current pathway, and couldn't search all pathways.";
+    if (global) return "Couldn't search all pathways.";
+    if (local && this.globalHasNoResult())
+      return "Nothing was found in any pathway, and couldn't search the current pathway.";
+    if (local) return "Couldn't search the current pathway.";
+    return '';
+  });
 
   constructor() {
     effect(
@@ -354,7 +377,10 @@ export class SearchComponent {
       if (scope === 'global') this.globalHasNoResult.set(true);
       return of(Search.EMPTY_RESULTS);
     }
-    return of(Search.EMPTY_RESULTS);
+    // Anything else is a failure, not an empty answer: the data source says so.
+    if (scope === 'local') this.localHasNoResult.set(false);
+    if (scope === 'global') this.globalHasNoResult.set(false);
+    return throwError(() => error);
   }
 
   setNoSearchResult(scope: Scope, results: Search.Result) {
@@ -372,6 +398,12 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   readonly facets = computed(() => this._result()?.facets || []);
   readonly found = computed(() => this._result()?.found || 0);
   readonly isLoading = signal<boolean>(false);
+  /** Pages that could not be loaded, until asked for again. */
+  private readonly failedPages = signal<ReadonlySet<number>>(new Set());
+  /** Some page could not be loaded: what is shown is short of what there is. */
+  readonly failed = computed(() => this.failedPages().size > 0);
+  /** Bumped by every new search: answers to an earlier one are dropped. */
+  private generation = 0;
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -393,6 +425,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   clear(): void {
+    this.generation++;
+    this.failedPages.set(new Set());
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
     this.fetchPage(0);
@@ -427,21 +461,46 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
     }
     this.isLoading.set(true);
     this.fetchedPages.add(page);
+    const generation = this.generation;
+    const current = () => generation === this.generation;
+    const markFailed = (failed: boolean) =>
+      this.failedPages.update((pages) => {
+        const next = new Set(pages);
+        if (failed) next.add(page);
+        else next.delete(page);
+        return next;
+      });
     // Use `setTimeout` to simulate fetching data from server.
     this.param$
       .pipe(
         take(1),
         switchMap((param) =>
           param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
-        ),
-        catchError((_err) => of(Search.EMPTY_RESULTS))
+        )
       )
-      .subscribe((result) => {
-        this._result.set(result);
-        if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
-        this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
-        this.dataStream.next(this.cachedEntries);
-        this.isLoading.set(false);
+      .subscribe({
+        next: (result) => {
+          if (!current()) return;
+          this._result.set(result);
+          if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
+          this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
+          this.dataStream.next(this.cachedEntries);
+          markFailed(false);
+          this.isLoading.set(false);
+        },
+        // Not an empty page: that wiped the whole list, and the page was never
+        // asked for again. What was found stays, and the next scroll retries.
+        error: () => {
+          if (!current()) return;
+          this.fetchedPages.delete(page);
+          if (page === 0) {
+            this._result.set(undefined);
+            this.cachedEntries.length = 0;
+            this.dataStream.next(this.cachedEntries);
+          }
+          markFailed(true);
+          this.isLoading.set(false);
+        },
       });
   }
 }

@@ -23,7 +23,7 @@
       (keydown)="hasFocus.set(true)"
     />
   </div>
-  @if (scopes[currentScopeName()].found() || searchedNoResult()) {
+  @if (scopes[currentScopeName()].found() || searchedNoResult() || searchFailed()) {
     <button mat-icon-button (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
@@ -45,12 +45,12 @@
   }
 </div>
 
-@if (scopes.global.found() || searchedNoResult()) {
+@if (scopes.global.found() || searchedNoResult() || searchFailed()) {
   <div class="results">
     @if (collapsed() !== 'collapsed') {
       <div class="collapsable">
         <div class="scope-container">
-          @if (scopes.global.found() > 0 || searchedNoResult()) {
+          @if (scopes.global.found() > 0 || searchedNoResult() || searchFailed()) {
             @if (state.pathwayId() && scopes.local.found()) {
               <div
                 class="scope"
@@ -96,6 +96,18 @@
           <div class="no-result-message">
             <mat-icon class="no-results-icon">search_off</mat-icon>
             <p>{{ searchErrorMessage() }}</p>
+          </div>
+        }
+
+        @if (searchFailed()) {
+          <div class="no-result-message failed" role="alert">
+            <mat-icon class="no-results-icon">error</mat-icon>
+            <p>{{ searchFailed() }} Please try again later.</p>
+          </div>
+        } @else if (currentScope().failed()) {
+          <div class="no-result-message failed" role="alert">
+            <mat-icon class="no-results-icon">error</mat-icon>
+            <p>Some results couldn't be loaded. Scroll to try again.</p>
           </div>
         }
 
