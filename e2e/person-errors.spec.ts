@@ -53,9 +53,12 @@ test.describe('The person page', () => {
     const thrown = collectThrown(page);
     await answer(page, person(AUTHOR), 500);
     await page.goto(`/content/detail/person/${AUTHOR}`);
-    await expect(
-      page.getByText("Couldn't load this contributor. Please try again later.")
-    ).toBeVisible({ timeout: LOAD });
+    await expect(page.getByRole('heading', { name: "Couldn't load this contributor" })).toBeVisible(
+      {
+        timeout: LOAD,
+      }
+    );
+    await expect(page.getByText('Please try again later.')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Person not found' })).toHaveCount(0);
     expect(thrown).toEqual([]);
   });
@@ -79,7 +82,9 @@ test.describe('The person page', () => {
   test('says nothing when a list is simply not there', async ({ page }) => {
     // A backend without these lists answers 404: not a failure.
     await answer(page, person(AUTHOR, 'reviewedReactions'), 404);
+    const answered = page.waitForResponse(person(AUTHOR, 'reviewedReactions'));
     await page.goto(`/content/detail/person/${AUTHOR}`);
+    await answered;
     await expect(page.locator('.event-section', { hasText: 'Authored Pathways' })).toBeVisible({
       timeout: LOAD,
     });
@@ -120,9 +125,13 @@ test.describe('The person page', () => {
     const authored = page.locator('.event-section', { hasText: 'Authored Pathways' });
     await expect(authored).toBeVisible({ timeout: LOAD });
 
+    // The breadcrumb's lookup of the first name is not cancelled: it is the
+    // late answer that reaches the page.
+    const lateName = page.waitForResponse(person(NO_EVENTS));
     release();
     // Every held answer, then two frames for them to be drawn.
     await expect.poll(() => waiting, { timeout: LOAD }).toBe(0);
+    await lateName;
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
     );

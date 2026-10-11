@@ -5,7 +5,8 @@
     </div>
   } @else if (failed()) {
     <div class="error-container" role="alert">
-      <p>Couldn't load this contributor. Please try again later.</p>
+      <h2>Couldn't load this contributor</h2>
+      <p>Please try again later.</p>
     </div>
   } @else if (notFound() || !person()) {
     <div class="error-container">

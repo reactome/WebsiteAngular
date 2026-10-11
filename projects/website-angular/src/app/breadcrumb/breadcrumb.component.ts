@@ -1,4 +1,4 @@
-import { Component, inject, effect, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, inject, effect, ChangeDetectorRef, DestroyRef, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
@@ -37,7 +37,11 @@ export class BreadcrumbComponent implements OnInit {
   /** The page shown, so a leaf asked for by a page since left is dropped. */
   private currentPath = '';
 
+  /** Set once destroyed, so a leaf still waiting for navOptions stops waiting. */
+  private destroyed = false;
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
     effect(() => {
       if (Object.keys(this.navOptions()).length === 0) return;
       if (this.lastSegments) this.updateBreadcrumbs(this.lastSegments);
@@ -224,7 +228,7 @@ export class BreadcrumbComponent implements OnInit {
    * an immediate push gets clobbered when the deferred update resolves.
    */
   private appendLeafBreadcrumb(label: string, link: string) {
-    if (link !== this.currentPath) return;
+    if (this.destroyed || link !== this.currentPath) return;
     if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.appendLeafBreadcrumb(label, link), 50);
       return;
@@ -236,7 +240,7 @@ export class BreadcrumbComponent implements OnInit {
   }
 
   private replaceLeafBreadcrumb(label: string, link: string) {
-    if (link !== this.currentPath) return;
+    if (this.destroyed || link !== this.currentPath) return;
     if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.replaceLeafBreadcrumb(label, link), 50);
       return;

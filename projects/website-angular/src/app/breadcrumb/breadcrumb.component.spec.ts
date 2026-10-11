@@ -67,4 +67,15 @@ describe('BreadcrumbComponent', () => {
       { label: 'Hoffmann, I', link: '/content/detail/person/69596' },
     ]);
   });
+
+  it('stops waiting for the navigation once it is gone', () => {
+    segments.next(url('content/detail/person/69596'));
+    person('69596').flush({ displayName: 'Hoffmann, I' });
+    vi.advanceTimersByTime(100);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    // The navigation never loads; the page is left.
+    TestBed.resetTestingModule();
+    vi.advanceTimersByTime(100);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
