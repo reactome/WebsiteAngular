@@ -1,5 +1,5 @@
 {
-  "warnings": 1467,
+  "warnings": 1465,
   "rules": {
     "@angular-eslint/no-input-rename": 7,
     "@angular-eslint/no-output-native": 6,
@@ -19,7 +19,7 @@
     "@typescript-eslint/prefer-as-const": 1,
     "no-empty-pattern": 1,
     "no-useless-assignment": 5,
-    "no-useless-escape": 4,
+    "no-useless-escape": 2,
     "prefer-const": 1
   }
 }

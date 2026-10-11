@@ -1,3 +1,4 @@
+import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
 // The FAQ page. A category with sub-categories shows them as tabs, the first one
@@ -37,5 +38,30 @@ test.describe('FAQ', () => {
     await expect(
       page.locator('a[href^="/documentation/faq/general-website/"]').first()
     ).toBeVisible({ timeout: 60_000 });
+  });
+
+  const answerIndex = (page: Page, status: number) =>
+    page.route('**/content/documentation/faq/index.json', (route) =>
+      route.fulfill({ status, contentType: 'text/plain', body: 'index failed' })
+    );
+
+  test('says the questions could not be loaded, rather than showing none', async ({ page }) => {
+    const crashes: string[] = [];
+    page.on('pageerror', (error) => crashes.push(error.message));
+    await answerIndex(page, 500);
+    await page.goto('/documentation/faq');
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the questions", {
+      timeout: 60_000,
+    });
+    expect(crashes).toEqual([]);
+  });
+
+  test('says nothing failed when there is no FAQ index', async ({ page }) => {
+    await answerIndex(page, 404);
+    const answered = page.waitForResponse('**/content/documentation/faq/index.json');
+    await page.goto('/documentation/faq');
+    await answered;
+    await expect(page.getByRole('heading', { name: 'Frequently Asked Questions' })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 });
