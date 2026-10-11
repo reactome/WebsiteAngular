@@ -1,7 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 import { ContentService } from 'projects/website-angular/src/services/content.service';
 
 import type {
@@ -21,15 +23,26 @@ import type {
  */
 @Component({
   selector: 'app-faq',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageLayoutComponent, RouterLink, LoadErrorComponent],
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })
 export class FaqComponent {
-  // The service answers an empty index if the request fails.
-  private readonly faqIndex = toSignal(inject(ContentService).getFaqIndex(), {
-    initialValue: {} as FaqIndex,
-  });
+  /** The index could not be loaded: said, rather than shown as no questions. */
+  readonly failed = signal(false);
+
+  // Without the index there is nothing to show: any failure is said.
+  private readonly faqIndex = toSignal(
+    inject(ContentService)
+      .getFaqIndex()
+      .pipe(
+        catchError(() => {
+          this.failed.set(true);
+          return of({} as FaqIndex);
+        })
+      ),
+    { initialValue: {} as FaqIndex }
+  );
 
   readonly categories = computed(() => Object.keys(this.faqIndex()));
 

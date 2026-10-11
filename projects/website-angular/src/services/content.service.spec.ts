@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -48,4 +49,51 @@ describe('ContentService.getPage', () => {
     });
     await expect(page).resolves.toBeNull();
   });
+});
+
+// The FAQ index always ships with the site: without it there is nothing to
+// show, so every way of not getting it is a failure the page reports.
+describe('ContentService.getFaqIndex', () => {
+  let service: ContentService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(ContentService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpTesting.verify());
+
+  function request() {
+    const index = firstValueFrom(service.getFaqIndex());
+    return {
+      index,
+      req: httpTesting.expectOne((r) => r.url.endsWith('/documentation/faq/index.json')),
+    };
+  }
+
+  it('returns the index', async () => {
+    const { index, req } = request();
+    req.flush({ general: { articles: [] } });
+    await expect(index).resolves.toEqual({ general: { articles: [] } });
+  });
+
+  for (const [name, flush] of [
+    ['a server error', (req) => req.flush('down', { status: 500, statusText: 'Server Error' })],
+    ['a 404', (req) => req.flush('nope', { status: 404, statusText: 'Not Found' })],
+    [
+      // HttpClient fails to parse it as JSON: an error with status 200.
+      'the HTML the site serves in its place',
+      (req) => req.error(new ProgressEvent('error'), { status: 200, statusText: 'OK' }),
+    ],
+  ] as [string, (req: ReturnType<HttpTestingController['expectOne']>) => void][]) {
+    it(`fails on ${name}`, async () => {
+      const { index, req } = request();
+      flush(req);
+      await expect(index).rejects.toBeDefined();
+    });
+  }
 });

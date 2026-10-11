@@ -1,3 +1,4 @@
+import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
 
 // The FAQ page. A category with sub-categories shows them as tabs, the first one
@@ -37,5 +38,30 @@ test.describe('FAQ', () => {
     await expect(
       page.locator('a[href^="/documentation/faq/general-website/"]').first()
     ).toBeVisible({ timeout: 60_000 });
+  });
+
+  const answerIndex = (page: Page, status: number) =>
+    page.route('**/content/documentation/faq/index.json', (route) =>
+      route.fulfill({ status, contentType: 'text/plain', body: 'index failed' })
+    );
+
+  test('says the questions could not be loaded, rather than showing none', async ({ page }) => {
+    const crashes: string[] = [];
+    page.on('pageerror', (error) => crashes.push(error.message));
+    await answerIndex(page, 500);
+    await page.goto('/documentation/faq');
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the questions", {
+      timeout: 60_000,
+    });
+    expect(crashes).toEqual([]);
+  });
+
+  test('says the questions could not be loaded when the index is missing', async ({ page }) => {
+    // The index always ships with the site: missing, the content did not.
+    await answerIndex(page, 404);
+    await page.goto('/documentation/faq');
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the questions", {
+      timeout: 60_000,
+    });
   });
 });

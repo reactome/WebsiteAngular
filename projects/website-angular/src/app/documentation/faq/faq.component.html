@@ -10,6 +10,9 @@
       </p>
     </header>
     <section class="faq-section">
+      @if (failed()) {
+        <app-load-error what="the questions" />
+      }
       @for (category of categories(); track category) {
         <div>
           <h2 class="faq-category-header" (click)="toggleCategory(category)">

@@ -187,39 +187,8 @@ export class ContentService {
    * Get all FAQ categories
    */
   getFaqIndex(): Observable<FaqIndex> {
-    return this.http
-      .get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`)
-      .pipe(catchError(() => of({})));
-  }
-
-  getFaqArticle(category: string, slug: string): Observable<Article | null> {
-    // See getPage(): content is compiled to JSON at build time.
-    return this.http
-      .get<Record<string, unknown>>(
-        `${this.contentBasePath}/documentation/faq/${category}/${slug}.json`
-      )
-      .pipe(
-        map((frontmatter) => {
-          const body = frontmatter['body'] as string;
-          const returnArticle: Article = {
-            title: (frontmatter['title'] as string) || '',
-            date: new Date(frontmatter['date'] as string),
-            author: frontmatter['author'] as string,
-            image: frontmatter['image'] as string,
-            tags:
-              typeof frontmatter['tags'] === 'string'
-                ? frontmatter['tags']
-                    .split(',')
-                    .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
-                : (frontmatter['tags'] as string[] | undefined),
-            body: body || '',
-            excerpt: truncateHtml(body || '', 50),
-            slug: slug,
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
-          };
-          return returnArticle;
-        }),
-        catchError(() => of(null))
-      );
+    // Every failure reaches the page, a missing index included: the index
+    // always ships with the site, so its absence means the content did not.
+    return this.http.get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`);
   }
 }
