@@ -34,6 +34,9 @@ export class BreadcrumbComponent implements OnInit {
   /** Last segments seen, so the effect can rebuild once navOptions resolves. */
   private lastSegments: string[] | null = null;
 
+  /** The page shown, so a leaf asked for by a page since left is dropped. */
+  private currentPath = '';
+
   constructor() {
     effect(() => {
       if (Object.keys(this.navOptions()).length === 0) return;
@@ -48,6 +51,7 @@ export class BreadcrumbComponent implements OnInit {
     this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
       const path_segments = segments.map((s) => s.path);
+      this.currentPath = '/' + path_segments.join('/');
 
       if (path_segments.length > 0 && path_segments) {
         const second_lastSegment =
@@ -102,6 +106,8 @@ export class BreadcrumbComponent implements OnInit {
               next: (p) => {
                 if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
               },
+              // The leaf keeps the id; the page itself says what went wrong.
+              error: () => undefined,
             });
         } else if (
           path_segments[0] === 'content' &&
@@ -131,6 +137,8 @@ export class BreadcrumbComponent implements OnInit {
                 const label = entity?.displayName || entity?.name?.[0] || id;
                 this.replaceLeafBreadcrumb(label, fullPath);
               },
+              // The leaf keeps the id; the page itself says what went wrong.
+              error: () => undefined,
             });
         } else if (path_segments.includes('faq') && path_segments.length > 2) {
           //In in an FAQ page, but not the main FAQ page
@@ -216,26 +224,31 @@ export class BreadcrumbComponent implements OnInit {
    * an immediate push gets clobbered when the deferred update resolves.
    */
   private appendLeafBreadcrumb(label: string, link: string) {
-    if (Object.keys(this.navOptions).length === 0) {
+    if (link !== this.currentPath) return;
+    if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.appendLeafBreadcrumb(label, link), 50);
       return;
     }
     if (this.breadcrumbs[this.breadcrumbs.length - 1]?.link !== link) {
       this.breadcrumbs.push({ label, link });
+      this.cdr.markForCheck();
     }
   }
 
   private replaceLeafBreadcrumb(label: string, link: string) {
-    if (Object.keys(this.navOptions).length === 0) {
+    if (link !== this.currentPath) return;
+    if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.replaceLeafBreadcrumb(label, link), 50);
       return;
     }
+    // The leaf may not be there yet: its append can still be waiting.
     const last = this.breadcrumbs[this.breadcrumbs.length - 1];
     if (last?.link === link) {
       this.breadcrumbs[this.breadcrumbs.length - 1] = { label, link };
     } else {
       this.breadcrumbs.push({ label, link });
     }
+    this.cdr.markForCheck();
   }
 
   /**
