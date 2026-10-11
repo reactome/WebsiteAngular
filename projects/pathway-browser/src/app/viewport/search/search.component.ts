@@ -20,6 +20,7 @@ import { CONTENT_SERVICE } from '../../../environments/environment';
 import {
   BehaviorSubject,
   catchError,
+  throwError,
   Observable,
   of,
   Subscription,
@@ -113,6 +114,23 @@ export class SearchComponent {
   readonly globalHasNoResult = signal<boolean>(false);
   readonly searchErrorMessage = signal<string>('');
   readonly searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
+
+  /**
+   * What could not be searched at all, said as such, or empty when nothing failed.
+   *
+   * Only a failure that left a scope with nothing: a failed later page is told
+   * apart below the results. A failed search of the current pathway also hides
+   * its tab, so it is named even while the other scope's results show.
+   */
+  readonly searchFailed = computed(() => {
+    const local =
+      this.scopes.local.failed() && !this.scopes.local.found() && !!this.state.pathwayId();
+    const global = this.scopes.global.failed() && !this.scopes.global.found();
+    if (local && global) return "Couldn't search right now.";
+    if (global) return "Couldn't search all pathways.";
+    if (local) return "Couldn't search the current pathway.";
+    return '';
+  });
 
   constructor() {
     effect(
@@ -354,7 +372,10 @@ export class SearchComponent {
       if (scope === 'global') this.globalHasNoResult.set(true);
       return of(Search.EMPTY_RESULTS);
     }
-    return of(Search.EMPTY_RESULTS);
+    // Anything else is a failure, not an empty answer: the data source says so.
+    if (scope === 'local') this.localHasNoResult.set(false);
+    if (scope === 'global') this.globalHasNoResult.set(false);
+    return throwError(() => error);
   }
 
   setNoSearchResult(scope: Scope, results: Search.Result) {
@@ -372,6 +393,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   readonly facets = computed(() => this._result()?.facets || []);
   readonly found = computed(() => this._result()?.found || 0);
   readonly isLoading = signal<boolean>(false);
+  /** The last request failed: what is shown may be short of what there is. */
+  readonly failed = signal<boolean>(false);
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -393,6 +416,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   clear(): void {
+    this.failed.set(false);
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
     this.fetchPage(0);
@@ -433,15 +457,29 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         take(1),
         switchMap((param) =>
           param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
-        ),
-        catchError((_err) => of(Search.EMPTY_RESULTS))
+        )
       )
-      .subscribe((result) => {
-        this._result.set(result);
-        if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
-        this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
-        this.dataStream.next(this.cachedEntries);
-        this.isLoading.set(false);
+      .subscribe({
+        next: (result) => {
+          this._result.set(result);
+          if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
+          this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
+          this.dataStream.next(this.cachedEntries);
+          this.failed.set(false);
+          this.isLoading.set(false);
+        },
+        // Not an empty page: that wiped the whole list, and the page was never
+        // asked for again. What was found stays, and the next scroll retries.
+        error: () => {
+          this.fetchedPages.delete(page);
+          if (page === 0) {
+            this._result.set(undefined);
+            this.cachedEntries.length = 0;
+            this.dataStream.next(this.cachedEntries);
+          }
+          this.failed.set(true);
+          this.isLoading.set(false);
+        },
       });
   }
 }
