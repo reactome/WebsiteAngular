@@ -86,11 +86,21 @@ function plainText(html: string | undefined) {
     .trim();
 }
 
+/** A value that was loaded, or undefined for one that could not be. */
+function loaded<T>(source: Observable<T>): Observable<{ value: T } | undefined> {
+  return source.pipe(
+    map((value) => ({ value })),
+    catchError(() => of(undefined))
+  );
+}
+
 /** What a pathway row expands to show: what it is, and where it sits. */
 export interface IdgPathwayDetail {
   summation?: string;
   /** Root first, the pathway itself last, as a breadcrumb reads. */
   hierarchy: { stId: string; name: string }[];
+  /** Part of it could not be loaded, so what is missing may yet exist. */
+  incomplete: boolean;
 }
 
 /**
@@ -127,11 +137,14 @@ function decodeToken(token: string | undefined) {
 export class IdgService {
   private http = inject(HttpClient);
 
-  /** Whether the service knows this gene or protein at all. */
+  /**
+   * Whether the service knows this gene or protein at all.
+   *
+   * A failure fails: read as "no", it told the reader their gene was not in the
+   * data when the server had not answered.
+   */
   checkTerm(term: string): Observable<boolean> {
-    return this.http
-      .get<boolean>(`${IDG_SERVICE}/checkTerm/${encodeURIComponent(term)}`)
-      .pipe(catchError(() => of(false)));
+    return this.http.get<boolean>(`${IDG_SERVICE}/checkTerm/${encodeURIComponent(term)}`);
   }
 
   /** Every dataset on offer, for the picker. */
@@ -236,7 +249,8 @@ export class IdgService {
    * scatter across all of it. Served hierarchically ordered, which is also the
    * order the plot puts them in, so the colours form bands rather than confetti.
    *
-   * 283KB and the same for everyone, so it is fetched once and shared.
+   * 283KB and the same for everyone, so it is fetched once and shared. A failure
+   * is not shared: the next page to ask asks again.
    */
   private topPathways?: Observable<Record<string, string>>;
   hierarchy(): Observable<Record<string, string>> {
@@ -250,7 +264,6 @@ export class IdgService {
           for (const entry of entries) order[entry.stId] = entry.topPathway;
           return order;
         }),
-        catchError(() => of<Record<string, string>>({})),
         shareReplay({ bufferSize: 1, refCount: false })
       );
     return this.topPathways;
@@ -290,15 +303,13 @@ export class IdgService {
    * From our own content service rather than the IDG server -- which is what the
    * portal does too, and it means an expanded row costs nothing extra from a
    * machine we do not control. Two calls because the description and the
-   * ancestry live on different endpoints.
+   * ancestry live on different endpoints. Either can fail without the other, so
+   * each is kept apart from "there is none".
    */
   pathwayDetail(stId: string): Observable<IdgPathwayDetail> {
     const detail = this.http
       .get<{ summation?: { text?: string }[] }>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
-      .pipe(
-        map((event) => plainText(event.summation?.[0]?.text)),
-        catchError(() => of(undefined))
-      );
+      .pipe(map((event) => plainText(event.summation?.[0]?.text)));
 
     const ancestors = this.http
       .get<{ stId: string; displayName: string }[][]>(
@@ -311,12 +322,15 @@ export class IdgService {
           [...(branches[0] ?? [])]
             .reverse()
             .map((event) => ({ stId: event.stId, name: event.displayName }))
-        ),
-        catchError(() => of<{ stId: string; name: string }[]>([]))
+        )
       );
 
-    return combineLatest([detail, ancestors]).pipe(
-      map(([summation, hierarchy]) => ({ summation, hierarchy }))
+    return combineLatest([loaded(detail), loaded(ancestors)]).pipe(
+      map(([summation, hierarchy]) => ({
+        summation: summation?.value,
+        hierarchy: hierarchy?.value ?? [],
+        incomplete: !summation || !hierarchy,
+      }))
     );
   }
 

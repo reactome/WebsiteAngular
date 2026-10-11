@@ -104,7 +104,7 @@
       </div>
     } @else if (!counts().matching) {
       <div class="state">
-        @if (known.value() === false) {
+        @if (known.hasValue() && known.value() === false) {
           <h2>{{ term() }} is not in the IDG data</h2>
           <p>No dataset here mentions that name, so it is worth checking the spelling.</p>
         } @else if (counts().total) {
@@ -112,6 +112,12 @@
           <p>
             {{ counts().total }} pathways came back, but none is both significant and lowest-level. Untick a filter
             below, or lower the score threshold.
+          </p>
+        } @else if (known.status() === 'error') {
+          <h2>Nothing found for {{ term() }}</h2>
+          <p>
+            No pathway is enriched at this threshold. The IDG service couldn't confirm whether it knows {{ term() }}, so
+            it is also worth checking the spelling.
           </p>
         } @else {
           <h2>Nothing found for {{ term() }}</h2>
@@ -319,6 +325,17 @@
                       <p class="quiet">Loading…</p>
                     } @else if (detail.hasValue()) {
                       @let open = detail.value();
+                      @if (open.incomplete) {
+                        <p class="failed" role="status">
+                          @if (open.summation || open.hierarchy.length) {
+                            Some of this pathway's details couldn't be loaded. Please try again later.
+                          } @else {
+                            Couldn't load this pathway's details. Please try again later.
+                          }
+                        </p>
+                      } @else if (!open.summation && !open.hierarchy.length) {
+                        <p class="quiet">No description available.</p>
+                      }
                       @if (open.summation) {
                         <h3>Description</h3>
                         <p class="summation">{{ open.summation }}</p>
@@ -336,7 +353,7 @@
                         </ol>
                       }
                     } @else {
-                      <p class="quiet">No description available.</p>
+                      <p class="failed" role="status">Couldn't load this pathway's details. Please try again later.</p>
                     }
                   </td>
                 </tr>
