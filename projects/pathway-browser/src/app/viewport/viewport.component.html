@@ -48,7 +48,7 @@
             (keydown.enter)="toggleVisibility('species')"
             (keydown.space)="toggleVisibility('species'); $event.preventDefault()"
             (keydown.escape)="closePanels()"
-            [ngClass]="{ selected: visibility.species }"
+            [class.selected]="visibility.species"
           >
             <mat-icon class="custom-icon" svgIcon="species"></mat-icon>
             <div class="species-content">
@@ -70,7 +70,7 @@
               (keydown.enter)="toggleVisibility('interactor')"
               (keydown.space)="toggleVisibility('interactor'); $event.preventDefault()"
               (keydown.escape)="closePanels()"
-              [ngClass]="{ selected: visibility.interactor }"
+              [class.selected]="visibility.interactor"
             >
               <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
               <div class="overlay-content">

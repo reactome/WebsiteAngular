@@ -12,7 +12,6 @@ import {
   signal,
   viewChild,
   inject,
-  HostListener,
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -81,6 +80,11 @@ const FIT_PADDING = 100;
 @UntilDestroy({ checkProperties: true })
 @Component({
   selector: 'cr-diagram',
+  host: {
+    '(window:pointermove)': 'onWindowPointerMove($event)',
+    '(window:pointerup)': 'endThumbnailDrag()',
+    '(window:pointercancel)': 'endThumbnailDrag()',
+  },
   templateUrl: './diagram.component.html',
   styleUrls: ['./diagram.component.scss'],
   standalone: true,
@@ -749,13 +753,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.panFromThumbnail(event);
   }
 
-  @HostListener('window:pointermove', ['$event'])
   onWindowPointerMove(event: PointerEvent) {
     if (this.thumbnailDragging) this.panFromThumbnail(event);
   }
 
-  @HostListener('window:pointerup')
-  @HostListener('window:pointercancel')
   endThumbnailDrag() {
     this.thumbnailDragging = false;
   }

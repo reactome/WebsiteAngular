@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import {
   Component,
   ElementRef,
-  HostListener,
   computed,
   effect,
   inject,
@@ -135,6 +134,11 @@ const TYPE_ORDER: string[] = [
  */
 @Component({
   selector: 'cr-entity-popup',
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+    '(document:click)': 'onDocumentPointer($event)',
+    '(document:contextmenu)': 'onDocumentPointer($event)',
+  },
   standalone: true,
   imports: [MatIcon, MatTooltip, DecimalPipe],
   templateUrl: './entity-popup.component.html',
@@ -528,15 +532,12 @@ export class EntityPopupComponent {
     this.pinned.update((v) => !v);
   }
 
-  @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.target()) this.dismissed.emit();
   }
 
   // A right-click elsewhere fires `contextmenu` rather than `click`, so both
   // are needed to dismiss reliably.
-  @HostListener('document:click', ['$event'])
-  @HostListener('document:contextmenu', ['$event'])
   onDocumentPointer(event: Event): void {
     if (!this.target() || this.pinned()) return;
     if (this.host.nativeElement.contains(event.target as Node)) return;

@@ -15,7 +15,7 @@ import { datasetFeature } from '../../../state/dataset/dataset.selector';
 import { datasetActions } from '../../../state/dataset/dataset.actions';
 import { isDefined } from '../../../utilities/utils';
 import { Settings, ReactomeTableModule } from 'reactome-table';
-import { NgClass, AsyncPipe } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -27,7 +27,6 @@ import { MatInput } from '@angular/material/input';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    NgClass,
     TourAnchorMatMenuDirective,
     MatFormField,
     MatLabel,

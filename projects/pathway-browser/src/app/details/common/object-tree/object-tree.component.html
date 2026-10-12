@@ -26,7 +26,7 @@
         @let connector = getAllConnectors(treeNodeRef._getSetSize(), node, index, treeNodeRef.level)[index];
         <div
           class="connector"
-          [ngClass]="connector?.type"
+          [class]="connector?.type"
           [attr.data-shape]="connector?.shape"
           [matTooltip]="connector?.type"
         ></div>
@@ -150,7 +150,7 @@
                     : { type: 'is', shape: 'L' };
                 <div
                   class="connector"
-                  [ngClass]="connector?.type"
+                  [class]="connector?.type"
                   [attr.data-shape]="connector?.shape"
                   [matTooltip]="connector?.type"
                 ></div>

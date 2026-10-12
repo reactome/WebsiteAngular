@@ -1,4 +1,4 @@
-import { Directive, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
+import { Directive, ElementRef, computed, inject, signal } from '@angular/core';
 import {
   DownloadPhase,
   FileDownloadService,
@@ -28,6 +28,7 @@ import {
   selector: 'a[crManagedDownload]',
   exportAs: 'managedDownload',
   host: {
+    '(click)': 'onClick($event)',
     '[class.dl--busy]': 'busy()',
     '[class.dl--failed]': 'failed()',
     '[attr.data-download-state]': 'label()',
@@ -65,7 +66,6 @@ export class ManagedDownloadDirective {
     return null;
   });
 
-  @HostListener('click', ['$event'])
   onClick(event: MouseEvent) {
     // A modified click is the reader asking the browser to handle it.
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {

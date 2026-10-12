@@ -119,6 +119,9 @@ test.describe('a disease pathway, and its comparison with the normal one', () =>
     }
   });
 
+  // Well inside the slide, which the waits around it put at about 600ms.
+  const SAYS_AT_ONCE = 200;
+
   test('a second click while it slides out brings it back', async ({ page }) => {
     await open(page, DISEASE);
     await compareButton(page).click();
@@ -127,10 +130,13 @@ test.describe('a disease pathway, and its comparison with the normal one', () =>
     await expect(compareButton(page)).toHaveText(/Close comparison/);
     await compareButton(page).click();
     // At once -- not once the slide has finished -- it says what it will do.
-    expect(await compareButton(page).textContent()).toMatch(/Compare with normal/);
+    // "At once" is the next frame, not the instant the click returns: under
+    // load, change detection may not have run by then. SAYS_AT_ONCE is well
+    // inside the slide, so this still fails if the label waits for it.
+    await expect(compareButton(page)).toHaveText(/Compare with normal/, { timeout: SAYS_AT_ONCE });
     // And a click before the slide is over reverses it.
     await compareButton(page).click();
-    expect(await compareButton(page).textContent()).toMatch(/Close comparison/);
+    await expect(compareButton(page)).toHaveText(/Close comparison/, { timeout: SAYS_AT_ONCE });
     await page.waitForTimeout(800);
     await expect(handle(page)).toBeVisible();
     await expect.poll(() => layerStart(page)).toBeGreaterThan(200);

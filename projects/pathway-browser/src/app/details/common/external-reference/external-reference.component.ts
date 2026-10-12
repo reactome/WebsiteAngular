@@ -2,7 +2,7 @@ import { Component, computed, input, inject } from '@angular/core';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { EntityService } from '../../../services/entity.service';
 import { isArray, isString } from 'lodash';
-import { NgClass, TitleCasePipe } from '@angular/common';
+import { TitleCasePipe } from '@angular/common';
 import { StructureViewerComponent } from '../../tabs/molecule-tab/structure-viewer/structure-viewer.component';
 import { DatabaseIdentifier } from '../../../model/graph/database-identifier.model';
 import { MatIconButton } from '@angular/material/button';
@@ -17,15 +17,7 @@ import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
   selector: 'cr-external-reference',
   templateUrl: './external-reference.component.html',
   styleUrl: './external-reference.component.scss',
-  imports: [
-    TitleCasePipe,
-    NgClass,
-    MatIcon,
-    MatIconButton,
-    MatTooltip,
-    NgClass,
-    StructureViewerComponent,
-  ],
+  imports: [TitleCasePipe, MatIcon, MatIconButton, MatTooltip, StructureViewerComponent],
 })
 export class ExternalReferenceComponent {
   private entity = inject(EntityService);

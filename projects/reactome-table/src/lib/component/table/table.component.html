@@ -44,7 +44,7 @@
           [style.height.px]="start.height"
           [style.width.px]="start.width"
           [style.z-index]="inputLevel$ | async"
-          [ngClass]="startClasses$ | async"
+          [class]="startClasses$ | async"
           class="flying-rename"
         />
       }
@@ -123,7 +123,7 @@
               @if (y !== 0) {
                 @for (cell of row; track $index; let x = $index) {
                   @if (x === 0 && settings.showRows) {
-                    <th [attr.x]="x" [attr.y]="y" [ngClass]="{ selected: cell.selected }" class="border-right rows">
+                    <th [attr.x]="x" [attr.y]="y" [class.selected]="cell.selected" class="border-right rows">
                       <div class="flex horizontal align-center justify-between">
                         @if (settings.deleteRow) {
                           <button (click)="deleteRow(y)" class="bin-button" mat-icon-button>
@@ -135,7 +135,7 @@
                     </th>
                   }
                   @if (x !== 0) {
-                    <td [attr.x]="x" [attr.y]="y" class="cell" [ngClass]="{ selected: cell.selected }">
+                    <td [attr.x]="x" [attr.y]="y" class="cell" [class.selected]="cell.selected">
                       {{ cell.value }}
                     </td>
                   }

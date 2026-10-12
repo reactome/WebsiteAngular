@@ -19,9 +19,9 @@
           class="raised-full-width-button"
           [disabled]="hasEHLD()"
           (click)="clearInteractors()"
-          [ngClass]="{ 'active-button': clear }"
+          [class.active-button]="clear"
         >
-          <mat-icon [ngClass]="{ 'active-icon': clear }" color="primary">clear</mat-icon>
+          <mat-icon [class.active-icon]="clear" color="primary">clear</mat-icon>
           Clear overlays
         </button>
       </div>
@@ -35,7 +35,7 @@
           mat-button
           [disabled]="hasEHLD()"
           (click)="getInteractors(INTACT_RESOURCE)"
-          [ngClass]="{ 'active-button': currentResource().type === ResourceType.STATIC }"
+          [class.active-button]="currentResource().type === ResourceType.STATIC"
         >
           <!--
             IntAct carries the same count as the others. It is the resource a
@@ -76,7 +76,7 @@
                 mat-button
                 [disabled]="hasEHLD() || (!!loadingResource && loadingResource !== resource.name)"
                 (click)="getInteractors(resource.name)"
-                [ngClass]="{ 'active-button': currentResource().name === resource.name }"
+                [class.active-button]="currentResource().name === resource.name"
               >
                 <div class="resource-name">
                   <span>{{ resource.name }}</span>
@@ -115,7 +115,7 @@
               [value]="resourceToken"
               [selected]="isSelected(resourceToken)"
               (click)="getInteractors(resourceToken)"
-              [ngClass]="{ 'active-button': currentResource().name === resourceToken.summary.name }"
+              [class.active-button]="currentResource().name === resourceToken.summary.name"
               class="full-width"
             >
               <div class="resource-name surface-variant">

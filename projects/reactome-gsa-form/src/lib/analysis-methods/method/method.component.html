@@ -2,7 +2,7 @@
   *ngrxLet="{ method: method$, parameters: parameters$, selected: selected$ } as vm"
   (closed)="updateScroll()"
   (opened)="updateScroll()"
-  [ngClass]="{ chosen: vm.selected }"
+  [class.chosen]="vm.selected"
   [expanded]="vm.selected"
   hideToggle
   class="mat-elevation-z3"

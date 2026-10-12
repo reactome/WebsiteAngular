@@ -7,7 +7,7 @@ import { datasetSourceFeature } from '../../../../../state/dataset-source/datase
 import { datasetActions } from '../../../../../state/dataset/dataset.actions';
 import { Parameter } from '../../../../../model/parameter.model';
 import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
-import { NgClass, AsyncPipe } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { SearchComponent } from './search/search.component';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +20,6 @@ import { MatButton } from '@angular/material/button';
   styleUrls: ['./external-data.component.scss'],
   imports: [
     TourAnchorMatMenuDirective,
-    NgClass,
     MatIcon,
     SearchComponent,
     FormsModule,

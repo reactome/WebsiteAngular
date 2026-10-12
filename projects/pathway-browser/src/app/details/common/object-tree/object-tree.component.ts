@@ -39,7 +39,6 @@ import { DataStateService } from '../../../services/data-state.service';
 import type { Relationship } from '../../../model/graph/relationship.model';
 import { cloneDeep, isArray } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
-import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { ExtractCompartmentPipe } from '../../../pipes/extract-compartment.pipe';
@@ -59,7 +58,6 @@ type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
     ExpressionTagComponent,
     MatTree,
     MatNestedTreeNode,
-    NgClass,
     MatTooltip,
     MatIcon,
     MatTreeNodeOutlet,

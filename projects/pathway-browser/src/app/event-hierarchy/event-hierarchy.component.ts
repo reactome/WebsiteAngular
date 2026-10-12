@@ -47,7 +47,7 @@ import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatNestedTreeNode } from '@angular/material/tree';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
+
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
 import { RevealDirective } from '../utils/reveal.directive';
@@ -68,7 +68,6 @@ import { HierarchyHoverService } from '../services/hierarchy-hover.service';
     MatTreeNodeOutlet,
     MatButton,
     MatIconButton,
-    NgClass,
     MatTooltip,
     PassiveDirective,
     RevealDirective,

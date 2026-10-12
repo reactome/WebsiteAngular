@@ -54,7 +54,7 @@ import {
 } from '@angular/material/snack-bar';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
+
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
@@ -77,7 +77,6 @@ const DROPDOWN_DURATION = 500;
     AngularSplitModule,
     SearchComponent,
     MatIcon,
-    NgClass,
     SpeciesComponent,
     InteractorsComponent,
     EventHierarchyComponent,

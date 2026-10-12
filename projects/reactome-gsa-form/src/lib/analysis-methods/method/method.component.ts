@@ -14,7 +14,7 @@ import {
   MatExpansionPanelTitle,
   MatExpansionPanelDescription,
 } from '@angular/material/expansion';
-import { NgClass } from '@angular/common';
+
 import { MethodParameterComponent } from '../../utilities/method-parameter/method-parameter.component';
 import { MatButton } from '@angular/material/button';
 
@@ -25,7 +25,6 @@ import { MatButton } from '@angular/material/button';
   imports: [
     LetDirective,
     MatExpansionPanel,
-    NgClass,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
     MatExpansionPanelDescription,

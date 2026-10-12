@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, viewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, viewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +12,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 @Component({
   standalone: true,
   selector: 'app-navigation-bar',
+  host: {
+    '(window:resize)': 'onResize($event)',
+  },
   imports: [
     CommonModule,
     RouterModule,
@@ -118,7 +121,7 @@ export class NavigationBarComponent implements AfterViewInit {
     return !!links && Object.keys(links).length > 0;
   }
 
-  @HostListener('window:resize', ['$event']) onResize(_event: any) {
+  onResize(_event: any) {
     this.windowWidth = window.innerWidth;
   }
 }

@@ -6,7 +6,7 @@
         <div class="label-container">{{ property.label || '' | titlecase }}</div>
         <div
           class="composition-container"
-          [ngClass]="{ 'columns-container': isArray(property.value) && !isString(property.value[0]) }"
+          [class.columns-container]="isArray(property.value) && !isString(property.value[0])"
         >
           @if (isArray(property.value) && !isString(property.value[0])) {
             @for (item of property.value; track item.dbId) {

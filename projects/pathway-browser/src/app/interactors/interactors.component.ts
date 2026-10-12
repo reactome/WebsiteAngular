@@ -22,7 +22,7 @@ import { CustomInteractorDialogComponent } from './custom-interactor-dialog/cust
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatDivider } from '@angular/material/divider';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -40,7 +40,6 @@ import { DEFAULT_INTERACTOR_SCORE } from './interactor-threshold';
     MatButton,
     MatIconButton,
     MatIcon,
-    NgClass,
     NgTemplateOutlet,
     MatDivider,
     MatGridList,

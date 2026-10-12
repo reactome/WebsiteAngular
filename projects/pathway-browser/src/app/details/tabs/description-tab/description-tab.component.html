@@ -373,7 +373,7 @@
                 <a
                   [href]="`${CONTENT_SCHEMA}/Person/${author.dbId}`"
                   target="_blank"
-                  [ngClass]="{ 'margin-right': !author.orcidId }"
+                  [class.margin-right]="!author.orcidId"
                 >
                   {{ author.firstname }} {{ author.surname }}
                 </a>
