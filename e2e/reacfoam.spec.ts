@@ -6,14 +6,26 @@ import { test, expect } from './support/backend';
 
 const BOOT = 90_000;
 
+type FoamData = { groups: { label: string }[] };
 type FoamTree = {
-  get(option: 'dataObject'): { groups: { label: string }[] };
+  get(option: 'dataObject'): FoamData;
   get(
     option: 'geometry',
     group: object
   ): { polygonCenterX: number; polygonCenterY: number } | undefined;
 };
 type Probe = { ng: { getComponent(el: Element | null): { foamTree(): FoamTree } } };
+/**
+ * The same probe while the page boots: no component yet, or no data in it --
+ * and the data object exists before its groups do.
+ */
+type Booting = {
+  ng?: {
+    getComponent(el: Element): {
+      foamTree(): { get(option: 'dataObject'): Partial<FoamData> | undefined };
+    } | null;
+  };
+};
 
 /** The map, laid out and done animating. */
 async function openMap(page: Page) {
@@ -23,9 +35,9 @@ async function openMap(page: Page) {
       () =>
         page.evaluate(() => {
           const host = document.querySelector('cr-reacfoam');
-          const probe = (window as unknown as Partial<Probe>).ng;
+          const probe = (window as unknown as Booting).ng;
           if (!host || !probe) return 0;
-          return probe.getComponent(host)?.foamTree()?.get('dataObject')?.groups?.length ?? 0;
+          return probe.getComponent(host)?.foamTree().get('dataObject')?.groups?.length ?? 0;
         }),
       { timeout: BOOT }
     )

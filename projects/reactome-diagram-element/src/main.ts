@@ -161,7 +161,8 @@ for (const [property, attribute] of Object.entries(PROPERTIES)) {
     get(this: HTMLElement) {
       return this.getAttribute(attribute);
     },
-    set(this: HTMLElement, value: string | null) {
+    // Host pages are not type-checked: undefined arrives as often as null.
+    set(this: HTMLElement, value: string | null | undefined) {
       if (value === null || value === undefined) this.removeAttribute(attribute);
       else this.setAttribute(attribute, String(value));
     },

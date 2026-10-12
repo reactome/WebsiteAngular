@@ -36,6 +36,11 @@ export interface PageContent {
   imageSizes?: Record<string, [number, number]>;
 }
 
+/** A staged content file's JSON: an object of its frontmatter fields and body. */
+function isFrontmatter(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -55,36 +60,34 @@ export class ContentService {
     // scripts/stage-content.ts. Frontmatter is already parsed server-side, so
     // the browser just consumes structured data -- no raw markdown fetch, and
     // nothing for vite to mistake for JSX source.
-    return this.http
-      .get<Record<string, unknown>>(`${this.contentBasePath}/${pageType}/${slug}.json`)
-      .pipe(
-        map((frontmatter) => {
-          // Not every 200 carries a content file: the SPA fallback answers an
-          // unknown path with index.html, which can reach here as a string
-          // rather than as a parse failure. Anything that is not a frontmatter
-          // object means there is no such page.
-          if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
-            return null;
-          }
-          return {
-            title: (frontmatter['title'] as string) || '',
-            description: frontmatter['description'] as string,
-            category: frontmatter['category'] as string,
-            image: frontmatter['image'] as string,
-            body: (frontmatter['body'] as string) || '',
-            // Named explicitly, like everything else here. This mapping lists
-            // the fields it wants, so a field added to the staged JSON reaches
-            // nothing until it is named -- which is how the image sizes came to
-            // be measured, shipped, and then silently dropped one layer before
-            // the renderer that needed them.
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
-          };
-        }),
-        catchError((error: unknown) => {
-          if (isMissingContent(error)) return of(null);
-          throw error;
-        })
-      );
+    return this.http.get<unknown>(`${this.contentBasePath}/${pageType}/${slug}.json`).pipe(
+      map((frontmatter) => {
+        // Not every 200 carries a content file: the SPA fallback answers an
+        // unknown path with index.html, which can reach here as a string
+        // rather than as a parse failure. Anything that is not a frontmatter
+        // object means there is no such page.
+        if (!isFrontmatter(frontmatter)) {
+          return null;
+        }
+        return {
+          title: (frontmatter['title'] as string) || '',
+          description: frontmatter['description'] as string,
+          category: frontmatter['category'] as string,
+          image: frontmatter['image'] as string,
+          body: (frontmatter['body'] as string) || '',
+          // Named explicitly, like everything else here. This mapping lists
+          // the fields it wants, so a field added to the staged JSON reaches
+          // nothing until it is named -- which is how the image sizes came to
+          // be measured, shipped, and then silently dropped one layer before
+          // the renderer that needed them.
+          imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
+        };
+      }),
+      catchError((error: unknown) => {
+        if (isMissingContent(error)) return of(null);
+        throw error;
+      })
+    );
   }
 
   /**
@@ -104,40 +107,36 @@ export class ContentService {
    */
   getArticle(path: string, slug: string): Observable<Article | null> {
     // See getPage(): content is compiled to JSON at build time.
-    return this.http
-      .get<Record<string, unknown>>(`${this.contentBasePath}/${path}/${slug}.json`)
-      .pipe(
-        map((frontmatter) => {
-          // As in getPage(): anything that is not a frontmatter object means
-          // there is no such article.
-          if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
-            return null;
-          }
-          const body = frontmatter['body'] as string;
-          const returnArticle: Article = {
-            title: (frontmatter['title'] as string) || '',
-            date: new Date(frontmatter['date'] as string),
-            author: frontmatter['author'] as string,
-            image: frontmatter['image'] as string,
-            tags:
-              typeof frontmatter['tags'] === 'string'
-                ? frontmatter['tags']
-                    .split(',')
-                    .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
-                : (frontmatter['tags'] as string[] | undefined),
-            body: body || '',
-            excerpt: truncateHtml(body || '', 50),
-            slug: slug,
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
-          };
-          return returnArticle;
-        }),
-        // A missing article is null; a failed one reaches the page, which says
-        // so rather than showing an article with nothing in it.
-        catchError((error: unknown) =>
-          isMissingContent(error) ? of(null) : throwError(() => error)
-        )
-      );
+    return this.http.get<unknown>(`${this.contentBasePath}/${path}/${slug}.json`).pipe(
+      map((frontmatter) => {
+        // As in getPage(): anything that is not a frontmatter object means
+        // there is no such article.
+        if (!isFrontmatter(frontmatter)) {
+          return null;
+        }
+        const body = frontmatter['body'] as string;
+        const returnArticle: Article = {
+          title: (frontmatter['title'] as string) || '',
+          date: new Date(frontmatter['date'] as string),
+          author: frontmatter['author'] as string,
+          image: frontmatter['image'] as string,
+          tags:
+            typeof frontmatter['tags'] === 'string'
+              ? frontmatter['tags']
+                  .split(',')
+                  .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
+              : (frontmatter['tags'] as string[] | undefined),
+          body: body || '',
+          excerpt: truncateHtml(body || '', 50),
+          slug: slug,
+          imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
+        };
+        return returnArticle;
+      }),
+      // A missing article is null; a failed one reaches the page, which says
+      // so rather than showing an article with nothing in it.
+      catchError((error: unknown) => (isMissingContent(error) ? of(null) : throwError(() => error)))
+    );
   }
 
   /**

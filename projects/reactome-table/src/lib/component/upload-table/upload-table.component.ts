@@ -24,7 +24,7 @@ export class UploadTableComponent implements OnInit {
   }
 
   uploadFile(input: HTMLInputElement) {
-    const file = input?.files?.[0];
+    const file = input.files?.[0];
     if (file) this.tableStore().importFile({ file });
   }
 }

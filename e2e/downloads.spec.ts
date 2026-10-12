@@ -468,7 +468,7 @@ test.describe('Logo downloads', () => {
           els.map((e) => ({
             href: e.getAttribute('href') ?? '',
             download: e.getAttribute('download'),
-            label: e.textContent ?? '',
+            label: e.textContent,
           }))
         ))
       );

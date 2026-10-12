@@ -155,7 +155,7 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   reportRequired$ = this.commonParameters$.pipe(
     map(
       (parameters) =>
-        (parameters?.find((parameter) => parameter.name === 'create_reports')?.value ||
+        (parameters.find((parameter) => parameter.name === 'create_reports')?.value ||
           false) as boolean
     )
   );
@@ -169,9 +169,11 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
   constructor() {
     const icons = this.icons;
 
-    effect(
-      () => this.tourComponent() && this.route.snapshot.queryParams['gsa-tour'] && this.tour.start()
-    );
+    effect(() => {
+      // Read first so the tour starts once its component is in the view.
+      this.tourComponent();
+      if (this.route.snapshot.queryParams['gsa-tour']) this.tour.start();
+    });
     icons.registerFontClassAlias('gsa', 'reactome-icon');
   }
 

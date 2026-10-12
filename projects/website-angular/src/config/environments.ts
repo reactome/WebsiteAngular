@@ -314,7 +314,8 @@ export const SELECTED_PROFILE_NAME: string | undefined =
  */
 export function getProfile(name?: string): SiteProfile {
   if (!name) return SITE_PROFILES.production;
-  const profile = SITE_PROFILES[name as ProfileName];
+  // Any string can arrive from the environment, and only some name a profile.
+  const profile = (SITE_PROFILES as Partial<Record<string, SiteProfile>>)[name];
   if (!profile) {
     throw new Error(
       `Unknown APP_ENV "${name}". Known deployments: ${Object.keys(SITE_PROFILES).join(', ')}.`

@@ -107,7 +107,7 @@ export const datasetFeature = createFeature({
         if (!dataset?.annotations) return {};
 
         const analysisColumn = transpose(dataset.annotations)
-          .find((column) => column[0] === dataset?.statisticalDesign?.analysisGroup)
+          .find((column) => column[0] === dataset.statisticalDesign?.analysisGroup)
           ?.slice(1);
         if (!analysisColumn) return {};
 
@@ -156,12 +156,12 @@ export const datasetFeature = createFeature({
 
     selectCovariancesAllSelected: (id: number) =>
       createSelector(selectEntities, (entities): boolean => {
-        return entities[id]?.statisticalDesign?.covariances?.every((cov) => cov.value) || false;
+        return entities[id]?.statisticalDesign?.covariances.every((cov) => cov.value) || false;
       }),
 
     selectCovariancesSomeSelected: (id: number) =>
       createSelector(selectEntities, (entities): boolean => {
-        return entities[id]?.statisticalDesign?.covariances?.some((cov) => cov.value) || false;
+        return entities[id]?.statisticalDesign?.covariances.some((cov) => cov.value) || false;
       }),
 
     selectSummaryParameters: (id: number) =>

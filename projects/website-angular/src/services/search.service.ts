@@ -207,7 +207,7 @@ export class SearchService {
  * string distance.
  */
 export function usableSpellCheckTerms(query: string, terms: string[] | null): string[] {
-  const asked = (query ?? '').trim().split(/\s+/).filter(Boolean).length;
+  const asked = query.trim().split(/\s+/).filter(Boolean).length;
   if (!terms || asked === 0) return terms ?? [];
   return terms.filter((term) => term.trim().split(/\s+/).filter(Boolean).length === asked);
 }

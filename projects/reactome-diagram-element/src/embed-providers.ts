@@ -65,7 +65,7 @@ export class ShadowRootsOnlyStylesHost extends SharedStylesHost {
 class EmbedAriaDescriber implements Pick<AriaDescriber, 'describe' | 'removeDescription'> {
   describe(hostElement: Element, message: string | HTMLElement): void {
     const text = typeof message === 'string' ? message : message.textContent;
-    if (text?.trim()) hostElement.setAttribute('aria-description', text);
+    if (text.trim()) hostElement.setAttribute('aria-description', text);
   }
 
   removeDescription(hostElement: Element): void {

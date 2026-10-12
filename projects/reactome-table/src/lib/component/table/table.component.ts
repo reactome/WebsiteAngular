@@ -146,7 +146,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   cleanData$: Observable<string[][]> = this.tableStore.cleanData$;
   start$: Observable<Coords> = this.tableStore.start$;
   stop$: Observable<Coords> = this.tableStore.stop$;
-  startCell$: Observable<HTMLTableCellElement> = this.start$.pipe(
+  startCell$: Observable<HTMLTableCellElement | null> = this.start$.pipe(
     distinctUntilChanged(Ranges.equals),
     delay(0), // Allow resizing of cell before updating size of input
     tap((start) => {
@@ -160,6 +160,8 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     delay(0), // Make sure cell is rendered after having been scrolled to
     map((start) => this.getHTMLCellElement(start.x, start.y)),
     tap((cell) => {
+      // Not drawn: a virtual scroll renders only the rows near the viewport.
+      if (!cell) return;
       cell.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
       if (isHiddenBehindSticky(cell, this.viewport().elementRef.nativeElement, this.rowHeight()))
         scrollToElementManually(cell, this.viewport().elementRef.nativeElement, this.rowHeight());
@@ -186,10 +188,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     delay(0),
     map(([cell]) => {
       const cellRect = cell.getBoundingClientRect();
-      if (!cellRect) return cellRect;
       const tableCoords = this.viewport().elementRef.nativeElement.getBoundingClientRect();
-      cellRect.x += this.viewport().measureScrollOffset('left') - tableCoords?.x;
-      cellRect.y += this.viewport().measureScrollOffset('top') - tableCoords?.y;
+      cellRect.x += this.viewport().measureScrollOffset('left') - tableCoords.x;
+      cellRect.y += this.viewport().measureScrollOffset('top') - tableCoords.y;
       const style = window.getComputedStyle(cell);
       cellRect.width -=
         parseFloat(style.getPropertyValue('padding-left')) +
@@ -289,7 +290,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   mousemove($event: MouseEvent) {
     if (this.isDraggingMouse) {
       const stop = this.getCell($event);
-      if (this.previousStop?.x !== stop.x || this.previousStop?.y !== stop.y)
+      if (this.previousStop?.x !== stop.x || this.previousStop.y !== stop.y)
         this.tableStore.selectRange({ stop });
       this.previousStop = stop;
     }
@@ -356,7 +357,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     $event.preventDefault();
     const pastedData = $event.clipboardData
       ?.getData('text')
-      ?.split('\n')
+      .split('\n')
       .map((row) => row.split('\t'));
     if (pastedData) this.tableStore.paste({ table: pastedData });
   }
@@ -367,10 +368,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
       .subscribe((range) => this.clipboard.copy(range.map((row) => row.join('\t')).join('\n')));
   }
 
-  getHTMLCellElement(x: number, y: number): HTMLTableCellElement {
-    return this.rootRef()?.nativeElement.querySelector(
-      `[x='${x}'][y='${y}']`
-    ) as HTMLTableCellElement;
+  /** The cell's element, or null when the virtual scroll has not drawn it. */
+  getHTMLCellElement(x: number, y: number): HTMLTableCellElement | null {
+    return this.rootRef().nativeElement.querySelector<HTMLTableCellElement>(`[x='${x}'][y='${y}']`);
   }
 
   getCell($event: MouseEvent): Coords {
@@ -416,11 +416,10 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
     const settings = await firstValueFrom(this.settings$);
 
-    const firstFile = $event.dataTransfer.items
-      ? Array.from($event.dataTransfer.items)
-          .filter((item) => item.kind === 'file') // If dropped items aren't files, reject them
-          .map((item) => item.getAsFile()!)?.[0]
-      : $event.dataTransfer.files?.[0];
+    // The first dropped item that is a file; anything else is ignored.
+    const firstFile = Array.from($event.dataTransfer.items)
+      .find((item) => item.kind === 'file')
+      ?.getAsFile();
 
     if (firstFile) this.importFile(firstFile, settings.dropReplace);
   }

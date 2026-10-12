@@ -17,7 +17,7 @@ export const datasetSourceFeature = createFeature({
     selectBySource: (source: Source, method: Method) =>
       createSelector(selectEntities, selectIds, (datasetSources, ids) => {
         return ids
-          ?.map((id) => datasetSources[id])
+          .map((id) => datasetSources[id])
           .filter((datasetSource) => datasetSource?.source === source)
           .filter(isDefined)
           .filter(

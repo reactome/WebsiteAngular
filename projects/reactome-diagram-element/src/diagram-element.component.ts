@@ -382,7 +382,7 @@ export class DiagramElementComponent {
     // events.
     const event = this.dataState
       .currentPathway()
-      ?.events?.find((e) => e.element.stId === stId)?.element;
+      ?.events.find((e) => e.element.stId === stId)?.element;
     return { id: stId, name: event?.displayName ?? null, schemaClass: event?.schemaClass ?? null };
   }
 
