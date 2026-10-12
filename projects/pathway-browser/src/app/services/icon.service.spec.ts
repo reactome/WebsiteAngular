@@ -46,3 +46,19 @@ describe('IconService.fetchIcon', () => {
     expect(service.currentIcon()?.stId).toBe('R-ICO-013624');
   });
 });
+
+// Every kind of entity the trees and lists show needs an icon of its own name:
+// a missing one falls back to "?", which mat-icon cannot find, and logs an
+// error for every row (an RNA drug in R-HSA-9845192's participants did).
+describe('IconService.getIconDetails', () => {
+  it('has an icon for every kind of drug', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(IconService);
+    for (const schemaClass of ['ChemicalDrug', 'ProteinDrug', 'RNADrug']) {
+      const icon = service.getIconDetails({ dbId: 1, displayName: 'x', schemaClass });
+      expect(icon.name, schemaClass).not.toBe('?');
+    }
+  });
+});
