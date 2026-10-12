@@ -1,5 +1,5 @@
 import { Component, inject, viewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     '(window:resize)': 'onResize($event)',
   },
   imports: [
+    NgOptimizedImage,
     CommonModule,
     RouterModule,
     MatIconModule,
