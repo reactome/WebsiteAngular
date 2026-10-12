@@ -9,18 +9,15 @@
  * The cases below are taken from what is actually in the content, not invented.
  */
 import { describe, expect, it } from 'vitest';
-import { FRAGMENT_PATTERN, isContentRoute } from './url-state.service';
+import { FRAGMENT_PATTERN, fragmentParams, isContentRoute } from './url-state.service';
 
 /** What the subscriber does with a fragment, reduced to its decisions. */
 function route(fragment: string) {
   const match = fragment.match(FRAGMENT_PATTERN);
   if (!match?.groups) return { id: undefined, params: {} as Record<string, unknown> };
-  const params: Record<string, unknown> = {};
-  if (match.groups['params']) {
-    for (const [key, value] of match.groups['params'].split('&').map((p) => p.split('='))) {
-      params[key] = value || true;
-    }
-  }
+  const params: Record<string, unknown> = match.groups['params']
+    ? fragmentParams(match.groups['params'])
+    : {};
   return { id: match.groups['id'], params };
 }
 
@@ -49,6 +46,13 @@ describe('a legacy pathway link in the fragment', () => {
     const { id, params } = route('/R-HSA-8876384&PATH=R-HSA-1643685,R-HSA-5663205');
     expect(id).toBe('R-HSA-8876384');
     expect(params).toEqual({ PATH: 'R-HSA-1643685,R-HSA-5663205' });
+  });
+
+  // A token is base64 and usually ends in "=": split on every "=", the value
+  // lost its padding, and the result it named read as never loaded.
+  it('keeps an analysis token whole', () => {
+    const { params } = route('/R-HSA-69620&ANALYSIS=MjAyNjA5MjUxNDM3NThfMTM=');
+    expect(params).toEqual({ ANALYSIS: 'MjAyNjA5MjUxNDM3NThfMTM=' });
   });
 
   it('opens the pathway a release announcement links to', () => {
