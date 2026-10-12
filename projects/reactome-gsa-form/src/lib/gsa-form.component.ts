@@ -33,11 +33,68 @@ import { ActivatedRoute } from '@angular/router';
 import { TourComponent } from './tour/tour.component';
 import { OptionsComponent } from './options/options.component';
 
+import { AnalysisMethodsComponent } from './analysis-methods/analysis-methods.component';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatListModule } from '@angular/material/list';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { AnalysisComponent } from './analysis/analysis.component';
+import { MatDialogModule } from '@angular/material/dialog';
+import { ScrollableComponent } from './utilities/scrollable/scrollable.component';
+import { LetDirective } from '@ngrx/component';
+import { DatasetFormComponent } from './dataset-form/dataset-form.component';
+import { CommonModule } from '@angular/common';
+import { ReactomeTableModule } from 'reactome-table';
+import { TourAnchorMatMenuDirective } from 'ngx-ui-tour-md-menu';
+
 @Component({
   selector: 'gsa-form',
   templateUrl: './gsa-form.component.html',
   styleUrls: ['./gsa-form.component.scss'],
-  standalone: false,
+  imports: [
+    CommonModule,
+    MatProgressBarModule,
+    MatCardModule,
+    MatButtonModule,
+    MatSlideToggleModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    FormsModule,
+    MatListModule,
+    MatGridListModule,
+    MatInputModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatStepperModule,
+    ReactiveFormsModule,
+    MatProgressSpinnerModule,
+    MatMenuModule,
+    MatCheckboxModule,
+    MatExpansionModule,
+    MatDialogModule,
+    ReactomeTableModule,
+    LetDirective,
+    TourAnchorMatMenuDirective,
+    AnalysisMethodsComponent,
+    DatasetFormComponent,
+    OptionsComponent,
+    AnalysisComponent,
+    ScrollableComponent,
+    TourComponent,
+  ],
 })
 export class GsaFormComponent implements AfterViewInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);

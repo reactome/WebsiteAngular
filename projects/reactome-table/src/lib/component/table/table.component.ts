@@ -36,15 +36,37 @@ import { isDefined } from '../../model/utils.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { safeInput } from '../../utils/web-component-utils';
 import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
-import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { downloadTable } from '../download-table/download-table.component';
+import {
+  CdkVirtualScrollViewport,
+  CdkFixedSizeVirtualScroll,
+  CdkVirtualForOf,
+} from '@angular/cdk/scrolling';
+import { downloadTable, DownloadTableComponent } from '../download-table/download-table.component';
+import { LetDirective } from '@ngrx/component';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton, MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { UploadTableComponent } from '../upload-table/upload-table.component';
+import { AsyncPipe } from '@angular/common';
 @UntilDestroy()
 @Component({
   selector: 'reactome-table',
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
   providers: [TableStore],
-  standalone: false,
+  imports: [
+    LetDirective,
+    CdkVirtualScrollViewport,
+    CdkFixedSizeVirtualScroll,
+    FormsModule,
+    MatIconButton,
+    MatIcon,
+    MatButton,
+    CdkVirtualForOf,
+    UploadTableComponent,
+    DownloadTableComponent,
+    AsyncPipe,
+  ],
 })
 export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   private clipboard = inject(Clipboard);

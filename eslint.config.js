@@ -126,7 +126,7 @@ module.exports = tseslint.config(
         { considerDefaultExhaustiveForUnions: true },
       ],
       '@angular-eslint/no-async-lifecycle-method': 'error',
-      '@angular-eslint/prefer-standalone': 'warn',
+      '@angular-eslint/prefer-standalone': 'error',
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
       // All twelve removed, so a new empty hook is a new mistake.

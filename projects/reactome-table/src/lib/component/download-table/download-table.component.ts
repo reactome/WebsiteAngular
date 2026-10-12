@@ -1,12 +1,16 @@
 import { Component, OnInit, input } from '@angular/core';
 import { first, map, Observable } from 'rxjs';
 import { TableStore } from '../../state/table.store';
+import { MatIconButton, MatButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'reactome-table-download',
   templateUrl: './download-table.component.html',
   styleUrls: ['./download-table.component.scss'],
-  standalone: false,
+  imports: [MatIconButton, MatTooltip, MatIcon, MatButton, AsyncPipe],
 })
 export class DownloadTableComponent implements OnInit {
   readonly name = input.required<string>();
