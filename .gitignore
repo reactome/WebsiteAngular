@@ -92,3 +92,6 @@ tools/svg-export-harness/harness.bundle.js
 # repository is public. Mounted into the container and read literally; never
 # parsed, never committed. See docker-compose.yml.
 .content-node.env
+
+# Notes of a recording's stubbed requests, consumed by scripts/trim-har.mjs (#404).
+e2e/har/*.stubs
