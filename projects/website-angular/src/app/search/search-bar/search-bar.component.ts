@@ -5,7 +5,6 @@ import {
   inject,
   OnChanges,
   SimpleChanges,
-  HostListener,
   signal,
   linkedSignal,
   ChangeDetectorRef,
@@ -34,6 +33,10 @@ const FILTER_KEYS = ['species', 'types', 'compartments', 'keywords', 'pageCatego
 
 @Component({
   selector: 'app-search-bar',
+  host: {
+    '(window:keydown.arrowdown)': 'onKeyDownArrowDown($event)',
+    '(window:keydown.arrowup)': 'onKeyDownArrowUp($event)',
+  },
   standalone: true,
   imports: [DropdownToggleComponent, RouterLink],
   templateUrl: './search-bar.component.html',
@@ -249,7 +252,6 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     this.advancedFilters[key] = current;
   }
 
-  @HostListener('window:keydown.arrowdown', ['$event'])
   onKeyDownArrowDown(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
@@ -258,7 +260,6 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     }
   }
 
-  @HostListener('window:keydown.arrowup', ['$event'])
   onKeyDownArrowUp(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {

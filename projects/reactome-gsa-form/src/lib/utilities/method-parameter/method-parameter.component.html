@@ -1,7 +1,7 @@
 <div
   *ngrxLet="screenIsSmall$ as screenIsSmall"
   class="grid-container"
-  [ngClass]="{ 'no-information': screenIsSmall || !infoTooltip() }"
+  [class.no-information]="screenIsSmall || !infoTooltip()"
 >
   <!--  'background-grey': index % 2 === 1-->
   @if (screenIsSmall || !infoTooltip()) {

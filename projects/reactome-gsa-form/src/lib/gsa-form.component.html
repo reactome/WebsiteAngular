@@ -13,7 +13,7 @@
     } as vm"
     (selectionChange)="stepChange($event, vm)"
     class="flex-container"
-    [ngClass]="{ 'no-tour': !tour.on }"
+    [class.no-tour]="!tour.on"
     [animationDuration]="tour.on ? '0' : '500'"
   >
     <mat-step #setMethodStep [completed]="vm.methodSelected" class="flex-one" [editable]="editable">
@@ -75,7 +75,7 @@
                   <gsa-dataset-form
                     [datasetId]="id"
                     [method]="vm.method"
-                    [ngClass]="{ 'width-hundred': i === 0 }"
+                    [class.width-hundred]="i === 0"
                   ></gsa-dataset-form>
                 </div>
               }

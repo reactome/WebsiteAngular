@@ -54,7 +54,7 @@ import { SpeciesService } from '../../../services/species.service';
 import { Summation } from '../../../model/graph/summation.model';
 import { FigureService } from './figure/figure.service';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
-import { KeyValuePipe, NgClass, NgTemplateOutlet } from '@angular/common';
+import { KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { IncludeRefPipe } from '../../../pipes/include-ref.pipe';
@@ -88,7 +88,6 @@ import type { Event as ReactomeEvent } from '../../../model/graph/event/event.mo
   standalone: true,
   imports: [
     NgTemplateOutlet,
-    NgClass,
     KeyValuePipe,
     RouterLink,
     SortByTextPipe,

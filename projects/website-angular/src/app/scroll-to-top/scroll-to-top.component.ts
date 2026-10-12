@@ -1,8 +1,11 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-scroll-to-top',
+  host: {
+    '(window:scroll)': 'onWindowScroll()',
+  },
   standalone: true,
   imports: [MatIcon],
   templateUrl: './scroll-to-top.component.html',
@@ -17,16 +20,15 @@ export class ScrollToTopComponent {
    * Whether the page is scrolled away from the top, which is what reveals the
    * button.
    *
-   * A signal rather than a plain field, and a HostListener rather than a bare
+   * A signal rather than a plain field, and a host listener rather than a bare
    * `window.addEventListener`, because both are needed without zone.js: a
    * listener registered directly on window is invisible to Angular, so the
    * assignment used to update nothing and the button never appeared. Angular
-   * also tears a HostListener down with the component, which the manual
+   * also tears a host listener down with the component, which the manual
    * listener never did.
    */
   readonly windowScrolled = signal(false);
 
-  @HostListener('window:scroll')
   onWindowScroll(): void {
     this.windowScrolled.set(window.scrollY !== 0);
   }

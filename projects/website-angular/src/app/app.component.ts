@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ViewportScroller } from '@angular/common';
@@ -15,6 +15,9 @@ import { IS_CURATOR } from '../../../pathway-browser/src/environments/environmen
 
 @Component({
   selector: 'app-root',
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+  },
   standalone: true,
   imports: [
     RouterOutlet,
@@ -81,7 +84,6 @@ export class AppComponent implements OnInit {
 
   // Intercept hash-only anchor clicks so Angular's <base href="/"> doesn't
   // resolve them as navigations to /#anchor (which lands on the home page).
-  @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = (event.target as Element | null)?.closest('a');

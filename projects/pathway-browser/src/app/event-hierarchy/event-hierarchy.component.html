@@ -53,7 +53,7 @@
         [crReveal]="node.stId === revealTarget()"
         class="leaf-node"
         (click)="$event.stopPropagation()"
-        [ngClass]="{ 'has-sibling': hasRootSiblingForLeafNode(node) }"
+        [class.has-sibling]="hasRootSiblingForLeafNode(node)"
         [attr.st-id]="node.stId"
       >
         <!-- The row, not the tree node: a node also contains its children. -->
@@ -66,7 +66,7 @@
             <button
               mat-button
               (click)="onTreeEventSelect(node)"
-              [ngClass]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
+              [class]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
               class="button"
             >
               <mat-icon
@@ -159,7 +159,7 @@
             <button
               mat-button
               class="button"
-              [ngClass]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
+              [class]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
             >
               <mat-icon
                 #eventIcon

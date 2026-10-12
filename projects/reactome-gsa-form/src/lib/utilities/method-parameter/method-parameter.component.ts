@@ -18,7 +18,7 @@ import { map, Observable } from 'rxjs';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { Parameter } from '../../model/parameter.model';
 import { LetDirective } from '@ngrx/component';
-import { NgClass } from '@angular/common';
+
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { MatFormField, MatError } from '@angular/material/form-field';
@@ -33,7 +33,6 @@ import { MatInput } from '@angular/material/input';
   styleUrls: ['./method-parameter.component.scss'],
   imports: [
     LetDirective,
-    NgClass,
     MatTooltip,
     MatIcon,
     MatFormField,

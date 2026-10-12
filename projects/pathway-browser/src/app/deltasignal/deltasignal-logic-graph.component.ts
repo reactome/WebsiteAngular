@@ -5,7 +5,6 @@ import {
   effect,
   ElementRef,
   inject,
-  NgZone,
   OnDestroy,
   signal,
   untracked,
@@ -31,7 +30,6 @@ const GRAPH_LIMIT = 40;
 })
 export class DeltaSignalLogicGraphComponent implements OnDestroy {
   private readonly service = inject(DeltaSignalService);
-  private readonly zone = inject(NgZone);
   private readonly container = viewChild<ElementRef<HTMLDivElement>>('graphContainer');
   private cy?: Core;
   private observedElement?: HTMLDivElement;
@@ -116,7 +114,8 @@ export class DeltaSignalLogicGraphComponent implements OnDestroy {
     });
     this.cy.on('tap', 'node', (event) => {
       const selected = nodes.find((node) => node.uuid === event.target.id()) ?? null;
-      this.zone.run(() => this.selected.set(selected));
+      // A signal: zoneless change detection sees the set, with no zone to enter.
+      this.selected.set(selected);
     });
     this.cy
       .layout({
