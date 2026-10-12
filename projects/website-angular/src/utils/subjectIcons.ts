@@ -87,6 +87,7 @@ export const SUBJECT_ICONS: Record<string, SubjectIcon> = {
     route: 'genome-encoded-entity',
   },
   ProteinDrug: { name: 'protein-drug', tooltip: 'Protein Drug', route: 'protein-drug' },
+  RNADrug: { name: 'rna-drug', tooltip: 'RNA Drug', route: 'chemical-drug' },
   ChemicalDrug: { name: 'chemical-drug', tooltip: 'Chemical Drug', route: 'chemical-drug' },
   Polymerisation: { name: 'binding', tooltip: 'Polymerisation', route: 'binding' },
   Depolymerisation: { name: 'dissociation', tooltip: 'Depolymerisation', route: 'dissociation' },
