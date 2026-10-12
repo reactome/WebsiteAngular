@@ -24,6 +24,12 @@ describe('site profiles', () => {
     expect(() => getProfile('plant')).toThrow(/Known deployments/);
   });
 
+  it("refuses a name that is only an object's inherited property", () => {
+    for (const name of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(() => getProfile(name), name).toThrow(/Unknown APP_ENV/);
+    }
+  });
+
   it('gives each deployment both halves: a backend and a UI', () => {
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
       const host = profile.host;

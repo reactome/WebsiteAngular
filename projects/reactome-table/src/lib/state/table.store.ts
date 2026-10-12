@@ -258,7 +258,7 @@ export class TableStore extends ComponentStore<TableState> {
 
   readonly write = this.updater((state, { value }: { value: string }) => {
     if (Ranges.equals({ x: 0, y: 0 }, state.start)) return state;
-    if (state.start) state.hasFocus = true;
+    state.hasFocus = true;
     const x = state.start.x;
     const y = state.start.y;
     const row = rowAt(state.dataset, y);
@@ -676,7 +676,7 @@ export namespace Ranges {
   export function findMaximumOfColumn(state: TableState, x: number): LocatedValue {
     return Ranges.column(state.dataset, x).reduce(
       (max, e, y) =>
-        e.value?.length > max.value.length
+        e.value.length > max.value.length
           ? {
               value: e.value,
               coords: { x, y },

@@ -68,7 +68,7 @@ async function markVisibleRowNearBottom(page: Page) {
     const pick = rows[Math.floor(rows.length / 2)];
     if (!pick) return null;
     pick.setAttribute('data-pick', '1');
-    return { scrollTop: Math.round(scroller.scrollTop), label: (pick.textContent ?? '').trim() };
+    return { scrollTop: Math.round(scroller.scrollTop), label: pick.textContent.trim() };
   }, SCROLLER);
 }
 

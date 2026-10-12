@@ -42,7 +42,8 @@ export class LocalDataComponent {
       this.showPopup = true;
       this.loadLocalFiles = false;
     } else {
-      const file: File = event.target.files[0];
+      // Nothing, when the reader closes the picker without choosing a file.
+      const file: File | undefined = event.target.files[0];
       if (file) {
         this.store.dispatch(
           datasetActions.upload({ id: this.datasetId(), file, typeId: this.source().id })
@@ -130,7 +131,6 @@ export class LocalDataComponent {
   }
 
   async checkValidFile(file: File): Promise<boolean> {
-    if (file === null) return false;
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 

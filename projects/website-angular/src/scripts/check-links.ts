@@ -243,7 +243,7 @@ export function nonImages(file: string, text: string): Link[] {
       local !== null
         ? !onDisk || looksLikeImage(onDisk)
         : IMAGE_FILE.test(url.split('#')[0].split('?')[0]);
-    if (!ok) found.push({ file, line: lineOf(text, m.index ?? 0), url });
+    if (!ok) found.push({ file, line: lineOf(text, m.index), url });
   }
   return found;
 }
@@ -275,11 +275,11 @@ function looksLikeImage(file: string): boolean {
 export function linksInTemplate(file: string, text: string): Link[] {
   const found: Link[] = [];
   for (const m of text.matchAll(/(?<![[\w-])(?:href|routerLink)\s*=\s*"([^"{}]+)"/g)) {
-    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
+    found.push({ file, line: lineOf(text, m.index), url: m[1] });
   }
   // A bound routerLink that is only a literal: [routerLink]="['/content/query']".
   for (const m of text.matchAll(/\[routerLink\]\s*=\s*"\[\s*'(\/[^']*)'\s*\]"/g)) {
-    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
+    found.push({ file, line: lineOf(text, m.index), url: m[1] });
   }
   return found;
 }
@@ -287,7 +287,7 @@ export function linksInTemplate(file: string, text: string): Link[] {
 function linksInNav(file: string, text: string): Link[] {
   const found: Link[] = [];
   for (const m of text.matchAll(/"link"\s*:\s*"([^"]+)"/g)) {
-    found.push({ file, line: lineOf(text, m.index ?? 0), url: m[1] });
+    found.push({ file, line: lineOf(text, m.index), url: m[1] });
   }
   return found;
 }
