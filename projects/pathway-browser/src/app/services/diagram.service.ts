@@ -217,7 +217,7 @@ export class DiagramService {
         }).pipe(
           // tap(({diagram, graph}) => console.log('Original diagram:', diagram, 'Original graph', graph)),
           switchMap(({ diagram, graph }) => {
-            if (diagram.forNormalDraw !== undefined && !diagram.forNormalDraw) {
+            if (diagram.forNormalDraw === false) {
               return this.getNormalPathway(diagram.stableId).pipe(
                 switchMap((normalPathwayId) =>
                   forkJoin({
@@ -236,14 +236,15 @@ export class DiagramService {
                 map(({ normalGraph, normalDiagram }) => {
                   graph.nodes.push(...normalGraph.nodes);
                   graph.edges.push(...normalGraph.edges);
-                  if (normalDiagram.shadows) {
-                    normalDiagram.shadows.forEach((shadow) => (shadow.isFadeOut = true));
-                    diagram.shadows = diagram.shadows || [];
-                    diagram.shadows.push(...normalDiagram.shadows);
-
-                    graph.subpathways = graph.subpathways || [];
-                    graph.subpathways.push(...normalGraph.subpathways);
-                  }
+                  normalDiagram.shadows.forEach((shadow) => (shadow.isFadeOut = true));
+                  diagram.shadows.push(...normalDiagram.shadows);
+                  // Either graph leaves out subpathways when it has none: a
+                  // spread of the missing list threw, and the disease diagram
+                  // was drawn knowing nothing of its normal pathway.
+                  graph.subpathways = [
+                    ...(graph.subpathways ?? []),
+                    ...(normalGraph.subpathways ?? []),
+                  ];
                   return { diagram, graph };
                 }),
                 catchError((_err) => of({ diagram, graph }))
@@ -321,11 +322,11 @@ export class DiagramService {
     const subpathwayIds = new Set<number>(diagram.shadows.map((shadow) => shadow.reactomeId));
 
     const eventIdToSubPathwayId = new Map<number, number>(
-      (graph.subpathways?.flatMap((subpathway) =>
+      graph.subpathways?.flatMap((subpathway) =>
         subpathway.events
           .map((event): [number, number] => [event, subpathway.dbId])
           .filter((entry) => subpathwayIds.has(entry[1]))
-      ) as [number, number][]) || []
+      )
     );
 
     const subpathwayIdToEventIds = new Map<number, number[]>(
@@ -338,23 +339,17 @@ export class DiagramService {
     const dbIdToGraphNode = new Map<number, Graph.Node>(
       graph.nodes.map((node) => [node.dbId, node])
     );
-    const mappingList: [number, Graph.Node][] = graph.nodes
-      .flatMap((node) => {
-        const [onlyChild] = node.children ?? [];
-        if (
-          node.children?.length === 1 &&
-          onlyChild !== undefined &&
-          node.diagramIds?.length !== 1
-        ) {
-          // Consider homomer complex like their constituents for interactors
-          return node.diagramIds
-            ?.map((id) => [id, dbIdToGraphNode.get(onlyChild)])
-            .filter((entry) => entry[1] !== undefined) as [number, Graph.Node][];
-        } else {
-          return node.diagramIds?.map((id) => [id, node]) as [number, Graph.Node][];
-        }
-      })
-      .filter((entry) => entry !== undefined);
+    // A node not drawn in this diagram has no diagramIds.
+    const mappingList = graph.nodes.flatMap((node): [number, Graph.Node][] => {
+      const ids = node.diagramIds ?? [];
+      const [onlyChild] = node.children ?? [];
+      if (node.children?.length === 1 && onlyChild !== undefined && ids.length !== 1) {
+        // Consider homomer complex like their constituents for interactors
+        const child = dbIdToGraphNode.get(onlyChild);
+        return child ? ids.map((id) => [id, child]) : [];
+      }
+      return ids.map((id) => [id, node]);
+    });
 
     const idToGraphNodes = new Map([...mappingList]);
     const idToGraphEdges = new Map(graph.edges.map((edge) => [edge.dbId, edge]));
@@ -366,7 +361,7 @@ export class DiagramService {
     };
 
     idToGraphNodes.forEach((node) => {
-      if (node.children?.length > 0) {
+      if (node.children?.length) {
         const leaves = new Set<Graph.Node>();
         getLeaves(node, leaves);
         node.leaves = [...leaves];
@@ -389,7 +384,7 @@ export class DiagramService {
     const posToSpecialEdge = new Map(specialEdges.map((edge) => [pointToStr(edge.position), edge]));
 
     //compartment nodes
-    const compartmentNodes: cytoscape.NodeDefinition[] = diagram?.compartments.flatMap((item) => {
+    const compartmentNodes: cytoscape.NodeDefinition[] = diagram.compartments.flatMap((item) => {
       const sides = ['left', 'top', 'right', 'bottom'] as const;
       const propToRects = (prop: Prop): Record<(typeof sides)[number], number> => ({
         left: scale(prop.x),
@@ -451,7 +446,7 @@ export class DiagramService {
     const replacementMap = new Map<string, string>();
 
     //reaction nodes
-    const reactionNodes: cytoscape.NodeDefinition[] = diagram?.edges.map((item) => {
+    const reactionNodes: cytoscape.NodeDefinition[] = diagram.edges.map((item) => {
       let replacement, replacedBy;
       if (item.isFadeOut) {
         replacedBy =
@@ -496,7 +491,7 @@ export class DiagramService {
     });
 
     //entity nodes
-    const entityNodes: cytoscape.NodeDefinition[] = diagram?.nodes.flatMap((item) => {
+    const entityNodes: cytoscape.NodeDefinition[] = diagram.nodes.flatMap((item) => {
       let classes = [
         // An array: spreading the bare string spread an unknown type's name
         // into one class per letter.
@@ -504,19 +499,22 @@ export class DiagramService {
       ];
       let unitId = undefined;
       if (item.schemaClass === SchemaClasses.POLYMER) {
-        const polymerGraphNode = dbIdToGraphNode.get(item.reactomeId)!;
-        // A unit the graph does not list reads as one it does not know, as before.
-        const unitGraph = dbIdToGraphNode.get(polymerGraphNode.children[0] ?? -1)!;
-        const unitClass = this.nodeTypeMap.get(unitGraph.schemaClass) ||
-          this.nodeTypeMap.get(
-            this.schemaClassToNodeTypeMap.get(
+        // A polymer, or its unit, the graph does not list reads as a unit it
+        // does not know -- as other nodes without graph data are drawn, rather
+        // than the whole diagram failing on the one node (see graphData below).
+        const polymerGraphNode = dbIdToGraphNode.get(item.reactomeId);
+        const unitGraph = dbIdToGraphNode.get(polymerGraphNode?.children?.[0] ?? -1);
+        const unitType = unitGraph
+          ? this.schemaClassToNodeTypeMap.get(
               unitGraph.schemaClass === 'EntityWithAccessionedSequence'
-                ? unitGraph.referenceType
+                ? (unitGraph.referenceType ?? '')
                 : unitGraph.schemaClass
-            )!
-          ) || ['GenomeEncodedEntity', 'PhysicalEntity'];
+            )
+          : undefined;
+        const unitClass = (unitGraph && this.nodeTypeMap.get(unitGraph.schemaClass)) ||
+          (unitType && this.nodeTypeMap.get(unitType)) || ['GenomeEncodedEntity', 'PhysicalEntity'];
         classes = [SchemaClasses.POLYMER, ...unitClass];
-        unitId = unitGraph.identifier;
+        unitId = unitGraph?.identifier;
       }
       let replacedBy: string | undefined;
       let replacement: string | undefined;
@@ -621,7 +619,7 @@ export class DiagramService {
     });
 
     //sub pathways
-    const shadowNodes: cytoscape.NodeDefinition[] = diagram?.shadows.map((item) => {
+    const shadowNodes: cytoscape.NodeDefinition[] = diagram.shadows.map((item) => {
       return {
         data: {
           id: item.id + '',
@@ -676,7 +674,6 @@ export class DiagramService {
         this.addEdgeInfo(reaction, points, 'backward', sourceP);
         this.addEdgeInfo(reaction, points, 'forward', targetP);
 
-        let [from, to] = [points.shift()!, points.pop()!];
         // Match upstream PathwayBrowser (github.com/reactome/PathwayBrowser):
         // fall back to node/reaction positions, not source/target. The
         // source/target fallback I previously chose for R-HSA-1296071
@@ -684,11 +681,10 @@ export class DiagramService {
         // on the underlying node/reaction positions to find the right
         // line geometry (e.g. R-HSA-112307 transmission across electrical
         // synapses, where every K+ connector has zero segments).
-        from = from ?? nodeP;
-        to = to ?? reactionP;
-        if (connector.type === 'CATALYST' && connector.endShape) {
-          to = scale(connector.endShape.centre || connector.endShape.c);
-        }
+        const from = points.shift() ?? nodeP;
+        let to = points.pop() ?? reactionP;
+        const end = connector.endShape?.centre ?? connector.endShape?.c;
+        if (connector.type === 'CATALYST' && end) to = scale(end);
 
         // points = addRoundness(from, to, points);
         const relatives = this.absoluteToRelative(from, to, points);
@@ -770,14 +766,14 @@ export class DiagramService {
     });
 
     const linkEdges: cytoscape.EdgeDefinition[] = diagram.links
-      ?.filter((link) => {
+      .filter((link) => {
         const [input] = link.inputs;
         const [output] = link.outputs;
         // A link without both ends is kept, to be refused below by name.
         if (!input || !output) return true;
         return !link.renderableClass.includes('EntitySet') || input.id !== output.id;
       })
-      ?.map((link) => {
+      .map((link) => {
         const [input] = link.inputs;
         const [output] = link.outputs;
         // As before, a link with no end cannot be drawn; now it says which.
@@ -792,9 +788,9 @@ export class DiagramService {
           .flatMap((segment, i) => (i === 0 ? [segment.from, segment.to] : [segment.to]))
           .map((pos) => scale(pos));
 
-        let [from, to] = [points.shift()!, points.pop()!];
-        from = from ?? sourceP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
-        to = to ?? targetP; // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+        // Quick fix to avoid problem with reaction without visible outputs like R-HSA-2424252 in R-HSA-1474244
+        const from = points.shift() ?? sourceP;
+        const to = points.pop() ?? targetP;
 
         // points = addRoundness(from, to, points);
         const relatives = this.absoluteToRelative(from, to, points);

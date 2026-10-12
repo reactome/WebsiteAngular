@@ -275,16 +275,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       const result = this.state.analysis(); // Not in one line to make sure to trigger the update
       this.avoidSideEffect(() => this.loadAnalysis(result));
     });
-    effect(
-      () =>
-        this.analysis.palette() &&
-        this.reactomeStyle?.loadAnalysis(this.cy, this.analysis.palette().scale)
-    );
-    effect(
-      () =>
-        this.analysis.sampleIndex() !== undefined &&
-        this._loadAnalysisFn?.(this.analysis.sampleIndex())
-    );
+    effect(() => {
+      const scale = this.analysis.palette().scale;
+      if (this.cy) this.reactomeStyle?.loadAnalysis(this.cy, scale);
+    });
+    effect(() => {
+      const index = this.analysis.sampleIndex();
+      this._loadAnalysisFn?.(index);
+    });
     effect(() => {
       // Update style upon dark change
       this.dark.isDark();
@@ -358,7 +356,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         bbs,
         bgColors,
         format === DownloadFormat.JPEG ? 'image/jpeg' : 'image/png',
-        options?.quality
+        options.quality
       );
     } else {
       // The diagram itself is always the first layer.
@@ -644,11 +642,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     };
   });
 
-  cy!: cytoscape.Core;
-  reactomeStyle!: Style;
-  cyCompare!: cytoscape.Core;
-  reactomeStyleCompare!: Style;
-  legend!: cytoscape.Core;
+  cy?: cytoscape.Core;
+  reactomeStyle?: Style;
+  cyCompare?: cytoscape.Core;
+  reactomeStyleCompare?: Style;
+  legend?: cytoscape.Core;
   cys: cytoscape.Core[] = [];
   reactomeStyles: Style[] = [];
 
@@ -822,36 +820,45 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     for (const cy of instances) cy?.destroy();
   }
 
+  // The controls below are on screen while the diagram loads, when there is no
+  // graph yet to move: until then they do nothing.
+
   // Needs Input event binding to react to mouse drag instead of mouse drop on slider
   zoom(inputEvent: Event) {
-    this.cy.zoom({
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
       level: this.zoomToCytoscapeTransform((inputEvent.target as HTMLInputElement).valueAsNumber),
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   zoomIn() {
-    this.cy.zoom({
-      level: this.cy.zoom() * 1.2,
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
+      level: cy.zoom() * 1.2,
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   zoomOut() {
-    this.cy.zoom({
-      level: this.cy.zoom() / 1.2,
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
+      level: cy.zoom() / 1.2,
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   move(direction: 'up' | 'right' | 'down' | 'left', distance = 50) {
     const x = direction === 'right' ? -distance : direction === 'left' ? distance : 0;
     const y = direction === 'up' ? distance : direction === 'down' ? -distance : 0;
-    this.cy.panBy({ x, y });
+    this.cy?.panBy({ x, y });
   }
 
   fitScreen() {
-    this.cy.animate({
+    this.cy?.animate({
       fit: {
         eles: '*',
         padding: FIT_PADDING,
@@ -899,7 +906,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   loadElvDiagram(): Observable<ElementsDefinition> {
     const cytoscapeContainer = this.cytoscapeContainer();
-    if (!cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+    // Prevent execution until the view is ready: the container, and the style
+    // ngAfterViewInit makes for it, which then loads the diagram itself.
+    const style = this.reactomeStyle;
+    if (!cytoscapeContainer || !style) return EMPTY;
     const pathwayId = this.pathwayId();
     if (this.drawing === pathwayId) return EMPTY;
     this.drawing = pathwayId;
@@ -917,24 +927,25 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // one's handle was left.
         this.resetCompare();
 
-        this.cy = cytoscape({
+        const cy = cytoscape({
           container: container,
           elements: elements,
-          style: this.reactomeStyle?.getStyleSheet(),
+          style: style.getStyleSheet(),
           layout: { name: 'preset' },
         });
-        this.cys[0] = this.cy;
-        this.reactomeStyles[0] = this.reactomeStyle;
+        this.cy = cy;
+        this.cys[0] = cy;
+        this.reactomeStyles[0] = style;
         // A pathway with no disease has no compare layer: the previous
         // disease pathway's must not stay in the list exports draw from.
         if (!this.comparing()) {
           this.cys.length = 1;
           this.reactomeStyles.length = 1;
         }
-        this.reactomeStyle.bindToCytoscape(this.cy);
+        style.bindToCytoscape(cy);
 
         this.leafIdToParentIds.clear();
-        this.cy.nodes().forEach((node) => {
+        cy.nodes().forEach((node) => {
           node.data('graph.leaves')?.forEach((leaf: Graph.Node) => {
             if (!this.leafIdToParentIds.has(leaf.stId)) this.leafIdToParentIds.set(leaf.stId, []);
             if (leaf.standardIdentifier && !this.leafIdToParentIds.has(leaf.standardIdentifier))
@@ -947,10 +958,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           });
         });
 
-        this.cy.on('zoom', () => this.controlZoom.set(this.zoomToControlTransform(this.cy.zoom())));
+        cy.on('zoom', () => this.controlZoom.set(this.zoomToControlTransform(cy.zoom())));
 
-        this.reactomeStyle.clearCache();
-        this.cy.on('dblclick', '.SUB.Pathway', (e) => {
+        style.clearCache();
+        cy.on('dblclick', '.SUB.Pathway', (e) => {
           void this.state.navigateTo(e.target.data('graph.stId'), {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
@@ -960,7 +971,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Right-click menu on entities. The old site offered Molecule /
         // Pathways / Interactors here and curators still reach for it; each
         // item is a shortcut to somewhere the details panel already goes.
-        this.cy.on('cxttap', '.PhysicalEntity', (e) => {
+        cy.on('cxttap', '.PhysicalEntity', (e) => {
           const stId = e.target.data('graph.stId');
           if (!stId) return;
           const pointer = e.originalEvent as MouseEvent | undefined;
@@ -976,14 +987,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // right-clicked, so the popup and the panel agree. Flagged as an
           // in-diagram selection, or the select effect animates a fit to the
           // node and a right-click would yank the whole diagram around.
-          this.popupViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
+          this.popupViewport = { zoom: cy.zoom(), pan: { ...cy.pan() } };
           this.selecting = true;
           this.state.select.set(stId);
         });
 
         // Right-clicking the background dismisses it.
-        this.cy.on('cxttap', (e) => {
-          if (e.target === this.cy) this.popupTarget.set(null);
+        cy.on('cxttap', (e) => {
+          if (e.target === cy) this.popupTarget.set(null);
         });
 
         // Keeps what the reader selected, like the `.SUB.Pathway` handler above.
@@ -996,34 +1007,35 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         //
         // Where you came from is still one Back away; what you were looking at
         // was not recoverable at all.
-        this.cy.on('dblclick', '.Interacting.Pathway', (e) => {
+        cy.on('dblclick', '.Interacting.Pathway', (e) => {
           void this.state.navigateTo(e.target.data('graph.stId'), {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
         });
 
-        const shadowNodes = this.cy?.nodes('.Shadow');
+        const shadowNodes = cy.nodes('.Shadow');
         this.event.setSubpathwayColors(
-          shadowNodes && shadowNodes.length > 0
+          shadowNodes.length > 0
             ? new Map(shadowNodes.map((node) => [node.data('reactomeId'), node.data('color')]))
             : undefined
         );
 
+        // Of whichever diagram is drawn by then.
         setTimeout(() => {
-          this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+          if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
         }, 5);
-        this.cy.on('viewport', () => {
-          this.zoomLevel.set(this.cy.zoom());
-          this.viewportPosition.set({ ...this.cy.pan() });
+        cy.on('viewport', () => {
+          this.zoomLevel.set(cy.zoom());
+          this.viewportPosition.set({ ...cy.pan() });
         });
 
-        this.zoomLevel.set(this.cy.zoom());
-        this.minZoom.set(this.cy.minZoom());
-        this.maxZoom.set(this.cy.maxZoom());
-        this.viewportPosition.set({ ...this.cy.pan() });
+        this.zoomLevel.set(cy.zoom());
+        this.minZoom.set(cy.minZoom());
+        this.maxZoom.set(cy.maxZoom());
+        this.viewportPosition.set({ ...cy.pan() });
         this.boundingBox.set(
-          this.cy.elements().boundingBox({
+          cy.elements().boundingBox({
             includeEdges: true,
             includeNodes: true,
 
@@ -1036,7 +1048,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           })
         );
 
-        this.loadCompare(elements, container);
+        this.loadCompare(cy, elements, container);
 
         this.avoidSideEffect(() => this.stateToDiagram());
       })
@@ -1075,22 +1087,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   public initialiseReplaceElements() {
-    if (this.comparing())
-      this.cy.batch(() => {
-        this.cy.elements('[!isBackground]').style('visibility', 'hidden');
-        this.cy.edges('.shadow').style('underlay-padding', 0);
+    const cy = this.cy;
+    if (cy && this.comparing())
+      cy.batch(() => {
+        cy.elements('[!isBackground]').style('visibility', 'hidden');
+        cy.edges('.shadow').style('underlay-padding', 0);
         this.lastIndex = 0;
         this.updateReplacementVisibility();
-        this.cy.elements('.Compartment').style('visibility', 'visible');
+        cy.elements('.Compartment').style('visibility', 'visible');
       });
   }
 
-  private loadCompare(elements: cytoscape.ElementsDefinition, container: HTMLDivElement) {
+  private loadCompare(
+    cy: cytoscape.Core,
+    elements: cytoscape.ElementsDefinition,
+    container: HTMLDivElement
+  ) {
     const getPosition = (e: cytoscape.SingularElementArgument) =>
       e.is('.Shadow') ? e.data('triggerPosition') : e.boundingBox().x1;
     if (this.comparing()) {
-      this.cy.elements('[!isBackground]').style('visibility', 'hidden');
-      this.replacedElements = this.cy!.elements('[?replacedBy]')
+      cy.elements('[!isBackground]').style('visibility', 'hidden');
+      this.replacedElements = cy
+        .elements('[?replacedBy]')
         .add('[?isCrossed]')
         .sort((a, b) => getPosition(a) - getPosition(b))
         .style('visibility', 'hidden')
@@ -1098,7 +1116,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
       this.replacedElementsPosition = this.replacedElements.map(getPosition);
 
-      this.cy.on('add', (e) => {
+      cy.on('add', (e) => {
         const addedElement = e.target;
         if (addedElement.data('replacedBy') || addedElement.data('isCrossed')) {
           const x = getPosition(addedElement);
@@ -1111,7 +1129,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      this.cy.on('remove', (e) => {
+      cy.on('remove', (e) => {
         const removedElement = e.target;
         const index = this.replacedElements.indexOf(removedElement);
         if (index > -1) {
@@ -1121,34 +1139,34 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       });
 
       const compareContainer = this.compareContainer()!.nativeElement;
-      this.cyCompare = cytoscape({
+      const cyCompare = cytoscape({
         container: compareContainer,
         elements: elements,
         style: this.reactomeStyle?.getStyleSheet(),
         layout: { name: 'preset' },
       });
+      this.cyCompare = cyCompare;
 
-      this.cyCompare.elements('[?isFadeOut]').remove();
-      this.cyCompare.elements('.Compartment').remove();
-      this.cy!.nodes('.crossed').removeClass('crossed');
+      cyCompare.elements('[?isFadeOut]').remove();
+      cyCompare.elements('.Compartment').remove();
+      cy.nodes('.crossed').removeClass('crossed');
 
-      this.cyCompare!.on('viewport', () =>
-        this.syncViewports(this.cyCompare, compareContainer, this.cy, container)
+      cyCompare.on('viewport', () =>
+        this.syncViewports(cyCompare, compareContainer, cy, container)
       );
-      this.cy!.on('viewport', () =>
-        this.syncViewports(this.cy, container, this.cyCompare, compareContainer)
-      );
+      cy.on('viewport', () => this.syncViewports(cy, container, cyCompare, compareContainer));
 
-      this.reactomeStyleCompare = new Style(compareContainer);
-      this.reactomeStyleCompare?.bindToCytoscape(this.cyCompare);
-      this.cyCompare.minZoom(this.cy!.minZoom());
-      this.cyCompare.maxZoom(this.cy!.maxZoom());
+      const compareStyle = new Style(compareContainer);
+      this.reactomeStyleCompare = compareStyle;
+      compareStyle.bindToCytoscape(cyCompare);
+      cyCompare.minZoom(cy.minZoom());
+      cyCompare.maxZoom(cy.maxZoom());
 
-      this.cys[1] = this.cyCompare;
-      this.reactomeStyles[1] = this.reactomeStyleCompare;
+      this.cys[1] = cyCompare;
+      this.reactomeStyles[1] = compareStyle;
 
       setTimeout(() => {
-        this.syncViewports(this.cy!, container, this.cyCompare, compareContainer);
+        this.syncViewports(cy, container, cyCompare, compareContainer);
         this.initialiseReplaceElements();
         // The disease layer from the left edge: the disease pathway alone.
         this.setComparePosition(0);
@@ -1236,7 +1254,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (cy === this.cy) {
       let running = true;
 
-      this.cy.animate(
+      cy.animate(
         {
           fit: { eles: selected, padding: 100 },
           duration: 1000,
@@ -1249,13 +1267,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       );
 
-      if (this.cyCompare) {
+      const cyCompare = this.cyCompare;
+      if (cyCompare) {
         const syncFrame = () => {
           if (!running) return;
           this.syncViewports(
-            this.cy,
+            cy,
             this.cytoscapeContainer()!.nativeElement,
-            this.cyCompare,
+            cyCompare,
             this.compareContainer()!.nativeElement,
             true
           );
@@ -1545,7 +1564,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
               if (includeInteractors) {
                 const interactors: Interactor[] = occurence.data('interactors');
                 const exps = interactors.map((i) => analysisEntityMap.get(i.acc)).filter(isDefined);
-                if (interactors && exps.length > 0) {
+                if (exps.length > 0) {
                   occurence.data('exp', [average(exps)]);
                 } else {
                   occurence.data('exp', [undefined]);
@@ -1560,8 +1579,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
               const leaves: Graph.Node[] = node.data('graph.leaves') || [node.data('graph')];
               const exp = leaves
-                ?.map((leaf) => analysisEntityMap.get(leaf.identifier))
-                ?.sort((a, b) => (a !== undefined ? (b !== undefined ? a - b : -1) : 1));
+                .map((leaf) =>
+                  leaf.identifier ? analysisEntityMap.get(leaf.identifier) : undefined
+                )
+                .sort((a, b) => (a !== undefined ? (b !== undefined ? a - b : -1) : 1));
               // if (hasExpression) exp = exp.map(e => e !== undefined ? 1 - e : undefined);
               node.data('exp', exp);
             });
@@ -1598,16 +1619,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   /** Takes any analysis colouring off the diagram. */
   private clearAnalysis() {
     this._loadAnalysisFn = undefined;
+    // No style yet means nothing drawn yet, so nothing to clear.
+    const shadow = this.reactomeStyle?.properties.shadow;
+    if (!shadow) return;
 
     this.cys.forEach((cy) => {
       cy.batch(() => {
         cy.nodes().removeData('exp');
         cy.edges('[?color]').style({
-          'underlay-padding': extract(this.reactomeStyle.properties.shadow.padding),
+          'underlay-padding': extract(shadow.padding),
         });
         cy.nodes('.Shadow').style({
-          'font-size': extract(this.reactomeStyle.properties.shadow.fontSize),
-          'text-outline-width': extract(this.reactomeStyle.properties.shadow.fontPadding),
+          'font-size': extract(shadow.fontSize),
+          'text-outline-width': extract(shadow.fontPadding),
         });
       });
     });
@@ -1651,18 +1675,20 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         style.loadAnalysis(cy, palette);
       });
     });
-    setTimeout(() => this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 })), 5);
+    setTimeout(() => {
+      if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+    }, 5);
   }
 
   updateStyle() {
-    this.cy
-      ? setTimeout(() => {
-          this.reactomeStyle?.update(this.cy);
-          this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
-        }, 5)
-      : null;
-    this.cyCompare ? setTimeout(() => this.reactomeStyle?.update(this.cyCompare), 5) : null;
-    this.legend ? setTimeout(() => this.reactomeStyle?.update(this.legend), 5) : null;
+    // A moment later, and of whatever is drawn by then: the style and the
+    // graphs are made as the view and the diagram load.
+    setTimeout(() => {
+      const style = this.reactomeStyle;
+      if (!style) return;
+      for (const cy of [this.cy, this.cyCompare, this.legend]) if (cy) style.update(cy);
+      if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+    }, 5);
   }
 
   readonly compareDragging = signal(false);
@@ -1753,12 +1779,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const layer = this.compareLayer()?.nativeElement;
     const canvas = this.compareContainer()?.nativeElement;
     const area = this.compareArea();
-    if (!layer || !canvas || !area || !this.cyCompare) return;
+    const cy = this.cy;
+    if (!layer || !canvas || !area || !cy || !this.cyCompare) return;
     const clamped = Math.max(0, Math.min(x, area.clientWidth));
     layer.style.left = `${clamped}px`;
     this.compareFraction = area.clientWidth ? clamped / area.clientWidth : 0;
     this.cyCompare.resize();
-    this.syncViewports(this.cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
+    this.syncViewports(cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
     // The sync works out what shows before it moves the layer; once more,
     // for where the layer is now.
     this.updateReplacementVisibility();
@@ -1767,12 +1794,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly legendPosition = signal<Point>({ x: 0, y: 0 });
   readonly animateLegend = signal(false);
   updateLegend() {
-    this.legend.resize();
-    this.legend.panningEnabled(true);
-    this.legend.zoomingEnabled(true);
-    this.legend.fit(this.legend.elements(), 2);
-    this.legend.panningEnabled(false);
-    this.legend.zoomingEnabled(false);
+    const legend = this.legend;
+    if (!legend) return;
+    legend.resize();
+    legend.panningEnabled(true);
+    legend.zoomingEnabled(true);
+    legend.fit(legend.elements(), 2);
+    legend.panningEnabled(false);
+    legend.zoomingEnabled(false);
   }
 
   toggleLegend(legendWidth: number) {
@@ -1833,6 +1862,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .subscribe((event) => {
       const src = event.detail.cy;
       const tgt = src === this.cy ? this.cyCompare : this.cy;
+      if (!tgt) return;
 
       let replacedBy = event.detail.element.data('replacedBy');
       replacedBy = replacedBy || event.detail.element.data('replacement');
@@ -1862,7 +1892,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     )
     .subscribe((e) => {
       [this.reactomeStyle, this.reactomeStyleCompare]
-        .filter((s) => e.detail.cy === s?.cy)
+        .filter(isDefined)
+        .filter((s) => e.detail.cy === s.cy)
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
           if (!occurrenceNode) return;
@@ -1894,11 +1925,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   diagram2legend = this.reactomeEvents$
     .pipe(filter((e) => e.detail.cy !== this.legend))
     .subscribe((event) => {
+      const legend = this.legend;
+      if (!legend) return;
       const classes = event.detail.element.classes();
       const firstClassToMatch = classes[0];
 
       // Only get the first matched item in the classes, this help to filter out the polymer when hovering on a molecule
-      let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection = this.legend
+      let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection = legend
         .elements(`.${firstClassToMatch}`)
         .filter((ele) => {
           const classes = ele.classes();
@@ -1910,7 +1943,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         else matchingElement = matchingElement.not('.drug');
       } else if (event.detail.type === 'reaction') {
         const reaction = event.detail.element.nodes('.reaction');
-        matchingElement = this.legend.nodes(`.${reaction.classes()[0]}`).first();
+        matchingElement = legend.nodes(`.${reaction.classes()[0]}`).first();
         matchingElement = matchingElement.add(matchingElement.connectedEdges());
       }
 
@@ -1965,7 +1998,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           else matchingElement = matchingElement.not('.drug');
         } else if (event.detail.type === 'reaction') {
           const reaction = event.detail.element.nodes('.reaction');
-          matchingElement = this.cy.nodes(`.${reaction.classes()[0]}`);
+          // Of each graph in turn, as above: the comparison's reactions too.
+          matchingElement = cy.nodes(`.${reaction.classes()[0]}`);
           matchingElement = matchingElement.add(matchingElement.connectedEdges());
         }
 
@@ -1996,7 +2030,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   logProteins() {
     console.debug(
-      new Set(this.cy.nodes('.Protein').map((node) => node.data('acc') || node.data('iAcc')))
+      new Set(this.cy?.nodes('.Protein').map((node) => node.data('acc') || node.data('iAcc')))
     );
   }
 
@@ -2040,7 +2074,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const viewport = this.popupViewport;
     if (viewport) {
-      this.cy.animate(
+      this.cy?.animate(
         { zoom: viewport.zoom, pan: viewport.pan },
         { duration: 500, easing: 'ease-in-out' }
       );
