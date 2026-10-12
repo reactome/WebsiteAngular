@@ -56,6 +56,18 @@ const LEGACY_FRAGMENT_KEYS = [
   'FLGINT',
 ] as const;
 
+/** The `KEY=value&...` part of a legacy fragment link; a bare key is true. */
+export function fragmentParams(text: string): Record<string, string | true> {
+  const params: Record<string, string | true> = {};
+  // On the first "=" only: an analysis token is base64 and often ends in "=".
+  for (const param of text.split('&')) {
+    const at = param.indexOf('=');
+    const [key, value] = at === -1 ? [param, ''] : [param.slice(0, at), param.slice(at + 1)];
+    params[key] = value || true;
+  }
+  return params;
+}
+
 export const FRAGMENT_PATTERN = new RegExp(
   // Not empty, and not a lone slash. Both halves below are optional, so without
   // this an absent fragment -- read as '' -- would match, and carriesLegacyPathway()
@@ -287,12 +299,7 @@ export class UrlStateService implements State {
             id = match.groups['id'];
           }
           if (match.groups['params']) {
-            match.groups['params']
-              .split('&')
-              .map((param) => param.split('='))
-              .forEach(([key, value]) => {
-                if (key !== undefined) params[key] = value || true;
-              });
+            Object.assign(params, fragmentParams(match.groups['params']));
           }
 
           // `DIAGRAM` is the old browser's name for the pathway to open, so it is
