@@ -398,8 +398,11 @@ export class AnalysisService {
     },
   });
 
+  // The service sends the token URL-encoded ("...%3D") and an address opened
+  // from a link holds it decoded ("...="): compared as sent, they never matched
+  // and the Analyze button spun for as long as the page was open.
   readonly isLoading = linkedSignal(
-    () => (this.result()?.summary.token || null) !== this.state.analysis()
+    () => decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis())
   );
 
   readonly pathwayStIdToData = computed(
@@ -752,5 +755,15 @@ export class AnalysisService {
         params: pagination,
       }
     );
+  }
+}
+
+/** A token in one form whichever way it arrived; null for none. */
+export function decodedToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token; // Not percent-encoded after all: a lone "%" in it.
   }
 }
