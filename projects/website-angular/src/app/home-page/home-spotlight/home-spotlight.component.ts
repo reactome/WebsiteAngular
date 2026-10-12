@@ -51,16 +51,19 @@ export class HomeSpotlightComponent implements OnInit {
           excerpt: item.excerpt,
         });
 
-        // Load the full article content using the slug
+        // The full article for its opening, or, when that is missing or could
+        // not be loaded, the index's own excerpt of it: the title and the link
+        // to the article are already shown either way.
+        const show = (markdown: string) =>
+          // Callback kept synchronous: an async one hands a promise to code
+          // that ignores it, so any rejection in here would vanish.
+          void (async () => {
+            const html = rewriteContentUrls(await marked(markdown));
+            this.renderedContent.set(truncateHtml(stripFirstH(html), 150));
+          })().catch((error) => console.error('Could not render spotlight', error));
         this.contentService.getArticle('content/reactome-research-spotlight', item.slug).subscribe({
-          next: (article) => {
-            // Callback kept synchronous: an async one hands a promise to code
-            // that ignores it, so any rejection in here would vanish.
-            void (async () => {
-              const html = rewriteContentUrls(await marked(article?.body || ''));
-              this.renderedContent.set(truncateHtml(stripFirstH(html), 150));
-            })().catch((error) => console.error('Could not render spotlight', error));
-          },
+          next: (article) => show(article?.body || item.excerpt || ''),
+          error: () => show(item.excerpt || ''),
         });
       },
       error: (err) => {

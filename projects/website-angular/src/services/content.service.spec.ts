@@ -51,6 +51,62 @@ describe('ContentService.getPage', () => {
   });
 });
 
+// A missing article is null, as a missing page is; a failed one is not, or the
+// article page shows a reader an article with nothing in it.
+describe('ContentService.getArticle', () => {
+  let service: ContentService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(ContentService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpTesting.verify());
+
+  function request() {
+    const article = firstValueFrom(service.getArticle('about/news', '98-version-63-released'));
+    return {
+      article,
+      req: httpTesting.expectOne((r) => r.url.endsWith('/about/news/98-version-63-released.json')),
+    };
+  }
+
+  it('returns the article when the content file exists', async () => {
+    const { article, req } = request();
+    req.flush({ title: 'Version 63 Released', date: '2017-12-18', body: 'Out now.' });
+    await expect(article).resolves.toMatchObject({
+      title: 'Version 63 Released',
+      body: 'Out now.',
+    });
+  });
+
+  it('reports a missing article as null when the server answers 404', async () => {
+    const { article, req } = request();
+    req.flush('nope', { status: 404, statusText: 'Not Found' });
+    await expect(article).resolves.toBeNull();
+  });
+
+  it('reports a missing article as null when the SPA fallback serves HTML', async () => {
+    const { article, req } = request();
+    req.flush('<!doctype html><html></html>', {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'Content-Type': 'text/html' },
+    });
+    await expect(article).resolves.toBeNull();
+  });
+
+  it('fails when the article could not be loaded, rather than reporting it missing', async () => {
+    const { article, req } = request();
+    req.flush('down', { status: 500, statusText: 'Server Error' });
+    await expect(article).rejects.toMatchObject({ status: 500 });
+  });
+});
+
 // The FAQ index always ships with the site: without it there is nothing to
 // show, so every way of not getting it is a failure the page reports.
 describe('ContentService.getFaqIndex', () => {
