@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import {
   ContentDataService,
@@ -51,10 +51,14 @@ export class ContributorsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      // Not distinctUntilChanged: clearing the box does not pass through here,
+      // so the same term typed again would look like no change and be dropped.
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
         this.activeLetter = '';
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();
