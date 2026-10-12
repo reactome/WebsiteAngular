@@ -40,10 +40,10 @@ export class NotFoundTableComponent {
   public analysis: AnalysisService = inject(AnalysisService);
   public state: UrlStateService = inject(UrlStateService);
 
-  readonly isGSA = computed(() => this.analysis.result()?.summary?.type === 'GSA_REGULATION');
+  readonly isGSA = computed(() => this.analysis.result()?.summary.type === 'GSA_REGULATION');
 
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
 
   readonly expressionColumnIds = computed(() =>

@@ -134,7 +134,7 @@ export class RenderComponent {
   private readonly reaction = viewChild(ReactionDiagramComponent);
 
   /** Non-empty only in the reaction view, which is what the template keys on. */
-  readonly reactionId = computed(() => (this.reactionView ? (this.pathwayId() ?? '') : ''));
+  readonly reactionId = computed(() => (this.reactionView ? this.pathwayId() : ''));
 
   readonly ready = signal(false);
   readonly error = signal<string | null>(null);
@@ -177,7 +177,7 @@ export class RenderComponent {
       // to learn nothing.
       this.error.set(
         `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          ((failure as Error)?.message ?? String(failure))
+          (failure instanceof Error ? failure.message : String(failure))
       );
       this.publish();
     }
@@ -266,7 +266,7 @@ export class RenderComponent {
 
     const diagram = this.diagram();
     if (diagram) {
-      const instances = diagram.cys?.filter(Boolean) ?? [];
+      const instances = diagram.cys.filter(Boolean);
       const elements = instances.reduce((total, cy) => total + cy.elements().length, 0);
       // Both conditions matter. The element count comes from the diagram's own
       // instances, which excludes the legend -- the legend is a separate
@@ -307,10 +307,10 @@ export class RenderComponent {
       // that window produces a valid SVG with zero width and nothing in it.
       // Geometry only appears once FoamTree's relaxation has run.
       const tree = untracked(reacfoam.foamTree);
-      const dataObject = tree?.get('dataObject');
+      const dataObject = tree.get('dataObject');
       const geometry = dataObject ? tree.get('geometry', dataObject) : undefined;
       const groups = dataObject?.groups ?? [];
-      if (!geometry?.boxWidth || !geometry?.boxHeight) return null;
+      if (!geometry?.boxWidth || !geometry.boxHeight) return null;
       return {
         view: 'reacfoam',
         groups: groups.length,
@@ -385,7 +385,7 @@ export class RenderComponent {
   /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
   private exportableInstances() {
     const diagram = this.diagram();
-    const instances = diagram?.cys?.filter(Boolean) ?? [];
+    const instances = diagram?.cys.filter(Boolean) ?? [];
     // Applied here rather than while waiting: drawing continues after the
     // diagram first has elements, and anything hidden earlier comes back. The
     // page is disposable, so nothing needs restoring.
@@ -676,7 +676,7 @@ export class RenderComponent {
     markups.forEach((markup, at) => {
       const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
       const root = parsed.documentElement;
-      if (!root || root.nodeName === 'parsererror') return;
+      if (root.nodeName === 'parsererror') return;
 
       const width = parseFloat(root.getAttribute('width') ?? '0');
       const height = parseFloat(root.getAttribute('height') ?? '0');
@@ -1388,7 +1388,7 @@ export class RenderComponent {
       controlPoints?: () => { x: number; y: number }[];
     };
     const points = candidate.segmentPoints?.() ?? candidate.controlPoints?.() ?? [];
-    return Array.isArray(points) ? points.filter((point) => Number.isFinite(point?.x)) : [];
+    return Array.isArray(points) ? points.filter((point) => Number.isFinite(point.x)) : [];
   }
 
   private exportSvg(): string | Promise<string> {

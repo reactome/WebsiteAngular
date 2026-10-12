@@ -399,23 +399,23 @@ export class AnalysisService {
   });
 
   readonly isLoading = linkedSignal(
-    () => (this.result()?.summary?.token || null) !== this.state.analysis()
+    () => (this.result()?.summary.token || null) !== this.state.analysis()
   );
 
   readonly pathwayStIdToData = computed(
-    () => new Map<string, Analysis.Pathway>(this.result()?.pathways?.map((p) => [p.stId, p]))
+    () => new Map<string, Analysis.Pathway>(this.result()?.pathways.map((p) => [p.stId, p]))
   );
 
   result$ = toObservable(this.result);
 
   readonly summary = computed(() => this.result()?.summary);
   readonly hasInteractors = computed(() => this.summary()?.interactors === true);
-  readonly hasPValues = computed(() => this.result()?.summary?.type !== 'GSVA');
+  readonly hasPValues = computed(() => this.result()?.summary.type !== 'GSVA');
   readonly type = computed(() => this.summary()?.type as Analysis.Type | undefined);
   readonly species = computed(() =>
     this.speciesService
       .allShortenSpecies()
-      ?.find((species) => species.dbId === this.result()?.summary?.species)
+      ?.find((species) => species.dbId === this.result()?.summary.species)
   );
   readonly isGSARegulation = computed(() => this.type() === 'GSA_REGULATION');
   readonly isGSA = computed(() => this.type() === 'GSA_REGULATION' || this.type() === 'GSVA');
@@ -446,9 +446,9 @@ export class AnalysisService {
     // value() throws while the request is in error.
     const found = this.foundForExpression.hasValue() ? this.foundForExpression.value() : undefined;
     for (const entity of found?.entities ?? []) {
-      const exp = (entity.exp ?? []).map(Number).filter((value) => Number.isFinite(value));
+      const exp = entity.exp.map(Number).filter((value) => Number.isFinite(value));
       if (!exp.length) continue;
-      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      const mapped = entity.mapsTo.flatMap((m) => m.ids);
       for (const id of [entity.id, ...mapped]) {
         if (id) map.set(String(id).toUpperCase(), exp);
       }
@@ -474,7 +474,7 @@ export class AnalysisService {
     computation: ({ result, sample }) =>
       Math.max(
         // Avoid -1 value from indexOf
-        (result && sample && result?.expression.columnNames?.indexOf(sample)) || 0,
+        (result && sample && result.expression.columnNames.indexOf(sample)) || 0,
         0
       ),
   });
@@ -572,7 +572,7 @@ export class AnalysisService {
       // Default to the first sample, but never over one the URL already names:
       // a link to a particular sample should open on that sample. Read
       // untracked so this effect does not depend on what it writes.
-      const columns = result?.expression.columnNames ?? [];
+      const columns = result.expression.columnNames;
       const requested = untracked(this.state.sample);
       if (!requested || !columns.includes(requested)) {
         this.state.sample.set(columns[0] || null);

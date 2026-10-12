@@ -210,10 +210,6 @@ export class CustomInteractorDialogComponent implements OnInit {
 
     this.isDataLoading.set(true);
     const userInput = this.getInputs();
-    if (!userInput) {
-      this.isDataLoading.set(false);
-      return;
-    }
 
     this.interactorService
       .getInteractorsFromToken(this.name.value!, userInput.url!, userInput.content!, this.cy)

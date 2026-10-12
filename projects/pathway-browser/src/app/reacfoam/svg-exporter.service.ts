@@ -65,6 +65,8 @@ export class SvgExporterService {
     const { decorationSize } = this.initExport(options);
     const foamtree = untracked(reacfoam.foamTree);
     const geometry = foamtree.get('geometry', foamtree.get('dataObject'));
+    // None until the map has been laid out: an export then would be empty.
+    if (!geometry) throw new Error('The pathway map has not been laid out yet.');
 
     const width = geometry.boxWidth;
     const height = geometry.boxHeight;
@@ -203,9 +205,7 @@ export class SvgExporterService {
         if (uniquePatterns.length <= 1) return;
 
         // Get the original pattern to copy attributes
-        const originalPattern = svg!.querySelector(
-          `pattern[id="${patternId}"]`
-        ) as SVGPatternElement;
+        const originalPattern = svg!.querySelector<SVGPatternElement>(`pattern[id="${patternId}"]`);
         if (!originalPattern) return;
         const contentToIndexId = this.createVersionedPatterns(
           originalPattern,

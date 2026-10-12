@@ -70,7 +70,7 @@ export class MoleculeTabComponent implements OnDestroy {
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   // Get selected pathway id on Reacfoam view
   readonly objStId = computed(() =>
-    this.pathwayId() ? this.pathwayId() : this.selectableObject()?.stId
+    this.pathwayId() ? this.pathwayId() : this.selectableObject().stId
   );
   readonly hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
 
@@ -80,7 +80,7 @@ export class MoleculeTabComponent implements OnDestroy {
 
   constructor() {
     effect(() => {
-      const selectableObjStId = this.selectableObject()?.stId;
+      const selectableObjStId = this.selectableObject().stId;
       const pathwayId = this.pathwayId();
       if (selectableObjStId && selectableObjStId !== pathwayId) {
         this.entity.loadRefEntities(selectableObjStId);
@@ -121,7 +121,7 @@ export class MoleculeTabComponent implements OnDestroy {
     const pathwayResults = this.getPathwayParticipants(pathwayParticipants);
 
     if (!this.hasNoMoleculeData()) {
-      if (this.selectableObject()?.stId === this.pathwayId() || !this.pathwayId()) {
+      if (this.selectableObject().stId === this.pathwayId() || !this.pathwayId()) {
         moleculeData = pathwayResults;
       } else {
         const refEntities = this.entity.refEntities() || [];
@@ -139,8 +139,7 @@ export class MoleculeTabComponent implements OnDestroy {
 
   getPathwayParticipants(pathwayParticipants: Participant[]) {
     const groupedMap = new Map<string, Map<number, MoleculeData>>();
-    const allRefEntities =
-      pathwayParticipants?.flatMap((participant) => participant.refEntities) || [];
+    const allRefEntities = pathwayParticipants.flatMap((participant) => participant.refEntities);
 
     for (const entity of allRefEntities) {
       const type = entity.type;
@@ -168,7 +167,7 @@ export class MoleculeTabComponent implements OnDestroy {
   }
 
   getReactionParticipants(pathwayResults: MoleculeGroup[], refEntities: ReferenceEntity[]) {
-    const dbIds = new Set(refEntities?.map((e) => e.dbId));
+    const dbIds = new Set(refEntities.map((e) => e.dbId));
     return pathwayResults.map((group) => {
       let found = 0;
       const updatedData = group.data.map((molecule) => {

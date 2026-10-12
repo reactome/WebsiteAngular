@@ -200,7 +200,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   uploadFile(input: HTMLInputElement) {
-    const file = input?.files?.[0];
+    const file = input.files?.[0];
     if (file) this.table()!.importFile(file, true);
   }
 

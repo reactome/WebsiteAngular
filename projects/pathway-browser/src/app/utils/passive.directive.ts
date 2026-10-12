@@ -34,7 +34,6 @@ export class PassiveDirective implements OnDestroy {
     effect(() => {
       this.clear();
       const [listeners, options] = [this.listeners(), this.options()];
-      if (!listeners) return console.warn('No listeners provided');
       this.removers = Object.entries(listeners).map(([type, listener]) =>
         this.renderer.listen(this.element.nativeElement, type, listener, options)
       );

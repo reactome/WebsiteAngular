@@ -354,11 +354,11 @@ export class ViewportComponent {
   readonly glyphs = afterNextRender(() => {
     const element = this.darkToggle()._switchElement.nativeElement;
     element
-      ?.querySelector('.mdc-switch__icon--on')
+      .querySelector('.mdc-switch__icon--on')
       ?.querySelector('path')
       ?.setAttribute('d', this.moon);
     element
-      ?.querySelector('.mdc-switch__icon--off')
+      .querySelector('.mdc-switch__icon--off')
       ?.querySelector('path')
       ?.setAttribute('d', this.sun);
   });

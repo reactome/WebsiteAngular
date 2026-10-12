@@ -236,7 +236,7 @@ export class FileDownloadService {
     return {
       phase: phase.asReadonly(),
       cancel: () => {
-        subscription?.unsubscribe();
+        subscription.unsubscribe();
         phase.set({ status: 'idle' });
       },
     };

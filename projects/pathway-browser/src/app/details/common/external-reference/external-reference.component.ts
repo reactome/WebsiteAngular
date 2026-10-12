@@ -34,8 +34,7 @@ export class ExternalReferenceComponent {
   });
 
   readonly moleculeType = computed(() => {
-    const entity = this.referenceEntity();
-    return entity ? entity.moleculeType : null;
+    return this.referenceEntity().moleculeType;
   });
 
   readonly hasStructure = computed(() =>

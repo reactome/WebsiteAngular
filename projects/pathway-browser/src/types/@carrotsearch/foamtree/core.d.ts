@@ -205,7 +205,9 @@ declare module '@carrotsearch/foamtree' {
       distanceFromCenter: number;
     }
 
-    export type IndividualGroupSelector = string | DataObject | null | undefined;
+    // The root data object, which has no label, selects the whole map.
+    export type IndividualGroupSelector =
+      string | DataObject | { groups?: DataObject[] } | null | undefined;
 
     type SelectorObject = { groups: GroupSelector } | { all: boolean };
     export type MultipleGroupSelector = IndividualGroupSelector[] | SelectorObject;

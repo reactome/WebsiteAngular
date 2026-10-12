@@ -1,25 +1,35 @@
 import cytoscape from 'cytoscape';
 
+/*
+ * Interactors come from four places: Reactome's own (static), DisGeNET,
+ * PSICQUIC registries and custom uploads. Measured from the static set (388
+ * interactors of four entities, #344); the others are not served where they can
+ * be measured, so a field only the static set always sends stays optional.
+ */
+
 export interface InteractorEntity {
   acc: string;
   count: number;
-  interactors: Interactor[] | null;
+  /** Left out when there are none. */
+  interactors?: Interactor[] | null;
 }
 
 export interface Interactor {
   acc: string;
   accURL: string;
-  alias: string;
+  /** Left out for some (5 of 388 static). */
+  alias?: string;
   evidences: number;
   evidencesURL: string;
   id: number;
-  score: number;
-  type: string;
+  score?: number;
+  /** Not sent by the static set at all. */
+  type?: string;
   existingNodes?: cytoscape.NodeCollection;
 }
 
 export interface Interactors {
-  entities: InteractorEntity[];
+  entities?: InteractorEntity[];
   resource: string; //STATIC, DisGeNet PSICQUIC resource (e.g. IntAct, MINT, etc) or Custom resource
 }
 

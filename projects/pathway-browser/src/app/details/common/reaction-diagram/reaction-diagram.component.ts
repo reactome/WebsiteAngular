@@ -81,7 +81,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
         });
 
         this.reactomeStyle?.bindToCytoscape(this.cy);
-        this.figureName.set(diagram.displayName ?? '');
+        this.figureName.set(diagram.displayName);
         this.drawn.set(this.cy);
         this.cy.userZoomingEnabled(true);
         this.cy.userPanningEnabled(true);

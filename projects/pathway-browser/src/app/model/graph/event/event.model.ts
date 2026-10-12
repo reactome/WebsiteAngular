@@ -11,16 +11,21 @@ import { InDepth } from '../in-depth.model';
 import { HasFigure } from '../figure.model';
 import { GO_BiologicalProcess } from '../go-term/go-biological-process.model';
 
+/**
+ * As /data/query/enhanced sends it, which leaves out what an event has none of:
+ * of 15 sampled pathways one had authors, reviewers or a review status, and
+ * three of 15 reactions (#344).
+ */
 export interface Event extends DatabaseObject, InDepth, HasFigure {
   stId: string;
-  authored: InstanceEdit[];
-  reviewed: InstanceEdit[];
+  authored?: InstanceEdit[];
+  reviewed?: InstanceEdit[];
   literatureReference?: LiteratureReference[];
   isInferred: boolean;
-  releaseStatus: string;
+  releaseStatus?: string;
   isInDisease: boolean;
   summation: Summation[];
-  reviewStatus: ReviewStatus;
+  reviewStatus?: ReviewStatus;
   name: string[];
   hasCompartment?: HasCompartment[];
   species: Species[];
@@ -31,7 +36,8 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   // not from API endpoint but are needed in the tree view
   isSelected?: boolean;
   isHovered?: boolean;
-  ancestors: Event[];
+  /** Set by this site once the lineage is known; no answer carries it. */
+  ancestors?: Event[];
   /** None for a top-level event. */
   parent?: Event;
   hit?: boolean;

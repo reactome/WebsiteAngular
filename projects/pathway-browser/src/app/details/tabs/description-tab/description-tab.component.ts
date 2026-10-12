@@ -22,6 +22,7 @@ import {
   isReferenceSummary,
   isRLE,
   observeSections,
+  firstName,
 } from '../../../services/utils';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
@@ -42,7 +43,7 @@ import type { Relationship } from '../../../model/graph/relationship.model';
 import { DatabaseIdentifier } from '../../../model/graph/database-identifier.model';
 import { EntityWithAccessionedSequence } from '../../../model/graph/physical-entity/entity-with-accessioned-sequence.model';
 import { MarkerReference } from '../../../model/graph/control-reference/marker-reference.model';
-import { camelCase, isArray } from 'lodash';
+import { camelCase } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
 import {
   CONTENT_DETAIL,
@@ -154,8 +155,8 @@ export class DescriptionTabComponent implements OnDestroy {
       if (!isPhysicalEntity(obj) || isReferenceSummary(obj) || !obj.stId) return undefined;
       return { stId: obj.stId, taxId: this.species.currentSpecies().taxId };
     },
-    stream: ({ params }) =>
-      params ? this.entity.getParticipatingPathways(params.stId, params.taxId) : of([]),
+    // Not called without params: the resource stays idle.
+    stream: ({ params }) => this.entity.getParticipatingPathways(params.stId, params.taxId),
   });
 
   /** Everything except the pathway already open, which is not "other". */
@@ -209,9 +210,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
     // An empty list of names, or a reference type with no suffix below, used to
     // put the word "undefined" into the name.
-    let name =
-      (obj.name ? (isArray(obj.name) ? obj.name[0] : obj.name) : obj.displayName) ??
-      obj.displayName;
+    let name = firstName(obj) ?? obj.displayName;
 
     if (isReferenceSummary(obj)) {
       const suffix = DescriptionTabComponent.referenceTypeToNameSuffix.get(
@@ -231,32 +230,32 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly symbol = computed(() => this.getSymbol(this.obj()));
-  readonly literatureRefs: Signal<LiteratureReference[]> = computed(() =>
+  readonly literatureRefs: Signal<LiteratureReference[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.LITERATURE_REFERENCE)
   );
   readonly groupedReferences = computed(() =>
     groupAndSortBy(
-      this.literatureRefs(),
+      this.literatureRefs() ?? [],
       (ref) => ref.year,
       (key1, key2) => key2 - key1
     )
   );
 
-  readonly summations: Signal<Summation[]> = computed(() =>
+  readonly summations: Signal<Summation[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.SUMMATION)
   );
   readonly allRefs = computed(() => {
     const literatureRefs = this.literatureRefs();
-    const summation = getProperty(this.obj(), DataKeys.SUMMATION) as Summation[];
+    const summation = getProperty(this.obj(), DataKeys.SUMMATION) as Summation[] | undefined;
     return [
       ...(literatureRefs || []),
-      ...(summation
-        .flatMap((s) => s.literatureReference as LiteratureReference[])
-        .filter(isDefined) || []),
+      ...(summation ?? [])
+        .flatMap((s) => s.literatureReference as LiteratureReference[] | undefined)
+        .filter(isDefined),
     ];
   });
 
-  readonly referenceEntity: Signal<ReferenceEntity> = computed(() =>
+  readonly referenceEntity: Signal<ReferenceEntity | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REFERENCE_ENTITY)
   );
 
@@ -281,7 +280,7 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly inferences = computed(() => {
-    const inferences: PhysicalEntity[] = getProperty(this.obj(), DataKeys.INFERRED_TO);
+    const inferences: PhysicalEntity[] | undefined = getProperty(this.obj(), DataKeys.INFERRED_TO);
     if (!inferences) return new Map<string, PhysicalEntity[]>();
     return this.getGroupedInferences(inferences);
   });
@@ -417,20 +416,20 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly interactors = computed(() => this._interactors.value() || []);
   readonly interactorsLength = computed(() => this._interactors.value()?.length || 0);
 
-  readonly catalystActivity: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivity: Signal<CatalystActivity[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY)
   );
-  readonly catalystActivities: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivities: Signal<CatalystActivity[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITIES)
   );
-  readonly catalystRef: Signal<CatalystActivityReference> = computed(() =>
+  readonly catalystRef: Signal<CatalystActivityReference | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY_REFERENCE)
   );
 
-  readonly regulations: Signal<Regulation[]> = computed(() =>
+  readonly regulations: Signal<Regulation[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATED_BY)
   );
-  readonly regulationRefs: Signal<RegulationReference[]> = computed(() =>
+  readonly regulationRefs: Signal<RegulationReference[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATION_REFERENCE)
   );
 
@@ -439,16 +438,18 @@ export class DescriptionTabComponent implements OnDestroy {
     ...(getProperty(this.obj(), DataKeys.NEGATIVELY_REGULATES) || []),
   ]);
 
-  readonly modifications: Signal<HasModifiedResidue[]> = computed(() =>
+  readonly modifications: Signal<HasModifiedResidue[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.MODIFIED_RESIDUES)
   );
 
   readonly crossReference = computed(() => {
-    if (this.referenceEntity()?.crossReference) {
-      return this.referenceEntity().crossReference;
-    }
+    const fromReference = this.referenceEntity()?.crossReference;
+    if (fromReference) return fromReference;
 
-    const crossReference: DatabaseIdentifier[] = getProperty(this.obj(), DataKeys.CROSS_REFERENCE);
+    const crossReference: DatabaseIdentifier[] | undefined = getProperty(
+      this.obj(),
+      DataKeys.CROSS_REFERENCE
+    );
     return crossReference ? [...crossReference] : [];
   });
 
@@ -458,11 +459,11 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly rnaMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
     () => getProperty(this.obj(), DataKeys.RNA_MARKERS) || []
   );
-  readonly markerReference: Signal<MarkerReference[]> = computed(() =>
+  readonly markerReference: Signal<MarkerReference[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.MARKER_REFERENCE)
   );
 
-  readonly repeatedUnits: Signal<PhysicalEntity[]> = computed(() =>
+  readonly repeatedUnits: Signal<PhysicalEntity[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REPEATED_UNIT)
   );
 
@@ -612,7 +613,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CATALYST_ACTIVITIES,
       manual: true,
       template: this.catalystActivitiesTemplate$,
-      isPresent: computed(() => this.catalystActivities()?.length > 0),
+      isPresent: computed(() => (this.catalystActivities()?.length ?? 0) > 0),
     },
 
     {
@@ -620,7 +621,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CATALYST_ACTIVITY,
       manual: true,
       template: this.catalystActivityTemplate$,
-      isPresent: computed(() => this.catalystActivity()?.length > 0),
+      isPresent: computed(() => (this.catalystActivity()?.length ?? 0) > 0),
     },
 
     {
@@ -628,7 +629,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CROSS_REFERENCES,
       manual: true,
       template: this.crossReferencesTemplate$,
-      isPresent: computed(() => this.crossReference()?.length > 0 && !this.hasRhea()),
+      isPresent: computed(() => this.crossReference().length > 0 && !this.hasRhea()),
     },
     // Rhea structure
     {
@@ -723,7 +724,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.OTHER_FORMS,
       manual: true,
       template: this.otherFormsTemplate$,
-      isPresent: computed(() => this.otherForms()?.size > 0),
+      isPresent: computed(() => this.otherForms().size > 0),
     },
 
     {
@@ -737,7 +738,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.AUTHORSHIP,
       manual: true,
       template: this.authorsTemplate$,
-      isPresent: computed(() => this.authorship()?.length > 0),
+      isPresent: computed(() => this.authorship().length > 0),
     },
     {
       key: DataKeys.INTERACTORS,
@@ -796,19 +797,19 @@ export class DescriptionTabComponent implements OnDestroy {
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
-        return this.catalystActivity() && this.catalystActivity().length > 0;
+        return (this.catalystActivity()?.length ?? 0) > 0;
       case DataKeys.CROSS_REFERENCE:
         return this.crossReference().length > 0 && !this.hasRhea();
       case camelCase(Labels.BIOCHEMICAL_REACTION):
         return this.hasRhea();
       case DataKeys.OTHER_FORMS:
-        return this.otherForms() && this.otherForms().size > 0;
+        return this.otherForms().size > 0;
       case DataKeys.ORTHOLOGOUS_EVENT:
         return this.orthologousEvents().size > 0;
       case camelCase(Labels.AUTHORSHIP):
-        return this.authorship() && this.authorship().length > 0;
+        return this.authorship().length > 0;
       case DataKeys.INTERACTORS:
-        return this.interactors() && this.interactors().length > 0;
+        return this.interactors().length > 0;
       case 'otherPathways':
         return this.otherPathways().length > 0 || this.otherPathwaysFailed();
       default:
@@ -921,7 +922,7 @@ const OTHER_FORMS_CATEGORY_ORDER: [OtherFormsCategory, string][] = [
 ];
 
 function categorizeOtherForm(pe: PhysicalEntity): OtherFormsCategory {
-  const name = (pe.name?.[0] || pe.displayName || '').toLowerCase();
+  const name = (pe.name[0] || pe.displayName || '').toLowerCase();
   if (/^\d?x?p-[styw]\d/.test(name)) return 'phosphorylated';
   if (name.startsWith('ac-')) return 'acetylated';
   if (/^me\d?[-k]/.test(name)) return 'methylated';

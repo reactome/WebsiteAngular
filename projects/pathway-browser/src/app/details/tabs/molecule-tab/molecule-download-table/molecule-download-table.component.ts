@@ -91,7 +91,7 @@ export class MoleculeDownloadTableComponent {
     return this.tableData().filter((molecule) => this.selectedCategory().includes(molecule.type));
   });
 
-  readonly finalData = computed(() => this.filteredData() ?? this.tableData());
+  readonly finalData = this.filteredData;
 
   readonly maxWidths = computed(() => {
     const columns = this.displayedColumns();
@@ -133,7 +133,7 @@ export class MoleculeDownloadTableComponent {
   }
 
   exportToTSV(): void {
-    if (!this.tableData() || this.tableData().length === 0) return;
+    if (this.tableData().length === 0) return;
 
     const exportData = this.getExportData();
 

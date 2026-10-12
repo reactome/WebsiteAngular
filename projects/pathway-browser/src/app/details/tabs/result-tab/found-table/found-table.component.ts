@@ -122,7 +122,7 @@ export class FoundTableComponent {
   readonly resources = computed(() => this.found()?.resources || []);
   readonly resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
   readonly expressionColumnIds = computed(() =>
     this.expressionColumnNames().map((_, i) => `exp-${i}`)

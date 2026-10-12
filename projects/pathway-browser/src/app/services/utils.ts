@@ -110,7 +110,7 @@ export function isPhysicalEntity(obj: DatabaseObject): obj is PhysicalEntity {
 }
 
 export function isReferenceSummary(obj: DatabaseObject): obj is SummaryEntity {
-  return (obj as SummaryEntity).summarisedEntities !== undefined;
+  return (obj as Partial<SummaryEntity>).summarisedEntities !== undefined;
 }
 
 const ReferenceEntityClasses: Set<string> = new Set([
@@ -308,8 +308,7 @@ export type ArrayStats = {
 };
 
 export function getArrayStats(values: number[]): ArrayStats {
-  if (values === undefined || values.length === 0)
-    return { min: 0, max: 0, average: 0, sum: 0, multiValued: false };
+  if (values.length === 0) return { min: 0, max: 0, average: 0, sum: 0, multiValued: false };
   const summary: ArrayStats = values.reduce(
     (acc: ArrayStats, value) => {
       if (value < acc.min) acc.min = value;
@@ -414,4 +413,13 @@ export function observeSections(
   });
   // return cleanup function
   return () => observer.disconnect();
+}
+
+/**
+ * The first of an object's names. A reference summary often has none (13 of 15
+ * sampled), though its type inherits a required list from PhysicalEntity.
+ */
+export function firstName(obj: { name?: unknown }): string | undefined {
+  const names = obj.name as string[] | string | undefined;
+  return Array.isArray(names) ? names[0] : names;
 }

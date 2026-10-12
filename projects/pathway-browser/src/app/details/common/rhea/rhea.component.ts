@@ -66,10 +66,8 @@ export class RheaComponent {
         ? '{filter:hue-rotate(180deg) invert(1)}'
         : '{fill:transparent !important}';
       if (this.rheaResources()) {
-        console.log('run...');
         setTimeout(() => {
-          const elements = document.querySelectorAll('rhea-visualizer') as NodeListOf<HTMLElement>;
-          if (!elements) return;
+          const elements = document.querySelectorAll<HTMLElement>('rhea-visualizer');
 
           elements.forEach((element) => {
             if (!element.shadowRoot) return;

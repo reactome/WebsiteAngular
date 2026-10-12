@@ -58,7 +58,7 @@ export class CitationComponent {
   });
 
   readonly citationToCopy = computed(() => {
-    if (this.staticCitation()) return (this.staticCitation() as string) ?? '';
+    if (this.staticCitation()) return this.staticCitation() as string;
     const content = [];
     if (this.pathwayCitation()) content.push('Pathway: ' + this.pathwayCitation());
     if (this.imageCitation()) content.push('Image: ' + this.imageCitation());

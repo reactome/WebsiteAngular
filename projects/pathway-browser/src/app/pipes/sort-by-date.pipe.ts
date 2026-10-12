@@ -6,7 +6,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class SortByDatePipe implements PipeTransform {
   transform<T>(value: T[], property: keyof T, descending: boolean = true) {
-    if (!value || !property) return;
+    if (!property) return value;
 
     return value.sort((a, b) => {
       const propA = a[property];

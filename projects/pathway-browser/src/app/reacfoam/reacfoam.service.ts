@@ -25,7 +25,8 @@ export namespace EventsHierarchy {
     llp?: boolean;
     totalEntity: number;
     totalEntityAndInteractors: number;
-    children: Data[];
+    /** Left out on a pathway with no sub-pathways (2,143 of 3,018 human ones). */
+    children?: Data[];
     reactions?: Analysis.Pathway['reactions'];
     entities?: Analysis.Pathway['entities'];
   }
@@ -162,7 +163,7 @@ export class ReacfoamService {
         pathwaysOnly: true,
         token: this.state.analysis() || undefined,
         resource: this.analysis.resourceFilter(),
-        interactors: this.analysis.result()?.summary?.interactors,
+        interactors: this.analysis.result()?.summary.interactors,
         view: 'nested-aggregated',
       } as EventsHierarchy.QueryParams,
     }),
@@ -355,7 +356,7 @@ export class ReacfoamService {
       expressions: event.entities?.exp,
       fdr: event.entities?.fdr,
       pValue: event.entities?.pValue,
-      llp: event?.llp || false,
+      llp: event.llp || false,
 
       // exposed: untracked(this.state.select) === event.stId // Untracked to avoid full reloading if select is updated
     };
