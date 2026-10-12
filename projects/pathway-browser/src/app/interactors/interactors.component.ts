@@ -230,10 +230,7 @@ export class InteractorsComponent implements AfterViewInit {
         }
       },
 
-      error: (error) => {
-        console.error('Error determining resource type:', error);
-        throw new Error('Error determining resource type: ' + error);
-      },
+      error: (error: unknown) => this.interactors.failedToLoad(name, error),
     });
   }
 
@@ -277,10 +274,14 @@ export class InteractorsComponent implements AfterViewInit {
     } else {
       return;
     }
+    this.interactors.loadFailure.set(null);
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, resource).subscribe((interactors) => {
-        this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
-        this.initialiseReplaceElements.emit();
+      this.interactors.fetchInteractorData(cy, resource).subscribe({
+        next: (interactors) => {
+          this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
+          this.initialiseReplaceElements.emit();
+        },
+        error: (error: unknown) => this.interactors.failedToLoad(resource, error),
       });
       this.state.overlay.set(resource);
     });
@@ -291,12 +292,22 @@ export class InteractorsComponent implements AfterViewInit {
     this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
+    this.interactors.loadFailure.set(null);
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, selectedResource).subscribe((interactors) => {
-        this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
-        this.isDataFromPsicquicLoading = false;
-        this.loadingResource = null;
-        this.state.overlay.set(selectedResource);
+      this.interactors.fetchInteractorData(cy, selectedResource).subscribe({
+        next: (interactors) => {
+          this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
+          this.isDataFromPsicquicLoading = false;
+          this.loadingResource = null;
+          this.state.overlay.set(selectedResource);
+        },
+        // The resource's spinner stopped only on success, so a failure left it
+        // turning for good.
+        error: (error: unknown) => {
+          this.isDataFromPsicquicLoading = false;
+          this.loadingResource = null;
+          this.interactors.failedToLoad(selectedResource, error);
+        },
       });
     });
   }
@@ -348,16 +359,23 @@ export class InteractorsComponent implements AfterViewInit {
       return;
     }
 
+    this.interactors.loadFailure.set(null);
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchCustomInteractors(resource, cy).subscribe((result) => {
-        this.interactors.addInteractorOccurrenceNode(
-          result.interactors,
-          cy,
-          result.interactors.resource
-        );
-        this.clear = false;
-        this.updateCurrentResource(resource!.summary.name, ResourceType.CUSTOM);
-        this.state.overlay.set(resource.summary.token);
+      this.interactors.fetchCustomInteractors(resource, cy).subscribe({
+        next: (result) => {
+          this.interactors.addInteractorOccurrenceNode(
+            result.interactors,
+            cy,
+            result.interactors.resource
+          );
+          this.clear = false;
+          this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
+          this.state.overlay.set(resource.summary.token);
+        },
+        // A link naming an overlay that does not exist is asked for as an
+        // upload's token, and answered 404.
+        error: (error: unknown) =>
+          this.interactors.failedToLoad(resource.summary.token || resource.summary.name, error),
       });
     });
   }
@@ -405,6 +423,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   clearInteractors() {
+    this.interactors.loadFailure.set(null);
     this.cys()?.forEach((cy) => {
       this.interactors.clearAllInteractorNodes(cy);
       this.clear = true;

@@ -12,7 +12,7 @@
   <!-- Suppress the browser's own menu so the diagram's can take its place. -->
   <div id="cytoscape" #cytoscape [class.pointer]="hovering()" (contextmenu)="$event.preventDefault()"></div>
 
-  <cr-flag-banner [notice]="analysisNotice()" />
+  <cr-flag-banner [notice]="notice()" />
 
   @if (loadFailed() && reportFailure()) {
     <p class="diagram-error" role="alert">This diagram could not be shown. Please try again later.</p>

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import cytoscape, { NodeCollection, NodeSingular } from 'cytoscape';
@@ -117,6 +118,23 @@ export class InteractorService {
    * Keyed by pathway, because the answer is a property of the diagram.
    */
   readonly resourceCounts = signal<Record<string, ResourceTally>>({});
+
+  /**
+   * Why the interactors asked for are not on the diagram, said on it; null
+   * while they are, or none were asked for. Before, a failed request left the
+   * diagram as it was, with only an uncaught error in the console.
+   */
+  readonly loadFailure = signal<string | null>(null);
+
+  /** Says why `resource`'s interactors could not be drawn. */
+  failedToLoad(resource: string, error: unknown) {
+    const missing = error instanceof HttpErrorResponse && error.status === 404;
+    this.loadFailure.set(
+      missing
+        ? `There is no interactor overlay "${resource}".`
+        : `Couldn't load the interactors from ${resource}. Try again in a moment.`
+    );
+  }
   private countsForPathway: string | null = null;
 
   /**
