@@ -34,17 +34,24 @@ export interface Diagram {
   stableId: string;
 }
 
+/**
+ * Box shapes give a and b, circles c and r; a diagram file adds a centre, the
+ * exporter's reaction layouts do not.
+ */
 export interface ReactionShape {
-  a: Position;
-  b: Position;
-  centre: Position;
+  a?: Position;
+  b?: Position;
+  c?: Position;
+  r?: number;
+  centre?: Position;
   type: string;
 }
 
 export interface ConnectorHolder {
   [k: string]: EdgeConnector[] | undefined;
 
-  inputs: EdgeConnector[];
+  /** Left out by the exporter for a black box event without inputs. */
+  inputs?: EdgeConnector[];
   outputs?: EdgeConnector[];
   catalysts?: EdgeConnector[];
   inhibitors?: EdgeConnector[];
