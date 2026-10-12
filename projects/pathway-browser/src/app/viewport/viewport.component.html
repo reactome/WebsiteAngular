@@ -369,6 +369,11 @@
                     <cr-ehld [(pathwayId)]="pathwayId" />
                   } @else if (hasDiagram()) {
                     <cr-diagram [(pathwayId)]="pathwayId" #diagram [interactor]="interactors" />
+                  } @else if (dataState.loadFailed()) {
+                    <div class="no-diagram">
+                      <mat-icon>error</mat-icon>
+                      <p role="alert">Couldn't load this pathway. Please try again later.</p>
+                    </div>
                   } @else {
                     <div class="no-diagram">
                       <mat-icon>hide_image</mat-icon>

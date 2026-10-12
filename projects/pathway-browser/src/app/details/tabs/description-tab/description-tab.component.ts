@@ -176,8 +176,13 @@ export class DescriptionTabComponent implements OnDestroy {
 
   readonly otherPathways = computed<Pathway[]>(() => {
     const current = this.state.pathwayId();
-    return (this._otherPathways.value() ?? []).filter((pathway) => pathway.stId !== current);
+    // value() throws while the resource is in error.
+    const pathways = this._otherPathways.hasValue() ? this._otherPathways.value() : [];
+    return pathways.filter((pathway) => pathway.stId !== current);
   });
+
+  /** The list could not be loaded: not the same as an entity in no other pathway. */
+  readonly otherPathwaysFailed = computed(() => this._otherPathways.status() === 'error');
 
   _interactors = rxResource({
     params: () => isPhysicalEntity(this.obj()) && this.referenceEntity()?.identifier,
@@ -582,7 +587,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: 'Other Pathways',
       manual: true,
       template: this.otherPathwaysTemplate$,
-      isPresent: computed(() => this.otherPathways().length > 0),
+      isPresent: computed(() => this.otherPathways().length > 0 || this.otherPathwaysFailed()),
     },
 
     {
@@ -802,7 +807,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case DataKeys.INTERACTORS:
         return this.interactors() && this.interactors().length > 0;
       case 'otherPathways':
-        return this.otherPathways().length > 0;
+        return this.otherPathways().length > 0 || this.otherPathwaysFailed();
       default:
         return obj[key] !== undefined && obj[key];
     }

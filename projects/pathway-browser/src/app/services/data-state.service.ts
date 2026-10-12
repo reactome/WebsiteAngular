@@ -79,6 +79,18 @@ export class DataStateService {
 
   public ancestorsLoading = this._ancestors.isLoading;
 
+  /**
+   * The open pathway, or what is needed to draw it, could not be loaded: the
+   * pathway itself, or -- for one with no diagram of its own -- the ancestors
+   * whose diagram it is drawn in. Without this the viewport could not tell a
+   * failure from a pathway with nothing to draw.
+   */
+  readonly loadFailed = computed(() => {
+    if (this._currentPathway.status() === 'error') return true;
+    const pathway = this.currentPathway();
+    return !!pathway && !pathway.hasDiagram && this._ancestors.status() === 'error';
+  });
+
   private _selectedElement = rxResource({
     params: () => ({
       id: this.state.select() || this.state.pathwayId(),
@@ -249,7 +261,13 @@ export class DataStateService {
         // An event that hangs off no top-level pathway - a freshly cloned
         // curation pathway, say - makes the backend answer 404 rather than an
         // empty list. That is not an error for the caller: it has no ancestors.
-        catchError(() => of([] as Pathway[]))
+        // Any other failure is one: without them a pathway drawn in its
+        // parent's diagram cannot find it (see `loadFailed`).
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404
+            ? of([] as Pathway[])
+            : throwError(() => error)
+        )
       );
   }
 
