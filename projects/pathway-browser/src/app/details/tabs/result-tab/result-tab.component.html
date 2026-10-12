@@ -55,8 +55,9 @@
           <tr>
             @for (sample of analysis.samples(); track sample; let i = $index) {
               <td [class.current]="sample === state.sample()">
-                @if (selected.values[i] !== undefined) {
-                  <cr-expression-tag [value]="selected.values[i]" [scientificFormat]="false" />
+                @let value = selected.values[i];
+                @if (value !== undefined) {
+                  <cr-expression-tag [value]="value" [scientificFormat]="false" />
                 }
               </td>
             }
@@ -209,12 +210,15 @@
             {{ expressionColumnNames()[i] }}
           </th>
           <td mat-cell *matCellDef="let pathway; dataSource: dataSource">
-            <cr-expression-tag
-              [value]="pathway.entities.exp[i]"
-              [fdr]="pathway.entities.fdr"
-              [scientificFormat]="analysis.expressionScientificFormat()"
-              [isRegulation]="analysis.isGSARegulation()"
-            />
+            @let value = pathway.entities.exp[i];
+            @if (value !== undefined) {
+              <cr-expression-tag
+                [value]="value"
+                [fdr]="pathway.entities.fdr"
+                [scientificFormat]="analysis.expressionScientificFormat()"
+                [isRegulation]="analysis.isGSARegulation()"
+              />
+            }
           </td> </ng-container
         >>
       }

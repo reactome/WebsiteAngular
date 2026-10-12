@@ -63,10 +63,13 @@ const isFinitePoint = (point: Position | undefined | null): point is Position =>
 
 const closestToAverage = (positions: Position[]): Position => {
   const average = avg(positions);
-  let closest = positions[0];
+  const [first, ...rest] = positions;
+  // A shadow over a sub-pathway with no events: as before, the diagram cannot
+  // be laid out, now saying why rather than reading a property of undefined.
+  if (!first) throw new Error('There are no positions to choose a closest from.');
+  let closest = first;
   let min = squaredDist(closest, average);
-  for (let i = 1; i < positions.length; i++) {
-    const pos = positions[i];
+  for (const pos of rest) {
     const dist = squaredDist(pos, average);
     if (dist < min) {
       min = dist;
@@ -169,7 +172,9 @@ export class DiagramService {
   }
 
   pick<T>(values: T[]): T {
-    return values[this.random(0, values.length - 1)];
+    if (values.length === 0) throw new Error('There is nothing to pick from.');
+    // In range, and undefined is a value some callers pick on purpose.
+    return values[this.random(0, values.length - 1)] as T;
   }
 
   private readonly COMPARTMENT_SHIFT = 35;
@@ -183,7 +188,7 @@ export class DiagramService {
       .get(`${CONTENT_SERVICE}/data/query/${id}/normalPathway`, {
         responseType: 'text',
       })
-      .pipe(map((data) => data.split('\t')[0]));
+      .pipe(map((data) => data.split('\t')[0] ?? data));
   }
 
   public getCHEBIStructure(ids: Set<string>): Map<string, Promise<string | undefined>> {
@@ -258,7 +263,11 @@ export class DiagramService {
                       node.standardIdentifier?.startsWith('chebi:') ||
                       node.chebiIdentifier !== undefined
                   )
-                  .map((node) => (node.chebiIdentifier || node.standardIdentifier)!.split(':')[1])
+                  // An identifier without its "chebi:" prefix has no id after one.
+                  .flatMap((node) => {
+                    const [, id] = (node.chebiIdentifier || node.standardIdentifier)!.split(':');
+                    return id === undefined ? [] : [id];
+                  })
               )
             ),
           })),
@@ -314,7 +323,7 @@ export class DiagramService {
     const eventIdToSubPathwayId = new Map<number, number>(
       (graph.subpathways?.flatMap((subpathway) =>
         subpathway.events
-          .map((event) => [event, subpathway.dbId])
+          .map((event): [number, number] => [event, subpathway.dbId])
           .filter((entry) => subpathwayIds.has(entry[1]))
       ) as [number, number][]) || []
     );
@@ -331,10 +340,15 @@ export class DiagramService {
     );
     const mappingList: [number, Graph.Node][] = graph.nodes
       .flatMap((node) => {
-        if (node.children?.length === 1 && node.diagramIds?.length !== 1) {
+        const [onlyChild] = node.children ?? [];
+        if (
+          node.children?.length === 1 &&
+          onlyChild !== undefined &&
+          node.diagramIds?.length !== 1
+        ) {
           // Consider homomer complex like their constituents for interactors
           return node.diagramIds
-            ?.map((id) => [id, dbIdToGraphNode.get(node.children[0])])
+            ?.map((id) => [id, dbIdToGraphNode.get(onlyChild)])
             .filter((entry) => entry[1] !== undefined) as [number, Graph.Node][];
         } else {
           return node.diagramIds?.map((id) => [id, node]) as [number, Graph.Node][];
@@ -376,7 +390,8 @@ export class DiagramService {
 
     //compartment nodes
     const compartmentNodes: cytoscape.NodeDefinition[] = diagram?.compartments.flatMap((item) => {
-      const propToRects = (prop: Prop): { [p: string]: number } => ({
+      const sides = ['left', 'top', 'right', 'bottom'] as const;
+      const propToRects = (prop: Prop): Record<(typeof sides)[number], number> => ({
         left: scale(prop.x),
         top: scale(prop.y),
         right: scale(prop.x + prop.width),
@@ -386,9 +401,9 @@ export class DiagramService {
       const innerCR = 10;
       let outerCR;
       if (item.insets) {
-        const rects = [propToRects(item.prop), propToRects(item.insets)];
-        outerCR = Object.keys(rects[0]).reduce(
-          (smallest, key) => Math.min(smallest, Math.abs(rects[0][key] - rects[1][key])),
+        const [outer, inner] = [propToRects(item.prop), propToRects(item.insets)];
+        outerCR = sides.reduce(
+          (smallest, key) => Math.min(smallest, Math.abs(outer[key] - inner[key])),
           Number.MAX_SAFE_INTEGER
         );
         outerCR = innerCR + Math.min(outerCR, 100);
@@ -490,7 +505,8 @@ export class DiagramService {
       let unitId = undefined;
       if (item.schemaClass === SchemaClasses.POLYMER) {
         const polymerGraphNode = dbIdToGraphNode.get(item.reactomeId)!;
-        const unitGraph = dbIdToGraphNode.get(polymerGraphNode.children[0])!;
+        // A unit the graph does not list reads as one it does not know, as before.
+        const unitGraph = dbIdToGraphNode.get(polymerGraphNode.children[0] ?? -1)!;
         const unitClass = this.nodeTypeMap.get(unitGraph.schemaClass) ||
           this.nodeTypeMap.get(
             this.schemaClassToNodeTypeMap.get(
@@ -754,13 +770,20 @@ export class DiagramService {
     });
 
     const linkEdges: cytoscape.EdgeDefinition[] = diagram.links
-      ?.filter(
-        (link) =>
-          !link.renderableClass.includes('EntitySet') || link.inputs[0].id !== link.outputs[0].id
-      )
+      ?.filter((link) => {
+        const [input] = link.inputs;
+        const [output] = link.outputs;
+        // A link without both ends is kept, to be refused below by name.
+        if (!input || !output) return true;
+        return !link.renderableClass.includes('EntitySet') || input.id !== output.id;
+      })
       ?.map((link) => {
-        const source = idToNodes.get(link.inputs[0].id)!;
-        const target = idToNodes.get(link.outputs[0].id)!;
+        const [input] = link.inputs;
+        const [output] = link.outputs;
+        // As before, a link with no end cannot be drawn; now it says which.
+        if (!input || !output) throw new Error(`Link ${link.id} has no input or no output.`);
+        const source = idToNodes.get(input.id)!;
+        const target = idToNodes.get(output.id)!;
 
         const sourceP = scale(source.position);
         const targetP = scale(target.position);
@@ -781,14 +804,13 @@ export class DiagramService {
         if (link.isDisease) classes.push('disease');
         const isBackground =
           link.isFadeOut ||
-          (idToNodes.get(link.inputs[0].id)?.isBackground &&
-            idToNodes.get(link.outputs[0].id)?.isBackground);
+          (idToNodes.get(input.id)?.isBackground && idToNodes.get(output.id)?.isBackground);
 
         return {
           data: {
             id: link.id + '',
-            source: link.inputs[0].id + '',
-            target: link.outputs[0].id + '',
+            source: input.id + '',
+            target: output.id + '',
             ...relativeSegments,
             ...this.getEndpointData(sourceP, targetP, from, to),
             isFadeOut: link.isFadeOut,
@@ -1056,10 +1078,10 @@ export class DiagramService {
       classes: [this.pick(reactionTypes), 'reaction'],
     }));
 
-    const nodes: cytoscape.NodeDefinition[] = physicalEntities.flatMap((node, i) => [
-      node,
-      reactions[i],
-    ]);
+    const nodes: cytoscape.NodeDefinition[] = physicalEntities.flatMap((node, i) => {
+      const reaction = reactions[i];
+      return reaction ? [node, reaction] : [node];
+    });
 
     const inOut: cytoscape.EdgeDefinition[] = physicalEntities.flatMap((_node, i) => [
       {

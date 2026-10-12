@@ -1,7 +1,15 @@
 {
-  "total": 85,
+  "total": 84,
   "files": {
-    "projects/pathway-browser/src/app/render/render.component.ts": 62,
-    "projects/pathway-browser/src/app/services/diagram.service.ts": 23
+    "projects/reactome-gsa-form/src/lib/dataset-form/datasets/select-dataset/dataset-types/local-data/local-data.component.ts": 4,
+    "projects/reactome-gsa-form/src/lib/state/dataset-source/dataset-source.effect.ts": 2,
+    "projects/reactome-gsa-form/src/lib/state/dataset/dataset.effect.ts": 1,
+    "projects/reactome-gsa-form/src/lib/state/dataset/dataset.reducer.ts": 3,
+    "projects/reactome-gsa-form/src/lib/state/dataset/dataset.selector.ts": 4,
+    "projects/reactome-gsa-form/src/lib/state/method/method.effect.ts": 2,
+    "projects/reactome-gsa-form/src/lib/state/method/method.reducer.ts": 1,
+    "projects/reactome-gsa-form/src/lib/utilities/species/species.pipe.ts": 1,
+    "projects/reactome-table/src/lib/state/table.store.ts": 63,
+    "projects/reactome-table/src/lib/utils/table.util.ts": 3
   }
 }
