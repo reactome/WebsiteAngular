@@ -28,7 +28,11 @@ function json(page: Page, url: string | RegExp, body: unknown, status = 200) {
  */
 async function idg(
   page: Page,
-  { pathways, known }: { pathways: boolean; known?: boolean | 'held' }
+  {
+    pathways,
+    known,
+    failing,
+  }: { pathways: boolean; known?: boolean | 'held'; failing?: 'levels' | 'features' }
 ) {
   await json(page, `${IDG}/datadesc`, [
     {
@@ -47,9 +51,19 @@ async function idg(
     `${IDG}/relationships/enrichedSecondaryPathwaysForTerm1`,
     pathways ? [{ ...PATHWAY, pVal: 0.001, fdr: 0.001, bottomLevel: true, numGenes: 1 }] : []
   );
-  await json(page, `${IDG}/relationships/network/enrichedSecondaryPathaysForTerm`, []);
+  await json(
+    page,
+    `${IDG}/relationships/network/enrichedSecondaryPathaysForTerm`,
+    failing === 'levels' ? { code: 500 } : [],
+    failing === 'levels' ? 500 : 200
+  );
   await json(page, `${IDG}/realtionships/getHierarchicalOrderedPathways`, []);
-  await json(page, `${IDG}/pairwise/term/true`, []);
+  await json(
+    page,
+    `${IDG}/pairwise/term/true`,
+    failing === 'features' ? { code: 500 } : [],
+    failing === 'features' ? 500 : 200
+  );
   if (known === 'held')
     await page.route(new RegExp(`${IDG}/checkTerm/`), () => new Promise(() => {}));
   else
@@ -98,6 +112,44 @@ test.describe('The IDG page', () => {
     await expect(state(page)).toContainText('No pathway is enriched at this threshold.');
     await expect(state(page)).not.toContainText('XYZZY1 is known');
     await expect(state(page)).not.toContainText('is not in the IDG data');
+  });
+
+  test('says when the target development levels could not be loaded', async ({ page }) => {
+    await idg(page, { pathways: true, known: true, failing: 'levels' });
+    await page.goto('/idg?gene=TANC1');
+    await expect(page.getByRole('row', { name: new RegExp(PATHWAY.name) })).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(
+      page.getByText(
+        "Couldn't load the target development levels, so the Weighted TDL column and the plot that uses them are empty. Please try again later."
+      )
+    ).toBeVisible();
+  });
+
+  test('says when the feature summary could not be loaded', async ({ page }) => {
+    await idg(page, { pathways: true, known: true, failing: 'features' });
+    await page.goto('/idg?gene=TANC1');
+    await expect(page.getByRole('row', { name: new RegExp(PATHWAY.name) })).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(
+      page.getByText("Couldn't load the feature summary for TANC1. Please try again later.")
+    ).toBeVisible();
+  });
+
+  test('says nothing of either when they load', async ({ page }) => {
+    await idg(page, { pathways: true, known: true });
+    const answered = Promise.all([
+      page.waitForResponse(`${IDG}/relationships/network/enrichedSecondaryPathaysForTerm`),
+      page.waitForResponse(`${IDG}/pairwise/term/true`),
+    ]);
+    await page.goto('/idg?gene=TANC1');
+    await answered;
+    await expect(page.getByRole('row', { name: new RegExp(PATHWAY.name) })).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(page.getByText(/Couldn't load the (target|feature)/)).toHaveCount(0);
   });
 
   test.describe("a pathway's details", () => {

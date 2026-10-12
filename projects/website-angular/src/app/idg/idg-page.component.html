@@ -207,6 +207,13 @@
         </figure>
       }
 
+      @if (druggability.status() === 'error') {
+        <p class="failed" role="status">
+          Couldn't load the target development levels, so the Weighted TDL column and the plot that uses them are empty.
+          Please try again later.
+        </p>
+      }
+
       @if (scatter()) {
         @let plot = scatter()!;
         <figure class="scatter">
@@ -427,6 +434,12 @@
             <div class="axis-x plain"><span>0</span><span>Functional Interaction Score</span><span>1</span></div>
             <p class="quiet">Highest count {{ curve.most }} genes.</p>
           </figure>
+        }
+
+        @if (features.status() === 'error') {
+          <p class="failed" role="status">
+            Couldn't load the feature summary for {{ term() }}. Please try again later.
+          </p>
         }
 
         @if (featurePlot()) {
