@@ -211,7 +211,8 @@ export class DatasetEffects {
               ['', ...summary.sample_metadata.map((col) => col.name)],
               ...summary.sample_ids.map((sampleId, i) => [
                 sampleId,
-                ...summary.sample_metadata!.map((column) => column.values[i]),
+                // A missing value reads as an empty cell, as the table treats one.
+                ...summary.sample_metadata!.map((column) => column.values[i] ?? ''),
               ]),
             ];
         return datasetActions.setAnnotations({ annotations: table, id });

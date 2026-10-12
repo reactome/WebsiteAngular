@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { catchError, exhaustMap, map, mergeMap, of, take } from 'rxjs';
 import { FetchDatasetService } from '../../services/fetch-dataset.service';
 import { datasetSourceActions } from './dataset-source.action';
-import { typeToParse } from '../../services/analysis-methods.service';
+import { parserFor } from '../../services/analysis-methods.service';
 
 @Injectable()
 export class DatasetSourceEffects {
@@ -50,8 +50,8 @@ export class DatasetSourceEffects {
             externals.forEach((external) =>
               external.parameters.forEach((param) => {
                 //  param.id = `${external.id} - ${param.name}`;
-                param.value = typeToParse[param.type](param.default);
-                param.default = typeToParse[param.type](param.default);
+                param.value = parserFor(param.type)(param.default);
+                param.default = parserFor(param.type)(param.default);
               })
             );
             return externals;

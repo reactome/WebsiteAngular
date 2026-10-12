@@ -84,7 +84,7 @@ export const datasetFeature = createFeature({
           .slice(1) // Remove row ids column
           .map((column) => ({
             // Create groups with distinct values
-            name: column[0],
+            name: column[0] ?? '',
             values: new Set(column.slice(1).filter((s) => s)),
           }))
           .filter((group) => group.values.size >= 2) // Filter groups suitable for analysis
@@ -115,19 +115,20 @@ export const datasetFeature = createFeature({
           .slice(1) // Remove row ids column
           .map((column) => ({
             // Create groups with distinct values
-            name: column[0],
+            name: column[0] ?? '',
             values: column.slice(1),
           }))
           .filter((column) => dataset!.statisticalDesign!.analysisGroup !== column.name) // Remove analysis group
           .filter((column) => {
-            const group1Values = new Set<string>();
-            const group2Values = new Set<string>();
+            // A missing value counts as one, as it always has.
+            const group1Values = new Set<string | undefined>();
+            const group2Values = new Set<string | undefined>();
             for (let i = 0; i < analysisColumn.length; i++) {
               const analysedValue = analysisColumn[i];
               for (const [comparisonGroup, values] of [
                 [dataset!.statisticalDesign!.comparisonGroup1, group1Values],
                 [dataset!.statisticalDesign!.comparisonGroup2, group2Values],
-              ] as [string, Set<string>][]) {
+              ] as [string, Set<string | undefined>][]) {
                 if (analysedValue === comparisonGroup) {
                   const value = column.values[i];
                   if (values.has(value)) return false; // remove columns where a "pair" is associated more than once to the same condition

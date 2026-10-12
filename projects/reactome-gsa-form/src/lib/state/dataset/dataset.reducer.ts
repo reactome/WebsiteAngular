@@ -134,13 +134,14 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
           const annotations = dataset.annotations!;
 
           const annotationsWithSimpleIds = cp(annotations);
-          annotationsWithSimpleIds[0][0] = 'sample_ids';
+          const [header] = annotationsWithSimpleIds;
+          if (header) header[0] = 'sample_ids';
 
           return {
             id: dataset.id,
             changes: {
               annotationColumns: new Map<string, string[]>(
-                transpose(annotationsWithSimpleIds).map((col) => [col[0], col.slice(1)])
+                transpose(annotationsWithSimpleIds).map((col) => [col[0] ?? '', col.slice(1)])
               ),
             },
           };
@@ -213,7 +214,7 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
         ...dataset.statisticalDesign!,
         covariances:
           dataset.annotations?.[0]
-            .slice(1) //slice the first element, which is the empty string
+            ?.slice(1) //slice the first element, which is the empty string
             .filter((name) => name !== dataset.statisticalDesign!.analysisGroup)
             .map((name) => ({
               name,

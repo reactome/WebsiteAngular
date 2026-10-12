@@ -58,7 +58,9 @@ async function centreOf(page: Page, label: string) {
 function darkInTitleStrip(page: Page) {
   return page.evaluate(() => {
     const canvases = [...document.querySelectorAll<HTMLCanvasElement>('cr-reacfoam canvas')];
-    const { width, height } = canvases[0];
+    const [first] = canvases;
+    if (!first) throw new Error('no reacfoam canvas');
+    const { width, height } = first;
     const top = Math.floor(height * 0.85);
     const all = document.createElement('canvas');
     all.width = width;

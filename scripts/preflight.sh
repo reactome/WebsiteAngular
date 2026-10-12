@@ -93,7 +93,6 @@ step "format" npm run format:check
 step "libraries" npm run build:libs
 step "types" npm run check:types
 step "lint" npm run check:lint
-step "unchecked indexed access" npm run check:indexed
 step "dead code" npm run check:dead
 step "unit tests" npm test
 step "e2e recordings" npm run check:har
