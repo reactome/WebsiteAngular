@@ -81,6 +81,7 @@ export const HIGHLIGHT_EVENT = 'reactome-diagram-highlight';
             (pathwayIdChange)="pathwayId.set($event)"
             (diagramLoaded)="loaded($event)"
             (diagramFailed)="failed($event)"
+            [reportFailure]="false"
           />
         }
       }
