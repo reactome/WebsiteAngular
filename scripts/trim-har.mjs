@@ -68,6 +68,12 @@ for (const name of readdirSync(HAR_DIR).filter((f) => f.endsWith('.har'))) {
   after += slim.length;
 }
 
+// A note whose recording is gone -- a test renamed or removed, or a run killed
+// before its context closed -- has nothing to apply to.
+for (const name of readdirSync(HAR_DIR).filter((f) => f.endsWith('.stubs'))) {
+  unlinkSync(path.join(HAR_DIR, name));
+}
+
 let freed = 0;
 let dropped = 0;
 for (const name of readdirSync(HAR_DIR).filter((f) => f.endsWith('.json'))) {

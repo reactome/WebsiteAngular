@@ -225,10 +225,9 @@ interface HarEntry {
 }
 
 /** `METHOD /path?query` -- deliberately without the origin. */
-function key(method: string, url: string): string {
-  const u = new URL(url);
-  return `${method.toUpperCase()} ${u.pathname}${u.search}`;
-}
+// One definition, shared with the stub stripping (har-stubs.mjs): the two must
+// key a request alike, or stripping silently stops matching.
+const key = harKey;
 
 /** Playwright writes large bodies beside the HAR and references them by name. */
 function bodyOf(entry: HarEntry, harDir: string): Buffer {
@@ -401,7 +400,8 @@ function noteStubs(context: BrowserContext) {
   });
 
   type Handler = (route: Route, request: Request) => unknown;
-  const wrappers = new WeakMap<Handler, Handler>();
+  // A handler may be registered for several URLs; each has its own wrapper.
+  const wrappers = new WeakMap<Handler, Handler[]>();
   const counting = (handler: Handler): Handler => {
     const wrapper: Handler = (route, request) =>
       handler(
@@ -421,7 +421,7 @@ function noteStubs(context: BrowserContext) {
         }),
         request
       );
-    wrappers.set(handler, wrapper);
+    wrappers.set(handler, [...(wrappers.get(handler) ?? []), wrapper]);
     return wrapper;
   };
   const wrap = (target: Page | BrowserContext) => {
@@ -430,8 +430,12 @@ function noteStubs(context: BrowserContext) {
     Object.assign(target, {
       route: (url: unknown, handler: Handler, options?: unknown) =>
         route(url, counting(handler), options),
-      unroute: (url: unknown, handler?: Handler) =>
-        unroute(url, handler && (wrappers.get(handler) ?? handler)),
+      // Playwright removes a route only when both URL and handler match, so
+      // trying each wrapper of the handler removes just the one for this URL.
+      unroute: async (url: unknown, handler?: Handler) => {
+        if (!handler) return unroute(url);
+        for (const wrapper of wrappers.get(handler) ?? [handler]) await unroute(url, wrapper);
+      },
     });
   };
   wrap(context);
