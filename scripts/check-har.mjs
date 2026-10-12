@@ -47,6 +47,12 @@ const ABANDONED = [
     request: /\/data\/query\/enhanced\/v2\/R-HSA-109582\?/,
     why: 'a result that is gone takes analysis= off the address, which reloads the details',
   },
+  {
+    recording:
+      /^diagram-load-errors--the-analysis-overlay-(says-so-when-the-pathway-s-results-can|a-hit-pathway-s-matches-say-so-when-th)/,
+    request: /\/AnalysisService\/token\/[^/]+\/filter\/pathways\?/,
+    why: 'the overlay forkJoins it with found/all, which the test fails; that unsubscribes this mid-stream',
+  },
 ];
 
 const abandoned = (recording, request) =>
