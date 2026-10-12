@@ -40,6 +40,15 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDivider } from '@angular/material/divider';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 
+/**
+ * A pathway's value for one sample. Out of range it compares false, as reading
+ * past the end always did; a null stays null, as the filters always saw it.
+ */
+function expressionAt(pathway: { entities: { exp: number[] } }, sample: number): number {
+  const value = pathway.entities.exp[sample];
+  return value === undefined ? NaN : value;
+}
+
 @Component({
   selector: 'cr-result-tab',
   imports: [
@@ -236,19 +245,17 @@ export class ResultTabComponent {
     }
     if (this.state.minExpressionFilter() !== undefined) {
       data = data.filter(
-        (p) =>
-          (p.entities.exp[this.analysis.sampleIndex()] ?? NaN) >= this.state.minExpressionFilter()!
+        (p) => expressionAt(p, this.analysis.sampleIndex()) >= this.state.minExpressionFilter()!
       );
     }
     if (this.state.maxExpressionFilter() !== undefined) {
       data = data.filter(
-        (p) =>
-          (p.entities.exp[this.analysis.sampleIndex()] ?? NaN) <= this.state.maxExpressionFilter()!
+        (p) => expressionAt(p, this.analysis.sampleIndex()) <= this.state.maxExpressionFilter()!
       );
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter((p) =>
-        this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()] ?? NaN)
+        this.gsaFilterSet().has(expressionAt(p, this.analysis.sampleIndex()))
       );
     }
     return data;
