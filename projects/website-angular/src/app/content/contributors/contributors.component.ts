@@ -114,8 +114,8 @@ export class ContributorsComponent implements OnInit, OnDestroy {
       const q = this.searchQuery.toLowerCase().trim();
       results = results.filter(
         (c) =>
-          c.person.displayName?.toLowerCase().includes(q) ||
-          c.person.surname?.toLowerCase().includes(q) ||
+          c.person.displayName.toLowerCase().includes(q) ||
+          c.person.surname.toLowerCase().includes(q) ||
           c.person.firstname?.toLowerCase().includes(q) ||
           c.person.orcidId?.toLowerCase().includes(q)
       );

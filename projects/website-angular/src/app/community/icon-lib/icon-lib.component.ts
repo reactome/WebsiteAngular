@@ -118,7 +118,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
     this.iconService.getFacets().subscribe({
       next: (data) => {
         const merged = new Map<string, number>();
-        for (const c of data.iconCategoriesFacet?.available || []) {
+        for (const c of data.iconCategoriesFacet.available || []) {
           const name = this.formatCategoryName(c.name);
           merged.set(name, (merged.get(name) || 0) + c.count);
         }

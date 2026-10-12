@@ -62,10 +62,16 @@ export interface TocPathway {
   releaseDate: string;
   reviseDate?: string;
   releaseStatus?: string | null;
-  authors: SimplePerson[];
-  reviewers: SimplePerson[];
-  editors: SimplePerson[];
-  subpathways: TocSubpathway[];
+  /**
+   * Present on all 34 today, but the service leaves out an empty list rather
+   * than sending [] -- /data/content/doi omits each of the people lists for a
+   * few pathways -- so a top-level pathway without reviewers, or without
+   * subpathways, would come without the field.
+   */
+  authors?: SimplePerson[];
+  reviewers?: SimplePerson[];
+  editors?: SimplePerson[];
+  subpathways?: TocSubpathway[];
 }
 
 export interface DoiPathway {
@@ -74,11 +80,17 @@ export interface DoiPathway {
   doi: string | null;
   species: string;
   releaseDate: string;
-  reviseDate: string;
-  releaseStatus: string | null;
-  authors: SimplePerson[];
-  reviewers: SimplePerson[];
-  editors: SimplePerson[];
+  /**
+   * Like the TOC's, omitted when there is none. Measured over the 669 pathways
+   * `/data/content/doi` returns: `reviseDate` absent in 564, `releaseStatus` in
+   * 608, and the people lists in a few -- `authors` 3, `reviewers` 11,
+   * `editors` 12.
+   */
+  reviseDate?: string;
+  releaseStatus?: string | null;
+  authors?: SimplePerson[];
+  reviewers?: SimplePerson[];
+  editors?: SimplePerson[];
 }
 
 export interface Contributor {
@@ -92,7 +104,8 @@ export interface Contributor {
 export interface SchemaNode {
   className: string;
   count: number;
-  children: SchemaNode[];
+  /** Left out on a class with no subclasses (74 of the 106). */
+  children?: SchemaNode[];
 }
 
 export interface SchemaValueType {

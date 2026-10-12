@@ -8,6 +8,9 @@ import { catchError } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import { TileComponent } from '../../../reactome-components/tile/tile.component';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
+// The search's own types: its type filter is not applied, so the first hit can
+// be an Icon, which has no reference identifier, URL or database.
+import { SearchResult } from '../../../../services/search.service';
 
 export interface CustomInteraction {
   identifier: string;
@@ -30,23 +33,10 @@ interface InteractionWithEntities {
   score: number;
   accession: string;
   accessionURL: string;
+  // Never empty: the endpoint returns only the interactors that have entities.
   physicalEntity: { dbId: number; stId: string; displayName: string; schemaClass: string }[];
   evidences: number;
   url: string;
-}
-
-interface SearchResult {
-  results: { entries: SearchEntry[] }[];
-}
-
-interface SearchEntry {
-  name: string;
-  type: string;
-  exactType: string;
-  species: string[];
-  databaseName: string;
-  referenceIdentifier: string;
-  referenceURL: string;
 }
 
 interface UniProtResponse {
@@ -130,9 +120,9 @@ export class InteractorDetailComponent implements OnInit {
             evidenceCount: row.evidences,
             url: row.accessionURL,
             evidenceURL: row.url,
-            entitiesCount: row.physicalEntity?.length ?? 0,
+            entitiesCount: row.physicalEntity.length,
           });
-          entityMap[row.accession] = (row.physicalEntity ?? []).map((pe) => ({
+          entityMap[row.accession] = row.physicalEntity.map((pe) => ({
             stId: pe.stId,
             displayName: pe.displayName,
           }));
@@ -141,10 +131,10 @@ export class InteractorDetailComponent implements OnInit {
         this.entityMap.set(entityMap);
 
         // Extract summary from search result
-        const entry = search?.results?.[0]?.entries?.[0];
+        const entry = search?.results[0]?.entries[0];
         if (entry) {
           const cleanId = (entry.referenceIdentifier ?? acc).replace(/<[^>]*>/g, '');
-          this.displayName.set(`${entry.databaseName}:${cleanId} ${entry.name}`);
+          this.displayName.set(`${entry.databaseName ?? 'UniProt'}:${cleanId} ${entry.name}`);
           this.interactorType.set(
             `${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`
           );

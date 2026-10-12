@@ -25,6 +25,7 @@ import {
   SearchEntry,
   FacetResponse,
   SearchFilters,
+  Facet,
   FacetCount,
   ResultGroup,
 } from '../../services/search.service';
@@ -167,15 +168,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   /** The website's pages could not be searched; only data results are shown. */
   pagesFailed = false;
 
-  // Unified search now always uses reference-style aggregation: one row per
-  // reference entity (e.g. one TP53) with modified forms / isoforms collapsed
-  // under it. The old simple/advanced/site-search tabs are gone — the
-  // `currentMode` field is retained as a compile-time-only constant so the
-  // existing template branches (and the URL params for inbound links)
-  // continue to work without conditional logic.
-  currentMode: 'reference' = 'reference';
-
-  private paramsSub!: Subscription;
+  private paramsSub?: Subscription;
 
   ngOnInit(): void {
     this.paramsSub = this.route.queryParams.subscribe((params) => {
@@ -239,7 +232,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     }
     this.searchService.getSpellCheckTerms(query).subscribe({
       next: (terms) => {
-        this.suggestedTerms = terms || [];
+        this.suggestedTerms = terms;
         this.cdr.markForCheck();
       },
       error: () => {
@@ -321,22 +314,21 @@ export class SearchComponent implements OnInit, OnDestroy {
           // Solr's true total across the whole result set; per-group
           // pagination chops each `group.entries` down to ~30, so we
           // must NOT recompute this from entries.length later.
-          const biologyTotal = res.numberOfMatches ?? 0;
-          const hasNonDeleted = res.results?.some((group) => group.entries.some((e) => !e.deleted));
-          res.results =
-            res.results
-              ?.map((group) => {
-                const entries = hasNonDeleted
-                  ? group.entries.filter((e) => !e.deleted)
-                  : group.entries;
+          const biologyTotal = res.numberOfMatches;
+          const hasNonDeleted = res.results.some((group) => group.entries.some((e) => !e.deleted));
+          res.results = res.results
+            .map((group) => {
+              const entries = hasNonDeleted
+                ? group.entries.filter((e) => !e.deleted)
+                : group.entries;
 
-                return {
-                  ...group,
-                  entries,
-                  entriesCount: entries.length,
-                };
-              })
-              .filter((group) => group.entries.length > 0) || [];
+              return {
+                ...group,
+                entries,
+                entriesCount: entries.length,
+              };
+            })
+            .filter((group) => group.entries.length > 0);
           // Build the Pages facet counts from the raw site-search hits so
           // the sidebar shows the full set of categories even when one is
           // currently selected (matches how Species / Types behave).
@@ -408,9 +400,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
-            ...(results.results || []).map((group) =>
-              Math.ceil((group.entriesCount || 0) / this.pageSize)
-            ),
+            ...results.results.map((group) => Math.ceil((group.entriesCount || 0) / this.pageSize)),
             0
           );
           this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
@@ -487,7 +477,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.proteinsIncomplete = results.some((result) => result === null);
       const allProteins: SearchEntry[] = [];
       for (const result of results) {
-        if (!result?.results?.length) continue;
+        if (!result?.results.length) continue;
         const group = result.results.find((g) => g.typeName === 'Protein');
         if (group) allProteins.push(...group.entries);
       }
@@ -619,7 +609,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   // }
 
   private filterDeletedEntries(entries: SearchEntry[]): SearchEntry[] {
-    if (!entries?.length) return [];
+    if (!entries.length) return [];
 
     const nonDeleted = entries.filter((e) => !e.deleted);
     if (nonDeleted.length > 0) {
@@ -637,9 +627,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  getFacetItems(
-    facet: { selected: FacetCount[]; available: FacetCount[] } | undefined
-  ): FacetCount[] {
+  getFacetItems(facet: Facet | undefined): FacetCount[] {
     if (!facet) return [];
     return [...(facet.selected || []), ...(facet.available || [])];
   }
@@ -668,34 +656,12 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (entry.exactType === 'Pages') {
       return (entry as any).pageUrl || '/';
     }
-    if (this.currentMode === 'reference') {
-      const id = entry.id || entry.stId;
-      if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
-      if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
-      return '/content/detail/' + id;
-    }
-    //Remove HTML tags from entry.stId if present
-    entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
-
-    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
-    if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
-    return '/content/detail/' + entry.stId;
-  }
-
-  getPageNumbers(): number[] {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    const end = Math.min(this.totalPages, start + maxVisible);
-
-    if (end - start < maxVisible) {
-      start = Math.max(0, end - maxVisible);
-    }
-
-    for (let i = start; i < end; i++) {
-      pages.push(i);
-    }
-    return pages;
+    // Search aggregates by reference entity (one TP53, its forms collapsed
+    // under it), so an entry links to its reference id where it has one.
+    const id = entry.id || entry.stId;
+    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
+    if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
+    return '/content/detail/' + id;
   }
 
   getReferencePageNumbers(): (number | '...')[] {
@@ -775,7 +741,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.groupLoading[group.typeName] = false;
         // Failed, or empty although the count said otherwise: the page number
         // stays on the entries still shown.
-        const entries = result?.results?.[0]?.entries;
+        const entries = result?.results[0]?.entries;
         this.groupPageFailed[group.typeName] = !entries?.length;
         if (!entries?.length) {
           this.cdr.markForCheck();

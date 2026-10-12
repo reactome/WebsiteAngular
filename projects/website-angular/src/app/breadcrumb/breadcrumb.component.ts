@@ -57,7 +57,7 @@ export class BreadcrumbComponent implements OnInit {
       const path_segments = segments.map((s) => s.path);
       this.currentPath = '/' + path_segments.join('/');
 
-      if (path_segments.length > 0 && path_segments) {
+      if (path_segments.length > 0) {
         const second_lastSegment =
           path_segments.length >= 2 ? path_segments[path_segments.length - 1] : null;
 
@@ -108,7 +108,7 @@ export class BreadcrumbComponent implements OnInit {
             .get<{ displayName?: string }>(`${CONTENT_SERVICE}/data/person/${id}`)
             .subscribe({
               next: (p) => {
-                if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+                if (p.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
               },
               // The leaf keeps the id; the page itself says what went wrong.
               error: () => undefined,
@@ -138,7 +138,7 @@ export class BreadcrumbComponent implements OnInit {
             .get<{ displayName?: string; name?: string[] }>(`${CONTENT_SERVICE}/data/query/${id}`)
             .subscribe({
               next: (entity) => {
-                const label = entity?.displayName || entity?.name?.[0] || id;
+                const label = entity.displayName || entity.name?.[0] || id;
                 this.replaceLeafBreadcrumb(label, fullPath);
               },
               // The leaf keeps the id; the page itself says what went wrong.

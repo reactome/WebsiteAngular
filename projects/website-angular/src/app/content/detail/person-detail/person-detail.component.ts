@@ -167,7 +167,7 @@ export class PersonDetailComponent implements OnInit {
 
   private fetchEvents(id: string, key: SectionKey) {
     return this.http.get<SimpleEvent[]>(`${CONTENT_SERVICE}/data/person/${id}/${key}`).pipe(
-      tap((list) => this[key].set(list ?? [])),
+      tap((list) => this[key].set(list)),
       catchError((error: unknown) => {
         if (!isNotFound(error)) this.contributionsFailed.set(true);
         return EMPTY;

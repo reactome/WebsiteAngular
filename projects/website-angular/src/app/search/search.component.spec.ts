@@ -106,26 +106,6 @@ describe('SearchComponent', () => {
     });
   });
 
-  describe('getPageNumbers()', () => {
-    it('should return correct page range for middle pages', () => {
-      component.totalPages = 20;
-      component.currentPage = 10;
-      expect(component.getPageNumbers()).toEqual([8, 9, 10, 11, 12]);
-    });
-
-    it('should clamp to start when near beginning', () => {
-      component.totalPages = 20;
-      component.currentPage = 1;
-      expect(component.getPageNumbers()).toEqual([0, 1, 2, 3, 4]);
-    });
-
-    it('should clamp to end when near end', () => {
-      component.totalPages = 5;
-      component.currentPage = 4;
-      expect(component.getPageNumbers()).toEqual([0, 1, 2, 3, 4]);
-    });
-  });
-
   describe('goToPage()', () => {
     it('should be a no-op for negative page', () => {
       component.totalPages = 10;

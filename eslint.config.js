@@ -141,7 +141,8 @@ module.exports = tseslint.config(
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-wrapper-object-types': 'warn',
       '@typescript-eslint/no-extra-non-null-assertion': 'warn',
-      '@typescript-eslint/prefer-as-const': 'warn',
+      // The last one went with search's constant currentMode (#344).
+      '@typescript-eslint/prefer-as-const': 'error',
       '@angular-eslint/no-output-rename': 'warn',
       'no-useless-assignment': 'warn',
       'no-unused-vars': 'warn',
