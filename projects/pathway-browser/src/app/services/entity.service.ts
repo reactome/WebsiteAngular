@@ -1,9 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
 import { Pathway } from '../model/graph/event/pathway.model';
-import { catchError, filter, map, Observable, of, take } from 'rxjs';
+import { catchError, filter, map, Observable, of, take, throwError } from 'rxjs';
 import { DataStateService } from './data-state.service';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
 import { DatabaseObject } from '../model/graph/database-object.model';
@@ -59,7 +59,13 @@ export class EntityService {
     const url = `${CONTENT_SERVICE}/data/pathways/low/entity/${stId}`;
     return this.http
       .get<Pathway[]>(url, { params: { species: taxId } })
-      .pipe(catchError(() => of([])));
+      .pipe(
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404
+            ? of([] as Pathway[])
+            : throwError(() => error)
+        )
+      );
   }
 
   getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {

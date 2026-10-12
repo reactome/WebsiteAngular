@@ -144,7 +144,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       });
     });
     effect(() => {
-      const text = this.svgData.value();
+      // value() throws while the resource is in error; loadError says so.
+      const text = this.svgData.hasValue() ? this.svgData.value() : undefined;
       if (text && this.ehldContainer()) {
         let svg: SVGSVGElement;
         try {

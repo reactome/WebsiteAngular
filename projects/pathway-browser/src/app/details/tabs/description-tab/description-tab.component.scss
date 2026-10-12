@@ -549,6 +549,11 @@
 }
 
 // "Other Pathways": a plain list of the pathways this entity also appears in.
+.other-pathways-error {
+  margin: 0;
+  color: var(--mat-sys-error, #b3261e);
+}
+
 .other-pathways {
   list-style: none;
   margin: 0;

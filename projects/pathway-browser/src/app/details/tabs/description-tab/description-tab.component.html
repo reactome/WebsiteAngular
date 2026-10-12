@@ -407,6 +407,11 @@
      currently open, so this is the answer to "where else does this appear?" -->
 <ng-template #otherPathwaysTemplate>
   <div class="element-container">
+    @if (otherPathwaysFailed()) {
+      <p class="other-pathways-error" role="alert">
+        Couldn't load the other pathways this takes part in. Please try again later.
+      </p>
+    }
     <ul class="other-pathways">
       @for (pathway of otherPathways(); track pathway.stId) {
         <li>
