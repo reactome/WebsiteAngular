@@ -79,6 +79,11 @@ export class DataStateService {
 
   public ancestorsLoading = this._ancestors.isLoading;
 
+  /** There is no such pathway: asking again will not help. */
+  readonly pathwayNotFound = computed(
+    () => this._currentPathway.status() === 'error' && isNotFound(this._currentPathway.error())
+  );
+
   /**
    * The open pathway, or what is needed to draw it, could not be loaded: the
    * pathway itself, or -- for one with no diagram of its own -- the ancestors
@@ -86,7 +91,7 @@ export class DataStateService {
    * failure from a pathway with nothing to draw.
    */
   readonly loadFailed = computed(() => {
-    if (this._currentPathway.status() === 'error') return true;
+    if (this._currentPathway.status() === 'error') return !this.pathwayNotFound();
     const pathway = this.currentPathway();
     return !!pathway && !pathway.hasDiagram && this._ancestors.status() === 'error';
   });

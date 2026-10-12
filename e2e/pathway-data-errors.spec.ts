@@ -18,6 +18,8 @@ const LOAD = 90_000;
 const DIAGRAM = 'R-HSA-69620';
 // No diagram of its own: drawn in its parent's.
 const SUBPATHWAY = 'R-HSA-69541';
+// Not a pathway: the service answers 404.
+const MISSING = 'R-HSA-0000001';
 // CDC25A, in Cell Cycle Checkpoints and seven other pathways.
 const ENTITY = 'R-HSA-143487';
 
@@ -48,6 +50,15 @@ test.describe('The pathway browser', () => {
       { timeout: LOAD }
     );
     await expect(view(page)).not.toContainText('No diagram is available');
+  });
+
+  test('says a pathway that does not exist was not found', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${MISSING}`);
+    await expect(view(page).locator('.no-diagram')).toContainText(
+      `There is no pathway ${MISSING}.`,
+      { timeout: LOAD }
+    );
+    await expect(view(page).getByRole('alert')).toHaveCount(0);
   });
 
   test('draws a sub-pathway in its parent’s diagram', async ({ page }) => {
