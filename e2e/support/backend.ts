@@ -48,12 +48,16 @@ import {
   expect,
   type APIRequestContext,
   type BrowserContext,
+  type Page,
+  type Request,
+  type Route,
   type TestInfo,
 } from '@playwright/test';
 import path from 'node:path';
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
+import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -221,10 +225,9 @@ interface HarEntry {
 }
 
 /** `METHOD /path?query` -- deliberately without the origin. */
-function key(method: string, url: string): string {
-  const u = new URL(url);
-  return `${method.toUpperCase()} ${u.pathname}${u.search}`;
-}
+// One definition, shared with the stub stripping (har-stubs.mjs): the two must
+// key a request alike, or stripping silently stops matching.
+const key = harKey;
 
 /** Playwright writes large bodies beside the HAR and references them by name. */
 function bodyOf(entry: HarEntry, harDir: string): Buffer {
@@ -377,6 +380,80 @@ function trackBackendRequests(context: BrowserContext) {
 }
 
 /**
+ * Notes the requests a test answers itself, so they can be left out of its
+ * recording (#404; see e2e/support/har-stubs.mjs).
+ *
+ * The test's `page.route` and `context.route` are wrapped so a `fulfill` is
+ * counted against its request. `unroute` is wrapped to match: a test removing
+ * the handler it passed must remove the wrapper that stands for it. Routes the
+ * fixture set up itself, before this, are not the test's and are not counted.
+ */
+function noteStubs(context: BrowserContext) {
+  const asked = new Map<string, number>();
+  const fulfilled = new Map<string, number>();
+  const bump = (counts: Map<string, number>, request: Request) => {
+    const key = harKey(request.method(), request.url());
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  };
+  context.on('request', (request) => {
+    if (/^https?:/.test(request.url())) bump(asked, request);
+  });
+
+  type Handler = (route: Route, request: Request) => unknown;
+  // A handler may be registered for several URLs; each has its own wrapper.
+  const wrappers = new WeakMap<Handler, Handler[]>();
+  const counting = (handler: Handler): Handler => {
+    const wrapper: Handler = (route, request) =>
+      handler(
+        new Proxy(route, {
+          get(target, property) {
+            if (property === 'fulfill') {
+              return (options: Parameters<Route['fulfill']>[0]) => {
+                bump(fulfilled, request);
+                return target.fulfill(options);
+              };
+            }
+            const value: unknown = Reflect.get(target, property);
+            return typeof value === 'function'
+              ? (value as (...args: unknown[]) => unknown).bind(target)
+              : value;
+          },
+        }),
+        request
+      );
+    wrappers.set(handler, [...(wrappers.get(handler) ?? []), wrapper]);
+    return wrapper;
+  };
+  const wrap = (target: Page | BrowserContext) => {
+    const route = target.route.bind(target) as (...args: unknown[]) => Promise<void>;
+    const unroute = target.unroute.bind(target) as (...args: unknown[]) => Promise<void>;
+    Object.assign(target, {
+      route: (url: unknown, handler: Handler, options?: unknown) =>
+        route(url, counting(handler), options),
+      // Playwright removes a route only when both URL and handler match, so
+      // trying each wrapper of the handler removes just the one for this URL.
+      unroute: async (url: unknown, handler?: Handler) => {
+        if (!handler) return unroute(url);
+        for (const wrapper of wrappers.get(handler) ?? [handler]) await unroute(url, wrapper);
+      },
+    });
+  };
+  wrap(context);
+  context.pages().forEach(wrap);
+  context.on('page', wrap);
+
+  return {
+    /** Writes the note beside the recording, or clears a stale one. */
+    write(har: string) {
+      const file = stubsFile(har);
+      const keys = fullyStubbed(asked, fulfilled);
+      if (keys.length) writeFileSync(file, JSON.stringify(keys));
+      else if (existsSync(file)) unlinkSync(file);
+    },
+  };
+}
+
+/**
  * Watches a test's pages for Angular errors, and fails the test on any once it
  * is done. Attached where the browser context is made, so only tests that use
  * a page pay for it -- an API-only test makes no context at all.
@@ -485,6 +562,7 @@ export const test = base.extend({
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });
       const settle = trackBackendRequests(context);
+      const stubs = noteStubs(context);
       // The wait below happens in this fixture's teardown, which counts against
       // the test's own time limit; give it room so a slow test does not time out
       // only when it is being recorded.
@@ -497,6 +575,7 @@ export const test = base.extend({
       // open until the test's backend requests have finished, up to a ceiling.
       // Recording only: a replay has nothing to wait for.
       await settle(RECORDING_SETTLE_MS);
+      stubs.write(har);
       await angular.check(testInfo);
       gsa.check(testInfo);
       return;
