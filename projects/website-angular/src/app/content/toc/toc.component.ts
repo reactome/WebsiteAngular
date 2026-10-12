@@ -42,6 +42,8 @@ export class TocComponent implements OnInit, OnDestroy {
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(() => {
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();

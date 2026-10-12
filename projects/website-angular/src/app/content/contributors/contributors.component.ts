@@ -55,6 +55,8 @@ export class ContributorsComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.activeLetter = '';
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();
