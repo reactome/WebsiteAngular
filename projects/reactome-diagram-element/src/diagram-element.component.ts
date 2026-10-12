@@ -20,6 +20,7 @@ import { EventService } from '../../pathway-browser/src/app/services/event.servi
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
 import { HierarchyHoverService } from '../../pathway-browser/src/app/services/hierarchy-hover.service';
 import { Analysis } from '../../pathway-browser/src/app/model/analysis.model';
+import { Pathway } from '../../pathway-browser/src/app/model/graph/event/pathway.model';
 import { MemoryState } from './memory-state';
 import { embedProviders } from './embed-providers';
 
@@ -380,9 +381,10 @@ export class DiagramElementComponent {
     if (node) return this.detailOf(node);
     // An illustration's regions, and anything not drawn, are the pathway's own
     // events.
-    const event = this.dataState
-      .currentPathway()
-      ?.events.find((e) => e.element.stId === stId)?.element;
+    // The partner's id can name any event, a reaction as well as a pathway, so
+    // what the lookup found may have no events.
+    const pathway: Partial<Pathway> | undefined = this.dataState.currentPathway();
+    const event = pathway?.events?.find((e) => e.element.stId === stId)?.element;
     return { id: stId, name: event?.displayName ?? null, schemaClass: event?.schemaClass ?? null };
   }
 
