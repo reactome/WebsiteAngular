@@ -291,7 +291,7 @@ export class DataStateService {
   }
 
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    const [first, ...others] = lineages ?? [];
+    const [first, ...others] = lineages;
     if (!first) return [];
     if (others.length === 0) return first;
 

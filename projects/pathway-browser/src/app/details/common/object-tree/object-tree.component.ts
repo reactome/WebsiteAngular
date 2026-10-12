@@ -20,6 +20,7 @@ import {
   isReferenceSummary,
   isRLE,
   isSelectableObject,
+  firstName,
 } from '../../../services/utils';
 import {
   MatNestedTreeNode,
@@ -133,7 +134,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const moleculeStoichiometry = this.stoichiometry();
     const moleculeView = this.moleculeView();
     const highlight = this.highlight();
-    if (!data || (isArray(data) && data.length === 0)) return [];
+    if (isArray(data) && data.length === 0) return [];
     if (!isArray(data)) data = [data];
     if (data[0]?.stoichiometry)
       return data.map((r, index) => ({
@@ -180,7 +181,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const source = this.depthChangeSource();
 
       const tree = this.tree();
-      if (index === 1 && tree) {
+      if (index === 1) {
         tree.collapseAll();
         return;
       }
@@ -217,10 +218,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     },
   });
 
-  inDepth(id: string | number, depth: number): Observable<E> {
+  inDepth(id: string | number, depth: number): Observable<E | null> {
     return this.scope() === 'entity'
-      ? this.entity.getEntityInDepth(id, depth)
-      : this.entity.getEventInDepth(id, depth);
+      ? this.entity.getEntityInDepth<E>(id, depth)
+      : this.entity.getEventInDepth<E>(id, depth);
   }
 
   // TODO only query for the required data, no need to know where the molecule is acting in this view
@@ -242,8 +243,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
         // PE -> Complex and Set
         return this.inDepth(param.params, 1) // This is from user interaction on the tree itself, so the depth is always 1
           .pipe(
-            map((entityResult) => {
-              if (entityResult && entityResult.composedOf) {
+            map((entityResult): E | null => {
+              // An entity the service no longer knows: nothing to add.
+              if (!entityResult) return null;
+              if (entityResult.composedOf) {
                 entityResult.composedOf = entityResult.composedOf.map((composed, index) => ({
                   ...composed,
                   element: {
@@ -253,10 +256,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
                   index: index,
                 }));
               }
-              return {
-                ...entityResult,
-                isLoaded: true,
-              };
+              return { ...entityResult, isLoaded: true };
             })
           );
       }
@@ -264,7 +264,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   });
 
   childrenAccessor = (node: R): R[] => {
-    if (!node || !node.element.composedOf) {
+    if (!node.element.composedOf) {
       return []; // Return an empty array when composedOf is undefined
     }
     return node.element.composedOf as R[];
@@ -314,7 +314,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
     return this.inDepth(id, depth).pipe(
       map((entityResult) => {
-        const composedOf = entityResult.composedOf || [];
+        const composedOf = entityResult?.composedOf || [];
         const nestedElement = {
           ...element,
           ...entityResult,
@@ -331,13 +331,13 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   // Recursively tracks the deepest level of the tree
   getTreeDepth(nodes: R[], level = 1, respectExpansion = false): number {
-    if (!nodes || nodes.length === 0) return level;
+    if (nodes.length === 0) return level;
 
     return Math.max(
       ...nodes.map((node) => {
-        const children = node.element?.composedOf || [];
+        const children = node.element.composedOf || [];
 
-        const isExpanded = this.tree()?.isExpanded(node);
+        const isExpanded = this.tree().isExpanded(node);
         const isNested = this.isNestedView(node.element);
 
         // Stop if not expanded or not nested
@@ -366,7 +366,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     if (!Array.isArray(composedArray)) return [];
 
     return composedArray.map((composed, index) => {
-      const element = composed?.element ?? [];
+      const element = composed.element;
       const nestedComposedOf = Array.isArray(element.composedOf)
         ? this.getComposedOfRecursively(element.composedOf)
         : [];
@@ -405,7 +405,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   isEllipsisActive(e: HTMLElement): boolean {
-    return e ? e.offsetWidth < e.scrollWidth : false;
+    return e.offsetWidth < e.scrollWidth;
   }
 
   // Important to use the updateCounter to trigger the update on the parent node when the child node is updated
@@ -458,7 +458,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getCurrentNodeConnector(size: number, node: R): Connector {
-    if (!size || !node) return null;
+    if (!size) return null;
     const index = node.index;
 
     return {
@@ -616,14 +616,17 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   private requireNavigate(node: E) {
     return (
       isPathway(node) &&
-      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species?.[0]?.abbreviation))
+      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species[0]?.abbreviation))
     );
   }
 
   getUrl(element: E): string {
     if (isReferenceSummary(element)) return element.url;
-    if ((isEWAS(element) || isChemical(element)) && element.referenceEntity?.url) {
-      return element.referenceEntity.url;
+    // The tree's elements come from the in-depth projection, which leaves an
+    // entity's reference out, though the full entity types always carry one.
+    const reference = (element as { referenceEntity?: { url?: string } }).referenceEntity;
+    if ((isEWAS(element) || isChemical(element)) && reference?.url) {
+      return reference.url;
     }
     if (this.moleculeView() && isMolecule(element)) {
       return element.url;
@@ -640,7 +643,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
     if (isSelectableObject(element)) {
       const displayName = this.extractCompartmentPipe.transform(element.displayName, true);
-      return element.name?.[0] || displayName || element.displayName;
+      return firstName(element) || displayName || element.displayName;
     }
     return element.displayName;
   }
@@ -678,7 +681,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
     const maxStringLength = 30; // Use Molluscum contagiosum virus's length
     const speciesArr = Array.isArray(species) ? species : [species];
-    const firstSpeciesName = speciesArr?.[0]?.name;
+    const firstSpeciesName = speciesArr[0]?.name;
     const shouldShorten = speciesName.length >= maxStringLength && firstSpeciesName.length > 1;
 
     return shouldShorten ? this.getShortest(firstSpeciesName) : speciesName;

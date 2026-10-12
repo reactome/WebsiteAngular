@@ -92,9 +92,10 @@ module.exports = tseslint.config(
       // A check the types say can never matter: a `?.` on a value typed as
       // never null, an `if` that is always true. Where the value is API data,
       // the answer is not to delete the check but to make the type say the
-      // field can be missing, from what the data shows (#344). Held while the
-      // existing ones are worked down.
-      '@typescript-eslint/no-unnecessary-condition': 'warn',
+      // field can be missing, from what the data shows -- the types were set by
+      // measuring the services' answers (#344), and several "unnecessary" guards
+      // turned out to be the only thing between a missing field and a crash.
+      '@typescript-eslint/no-unnecessary-condition': 'error',
       '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/no-namespace': 'warn',
       '@typescript-eslint/no-unused-expressions': 'warn',

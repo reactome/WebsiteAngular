@@ -32,7 +32,8 @@ const UNIPROT = 'http://www.uniprot.org/uniprot/';
 
 export interface ParsedInteractions {
   /** Drawable, in the shape the overlay already consumes. */
-  interactors: Interactors;
+  // Built here, so always with its entities.
+  interactors: Interactors & { entities: InteractorEntity[] };
   /** Accepted, but the reader should know. */
   warnings: string[];
   /** Nothing usable was found, and why. */

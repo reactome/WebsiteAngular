@@ -438,10 +438,10 @@ export class InteractorService {
   }
 
   public getIdentifiersFromGraph(cy: cytoscape.Core) {
-    const graphNodes = cy?.nodes(`[graph]`);
+    const graphNodes = cy.nodes(`[graph]`);
     const result: string[] = [];
 
-    graphNodes?.forEach((entity) => {
+    graphNodes.forEach((entity) => {
       const schemaClass = entity.data('graph').schemaClass;
       if (schemaClass === 'EntityWithAccessionedSequence' || schemaClass === 'SimpleEntity') {
         result.push(entity.data('acc'));
@@ -521,8 +521,8 @@ export class InteractorService {
     interactors.entities
       .filter((interactorEntity) => interactorEntity.count > 0)
       .forEach((interactorEntity) => {
-        const entities = cy?.nodes(`[acc = '${interactorEntity.acc}']`);
-        entities?.forEach((entityNode) => {
+        const entities = cy.nodes(`[acc = '${interactorEntity.acc}']`);
+        entities.forEach((entityNode) => {
           const pos = { ...entityNode.position() };
           pos.x += entityNode.width() / 2;
           pos.y -= entityNode.height() / 2;
@@ -530,7 +530,7 @@ export class InteractorService {
           const id = entityNode.id() + '-occ' + '-' + resource.toLowerCase();
 
           if (!entityNode.classes().includes('Modification')) {
-            const occurrenceNode = cy?.add({
+            const occurrenceNode = cy.add({
               data: {
                 ...entityNode.data(),
                 exp: undefined,
@@ -711,13 +711,13 @@ export class InteractorService {
     // which is what makes a cap defensible: the ones you lose are the ones with
     // the least evidence behind them.
     interactorsData = [...interactorsData].sort(
-      (a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.acc ?? '').localeCompare(b.acc ?? '')
+      (a, b) => (b.score ?? -1) - (a.score ?? -1) || a.acc.localeCompare(b.acc)
     );
     // get interactors to draw with a provided a number, collect existing interactors for creating edge
     for (const interactor of interactorsData) {
-      const diagramNodes = cy?.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
+      const diagramNodes = cy.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
 
-      if (!diagramNodes || diagramNodes.length === 0) {
+      if (diagramNodes.length === 0) {
         dynamicInteractors.push(interactor);
       } else {
         interactor.existingNodes = diagramNodes;
@@ -731,7 +731,7 @@ export class InteractorService {
     // by name costs nothing and the two decisions stop fighting each other.
     const drawn = dynamicInteractors
       .slice(0, numberToAdd)
-      .sort((a, b) => (a.alias ?? a.acc ?? '').localeCompare(b.alias ?? b.acc ?? ''));
+      .sort((a, b) => (a.alias ?? a.acc).localeCompare(b.alias ?? b.acc));
     return [drawn, existingInteractors];
   }
 
@@ -753,7 +753,7 @@ export class InteractorService {
         resource === ResourceType.DISGENET
           ? ['PhysicalEntity', 'Interactor', 'disease']
           : [
-              ...(this.diagramService.nodeTypeMap.get(interactor.type) || defaultType),
+              ...(this.diagramService.nodeTypeMap.get(interactor.type ?? '') || defaultType),
               'Interactor',
             ];
       const width =
@@ -797,7 +797,7 @@ export class InteractorService {
         selectable: false,
       });
     });
-    return cy?.add(interactorNodes);
+    return cy.add(interactorNodes);
   }
 
   public createInteractorEdges(
@@ -838,7 +838,7 @@ export class InteractorService {
         });
       });
     });
-    cy?.add(interactorEdges);
+    cy.add(interactorEdges);
   }
 
   public displayInteractors(interactorsToDisplay: NodeCollection, _cy: cytoscape.Core) {
@@ -969,26 +969,6 @@ export class InteractorService {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
       })
       .pipe(map((interactors) => ({ token: token, interactors: interactors })));
-  }
-
-  public getResourceTypeStatic(resource: string): ResourceType | null {
-    if (resource === ResourceType.STATIC) {
-      return ResourceType.STATIC;
-    }
-    if (resource === ResourceType.DISGENET) {
-      return ResourceType.DISGENET;
-    }
-
-    // isFromPSICQUIC will be a function with a static dictionary to map to result, not Observable
-    if (this.isFromPSICQUIC(resource)) {
-      return ResourceType.PSICQUIC;
-    }
-    // none of above then is custom
-    if (this.isCustomResource(resource)) {
-      return ResourceType.CUSTOM;
-    }
-
-    return null;
   }
 
   public getResourceType(resource: string): Observable<ResourceType | null> {

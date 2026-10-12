@@ -112,7 +112,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   );
   panZoomInstance?: SvgPanZoom.Instance;
   legendItems: LegendGroup[] = [...this.ehldService.legendItems];
-  resizeObserver!: ResizeObserver;
+  private readonly resizeObserver = new ResizeObserver(() => {
+    if (!this.panZoomInstance) return;
+    this.handleResize();
+  });
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
   readonly controlMaxZoom = signal<number>(15);
@@ -146,7 +149,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       // value() throws while the resource is in error; loadError says so.
       const text = this.svgData.hasValue() ? this.svgData.value() : undefined;
-      if (text && this.ehldContainer()) {
+      if (text) {
         let svg: SVGSVGElement;
         try {
           svg = parseEhldSvg(text);
@@ -213,11 +216,6 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.style = new Style(this.ehldContainer().nativeElement);
-
-    this.resizeObserver = new ResizeObserver(() => {
-      if (!this.panZoomInstance) return;
-      this.handleResize();
-    });
 
     this.resizeObserver.observe(this.ehldContainer().nativeElement);
   }
@@ -316,14 +314,15 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   private loadAnalysis() {
     const elementsMap = this.stIdToSVGGElement();
-    const svg = this.ehldContainer().nativeElement.querySelector('svg')!;
+    // Not there until the illustration has loaded.
+    const svg = this.ehldContainer().nativeElement.querySelector('svg');
     if (!svg) return;
     this.ehldService.clearExistingPatterns(svg);
     this.ehldService.clearAllOverlay(elementsMap);
     this.ehldService.clearAnalysisInfo(elementsMap);
 
-    const bg = svg.querySelector('#BG') as SVGGElement;
-    const fg = svg.querySelector('#FG') as SVGGElement;
+    const bg = svg.querySelector<SVGGElement>('#BG');
+    const fg = svg.querySelector<SVGGElement>('#FG');
 
     const allPathwayStIds = this.subpathwayStIds();
     if (!this.analysis.result()) {
@@ -373,9 +372,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
+    this.resizeObserver.disconnect();
     if (this.panZoomInstance) {
       this.panZoomInstance.destroy();
     }

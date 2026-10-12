@@ -23,22 +23,30 @@ export class DescriptionOverviewComponent {
   readonly obj = input.required<DatabaseObject>();
   readonly showSpecies = input<boolean>(true);
 
-  readonly category: Signal<string> = computed(() => getProperty(this.obj(), DataKeys.CATEGORY));
-  readonly className: Signal<string> = computed(() => getProperty(this.obj(), DataKeys.CLASS_NAME));
-  readonly speciesName: Signal<string> = computed(() =>
+  readonly category: Signal<string | undefined> = computed(() =>
+    getProperty(this.obj(), DataKeys.CATEGORY)
+  );
+  readonly className: Signal<string | undefined> = computed(() =>
+    getProperty(this.obj(), DataKeys.CLASS_NAME)
+  );
+  readonly speciesName: Signal<string | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.SPECIES_NAME)
   );
-  readonly compartment: Signal<HasCompartment[]> = computed(() =>
+  readonly compartment: Signal<HasCompartment[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.COMPARTMENT)
   );
   readonly name: Signal<string> = computed(
     () => getProperty(this.obj(), DataKeys.NAME) || [getProperty(this.obj(), DataKeys.DISPLAY_NAME)]
   );
-  readonly tissue: Signal<Anatomy> = computed(() => getProperty(this.obj(), DataKeys.TISSUE));
-  readonly reviewStatus: Signal<ReviewStatus> = computed(() =>
+  readonly tissue: Signal<Anatomy | undefined> = computed(() =>
+    getProperty(this.obj(), DataKeys.TISSUE)
+  );
+  readonly reviewStatus: Signal<ReviewStatus | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REVIEW_STATUS)
   );
-  readonly disease: Signal<Disease[]> = computed(() => getProperty(this.obj(), DataKeys.DISEASE));
+  readonly disease: Signal<Disease[] | undefined> = computed(() =>
+    getProperty(this.obj(), DataKeys.DISEASE)
+  );
   /**
    * "Computationally inferred", for an event that was -- and only for those.
    *
@@ -66,11 +74,13 @@ export class DescriptionOverviewComponent {
   readonly goBiologicalProcess: Signal<GO_BiologicalProcess | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.GO_BIOLOGICAL_PROCESS)
   );
-  readonly cellType: Signal<CellType[]> = computed(() =>
+  readonly cellType: Signal<CellType[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CELL_TYPE)
   );
-  readonly organ: Signal<Anatomy> = computed(() => getProperty(this.obj(), DataKeys.ORGAN));
-  readonly tissueLayer: Signal<Anatomy> = computed(() =>
+  readonly organ: Signal<Anatomy | undefined> = computed(() =>
+    getProperty(this.obj(), DataKeys.ORGAN)
+  );
+  readonly tissueLayer: Signal<Anatomy | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.TISSUE_LAYER)
   );
 

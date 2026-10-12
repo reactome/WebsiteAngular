@@ -154,10 +154,11 @@ export namespace Analysis {
   export type Type = (typeof TYPES)[number];
 
   export interface Result {
+    /** An overrepresentation analysis has no values: no min or max, no columns. */
     expression: {
       columnNames: string[];
-      min: number;
-      max: number;
+      min?: number;
+      max?: number;
     };
     identifiersNotFound: number;
     pathwaysFound: number;

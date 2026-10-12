@@ -140,7 +140,7 @@ export class EhldService {
   }
 
   isFlagged(element: SVGGElement, flaggedElement: (SVGGElement | undefined)[]): boolean {
-    return flaggedElement?.includes(element) ?? false;
+    return flaggedElement.includes(element);
   }
 
   /***
@@ -154,7 +154,7 @@ export class EhldService {
   getStableId(identifier: string) {
     const STID_PATTERN_LITE = /R-[A-Z]{3}-[0-9]{3,}/;
 
-    if (identifier?.trim()) {
+    if (identifier.trim()) {
       const result = STID_PATTERN_LITE.exec(identifier);
 
       if (result && result.length > 0) {
@@ -201,7 +201,7 @@ export class EhldService {
   getDbId(identifier: string) {
     const DBID_PATTERN_LITE = /\d+$/;
 
-    if (identifier?.trim()) {
+    if (identifier.trim()) {
       const result = DBID_PATTERN_LITE.exec(identifier);
       if (result && result.length > 0) {
         return result[0]; // First match
@@ -332,10 +332,7 @@ export class EhldService {
       exp: number | undefined;
       width: number;
     }[] = [];
-    const size = values.reduce(
-      (l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1),
-      0
-    );
+    const size = values.reduce((l: number, e) => l + e[1], 0);
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
     values.forEach((exp, _i) => {
@@ -370,9 +367,9 @@ export class EhldService {
 
   showAnalysisInfo(regionElement: SVGGElement, analysisPathway: Analysis.Pathway | undefined) {
     if (!analysisPathway) return;
-    const analysisInfoElement = regionElement.querySelector(
+    const analysisInfoElement = regionElement.querySelector<SVGGElement>(
       `g[id^="${this.analysisInfoId}"]`
-    ) as SVGGElement;
+    );
 
     if (analysisInfoElement) {
       // The label is the whole point of this box, so find it before revealing
@@ -603,8 +600,8 @@ export class EhldService {
     const analysisContainerClass = '.analysis-info-container';
     const analysisTextClass = '.analysis-text';
     // Get one representative element for each class
-    const container = svg.querySelector(`${analysisContainerClass}`) as HTMLElement;
-    const text = svg.querySelector(`${analysisTextClass}`) as HTMLElement;
+    const container = svg.querySelector<HTMLElement>(analysisContainerClass);
+    const text = svg.querySelector<HTMLElement>(analysisTextClass);
     if (!container || !text) return svg;
     // grab computed styles
     const containerStyle = getComputedStyle(container);

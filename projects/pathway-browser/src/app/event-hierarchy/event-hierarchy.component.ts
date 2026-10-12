@@ -425,7 +425,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       if (isPathway(event) && event.events) {
         this.selectAllParents(
           selectedEvent,
-          event.events?.map((e) => e.element)
+          event.events.map((e) => e.element)
         );
       }
     });
@@ -436,7 +436,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     events.forEach((event) => {
       event.isSelected = false;
       if (isPathway(event) && event.events) {
-        this.clearAllSelectedEvents(event.events?.map((e) => e.element));
+        this.clearAllSelectedEvents(event.events.map((e) => e.element));
       }
     });
   }
@@ -618,7 +618,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const expanded = new Set<string>();
     const traverse = (items: Event[]) => {
       for (const node of items) {
-        if (this.tree()?.isExpanded(node)) {
+        if (this.tree().isExpanded(node)) {
           expanded.add(node.stId);
         }
         if (isPathway(node) && node.events) {
@@ -635,7 +635,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const traverse = (items: Event[]) => {
       for (const node of items) {
         if (expandedIds.has(node.stId)) {
-          this.tree()?.expand(node);
+          this.tree().expand(node);
         }
         if (isPathway(node) && node.events) {
           traverse(node.events.map((e) => e.element));

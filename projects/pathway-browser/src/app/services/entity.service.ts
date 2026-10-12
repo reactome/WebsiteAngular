@@ -68,10 +68,17 @@ export class EntityService {
       );
   }
 
-  getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  /**
+   * Null for an id the service does not know: it answers that with 200 and an
+   * empty body, unlike the event endpoint's 404.
+   */
+  getEntityInDepth<E extends DatabaseObject>(
+    id: string | number,
+    depth: number
+  ): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<E | null>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',

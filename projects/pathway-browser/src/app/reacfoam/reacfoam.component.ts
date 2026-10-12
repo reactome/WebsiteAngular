@@ -196,7 +196,7 @@ export class ReacfoamComponent implements OnDestroy {
   readonly flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
 
   setFlag(groups: PathwayGroup[]) {
-    groups?.forEach((group: PathwayGroup) => {
+    groups.forEach((group: PathwayGroup) => {
       group.flag = this.flagging() ? this.cleanFlagIdentifiers().has(group.stId) : false;
       group.groups && this.setFlag(group.groups);
     });
@@ -246,10 +246,7 @@ export class ReacfoamComponent implements OnDestroy {
         }
       })().catch((error) => console.error('Reacfoam selection update failed', error));
     });
-    effect(
-      () =>
-        this.container()?.nativeElement && this.sizeObserver.observe(this.container().nativeElement)
-    );
+    effect(() => this.sizeObserver.observe(this.container().nativeElement));
     effect(() => {
       // Update colors upon analysis column switching
       this.analysis.sampleIndex(); // Update colors on expression column shifting
@@ -394,14 +391,14 @@ export class ReacfoamComponent implements OnDestroy {
           width: '150px',
           height: '150px',
         });
-        if (request && this.download.isRasterFormat(request.format)) {
+        if (this.download.isRasterFormat(request.format)) {
           const params: FoamTree.ImageFormat = {
             format: this.download.toFoamtreeType(request.format),
             ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
           };
           this.exportRaster(request.format, params);
           this.download.resetDownload();
-        } else if (request?.format === DownloadFormat.SVG) {
+        } else if (request.format === DownloadFormat.SVG) {
           this.download.export(
             await this.svgExporter.exportReacfoam(this, options),
             request.format,

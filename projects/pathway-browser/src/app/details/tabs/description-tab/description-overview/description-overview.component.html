@@ -27,14 +27,14 @@
           }
         </div>
       </div>
-      @if (cellType()) {
+      @if (cellType(); as cellTypeList) {
         <div class="row">
           <div class="label">Cell Type</div>
           <div class="value compartment-row">
-            @for (type of cellType(); track type.dbId; let i = $index) {
+            @for (type of cellTypeList; track type.dbId; let i = $index) {
               <cr-ontology-term [term]="type"></cr-ontology-term>
               <!-- Add comma separator except for last item -->
-              @if (i < cellType().length - 1) {
+              @if (i < cellTypeList.length - 1) {
                 <span class="comma">,</span>
               }
             }
@@ -47,28 +47,28 @@
           <div class="value">{{ speciesName() }}</div>
         </div>
       }
-      @if (compartment()) {
+      @if (compartment(); as compartmentList) {
         <div class="row">
           <div class="label">Compartment</div>
           <div class="value compartment-row">
-            @for (has of compartment(); track has?.element?.dbId ?? $index; let i = $index) {
+            @for (has of compartmentList; track has?.element?.dbId ?? $index; let i = $index) {
               <cr-ontology-term [term]="has.element" />
               <!-- Add comma separator except for last item -->
-              @if (i < compartment().length - 1) {
+              @if (i < compartmentList.length - 1) {
                 <span class="comma">,</span>
               }
             }
           </div>
         </div>
       }
-      @if (disease()) {
+      @if (disease(); as diseaseList) {
         <div class="row">
           <div class="label">Disease</div>
           <div class="value compartment-row">
-            @for (d of disease(); track d.dbId; let i = $index) {
+            @for (d of diseaseList; track d.dbId; let i = $index) {
               <cr-ontology-term [term]="d" [titleCase]="true" />
               <!-- Add comma separator except for last item -->
-              @if (i < disease().length - 1) {
+              @if (i < diseaseList.length - 1) {
                 <span class="comma">,</span>
               }
             }
@@ -95,27 +95,27 @@
           <div class="value">{{ name().slice(1) }}</div>
         </div>
       }
-      @if (organ()) {
+      @if (organ(); as organ) {
         <div class="row">
           <div class="label">Organ</div>
           <div class="value">
-            <cr-ontology-term [term]="organ()" />
+            <cr-ontology-term [term]="organ" />
           </div>
         </div>
       }
-      @if (tissue()) {
+      @if (tissue(); as tissue) {
         <div class="row">
           <div class="label">Tissue</div>
           <div class="value">
-            <cr-ontology-term [term]="tissue()" />
+            <cr-ontology-term [term]="tissue" />
           </div>
         </div>
       }
-      @if (tissueLayer()) {
+      @if (tissueLayer(); as tissueLayer) {
         <div class="row">
           <div class="label">Tissue Layer</div>
           <div class="value">
-            <cr-ontology-term [term]="tissueLayer()" />
+            <cr-ontology-term [term]="tissueLayer" />
           </div>
         </div>
       }

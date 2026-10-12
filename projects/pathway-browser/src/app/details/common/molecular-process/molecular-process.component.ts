@@ -49,8 +49,9 @@ export class MolecularProcessComponent {
   readonly objects = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>({
     alias: 'entries',
   });
-  readonly catalystActivityReference = input.required<CatalystActivityReference>();
-  readonly regulationRefs = input.required<RegulationReference[]>();
+  // Most events have neither.
+  readonly catalystActivityReference = input<CatalystActivityReference>();
+  readonly regulationRefs = input<RegulationReference[]>();
 
   readonly perspective = input<'entity' | 'event'>('event');
 

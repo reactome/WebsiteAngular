@@ -27,10 +27,14 @@ export class DetailEntityService implements Partial<EntityService> {
     return this.http.get<PhysicalEntity[]>(url);
   }
 
-  getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  // Null for an unknown id: see EntityService.getEntityInDepth.
+  getEntityInDepth<E extends DatabaseObject>(
+    id: string | number,
+    depth: number
+  ): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<E | null>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',

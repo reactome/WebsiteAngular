@@ -196,7 +196,7 @@ export class InteractorsComponent implements AfterViewInit {
     // custom resource while `currentResource()` holds its *name*, so the two
     // could never match and clicking an active custom resource never put it
     // away -- the one gesture this branch exists for.
-    const name = typeof resource === 'string' ? resource : resource.summary?.name;
+    const name = typeof resource === 'string' ? resource : resource.summary.name;
     if (chosenByReader && name && this.currentResource().name === name) {
       this.clearInteractors();
       return;
@@ -253,7 +253,7 @@ export class InteractorsComponent implements AfterViewInit {
   private asToken(resource: string | InteractorToken): InteractorToken {
     if (typeof resource !== 'string') return resource;
 
-    const known = this.resourceTokens?.find((token) => token.summary?.token === resource);
+    const known = this.resourceTokens.find((token) => token.summary.token === resource);
     if (known) return known;
 
     const made: InteractorToken = {
@@ -265,7 +265,7 @@ export class InteractorsComponent implements AfterViewInit {
         interactions: 0,
       },
     };
-    this.resourceTokens?.push(made);
+    this.resourceTokens.push(made);
     return made;
   }
 
@@ -333,8 +333,6 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   getCustomResourceInteractors(resource: InteractorToken) {
-    if (!resource.summary) return;
-
     // A resource parsed in this page has no token, because there is nothing on a
     // server to point at. Asking for one would be a request for `token/` with an
     // empty id -- so it redraws from what is already held, and the address is
@@ -375,7 +373,7 @@ export class InteractorsComponent implements AfterViewInit {
     // a selector matching nothing, so deleting removed the button and left the
     // interactors drawn. Measured on beta: one badge before, one badge after,
     // and the list empty.
-    const name = resource.summary?.name;
+    const name = resource.summary.name;
     if (!name) return;
 
     // By name *and* by token. A resource read in this page is drawn under its
@@ -384,7 +382,7 @@ export class InteractorsComponent implements AfterViewInit {
     // diagram, which is the same fault this method was just fixed for, still
     // live on the other half of the path. Measured: one badge before deleting,
     // one after.
-    const identifiers = [name, resource.summary?.token].filter(
+    const identifiers = [name, resource.summary.token].filter(
       (identifier): identifier is string => !!identifier
     );
 

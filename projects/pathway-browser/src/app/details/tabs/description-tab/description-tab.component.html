@@ -147,20 +147,26 @@
 <!-- Cell markers -->
 <ng-template #markerTemplate>
   <div class="element-container">
-    <cr-cell-marker [proteinMarkers]="proteinMarkers()" [rnaMarkers]="rnaMarkers()" [markerRefs]="markerReference()" />
+    <cr-cell-marker
+      [proteinMarkers]="proteinMarkers()"
+      [rnaMarkers]="rnaMarkers()"
+      [markerRefs]="markerReference() ?? []"
+    />
   </div>
 </ng-template>
 
 <!-- External Reference -->
 <ng-template #referenceTemplate>
-  <cr-external-reference [referenceEntity]="referenceEntity()" [xRefs]="crossReference()"></cr-external-reference>
+  @if (referenceEntity(); as referenceEntity) {
+    <cr-external-reference [referenceEntity]="referenceEntity" [xRefs]="crossReference()"></cr-external-reference>
+  }
 </ng-template>
 
 <!-- Modifications-->
 <ng-template #modificationsTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="modifications()"
+      [entries]="modifications() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
     ></cr-molecular-process>
@@ -304,7 +310,7 @@
 <ng-template #catalystActivityTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="catalystActivity()"
+      [entries]="catalystActivity() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
     ></cr-molecular-process>
@@ -314,7 +320,7 @@
 <ng-template #catalystActivitiesTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="catalystActivities()"
+      [entries]="catalystActivities() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
       perspective="entity"
@@ -326,7 +332,7 @@
 <ng-template #regulationTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="regulations()"
+      [entries]="regulations() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
       perspective="event"

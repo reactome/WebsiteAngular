@@ -326,7 +326,9 @@ export class EventService {
     tree: MatTree<Event, string>,
     _hitReactions: number[]
   ): void {
-    const reactionDiagramStId = [...selectedReaction.ancestors]
+    // Not yet known: nothing to decide about.
+    const ancestors = selectedReaction.ancestors ?? [];
+    const reactionDiagramStId = [...ancestors]
       .reverse()
       .find((ancestor) => isPathway(ancestor) && ancestor.hasDiagram)?.stId;
     const isReactionInCurrentDiagram =
@@ -336,14 +338,14 @@ export class EventService {
       diagramId = this.getPathwayWithDiagram(selectedReaction)?.stId;
       if (diagramId) {
         this.state.pathwayId.set(diagramId);
-        const ancestorIds = new Set(selectedReaction.ancestors.map((a) => a.stId));
+        const ancestorIds = new Set(ancestors.map((a) => a.stId));
         allVisibleTreeNodes
           .filter((node) => !ancestorIds.has(node.stId))
           .forEach((node) => {
             node.isSelected = false;
             tree.collapse(node);
           });
-        this.setBreadcrumbs(selectedReaction.ancestors);
+        this.setBreadcrumbs(ancestors);
       }
     }
   }
@@ -374,7 +376,8 @@ export class EventService {
     }
   }
 
-  clearAllSelectedEvents(events: Event[]) {
+  // A pathway's events are missing until loaded.
+  clearAllSelectedEvents(events: Event[] | undefined) {
     events?.forEach((event) => {
       event.isSelected = false;
       if (isPathway(event)) {
@@ -383,7 +386,7 @@ export class EventService {
     });
   }
 
-  clearAllHitEvents(events: Event[]) {
+  clearAllHitEvents(events: Event[] | undefined) {
     events?.forEach((event) => {
       event.hit = false;
       if (isPathway(event)) {
@@ -567,7 +570,7 @@ export class EventService {
         // Search in last matched event's children or full tree
         const treeEventResources =
           this.lastMatchedEvent && isPathway(this.lastMatchedEvent)
-            ? this.lastMatchedEvent.events?.map((e) => e.element)
+            ? (this.lastMatchedEvent.events?.map((e) => e.element) ?? [])
             : tree;
         let targetTreeEvent = this.findTreeEvent(treeEventResources, ancestor.stId);
         if (!targetTreeEvent) targetTreeEvent = this.findTreeEvent(tree, ancestor.stId); // Not found in previous pathway, search in the global tree
@@ -752,7 +755,7 @@ export class EventService {
       if (!isPathway(event)) return;
       if (event.events && event.events.length > 0) {
         this.addHitReactions(
-          event.events?.map((e) => e.element),
+          event.events.map((e) => e.element),
           hitReactions
         );
       }
@@ -766,7 +769,7 @@ export class EventService {
       }
       if (isPathway(event) && event.events) {
         const found = this.findTreeEvent(
-          event.events?.map((e) => e.element),
+          event.events.map((e) => e.element),
           targetId
         );
         if (found) return found;
@@ -778,7 +781,7 @@ export class EventService {
   setSubtreeColors(event: Event, colors: Map<number, string> | undefined) {
     if (colors && isPathway(event) && event.events) {
       event.events
-        ?.map((e) => e.element)
+        .map((e) => e.element)
         .forEach((e) => {
           if (isPathway(e) && !e.hasDiagram) {
             e.subpathwayColor = colors.get(e.dbId);
@@ -791,7 +794,7 @@ export class EventService {
     pathIds = pathIds || this.state.path();
     let finalAncestor: Event[] | undefined;
     // When path is given through URL, this link is from Location in PWB on detail page
-    if (pathIds && ancestors.length > 1) {
+    if (ancestors.length > 1) {
       finalAncestor = this.findBestAncestors(ancestors, pathIds);
     } else {
       // Take the first ancestor if no path is given
@@ -802,7 +805,7 @@ export class EventService {
     return finalAncestor ?? [];
   }
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    const [first, ...others] = lineages ?? [];
+    const [first, ...others] = lineages;
     if (!first) return [];
     if (others.length === 0) return first;
 
@@ -886,7 +889,7 @@ export class EventService {
       nodes.forEach((node) => {
         flatTreeData.push(node);
         if (isPathway(node)) {
-          flatten(node.events?.map((e) => e.element));
+          flatten(node.events?.map((e) => e.element) ?? []);
         }
       });
     };
@@ -907,7 +910,10 @@ export class EventService {
     return this.hasChild(0, event);
   }
 
-  getPathwayWithDiagram(event: Event, lineage: Event[] = event.ancestors): Event | undefined {
+  getPathwayWithDiagram(
+    event: Event,
+    lineage: Event[] | undefined = event.ancestors
+  ): Event | undefined {
     const parents = [...(lineage ?? [])].reverse();
     return parents.find((p) => isPathway(p) && p.stId !== event.stId && p.hasDiagram);
   }
@@ -919,7 +925,7 @@ export class EventService {
     if (!parentTree) return;
     if (!isPathway(parentTree)) return;
     // Loop through the parent's children to collapse any expanded siblings
-    parentTree.events.forEach((childEvent) => {
+    parentTree.events?.forEach((childEvent) => {
       if (childEvent.element !== event && matTree.isExpanded(childEvent.element)) {
         matTree.collapse(childEvent.element);
         childEvent.element.isSelected = false;

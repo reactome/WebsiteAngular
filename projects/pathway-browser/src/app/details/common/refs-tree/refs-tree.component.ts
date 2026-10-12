@@ -52,7 +52,7 @@ export class RefsTreeComponent {
     },
   });
   readonly title = computed(
-    () => `${this.referenceHolder()?.literatureReference.length} references`
+    () => `${this.referenceHolder().literatureReference.length} references`
   );
 
   dataSource = new MatTreeNestedDataSource<ReferenceNode>();

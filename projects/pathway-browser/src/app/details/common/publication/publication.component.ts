@@ -57,7 +57,7 @@ export class PublicationComponent {
   /** Heading text: `title` for newer instances, `displayName` for older ones. */
   readonly heading = computed<string>(() => {
     const ref = this.ref();
-    return (this.isNewerInstance() ? ref.title?.trim() : '') || ref.displayName;
+    return (this.isNewerInstance() ? ref.title.trim() : '') || ref.displayName;
   });
 
   /** Free-text author byline, only used when no structured authors exist. */

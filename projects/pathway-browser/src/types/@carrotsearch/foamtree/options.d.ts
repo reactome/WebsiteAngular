@@ -56,7 +56,8 @@ declare module '@carrotsearch/foamtree' {
       /**
        * Root of hierarchy to visualize
        */
-      dataObject: { groups: D[] };
+      // Exists before its groups do while the map loads (#344).
+      dataObject: { groups?: D[] };
       /**
        * Determines the general type of layout to generate. Depending on this option, FoamTree will produce polygon-based organic-looking visualization or the traditional rectangular tree map.
        *
@@ -2421,17 +2422,21 @@ declare module '@carrotsearch/foamtree' {
       /**
        * Returns hierarchy-related information about a group. The returned object contains the following properties:
        */
-      hierarchy: ParametrizedOption<[IndividualGroupSelector], HierarchyObject<D>>;
+      // Nothing for a group the map does not have (#344).
+      hierarchy: ParametrizedOption<
+        [IndividualGroupSelector],
+        HierarchyObject<D> | null | undefined
+      >;
 
       /**
        * To retrieve the full geometry information, including coordinates of the polygon's vertices, pass true as the third parameter of the get method:
        */
-      geometry: ParametrizedOption<[GroupSelector, boolean], GeometryObject<D>>;
+      geometry: ParametrizedOption<[GroupSelector, boolean], GeometryObject<D> | null | undefined>;
 
       /**
        * Returns information about the state of the group. The returned object contains the following properties:
        */
-      state: ParametrizedOption<[IndividualGroupSelector], StateObject>;
+      state: ParametrizedOption<[IndividualGroupSelector], StateObject | null | undefined>;
 
       /**
        * Converts the the provided visualization-area-relative point coordinates to the coordinates relative to the

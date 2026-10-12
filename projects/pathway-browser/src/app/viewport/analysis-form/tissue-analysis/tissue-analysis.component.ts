@@ -71,7 +71,11 @@ export class TissueAnalysisComponent {
 
   readonly tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
   readonly availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
-  readonly selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
+  // Emptied whenever the experiment's tissues change.
+  readonly selectedTissues = linkedSignal<Record<string, unknown>, string[]>({
+    source: this.tissuesMap,
+    computation: () => [],
+  });
 
   readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
   readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
@@ -148,7 +152,7 @@ export class TissueAnalysisComponent {
       this.settle(shift);
       this.availableTissues.set([...availableTissues]);
       this.selectedTissues.set([...this.selectedTissues(), shift]);
-    } else if (this.interval) {
+    } else if (this.interval()) {
       clearInterval(this.interval());
       this.interval.set(undefined);
     }
@@ -161,7 +165,7 @@ export class TissueAnalysisComponent {
       this.settle(shift);
       this.selectedTissues.set([...selectedTissues]);
       this.availableTissues.set([...this.availableTissues(), shift]);
-    } else if (this.interval) {
+    } else if (this.interval()) {
       clearInterval(this.interval());
       this.interval.set(undefined);
     }

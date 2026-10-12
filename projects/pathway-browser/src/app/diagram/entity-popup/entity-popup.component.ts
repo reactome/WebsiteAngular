@@ -279,12 +279,12 @@ export class EntityPopupComponent {
   private readonly analysisHits = computed<Map<string, number[]> | undefined>(() => {
     if (!this.state.analysis()) return undefined;
     // value() throws while the request is in error: no markers, as without one.
-    const entities = this.found.hasValue() ? this.found.value()?.entities : undefined;
+    const entities = this.found.hasValue() ? this.found.value().entities : undefined;
     if (!entities) return undefined;
     const map = new Map<string, number[]>();
     for (const entity of entities) {
-      const exp = entity.exp ?? [];
-      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      const exp = entity.exp;
+      const mapped = entity.mapsTo.flatMap((m) => m.ids);
       for (const id of [entity.id, ...mapped]) {
         if (id) map.set(String(id).toUpperCase(), exp);
       }
@@ -322,7 +322,7 @@ export class EntityPopupComponent {
               `${CONTENT_SERVICE}/data/participants/${stId}/referenceEntities`
             )
             .pipe(
-              map((refs) => [stId, refs ?? []] as [string, ReferenceEntityIds[]]),
+              map((refs) => [stId, refs] as [string, ReferenceEntityIds[]]),
               // A row we cannot resolve stays unmarked rather than being called
               // absent, which would be a claim we cannot make.
               catchError(() => of([stId, []] as [string, ReferenceEntityIds[]]))
@@ -355,7 +355,7 @@ export class EntityPopupComponent {
         const refs = row.stId ? (participants.get(row.stId) ?? []) : [];
         if (!refs.length) return row;
 
-        const ids = refs.flatMap((r) => [r?.identifier, ...(r?.geneName ?? [])].filter(Boolean));
+        const ids = refs.flatMap((r) => [r.identifier, ...(r.geneName ?? [])].filter(Boolean));
         const hit = ids.map((id) => hits.get(String(id).toUpperCase())).find(Boolean);
         return {
           ...row,
@@ -377,7 +377,7 @@ export class EntityPopupComponent {
 
   /** Whether the running analysis carries per-sample values to show. */
   private readonly hasExpressionValues = computed(
-    () => (this.analysis.result()?.expression?.columnNames?.length ?? 0) > 0
+    () => (this.analysis.result()?.expression.columnNames.length ?? 0) > 0
   );
 
   /** Sample names, for labelling the values a row carries. */
@@ -432,7 +432,7 @@ export class EntityPopupComponent {
         ? this.http.get<any[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`).pipe(
             map((items): PopupGroup[] => [
               {
-                rows: (items ?? []).map((p) => ({
+                rows: items.map((p) => ({
                   label: p.displayName,
                   detail: p.speciesName,
                   stId: p.stId,

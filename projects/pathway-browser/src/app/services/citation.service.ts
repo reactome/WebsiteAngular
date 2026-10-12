@@ -124,8 +124,6 @@ export class CitationService {
   }
 
   isPathwayCitation(obj: string | PathwayCitation): obj is PathwayCitation {
-    return (
-      typeof obj === 'object' && obj !== null && 'imageCitation' in obj && 'pathwayCitation' in obj
-    );
+    return typeof obj === 'object' && 'imageCitation' in obj && 'pathwayCitation' in obj;
   }
 }

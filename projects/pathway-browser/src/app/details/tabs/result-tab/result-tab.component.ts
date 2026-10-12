@@ -96,7 +96,7 @@ export class ResultTabComponent {
 
   trackBy = (index: number, pathway: Analysis.Pathway) => pathway.stId + '-' + index;
 
-  readonly hasExpression = computed(() => this.analysis.result()?.expression?.min !== undefined);
+  readonly hasExpression = computed(() => this.analysis.result()?.expression.min !== undefined);
 
   /**
    * Expression of the entity currently selected in the diagram, across every
@@ -122,19 +122,21 @@ export class ResultTabComponent {
     ]);
     return values ? { name: element.displayName, values } : undefined;
   });
-  readonly minExpression = computed(() =>
-    this.hasExpression() ? Math.floor(this.analysis.result()!.expression.min) : 0
-  );
-  readonly maxExpression = computed(() =>
-    this.hasExpression() ? Math.ceil(this.analysis.result()!.expression.max) : 1
-  );
+  readonly minExpression = computed(() => {
+    const min = this.analysis.result()?.expression.min;
+    return min === undefined ? 0 : Math.floor(min);
+  });
+  readonly maxExpression = computed(() => {
+    const max = this.analysis.result()?.expression.max;
+    return max === undefined ? 1 : Math.ceil(max);
+  });
 
   readonly pValuesColumnIds = computed(() =>
     this.analysis.hasPValues() ? ['entities-pValue', 'entities-fdr'] : []
   );
 
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
 
   readonly expressionColumnIds = computed(() =>
@@ -309,9 +311,14 @@ export class ResultTabComponent {
       this.dataSource.sort = this.sort();
     });
     effect(() => (this.dataSource.data = this.filteredData()));
-    effect(() => this.currentSort() && this.paginator().firstPage());
+    // Read to follow the sort: a new sort starts at the first page.
     effect(() => {
-      if (this.currentSort()) setTimeout(() => (this.dataSource.sort = this.sort()));
+      this.currentSort();
+      this.paginator().firstPage();
+    });
+    effect(() => {
+      this.currentSort();
+      setTimeout(() => (this.dataSource.sort = this.sort()));
     });
     effect(() => {
       const stId = this.data.selectedPathwayStId();

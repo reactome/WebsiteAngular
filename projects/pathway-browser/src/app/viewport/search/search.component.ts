@@ -97,9 +97,11 @@ export class SearchComponent {
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
   });
 
-  readonly suggestionIndex: WritableSignal<number> = linkedSignal(
-    () => this.suggestionResults() && -1
-  );
+  // Back to no suggestion whenever the suggestions change.
+  readonly suggestionIndex: WritableSignal<number> = linkedSignal({
+    source: this.suggestionResults,
+    computation: () => -1,
+  });
   readonly currentSuggest = computed(() =>
     this.suggestionIndex() !== -1
       ? this.searchText() +
