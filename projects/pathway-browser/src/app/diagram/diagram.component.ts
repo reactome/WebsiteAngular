@@ -1504,6 +1504,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       ? "Couldn't load the analysis results for this diagram, so nothing is coloured. Try again in a moment."
       : null
   );
+  /** What the banner says: an analysis that failed, else interactors that did. */
+  readonly notice = computed(() => this.analysisNotice() ?? this.interactorsService.loadFailure());
 
   private analysisLoad?: Subscription;
 
