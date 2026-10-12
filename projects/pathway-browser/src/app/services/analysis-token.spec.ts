@@ -10,6 +10,12 @@ describe('decodedToken', () => {
     );
   });
 
+  it('reads a token without its padding as the same', () => {
+    expect(decodedToken('MjAyNjA5MjUxNDM3NThfMTM')).toBe(
+      decodedToken('MjAyNjA5MjUxNDM3NThfMTM%3D')
+    );
+  });
+
   it('is null for no token', () => {
     expect(decodedToken(undefined)).toBeNull();
     expect(decodedToken(null)).toBeNull();

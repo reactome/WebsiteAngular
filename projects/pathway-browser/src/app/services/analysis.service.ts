@@ -758,12 +758,18 @@ export class AnalysisService {
   }
 }
 
-/** A token in one form whichever way it arrived; null for none. */
+/**
+ * A token in one form whichever way it arrived; null for none. Decoded, and
+ * without base64's "=" padding, which the service adds back to a token sent
+ * without it -- an old fragment link's lost it -- so the two would differ.
+ */
 export function decodedToken(token: string | null | undefined): string | null {
   if (!token) return null;
+  let decoded = token;
   try {
-    return decodeURIComponent(token);
+    decoded = decodeURIComponent(token);
   } catch {
-    return token; // Not percent-encoded after all: a lone "%" in it.
+    // Not percent-encoded after all: a lone "%" in it.
   }
+  return decoded.replace(/=+$/, '');
 }
