@@ -527,6 +527,18 @@ test.describe('the embeddable diagram', () => {
     expect(await page.evaluate(() => 1 + 1), 'the host page still runs').toBe(2);
   });
 
+  test('says once when a diagram cannot be loaded', async ({ page }) => {
+    // Aborted, not answered: an aborted request is not recorded (#404).
+    await page.route(/\/diagram\/R-HSA-69620\.json(\?|$)/, (route) => route.abort('failed'));
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    const view = page.locator('#diagram reactome-diagram-view');
+    await expect(view.locator('.message')).toHaveText('This pathway could not be shown.', {
+      timeout: LOAD,
+    });
+    // The diagram's own message is the pathway browser's, not the embed's.
+    await expect(view.locator('cr-diagram [role="alert"]')).toHaveCount(0);
+  });
+
   // The page partners are sent to, served beside the code. Its picker is also
   // the one place a live element's pathway is changed after it has drawn.
   test('the demo page draws, and redraws when another pathway is picked', async ({ page }) => {

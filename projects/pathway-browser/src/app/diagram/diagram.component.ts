@@ -134,6 +134,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly diagramLoaded = output<string>();
   /** The pathway's diagram could not be loaded. */
   readonly diagramFailed = output<string>();
+  /**
+   * Whether the diagram says so itself when it could not be loaded. A host
+   * with its own message for that, like the embeddable diagram, turns it off.
+   */
+  readonly reportFailure = input(true);
+  /** The last diagram asked for could not be loaded or drawn. */
+  readonly loadFailed = signal(false);
 
   /** The entity a right-click landed on, or null when no popup is open. */
   readonly popupTarget = signal<EntityPopupTarget | null>(null);
@@ -862,6 +869,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       )
       .subscribe((drawn) => {
         this.isInitialLoad = false;
+        this.loadFailed.set(!drawn);
         if (drawn) this.diagramLoaded.emit(this.pathwayId());
         else this.diagramFailed.emit(this.pathwayId());
       });
@@ -884,6 +892,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const pathwayId = this.pathwayId();
     if (this.drawing === pathwayId) return EMPTY;
     this.drawing = pathwayId;
+    this.loadFailed.set(false);
 
     const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(
