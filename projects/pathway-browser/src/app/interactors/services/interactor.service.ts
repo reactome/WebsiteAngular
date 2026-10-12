@@ -695,7 +695,11 @@ export class InteractorService {
     this.showingInteractors.set(cy.nodes('.Interactor').length > 0);
   }
 
-  public getAllInteractors(interactorsData: Interactor[], cy: cytoscape.Core, numberToAdd: number) {
+  public getAllInteractors(
+    interactorsData: Interactor[],
+    cy: cytoscape.Core,
+    numberToAdd: number
+  ): [drawn: Interactor[], existing: Interactor[]] {
     const dynamicInteractors = [];
     const existingInteractors = [];
     // Best supported first, so that the cap keeps the interactions worth keeping.

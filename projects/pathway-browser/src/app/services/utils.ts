@@ -297,7 +297,7 @@ export const shouldBeScientificFormat = (representativeSample: number[]) =>
  * @param value a number
  */
 const shouldBeScientificFormatValue = (value: number) =>
-  parseInt(value.toExponential(0).split(/e[+-]/)[1]) > 3;
+  parseInt(value.toExponential(0).split(/e[+-]/)[1] ?? '0') > 3;
 
 export type ArrayStats = {
   min: number;
@@ -349,7 +349,7 @@ export function extractIdAfterColon(value: string): string {
  */
 export function extractIdInBrackets(value: string): string {
   const match = value.match(/\[.*?:([^\]\s]+)\]/);
-  return match ? match[1] : '';
+  return match?.[1] ?? '';
 }
 
 /**
@@ -390,8 +390,9 @@ export function observeSections(
       .filter((e) => e.isIntersecting)
       .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
 
-    if (visibles.length > 0) {
-      const id = visibles[0].target.id;
+    const [topmost] = visibles;
+    if (topmost) {
+      const id = topmost.target.id;
       if (id && id !== selectedKey()) {
         selectedKey.set(id);
       }

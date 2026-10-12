@@ -85,7 +85,7 @@ export function defaultResource(
   const specific = summary
     .map((entry) => entry.resource)
     .filter((resource) => resource !== 'TOTAL');
-  return specific.length === 1 ? specific[0] : null;
+  return specific.length === 1 ? (specific[0] ?? null) : null;
 }
 
 /**

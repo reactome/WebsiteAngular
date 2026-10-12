@@ -94,10 +94,8 @@ export const FRAGMENT_PATTERN = new RegExp(
  * up in somebody's data.
  */
 export function isContentRoute(url: string): boolean {
-  return url
-    .split(/[?#]/, 1)[0]
-    .split('/')
-    .some((segment) => segment === 'content');
+  const [path = url] = url.split(/[?#]/, 1);
+  return path.split('/').some((segment) => segment === 'content');
 }
 
 export type UrlParam<T> = WritableSignal<T> & {
@@ -293,7 +291,7 @@ export class UrlStateService implements State {
               .split('&')
               .map((param) => param.split('='))
               .forEach(([key, value]) => {
-                params[key] = value || true;
+                if (key !== undefined) params[key] = value || true;
               });
           }
 

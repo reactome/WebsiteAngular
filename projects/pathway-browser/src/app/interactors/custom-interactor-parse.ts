@@ -59,7 +59,8 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  if (lines.length === 0) {
+  const [first] = lines;
+  if (first === undefined) {
     return {
       interactors: { entities: [], resource },
       warnings,
@@ -70,9 +71,9 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
   // The header, if there is one. Said rather than assumed, because the service
   // treats its absence as a warning and silently eats a pair -- the one part of
   // this format that costs a reader data without telling them.
-  const hasHeader = lines[0].startsWith('#');
+  const hasHeader = first.startsWith('#');
   if (hasHeader) {
-    const columns = fields(lines[0].slice(1));
+    const columns = fields(first.slice(1));
     if (columns.length > 2) {
       return {
         interactors: { entities: [], resource },
@@ -124,7 +125,7 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     // diagram happens to draw -- except a self-interaction, which has one end.
     // The service does the same otherwise: a two-line file comes back as four
     // interactors.
-    const directions =
+    const directions: [owner: string, partner: string][] =
       from === to
         ? [[from, to]]
         : [

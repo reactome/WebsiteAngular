@@ -208,7 +208,11 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly name = computed(() => {
     const obj = this.obj();
 
-    let name = obj.name ? (isArray(obj.name) ? obj.name[0] : obj.name) : obj.displayName;
+    // An empty list of names, or a reference type with no suffix below, used to
+    // put the word "undefined" into the name.
+    let name =
+      (obj.name ? (isArray(obj.name) ? obj.name[0] : obj.name) : obj.displayName) ??
+      obj.displayName;
 
     if (isReferenceSummary(obj)) {
       const suffix = DescriptionTabComponent.referenceTypeToNameSuffix.get(
@@ -218,10 +222,10 @@ export class DescriptionTabComponent implements OnDestroy {
         isReferenceSequence(obj.referenceEntity) &&
         isDefinedAndNotEmpty(obj.referenceEntity.geneName)
       )
-        name = obj.referenceEntity.geneName[0];
+        name = obj.referenceEntity.geneName[0] ?? name;
       return obj.referenceEntity.schemaClass === 'ReferenceIsoform'
         ? `${name} Isoform ${obj.variantIdentifier} `
-        : name + suffix;
+        : name + (suffix ?? '');
     }
 
     return name;
@@ -464,7 +468,7 @@ export class DescriptionTabComponent implements OnDestroy {
   );
 
   readonly hasRhea = computed(() =>
-    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName)
+    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName ?? '')
   );
 
   // Disable the navigation control for inferred event when there is no associated pathway

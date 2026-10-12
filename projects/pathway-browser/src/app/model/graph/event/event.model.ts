@@ -32,6 +32,7 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   isSelected?: boolean;
   isHovered?: boolean;
   ancestors: Event[];
-  parent: Event;
+  /** None for a top-level event. */
+  parent?: Event;
   hit?: boolean;
 }

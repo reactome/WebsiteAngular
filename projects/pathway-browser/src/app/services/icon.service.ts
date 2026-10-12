@@ -254,9 +254,11 @@ export class IconService {
     return this.http
       .get<Search.Icon.Result>(`${CONTENT_SERVICE}/search/query?query=${identifier}&types=Icon`)
       .pipe(
-        map((response) =>
-          response.results[0].typeName === 'Icon' ? response.results[0].entries[0] : null
-        ),
+        // No result group at all is no icon, not an error.
+        map((response) => {
+          const [group] = response.results;
+          return group?.typeName === 'Icon' ? (group.entries[0] ?? null) : null;
+        }),
         switchMap((entry) => {
           if (entry) {
             this.currentIcon.set(entry);

@@ -88,8 +88,9 @@ export class MoleculeTabComponent implements OnDestroy {
     });
 
     effect(() => {
-      if (this.moleculeData().length > 0) {
-        const id = this.sanitizeId(this.moleculeData()[0].category);
+      const [first] = this.moleculeData();
+      if (first) {
+        const id = this.sanitizeId(first.category);
         this.selectedKey.set(id);
       }
     });

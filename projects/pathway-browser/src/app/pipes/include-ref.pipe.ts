@@ -16,17 +16,20 @@ export class IncludeRefPipe implements PipeTransform {
       .filter((ref) => ref?.url && ref.author?.length && ref.author?.length > 0)
       .forEach((ref) => {
         const author = ref.author!;
+        // At least one author: the filter above asks for it.
+        const [first, second] = author;
+        if (!first) return;
         const replacer = (match: string) => `<a href="${ref.url}">${match}</a>`;
         text = text.replaceAll(
           new RegExp(
-            `${author[0].surname} ?${this.initials(author[0].initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`,
+            `${first.surname} ?${this.initials(first.initial)}\\.? ?( et al[., ]{0,2})? ?${ref.year}`,
             'g'
           ),
           replacer
         );
-        if (author.length === 2) {
+        if (second && author.length === 2) {
           const regExp = new RegExp(
-            `${author[0].surname} ?${this.initials(author[0].initial)}\\.? ?(and|&) ${author[1].surname} ?${this.initials(author[1].initial)}\\.? ?,? ${ref.year}`,
+            `${first.surname} ?${this.initials(first.initial)}\\.? ?(and|&) ${second.surname} ?${this.initials(second.initial)}\\.? ?,? ${ref.year}`,
             'g'
           );
           text = text.replaceAll(regExp, replacer);

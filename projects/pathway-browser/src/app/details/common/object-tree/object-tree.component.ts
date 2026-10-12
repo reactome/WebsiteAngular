@@ -137,7 +137,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const highlight = this.highlight();
     if (!data || (isArray(data) && data.length === 0)) return [];
     if (!isArray(data)) data = [data];
-    if (data[0].stoichiometry)
+    if (data[0]?.stoichiometry)
       return data.map((r, index) => ({
         ...r,
         element: { ...r.element, composedOf: r.element.composedOf || [] },
@@ -423,8 +423,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   //TODO because of MatNestedTree, we are only able to update a leaf node by updating as well its parent, all the way till the root. To optimise more, we need to use a MatFlatTree which would allow us to really just update the targeted node
 
   updateTree(existingTreeData: R[], result: E): R | void {
-    for (let i = 0; i < existingTreeData.length; i++) {
-      const node = existingTreeData[i];
+    for (const node of existingTreeData) {
       if (node.element.dbId === result.dbId) {
         Object.assign(node.element, result); // MUTATES ORIGINAL ELEMENT
         node.element._updateCounter = (node.element._updateCounter || 0) + 1;
@@ -527,6 +526,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     // Start from index 1 to exclude the root
     for (let i = 1; i < parents.length; i++) {
       const parent = parents[i];
+      if (!parent) continue;
       const grandParent = i > 0 ? parents[i - 1] : null;
 
       const grandParentChildCount = grandParent?.element.composedOf?.length
@@ -544,14 +544,15 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getParentConnector(parentNode: R, node: R): Connector {
-    if (!parentNode.element.composedOf || parentNode.element.composedOf.length === 0) return null;
+    const [firstChild] = parentNode.element.composedOf ?? [];
+    if (!firstChild) return null;
 
     // Find a child with the same type as the clicked node
-    const matchedChild = parentNode.element.composedOf.find((child) => child.type === node.type);
+    const matchedChild = parentNode.element.composedOf?.find((child) => child.type === node.type);
     // Fallback to the first child if no match is found and use the first child to know the connector type, because the parent could be input or output type
     // Cannot use the composedOf[0] directly is because the elements in composedOf could have different types, for instance, member and candidate, composedOf[0] will always
     // return member type not candidate
-    const typeReference = matchedChild || parentNode.element.composedOf[0];
+    const typeReference = matchedChild || firstChild;
 
     return { shape: 'I', type: typeReference.type };
   }
@@ -606,10 +607,18 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return `${action} ${id}`;
   }
 
+  /**
+   * Whether the open pathway's id carries this species abbreviation. With none
+   * this is false, as `includes(undefined)` was: it looks for "undefined".
+   */
+  private inOpenPathwaySpecies(abbreviation: string | undefined): boolean {
+    return abbreviation !== undefined && !!this.state.pathwayId()?.includes(abbreviation);
+  }
+
   private requireNavigate(node: E) {
     return (
       isPathway(node) &&
-      (node.hasDiagram || !this.state.pathwayId()?.includes(node.species?.[0]?.abbreviation))
+      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species?.[0]?.abbreviation))
     );
   }
 

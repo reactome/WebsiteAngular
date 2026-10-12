@@ -357,7 +357,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         options?.quality
       );
     } else {
-      blob = await blobs[0];
+      // The diagram itself is always the first layer.
+      const [only] = blobs;
+      if (only === undefined) return;
+      blob = await only;
     }
 
     const a = document.createElement('a');
@@ -482,7 +485,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * bitmaps to do the same thing.
    */
   private composeSvgs(svgs: string[]): string {
-    if (svgs.length === 1) return svgs[0];
+    const [first = ''] = svgs;
+    if (svgs.length === 1) return first;
 
     const sized = svgs.map((svg) => ({
       svg,
@@ -492,7 +496,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const width = sized.reduce((total, s) => total + s.width, 0);
     const height = Math.max(...sized.map((s) => s.height));
-    if (!width || !height) return svgs[0];
+    if (!width || !height) return first;
 
     let x = 0;
     const children = sized
@@ -524,8 +528,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     // Calculate scale ratio between pixel space (image) and model space (bounding box)
     // Assume all images have the same scale - use the first one
-    const bbWidth = bbs[0].x2 - bbs[0].x1;
-    const scale = images[0].width / bbWidth;
+    const [firstBb] = bbs;
+    const [firstImage] = images;
+    if (!firstBb || !firstImage) throw new Error('There are no layers to merge.');
+    const bbWidth = firstBb.x2 - firstBb.x1;
+    const scale = firstImage.width / bbWidth;
 
     const mergedWidth = (xMax - xMin) * scale;
     const mergedHeight = (yMax - yMin) * scale;
@@ -540,11 +547,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     }
 
     images.forEach((image, i) => {
-      const offsetX = (bbs[i].x1 - xMin) * scale; // shift relative to merged bbox, scaled to pixel space
-      const offsetY = (bbs[i].y1 - yMin) * scale;
+      // One box and one colour per layer, as images has.
+      const bb = bbs[i];
+      if (!bb) return;
+      const offsetX = (bb.x1 - xMin) * scale; // shift relative to merged bbox, scaled to pixel space
+      const offsetY = (bb.y1 - yMin) * scale;
 
       // Fill background color for this layer
-      ctx.fillStyle = bgColors[i];
+      ctx.fillStyle = bgColors[i] ?? 'transparent';
       ctx.fillRect(0, 0, mergedWidth, mergedHeight);
 
       // Draw image on top
@@ -1854,6 +1864,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         .filter((s) => e.detail.cy === s?.cy)
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
+          if (!occurrenceNode) return;
 
           const cy = style.cy;
           if (e.type === ReactomeEventTypes.open && cy) {

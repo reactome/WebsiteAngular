@@ -127,7 +127,8 @@ export class SpeciesService {
   }
 
   private setShortName(s: Species): Species {
-    const [genus, species, ..._] = s.displayName.split(' ');
+    // A one-word name has no species part, and used to end in "undefined".
+    const [genus = '', species = '', ..._] = s.displayName.split(' ');
     return { ...s, shortName: `${genus.charAt(0)}. ${species}` };
   }
 
