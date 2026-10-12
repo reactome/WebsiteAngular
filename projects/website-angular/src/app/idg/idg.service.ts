@@ -235,9 +235,9 @@ export class IdgService {
             };
           }
           return levels;
-        }),
-        // A missing level is a missing column, not a broken page.
-        catchError(() => of({}))
+        })
+        // A failure reaches the page, which says the column is empty because
+        // of it, not because no pathway has a level.
       );
   }
 
@@ -292,8 +292,7 @@ export class IdgService {
             const [provenance = id, species = '', dataType = ''] = id.split('|');
             return [{ id, provenance, species, dataType, count: entry.posNum }];
           })
-        ),
-        catchError(() => of<IdgFeature[]>([]))
+        )
       );
   }
 
