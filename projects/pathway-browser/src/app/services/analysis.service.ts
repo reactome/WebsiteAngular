@@ -398,8 +398,11 @@ export class AnalysisService {
     },
   });
 
+  // The service sends the token URL-encoded ("...%3D") and an address opened
+  // from a link holds it decoded ("...="): compared as sent, they never matched
+  // and the Analyze button spun for as long as the page was open.
   readonly isLoading = linkedSignal(
-    () => (this.result()?.summary.token || null) !== this.state.analysis()
+    () => decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis())
   );
 
   readonly pathwayStIdToData = computed(
@@ -753,4 +756,20 @@ export class AnalysisService {
       }
     );
   }
+}
+
+/**
+ * A token in one form whichever way it arrived; null for none. Decoded, and
+ * without base64's "=" padding, which the service adds back to a token sent
+ * without it -- an old fragment link's lost it -- so the two would differ.
+ */
+export function decodedToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  let decoded = token;
+  try {
+    decoded = decodeURIComponent(token);
+  } catch {
+    // Not percent-encoded after all: a lone "%" in it.
+  }
+  return decoded.replace(/=+$/, '');
 }
