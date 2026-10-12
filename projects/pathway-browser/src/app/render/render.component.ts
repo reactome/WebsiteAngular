@@ -417,11 +417,12 @@ export class RenderComponent {
    */
   private async frameCanvas(scale: number): Promise<HTMLCanvasElement> {
     const { diagram, instances } = this.exportableInstances();
-    if (diagram && instances.length) {
+    const [instance] = instances;
+    if (diagram && instance) {
       // White, not transparent. Every animated format in play here either has no
       // alpha channel or only a single transparent index, so a transparent
       // background composites to black rather than to nothing.
-      return diagram.exportCanvas(instances[0], { full: true, scale, bg: '#ffffff' });
+      return diagram.exportCanvas(instance, { full: true, scale, bg: '#ffffff' });
     }
 
     // An illustration is inline SVG rather than a canvas, so a frame has to be
@@ -779,6 +780,8 @@ export class RenderComponent {
 
       const a = points[from];
       const b = points[to];
+      // In range: both are indexes of points, from the stack.
+      if (!a || !b) continue;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const span = Math.hypot(dx, dy);
@@ -787,6 +790,7 @@ export class RenderComponent {
       let at = -1;
       for (let index = from + 1; index < to; index++) {
         const point = points[index];
+        if (!point) continue;
         // Distance to the chord, or to its endpoint when the chord is a point.
         const distance =
           span === 0
@@ -840,7 +844,7 @@ export class RenderComponent {
   private transformScale(element: Element): number {
     const transform = element.getAttribute('transform') ?? element.getAttribute('style') ?? '';
     const scale = /scale\(\s*([\d.]+)/.exec(transform);
-    const value = scale ? parseFloat(scale[1]) : 1;
+    const value = parseFloat(scale?.[1] ?? '1');
     return Number.isFinite(value) && value > 0 ? value : 1;
   }
 
@@ -1053,18 +1057,19 @@ export class RenderComponent {
 
     const rgb = /^rgba?\(([^)]+)\)$/.exec(text);
     if (rgb) {
-      const parts = rgb[1].split(/[,\s/]+/).map((part) => parseFloat(part));
+      const parts = (rgb[1] ?? '').split(/[,\s/]+/).map((part) => parseFloat(part));
       if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isFinite(part))) {
         const own = parts.length > 3 && Number.isFinite(parts[3]) ? parts[3] : 1;
         return withAlpha(parts.slice(0, 3), own);
       }
     }
     const hex = /^#?([0-9a-f]{6})$/i.exec(text);
-    if (hex) {
-      return withAlpha([0, 2, 4].map((at) => parseInt(hex[1].slice(at, at + 2), 16)));
+    if (hex?.[1]) {
+      const digits = hex[1];
+      return withAlpha([0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16)));
     }
     const short = /^#?([0-9a-f]{3})$/i.exec(text);
-    if (short) {
+    if (short?.[1]) {
       return withAlpha([...short[1]].map((digit) => parseInt(digit + digit, 16)));
     }
     return null;
@@ -1153,6 +1158,8 @@ export class RenderComponent {
       for (let index = 0; index < polygon.length; index++) {
         const current = polygon[index];
         const previous = polygon[(index + polygon.length - 1) % polygon.length];
+        // In range: both indexes are taken within the polygon's length.
+        if (!current || !previous) continue;
         const currentIn = inside(current);
         const previousIn = inside(previous);
         if (currentIn) {
@@ -1187,18 +1194,20 @@ export class RenderComponent {
     for (let at = 0; at < points.length - 1; at++) {
       const from = points[at];
       const to = points[at + 1];
+      if (!from || !to) continue;
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       let enter = 0;
       let leave = 1;
       let inside = true;
 
-      for (const [p, q] of [
+      const edges: [p: number, q: number][] = [
         [-dx, from.x - box.x1],
         [dx, box.x2 - from.x],
         [-dy, from.y - box.y1],
         [dy, box.y2 - from.y],
-      ]) {
+      ];
+      for (const [p, q] of edges) {
         if (p === 0) {
           // Parallel to this edge: outside it means the whole segment is out.
           if (q < 0) {
@@ -1219,8 +1228,9 @@ export class RenderComponent {
 
       const start = { x: from.x + dx * enter, y: from.y + dy * enter };
       const end = { x: from.x + dx * leave, y: from.y + dy * leave };
-      if (!run.length) run.push(start);
-      else if (!near(run[run.length - 1], start)) {
+      const last = run.at(-1);
+      if (!last) run.push(start);
+      else if (!near(last, start)) {
         if (run.length > 1) runs.push(run);
         run = [start];
       }
@@ -1266,8 +1276,10 @@ export class RenderComponent {
     const scale = this.pixels(edge.style('arrow-scale')) || 1;
     const size = Math.max(6, width * 4 * scale);
 
-    const tip = points[points.length - 1];
-    const from = points[points.length - 2];
+    const tip = points.at(-1);
+    const from = points.at(-2);
+    // Two points at least: checked on entry.
+    if (!tip || !from) return [];
     const run = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
     // Along the line, and across it.
     const ax = (tip.x - from.x) / run;
@@ -1387,14 +1399,15 @@ export class RenderComponent {
 
     if (this.diagram()) {
       const { instances } = this.exportableInstances();
-      if (!instances.length) throw new Error('no diagram to export');
+      const [instance] = instances;
+      if (!instance) throw new Error('no diagram to export');
       // One instance here by construction: this page never opens the
       // comparison view.
       //
       // full:false exports what the viewport shows, which is the point when the
       // viewport has been framed on one event.
-      const framed = this.frameSelection(instances[0]);
-      return instances[0].svg({ full: !framed });
+      const framed = this.frameSelection(instance);
+      return instance.svg({ full: !framed });
     }
 
     // Through the illustration's own service, which knows that its styling has
@@ -1456,12 +1469,13 @@ export class RenderComponent {
     }
 
     const { diagram, instances } = this.exportableInstances();
-    if (instances.length) {
-      const framed = this.frameSelection(instances[0]);
+    const [instance] = instances;
+    if (instance) {
+      const framed = this.frameSelection(instance);
       if (jpeg && diagram) {
-        return asJpeg(diagram.exportCanvas(instances[0], { full: !framed, scale, bg }));
+        return asJpeg(diagram.exportCanvas(instance, { full: !framed, scale, bg }));
       }
-      return instances[0].png({ full: !framed, scale, bg });
+      return instance.png({ full: !framed, scale, bg });
     }
 
     // An illustration has no cytoscape instance to ask, so it goes through the

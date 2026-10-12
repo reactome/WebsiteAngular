@@ -4,7 +4,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": []
+    "types": [],
+    // Every index read checked (#345). Not yet in tsconfig.json: the workspace
+    // libraries have findings left, held at a count by scripts/check-indexed-access.mjs.
+    "noUncheckedIndexedAccess": true
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.d.ts"]
