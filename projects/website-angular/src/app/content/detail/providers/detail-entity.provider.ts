@@ -42,7 +42,7 @@ export class DetailEntityService implements Partial<EntityService> {
           maxDepth: depth,
         },
       })
-      .pipe(map(this.flattenReferences));
+      .pipe(map((entity) => (entity === null ? null : this.flattenReferences(entity))));
   }
 
   getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {

@@ -86,7 +86,10 @@ export class EntityService {
           maxDepth: depth,
         },
       })
-      .pipe(map(this.dataStateService.flattenReferences));
+      .pipe(
+        // Before deserialising: it reads the answer's @id, and null has none.
+        map((entity) => (entity === null ? null : this.dataStateService.flattenReferences(entity)))
+      );
   }
 
   getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {

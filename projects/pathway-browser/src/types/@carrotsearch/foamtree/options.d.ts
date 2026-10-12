@@ -56,8 +56,9 @@ declare module '@carrotsearch/foamtree' {
       /**
        * Root of hierarchy to visualize
        */
-      // Exists before its groups do while the map loads (#344).
-      dataObject: { groups?: D[] };
+      // Not set on a new instance until data is given, and set before its
+      // groups are while the map loads (#344).
+      dataObject: { groups?: D[] } | undefined;
       /**
        * Determines the general type of layout to generate. Depending on this option, FoamTree will produce polygon-based organic-looking visualization or the traditional rectangular tree map.
        *

@@ -308,8 +308,8 @@ export class RenderComponent {
       // Geometry only appears once FoamTree's relaxation has run.
       const tree = untracked(reacfoam.foamTree);
       const dataObject = tree.get('dataObject');
-      const geometry = tree.get('geometry', dataObject);
-      const groups = dataObject.groups ?? [];
+      const geometry = dataObject ? tree.get('geometry', dataObject) : undefined;
+      const groups = dataObject?.groups ?? [];
       if (!geometry?.boxWidth || !geometry.boxHeight) return null;
       return {
         view: 'reacfoam',

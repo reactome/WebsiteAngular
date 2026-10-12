@@ -391,22 +391,27 @@ export class ReacfoamComponent implements OnDestroy {
           width: '150px',
           height: '150px',
         });
-        if (this.download.isRasterFormat(request.format)) {
-          const params: FoamTree.ImageFormat = {
-            format: this.download.toFoamtreeType(request.format),
-            ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
-          };
-          this.exportRaster(request.format, params);
-          this.download.resetDownload();
-        } else if (request.format === DownloadFormat.SVG) {
-          this.download.export(
-            await this.svgExporter.exportReacfoam(this, options),
-            request.format,
-            'reacfoam'
-          );
-          this.download.resetDownload();
+        // Closed whatever happens: it cannot be dismissed, and a failure has a
+        // message to show behind it.
+        try {
+          if (this.download.isRasterFormat(request.format)) {
+            const params: FoamTree.ImageFormat = {
+              format: this.download.toFoamtreeType(request.format),
+              ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
+            };
+            this.exportRaster(request.format, params);
+            this.download.resetDownload();
+          } else if (request.format === DownloadFormat.SVG) {
+            this.download.export(
+              await this.svgExporter.exportReacfoam(this, options),
+              request.format,
+              'reacfoam'
+            );
+            this.download.resetDownload();
+          }
+        } finally {
+          loader.close();
         }
-        loader.close();
       })().catch((error) => this.download.failed(error, 'Genome-wide view export failed'));
     });
   }
