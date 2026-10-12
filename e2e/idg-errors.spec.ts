@@ -140,12 +140,15 @@ test.describe('The IDG page', () => {
 
   test('says nothing of either when they load', async ({ page }) => {
     await idg(page, { pathways: true, known: true });
+    const answered = Promise.all([
+      page.waitForResponse(`${IDG}/relationships/network/enrichedSecondaryPathaysForTerm`),
+      page.waitForResponse(`${IDG}/pairwise/term/true`),
+    ]);
     await page.goto('/idg?gene=TANC1');
+    await answered;
     await expect(page.getByRole('row', { name: new RegExp(PATHWAY.name) })).toBeVisible({
       timeout: LOAD,
     });
-    // Both answered: give the page the moment it takes to draw them.
-    await expect(page.locator('figure.chart, figure.scatter, .tdl').first()).toBeAttached();
     await expect(page.getByText(/Couldn't load the (target|feature)/)).toHaveCount(0);
   });
 
