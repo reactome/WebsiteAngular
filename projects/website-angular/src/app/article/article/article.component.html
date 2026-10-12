@@ -3,6 +3,7 @@
     <div class="article-container">
       @if (failed) {
         <div class="error-message">
+          <h1>Something went wrong</h1>
           <app-load-error what="this article" />
         </div>
       } @else if (notFound) {

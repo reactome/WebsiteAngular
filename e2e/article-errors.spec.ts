@@ -56,6 +56,9 @@ test.describe('A news article', () => {
   test('does not show an article it could not load as an empty one', async ({ page }) => {
     await failWith(page, file(FAILING), 500);
     await page.goto(FAILING);
+    await expect(page.getByRole('heading', { name: 'Something went wrong' })).toBeVisible({
+      timeout: LOAD,
+    });
     await expect(page.getByRole('alert')).toContainText(
       "Couldn't load this article. Please try again later.",
       { timeout: LOAD }
