@@ -298,9 +298,8 @@ export class IconLibComponent implements OnInit, OnDestroy {
     const map = new Map<string, ParsedReference[]>();
     if (!icon.iconReferences) return map;
     for (const xref of icon.iconReferences) {
-      if (xref.includes(':')) {
-        const db = xref.split(':')[0];
-        const id = xref.split(':')[1];
+      const [db, id] = xref.split(':');
+      if (db !== undefined && id !== undefined) {
         const url = this.getReferenceUrl(db, id);
         if (!map.has(db)) map.set(db, []);
         map.get(db)!.push({ db, id, url });

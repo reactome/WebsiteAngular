@@ -45,7 +45,7 @@ export default function rewriteContentUrls(html: string): string {
 function normalizeContentUrl(url: string): string {
   const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
   if (reactomeUrlMatch) {
-    const rest = reactomeUrlMatch[1].replace(/^\//, '');
+    const rest = (reactomeUrlMatch[1] ?? '').replace(/^\//, '');
     if (STILL_ON_PRODUCTION.some((path) => path.test(rest))) return url;
     // The home page itself has no path left; an empty href would mean the page
     // the reader is already on.

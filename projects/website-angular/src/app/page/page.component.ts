@@ -54,7 +54,8 @@ export class PageComponent implements OnInit {
 
   ngOnInit() {
     this.route.url.subscribe((segments) => {
-      if (segments.length === 0) {
+      const [section] = segments;
+      if (!section) {
         this.notFound = true;
         this.cdr.markForCheck();
         return;
@@ -64,14 +65,14 @@ export class PageComponent implements OnInit {
       let path = segments.map((s) => s.path).join('/');
       this.requestedPath = path;
       // Strip the '{pageType}/' prefix since content is in content/{pageType}/
-      if (path.startsWith(segments[0].path + '/')) {
-        path = path.substring(segments[0].path.length + 1);
-      } else if (path === segments[0].path) {
+      if (path.startsWith(section.path + '/')) {
+        path = path.substring(section.path.length + 1);
+      } else if (path === section.path) {
         path = 'index';
       }
       if (path) {
         // loadPage reports its own failures through the subscribe error handler.
-        void this.loadPage(segments[0].path, path);
+        void this.loadPage(section.path, path);
       }
     });
   }

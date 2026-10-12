@@ -71,7 +71,7 @@ export class BreadcrumbComponent implements OnInit {
             }, 50);
           }
 
-          const articleSegment = path_segments[path_segments.length - 1];
+          const articleSegment = path_segments.at(-1) ?? '';
           this.contentService
             .getArticleIndexItem(
               second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
@@ -101,7 +101,7 @@ export class BreadcrumbComponent implements OnInit {
           // ORCID or numeric dbId). Resolve to displayName via the
           // ContentService person endpoint which accepts both forms.
           this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
-          const id = path_segments[3];
+          const id = path_segments[3] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
           this.http
@@ -131,7 +131,7 @@ export class BreadcrumbComponent implements OnInit {
           this.breadcrumbs = [
             { label: 'Search', link: searchPath, queryParams: searchQueryParams },
           ];
-          const id = path_segments[2];
+          const id = path_segments[2] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
           this.http

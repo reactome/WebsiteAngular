@@ -57,10 +57,10 @@ export class EditorialCalendarComponent implements OnInit {
     const entries: EditorialEntry[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const cols = this.parseCsvLine(lines[i]);
+      const cols = this.parseCsvLine(lines[i] ?? '');
       if (cols.length < 3) continue;
 
-      const pathway = cols[0].trim();
+      const pathway = cols[0]?.trim();
       if (!pathway) continue;
 
       entries.push({

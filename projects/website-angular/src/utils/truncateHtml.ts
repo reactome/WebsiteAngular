@@ -33,7 +33,7 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
   ]);
 
   for (let i = 0; i < html.length; i++) {
-    const char = html[i];
+    const char = html.charAt(i);
 
     if (char === '<') {
       // Save any pending word before processing tag
@@ -53,7 +53,7 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
 
       // Parse the tag
       const tagMatch = currentTag.match(/^\/?\s*(\w+)/);
-      if (tagMatch) {
+      if (tagMatch?.[1]) {
         const tagName = tagMatch[1].toLowerCase();
 
         // Check if it's a closing tag
