@@ -1,12 +1,19 @@
 <app-page-layout>
   @if (!loading) {
     <div class="article-container">
-      @if (error) {
+      @if (failed) {
         <div class="error-message">
-          <h1>{{ error }}</h1>
+          <app-load-error what="this article" />
         </div>
-      }
-      @if (article) {
+      } @else if (notFound) {
+        <div class="error-message">
+          <h1>We can't find that article</h1>
+          <p>It may have moved, or the link may be mistyped.</p>
+          <p>
+            <a [routerLink]="listLink()">See all {{ listName() }}</a>
+          </p>
+        </div>
+      } @else if (article) {
         <article class="article">
           <header class="article-header">
             <h1 class="article-title">{{ article.title }}</h1>

@@ -1,10 +1,11 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ContentService } from '../../../services/content.service';
 import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 import { marked } from 'marked';
 import addImageSizes from '../../../utils/addImageSizes';
 import renderContentBody from '../../../utils/renderContentBody';
@@ -16,7 +17,7 @@ import { IS_CURATOR } from '../../../../../pathway-browser/src/environments/envi
 
 @Component({
   selector: 'app-article',
-  imports: [PageLayoutComponent],
+  imports: [PageLayoutComponent, LoadErrorComponent, RouterLink],
   templateUrl: './article.component.html',
   styleUrl: './article.component.scss',
 })
@@ -24,7 +25,10 @@ export class ArticleComponent implements OnInit {
   article: Article | null = null;
   renderedContent: SafeHtml = '';
   loading = true;
-  error: string | null = null;
+  notFound = false;
+  failed = false;
+  /** Where the article was looked for: 'about/news' or the spotlights. */
+  private path = '';
 
   private route = inject(ActivatedRoute);
   private contentService = inject(ContentService);
@@ -57,13 +61,23 @@ export class ArticleComponent implements OnInit {
 
   loadArticle(path: string, slug: string) {
     this.loading = true;
+    this.notFound = false;
+    this.failed = false;
+    this.article = null;
+    this.path = path;
 
     this.contentService.getArticle(path, slug).subscribe({
       next: (article) => {
+        if (!article) {
+          this.notFound = true;
+          this.loading = false;
+          this.cdr.markForCheck();
+          return;
+        }
         // Callback kept synchronous: an async one hands a promise to code
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
-          let html = await marked((article?.body as string) || '');
+          let html = await marked(article.body || '');
           // The same URL handling as the content pages (see rewriteContentUrls).
           if (needsRelease(html)) {
             const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });
@@ -74,35 +88,36 @@ export class ArticleComponent implements OnInit {
           // four images where a userguide page carries 114, so nobody is thrown
           // thousands of pixels off here -- but the text still moves under a
           // reader while the images arrive, and the sizes are already staged.
-          const renderedContent = addImageSizes(renderContentBody(html), article?.imageSizes);
+          const renderedContent = addImageSizes(renderContentBody(html), article.imageSizes);
           this.renderedContent = this.sanitizer.bypassSecurityTrustHtml(renderedContent);
 
-          this.article = {
-            title: article?.title || '',
-            author: article?.author || '',
-            date: article?.date || new Date(),
-            body: renderedContent,
-            slug: slug,
-            image: article?.image,
-            tags: article?.tags,
-          };
+          this.article = { ...article, body: renderedContent };
 
           this.loading = false;
           this.cdr.markForCheck();
         })().catch((error) => {
           console.error('Could not render article', error);
-          this.error = 'Error loading article.';
+          this.failed = true;
           this.loading = false;
           this.cdr.markForCheck();
         });
       },
       error: (err) => {
-        this.error = 'Error loading article.';
+        this.failed = true;
         this.loading = false;
         console.error('Error loading article:', err);
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /** The list the article would be in, for a reader whose article is not there. */
+  listLink(): string {
+    return '/' + this.path;
+  }
+
+  listName(): string {
+    return this.path === 'about/news' ? 'news' : 'research spotlights';
   }
 
   formatD(date: Date): string {

@@ -36,13 +36,6 @@ export interface PageContent {
   imageSizes?: Record<string, [number, number]>;
 }
 
-export interface TeamMember {
-  name: string;
-  role: string;
-  institution: string;
-  type: 'principal_investigator' | 'current' | 'alumni';
-}
-
 @Injectable({
   providedIn: 'root',
 })
@@ -115,6 +108,11 @@ export class ContentService {
       .get<Record<string, unknown>>(`${this.contentBasePath}/${path}/${slug}.json`)
       .pipe(
         map((frontmatter) => {
+          // As in getPage(): anything that is not a frontmatter object means
+          // there is no such article.
+          if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
+            return null;
+          }
           const body = frontmatter['body'] as string;
           const returnArticle: Article = {
             title: (frontmatter['title'] as string) || '',
@@ -134,7 +132,11 @@ export class ContentService {
           };
           return returnArticle;
         }),
-        catchError(() => of(null))
+        // A missing article is null; a failed one reaches the page, which says
+        // so rather than showing an article with nothing in it.
+        catchError((error: unknown) =>
+          isMissingContent(error) ? of(null) : throwError(() => error)
+        )
       );
   }
 
@@ -163,24 +165,6 @@ export class ContentService {
         return articles.slice(0, count);
       })
     );
-  }
-
-  /**
-   * Get all team members
-   */
-  getTeamMembers(): Observable<TeamMember[]> {
-    return this.http
-      .get<TeamMember[]>(`${this.contentBasePath}/team/index.json`)
-      .pipe(catchError(() => of([])));
-  }
-
-  /**
-   * Get team member by slug
-   */
-  getTeamMember(slug: string): Observable<TeamMember | null> {
-    return this.http
-      .get<TeamMember>(`${this.contentBasePath}/team/${slug}.json`)
-      .pipe(catchError(() => of(null)));
   }
 
   /**
