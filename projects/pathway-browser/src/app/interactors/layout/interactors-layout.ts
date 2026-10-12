@@ -79,7 +79,7 @@ class InteractorsLayout {
     const nodePerEdges = [lp.nodeOnTop, lp.nodeOnRight, lp.nodeOnBottom, lp.nodeOnLeft];
 
     for (edgeIndex = 0; edgeIndex < nodePerEdges.length; edgeIndex++) {
-      edgeNodes = nodePerEdges[edgeIndex];
+      edgeNodes = nodePerEdges[edgeIndex] ?? 0;
       prevNodeCount = nodeCount;
       nodeCount += edgeNodes - 1;
       if (interactorIndex < nodeCount) {

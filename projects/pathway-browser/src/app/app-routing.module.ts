@@ -64,10 +64,10 @@ export const routes: Routes = [
     ],
   },
   {
-    matcher: (segments) =>
-      segments.length === 0
-        ? { consumed: segments }
-        : { consumed: segments, posParams: { pathwayId: segments[0] } },
+    matcher: (segments) => {
+      const [pathwayId] = segments;
+      return pathwayId ? { consumed: segments, posParams: { pathwayId } } : { consumed: segments };
+    },
     providers: [
       // ngx-ui-tour 16 stopped providing TourService in root, so it has to be
       // provided explicitly or the GSA form's tour anchors fail with NG0201 and

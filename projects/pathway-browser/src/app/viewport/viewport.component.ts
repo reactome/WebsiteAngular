@@ -430,7 +430,7 @@ export class ViewportComponent {
 
   updateProfile(index: number) {
     this.analysis.sampleIndex.set(index);
-    this.state.sample.set(this.analysis.samples()[index]);
+    this.state.sample.set(this.analysis.samples()[index] ?? null);
   }
 
   toggleIterate() {

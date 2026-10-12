@@ -40,7 +40,8 @@ export function resultRows(
     .filter((node) => result.node_activities[node.uuid] !== undefined)
     .map((node) => {
       const baseline = toDisplayActivity(node.baseline);
-      const activity = toDisplayActivity(result.node_activities[node.uuid]);
+      // Present: the filter above keeps only nodes that have one.
+      const activity = toDisplayActivity(result.node_activities[node.uuid] ?? 0);
       return {
         uuid: node.uuid,
         reactomeId: node.reactome_id,

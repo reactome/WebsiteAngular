@@ -302,7 +302,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     if (this.tabId === 'data') {
       input.url = this.interactorService.UPLOAD_URL + this.selectedValue;
       input.content = formValue[this.selectedValue];
-      if (this.selectedValue === this.items[0].name) {
+      if (this.selectedValue === this.items[0]?.name) {
         // Prepare formdata when file is uploaded
         input.content = this.prepareFormData(formValue.form);
       }

@@ -178,9 +178,7 @@ export class EventService {
 
   getAncestors(array: Event[] | null, stId: string): Event[] | null {
     if (!Array.isArray(array)) return null;
-    for (let i = 0; i < array.length; i++) {
-      const node = array[i];
-
+    for (const node of array) {
       if (node.stId === stId) {
         return [node]; // Node itself is part of the path
       }
@@ -517,7 +515,7 @@ export class EventService {
           (treeNode) => (treeNode.isSelected = ancestorStIds.has(treeNode.stId))
         );
         treeEvent.ancestors = finalAncestor;
-        treeEvent.parent = finalAncestor[finalAncestor.length - 2];
+        treeEvent.parent = finalAncestor.at(-2);
         this.setTreeData(this.treeData$.value);
         this.setBreadcrumbs(finalAncestor);
         this.expandAllAncestors(finalAncestor, tree);
@@ -791,7 +789,7 @@ export class EventService {
 
   getFinalAncestor(ancestors: Pathway[][], pathIds?: string[]): Event[] {
     pathIds = pathIds || this.state.path();
-    let finalAncestor: Event[];
+    let finalAncestor: Event[] | undefined;
     // When path is given through URL, this link is from Location in PWB on detail page
     if (pathIds && ancestors.length > 1) {
       finalAncestor = this.findBestAncestors(ancestors, pathIds);
@@ -804,13 +802,14 @@ export class EventService {
     return finalAncestor ?? [];
   }
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    if (!lineages) return [];
-    if (lineages.length === 1) return lineages[0];
+    const [first, ...others] = lineages ?? [];
+    if (!first) return [];
+    if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = lineages[0];
-    let bestAncestorsScore = this.getAncestorsMatchingScore(lineages[0], idealIds);
-    for (const ancestors of lineages.slice(1)) {
+    let bestAncestors: Pathway[] = first;
+    let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
+    for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
       if (score > bestAncestorsScore) {
         bestAncestors = ancestors;

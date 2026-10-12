@@ -291,13 +291,14 @@ export class DataStateService {
   }
 
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    if (!lineages) return [];
-    if (lineages.length === 1) return lineages[0];
+    const [first, ...others] = lineages ?? [];
+    if (!first) return [];
+    if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = lineages[0];
-    let bestAncestorsScore = this.getAncestorsMatchingScore(lineages[0], idealIds);
-    for (const ancestors of lineages.slice(1)) {
+    let bestAncestors: Pathway[] = first;
+    let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
+    for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
       if (score > bestAncestorsScore) {
         bestAncestors = ancestors;

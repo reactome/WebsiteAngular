@@ -238,9 +238,10 @@ export class ReacfoamComponent implements OnDestroy {
               this.species.currentSpecies().displayName
             )
           );
-          if (flaggingResult.matches?.length === 1) {
+          const [only, ...others] = flaggingResult.matches ?? [];
+          if (only !== undefined && others.length === 0) {
             //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
-            this.select.set(flaggingResult.matches[0]);
+            this.select.set(only);
           }
         }
       })().catch((error) => console.error('Reacfoam selection update failed', error));

@@ -339,15 +339,15 @@ export class EhldService {
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
     values.forEach((exp, _i) => {
-      const p = stops.length - 1;
+      const last = stops.at(-1);
       const realExp = isArray(exp) ? exp[0] : exp;
-      if (stops.length !== 0 && stops[p].exp === realExp) {
-        stops[p].stop += delta;
-        stops[p].width += delta;
+      if (last && last.exp === realExp) {
+        last.stop += delta;
+        last.width += delta;
       } else {
         stops.push({
-          start: stops[p]?.stop || 0,
-          stop: (stops[p]?.stop || 0) + delta * exp[1],
+          start: last?.stop || 0,
+          stop: (last?.stop || 0) + delta * exp[1],
           width: delta * exp[1],
           color: palette.scale(realExp).hex(),
           exp: realExp,

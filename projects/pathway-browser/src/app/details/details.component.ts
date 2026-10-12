@@ -78,7 +78,7 @@ export class DetailsComponent {
     // from something we just set ourselves.
     const tabCameFromUrl = !!untracked(this.state.tab);
 
-    effect(() => this.state.tab.set(this.tabs()[this.selectedTabIndex()!]));
+    effect(() => this.state.tab.set(this.tabs()[this.selectedTabIndex()!] ?? null));
 
     effect(() => {
       // A shared link that says ?tab=download has to land on Download. These

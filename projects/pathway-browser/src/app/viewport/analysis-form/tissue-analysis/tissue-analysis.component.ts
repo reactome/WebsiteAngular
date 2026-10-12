@@ -225,7 +225,7 @@ export class TissueAnalysisComponent {
       (fromAvailable ? this.availableTissues : this.selectedTissues).set(from);
       (toAvailable ? this.availableTissues : this.selectedTissues).set(to);
     }
-    this.dropped.set(new Set(this.dropped()).add(tissue));
+    if (tissue !== undefined) this.dropped.set(new Set(this.dropped()).add(tissue));
   }
 
   lottie?: DotLottie;
@@ -241,7 +241,7 @@ export class TissueAnalysisComponent {
       .analyseFromUrl(
         this.tissue.getSampleURL(this.experiment()!.id, {
           omitNulls: true,
-          columns: this.selectedTissues().map((tissue) => this.tissuesMap()[tissue]),
+          columns: this.selectedTissues().flatMap((tissue) => this.tissuesMap()[tissue] ?? []),
         })
       )
       .subscribe((result) => {

@@ -191,6 +191,8 @@ export class StructureViewerComponent {
         .pipe(
           map((response) => {
             const value = response[id];
+            // An id the service has no structures for: none, rather than a throw.
+            if (!value) return undefined;
             const ids = new Set(value.map((item) => item.pdb_id.toUpperCase()));
             return Array.from(ids);
           }),

@@ -409,7 +409,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
     if (isPathway(treeEvent)) {
       this.eventService.loadEventData(treeEvent);
-    } else {
+    } else if (treeEvent.parent) {
       this.dboService
         .fetchEnhancedEntry<Event>(treeEvent.parent.stId)
         .pipe(untilDestroyed(this))

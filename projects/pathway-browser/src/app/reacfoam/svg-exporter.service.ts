@@ -175,8 +175,7 @@ export class SvgExporterService {
       const idToSampleStyle = new Map<string, { fill?: string; stroke?: string }[]>();
       const patternIdToContent = new Map<string, string[]>();
 
-      for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
-        const sample = samples[sampleIndex];
+      for (const [sampleIndex, sample] of samples.entries()) {
         this.state.sample.set(sample);
         await this.waitFor(() => ehld.currentSample === sample, 500);
 
@@ -286,11 +285,11 @@ export class SvgExporterService {
   ): Map<string, FrameDiff[]> {
     const compressed = new Map<string, FrameDiff[]>();
     idToSampleStyle.forEach((frameStyles, id) => {
-      let currentStyle = frameStyles[0];
-      const diffs = [{ frame: 0, style: frameStyles[0] }] as FrameDiff[];
+      let currentStyle = frameStyles[0] ?? {};
+      const diffs = [{ frame: 0, style: currentStyle }] as FrameDiff[];
 
-      for (let i = 1; i < frameStyles.length; i++) {
-        const frameStyle = frameStyles[i];
+      for (const [i, frameStyle] of frameStyles.entries()) {
+        if (i === 0) continue;
         const diff = this.getStyleDiff(currentStyle, frameStyle);
         if (Object.keys(diff).length > 0) {
           diffs.push({ frame: i, style: diff });
@@ -354,7 +353,7 @@ export class SvgExporterService {
   private generateCompressedKeyframes(id: string, diffs: FrameDiff[]): string {
     const keyframeName = `kf_${this.sanitizeId(id)}`;
     let keyframes = `@keyframes ${keyframeName} {\n`;
-    const lastValues: Partial<Record<string, string>> = { ...diffs[diffs.length - 1].style }; // start with the last value as it loops
+    const lastValues: Partial<Record<string, string>> = { ...diffs.at(-1)?.style }; // start with the last value as it loops
 
     diffs.forEach((diff, _i) => {
       const { start, stop } = this.calcTransitionTime(diff.frame);
@@ -410,8 +409,8 @@ export class SvgExporterService {
           `<tspan dy="${fontSize}" x="${labelX}">Sig. Down</tspan><tspan dy="${fontSize}" x="${labelX}">Regulated</tspan>`,
         ]
       : [
-          this.analysis.palette().domainRange[1].toFixed(2),
-          this.analysis.palette().domainRange[0].toFixed(2),
+          (this.analysis.palette().domainRange[1] ?? 0).toFixed(2),
+          (this.analysis.palette().domainRange[0] ?? 0).toFixed(2),
         ];
 
     const labelSpace = (height * (4 / 5)) / (labels.length - 1);

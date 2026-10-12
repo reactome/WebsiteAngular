@@ -133,7 +133,9 @@ export class ReacfoamService {
               .filter((line) => !line.startsWith('#')) // Remove comments lines
               .filter((line) => line.length > 0) // Remove empty lines
               .map((line) => line.split('\t')) // Split columns
-              .map(([stId, name, distance, angle, family]) => [
+              // Every line of the layout has all five columns; a short one would
+              // read its missing numbers as NaN, as before.
+              .map(([stId = '', name = '', distance = '', angle = '', family = '']) => [
                 stId,
                 {
                   stId,

@@ -56,7 +56,9 @@ export class JSOGDeserializer {
 
   private resolveReferences(obj: JSOGObject): JSOGObject {
     if (obj['@ref']) {
-      return this.objectMap[obj['@ref']];
+      // A reference always points back at an object already read; one that
+      // does not is left as it is rather than becoming undefined.
+      return this.objectMap[obj['@ref']] ?? obj;
     }
 
     for (const key in obj) {

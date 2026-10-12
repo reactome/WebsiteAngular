@@ -64,7 +64,7 @@ export class ObjectTreeDetailsComponent {
     const otherKeys = ['geneName', 'chain', 'referenceGene', 'referenceTranscript'];
     const onlyDisplayName =
       displayedExternalRef.length === 1 &&
-      displayedExternalRef[0].label === Labels.EXTERNAL_REFERENCE;
+      displayedExternalRef[0]?.label === Labels.EXTERNAL_REFERENCE;
     const hasOtherFields = otherKeys.some((key) => referenceEntity[key]);
     const emptyExternalRef = onlyDisplayName && !hasOtherFields;
 

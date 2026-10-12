@@ -236,17 +236,19 @@ export class ResultTabComponent {
     }
     if (this.state.minExpressionFilter() !== undefined) {
       data = data.filter(
-        (p) => p.entities.exp[this.analysis.sampleIndex()] >= this.state.minExpressionFilter()!
+        (p) =>
+          (p.entities.exp[this.analysis.sampleIndex()] ?? NaN) >= this.state.minExpressionFilter()!
       );
     }
     if (this.state.maxExpressionFilter() !== undefined) {
       data = data.filter(
-        (p) => p.entities.exp[this.analysis.sampleIndex()] <= this.state.maxExpressionFilter()!
+        (p) =>
+          (p.entities.exp[this.analysis.sampleIndex()] ?? NaN) <= this.state.maxExpressionFilter()!
       );
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter((p) =>
-        this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()])
+        this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()] ?? NaN)
       );
     }
     return data;

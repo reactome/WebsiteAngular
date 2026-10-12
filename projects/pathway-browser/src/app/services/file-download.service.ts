@@ -75,7 +75,7 @@ export function filenameFrom(disposition: string | null, fallback: string): stri
 
 /** The name to fall back on, taken from the URL's last path segment. */
 export function filenameFromUrl(url: string, fallback = 'download'): string {
-  const path = url.split(/[?#]/)[0];
+  const [path = url] = url.split(/[?#]/);
   const last = path.slice(path.lastIndexOf('/') + 1);
   return last || fallback;
 }
