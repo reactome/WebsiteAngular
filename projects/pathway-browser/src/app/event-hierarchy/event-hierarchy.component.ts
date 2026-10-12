@@ -14,6 +14,7 @@ import { Event } from '../model/graph/event/event.model';
 import { EventService, SelectableObject } from '../services/event.service';
 import { SpeciesService } from '../services/species.service';
 import {
+  catchError,
   combineLatest,
   combineLatestWith,
   filter,
@@ -164,8 +165,12 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           ? this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
               map((enhancedEvent) => ({
                 idToUse,
-                enhancedEvent,
-              }))
+                enhancedEvent: enhancedEvent as SelectableObject | undefined,
+              })),
+              // Caught here, inside the switchMap: an error reaching the outer
+              // stream would end it, and the tree would stop following the URL.
+              // The viewport says the pathway could not be loaded.
+              catchError(() => of({ idToUse, enhancedEvent: undefined }))
             )
           : of({ idToUse, enhancedEvent: undefined });
       }),
@@ -296,9 +301,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         if (diagramPathway?.stId === idToUse) {
           return of({ enhancedEvent: diagramPathway });
         } else {
-          return this.dboService
-            .fetchEnhancedEntry<SelectableObject>(idToUse)
-            .pipe(map((enhancedEvent) => ({ enhancedEvent })));
+          return this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
+            map((enhancedEvent) => ({
+              enhancedEvent: enhancedEvent as SelectableObject | undefined,
+            })),
+            // No such event, or it could not be loaded: the tree still draws
+            // its top level, and the viewport says what went wrong.
+            catchError(() => of({ enhancedEvent: undefined }))
+          );
         }
       })
     );

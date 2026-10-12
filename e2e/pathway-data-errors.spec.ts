@@ -27,10 +27,21 @@ const fail = (page: Page, url: RegExp) => page.route(url, (route) => route.abort
 const view = (page: Page) => page.locator('#view');
 const details = (page: Page) => page.locator('cr-description-tab');
 
+/** Anything Angular reports ("ERROR <error>"), and anything uncaught. */
+function collectThrown(page: Page) {
+  const thrown: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /^ERROR\b/.test(message.text())) thrown.push(message.text());
+  });
+  page.on('pageerror', (error) => thrown.push(String(error)));
+  return thrown;
+}
+
 test.describe('The pathway browser', () => {
   test.describe.configure({ timeout: 3 * 60_000 });
 
   test('does not say a pathway has no diagram when it could not be loaded', async ({ page }) => {
+    const thrown = collectThrown(page);
     await fail(page, new RegExp(`/data/query/enhanced/v2/${DIAGRAM}(\\?|$)`));
     await page.goto(`/PathwayBrowser/${DIAGRAM}`);
     await expect(view(page).getByRole('alert')).toHaveText(
@@ -38,6 +49,7 @@ test.describe('The pathway browser', () => {
       { timeout: LOAD }
     );
     await expect(view(page)).not.toContainText('No diagram is available');
+    expect(thrown).toEqual([]);
   });
 
   test('does not say a sub-pathway has no diagram when its parents could not be loaded', async ({
@@ -53,12 +65,14 @@ test.describe('The pathway browser', () => {
   });
 
   test('says a pathway that does not exist was not found', async ({ page }) => {
+    const thrown = collectThrown(page);
     await page.goto(`/PathwayBrowser/${MISSING}`);
     await expect(view(page).locator('.no-diagram')).toContainText(
       `There is no pathway ${MISSING}.`,
       { timeout: LOAD }
     );
     await expect(view(page).getByRole('alert')).toHaveCount(0);
+    expect(thrown).toEqual([]);
   });
 
   test('draws a sub-pathway in its parent’s diagram', async ({ page }) => {

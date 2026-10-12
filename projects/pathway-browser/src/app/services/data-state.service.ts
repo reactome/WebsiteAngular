@@ -110,7 +110,15 @@ export class DataStateService {
           }),
   });
 
-  public selectedElement = this._selectedElement.asReadonly().value;
+  /**
+   * The selection, or undefined while there is none -- and when it could not
+   * be loaded. The resource's own value() throws in its error state, so every
+   * view reading it threw too when the open pathway (the default selection)
+   * failed or did not exist.
+   */
+  public readonly selectedElement = computed(() =>
+    this._selectedElement.hasValue() ? this._selectedElement.value() : undefined
+  );
   public selectedElementLoading = this._selectedElement.asReadonly().isLoading;
 
   readonly hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
