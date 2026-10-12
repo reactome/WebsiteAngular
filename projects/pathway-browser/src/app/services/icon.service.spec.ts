@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -44,5 +46,36 @@ describe('IconService.fetchIcon', () => {
     http.expectOne((request) => request.url.includes('R-ICO-013624')).flush('<svg/>');
     await expect(icon).resolves.toBe('<svg/>');
     expect(service.currentIcon()?.stId).toBe('R-ICO-013624');
+  });
+});
+
+// Every kind of entity the trees and lists show needs an icon of its own name:
+// a missing one falls back to "?", which mat-icon cannot find, and logs an
+// error for every row (an RNA drug in R-HSA-9845192's participants did).
+describe('IconService.getIconDetails', () => {
+  it('has an icon for every kind of drug', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(IconService);
+    for (const schemaClass of ['ChemicalDrug', 'ProteinDrug', 'RNADrug']) {
+      const icon = service.getIconDetails({ dbId: 1, displayName: 'x', schemaClass });
+      expect(icon.name, schemaClass).not.toBe('?');
+    }
+  });
+
+  // And each one's artwork has to exist, or mat-icon fetches a 404.
+  it('has artwork for every icon', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const icons = TestBed.inject(IconService).reactomeSubjectIcons;
+    const folder = join(
+      process.cwd(),
+      'projects/pathway-browser/src/assets/icons/reactome-subject'
+    );
+    for (const [key, icon] of Object.entries(icons)) {
+      expect(existsSync(join(folder, `${icon.route}.svg`)), `${key}: ${icon.route}.svg`).toBe(true);
+    }
   });
 });

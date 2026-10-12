@@ -108,6 +108,8 @@ export class IconService {
       route: 'genome-encoded-entity',
     },
     ProteinDrug: { name: 'protein-drug', tooltip: 'Protein Drug', route: 'protein-drug' },
+    // No artwork of its own yet: the generic drug's, as reference therapeutics use.
+    RNADrug: { name: 'rna-drug', tooltip: 'RNA Drug', route: 'chemical-drug' },
     ChemicalDrug: {
       name: 'chemical-drug',
       tooltip: 'A therapeutic agent that is a chemically synthesized substance',
