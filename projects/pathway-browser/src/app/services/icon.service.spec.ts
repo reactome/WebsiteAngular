@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -59,6 +61,21 @@ describe('IconService.getIconDetails', () => {
     for (const schemaClass of ['ChemicalDrug', 'ProteinDrug', 'RNADrug']) {
       const icon = service.getIconDetails({ dbId: 1, displayName: 'x', schemaClass });
       expect(icon.name, schemaClass).not.toBe('?');
+    }
+  });
+
+  // And each one's artwork has to exist, or mat-icon fetches a 404.
+  it('has artwork for every icon', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const icons = TestBed.inject(IconService).reactomeSubjectIcons;
+    const folder = join(
+      process.cwd(),
+      'projects/pathway-browser/src/assets/icons/reactome-subject'
+    );
+    for (const [key, icon] of Object.entries(icons)) {
+      expect(existsSync(join(folder, `${icon.route}.svg`)), `${key}: ${icon.route}.svg`).toBe(true);
     }
   });
 });
