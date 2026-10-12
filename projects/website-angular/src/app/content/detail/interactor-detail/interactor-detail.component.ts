@@ -96,7 +96,8 @@ export class InteractorDetailComponent implements OnInit {
     }
 
     this.acc.set(acc);
-    const baseAcc = acc.split('-')[0];
+    // An isoform's accession without its suffix: P04637-2 is P04637.
+    const [baseAcc = acc] = acc.split('-');
 
     // One backend round-trip pulls interactions WITH each partner's
     // Reactome physical entities pre-resolved -- previously this fanned

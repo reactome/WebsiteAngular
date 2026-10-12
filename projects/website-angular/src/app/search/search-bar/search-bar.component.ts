@@ -254,7 +254,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
-      this.text.set(this.suggestions[this.highlightedIndex]);
+      this.text.set(this.suggestions[this.highlightedIndex] ?? '');
     }
   }
 
@@ -264,7 +264,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
-      this.text.set(this.suggestions[this.highlightedIndex]);
+      this.text.set(this.suggestions[this.highlightedIndex] ?? '');
     }
   }
 }

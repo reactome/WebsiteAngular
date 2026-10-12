@@ -35,7 +35,8 @@ function addSamePageIds(html: string): string {
   const re = /<(h[1-6])>\s*(<a\s[^>]*href="#([^"]+)"[^>]*>)/g;
   const matches: { index: number; length: number; tag: string; href: string; full: string }[] = [];
   for (let m = re.exec(html); m !== null; m = re.exec(html)) {
-    matches.push({ index: m.index, length: m[0].length, tag: m[1], href: m[3], full: m[0] });
+    const [full, tag = '', , href = ''] = m;
+    matches.push({ index: m.index, length: full.length, tag, href, full });
   }
   const lastByHref = new Map<string, number>();
   matches.forEach((m, i) => lastByHref.set(m.href, i));
@@ -61,7 +62,8 @@ function addSamePageIds(html: string): string {
   // match, which is the behaviour pass 1 exists to avoid.
   const assigned = new Set(lastByHref.keys());
   const fragments = new Set<string>();
-  for (const m of out.matchAll(/href="#([^"]+)"/g)) fragments.add(m[1]);
+  for (const [, fragment] of out.matchAll(/href="#([^"]+)"/g))
+    if (fragment) fragments.add(fragment);
   if (fragments.size === 0) return out;
 
   out = out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
@@ -101,11 +103,12 @@ function addSamePageIds(html: string): string {
   const loose = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
   const linkText = new Map<string, string>();
   for (const m of out.matchAll(/<a\s[^>]*href="#([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)) {
-    const text = m[2]
+    const [, fragment = '', inner = ''] = m;
+    const text = inner
       .replace(/<[^>]+>/g, '')
       .replace(/^[\d.\s]+/, '')
       .trim();
-    if (text && !linkText.has(m[1])) linkText.set(m[1], text);
+    if (text && !linkText.has(fragment)) linkText.set(fragment, text);
   }
 
   const wanted = new Map<string, string>();

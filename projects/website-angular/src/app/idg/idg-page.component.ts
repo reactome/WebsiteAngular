@@ -51,7 +51,7 @@ function normalise(term: string) {
 const BUCKETS = 28;
 
 /** Rows per page, and the portal's own default first. */
-const PAGE_SIZES = [10, 25, 50, 100];
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 /**
  * The portal's own starting threshold.
@@ -182,8 +182,10 @@ export class IdgPageComponent {
    */
   readonly scoreRange = computed(() => {
     const sorted = this.sortedScores();
-    if (!sorted.length) return undefined;
-    return { min: sorted[0], max: sorted[sorted.length - 1] };
+    const [min] = sorted;
+    const max = sorted.at(-1);
+    if (min === undefined || max === undefined) return undefined;
+    return { min, max };
   });
 
   /** Starts at the 90th percentile: the confident tail, without being empty. */
@@ -191,8 +193,8 @@ export class IdgPageComponent {
     source: () => (this.sortedScores().length ? this.sortedScores() : undefined),
     computation: (sorted, previous) => {
       if (previous?.value !== undefined && previous.source) return previous.value;
-      if (!sorted?.length) return DEFAULT_THRESHOLD;
-      const best = sorted[sorted.length - 1];
+      const best = sorted?.at(-1);
+      if (best === undefined) return DEFAULT_THRESHOLD;
       return Math.min(DEFAULT_THRESHOLD, Math.round(best * 100) / 100);
     },
   });
@@ -248,7 +250,7 @@ export class IdgPageComponent {
     const counts = new Array<number>(BUCKETS).fill(0);
     for (const score of sorted) {
       const bucket = Math.min(BUCKETS - 1, Math.floor((score - range.min) / width));
-      counts[bucket]++;
+      counts[bucket] = (counts[bucket] ?? 0) + 1;
     }
     const tallest = Math.max(...counts, 1);
     return counts.map((count, index) => ({
@@ -417,7 +419,7 @@ export class IdgPageComponent {
   readonly significantOnly = signal(true);
 
   readonly pageSizes = PAGE_SIZES;
-  readonly perPage = signal(PAGE_SIZES[0]);
+  readonly perPage = signal<number>(PAGE_SIZES[0]);
   readonly page = signal(0);
 
   private readonly matching = computed<IdgRow[]>(() => {
@@ -520,7 +522,8 @@ export class IdgPageComponent {
       let high = sorted.length;
       while (low < high) {
         const middle = (low + high) >> 1;
-        if (sorted[middle] < score) low = middle + 1;
+        // `middle` is below the length, so the value is there.
+        if ((sorted[middle] ?? score) < score) low = middle + 1;
         else high = middle;
       }
       return { score, genes: sorted.length - low };

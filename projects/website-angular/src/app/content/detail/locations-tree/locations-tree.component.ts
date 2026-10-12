@@ -70,8 +70,9 @@ export class LocationsTreeComponent {
         }
         if (species.has('Homo sapiens')) {
           this.selectedSpecies.set('Homo sapiens');
-        } else if (species.size > 0) {
-          this.selectedSpecies.set([...species].sort()[0]);
+        } else {
+          const first = [...species].sort()[0];
+          if (first) this.selectedSpecies.set(first);
         }
         this.loading.set(false);
       },

@@ -63,28 +63,20 @@ export class ResourcesComponent implements OnInit {
     let rowMatch;
 
     while ((rowMatch = rowRegex.exec(html)) !== null) {
-      const rowHtml = rowMatch[1];
+      const rowHtml = rowMatch[1] ?? '';
       const cells: string[] = [];
 
       let cellMatch;
       const cellRe = new RegExp(cellRegex.source, 'g');
       while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
-        const cellHtml = cellMatch[1];
+        const cellHtml = cellMatch[1] ?? '';
         cells.push(cellHtml.replace(tagRegex, '').trim());
       }
 
-      if (cells.length < 3) continue;
+      const [name, description, category] = cells;
+      if (name === undefined || description === undefined || category === undefined) continue;
 
-      const category = cells[2];
-      if (!entries[category]) {
-        entries[category] = [];
-      }
-
-      entries[category].push({
-        name: cells[0],
-        description: cells[1],
-        category: category,
-      });
+      (entries[category] ??= []).push({ name, description, category });
     }
 
     //Remove "category" entry if it exists (header row)

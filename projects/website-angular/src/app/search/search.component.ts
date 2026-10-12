@@ -183,8 +183,9 @@ export class SearchComponent implements OnInit, OnDestroy {
       let q = params['q'] || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
-        if (pathSegments.length === 2 && pathSegments[1].path.startsWith('query=')) {
-          q = decodeURIComponent(pathSegments[1].path.substring('query='.length));
+        const querySegment = pathSegments.length === 2 ? pathSegments[1] : undefined;
+        if (querySegment?.path.startsWith('query=')) {
+          q = decodeURIComponent(querySegment.path.substring('query='.length));
         }
       }
 

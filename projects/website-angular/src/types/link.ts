@@ -20,7 +20,7 @@ export interface NavOption extends NavLink {
 // inconsistent about including one and a relative routerLink resolves
 // against the current route rather than the app root.
 export function linkPath(link: string): string {
-  const path = link.split('?')[0];
+  const [path = link] = link.split('?');
   return path.startsWith('/') ? path : '/' + path;
 }
 

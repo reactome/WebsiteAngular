@@ -1,5 +1,5 @@
 {
-  "total": 257,
+  "total": 180,
   "files": {
     "projects/pathway-browser/src/app/analysis-summary/summary-stream.ts": 2,
     "projects/pathway-browser/src/app/app-routing.module.ts": 1,
@@ -35,23 +35,6 @@
     "projects/pathway-browser/src/app/services/utils.ts": 3,
     "projects/pathway-browser/src/app/utils/JSOGDeserializer.ts": 1,
     "projects/pathway-browser/src/app/viewport/analysis-form/tissue-analysis/tissue-analysis.component.ts": 2,
-    "projects/pathway-browser/src/app/viewport/viewport.component.ts": 1,
-    "projects/website-angular/src/app/about/editorial-calendar/editorial-calendar.component.ts": 2,
-    "projects/website-angular/src/app/about/release-calendar/release-calendar.component.ts": 6,
-    "projects/website-angular/src/app/breadcrumb/breadcrumb.component.ts": 4,
-    "projects/website-angular/src/app/community/collaboration/collaboration.component.ts": 13,
-    "projects/website-angular/src/app/community/icon-lib/icon-lib.component.ts": 6,
-    "projects/website-angular/src/app/community/resources/resources.component.ts": 5,
-    "projects/website-angular/src/app/content/detail/interactor-detail/interactor-detail.component.ts": 1,
-    "projects/website-angular/src/app/content/detail/locations-tree/locations-tree.component.ts": 1,
-    "projects/website-angular/src/app/idg/idg-page.component.ts": 13,
-    "projects/website-angular/src/app/page/page.component.ts": 4,
-    "projects/website-angular/src/app/search/search-bar/search-bar.component.ts": 2,
-    "projects/website-angular/src/app/search/search.component.ts": 2,
-    "projects/website-angular/src/app/sidebar/sidebar.component.ts": 7,
-    "projects/website-angular/src/types/link.ts": 2,
-    "projects/website-angular/src/utils/addAnchorIds.ts": 6,
-    "projects/website-angular/src/utils/rewriteContentUrls.ts": 1,
-    "projects/website-angular/src/utils/truncateHtml.ts": 2
+    "projects/pathway-browser/src/app/viewport/viewport.component.ts": 1
   }
 }
