@@ -22,6 +22,14 @@ describe('the indexed-access count', () => {
     expect(outcome(2, output)).toEqual({ ok: true, counts: countErrors(output) });
   });
 
+  // With a syntax error tsc reports only that, skipping the type check: the
+  // count drops to one, and --update would record it.
+  it('refuses a run that stopped at a syntax error', () => {
+    expect(
+      outcome(2, 'projects/a/src/x.ts(4,1): error TS1128: Declaration or statement expected.').ok
+    ).toBe(false);
+  });
+
   // A crash prints no error lines, which would otherwise read as a clean run
   // (scripts/check-types.mjs says how that cost an afternoon).
   it('refuses a run that failed without reporting an error', () => {

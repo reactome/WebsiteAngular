@@ -11,6 +11,9 @@
  * file, because a total lets a new finding hide behind a fix elsewhere, and a
  * file the baseline does not list is held at zero.
  *
+ * Moving or renaming a file with findings shows as an increase under its new
+ * path. Check the total is unchanged, then run with --update.
+ *
  * It runs the project the build uses (tsconfig.app.json, as check-types does)
  * with the flag added. A run that fails without naming a single finding is a
  * crash, not a clean result, and is refused.
@@ -51,7 +54,10 @@ export function outcome(status, output) {
   // An error with no file -- a bad option, a missing tsconfig -- or a failure
   // with nothing counted means tsc did not get as far as the code.
   const global = output.split('\n').some((line) => /^error TS\d+:/.test(line));
-  if (global || Object.keys(counts).length === 0) return { ok: false, counts };
+  // A syntax error (TS1xxx) stops tsc before the type check, so the findings
+  // it would have reported are missing, not fixed.
+  const syntax = /\): error TS1\d{3}:/m.test(output);
+  if (global || syntax || Object.keys(counts).length === 0) return { ok: false, counts };
   return { ok: true, counts };
 }
 
@@ -67,7 +73,9 @@ function main() {
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
   const run = outcome(result.status, output);
   if (!run.ok) {
-    console.error(`tsc failed without reporting a finding (exit ${result.status}):`);
+    console.error(
+      `tsc did not get as far as the type check (exit ${result.status}), so it has nothing to count:`
+    );
     console.error(output.trim());
     process.exit(1);
   }
@@ -86,17 +94,22 @@ function main() {
     return;
   }
 
-  const baseline = existsSync(BASELINE)
-    ? /** @type {{ files: Record<string, number> }} */ (JSON.parse(readFileSync(BASELINE, 'utf8')))
-        .files
-    : {};
+  if (!existsSync(BASELINE)) {
+    console.error(`No baseline at ${BASELINE}: record one with --update.`);
+    process.exit(1);
+  }
+  const baseline = /** @type {{ files: Record<string, number> }} */ (
+    JSON.parse(readFileSync(BASELINE, 'utf8'))
+  ).files;
   const { increased, decreased } = compare(counts, baseline);
   if (increased.length) {
     console.error('Unchecked indexed access went up (noUncheckedIndexedAccess, #345):\n');
     for (const { rule: file, was, now } of increased) console.error(`  ${file}: ${was} -> ${now}`);
     console.error(
       `\nGuard the new index reads in those files: an index out of range or a missing key is` +
-        ` undefined. See them with:\n\n  npx tsc --noEmit -p ${PROJECT} --noUncheckedIndexedAccess\n`
+        ` undefined. See them with:\n\n  npx tsc --noEmit -p ${PROJECT} --noUncheckedIndexedAccess\n\n` +
+        `A file that was only moved or renamed shows here under its new path: if the total` +
+        ` (${total(counts)} now, ${total(baseline)} before) has not gone up, run with --update.\n`
     );
     process.exit(1);
   }
