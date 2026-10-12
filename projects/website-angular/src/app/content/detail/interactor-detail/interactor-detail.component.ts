@@ -131,10 +131,14 @@ export class InteractorDetailComponent implements OnInit {
         this.entityMap.set(entityMap);
 
         // Extract summary from search result
-        const entry = search?.results[0]?.entries[0];
+        // The first hit that is a reference: when nothing matches as an
+        // interactor the search answers unfiltered, and an Icon can lead.
+        const entry = search?.results
+          .flatMap((group) => group.entries)
+          .find((hit) => hit.databaseName && hit.referenceIdentifier);
         if (entry) {
           const cleanId = (entry.referenceIdentifier ?? acc).replace(/<[^>]*>/g, '');
-          this.displayName.set(`${entry.databaseName ?? 'UniProt'}:${cleanId} ${entry.name}`);
+          this.displayName.set(`${entry.databaseName}:${cleanId} ${entry.name}`);
           this.interactorType.set(
             `${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`
           );

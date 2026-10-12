@@ -149,7 +149,10 @@ export class IdgService {
 
   /** Every dataset on offer, for the picker. */
   datasets(): Observable<IdgDataset[]> {
-    return this.http.get<IdgDataset[]>(`${IDG_SERVICE}/datadesc`);
+    // An empty body arrives as null: none.
+    return this.http
+      .get<IdgDataset[] | null>(`${IDG_SERVICE}/datadesc`)
+      .pipe(map((datasets) => datasets ?? []));
   }
 
   /**
@@ -160,9 +163,11 @@ export class IdgService {
    * 0.89, which is why a fixed 0.9 threshold returns nothing at all for it.
    */
   interactorScores(term: string): Observable<Record<string, number>> {
-    return this.http.get<Record<string, number>>(
-      `${IDG_SERVICE}/relationships/combinedScoreGenesForTerm/${encodeURIComponent(term)}`
-    );
+    return this.http
+      .get<Record<string, number> | null>(
+        `${IDG_SERVICE}/relationships/combinedScoreGenesForTerm/${encodeURIComponent(term)}`
+      )
+      .pipe(map((scores) => scores ?? {}));
   }
 
   /**
