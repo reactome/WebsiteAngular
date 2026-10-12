@@ -19,8 +19,10 @@ import { CONTENT_SERVICE } from '../../../../environments/environment';
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
 
+/** A reaction's own layout: a diagram without the lists it has no use for. */
 interface ReactionJson {
-  diagram: Diagram;
+  diagram: Omit<Diagram, 'links' | 'shadows' | 'compartments'> &
+    Partial<Pick<Diagram, 'links' | 'shadows' | 'compartments'>>;
   graph: Graph.Data;
 }
 
@@ -59,12 +61,14 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
 
     this.http
       .get<ReactionJson>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
-      .subscribe(({ diagram, graph }) => {
-        // Ensure required arrays exist (reaction diagrams may omit empty arrays)
-        diagram.links = diagram.links || [];
-        diagram.shadows = diagram.shadows || [];
-        diagram.compartments = diagram.compartments || [];
-        graph.subpathways = graph.subpathways || [];
+      .subscribe(({ diagram: layout, graph }) => {
+        // A reaction's layout leaves out the lists it does not have.
+        const diagram: Diagram = {
+          ...layout,
+          links: layout.links ?? [],
+          shadows: layout.shadows ?? [],
+          compartments: layout.compartments ?? [],
+        };
 
         const elements = this.diagramService.diagramFromData(diagram, graph);
 
