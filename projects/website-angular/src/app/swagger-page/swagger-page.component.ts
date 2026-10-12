@@ -90,9 +90,6 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    const swaggerContainer = this.swaggerContainer();
-    if (swaggerContainer?.nativeElement) {
-      swaggerContainer.nativeElement.innerHTML = '';
-    }
+    this.swaggerContainer().nativeElement.innerHTML = '';
   }
 }

@@ -10,9 +10,10 @@ export interface IconCategory {
   count: number;
 }
 
+// As with the search facets, an empty list is left out.
 export interface IconFacet {
-  selected: IconCategory[];
-  available: IconCategory[];
+  selected?: IconCategory[];
+  available?: IconCategory[];
 }
 
 export interface IconFacetResponse {
@@ -51,7 +52,8 @@ export interface IconEntry {
 }
 
 export interface IconResult {
-  entries: IconEntry[];
+  /** Left out when nothing matches. */
+  entries?: IconEntry[];
   entriesCount: number;
 }
 

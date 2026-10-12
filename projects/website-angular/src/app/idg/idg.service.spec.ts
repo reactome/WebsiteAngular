@@ -40,6 +40,23 @@ describe('IdgService', () => {
     });
   });
 
+  // An answer with an empty body reaches HttpClient as null.
+  describe('an empty answer', () => {
+    it('is no datasets', async () => {
+      const datasets = firstValueFrom(service.datasets());
+      http.expectOne((request) => request.url.endsWith('/datadesc')).flush(null);
+      await expect(datasets).resolves.toEqual([]);
+    });
+
+    it('is no interactors', async () => {
+      const scores = firstValueFrom(service.interactorScores('TANC1'));
+      http
+        .expectOne((request) => request.url.endsWith('/combinedScoreGenesForTerm/TANC1'))
+        .flush(null);
+      await expect(scores).resolves.toEqual({});
+    });
+  });
+
   describe('pathwayDetail', () => {
     const ID = 'R-HSA-69620';
     const summation = () => http.expectOne((r) => r.url.endsWith(`/data/query/enhanced/${ID}`));

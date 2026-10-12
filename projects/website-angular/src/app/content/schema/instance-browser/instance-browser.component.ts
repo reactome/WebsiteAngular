@@ -55,7 +55,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   error = false;
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['instanceId'] && this.instanceId() != null) {
+    if (changes['instanceId']) {
       this.loadInstance();
     }
   }
@@ -97,7 +97,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (groups) => {
-          this.referrals = groups || [];
+          this.referrals = groups;
           this.cdr.markForCheck();
         },
         error: () => {

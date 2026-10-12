@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
+  Facet,
   FacetCount,
   FacetResponse,
   SearchFilters,
@@ -118,7 +119,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['suggestions']) {
-      this.suggestions = this.suggestions ? [...this.suggestions] : [];
+      this.suggestions = [...this.suggestions];
     }
     if (changes['activeFilters']) {
       // Each array is copied, not just the object. `toggleAdvancedFacet` edits
@@ -126,7 +127,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       // with the page's own `filters` -- and ticking a box here would silently
       // rewrite what the page believes is applied, with no navigation and no
       // change to the URL.
-      const applied = this.activeFilters() || {};
+      const applied = this.activeFilters();
       this.advancedFilters = Object.fromEntries(
         Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
       ) as SearchFilters;
@@ -206,7 +207,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     }
     this.searchService.getSuggestedTerms(query).subscribe({
       next: (terms) => {
-        this.suggestions = terms || [];
+        this.suggestions = terms;
         this.cdr.markForCheck();
       },
       error: () => {
@@ -229,9 +230,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     });
   }
 
-  getFacetItems(
-    facet: { selected: FacetCount[]; available: FacetCount[] } | undefined
-  ): FacetCount[] {
+  getFacetItems(facet: Facet | undefined): FacetCount[] {
     if (!facet) return [];
     return [...(facet.selected || []), ...(facet.available || [])];
   }

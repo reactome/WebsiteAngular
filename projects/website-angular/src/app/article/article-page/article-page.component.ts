@@ -46,7 +46,7 @@ export class ArticlePageComponent implements OnInit {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
       const path_segments = segments.map((s) => s.path);
 
-      if (path_segments.length > 0 && path_segments) {
+      if (path_segments.length > 0) {
         if (path_segments.includes('about')) {
           this.loadArticles('about/news');
           this.pageTile = 'News & Updates';
@@ -86,7 +86,7 @@ export class ArticlePageComponent implements OnInit {
           // markdown, and any failure went unreported.
           await Promise.all(
             this.articles.map(async (article) => {
-              const html = await marked(article?.excerpt || '');
+              const html = await marked(article.excerpt || '');
               article.excerpt = stripFirstH(rewriteContentUrls(html));
             })
           );

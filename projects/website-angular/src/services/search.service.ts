@@ -81,9 +81,11 @@ export interface FacetCount {
   count: number;
 }
 
+// Each list is left out when it is empty: `selected` when nothing is chosen,
+// `available` when the query matches nothing.
 export interface Facet {
-  selected: FacetCount[];
-  available: FacetCount[];
+  selected?: FacetCount[];
+  available?: FacetCount[];
 }
 
 export interface FacetResponse {

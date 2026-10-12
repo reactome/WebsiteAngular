@@ -51,10 +51,10 @@ export class NavigationBarComponent implements AfterViewInit {
       const toggle = this.darkToggle();
       if (toggle) {
         const onIcon = toggle._switchElement.nativeElement
-          ?.querySelector('.mdc-switch__icon--on')
+          .querySelector('.mdc-switch__icon--on')
           ?.querySelector('path');
         const offIcon = toggle._switchElement.nativeElement
-          ?.querySelector('.mdc-switch__icon--off')
+          .querySelector('.mdc-switch__icon--off')
           ?.querySelector('path');
         if (onIcon) onIcon.setAttribute('d', this.moon);
         if (offIcon) offIcon.setAttribute('d', this.sun);

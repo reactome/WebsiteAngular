@@ -48,7 +48,7 @@ export class ArticleComponent implements OnInit {
         // Build the path from URL segments (e.g., about/userguide/pathway-browser)
         const path_segments = segments.map((s) => s.path);
 
-        if (path_segments.length > 0 && path_segments) {
+        if (path_segments.length > 0) {
           if (path_segments.includes('about')) {
             this.loadArticle('about/news', slug);
           } else if (path_segments.includes('content')) {

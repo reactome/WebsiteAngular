@@ -36,7 +36,7 @@ export class DetailDiagramComponent {
    */
   readonly diagramUrl = computed<string | null>(() => {
     const p = this.obj() as PathwayLike;
-    if (!p?.stId || !p.hasDiagram) return null;
+    if (!p.stId || !p.hasDiagram) return null;
     return `${RENDER_SERVICE}/render/${p.stId}.svg`;
   });
 

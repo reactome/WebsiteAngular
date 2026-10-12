@@ -147,7 +147,8 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   private buildFlatTreeRecursive(node: SchemaNode, depth: number) {
-    const hasChildren = node.children && node.children.length > 0;
+    const children = node.children ?? [];
+    const hasChildren = children.length > 0;
     const expanded = this.expandedNodes.has(node.className);
 
     // If searching, skip nodes that aren't in the search results path
@@ -163,7 +164,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     });
 
     if (hasChildren && expanded) {
-      const sorted = [...node.children].sort((a, b) => a.className.localeCompare(b.className));
+      const sorted = [...children].sort((a, b) => a.className.localeCompare(b.className));
       for (const child of sorted) {
         this.buildFlatTreeRecursive(child, depth + 1);
       }

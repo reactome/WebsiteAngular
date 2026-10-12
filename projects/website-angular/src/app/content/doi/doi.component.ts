@@ -102,7 +102,7 @@ export class DoiComponent implements OnInit, OnDestroy {
       results = results.filter(
         (p) =>
           p.displayName.toLowerCase().includes(q) ||
-          p.species?.toLowerCase().includes(q) ||
+          p.species.toLowerCase().includes(q) ||
           p.doi?.toLowerCase().includes(q) ||
           this.personsMatch(p.authors, q) ||
           this.personsMatch(p.reviewers, q) ||
@@ -114,11 +114,11 @@ export class DoiComponent implements OnInit, OnDestroy {
     this.updatePage();
   }
 
-  private personsMatch(persons: SimplePerson[], q: string): boolean {
-    return persons?.some(
+  private personsMatch(persons: SimplePerson[] | undefined, q: string): boolean {
+    return !!persons?.some(
       (p) =>
-        p.displayName?.toLowerCase().includes(q) ||
-        p.surname?.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q) ||
+        p.surname.toLowerCase().includes(q) ||
         p.firstname?.toLowerCase().includes(q)
     );
   }
@@ -171,7 +171,7 @@ export class DoiComponent implements OnInit, OnDestroy {
     }
   }
 
-  personNames(persons: SimplePerson[]): string {
+  personNames(persons: SimplePerson[] | undefined): string {
     if (!persons?.length) return '';
     return persons.map((p) => p.displayName).join(', ');
   }
