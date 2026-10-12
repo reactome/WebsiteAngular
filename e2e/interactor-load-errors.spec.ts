@@ -45,3 +45,71 @@ test('interactors that cannot be loaded say so', async ({ page }) => {
   });
   expect(thrown).toEqual([]);
 });
+
+test('a failed resource is fetched again with one click, and the notice goes', async ({ page }) => {
+  const thrown = collectThrown(page);
+  // Failing until let through: opening the panel asks for the counts too.
+  // Aborted rather than answered, so the recording holds only real answers:
+  // a stubbed one for the same request would be replayed in their place.
+  let failing = true;
+  await page.route('**/interactors/static/molecules/details', async (route) => {
+    if (failing) return route.abort('failed');
+    return route.fallback();
+  });
+  await page.goto(`/PathwayBrowser/${PATHWAY}`);
+  await page.locator('.species-interactor-container .interactor').click({ timeout: LOAD });
+  const panel = page.locator('cr-interactors');
+  await panel.getByRole('button', { name: 'IntAct' }).click();
+  await expect(banner(page)).toContainText("Couldn't load the interactors from IntAct", {
+    timeout: LOAD,
+  });
+
+  // Once: it was shown as chosen, so the first click put it away instead.
+  failing = false;
+  await panel.getByRole('button', { name: 'IntAct' }).click();
+  await expect
+    .poll(
+      () =>
+        page.evaluate<number>(`(() => {
+          const cy = document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy;
+          return cy ? cy.nodes('.InteractorOccurrences').length : 0;
+        })()`),
+      { timeout: LOAD }
+    )
+    .toBeGreaterThan(0);
+  await expect(banner(page)).not.toContainText('interactors');
+  expect(thrown).toEqual([]);
+});
+
+test('the notice is about the pathway on screen', async ({ page }) => {
+  // A resource that failed is not put in the address, so nothing on the next
+  // pathway asks for it again -- and nothing took its notice down.
+  await page.route('**/interactors/psicquic/molecules/biogrid/details', (route) =>
+    route.abort('failed')
+  );
+  // Two sibling pathways under Autophagy, each with a diagram of its own.
+  await page.goto('/PathwayBrowser/R-HSA-9615710');
+  await page.locator('.species-interactor-container .interactor').click({ timeout: LOAD });
+  await page.locator('cr-interactors').getByRole('button', { name: 'BioGrid' }).click();
+  await expect(banner(page)).toContainText("Couldn't load the interactors from BioGrid", {
+    timeout: LOAD,
+  });
+
+  // Within the page, as the hierarchy or Back would: the router follows it.
+  await page.evaluate(() => {
+    history.pushState({}, '', '/PathwayBrowser/R-HSA-1632852');
+    dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+  });
+  await expect(page).toHaveURL(/R-HSA-1632852/, { timeout: LOAD });
+  await expect
+    .poll(
+      () =>
+        page.evaluate<number>(`(() => {
+          const cy = document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy;
+          return cy ? cy.nodes().length : 0;
+        })()`),
+      { timeout: LOAD }
+    )
+    .toBeGreaterThan(0);
+  await expect(banner(page)).not.toContainText('BioGrid');
+});

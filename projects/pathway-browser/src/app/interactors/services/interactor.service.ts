@@ -1,6 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, signal, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Injectable, effect, signal, inject, untracked } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import cytoscape, { NodeCollection, NodeSingular } from 'cytoscape';
 import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import {
@@ -58,6 +57,49 @@ export class InteractorService {
   private http = inject(HttpClient);
   private diagramService = inject(DiagramService);
   private urlState = inject(UrlStateService);
+
+  /**
+   * Why the interactors asked for are not on the diagram, said on it; null
+   * while they are, or none were asked for. Before, a failed request left the
+   * diagram as it was, with only an uncaught error in the console.
+   */
+  private readonly _loadFailure = signal<string | null>(null);
+  readonly loadFailure = this._loadFailure.asReadonly();
+
+  /**
+   * Says why `resource`'s interactors could not be drawn. Only an upload's
+   * token can name something that does not exist; any other 404 is the
+   * service's, not the reader's.
+   */
+  failedToLoad(resource: string, error: unknown, kind: 'resource' | 'token' = 'resource') {
+    const missing = kind === 'token' && error instanceof HttpErrorResponse && error.status === 404;
+    this._loadFailure.set(
+      missing
+        ? `There is no interactor overlay "${resource}".`
+        : `Couldn't load the interactors from ${resource}. Try again in a moment.`
+    );
+    // Not drawn, so not chosen: clicking it again should fetch it, not put it
+    // away, which took a second click before it was asked for again.
+    if (this.currentResource().name === resource)
+      this.currentResource.set({ name: null, type: null });
+  }
+
+  clearLoadFailure() {
+    this._loadFailure.set(null);
+  }
+
+  constructor() {
+    // A notice is about the pathway it was for; on another, it would be wrong.
+    // Only on a change: the effect's first run can come after a failure on the
+    // pathway already open, and would take its notice down.
+    let shownFor = untracked(this.urlState.pathwayId);
+    effect(() => {
+      const pathway = this.urlState.pathwayId();
+      if (pathway === shownFor) return;
+      shownFor = pathway;
+      untracked(() => this._loadFailure.set(null));
+    });
+  }
 
   private readonly _PREFIX_INTERACTOR = `${CONTENT_SERVICE}/interactors/`;
   private readonly _PREFIX_DISEASE = `${OVERLAYS}/disgenet/`;
@@ -119,22 +161,6 @@ export class InteractorService {
    */
   readonly resourceCounts = signal<Record<string, ResourceTally>>({});
 
-  /**
-   * Why the interactors asked for are not on the diagram, said on it; null
-   * while they are, or none were asked for. Before, a failed request left the
-   * diagram as it was, with only an uncaught error in the console.
-   */
-  readonly loadFailure = signal<string | null>(null);
-
-  /** Says why `resource`'s interactors could not be drawn. */
-  failedToLoad(resource: string, error: unknown) {
-    const missing = error instanceof HttpErrorResponse && error.status === 404;
-    this.loadFailure.set(
-      missing
-        ? `There is no interactor overlay "${resource}".`
-        : `Couldn't load the interactors from ${resource}. Try again in a moment.`
-    );
-  }
   private countsForPathway: string | null = null;
 
   /**
@@ -496,6 +522,9 @@ export class InteractorService {
     cy: cytoscape.Core,
     resource: string
   ) {
+    // Every way of drawing interactors comes through here, and a drawing means
+    // whatever failed before is no longer what is on screen.
+    this._loadFailure.set(null);
     if (this.cyToSelectedResource.has(cy) && this.cyToSelectedResource.get(cy) !== resource) {
       const previousResource = this.cyToSelectedResource.get(cy);
       cy.elements(`[resource='${previousResource}']`).remove();

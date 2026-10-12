@@ -65,6 +65,9 @@
         made every button disappear and come back, and meant the spinner below
         could never be seen: it lives inside the thing that was being hidden.
       -->
+      @if (psicquicResourcesFailed) {
+        <p class="load-error" role="alert">Couldn't load the list of PSICQUIC resources. Try again later.</p>
+      }
       @if (psicquicResources.length > 0) {
         <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: 'PSICQUIC' }"></ng-container>
 

@@ -78,6 +78,7 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
+  psicquicResourcesFailed = false;
   /** What each resource turned out to hold here, once we have asked it. */
   readonly resourceCounts = this.interactors.resourceCounts;
 
@@ -226,7 +227,8 @@ export class InteractorsComponent implements AfterViewInit {
             this.getCustomResourceInteractors(this.asToken(resource));
             break;
           default:
-            throw new Error('Unknown resource type encountered: ' + resourceType);
+            // Null: the registry that says what a name is could not be asked.
+            this.interactors.failedToLoad(name, null);
         }
       },
 
@@ -274,14 +276,17 @@ export class InteractorsComponent implements AfterViewInit {
     } else {
       return;
     }
-    this.interactors.loadFailure.set(null);
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.fetchInteractorData(cy, resource).subscribe({
         next: (interactors) => {
           this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
           this.initialiseReplaceElements.emit();
         },
-        error: (error: unknown) => this.interactors.failedToLoad(resource, error),
+        // Unless the diagram it was for has been replaced since.
+        error: (error: unknown) => {
+          if (!cy.destroyed()) this.interactors.failedToLoad(resource, error);
+        },
       });
       this.state.overlay.set(resource);
     });
@@ -292,7 +297,7 @@ export class InteractorsComponent implements AfterViewInit {
     this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
-    this.interactors.loadFailure.set(null);
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.fetchInteractorData(cy, selectedResource).subscribe({
         next: (interactors) => {
@@ -306,7 +311,7 @@ export class InteractorsComponent implements AfterViewInit {
         error: (error: unknown) => {
           this.isDataFromPsicquicLoading = false;
           this.loadingResource = null;
-          this.interactors.failedToLoad(selectedResource, error);
+          if (!cy.destroyed()) this.interactors.failedToLoad(selectedResource, error);
         },
       });
     });
@@ -359,7 +364,7 @@ export class InteractorsComponent implements AfterViewInit {
       return;
     }
 
-    this.interactors.loadFailure.set(null);
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.fetchCustomInteractors(resource, cy).subscribe({
         next: (result) => {
@@ -374,8 +379,11 @@ export class InteractorsComponent implements AfterViewInit {
         },
         // A link naming an overlay that does not exist is asked for as an
         // upload's token, and answered 404.
-        error: (error: unknown) =>
-          this.interactors.failedToLoad(resource.summary.token || resource.summary.name, error),
+        error: (error: unknown) => {
+          if (cy.destroyed()) return;
+          const named = resource.summary.token || resource.summary.name;
+          this.interactors.failedToLoad(named, error, 'token');
+        },
       });
     });
   }
@@ -385,6 +393,8 @@ export class InteractorsComponent implements AfterViewInit {
     if (index === -1) return;
 
     this.resourceTokens!.splice(index, 1);
+    // Including one that never drew: a link to an overlay that did not exist.
+    this.interactors.clearLoadFailure();
 
     // The name, not the token object. This read `[resource = '${resource}']`,
     // which interpolates an InteractorToken to the string "[object Object]" --
@@ -423,7 +433,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   clearInteractors() {
-    this.interactors.loadFailure.set(null);
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.clearAllInteractorNodes(cy);
       this.clear = true;
@@ -448,13 +458,19 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   getPsicquicResources() {
-    this.interactors.getPsicquicResources().subscribe((resources) => {
-      this.psicquicResources = resources;
+    this.psicquicResourcesFailed = false;
+    this.interactors.getPsicquicResources().subscribe({
+      next: (resources) => {
+        this.psicquicResources = resources;
 
-      // Ask them all what they hold here, without waiting for any of them. The
-      // panel is usable straight away; the counts appear beside each resource as
-      // its answer arrives.
-      this.maybePrefetchCounts();
+        // Ask them all what they hold here, without waiting for any of them. The
+        // panel is usable straight away; the counts appear beside each resource as
+        // its answer arrives.
+        this.maybePrefetchCounts();
+      },
+      // The panel lists none, and says why rather than looking as though
+      // there were none to list.
+      error: () => (this.psicquicResourcesFailed = true),
     });
   }
 }
