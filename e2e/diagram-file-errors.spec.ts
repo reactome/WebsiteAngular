@@ -41,7 +41,7 @@ test.describe('A pathway diagram', () => {
     await fail(page, version);
     await page.goto(`/PathwayBrowser/${DIAGRAM}`);
     await expect(page.locator('cr-diagram [role="alert"]')).toHaveText(
-      'This diagram could not be loaded. Please try again later.',
+      'This diagram could not be shown. Please try again later.',
       { timeout: LOAD }
     );
     expect(thrown).toEqual([]);
@@ -51,7 +51,7 @@ test.describe('A pathway diagram', () => {
     await fail(page, diagramFile);
     await page.goto(`/PathwayBrowser/${DIAGRAM}`);
     await expect(page.locator('cr-diagram [role="alert"]')).toHaveText(
-      'This diagram could not be loaded. Please try again later.',
+      'This diagram could not be shown. Please try again later.',
       { timeout: LOAD }
     );
   });

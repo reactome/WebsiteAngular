@@ -139,7 +139,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * with its own message for that, like the embeddable diagram, turns it off.
    */
   readonly reportFailure = input(true);
-  /** The last diagram asked for could not be loaded. */
+  /** The last diagram asked for could not be loaded or drawn. */
   readonly loadFailed = signal(false);
 
   /** The entity a right-click landed on, or null when no popup is open. */
