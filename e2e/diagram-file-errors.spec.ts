@@ -63,11 +63,13 @@ test.describe('A pathway diagram', () => {
   });
 
   test('an illustration says so when the release cannot be found', async ({ page }) => {
+    const thrown = collectThrown(page);
     await fail(page, version);
     await page.goto(`/PathwayBrowser/${ILLUSTRATED}`);
     await expect(page.locator('cr-ehld [role="alert"]')).toContainText(
       'This illustration could not be loaded.',
       { timeout: LOAD }
     );
+    expect(thrown).toEqual([]);
   });
 });
