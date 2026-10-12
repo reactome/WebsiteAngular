@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countErrors, outcome } from '../../scripts/check-indexed-access.mjs';
+import { countErrors, mergeCounts, outcome } from '../../scripts/check-indexed-access.mjs';
 
 // tsc's own output, as `tsc --noEmit` prints it without --pretty.
 const output = [
@@ -35,5 +35,20 @@ describe('the indexed-access count', () => {
   it('refuses a run that failed without reporting an error', () => {
     expect(outcome(134, 'FATAL ERROR: JavaScript heap out of memory').ok).toBe(false);
     expect(outcome(2, 'error TS5058: The specified path does not exist').ok).toBe(false);
+  });
+
+  // The projects still counted are separate libraries, but a file two of them
+  // compiled would be reported by both: once is the truth.
+  it('counts a file two projects compile once, at its larger count', () => {
+    expect(
+      mergeCounts([
+        { 'a.ts': 2, 'b.ts': 1 },
+        { 'b.ts': 3, 'c.ts': 1 },
+      ])
+    ).toEqual({
+      'a.ts': 2,
+      'b.ts': 3,
+      'c.ts': 1,
+    });
   });
 });

@@ -64,8 +64,9 @@ const isFinitePoint = (point: Position | undefined | null): point is Position =>
 const closestToAverage = (positions: Position[]): Position => {
   const average = avg(positions);
   const [first, ...rest] = positions;
-  // No positions has no closest; the average (of nothing) stands in for it.
-  if (!first) return average;
+  // A shadow over a sub-pathway with no events: as before, the diagram cannot
+  // be laid out, now saying why rather than reading a property of undefined.
+  if (!first) throw new Error('There are no positions to choose a closest from.');
   let closest = first;
   let min = squaredDist(closest, average);
   for (const pos of rest) {
@@ -171,9 +172,9 @@ export class DiagramService {
   }
 
   pick<T>(values: T[]): T {
-    const value = values[this.random(0, values.length - 1)];
-    if (value === undefined) throw new Error('There is nothing to pick from.');
-    return value;
+    if (values.length === 0) throw new Error('There is nothing to pick from.');
+    // In range, and undefined is a value some callers pick on purpose.
+    return values[this.random(0, values.length - 1)] as T;
   }
 
   private readonly COMPARTMENT_SHIFT = 35;
@@ -769,10 +770,13 @@ export class DiagramService {
     });
 
     const linkEdges: cytoscape.EdgeDefinition[] = diagram.links
-      ?.filter(
-        (link) =>
-          !link.renderableClass.includes('EntitySet') || link.inputs[0]?.id !== link.outputs[0]?.id
-      )
+      ?.filter((link) => {
+        const [input] = link.inputs;
+        const [output] = link.outputs;
+        // A link without both ends is kept, to be refused below by name.
+        if (!input || !output) return true;
+        return !link.renderableClass.includes('EntitySet') || input.id !== output.id;
+      })
       ?.map((link) => {
         const [input] = link.inputs;
         const [output] = link.outputs;

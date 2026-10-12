@@ -70,6 +70,20 @@ export function outcome(status, output) {
   return { ok: true, counts };
 }
 
+/**
+ * Several projects' counts as one: a file two projects compile is counted
+ * once, at the larger of its counts.
+ * @param {Record<string, number>[]} perProject
+ */
+export function mergeCounts(perProject) {
+  /** @type {Record<string, number>} */
+  const merged = {};
+  for (const counts of perProject) {
+    for (const [file, n] of Object.entries(counts)) merged[file] = Math.max(merged[file] ?? 0, n);
+  }
+  return merged;
+}
+
 const total = (/** @type {Record<string, number>} */ counts) =>
   Object.values(counts).reduce((a, b) => a + b, 0);
 
@@ -93,14 +107,7 @@ function countProject(/** @type {string} */ project) {
 }
 
 function main() {
-  /** @type {Record<string, number>} */
-  const merged = {};
-  for (const project of PROJECTS) {
-    // A file two projects compile is counted once.
-    for (const [file, n] of Object.entries(countProject(project))) {
-      merged[file] = Math.max(merged[file] ?? 0, n);
-    }
-  }
+  const merged = mergeCounts(PROJECTS.map(countProject));
   const counts = Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)));
   if (process.argv.includes('--update')) {
     writeFileSync(

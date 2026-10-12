@@ -51,9 +51,11 @@
   // Strictness here is a deliberate trade: each of these was measured against
   // the codebase before being switched on. strictTemplates cost 83 fixes and
   // was worth it; typeCheckHostBindings, strictStandalone and the checks below
-  // all cost nothing. noUncheckedIndexedAccess (185 errors) and
-  // exactOptionalPropertyTypes (72) are not on -- worth revisiting, but not
-  // free. noUncheckedIndexedAccess was trialled properly rather than dismissed:
+  // all cost nothing. exactOptionalPropertyTypes (72) is not on -- worth
+  // revisiting, but not free. noUncheckedIndexedAccess is on for the app and the
+  // embeddable diagram, in their own tsconfig.app.json (#345), and held at a
+  // count for the workspace libraries by scripts/check-indexed-access.mjs until
+  // it can go here. It was first trialled and set aside:
   // of its 185 findings, roughly 44% are places the code already checks .length
   // or iterates a bounded loop and TypeScript simply cannot connect the check to
   // the access, where the only "fix" is a non-null assertion that documents
