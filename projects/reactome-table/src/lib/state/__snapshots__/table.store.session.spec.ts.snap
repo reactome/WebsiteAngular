@@ -116,6 +116,55 @@ exports[`TableStore through an editing session > clears back to the template 1`]
 }
 `;
 
+exports[`TableStore through an editing session > deletes the last row while a cell in it is selected 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+  ],
+  "columnByIndex": [
+    "A",
+    "",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+  ],
+  "hasData": false,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [
+    "",
+    "",
+    "",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+  ],
+  "value": "",
+}
+`;
+
 exports[`TableStore through an editing session > generates a template 1`] = `
 {
   "cleanData": [
@@ -1171,6 +1220,33 @@ exports[`TableStore through an editing session > went through every step as reco
       },
     },
     "step": "deselect",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C",
+        "1 | · | · | ·",
+        "2 | · | · | ·",
+        "3 | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "@0,0",
+        "A@1,0",
+        "B@2,0",
+        "C@3,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteRow of the selected last row",
   },
 ]
 `;

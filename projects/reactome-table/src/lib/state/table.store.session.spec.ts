@@ -181,6 +181,18 @@ describe('TableStore through an editing session', () => {
     expect(await selectors(store)).toMatchSnapshot();
   });
 
+  // Deleting the row the selection is in left the selection pointing at a row
+  // that was gone; reading it threw, which ended the store's state stream and
+  // left the table unusable.
+  it('deletes the last row while a cell in it is selected', async () => {
+    store.focusLast();
+    const last = store.state().dataset.length - 1;
+    store.deleteRow({ y: last });
+    record('deleteRow of the selected last row');
+    expect(store.state().dataset.length).toBe(last);
+    expect(await selectors(store)).toMatchSnapshot();
+  });
+
   it('went through every step as recorded', () => {
     expect(steps).toMatchSnapshot();
   });

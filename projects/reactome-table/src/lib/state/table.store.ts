@@ -690,7 +690,10 @@ export namespace Ranges {
 namespace Cells {
   export function select(state: TableState): TableState {
     state.selectedCoords.forEach((coords) => {
-      const cell = rowAt(state.dataset, coords.y)[coords.x];
+      // The previous selection, to un-mark: a cell of a row or column deleted
+      // since is gone, with nothing to un-mark. Reading its row used to throw,
+      // ending the store's state stream and leaving the table unusable.
+      const cell = state.dataset[coords.y]?.[coords.x];
       if (cell) {
         cell.selected = false;
         cell.visibility = 'visible';
