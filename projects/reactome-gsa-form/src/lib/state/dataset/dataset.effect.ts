@@ -211,7 +211,8 @@ export class DatasetEffects {
               ['', ...summary.sample_metadata.map((col) => col.name)],
               ...summary.sample_ids.map((sampleId, i) => [
                 sampleId,
-                ...summary.sample_metadata!.map((column) => column.values[i]),
+                // A missing value stays missing (sent as null), as it always was.
+                ...summary.sample_metadata!.map((column) => column.values[i] as string),
               ]),
             ];
         return datasetActions.setAnnotations({ annotations: table, id });

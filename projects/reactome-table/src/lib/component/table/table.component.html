@@ -147,7 +147,7 @@
             @if (settings.addRow) {
               <tr>
                 <th class="rows">...</th>
-                <td class="no-padding add-row-button-container" [colSpan]="data[0].length">
+                <td class="no-padding add-row-button-container" [colSpan]="data[0]?.length ?? 1">
                   <button
                     (click)="addRow()"
                     (keydown.shift.tab)="focusLastCell($event)"

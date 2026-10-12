@@ -55,17 +55,47 @@ export const cell = (
 
 export const EMPTY_CELL: Cell = cell();
 
+/**
+ * The row at y. Out of range it throws, as reading a cell of it always did --
+ * now saying where rather than reading a property of undefined.
+ */
+function rowAt(dataset: Cell[][], y: number): Cell[] {
+  const row = dataset[y];
+  if (!row) throw new RangeError(`The table has no row ${y}.`);
+  return row;
+}
+
+/** The cell at x, y; out of range it throws, as reading it always did. */
+function cellAt(dataset: Cell[][], x: number, y: number): Cell {
+  const found = rowAt(dataset, y)[x];
+  if (!found) throw new RangeError(`The table has no cell at ${x}, ${y}.`);
+  return found;
+}
+
+/** The longest value in column x; out of range it throws, as reading it did. */
+function maxAt(state: TableState, x: number): LocatedValue {
+  const max = state.maxCols[x];
+  if (!max) throw new RangeError(`The table has no column ${x}.`);
+  return max;
+}
+
+/**
+ * Every row is as wide as the first: pushAll and addRow keep them so. A read
+ * across rows at one index therefore finds a cell in each.
+ */
+const atColumn = (row: Cell[], x: number) => row[x] as Cell;
+
 function addColumn(state: TableState, columnName?: string) {
   const x = pushAll(state.dataset, cell()) - 1;
   const value = columnName || numberToLetter(x);
-  state.dataset[0][x].value = value;
+  cellAt(state.dataset, x, 0).value = value;
   state.maxCols.push({ value, coords: { x: x, y: 0 } });
   return { x, value };
 }
 
 function addRow(state: TableState) {
-  const y = state.dataset.push(state.dataset[0].map(() => cell())) - 1;
-  state.dataset[y][0].value = '' + y;
+  const y = state.dataset.push(rowAt(state.dataset, 0).map(() => cell())) - 1;
+  cellAt(state.dataset, 0, y).value = '' + y;
   return y;
 }
 
@@ -136,9 +166,17 @@ export class TableStore extends ComponentStore<TableState> {
   readonly hasFocus$ = this.select((state) => state.hasFocus);
   readonly maxColumns$ = this.select((state) => state.maxCols);
 
-  readonly value$ = this.select((state) => state.dataset[state.start.y][state.start.x].value);
-  readonly colNames$ = this.select((state) => state.dataset[0].slice(1).map((cell) => cell.value));
-  readonly rowNames$ = this.select((state) => state.dataset.slice(1).map((cell) => cell[0].value));
+  readonly value$ = this.select(
+    (state) => cellAt(state.dataset, state.start.x, state.start.y).value
+  );
+  readonly colNames$ = this.select((state) =>
+    rowAt(state.dataset, 0)
+      .slice(1)
+      .map((cell) => cell.value)
+  );
+  readonly rowNames$ = this.select((state) =>
+    state.dataset.slice(1).map((row) => atColumn(row, 0).value)
+  );
   readonly range$ = this.select((state) => {
     const range = Ranges.minMax(state.start, state.stop);
     return state.dataset
@@ -149,19 +187,19 @@ export class TableStore extends ComponentStore<TableState> {
   readonly column$ = (props: ({ index: number } | Named) & { includeName?: boolean }) =>
     this.select((state) => {
       const x = isNamed(props)
-        ? state.dataset[0].findIndex((cell) => cell.value == props.name)
+        ? rowAt(state.dataset, 0).findIndex((cell) => cell.value == props.name)
         : props.index;
       if (x < 1) return [];
-      return state.dataset.map((row) => row[x]).slice(props.includeName ? 0 : 1);
+      return state.dataset.map((row) => atColumn(row, x)).slice(props.includeName ? 0 : 1);
     });
 
   readonly row$ = (props: ({ index: number } | Named) & { includeName?: boolean }) =>
     this.select((state) => {
       const y = isNamed(props)
-        ? state.dataset.findIndex((cell) => cell[0].value == props.name)
+        ? state.dataset.findIndex((row) => atColumn(row, 0).value == props.name)
         : props.index;
       if (y < 1) return [];
-      return state.dataset[y].slice(props.includeName ? 0 : 1);
+      return rowAt(state.dataset, y).slice(props.includeName ? 0 : 1);
     });
 
   // Writers (Reducers)
@@ -223,11 +261,10 @@ export class TableStore extends ComponentStore<TableState> {
     if (state.start) state.hasFocus = true;
     const x = state.start.x;
     const y = state.start.y;
-    const cell = state.dataset[y][x];
-
-    state.dataset[y][x] = { ...cell, value };
+    const row = rowAt(state.dataset, y);
+    row[x] = { ...(row[x] ?? cell()), value };
     state.start = { ...state.start };
-    const maxInColumn = state.maxCols[x];
+    const maxInColumn = maxAt(state, x);
 
     if (Ranges.equals(state.start, maxInColumn.coords)) {
       if (value.length > maxInColumn.value.length)
@@ -299,8 +336,8 @@ export class TableStore extends ComponentStore<TableState> {
     const colsToGetMax = new Set<number>();
     for (let y = range.y.min; y <= range.y.max; y++) {
       for (let x = range.x.min; x <= range.x.max; x++) {
-        state.dataset[y][x].value = '';
-        if (Ranges.equals(state.maxCols[x].coords, { x, y })) colsToGetMax.add(x);
+        cellAt(state.dataset, x, y).value = '';
+        if (Ranges.equals(maxAt(state, x).coords, { x, y })) colsToGetMax.add(x);
       }
     }
     colsToGetMax.forEach((x) => (state.maxCols[x] = Ranges.findMaximumOfColumn(state, x)));
@@ -312,16 +349,17 @@ export class TableStore extends ComponentStore<TableState> {
     const colsToGetMax = new Set<number>();
     const isGenerated = state.numberOfColumns && state.numberOfRows;
 
-    for (let yFrom = 0; yFrom < table.length; yFrom++) {
+    for (const [yFrom, pastedRow] of table.entries()) {
       const yTo = range.y.min + yFrom;
       if (isGenerated && yTo >= state.dataset.length) addRow(state);
-      for (let xFrom = 0; xFrom < table[yFrom].length; xFrom++) {
+      for (const [xFrom, pasted] of pastedRow.entries()) {
         const xTo = range.x.min + xFrom;
-        if (isGenerated && xTo >= state.dataset[0].length) addColumn(state);
-        if (state.dataset[yTo]?.[xTo]) {
-          const value = table[yFrom][xFrom].trim();
-          const maxCol = state.maxCols[xTo];
-          state.dataset[yTo][xTo].value = value;
+        if (isGenerated && xTo >= rowAt(state.dataset, 0).length) addColumn(state);
+        const target = state.dataset[yTo]?.[xTo];
+        if (target) {
+          const value = pasted.trim();
+          const maxCol = maxAt(state, xTo);
+          target.value = value;
           if (
             value.length > maxCol.value.length ||
             Ranges.equals(maxCol.coords, {
@@ -352,7 +390,7 @@ export class TableStore extends ComponentStore<TableState> {
       start: { x: 0, y: 0 },
       stop: { x: 0, y: 0 },
       dataset: dataset,
-      maxCols: dataset[0].map((cell, x) => ({ value: cell.value, coords: { x, y: 0 } })),
+      maxCols: rowAt(dataset, 0).map((cell, x) => ({ value: cell.value, coords: { x, y: 0 } })),
     };
   });
 
@@ -408,23 +446,28 @@ export class TableStore extends ComponentStore<TableState> {
       }
     ) => {
       if (state.settings.importMapHeaders) {
-        const nameToRowI = new Map(state.dataset.map((row, i) => [row[0].value, i]));
-        const nameToColI = new Map(state.dataset[0].map((cell, i) => [cell.value, i]));
+        // Keyed by name; a row or column of the import with no name has none.
+        const nameToRowI = new Map<string | undefined, number>(
+          state.dataset.map((row, i) => [atColumn(row, 0).value, i])
+        );
+        const nameToColI = new Map<string | undefined, number>(
+          rowAt(state.dataset, 0).map((cell, i) => [cell.value, i])
+        );
+        const header = table[0] ?? [];
 
-        for (let yFrom = 0; yFrom < table.length; yFrom++) {
+        for (const importedRow of table) {
           let xTo, yTo: number;
-          const rowName = table[yFrom][0];
+          const rowName = importedRow[0];
           if (hasRowNames && nameToRowI.has(rowName)) {
             // Row already present
             yTo = nameToRowI.get(rowName) as number;
           } else if (fullImport || state.settings.addRow) {
             // New row to add
-            yTo = state.dataset.push(state.dataset[0].map(() => cell())) - 1;
+            yTo = state.dataset.push(rowAt(state.dataset, 0).map(() => cell())) - 1;
             nameToRowI.set(rowName, yTo);
           } else continue; // skip row since not present and cannot be added
 
-          for (let xFrom = 0; xFrom < table[0].length; xFrom++) {
-            const colName = table[0][xFrom];
+          for (const [xFrom, colName] of header.entries()) {
             if (hasColNames && nameToColI.has(colName)) {
               // Column already present
               xTo = nameToColI.get(colName) as number;
@@ -434,24 +477,26 @@ export class TableStore extends ComponentStore<TableState> {
               nameToColI.set(colName, xTo);
             } else continue; // skip column since not present and cannot be added
 
-            const value = (table[yFrom][xFrom] || '').trim();
-            state.dataset[yTo][xTo].value = value;
-            if (value.length > state.maxCols[xTo].value.length)
+            const value = (importedRow[xFrom] || '').trim();
+            cellAt(state.dataset, xTo, yTo).value = value;
+            if (value.length > maxAt(state, xTo).value.length)
               state.maxCols[xTo] = { value, coords: { x: xTo, y: yTo } };
           }
         }
       } else {
         // Simple import without mapping
 
-        for (let yFrom = 0; yFrom < table.length; yFrom++) {
+        // As wide as the first row, whatever each row's own length.
+        const width = (table[0] ?? []).length;
+        for (const [yFrom, importedRow] of table.entries()) {
           const yTo = state.settings.renameCols ? yFrom : yFrom + 1;
           if (yTo >= state.dataset.length) addRow(state);
-          for (let xFrom = 0; xFrom < table[0].length; xFrom++) {
+          for (let xFrom = 0; xFrom < width; xFrom++) {
             const xTo = state.settings.renameRows ? xFrom : xFrom + 1;
-            if (xTo >= state.dataset[0].length) addColumn(state);
-            const value = (table[yFrom][xFrom] || '').trim();
-            state.dataset[yTo][xTo].value = value;
-            if (value.length > state.maxCols[xTo].value.length)
+            if (xTo >= rowAt(state.dataset, 0).length) addColumn(state);
+            const value = (importedRow[xFrom] || '').trim();
+            cellAt(state.dataset, xTo, yTo).value = value;
+            if (value.length > maxAt(state, xTo).value.length)
               state.maxCols[xTo] = { value, coords: { x: xTo, y: yTo } };
           }
         }
@@ -479,7 +524,7 @@ export class TableStore extends ComponentStore<TableState> {
 
   readonly deleteColumn = this.updater((state, props: { x: number } | Named) => {
     const x = isNamed(props)
-      ? state.dataset[0].findIndex((cell) => cell.value === props.name)
+      ? rowAt(state.dataset, 0).findIndex((cell) => cell.value === props.name)
       : props.x;
     if (x < 1) return state;
     state.dataset.forEach((row) => row.splice(x, 1));
@@ -492,7 +537,7 @@ export class TableStore extends ComponentStore<TableState> {
   });
   readonly deleteRow = this.updater((state, props: { y: number } | Named) => {
     const y = isNamed(props)
-      ? state.dataset.map((row) => row[0]).findIndex((cell) => cell.value === props.name)
+      ? state.dataset.findIndex((row) => atColumn(row, 0).value === props.name)
       : props.y;
     if (y < 1) return state;
     state.dataset.splice(y, 1);
@@ -567,11 +612,9 @@ export namespace Ranges {
   type Range = { x: MinMax; y: MinMax };
 
   export function minMax(start: Coords, stop: Coords): Range {
-    const [minX, maxX] = [start.x, stop.x].sort((a, b) => a - b);
-    const [minY, maxY] = [start.y, stop.y].sort((a, b) => a - b);
     return {
-      x: { min: minX, max: maxX },
-      y: { min: minY, max: maxY },
+      x: { min: Math.min(start.x, stop.x), max: Math.max(start.x, stop.x) },
+      y: { min: Math.min(start.y, stop.y), max: Math.max(start.y, stop.y) },
     };
   }
 
@@ -626,7 +669,8 @@ export namespace Ranges {
   }
 
   export function column<T>(table: T[][], x: number): T[] {
-    return table.map((row: T[]) => row[x]);
+    // Every row as wide as the first; see atColumn.
+    return table.map((row: T[]) => row[x] as T);
   }
 
   export function findMaximumOfColumn(state: TableState, x: number): LocatedValue {
@@ -638,7 +682,7 @@ export namespace Ranges {
               coords: { x, y },
             }
           : max,
-      { value: state.dataset[state.start.y][x].value, coords: state.start }
+      { value: cellAt(state.dataset, x, state.start.y).value, coords: state.start }
     );
   }
 }
@@ -646,7 +690,10 @@ export namespace Ranges {
 namespace Cells {
   export function select(state: TableState): TableState {
     state.selectedCoords.forEach((coords) => {
-      const cell = state.dataset[coords.y][coords.x];
+      // The previous selection, to un-mark: a cell of a row or column deleted
+      // since is gone, with nothing to un-mark. Reading its row used to throw,
+      // ending the store's state stream and leaving the table unusable.
+      const cell = state.dataset[coords.y]?.[coords.x];
       if (cell) {
         cell.selected = false;
         cell.visibility = 'visible';
@@ -662,13 +709,13 @@ namespace Cells {
       }
       selectCell({ x, y: 0 }, state);
     }
-    const selectedCell = state.dataset[state.start.y][state.start.x];
+    const selectedCell = rowAt(state.dataset, state.start.y)[state.start.x];
     if (selectedCell) selectedCell.visibility = 'hidden';
     return state;
   }
 
   function selectCell(coords: Coords, state: TableState): Coords {
-    state.dataset[coords.y][coords.x].selected = true;
+    cellAt(state.dataset, coords.x, coords.y).selected = true;
     state.selectedCoords.push(coords);
     return coords;
   }

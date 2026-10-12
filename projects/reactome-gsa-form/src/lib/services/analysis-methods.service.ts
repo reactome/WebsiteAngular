@@ -6,13 +6,23 @@ import { extractErrorMessage } from '../utilities/utils';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfigProvider, REACTOME_GSA_CONFIG } from '../config/gsa-config';
 
-export const typeToParse: { [p: string]: (value: string) => any } = {
+/** Reads a parameter's text as its type: a boolean, a number, or the text itself. */
+type Parser = (value: string) => any;
+
+const typeToParse: { [p: string]: Parser } = {
   bool: (value) => value.toLowerCase() === 'true',
   float: parseFloat,
   int: parseInt,
   email: (value) => value,
   string: (value) => value,
 };
+
+/**
+ * How to read a parameter of this type. A type this form does not know -- one
+ * the service added since -- is read as text, rather than taking the whole form
+ * down with it.
+ */
+export const parserFor = (type: string): Parser => typeToParse[type] ?? ((text: string) => text);
 
 @Injectable({
   providedIn: 'root',

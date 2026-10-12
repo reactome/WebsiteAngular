@@ -1,6 +1,6 @@
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Injectable, inject } from '@angular/core';
-import { AnalysisMethodsService, typeToParse } from '../../services/analysis-methods.service';
+import { AnalysisMethodsService, parserFor } from '../../services/analysis-methods.service';
 import { methodActions } from './method.action';
 import { catchError, exhaustMap, map, of } from 'rxjs';
 import { ParameterType } from '../../model/methods.model';
@@ -21,8 +21,8 @@ export class MethodEffects {
             methods.forEach((method) => {
               method.parameters.forEach((param) => {
                 param.type = param.name === 'email' ? ParameterType.email : param.type;
-                param.value = typeToParse[param.type](param.default);
-                param.default = typeToParse[param.type](param.default);
+                param.value = parserFor(param.type)(param.default);
+                param.default = parserFor(param.type)(param.default);
               });
               const server = method.parameters.find((param) => param.name === 'reactome_server');
               if (server) server.value = this.config().server;

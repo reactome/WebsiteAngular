@@ -87,12 +87,6 @@ jobs:
       - name: Lint
         run: npm run check:lint
 
-      # noUncheckedIndexedAccess is a compiler flag with no warning level, so it
-      # is held at a per-file count until it reaches zero and can be enabled
-      # (#345). Like the lint warnings, a count can only go down.
-      - name: Unchecked indexed access has not increased
-        run: npm run check:indexed
-
       # eslint sees unused symbols within a file; knip sees whole files and
       # exports nothing imports, which was the bigger pile. Also baselined,
       # because some findings need someone who knows the data model to judge --

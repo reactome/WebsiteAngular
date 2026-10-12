@@ -141,10 +141,9 @@ export class LocalDataComponent {
         }
         const lines = text.trim().split('\n');
 
-        for (let i = 1; i < lines.length; i++) {
-          const columns = lines[i].split('\t');
-          for (let j = 1; j < columns.length; j++) {
-            const value = columns[j].trim();
+        for (const line of lines.slice(1)) {
+          for (const column of line.split('\t').slice(1)) {
+            const value = column.trim();
             if (!Number.isInteger(Number(value))) {
               return resolve(false);
             }
@@ -166,10 +165,10 @@ export class LocalDataComponent {
         this.readFile(fileRibo),
       ]);
 
-      const file1FirstLine = file1Content.split('\n')[0].trim();
-      const file2FirstLine = file2Content.split('\n')[0].trim();
+      const [file1FirstLine = ''] = file1Content.split('\n');
+      const [file2FirstLine = ''] = file2Content.split('\n');
 
-      return file1FirstLine === file2FirstLine;
+      return file1FirstLine.trim() === file2FirstLine.trim();
     } catch (error) {
       return false;
     }
