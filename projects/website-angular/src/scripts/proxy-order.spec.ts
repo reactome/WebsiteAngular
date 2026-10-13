@@ -54,6 +54,12 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const id of ['R-HSA-5672965', '5672965', 'REACT_111102.2', 'R-HSA-70486;x']) {
+    it(`sends the ancestors of ${id} to the content service`, async () => {
+      expect(await targetOf(`/ContentService/data/event/${id}/ancestors`)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -64,6 +70,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/person/68285/publications',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
     '/ContentService/data/database/version',
+    // Only the ancestors of an event are ported.
+    '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
+    '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
+    '/ContentService/data/eventsHierarchy/9606',
   ]) {
     it(`leaves ${other} with Java`, async () => {
       expect(await targetOf(other)).toBe(backend);
