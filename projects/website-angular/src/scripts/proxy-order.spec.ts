@@ -48,7 +48,18 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const id of ['70486', 'R-HSA-70486.4', 'REACT_1081', 'UniProt:P04637']) {
+    it(`sends the stable id of ${id} to the content service`, async () => {
+      expect(await targetOf(`/ContentService/data/query/${id}/stId`)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
+    // Other attributes of the same Java endpoint are not ported.
+    '/ContentService/data/query/70486/displayName',
+    '/ContentService/data/query/70486/stIdVersion',
+    '/ContentService/data/query/70486',
+    '/ContentService/data/query/enhanced/70486',
     '/ContentService/data/person/68285',
     '/ContentService/data/person/68285/publications',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',

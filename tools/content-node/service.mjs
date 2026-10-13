@@ -576,6 +576,44 @@ export const endpoints = [
       return { status: 200, body, type: 'application/json' };
     }),
   })),
+  {
+    path: '/ContentService/data/query/{id}/stId',
+    // A reaction by dbId, so the comparison covers the lookup the site makes.
+    sample: '70486',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/query\/[^/]+\/stId: \.url: /],
+    /**
+     * An object's stable id, asked for as text.
+     *
+     * The site calls this whenever it meets a dbId -- an old link, a legacy
+     * fragment, a URL parameter -- to swap it for the stable id: 13 bytes, where
+     * fetching the object to read one field is 12KB. Java serves it from the
+     * general `/data/query/{id}/{attributeName}`; only this attribute is ported,
+     * so the route is exact.
+     *
+     * The id is resolved as Java resolves it (see resolveId): a stable id, a
+     * pre-2016 REACT_ id or a dbId, with any version suffix ignored. An object
+     * that has no stable id -- a Species, a ReferenceEntity -- is Java's 404 with
+     * its own message, not an empty 200.
+     */
+    handler: async (request) => {
+      const raw = String(request.params.id);
+      const { where, params } = resolveId(raw);
+      const rows = await read(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         RETURN n.stId AS stId, n.schemaClass AS schemaClass LIMIT 1`,
+        params
+      );
+      const [row] = rows;
+      if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
+      if (row.stId === null || row.stId === undefined)
+        return notFound(
+          request,
+          `Attribute: 'stId' has not been found for object: ${String(row.schemaClass)}`
+        );
+      return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
+    },
+  },
 ];
 
 /**
@@ -725,6 +763,34 @@ function compact(fields) {
  * because `proxy_set_header Host $host` preserves it; asked directly on
  * loopback it is the loopback address, which is what Java would say too.
  */
+/**
+ * How Java reads an id, as a Cypher condition on `n`.
+ *
+ * Mirrors graph-core's DatabaseObjectUtils (getIdentifier, trimId, isStId,
+ * isDbId) and AdvancedDatabaseObjectService.findById:
+ *
+ * - trimmed; an id without ':' is also cut at its first '.', so any version
+ *   suffix is ignored (`R-HSA-70486.4`, `70486.3`). An id with ':' -- a
+ *   reference, `UniProt:P04637` -- is only trimmed.
+ * - `REACT_…` is a pre-2016 id: findNewStId looks up the node whose `oldStId`
+ *   it is, and that node is the answer. Here that is one match on `oldStId`.
+ * - starting with 'R', or containing ':', is a stable id; all digits is a
+ *   dbId (leading zeros allowed, as Long.parseLong allows them). Anything else
+ *   is not found, as in Java. Case matters: `r-hsa-70486` is not found.
+ *
+ * Every branch matches one indexed property on DatabaseObject, never a
+ * disjunction: a disjunction across properties uses no index and scans the
+ * whole graph (see the person endpoints).
+ */
+export function resolveId(raw) {
+  const trimmed = String(raw).trim();
+  const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
+  if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
+  if (id.startsWith('R') || id.includes(':')) return { where: 'n.stId = $id', params: { id } };
+  if (/^\d+$/.test(id)) return { where: 'n.dbId = toInteger($id)', params: { id } };
+  return { where: 'false', params: {} };
+}
+
 function notFound(request, message) {
   const host = request.get?.('host') ?? 'localhost';
   const protocol = request.protocol ?? 'http';
