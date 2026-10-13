@@ -78,7 +78,19 @@ export class DetailsComponent {
     // from something we just set ourselves.
     const tabCameFromUrl = !!untracked(this.state.tab);
 
-    effect(() => this.state.tab.set(this.tabs()[this.selectedTabIndex()!] ?? null));
+    effect(() => {
+      const tab = this.tabs()[this.selectedTabIndex()!] ?? null;
+      // With no tab in the address the index falls back to Info, and writing that
+      // back is filling in a default, not a choice: settled, so it replaces the
+      // history entry. Written as a step of its own, it was the second entry for
+      // a pathway opened from within the browser, which Back then had to undo
+      // (#168). A tab the reader clicks still adds a step.
+      // Only the fallback itself: a different tab is the reader's click, even
+      // when the address had no tab, and that adds a step.
+      if (untracked(this.state.tab) === null && tab === 'info')
+        this.state.settle(() => this.state.tab.set(tab));
+      else this.state.tab.set(tab);
+    });
 
     effect(() => {
       // A shared link that says ?tab=download has to land on Download. These

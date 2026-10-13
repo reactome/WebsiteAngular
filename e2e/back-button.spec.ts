@@ -93,4 +93,54 @@ test.describe('The back button', () => {
     await page.goBack({ waitUntil: 'domcontentloaded' });
     await expect.poll(search, { message: 'a choice the reader made is undoable' }).toBe(settled);
   });
+
+  test('comes back from a pathway that is drawn in its parent', async ({ page }) => {
+    // G1/S Transition has no diagram of its own: opening it shows its parent's,
+    // Mitotic G1 phase and G1/S transition, with it selected. That hand-off
+    // was written as steps of its own, so Back returned to G1/S Transition,
+    // which handed off again: Back did nothing, however often it was pressed
+    // (#168).
+    const START = 'R-HSA-69002';
+    const NO_DIAGRAM = 'R-HSA-69206';
+    const PARENT = 'R-HSA-453279';
+    await page.goto(`/PathwayBrowser/${START}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(
+      () => {
+        const container = document.querySelector('#cytoscape') as
+          (HTMLElement & { _cyreg?: { cy?: { elements(): { length: number } } } }) | null;
+        return (container?._cyreg?.cy?.elements().length ?? 0) > 0;
+      },
+      { timeout: BOOT_TIMEOUT }
+    );
+    await page.waitForTimeout(2500);
+
+    // Within the page, as a link in the hierarchy or a diagram does.
+    await page.evaluate((id) => {
+      history.pushState({}, '', `/PathwayBrowser/${id}`);
+      dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    }, NO_DIAGRAM);
+    const path = () => new URL(page.url()).pathname;
+    await expect.poll(path, { timeout: BOOT_TIMEOUT }).toBe(`/PathwayBrowser/${PARENT}`);
+    // The parent's diagram is drawn, with the pathway selected in it.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: BOOT_TIMEOUT })
+      .toBe(NO_DIAGRAM);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const container = document.querySelector('#cytoscape') as
+              (HTMLElement & { _cyreg?: { cy?: { elements(): { length: number } } } }) | null;
+            return container?._cyreg?.cy?.elements().length ?? 0;
+          }),
+        { timeout: BOOT_TIMEOUT }
+      )
+      .toBeGreaterThan(0);
+    await page.waitForTimeout(2500);
+
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await expect
+      .poll(path, { message: 'one press of Back returns to where the reader was', timeout: 30_000 })
+      .toBe(`/PathwayBrowser/${START}`);
+  });
 });

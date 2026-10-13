@@ -1068,14 +1068,25 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // The same diagram: another load of this pathway is drawing it, so
           // there is nothing to do -- which is not a failure.
           if (newDiagramId === diagramId) return EMPTY;
-          this.pathwayId.set(newDiagramId);
-          // this.router.navigate([diagramId], {
-          //   queryParamsHandling: "preserve"
-          // }).then(() => {
-          this.state.select.set(event.stId);
-          // });
-
-          return this.loadElvDiagram();
+          // Showing the parent's diagram is a correction, not a step the reader
+          // took, so it replaces the address rather than adding to history.
+          // Written as two steps of its own (the pathway, then the selection),
+          // Back returned to this pathway, which handed off again: Back did
+          // nothing (#168). The diagram loads from the new address, as for any
+          // other pathway.
+          void this.state
+            .navigateTo(newDiagramId, {
+              queryParamsHandling: 'merge',
+              queryParams: { select: event.stId },
+              replaceUrl: true,
+            })
+            // Only if this navigation happened: one the reader's next click
+            // superseded resolves false, and the selection belongs to it.
+            .then((navigated) => navigated && this.state.select.set(event.stId))
+            // navigateTo reports a failure itself; this derived promise must
+            // not go unhandled.
+            .catch(() => undefined);
+          return EMPTY;
         }
         return of(null);
       })
