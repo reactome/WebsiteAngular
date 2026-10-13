@@ -597,7 +597,7 @@ export const endpoints = [
      * its own message, not an empty 200.
      */
     handler: async (request) => {
-      const raw = String(request.params.id);
+      const raw = pathId(request.params.id);
       const { where, params } = resolveId(raw);
       const rows = await read(
         `MATCH (n:DatabaseObject) WHERE ${where}
@@ -751,19 +751,6 @@ function compact(fields) {
 }
 
 /**
- * Java's error envelope, which callers already parse.
- *
- * Reproduced rather than invented because a 404 here is part of the contract:
- * `/data/pathways/top/{taxId}` answers 404 for a species with no top-level
- * pathways, existent or not, and node was answering `200 []`. Nothing caught it
- * because the diff had only ever been run with valid species ids -- the
- * not-found path was never compared with anything.
- *
- * `url` is rebuilt from the request. Behind nginx that is the external URL,
- * because `proxy_set_header Host $host` preserves it; asked directly on
- * loopback it is the loopback address, which is what Java would say too.
- */
-/**
  * How Java reads an id, as a Cypher condition on `n`.
  *
  * Mirrors graph-core's DatabaseObjectUtils (getIdentifier, trimId, isStId,
@@ -777,20 +764,66 @@ function compact(fields) {
  * - starting with 'R', or containing ':', is a stable id; all digits is a
  *   dbId (leading zeros allowed, as Long.parseLong allows them). Anything else
  *   is not found, as in Java. Case matters: `r-hsa-70486` is not found.
+ * - One known difference: `.` alone is Java's 500 (it indexes the empty
+ *   result of the split); here it is a 404, the answer it should have been.
  *
  * Every branch matches one indexed property on DatabaseObject, never a
  * disjunction: a disjunction across properties uses no index and scans the
  * whole graph (see the person endpoints).
  */
 export function resolveId(raw) {
-  const trimmed = String(raw).trim();
+  // Java's String.trim: every character up to U+0020, control characters
+  // included, and nothing above it -- a no-break space stays.
+  const trimmed = String(raw).replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '');
   const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
   if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
   if (id.startsWith('R') || id.includes(':')) return { where: 'n.stId = $id', params: { id } };
-  if (/^\d+$/.test(id)) return { where: 'n.dbId = toInteger($id)', params: { id } };
+  // StringUtils.isNumeric and Long.parseLong take a digit of any script.
+  if (/^\p{Nd}+$/u.test(id)) {
+    return { where: 'n.dbId = toInteger($id)', params: { id: asciiDigits(id) } };
+  }
   return { where: 'false', params: {} };
 }
 
+/**
+ * A run of digits from any script, as ASCII. Unicode keeps each script's
+ * digits in contiguous runs from 0 to 9, some runs back to back, so a digit's
+ * value is its distance from the start of its run, modulo ten.
+ */
+function asciiDigits(digits) {
+  const isDigit = (code) => /\p{Nd}/u.test(String.fromCodePoint(code));
+  return [...digits]
+    .map((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      let first = code;
+      while (isDigit(first - 1)) first -= 1;
+      return String((code - first) % 10);
+    })
+    .join('');
+}
+
+/**
+ * The id as Spring hands it to a controller: whatever follows a ';' in a path
+ * segment is a matrix parameter, removed before the path is matched, so Java
+ * reads `70486;x` as `70486`, in its answer and its 404 message alike.
+ */
+export function pathId(raw) {
+  return String(raw).split(';')[0] ?? '';
+}
+
+/**
+ * Java's error envelope, which callers already parse.
+ *
+ * Reproduced rather than invented because a 404 here is part of the contract:
+ * `/data/pathways/top/{taxId}` answers 404 for a species with no top-level
+ * pathways, existent or not, and node was answering `200 []`. Nothing caught it
+ * because the diff had only ever been run with valid species ids -- the
+ * not-found path was never compared with anything.
+ *
+ * `url` is rebuilt from the request. Behind nginx that is the external URL,
+ * because `proxy_set_header Host $host` preserves it; asked directly on
+ * loopback it is the loopback address, which is what Java would say too.
+ */
 function notFound(request, message) {
   const host = request.get?.('host') ?? 'localhost';
   const protocol = request.protocol ?? 'http';
