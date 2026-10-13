@@ -402,9 +402,10 @@ export class TableStore extends ComponentStore<TableState> {
         numberOfRows,
         numberOfColumns,
       }: {
-        table?: string[][];
-        numberOfRows?: number;
-        numberOfColumns?: number;
+        // The component passes its optional inputs straight through.
+        table?: string[][] | undefined;
+        numberOfRows?: number | undefined;
+        numberOfColumns?: number | undefined;
       }
     ) => {
       if (!table && !(numberOfRows && numberOfColumns))
@@ -582,7 +583,7 @@ export class TableStore extends ComponentStore<TableState> {
       }: {
         content: string;
         type: 'csv' | 'tsv';
-        replace?: boolean;
+        replace?: boolean | undefined;
       }
     ) => {
       if (replace) this.clear();

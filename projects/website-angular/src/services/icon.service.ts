@@ -78,7 +78,13 @@ export class IconService {
   }
 
   queryIcons(
-    options: { query?: string; category?: string; page?: number; pageSize?: number } = {}
+    // Each is left off the request when it is missing or empty.
+    options: {
+      query?: string | undefined;
+      category?: string | undefined;
+      page?: number;
+      pageSize?: number;
+    } = {}
   ): Observable<IconResult> {
     let params = new HttpParams();
     if (options.query) params = params.set('query', options.query);

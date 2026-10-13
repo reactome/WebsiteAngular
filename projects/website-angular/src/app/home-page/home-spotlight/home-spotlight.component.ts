@@ -10,6 +10,7 @@ import stripFirstH from '../../../utils/stripFirstH';
 import truncateHtml from '../../../utils/truncateHtml';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
+import { articleIndexItem } from '../../../utils/articleIndexItem';
 
 @Component({
   selector: 'app-home-spotlight',
@@ -42,14 +43,7 @@ export class HomeSpotlightComponent implements OnInit {
       next: ([item]) => {
         this.loading.set(false);
         if (!item) return;
-        this.spotlight.set({
-          title: item.title,
-          date: new Date(item.date),
-          author: item.author,
-          tags: item.tags || [],
-          slug: item.slug,
-          excerpt: item.excerpt,
-        });
+        this.spotlight.set(articleIndexItem(item));
 
         // The full article for its opening, or, when that is missing or could
         // not be loaded, the index's own excerpt of it: the title and the link

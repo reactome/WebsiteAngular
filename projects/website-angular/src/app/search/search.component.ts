@@ -79,7 +79,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   readonly captchaContainer = viewChild<ElementRef<HTMLDivElement>>('captchaContainer');
 
   captchaToken: string | null = null;
-  private challenge?: ChallengeWidget;
+  private challenge: ChallengeWidget | undefined;
   private challengeSub?: Subscription;
   /** A message is on its way: Send waits for its answer, so it goes once. */
   contactSending = false;

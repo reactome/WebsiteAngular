@@ -16,8 +16,9 @@ export interface StatisticalDesign {
   defaultCovariances: Set<string>;
 
   analysisGroup?: string;
-  comparisonGroup1?: string;
-  comparisonGroup2?: string;
+  // Set to undefined on purpose: choosing another analysis group clears them.
+  comparisonGroup1?: string | undefined;
+  comparisonGroup2?: string | undefined;
   covariances: Covariate[];
 }
 

@@ -41,6 +41,11 @@ function isFrontmatter(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Staged image sizes: present when the content had images to measure. */
+function isImageSizes(value: unknown): value is Record<string, [number, number]> {
+  return isFrontmatter(value);
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -80,7 +85,9 @@ export class ContentService {
           // nothing until it is named -- which is how the image sizes came to
           // be measured, shipped, and then silently dropped one layer before
           // the renderer that needed them.
-          imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
+          ...(isImageSizes(frontmatter['imageSizes']) && {
+            imageSizes: frontmatter['imageSizes'],
+          }),
         };
       }),
       catchError((error: unknown) => {
@@ -115,21 +122,24 @@ export class ContentService {
           return null;
         }
         const body = frontmatter['body'] as string;
+        const tags =
+          typeof frontmatter['tags'] === 'string'
+            ? frontmatter['tags']
+                .split(',')
+                .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
+            : (frontmatter['tags'] as string[] | undefined);
         const returnArticle: Article = {
           title: (frontmatter['title'] as string) || '',
           date: new Date(frontmatter['date'] as string),
           author: frontmatter['author'] as string,
           image: frontmatter['image'] as string,
-          tags:
-            typeof frontmatter['tags'] === 'string'
-              ? frontmatter['tags']
-                  .split(',')
-                  .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
-              : (frontmatter['tags'] as string[] | undefined),
+          ...(tags && { tags }),
           body: body || '',
           excerpt: truncateHtml(body || '', 50),
           slug: slug,
-          imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
+          ...(isImageSizes(frontmatter['imageSizes']) && {
+            imageSizes: frontmatter['imageSizes'],
+          }),
         };
         return returnArticle;
       }),

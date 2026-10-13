@@ -214,7 +214,8 @@ describe('citations that are documentation pages rather than entities', () => {
     const frame =
       'event: citation\ndata: {"st_id": "R-HSA-1", "url": "https://example.org/x", "display_name": "Both"}';
     const event = parseFrame(frame);
-    expect(event).toMatchObject({ citation: { stId: 'R-HSA-1', url: undefined } });
+    expect(event).toMatchObject({ citation: { stId: 'R-HSA-1' } });
+    expect(event).not.toHaveProperty('citation.url');
   });
 
   it('drops a citation whose url is not http', () => {

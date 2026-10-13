@@ -125,12 +125,8 @@ export class BreadcrumbComponent implements OnInit {
           // visited (preserving ?q= etc.), so they don't land on an empty
           // search form. The leaf starts as the raw stId and is replaced
           // with the entity displayName once /data/query/{id} responds.
-          const { path: searchPath, queryParams: searchQueryParams } = this.splitUrl(
-            this.searchHistory.lastSearchUrl()
-          );
-          this.breadcrumbs = [
-            { label: 'Search', link: searchPath, queryParams: searchQueryParams },
-          ];
+          const { path: searchPath, ...search } = this.splitUrl(this.searchHistory.lastSearchUrl());
+          this.breadcrumbs = [{ label: 'Search', link: searchPath, ...search }];
           const id = path_segments[2] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
