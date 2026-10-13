@@ -37,3 +37,14 @@ test('Cite us opens the citation for the pathway on screen, and closes', async (
   await expect(dialog).toHaveCount(0);
   expect(thrown).toEqual([]);
 });
+
+test("the site's Cite Us button opens the citation from any page", async ({ page }) => {
+  const thrown: string[] = [];
+  page.on('pageerror', (error) => thrown.push(String(error)));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Cite Us', exact: true }).click({ timeout: 60_000 });
+  const dialog = page.locator('cr-citation');
+  await expect(dialog.getByRole('heading', { name: 'Cite Us!' })).toBeVisible({ timeout: 30_000 });
+  await expect(dialog.locator('mat-dialog-content')).not.toBeEmpty({ timeout: 30_000 });
+  expect(thrown).toEqual([]);
+});

@@ -16,6 +16,9 @@ export class CiteUsComponent {
   private citation: CitationService = inject(CitationService);
 
   openCitationDialog() {
-    this.citation.openDialog();
+    // The dialog's code is fetched on first open; a failed fetch is reported.
+    this.citation
+      .openDialog()
+      .catch((error) => console.error('Could not open the citation', error));
   }
 }
