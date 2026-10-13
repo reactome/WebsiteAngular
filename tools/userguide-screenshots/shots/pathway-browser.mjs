@@ -59,6 +59,17 @@ export const shots = [
     clip: { selector: 'a.shortcut-link:has-text("Pathway Browser")', pad: 12 },
   },
   {
+    // The map of all pathways the browser opens on (Reacfoam), where the old
+    // browser opened on its Fireworks overview.
+    name: 'pathway-overview-map',
+    url: '/PathwayBrowser/',
+    prepare: async (page) => {
+      await page.locator('cr-reacfoam canvas').first().waitFor({ timeout: 120_000 });
+      // Roll-out and relaxation run for a few seconds.
+      await page.waitForTimeout(8000);
+    },
+  },
+  {
     name: 'pathway-browser-labelled',
     url: '/PathwayBrowser/R-HSA-1236394',
     prepare: diagramDrawn,
