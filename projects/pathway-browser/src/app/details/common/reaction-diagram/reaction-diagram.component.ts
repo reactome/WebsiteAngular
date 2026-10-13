@@ -75,7 +75,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
         this.cy = cytoscape({
           container,
           elements,
-          style: this.reactomeStyle?.getStyleSheet(),
+          ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
           layout: { name: 'preset' },
           boxSelectionEnabled: false,
         });

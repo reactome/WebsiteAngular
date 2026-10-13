@@ -110,7 +110,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       .map((stId) => this.stIdToSVGGElement().get(stId))
       .filter(isDefined)
   );
-  panZoomInstance?: SvgPanZoom.Instance;
+  panZoomInstance: SvgPanZoom.Instance | undefined;
   legendItems: LegendGroup[] = [...this.ehldService.legendItems];
   private readonly resizeObserver = new ResizeObserver(() => {
     if (!this.panZoomInstance) return;
@@ -122,7 +122,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   private initialZoom = 1;
   private initialPan = { x: 0, y: 0 };
-  currentSample?: string;
+  currentSample: string | undefined;
 
   constructor() {
     effect(

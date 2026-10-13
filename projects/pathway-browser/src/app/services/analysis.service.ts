@@ -19,7 +19,7 @@ import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
 import { Params } from '@angular/router';
-import { cleanObject } from '../reacfoam/reacfoam.service';
+import { httpParams } from '../utils/http-params';
 import { isDefined, shouldBeScientificFormat } from './utils';
 import { Report } from 'reactome-gsa-form';
 import { Species } from '../model/graph/species.model';
@@ -611,7 +611,7 @@ export class AnalysisService {
 
   analyse(
     data: string,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
@@ -619,7 +619,7 @@ export class AnalysisService {
       .post<Analysis.Result>(
         `${environment.host}/AnalysisService/identifiers/${params?.projectToHuman ? 'projection' : ''}`,
         data,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
         tap((result) => this.result.set(result)),
@@ -631,14 +631,14 @@ export class AnalysisService {
 
   analyseSpecies(
     species: Species,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
     return this.http
       .get<Analysis.Result>(
         `${environment.host}/AnalysisService/species/homoSapiens/${species.dbId}`,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
         tap((result) => this.result.set(result)),
@@ -650,7 +650,7 @@ export class AnalysisService {
 
   analyseFromUrl(
     url: string,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
@@ -658,7 +658,7 @@ export class AnalysisService {
       .post<Analysis.Result>(
         `${environment.host}/AnalysisService/identifiers/url${params?.projectToHuman ? '/projection' : ''}`,
         url,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
         tap((result) => this.result.set(result)),
@@ -668,11 +668,10 @@ export class AnalysisService {
       );
   }
 
-  loadAnalysis(token?: string, params?: Partial<Analysis.Parameters>): Observable<Analysis.Result> {
-    cleanObject(params || {});
+  loadAnalysis(token?: string, params?: Analysis.RequestParameters): Observable<Analysis.Result> {
     return this.http.get<Analysis.Result>(
       `${environment.host}/AnalysisService/token/${token || this.state.analysis()}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 
@@ -730,11 +729,11 @@ export class AnalysisService {
       .pipe(catchError((error: unknown) => (isNotFound(error) ? of([]) : throwError(() => error))));
   }
 
-  getHitReactions(pathwayId: string, token: string, params?: Partial<Analysis.Parameters>) {
+  getHitReactions(pathwayId: string, token: string, params?: Analysis.RequestParameters) {
     if (!pathwayId || !token) return of([]);
     return this.http.get<number[]>(
       `${environment.host}/AnalysisService/token/${token}/reactions/${pathwayId}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 

@@ -12,27 +12,30 @@ import { ReactionLikeEvent } from './event/reaction-like-event.model';
 
 /**
  * This Generic type is for rendering data in Molecular Process component and used by catalystActivity, Regulation and ModifiedResidue
+ *
+ * Built by copying fields across from the entry, each of which the entry may
+ * not have: a field here may be present and undefined.
  */
 export interface MolecularProcess extends DatabaseObject {
-  reactions?: ReactionLikeEvent[];
+  reactions?: ReactionLikeEvent[] | undefined;
 
   // CatalystActivity
   type: string;
-  activity?: GO_MolecularFunction;
-  ecNumber?: string;
-  activeUnit?: PhysicalEntity[];
-  catalyst?: PhysicalEntity;
-  catalystActivityReference?: CatalystActivityReference;
-  isCatalystActivity?: boolean;
+  activity?: GO_MolecularFunction | undefined;
+  ecNumber?: string | undefined;
+  activeUnit?: PhysicalEntity[] | undefined;
+  catalyst?: PhysicalEntity | undefined;
+  catalystActivityReference?: CatalystActivityReference | undefined;
+  isCatalystActivity?: boolean | undefined;
   // Regulation
-  regulator?: PhysicalEntity;
-  regulationReference?: RegulationReference[];
-  go_BiologicalProcess?: GO_MolecularFunction;
-  isRegulation?: boolean;
+  regulator?: PhysicalEntity | undefined;
+  regulationReference?: RegulationReference[] | undefined;
+  go_BiologicalProcess?: GO_MolecularFunction | undefined;
+  isRegulation?: boolean | undefined;
   // Modifications
-  name?: string;
-  psiMod?: PsiMod[]; // ReplacedResidue has multiple PsiMod
-  coordinate?: number;
-  modification?: EntitySet | Polymer | ReferenceGroup | ReferenceMolecule;
-  isModification?: boolean;
+  name?: string | undefined;
+  psiMod?: PsiMod[] | undefined; // ReplacedResidue has multiple PsiMod
+  coordinate?: number | undefined;
+  modification?: EntitySet | Polymer | ReferenceGroup | ReferenceMolecule | undefined;
+  isModification?: boolean | undefined;
 }

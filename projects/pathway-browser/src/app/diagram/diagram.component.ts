@@ -683,7 +683,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         this.legend = cytoscape({
           container: legendContainer,
           elements: legend,
-          style: this.reactomeStyle?.getStyleSheet(),
+          ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
           layout: { name: 'preset' },
           boxSelectionEnabled: false,
         });
@@ -1142,7 +1142,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       const cyCompare = cytoscape({
         container: compareContainer,
         elements: elements,
-        style: this.reactomeStyle?.getStyleSheet(),
+        ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
         layout: { name: 'preset' },
       });
       this.cyCompare = cyCompare;

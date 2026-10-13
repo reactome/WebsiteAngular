@@ -27,7 +27,7 @@ export const DEFAULT_INTERACTOR_SCORE = 0.45;
 
 /** An interaction, reduced to the one field this decision reads. */
 export interface ScoredInteraction {
-  score?: number | null;
+  score?: number | null | undefined;
 }
 
 /**

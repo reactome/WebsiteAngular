@@ -31,9 +31,15 @@ namespace SvgDecoration {
   }
 }
 
+/**
+ * A frame's style. A property kept as undefined is one the element lost, and
+ * still counts as a change from the frame before, so it is not left out.
+ */
+type FrameStyle = Record<string, string | undefined>;
+
 type FrameDiff = {
   frame: number; // the frame at which the property changes
-  style: Partial<Record<string, string>>;
+  style: FrameStyle;
 };
 
 type Padding = { left: number; right: number; top: number; bottom: number };
@@ -95,7 +101,7 @@ export class SvgExporterService {
       padding = result.padding;
     } else {
       const initSample = untracked(this.state.sample);
-      const idToSampleStyle = new Map<string, { fill?: string; stroke?: string }[]>();
+      const idToSampleStyle = new Map<string, FrameStyle[]>();
       const frames: SVGGElement[] = [];
 
       for (const sample of samples) {
@@ -174,7 +180,7 @@ export class SvgExporterService {
       padding = result.padding;
     } else {
       const initSample = untracked(this.state.sample);
-      const idToSampleStyle = new Map<string, { fill?: string; stroke?: string }[]>();
+      const idToSampleStyle = new Map<string, FrameStyle[]>();
       const patternIdToContent = new Map<string, string[]>();
 
       for (const [sampleIndex, sample] of samples.entries()) {
@@ -281,7 +287,7 @@ export class SvgExporterService {
   }
 
   private compressFrameStyles(
-    idToSampleStyle: Map<string, Partial<Record<string, string>>[]>
+    idToSampleStyle: Map<string, FrameStyle[]>
   ): Map<string, FrameDiff[]> {
     const compressed = new Map<string, FrameDiff[]>();
     idToSampleStyle.forEach((frameStyles, id) => {
@@ -303,11 +309,8 @@ export class SvgExporterService {
     return compressed;
   }
 
-  private getStyleDiff(
-    prev: Partial<Record<string, string>>,
-    curr: Partial<Record<string, string>>
-  ) {
-    const diff: Partial<Record<string, string>> = {};
+  private getStyleDiff(prev: FrameStyle, curr: FrameStyle) {
+    const diff: FrameStyle = {};
     Object.keys(curr).forEach((key) => {
       if (prev[key] !== curr[key]) diff[key] = curr[key];
     });
@@ -353,7 +356,7 @@ export class SvgExporterService {
   private generateCompressedKeyframes(id: string, diffs: FrameDiff[]): string {
     const keyframeName = `kf_${this.sanitizeId(id)}`;
     let keyframes = `@keyframes ${keyframeName} {\n`;
-    const lastValues: Partial<Record<string, string>> = { ...diffs.at(-1)?.style }; // start with the last value as it loops
+    const lastValues: FrameStyle = { ...diffs.at(-1)?.style }; // start with the last value as it loops
 
     diffs.forEach((diff, _i) => {
       const { start, stop } = this.calcTransitionTime(diff.frame);

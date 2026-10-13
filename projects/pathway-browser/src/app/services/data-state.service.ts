@@ -169,8 +169,8 @@ export class DataStateService {
             map((results) =>
               results.reduce<FlaggingResult>(
                 (acc, result) => {
-                  if (result.matches) acc.matches.push(...result.matches);
-                  if (result.interactsWith) acc.interactsWith!.push(...result.interactsWith);
+                  acc.matches.push(...result.matches);
+                  acc.interactsWith.push(...result.interactsWith);
                   return acc;
                 },
                 { matches: [], interactsWith: [] }
@@ -179,7 +179,7 @@ export class DataStateService {
           ),
   });
 
-  getReacfoamFlagging(query: string, species: string): Observable<Partial<FlaggingResult>> {
+  getReacfoamFlagging(query: string, species: string): Observable<FlaggingResult> {
     return this.http
       .get<FireworksFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
         params: { query, species, scope: 'REFERENCE_ENTITY', includeInteractors: false },
@@ -190,13 +190,13 @@ export class DataStateService {
           isNotFound(error) ? of({} as FireworksFlagResult) : throwError(() => error)
         ),
         map((r) => ({
-          matches: r.llps,
-          interactsWith: r.interactsWith,
+          matches: r.llps ?? [],
+          interactsWith: r.interactsWith ?? [],
         }))
       );
   }
 
-  getDiagramFlagging(diagram: string, query: string): Observable<Partial<FlaggingResult>> {
+  getDiagramFlagging(diagram: string, query: string): Observable<FlaggingResult> {
     return this.http
       .get<DiagramFlagResult>(`${CONTENT_SERVICE}/search/diagram/${diagram}/flag`, {
         params: { query, scope: 'REFERENCE_ENTITY', includeInteractors: false },
@@ -208,8 +208,8 @@ export class DataStateService {
           isNotFound(error) ? of({} as DiagramFlagResult) : throwError(() => error)
         ),
         map((r) => ({
-          matches: r.occurrences,
-          interactsWith: r.interactsWith,
+          matches: r.occurrences ?? [],
+          interactsWith: r.interactsWith ?? [],
         }))
       );
   }
