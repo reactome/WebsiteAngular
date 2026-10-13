@@ -514,7 +514,9 @@ export class RenderComponent {
         : node.data('reactionId') !== undefined && node.data('reactionId') !== null
           ? reactionGroup(node)
           : {
-              group: `entity-${String(node.id())}`,
+              // A modification badge is a node of its own, pointing at its protein with
+              // nodeId: it goes with the protein, so dragging one takes both.
+              group: `entity-${String(node.data('nodeId') ?? node.id())}`,
               groupName: label || String(node.data('schemaClass') ?? node.id()),
             };
       const under = this.underlay(node);

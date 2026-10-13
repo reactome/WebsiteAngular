@@ -361,9 +361,14 @@ function boundsOf(shape, place) {
  * rectangle, so the members' own coordinates -- already on the slide -- mean
  * exactly what they did ungrouped.
  */
-function groupShape(members, id, one, place) {
-  const boxes = members.map((shape) => boundsOf(shape, place)).filter(Boolean);
-  if (!boxes.length) return members.map(one).join('');
+function groupShape(members, nextId, one, place) {
+  // The group's id comes before its members', which take theirs as they are
+  // written. A shape with nothing to draw writes nothing, so a group is made
+  // only of what is actually drawn, and only when that is more than one shape.
+  const id = nextId();
+  const drawn = members.map((shape) => ({ shape, xml: one(shape) })).filter((member) => member.xml);
+  if (drawn.length < 2) return drawn.map((member) => member.xml).join('');
+  const boxes = drawn.map((member) => boundsOf(member.shape, place)).filter(Boolean);
   const x = Math.min(...boxes.map((box) => box.x));
   const y = Math.min(...boxes.map((box) => box.y));
   const cx = Math.max(1, Math.max(...boxes.map((box) => box.x + box.cx)) - x);
@@ -374,7 +379,7 @@ function groupShape(members, id, one, place) {
     `<p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
     `<p:grpSpPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
     `<a:chOff x="${x}" y="${y}"/><a:chExt cx="${cx}" cy="${cy}"/></a:xfrm></p:grpSpPr>` +
-    members.map(one).join('') +
+    drawn.map((member) => member.xml).join('') +
     `</p:grpSp>`
   );
 }
@@ -412,7 +417,7 @@ function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
     let end = i + 1;
     if (key) while (end < list.length && list[end].group === key) end++;
     const members = list.slice(i, end);
-    drawn += key && members.length > 1 ? groupShape(members, nextId++, one, place) : one(list[i]);
+    drawn += key ? groupShape(members, () => nextId++, one, place) : one(list[i]);
     i = end;
   }
 

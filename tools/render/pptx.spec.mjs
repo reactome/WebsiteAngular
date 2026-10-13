@@ -866,3 +866,24 @@ describe('a slide built from shapes, grouped', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+describe('a group with nothing to group', () => {
+  it('writes no empty group, nor a group of one', () => {
+    const lone = { ...EDGE, group: 'reaction-1', points: [{ x: 1, y: 1 }] };
+    const broken = {
+      ...EDGE,
+      group: 'reaction-1',
+      points: [
+        { x: NaN, y: 1 },
+        { x: 2, y: 2 },
+      ],
+    };
+    const empty = open(pptx({ shapes: { ...SHAPES, shapes: [lone, broken] } })).slide();
+    expect(empty).not.toContain('<p:grpSp>');
+    const one = open(
+      pptx({ shapes: { ...SHAPES, shapes: [lone, { ...EDGE, group: 'reaction-1' }] } })
+    ).slide();
+    expect(one).not.toContain('<p:grpSp>');
+    expect((one.match(/<p:sp>/g) ?? []).length).toBe(1);
+  });
+});
