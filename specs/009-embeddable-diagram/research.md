@@ -115,6 +115,8 @@ Unminified sizes from `node_modules`:
 
 Plus Angular core and the parts of Material the diagram uses, and the style library.
 
+Since then (#356): vectorious is gone, replaced by plain arithmetic, and the embed no longer carries the router or lodash.
+
 **Estimate**: 1.0–1.3 MB minified, 300–400 KB gzipped. **Budget**: 1.5 MB initial, and less than a third of the full site (SC-004), checked in the build.
 
 The interactors panel pulls in forms, tabs, radio, list, a file-input package and GSA types. The embed leaves the interactors _panel_ out (it's a browser-shell control), which keeps those out of the bundle; interactors drawn _on_ the diagram stay.

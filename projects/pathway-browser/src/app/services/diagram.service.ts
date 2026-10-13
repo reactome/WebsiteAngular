@@ -13,7 +13,7 @@ import {
 import { Graph } from '../model/graph.model';
 import { Style, Types } from 'ngx-reactome-cytoscape-style';
 import legend from '../../assets/json/legend.json';
-import { absoluteToRelative, RelativePosition } from './edge-geometry';
+import { absoluteToRelative, equal, isFinitePoint, RelativePosition } from './edge-geometry';
 
 import cytoscape from 'cytoscape';
 import cytoscapeFcose, { FcoseLayoutOptions } from 'cytoscape-fcose';
@@ -38,8 +38,6 @@ const scale = <T extends Position | number>(pos: T, scale = 2): T => {
   } as T;
 };
 
-const equal = (pos1: Position, pos2: Position) => pos1.x === pos2.x && pos1.y === pos2.y;
-
 const avg = (positions: Position[]): Position => {
   const sum = { x: 0, y: 0 };
   positions.forEach((pos) => {
@@ -55,9 +53,6 @@ const squaredDist = (pos1: Position, pos2: Position) => {
 };
 
 const dist = (pos1: Position, pos2: Position) => Math.sqrt(squaredDist(pos1, pos2));
-
-const isFinitePoint = (point: Position | undefined | null): point is Position =>
-  !!point && Number.isFinite(point.x) && Number.isFinite(point.y);
 
 const closestToAverage = (positions: Position[]): Position => {
   const average = avg(positions);

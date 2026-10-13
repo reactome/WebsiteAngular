@@ -3,9 +3,9 @@ import { Position } from '../model/diagram.model';
 /** Points along an edge: how far along it (weights) and how far off it (distances). */
 export type RelativePosition = { distances: number[]; weights: number[] };
 
-const equal = (pos1: Position, pos2: Position) => pos1.x === pos2.x && pos1.y === pos2.y;
+export const equal = (pos1: Position, pos2: Position) => pos1.x === pos2.x && pos1.y === pos2.y;
 
-const isFinitePoint = (point: Position | undefined | null): point is Position =>
+export const isFinitePoint = (point: Position | undefined | null): point is Position =>
   !!point && Number.isFinite(point.x) && Number.isFinite(point.y);
 
 /**
