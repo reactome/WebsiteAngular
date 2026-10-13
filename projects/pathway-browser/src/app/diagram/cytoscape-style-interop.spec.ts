@@ -1,27 +1,19 @@
 /**
  * `ngx-reactome-cytoscape-style` can be imported under vitest.
  *
- * Its published ESM does `import { isArray } from 'lodash'`, and lodash is
- * CommonJS only. Vite's interop rejects that named import -- "Named export
- * 'isArray' not found" -- before any test using the library can run.
- * `server.deps.inline` in vitest.config.ts makes vite transform the library and
- * resolve the interop, which is why that option is there.
- *
- * Nothing exercised it. Every module importing this library is a component, and
- * the same config file explains that components are covered by e2e rather than
- * unit tests -- so the option was load-bearing and untested, and a vitest or vite
- * upgrade could have silently stopped honouring it. Found while moving to
- * vitest 4 (#234), where it would have been exactly the kind of breakage a
- * "244 passed" run does not mention.
- *
- * The import is the test. The assertions are here so it fails as a statement
- * about the library rather than as a bare module error.
+ * It used to import lodash, which is CommonJS only, and vite's interop rejected
+ * the named import ("Named export 'isArray' not found") until vitest.config.ts
+ * inlined the library. The library no longer imports lodash
+ * (reactome/ngx-reactome-base#15), so that option is gone. This keeps the import
+ * under test, so a library build that brings back a CommonJS-only import fails
+ * here, as a statement about the library, rather than in whichever spec happens
+ * to pull it in first.
  */
 import { describe, expect, it } from 'vitest';
 import { ReactomeEventTypes, Style } from 'ngx-reactome-cytoscape-style';
 
 describe('the cytoscape style library under vitest', () => {
-  it('imports, despite its lodash interop', () => {
+  it('imports under vitest as it is installed', () => {
     expect(typeof Style, 'Style should be the class the diagram builds on').toBe('function');
   });
 
