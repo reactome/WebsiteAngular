@@ -1080,7 +1080,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
               queryParams: { select: event.stId },
               replaceUrl: true,
             })
-            .then(() => this.state.select.set(event.stId));
+            // Only if this navigation happened: one the reader's next click
+            // superseded resolves false, and the selection belongs to it.
+            .then((navigated) => navigated && this.state.select.set(event.stId))
+            // navigateTo reports a failure itself; this derived promise must
+            // not go unhandled.
+            .catch(() => undefined);
           return EMPTY;
         }
         return of(null);

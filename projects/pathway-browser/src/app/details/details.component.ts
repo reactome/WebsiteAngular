@@ -85,7 +85,10 @@ export class DetailsComponent {
       // history entry. Written as a step of its own, it was the second entry for
       // a pathway opened from within the browser, which Back then had to undo
       // (#168). A tab the reader clicks still adds a step.
-      if (untracked(this.state.tab) === null) this.state.settle(() => this.state.tab.set(tab));
+      // Only the fallback itself: a different tab is the reader's click, even
+      // when the address had no tab, and that adds a step.
+      if (untracked(this.state.tab) === null && tab === 'info')
+        this.state.settle(() => this.state.tab.set(tab));
       else this.state.tab.set(tab);
     });
 

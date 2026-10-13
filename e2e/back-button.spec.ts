@@ -121,6 +121,21 @@ test.describe('The back button', () => {
     }, NO_DIAGRAM);
     const path = () => new URL(page.url()).pathname;
     await expect.poll(path, { timeout: BOOT_TIMEOUT }).toBe(`/PathwayBrowser/${PARENT}`);
+    // The parent's diagram is drawn, with the pathway selected in it.
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: BOOT_TIMEOUT })
+      .toBe(NO_DIAGRAM);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const container = document.querySelector('#cytoscape') as
+              (HTMLElement & { _cyreg?: { cy?: { elements(): { length: number } } } }) | null;
+            return container?._cyreg?.cy?.elements().length ?? 0;
+          }),
+        { timeout: BOOT_TIMEOUT }
+      )
+      .toBeGreaterThan(0);
     await page.waitForTimeout(2500);
 
     await page.goBack({ waitUntil: 'domcontentloaded' });
