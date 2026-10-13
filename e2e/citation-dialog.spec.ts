@@ -52,13 +52,21 @@ test("the site's Cite Us button opens the citation from any page", async ({ page
 test('two quick clicks open one citation, not two', async ({ page }) => {
   // The dialog's code loads on the first click, so a second click can land
   // while it is still on its way; each used to open a dialog of its own.
-  // Material refuses a second dialog with the same id by throwing, so without
-  // the guard the count alone stays at one; the failed open is what shows.
+  // Without the guards, a development build (what this suite serves) refuses
+  // the second dialog by throwing -- Material checks for a duplicate id only in
+  // dev mode -- so the count stays at one and the failed open is what shows. A
+  // production build opens two, which the count catches. Both are checked.
+  // Matched narrowly: a citation request that fails is a different problem.
   const failures: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error' && /citation/i.test(message.text()))
+    if (
+      message.type() === 'error' &&
+      /exists already|Could not open the citation/.test(message.text())
+    )
       failures.push(message.text());
   });
+  // Unhandled, should the component ever stop catching it.
+  page.on('pageerror', (error) => failures.push(String(error)));
   await page.goto('/');
   const button = page.getByRole('button', { name: 'Cite Us', exact: true });
   await expect(button).toBeVisible({ timeout: 60_000 });
