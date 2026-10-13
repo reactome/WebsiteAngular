@@ -48,3 +48,17 @@ test("the site's Cite Us button opens the citation from any page", async ({ page
   await expect(dialog.locator('mat-dialog-content')).not.toBeEmpty({ timeout: 30_000 });
   expect(thrown).toEqual([]);
 });
+
+test('two quick clicks open one citation, not two', async ({ page }) => {
+  // The dialog's code loads on the first click, so a second click can land
+  // while it is still on its way; each used to open a dialog of its own.
+  await page.goto('/');
+  const button = page.getByRole('button', { name: 'Cite Us', exact: true });
+  await button.click({ timeout: 60_000 });
+  await button.click({ force: true });
+  const dialog = page.locator('cr-citation');
+  await expect(dialog.getByRole('heading', { name: 'Cite Us!' })).toBeVisible({ timeout: 30_000 });
+  // Long enough for a second dialog to have opened, had one been coming.
+  await page.waitForTimeout(2000);
+  await expect(dialog).toHaveCount(1);
+});

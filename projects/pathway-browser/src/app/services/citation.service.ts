@@ -36,6 +36,9 @@ export enum ExportFormat {
   TXT = 'txt',
 }
 
+/** The citation dialog's id, so a second open finds the first rather than stacking. */
+const CITATION_DIALOG = 'citation';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -98,12 +101,29 @@ export class CitationService {
   }
 
   async openDialog(): Promise<void> {
+    // One dialog at a time. The first open now waits while its code loads, and a
+    // reader who clicks again in that moment would otherwise get two.
+    if (this.opening) return;
+    this.opening = true;
+    try {
+      await this.showDialog();
+    } finally {
+      this.opening = false;
+    }
+  }
+
+  private opening = false;
+
+  private async showDialog(): Promise<void> {
     this.currentCitationId.set(this.updatedCitationId());
     const [{ MatDialog }, { CitationComponent }] = await Promise.all([
       import('@angular/material/dialog'),
       import('../citation/citation.component'),
     ]);
-    const dialogRef = this.injector.get(MatDialog).open(CitationComponent, {
+    const dialog = this.injector.get(MatDialog);
+    if (dialog.getDialogById(CITATION_DIALOG)) return;
+    dialog.open(CitationComponent, {
+      id: CITATION_DIALOG,
       data: {
         content: this.citationData.value,
         id: this.currentCitationId,
@@ -112,7 +132,6 @@ export class CitationService {
       enterAnimationDuration: '450ms',
       exitAnimationDuration: '450ms',
     });
-    dialogRef.afterClosed();
   }
 
   getExportUrls(id: string) {
