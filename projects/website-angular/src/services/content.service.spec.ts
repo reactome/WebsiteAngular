@@ -191,7 +191,8 @@ describe('ContentService asks the server, not a saved copy', () => {
       const subscription = (call(service) as { subscribe(): { unsubscribe(): void } }).subscribe();
       const req = httpTesting.expectOne((r) => r.url.endsWith(file));
       expect(req.request.cache).toBe('no-cache');
-      req.flush({});
+      // An article index is a list; every other content file is an object.
+      req.flush(file.endsWith('/index.json') && name !== 'getFaqIndex' ? [] : {});
       subscription.unsubscribe();
     });
   }
