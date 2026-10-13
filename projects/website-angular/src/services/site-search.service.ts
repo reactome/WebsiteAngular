@@ -49,39 +49,43 @@ export class SiteSearchService {
   }
 
   private loadIndex(): void {
-    this.http.get<SiteSearchIndexItem[]>('/site-search-index.json').subscribe({
-      next: (items) => {
-        const mini = new MiniSearch<SiteSearchIndexItem>({
-          fields: ['title', 'body'],
-          storeFields: ['title', 'category', 'url', 'excerpt', 'date', 'body'],
-          searchOptions: {
-            boost: { title: 3 },
-            fuzzy: 0.2,
-            prefix: true,
-            // Require every term to match. MiniSearch defaults to OR, which
-            // made any multi-word query return everything containing its most
-            // common word -- "xyzzy_no_match_99999" tokenises to
-            // xyzzy/no/match/99999 and matched 162 pages on "no" and "match"
-            // alone, so the "No results found" state was unreachable. The
-            // production site reports no results for that query, and AND both
-            // restores that and sharply improves relevance for real queries
-            // (e.g. "contact us" and "data model" now rank their own pages
-            // first). Single-term queries are unaffected.
-            combineWith: 'AND',
-          },
-        });
-        mini.addAll(items);
-        this.index$.next(mini);
-      },
-      error: (error: unknown) => {
-        // Fail the searches waiting on it, rather than answer them from an
-        // empty index -- which read as "no pages match" -- and let the next
-        // search load it again.
-        const failed = this.index$;
-        this.index$ = new ReplaySubject<MiniSearch<SiteSearchIndexItem>>(1);
-        this.loaded = false;
-        failed.error(error);
-      },
-    });
+    // Rebuilt under the same name with every build: the browser checks back
+    // rather than keeping a copy (see ContentService).
+    this.http
+      .get<SiteSearchIndexItem[]>('/site-search-index.json', { cache: 'no-cache' })
+      .subscribe({
+        next: (items) => {
+          const mini = new MiniSearch<SiteSearchIndexItem>({
+            fields: ['title', 'body'],
+            storeFields: ['title', 'category', 'url', 'excerpt', 'date', 'body'],
+            searchOptions: {
+              boost: { title: 3 },
+              fuzzy: 0.2,
+              prefix: true,
+              // Require every term to match. MiniSearch defaults to OR, which
+              // made any multi-word query return everything containing its most
+              // common word -- "xyzzy_no_match_99999" tokenises to
+              // xyzzy/no/match/99999 and matched 162 pages on "no" and "match"
+              // alone, so the "No results found" state was unreachable. The
+              // production site reports no results for that query, and AND both
+              // restores that and sharply improves relevance for real queries
+              // (e.g. "contact us" and "data model" now rank their own pages
+              // first). Single-term queries are unaffected.
+              combineWith: 'AND',
+            },
+          });
+          mini.addAll(items);
+          this.index$.next(mini);
+        },
+        error: (error: unknown) => {
+          // Fail the searches waiting on it, rather than answer them from an
+          // empty index -- which read as "no pages match" -- and let the next
+          // search load it again.
+          const failed = this.index$;
+          this.index$ = new ReplaySubject<MiniSearch<SiteSearchIndexItem>>(1);
+          this.loaded = false;
+          failed.error(error);
+        },
+      });
   }
 }

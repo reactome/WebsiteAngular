@@ -251,14 +251,33 @@ app.use(
   }
 );
 
-// Hashed build artefacts are immutable; index.html must never be cached or a
-// redeploy leaves browsers pinned to chunks that no longer exist.
+// Only build output named by its content is immutable: the bundles at the top
+// of the build (main-XXXXXXXX.js, chunk-..., styles-...) and media/. Everything
+// else keeps its name when it changes -- index.html, the content pages, uploads,
+// assets -- so browsers check back (a 304 when unchanged). Cached for a year as
+// immutable, a rewritten documentation page stayed old in every browser that
+// had seen it; index.html cached would pin browsers to chunks that are gone.
+const CONTENT_NAMED = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
+function contentNamed(filePath) {
+  const relative = path.relative(DIST, filePath).split(path.sep);
+  const inBuildRoot = relative.length === 1 || (relative.length === 2 && relative[0] === 'media');
+  return inBuildRoot && CONTENT_NAMED.test(relative[relative.length - 1]);
+}
 app.use(
   express.static(DIST, {
     index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
-      else res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader(
+        'Cache-Control',
+        contentNamed(filePath)
+          ? 'public, max-age=31536000, immutable'
+          : /\.(json|html)$/.test(filePath)
+            ? // Content pages, the search index, index.html: always current.
+              'no-cache'
+            : // Images, uploads, fonts: a few minutes, so a page's pictures are
+              // not refetched on every view, and an edit shows within minutes.
+              'public, max-age=300'
+      );
     },
   })
 );
