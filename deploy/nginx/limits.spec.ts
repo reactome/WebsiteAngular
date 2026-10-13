@@ -20,7 +20,7 @@ function limitConns(file: string): number[] {
 }
 
 describe('per-client request limits', () => {
-  for (const file of ['dev.conf', 'production.conf']) {
+  for (const file of ['dev.conf', 'release.conf', 'production.conf']) {
     it(`${file} lets one page's requests through at once`, () => {
       const limits = limitConns(file);
       expect(limits.length, 'no limit_conn found').toBeGreaterThan(0);
