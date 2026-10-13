@@ -52,13 +52,36 @@ test("the site's Cite Us button opens the citation from any page", async ({ page
 test('two quick clicks open one citation, not two', async ({ page }) => {
   // The dialog's code loads on the first click, so a second click can land
   // while it is still on its way; each used to open a dialog of its own.
+  // Without the guards, a development build (what this suite serves) refuses
+  // the second dialog by throwing -- Material checks for a duplicate id only in
+  // dev mode -- so the count stays at one and the failed open is what shows. A
+  // production build opens two, which the count catches. Both are checked.
+  // Matched narrowly: a citation request that fails is a different problem.
+  const failures: string[] = [];
+  page.on('console', (message) => {
+    if (
+      message.type() === 'error' &&
+      /exists already|Could not open the citation/.test(message.text())
+    )
+      failures.push(message.text());
+  });
+  // Unhandled, should the component ever stop catching it.
+  page.on('pageerror', (error) => failures.push(String(error)));
   await page.goto('/');
   const button = page.getByRole('button', { name: 'Cite Us', exact: true });
-  await button.click({ timeout: 60_000 });
-  await button.click({ force: true });
+  await expect(button).toBeVisible({ timeout: 60_000 });
+  // Both clicks in one task, so the second is certain to land while the first
+  // is still loading. Two pointer clicks raced the load instead: on a fast
+  // machine the dialog was already open and the second click landed on its
+  // backdrop, closing it -- a test of timing, not of the guard.
+  await button.evaluate((element: HTMLElement) => {
+    element.click();
+    element.click();
+  });
   const dialog = page.locator('cr-citation');
   await expect(dialog.getByRole('heading', { name: 'Cite Us!' })).toBeVisible({ timeout: 30_000 });
   // Long enough for a second dialog to have opened, had one been coming.
   await page.waitForTimeout(2000);
   await expect(dialog).toHaveCount(1);
+  expect(failures).toEqual([]);
 });
