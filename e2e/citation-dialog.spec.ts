@@ -52,13 +52,28 @@ test("the site's Cite Us button opens the citation from any page", async ({ page
 test('two quick clicks open one citation, not two', async ({ page }) => {
   // The dialog's code loads on the first click, so a second click can land
   // while it is still on its way; each used to open a dialog of its own.
+  // Material refuses a second dialog with the same id by throwing, so without
+  // the guard the count alone stays at one; the failed open is what shows.
+  const failures: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /citation/i.test(message.text()))
+      failures.push(message.text());
+  });
   await page.goto('/');
   const button = page.getByRole('button', { name: 'Cite Us', exact: true });
-  await button.click({ timeout: 60_000 });
-  await button.click({ force: true });
+  await expect(button).toBeVisible({ timeout: 60_000 });
+  // Both clicks in one task, so the second is certain to land while the first
+  // is still loading. Two pointer clicks raced the load instead: on a fast
+  // machine the dialog was already open and the second click landed on its
+  // backdrop, closing it -- a test of timing, not of the guard.
+  await button.evaluate((element: HTMLElement) => {
+    element.click();
+    element.click();
+  });
   const dialog = page.locator('cr-citation');
   await expect(dialog.getByRole('heading', { name: 'Cite Us!' })).toBeVisible({ timeout: 30_000 });
   // Long enough for a second dialog to have opened, had one been coming.
   await page.waitForTimeout(2000);
   await expect(dialog).toHaveCount(1);
+  expect(failures).toEqual([]);
 });
