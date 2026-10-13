@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from '@angular/router';
 import { MatIconRegistry } from '@angular/material/icon';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DetailComponent } from './detail.component';
@@ -18,9 +18,14 @@ describe('DetailComponent addresses', () => {
   let fetch: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.fn>;
 
-  function open(id: string, answer: object | undefined) {
+  /** `respond`, when given, answers each fetch instead of `answer`. */
+  function open(
+    id: string,
+    answer: object | undefined,
+    respond: (asked: string) => Observable<object | undefined> = () => of(answer)
+  ) {
     params = new BehaviorSubject(convertToParamMap({ id }));
-    fetch = vi.fn(() => of(answer));
+    fetch = vi.fn(respond);
     navigate = vi.fn(() => Promise.resolve(true));
     TestBed.configureTestingModule({
       providers: [
@@ -77,5 +82,22 @@ describe('DetailComponent addresses', () => {
   it('leaves the address alone for an object that has no stable id', () => {
     open('48887', { dbId: 48887 });
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores an answer for an address the reader has already left', () => {
+    // A slow object, and the reader moves on before it arrives: its late
+    // answer must neither show nor move the address back to it.
+    const pending = new Map<string, Subject<object>>();
+    const component = open('70486', undefined, (asked) => {
+      const answer = new Subject<object>();
+      pending.set(asked, answer);
+      return answer;
+    });
+    params.next(convertToParamMap({ id: 'R-HSA-69620' }));
+    pending.get('70486')?.next({ dbId: 70486, stId: 'R-HSA-70486' });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.obj()).toBeUndefined();
+    pending.get('R-HSA-69620')?.next({ dbId: 69620, stId: 'R-HSA-69620' });
+    expect(component.obj()).toEqual({ dbId: 69620, stId: 'R-HSA-69620' });
   });
 });

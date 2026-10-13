@@ -1,10 +1,11 @@
-import { Component, effect, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, effect, inject, OnInit, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { of } from 'rxjs';
+import { catchError, EMPTY, filter, map, of, switchMap, tap } from 'rxjs';
 
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { SidebarComponent } from '../../sidebar/sidebar.component';
@@ -58,6 +59,7 @@ import { DetailSpeciesService } from './providers/detail-species.provider';
 export class DetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
   private detailDataService = inject(DetailDataService);
   private dataState = inject(DataStateService) as unknown as DetailDataState;
   private matIconRegistry = inject(MatIconRegistry);
@@ -157,36 +159,39 @@ export class DetailComponent implements OnInit {
   ngOnInit() {
     // Subscribe (not snapshot) so navigation between entity detail pages
     // -- /content/detail/A -> /content/detail/B reuses the same component
-    // and would otherwise never re-fetch.
-    this.route.paramMap.subscribe((params) => {
-      const id = params.get('id');
-      if (!id) {
-        this.loading.set(false);
-        this.error.set(true);
-        return;
-      }
-      // The address was just moved to the stable id of the object on show
-      // (below): nothing new to fetch.
-      if (id === this.obj()?.stId) return;
-      this.loading.set(true);
-      this.error.set(false);
-      this.obj.set(undefined);
-      this.detailDataService.fetchEnhancedData<SelectableObject>(id).subscribe({
-        next: (data) => {
-          if (data) {
-            this.obj.set(data);
-            this.dataState.selectedElement.set(data);
-            this.keepStableAddress(id, data);
-          } else {
-            this.error.set(true);
-          }
-          this.loading.set(false);
-        },
-        error: () => {
+    // and would otherwise never re-fetch. switchMap drops the answer for an
+    // address the reader has already left: a slow object arriving late would
+    // otherwise replace the one on show, and move the address back to it.
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('id')),
+        // The address was just moved to the stable id of the object on show
+        // (keepStableAddress): nothing new to fetch.
+        filter((id) => !id || id !== this.obj()?.stId),
+        tap((id) => {
+          this.loading.set(!!id);
+          this.error.set(!id);
+          this.obj.set(undefined);
+        }),
+        switchMap((id) =>
+          id
+            ? this.detailDataService.fetchEnhancedData<SelectableObject>(id).pipe(
+                map((data) => ({ id, data })),
+                catchError(() => of({ id, data: undefined }))
+              )
+            : EMPTY
+        ),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(({ id, data }) => {
+        if (data) {
+          this.obj.set(data);
+          this.dataState.selectedElement.set(data);
+          this.keepStableAddress(id, data);
+        } else {
           this.error.set(true);
-          this.loading.set(false);
-        },
+        }
+        this.loading.set(false);
       });
-    });
   }
 }
