@@ -277,6 +277,7 @@ export class RouterUrlStateService extends UrlStateService {
   }
 
   override queryParams(): Params {
-    return this.route.snapshot.queryParams;
+    // A copy: the snapshot's object is the router's own.
+    return { ...this.route.snapshot.queryParams };
   }
 }

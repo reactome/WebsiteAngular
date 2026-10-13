@@ -7,6 +7,13 @@ import {
 } from '../../../../../../pathway-browser/src/app/services/url-state.service';
 import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/app/interactors/interactor-threshold';
 
+/**
+ * The state the content pages read, for the Pathway Browser components they
+ * reuse. Partial on purpose, and so unchecked: nothing makes it carry the rest
+ * of UrlStateService (settle, navigateTo, isFirstNavigation, queryParams), and
+ * nothing on these pages calls them -- their diagram is an image, not
+ * cr-diagram. Reuse a component that does, and it will need them.
+ */
 @Injectable()
 export class DetailUrlState implements Partial<UrlStateService> {
   private route = inject(ActivatedRoute);
@@ -28,9 +35,9 @@ export class DetailUrlState implements Partial<UrlStateService> {
   );
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
-  // Mirrors UrlStateService. The content pages do not draw interactors, but
-  // this class declares the same shape, so a param added there has to appear
-  // here or the build fails -- which is how this one was found.
+  // Mirrors UrlStateService. The content pages do not draw interactors, but a
+  // component they reuse read this param, and finding it missing here is how it
+  // was added.
   interactorScore = urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number');
   palette = urlParam<any>(null, 'string');
   filterViewMode = urlParam<any>(undefined, 'string');

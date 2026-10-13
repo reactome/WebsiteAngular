@@ -112,8 +112,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
-  // Optional: the embeddable diagram (projects/reactome-diagram-element) has no
-  // router -- it must never read or write its host page's address.
   private download = inject(DownloadService);
   private data = inject(DataStateService);
   private deltaSignal = inject(DeltaSignalService);

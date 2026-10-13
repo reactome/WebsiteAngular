@@ -129,7 +129,7 @@ export class SpeciesService {
   }
 
   updateQueryParams(map: OrthologousMap, pathwayId: string | undefined) {
-    const params = { ...this.state.queryParams() };
+    const params = this.state.queryParams();
     for (const [key, value] of Object.entries(params)) {
       let newValue = JSON.stringify(value);
       for (const [initial, replacement] of map) {
