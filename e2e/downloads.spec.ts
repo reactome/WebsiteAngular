@@ -81,6 +81,7 @@ function slideOf(bytes: Buffer) {
   const size = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(strFromU8(parts['ppt/presentation.xml']));
   return {
     shapes: (slide.match(/<p:sp>/g) ?? []).length,
+    groups: (slide.match(/<p:grpSp>/g) ?? []).length,
     pictures: (slide.match(/<p:pic>/g) ?? []).length,
     width: Number(size?.[1] ?? 0),
   };
@@ -214,6 +215,9 @@ test.describe('Server-rendered figures', () => {
           100
         );
         expect(slide.pictures, 'no picture of the diagram').toBe(0);
+        // And an entity or a reaction is one object to drag, not a border, a
+        // centre and a line for every segment to select one by one (#299).
+        expect(slide.groups, 'entities and reactions grouped').toBeGreaterThan(10);
       }
     });
   }
