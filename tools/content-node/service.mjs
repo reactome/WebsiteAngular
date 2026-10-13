@@ -772,9 +772,7 @@ function compact(fields) {
  * whole graph (see the person endpoints).
  */
 export function resolveId(raw) {
-  // Java's String.trim: every character up to U+0020, control characters
-  // included, and nothing above it -- a no-break space stays.
-  const trimmed = String(raw).replace(/^[\x00-\x20]+|[\x00-\x20]+$/g, '');
+  const trimmed = javaTrim(String(raw));
   const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
   if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
   if (id.startsWith('R') || id.includes(':')) return { where: 'n.stId = $id', params: { id } };
@@ -783,6 +781,18 @@ export function resolveId(raw) {
     return { where: 'n.dbId = toInteger($id)', params: { id: asciiDigits(id) } };
   }
   return { where: 'false', params: {} };
+}
+
+/**
+ * Java's String.trim: every character up to U+0020 off both ends, control
+ * characters included, and nothing above it -- a no-break space stays.
+ */
+function javaTrim(text) {
+  let start = 0;
+  let end = text.length;
+  while (start < end && text.charCodeAt(start) <= 0x20) start += 1;
+  while (end > start && text.charCodeAt(end - 1) <= 0x20) end -= 1;
+  return text.slice(start, end);
 }
 
 /**
