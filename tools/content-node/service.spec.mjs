@@ -12,7 +12,7 @@
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, endpoints, pathId, resolveId } from './service.mjs';
+import { app, endpoints, eventProjection, pathId, resolveId } from './service.mjs';
 
 let base;
 let server;
@@ -238,5 +238,58 @@ describe('pathId, the id as Spring hands it to a controller', () => {
 
   it('decodes the rest, spaces included', () => {
     expect(pathId('%20R-HSA-70486%20')).toBe(' R-HSA-70486 ');
+  });
+});
+
+describe("eventProjection, graph-core's EventProjection as Java writes it", () => {
+  // A reaction's node as the graph holds it; Java's answer for R-HSA-5672965,
+  // 13 Oct 2026, is the expected value.
+  const reaction = {
+    schemaClass: 'Reaction',
+    isInferred: false,
+    category: 'transition',
+    stIdVersion: 'R-HSA-5672965.4',
+    releaseDate: '2015-06-17',
+    displayName: 'RAS GEFs promote RAS nucleotide exchange',
+    speciesName: 'Homo sapiens',
+    stId: 'R-HSA-5672965',
+    name: ['RAS GEFs promote RAS nucleotide exchange'],
+    dbId: 5672965,
+    isInDisease: false,
+    // Not part of the projection: never written.
+    isChimeric: false,
+  };
+
+  it("writes Java's keys in Java's order", () => {
+    expect(JSON.stringify(eventProjection(reaction))).toBe(
+      '{"dbId":5672965,"displayName":"RAS GEFs promote RAS nucleotide exchange",' +
+        '"stId":"R-HSA-5672965","name":["RAS GEFs promote RAS nucleotide exchange"],' +
+        '"stIdVersion":"R-HSA-5672965.4","schemaClass":"Reaction","speciesName":"Homo sapiens",' +
+        '"releaseDate":"2015-06-17","hasDiagram":false,"hasEHLD":false,"diagramWidth":0,' +
+        '"diagramHeight":0,"category":"transition","inferred":false,"inDisease":false}'
+    );
+  });
+
+  it('puts isCanonical and definition with the field-backed properties, before inferred', () => {
+    const keys = Object.keys(eventProjection({ ...reaction, isCanonical: 'x', definition: 'y' }));
+    expect(keys.slice(-5)).toEqual([
+      'category',
+      'isCanonical',
+      'definition',
+      'inferred',
+      'inDisease',
+    ]);
+  });
+
+  it('defaults the flags and the diagram size as the projection does', () => {
+    expect(eventProjection({ dbId: 1 })).toEqual({
+      dbId: 1,
+      hasDiagram: false,
+      hasEHLD: false,
+      diagramWidth: 0,
+      diagramHeight: 0,
+      inferred: false,
+      inDisease: false,
+    });
   });
 });
