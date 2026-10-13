@@ -24,23 +24,5 @@ export default defineConfig({
     // sat in the repo without being run by anything at all.
     include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
     css: false,
-    // ngx-reactome-cytoscape-style's ESM does `import { isArray } from
-    // 'lodash'`, and lodash is CommonJS only, so vite's interop rejects the named
-    // import ("Named export 'isArray' not found") before any test touching the
-    // library can run. Inlining it makes vite transform the library and resolve
-    // the interop.
-    //
-    // The library is installed built, from ngx-reactome-base, so a local run and
-    // CI resolve the same copy. (When it was built here, a machine with dist/
-    // passed without this option and CI failed on four spec files.)
-    //
-    // diagram/cytoscape-style-interop.spec.ts imports the library directly, so
-    // this is covered by a test rather than only by whichever spec happens to
-    // pull the library in first.
-    server: {
-      deps: {
-        inline: [/reactome-cytoscape-style/],
-      },
-    },
   },
 });
