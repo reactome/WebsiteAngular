@@ -18,7 +18,7 @@ import chroma, { Color, Scale } from 'chroma-js';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
-import { Params } from '@angular/router';
+import type { Params } from '@angular/router';
 import { httpParams } from '../utils/http-params';
 import { isDefined, shouldBeScientificFormat } from './utils';
 import { Report } from 'reactome-gsa-form';

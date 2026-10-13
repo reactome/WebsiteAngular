@@ -1,14 +1,11 @@
-import { effect, inject, Injectable, signal, untracked, WritableSignal } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, NavigationExtras, Params, Router } from '@angular/router';
-import { catchError, filter, firstValueFrom, map, of, switchMap } from 'rxjs';
-import { isArray, isNumber } from 'lodash';
+import { inject, Signal, signal, WritableSignal } from '@angular/core';
+import type { NavigationExtras, Params } from '@angular/router';
+import { catchError, firstValueFrom, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
-import { PaletteName } from './analysis.service';
+import type { PaletteName } from './analysis.service';
 import type { Analysis } from '../model/analysis.model';
 import { DEFAULT_INTERACTOR_SCORE } from '../interactors/interactor-threshold';
-import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 /**
  * A legacy pathway link, as the old browser addressed one in the URL fragment.
@@ -147,12 +144,12 @@ export function urlParam<T>(
 /**
  * Every piece of Pathway Browser state, as signals.
  *
- * A factory so the embeddable diagram's in-memory state
- * (projects/reactome-diagram-element) is built from exactly these definitions:
- * two copies of this list would drift, and a param added here but not there is
- * a param the embedded diagram silently ignores.
+ * Built once per state, in UrlStateService below, so the site's address-bar
+ * state and the embeddable diagram's in-memory state are made from exactly
+ * these definitions: two copies of this list would drift, and a param added
+ * here but not there is a param the embedded diagram silently ignores.
  */
-export function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
+function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
   return {
     select: urlParam<string | null>(null, 'id', ['SEL']),
     flag: urlParam<string[]>([], 'id', ['FLG']),
@@ -205,307 +202,83 @@ export function createStateValues(oldToNewTab: ReadonlyMap<string | null, string
   };
 }
 
-type State = UrlStateService['values'];
+export type StateValues = ReturnType<typeof createStateValues>;
 
-@UntilDestroy()
-@Injectable({
-  providedIn: 'root',
-})
-export class UrlStateService implements State {
-  private route: ActivatedRoute = inject(ActivatedRoute);
-  private router: Router = inject(Router);
-  private http: HttpClient = inject(HttpClient);
+/** The old browser's tab codes, and the tabs they are now. */
+const TABS_COMPATIBILITY: [string | null, string][] = [
+  ['ST', 'details'],
+  [null, 'details'],
+  ['MT', 'molecule'],
+  ['AN', 'results'],
+  ['EX', 'expression'],
+  ['DT', 'download'],
+];
 
-  private readonly tabsCompatibility: [string | null, string][] = [
-    ['ST', 'details'],
-    [null, 'details'],
-    ['MT', 'molecule'],
-    ['AN', 'results'],
-    ['EX', 'expression'],
-    ['DT', 'download'],
-  ];
-  readonly oldToNewTab = new Map(this.tabsCompatibility);
-  readonly newToOldTab = new Map(
-    this.tabsCompatibility.map(([newTab, oldTab]) => [oldTab, newTab])
-  );
+/**
+ * The Pathway Browser's state, as everything that draws a pathway injects it.
+ *
+ * Where it is kept is up to the subclass. The site keeps it in the address bar
+ * (RouterUrlStateService, provided in src/app/app.config.ts); the embeddable
+ * diagram keeps it in memory (projects/reactome-diagram-element's MemoryState).
+ * This class imports nothing from the router -- only its types -- so the embed,
+ * which never routes, does not carry the router in its bundle (#356).
+ */
+export abstract class UrlStateService implements StateValues {
+  private readonly http = inject(HttpClient);
+
+  readonly oldToNewTab = new Map(TABS_COMPATIBILITY);
+  readonly newToOldTab = new Map(TABS_COMPATIBILITY.map(([newTab, oldTab]) => [oldTab, newTab]));
 
   readonly values = createStateValues(this.oldToNewTab);
 
-  public readonly select = this.values.select;
-  public readonly flag = this.values.flag;
-  public readonly path = this.values.path;
-  public readonly flagInteractors = this.values.flagInteractors;
-  public readonly overlay = this.values.overlay;
-  public readonly analysis = this.values.analysis;
-  public readonly analysisTab = this.values.analysisTab;
-  public readonly tab = this.values.tab;
-  public readonly significance = this.values.significance;
-  public readonly sample = this.values.sample;
-  public readonly interactorScore = this.values.interactorScore;
-  public readonly palette = this.values.palette;
-  public readonly filterViewMode = this.values.filterViewMode;
-  public readonly speciesFilter = this.values.speciesFilter;
-  public readonly resourceFilter = this.values.resourceFilter;
-  public readonly includeDisease = this.values.includeDisease;
-  public readonly includeGrouping = this.values.includeGrouping;
-  public readonly pathwayMinSizeFilter = this.values.pathwayMinSizeFilter;
-  public readonly pathwayMaxSizeFilter = this.values.pathwayMaxSizeFilter;
-  public readonly minExpressionFilter = this.values.minExpressionFilter;
-  public readonly maxExpressionFilter = this.values.maxExpressionFilter;
-  public readonly fdrFilter = this.values.fdrFilter;
-  public readonly gsaFilter = this.values.gsaFilter;
-  public readonly summariseDisease = this.values.summariseDisease;
-  public readonly example = this.values.example;
+  readonly select = this.values.select;
+  readonly flag = this.values.flag;
+  readonly path = this.values.path;
+  readonly flagInteractors = this.values.flagInteractors;
+  readonly overlay = this.values.overlay;
+  readonly analysis = this.values.analysis;
+  readonly analysisTab = this.values.analysisTab;
+  readonly tab = this.values.tab;
+  readonly significance = this.values.significance;
+  readonly sample = this.values.sample;
+  readonly interactorScore = this.values.interactorScore;
+  readonly palette = this.values.palette;
+  readonly filterViewMode = this.values.filterViewMode;
+  readonly speciesFilter = this.values.speciesFilter;
+  readonly resourceFilter = this.values.resourceFilter;
+  readonly includeDisease = this.values.includeDisease;
+  readonly includeGrouping = this.values.includeGrouping;
+  readonly pathwayMinSizeFilter = this.values.pathwayMinSizeFilter;
+  readonly pathwayMaxSizeFilter = this.values.pathwayMaxSizeFilter;
+  readonly minExpressionFilter = this.values.minExpressionFilter;
+  readonly maxExpressionFilter = this.values.maxExpressionFilter;
+  readonly fdrFilter = this.values.fdrFilter;
+  readonly gsaFilter = this.values.gsaFilter;
+  readonly summariseDisease = this.values.summariseDisease;
+  readonly example = this.values.example;
 
-  public readonly pathwayId = signal<string | undefined>(undefined);
+  readonly pathwayId: WritableSignal<string | undefined> = signal<string | undefined>(undefined);
 
-  readonly section = toSignal(this.route.fragment);
-
-  constructor() {
-    this.router.events
-      .pipe(
-        filter((event) => event instanceof NavigationEnd),
-        switchMap(() => {
-          let route = this.router.routerState.root;
-          while (route.firstChild) route = route.firstChild;
-          return route.params;
-        }),
-        map((params) => params['pathwayId'])
-      )
-      .subscribe((id) => {
-        this.pathwayId.set(id);
-      });
-
-    effect(() => {
-      // console.log('Updating patwhayId to ', this.pathwayId())
-
-      if (isContentRoute(this.router.url)) return;
-
-      void this.navigateTo(this.pathwayId() ?? null, {
-        queryParamsHandling: 'preserve',
-        preserveFragment: !this.carriesLegacyPathway(),
-      });
-    });
-
-    this.route.fragment.pipe(untilDestroyed(this)).subscribe((fragment) => {
-      if (fragment) {
-        // Convert fragments to params
-        const params: Params = {};
-        let id = undefined; // Default routing
-
-        const match = fragment.match(FRAGMENT_PATTERN);
-        if (match?.groups) {
-          if (match.groups['id']) {
-            id = match.groups['id'];
-          }
-          if (match.groups['params']) {
-            Object.assign(params, fragmentParams(match.groups['params']));
-          }
-
-          // `DIAGRAM` is the old browser's name for the pathway to open, so it is
-          // the route rather than a setting: `#DIAGRAM=9006934&PATH=162582` in the
-          // v64 announcement means the same as `#9006934&PATH=162582`. It is only
-          // ever a dbId, which the resolution below then swaps for the stable id.
-          if (!id && typeof params['DIAGRAM'] === 'string') {
-            id = params['DIAGRAM'];
-            delete params['DIAGRAM'];
-          }
-
-          // `TOOL=AT` opened the analysis tool. Rewritten into the parameter that
-          // does that now, rather than carried through as a legacy token, because
-          // a legacy token does not survive the trip: the writer replaces the
-          // whole query string as soon as any state settles, so `?tab=info`
-          // arriving first dropped `?TOOL=AT` before the reader saw it. Setting
-          // the signal instead does not work either -- the reader resets every
-          // param the URL does not mention, so it would be undone in the same
-          // turn. The URL is the source of truth, so the URL is where it goes.
-          if (params['TOOL'] === 'AT') {
-            params['analysisTab'] = 'qualitative';
-            delete params['TOOL'];
-          }
-        }
-
-        const go = (resolved: string | undefined) =>
-          void this.navigateTo(resolved ?? null, {
-            queryParamsHandling: 'merge',
-            fragment: fragment.replace(FRAGMENT_PATTERN, ''),
-            preserveFragment: false,
-            queryParams: params,
-            // Replace, do not add. Rewriting a legacy fragment into a proper
-            // route is a correction, not a step the reader took: pushing it
-            // left the old URL one Back away, and going back to it rewrote it
-            // again -- so someone who followed a link out of the news archive
-            // could not get back to the news archive.
-            replaceUrl: true,
-          });
-
-        // A legacy link may name a pathway by dbId. Navigate on it straight
-        // away -- the browser resolves one, and going first means the fragment
-        // is consumed in the same turn as an `#R-HSA-…` one, before anything
-        // else writes a history entry that still carries it.
-        //
-        // Then swap the URL for the stable id, replacing rather than pushing: a
-        // dbId is not stable across releases, so it is not a URL to leave a
-        // reader holding, but correcting it is not a step they took.
-        go(id);
-        if (id && /^\d+$/.test(id)) {
-          void this.dbIdToStId(Number(id)).then((stId) => {
-            if (stId && stId !== id) {
-              void this.navigateTo(stId, {
-                queryParamsHandling: 'preserve',
-                preserveFragment: false,
-                replaceUrl: true,
-              });
-            }
-          });
-        }
-      }
-    });
-
-    this.route.queryParams.pipe(untilDestroyed(this)).subscribe((params) => {
-      // Kept synchronous: subscribe ignores what the callback returns, so a
-      // rejection in here would go unreported.
-      void (async () => {
-        for (const mainToken in this.values) {
-          const param = this.values[mainToken as keyof State] as UrlParam<any>;
-          const tokens: string[] = [mainToken, ...(param.otherTokens || [])];
-          const token = tokens.find((token) => params[token] !== undefined);
-          if (token) {
-            const initialValue = param.initialValue;
-            let value = params[token];
-            if (value === undefined || value === null) param.set(value);
-            if (param.otherTransform && token !== mainToken) value = param.otherTransform(value);
-            else {
-              if (isArray(initialValue)) {
-                let values: any[] = value.split(';');
-                if (param.type === 'id') {
-                  const mixedValues = values.map((v) =>
-                    v.charAt(0).match(/\d/) ? parseInt(v) : v
-                  );
-                  values = await Promise.all(mixedValues.map((v) => this.ensureStId(v)));
-                }
-                if (param.type === 'number') values = values.map((v) => +v);
-                if (param.type === 'boolean') values = values.map((v) => v === 'true');
-                param.set(values);
-              } else if (param.type === 'boolean') {
-                param.set(value === 'true');
-              } else if (param.type === 'id') {
-                param.set(await this.ensureStId(value));
-              } else if (param.type === 'number') {
-                param.set(parseFloat(value));
-              } else {
-                param.set(value.replaceAll('__', ' '));
-              }
-            }
-          } else {
-            param.set(param.initialValue);
-          }
-        }
-      })().catch((error) => console.error('Could not apply URL parameters', error));
-    });
-    effect(() => {
-      const queryParams = this.currentQueryParams();
-      if (isContentRoute(this.router.url)) return;
-
-      // Settling is not a step the reader took, so it replaces rather than adds:
-      // opening a pathway wrote ?tab=info and then ?tab=details, two entries for a
-      // choice nobody made, so Back changed the tab twice before it left.
-      //
-      // Decided from the values rather than from a flag. A flag raised by
-      // settle() and read here outlives its turn whenever this does not run --
-      // the early return above, or a default that was already the current value,
-      // so no signal changed at all -- and the reader's next write, a real one,
-      // would then quietly replace their history instead of adding to it.
-      const settled = this.settledParams;
-      this.settledParams = null;
-
-      void this.navigateTo(this.pathwayId() ?? null, {
-        queryParams,
-        preserveFragment: !this.carriesLegacyPathway(),
-        replaceUrl: settled !== null && settled === JSON.stringify(queryParams),
-      });
-    });
-  }
+  /** The section of the page named in the address, if there is one. */
+  abstract readonly section: Signal<string | null | undefined>;
 
   /**
-   * Navigate to a pathway within the PathwayBrowser route context.
-   * Resolves the correct base path whether running standalone or inside the umbrella app.
-   *
-   * Router.navigate rejects when navigation fails -- a guard throwing, a
-   * resolver erroring -- and almost every caller here ignores the result, so
-   * those failures went nowhere. A rejection handler is attached here so they
-   * are always reported; the promise is still returned for the one caller that
-   * legitimately chains on navigation having finished.
+   * Make a state change the reader did not ask for: where there is a history,
+   * it does not add a step to it.
    */
-  /**
-   * Whether the URL still carries a legacy pathway reference in its fragment.
-   *
-   * Such a fragment is on its way out: it is being rewritten into a proper
-   * route. Until then the other navigations here -- writing state into the URL,
-   * following a pathway change -- must not carry it along, because every entry
-   * they carry it into is one that rewrites itself forward when the reader goes
-   * back to it. Someone who followed a link out of the news archive could not
-   * get back to the news archive: three Backs, still on the pathway.
-   */
-  private carriesLegacyPathway(): boolean {
-    return FRAGMENT_PATTERN.test(this.route.snapshot.fragment ?? '');
-  }
+  abstract settle(change: () => void): void;
 
-  /** The params settle() last wrote, so the writer can recognise its own work. */
-  private settledParams: string | null = null;
+  /** Open a pathway, or none. */
+  abstract navigateTo(pathwayId: string | null, extras?: NavigationExtras): Promise<boolean>;
 
-  /**
-   * Make a state change the reader did not ask for.
-   *
-   * The URL still has to say what is on screen -- a link has to be shareable --
-   * but writing a default nobody chose should not cost them a press of Back.
-   * Choosing a tab pushes; being given one replaces.
-   */
-  settle(change: () => void): void {
-    change();
-    // What the URL should now say. The writer replaces only if it is about to
-    // write exactly this, which is what keeps the decision out of a flag.
-    //
-    // Untracked, and that is the whole of it: settle() is called from inside an
-    // effect, so reading every param here made that effect depend on every
-    // param. Choosing a tab then re-ran the defaulting effect, which set the
-    // tab back to its default -- the reader's click did nothing at all.
-    this.settledParams = JSON.stringify(untracked(() => this.currentQueryParams()));
-  }
+  /** Whether this is the first page opened here: nothing came before it. */
+  abstract isFirstNavigation(): boolean;
 
-  /** The query params the current state should put in the URL. */
-  private currentQueryParams(): Record<string, unknown> {
-    const queryParams: Record<string, unknown> = {};
-    for (const key in this.values) {
-      const param = this.values[key as keyof State];
-      let paramValue: unknown = param();
-      if (
-        paramValue === undefined ||
-        paramValue === null ||
-        (isArray(paramValue) && paramValue.length === 0) ||
-        paramValue === param.initialValue
-      )
-        continue;
-      if (typeof paramValue === 'string') paramValue = paramValue.replaceAll(' ', '__');
-      queryParams[key] = isArray(paramValue) ? paramValue.join(';') : paramValue;
-    }
-    return queryParams;
-  }
-
-  navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
-    let route = this.router.routerState.root;
-    while (route.firstChild) route = route.firstChild;
-    const segments = pathwayId ? [pathwayId] : [];
-    const navigation = this.router.navigate(segments, {
-      relativeTo: route.parent,
-      ...extras,
-    });
-    navigation.catch((error) => console.error('Navigation failed', segments, error));
-    return navigation;
-  }
+  /** The query parameters in the address now; none where there is no address. */
+  abstract queryParams(): Params;
 
   async ensureStId(id: string | number): Promise<string> {
-    return isNumber(id) ? this.dbIdToStId(id) : id;
+    return typeof id === 'number' ? this.dbIdToStId(id) : id;
   }
 
   /**

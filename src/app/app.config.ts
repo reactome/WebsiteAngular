@@ -15,6 +15,8 @@ import {
 import { environment } from '../../projects/pathway-browser/src/environments/environment';
 
 import { routes } from './app.routes';
+import { UrlStateService } from '../../projects/pathway-browser/src/app/services/url-state.service';
+import { RouterUrlStateService } from '../../projects/pathway-browser/src/app/services/router-url-state.service';
 
 /**
  * Analytics, when the deployment has a property to report to.
@@ -40,6 +42,10 @@ export const appConfig: ApplicationConfig = {
     // template event bindings and explicit markForCheck instead.
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    // The Pathway Browser's state lives in the address bar on the site. The
+    // token is router-free so the embeddable diagram can keep it in memory
+    // without carrying the router (#356).
+    { provide: UrlStateService, useClass: RouterUrlStateService },
     provideHttpClient(withFetch()),
     // Loaded on demand rather than eagerly: the only animations in the app
     // are in the lazily routed pathway browser, so the animations engine has
