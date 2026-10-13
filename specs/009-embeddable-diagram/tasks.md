@@ -136,6 +136,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - that it's under a third of the `reactome` initial bundle (SC-004);
   - that the budget error fires if the budget is set below the actual size (red proof for the budget).
   - **Result**: 1.57 MB raw / 394 KB gzipped, about 37% of the site: SC-004 is **missed**. Budget set at warn 1.65 MB / error 1.8 MB; slimming is #356.
+  - **Since (#356, 13 Oct 2026)**: the router, lodash, vectorious and the citation dialog are out of the initial load: 1.36 MB initial. SC-004 now names an absolute budget (warn 1.4 MB / error 1.45 MB), which the build enforces.
 - [x] T020 [US1] Add a CI build to `.github/workflows/tests.yml` (unit job, after `build:libs`): `npx ng build reactome-diagram-element --configuration production`. Add the same build as a step in `scripts/preflight.sh`, in full mode, to a temp output path.
   - **Red**: introduce a type error in `EL/diagram-element.component.ts` on a throwaway commit, and show preflight and CI both fail. Revert.
 - [x] T021 [US1] Serve on beta:
