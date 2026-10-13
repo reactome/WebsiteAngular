@@ -49,7 +49,6 @@ import { AnalysisService } from '../services/analysis.service';
 import { Graph } from '../model/graph.model';
 import { average, isDefined, isPathwayWithDiagram, isReferenceEntityStId } from '../services/utils';
 import type { Analysis } from '../model/analysis.model';
-import { Router } from '@angular/router';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
@@ -115,7 +114,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private event = inject(EventService);
   // Optional: the embeddable diagram (projects/reactome-diagram-element) has no
   // router -- it must never read or write its host page's address.
-  private router = inject(Router, { optional: true });
   private download = inject(DownloadService);
   private data = inject(DataStateService);
   private deltaSignal = inject(DeltaSignalService);
@@ -186,7 +184,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private readonly hierarchyHover = inject(HierarchyHoverService);
 
   constructor() {
-    this.isInitialLoad = Boolean(!this.router?.currentNavigation()?.previousNavigation);
+    this.isInitialLoad = this.state.isFirstNavigation();
     effect(() => this.pathwayId() && this.loadDiagram());
     // A reaction or sub-pathway pointed at in the hierarchy stands out here,
     // as the old browser drew it in yellow; nothing reached the diagram before.
