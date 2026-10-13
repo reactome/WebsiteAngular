@@ -39,6 +39,7 @@
               @for (item of group.items; track item) {
                 <div class="legend-item">
                   <span>{{ item.name }}</span>
+                  <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- icons from the figure host, each its own shape; nothing here knows their size -->
                   <img [src]="item.src" [alt]="item.alt" />
                 </div>
               }

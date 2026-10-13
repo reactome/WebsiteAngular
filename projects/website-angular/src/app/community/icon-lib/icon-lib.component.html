@@ -96,6 +96,7 @@
         @for (icon of icons; track icon.stId) {
           <button class="icon-card" (click)="openDetail(icon)">
             <div class="icon-preview">
+              <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
               <img
                 [src]="iconSvgUrl(icon)"
                 [alt]="icon.iconName || icon.name"
@@ -104,6 +105,7 @@
                 width="250"
                 height="auto"
               />
+              <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
             </div>
             <span class="icon-name">{{ icon.iconName || icon.name }}</span>
           </button>
@@ -144,11 +146,13 @@
       @if (!detailLoading && selectedIcon) {
         <div class="icon-detail">
           <div class="detail-preview">
+            <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
             <img
               [src]="iconSvgUrl(selectedIcon)"
               [alt]="selectedIcon.iconName || selectedIcon.name"
               (error)="onImgError($event)"
             />
+            <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
           </div>
 
           <div class="detail-info">

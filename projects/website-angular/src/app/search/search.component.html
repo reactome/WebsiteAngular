@@ -533,6 +533,7 @@ NOTE: This is an automatically generated message.
                             </div>
                             @if (entry.exactType === 'Icon') {
                               <div class="icon-preview">
+                                <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
                                 <img
                                   [src]="iconSvgUrl(entry)"
                                   [alt]="entry.stId"
@@ -541,6 +542,7 @@ NOTE: This is an automatically generated message.
                                   width="100"
                                   height="auto"
                                 />
+                                <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
                               </div>
                             }
                           </div>

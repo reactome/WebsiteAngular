@@ -95,6 +95,7 @@
           <!-- Press and drag to move the diagram: people were using the
                thumbnail to navigate and finding it inert (#135). -->
           <div class="thumbnail" role="presentation" (pointerdown)="onThumbnailPointerDown($event)">
+            <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- a data URL drawn here from the diagram, which ngSrc refuses -->
             <img [src]="thumbnailImg()" #thumbnail (load)="thumbnailLoaded()" draggable="false" />
             <svg class="overlay" [attr.viewBox]="thumbnailViewBox()">
               <mask id="viewportMask" mask-type="luminance">

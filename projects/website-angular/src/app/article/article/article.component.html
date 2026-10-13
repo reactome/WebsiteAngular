@@ -30,6 +30,7 @@
           </header>
           <div class="article-body">
             @if (article.image) {
+              <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- an article's header image can be any size, and staging measures only the body's -->
               <img class="article-image" [src]="article.image" alt="Article Image" class="article-image" />
             }
             <div class="article-text" [innerHTML]="renderedContent"></div>

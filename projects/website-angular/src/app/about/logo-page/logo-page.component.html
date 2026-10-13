@@ -36,7 +36,13 @@
             <div class="logo-container">
               @for (variant of group.variants; track variant.file) {
                 <div class="logo-item" [class.negative]="variant.negative">
-                  <img [class]="group.id" [src]="dir + variant.file + '.svg'" [alt]="variant.alt" />
+                  <img
+                    [class]="group.id"
+                    [ngSrc]="dir + variant.file + '.svg'"
+                    [width]="group.svgSize[0]"
+                    [height]="group.svgSize[1]"
+                    [alt]="variant.alt"
+                  />
                   <div class="logo-options">
                     <button
                       type="button"

@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
@@ -13,6 +14,8 @@ interface LogoGroup {
    */
   sizes: { label: string; mm: number; px: string }[];
   variants: { file: string; alt: string; negative: boolean }[];
+  /** The SVGs' own width and height, so their box is known before they load. */
+  svgSize: [number, number];
 }
 
 /**
@@ -30,7 +33,7 @@ interface LogoGroup {
  */
 @Component({
   selector: 'app-logo-page',
-  imports: [MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, PageLayoutComponent],
+  imports: [MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, PageLayoutComponent, NgOptimizedImage],
   templateUrl: './logo-page.component.html',
   styleUrl: './logo-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +50,7 @@ export class LogoPageComponent {
         { label: 'Medium', mm: 50, px: '1418 × 330' },
         { label: 'Large', mm: 100, px: '2835 × 659' },
       ],
+      svgSize: [709, 165],
       variants: [
         {
           file: 'Reactome_Imagotype_Positive',
@@ -68,6 +72,7 @@ export class LogoPageComponent {
         { label: 'Medium', mm: 25, px: '410 × 410' },
         { label: 'Large', mm: 50, px: '820 × 820' },
       ],
+      svgSize: [164, 164],
       variants: [
         { file: 'Reactome_Isotype_Positive', alt: 'Reactome isotype, positive', negative: false },
         { file: 'Reactome_Isotype_Negative', alt: 'Reactome isotype, negative', negative: true },
