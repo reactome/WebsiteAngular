@@ -13,7 +13,7 @@ import {
 import { Graph } from '../model/graph.model';
 import { Style, Types } from 'ngx-reactome-cytoscape-style';
 import legend from '../../assets/json/legend.json';
-import { array } from 'vectorious';
+import { absoluteToRelative, RelativePosition } from './edge-geometry';
 
 import cytoscape from 'cytoscape';
 import cytoscapeFcose, { FcoseLayoutOptions } from 'cytoscape-fcose';
@@ -25,8 +25,6 @@ type ReactionDefinition = Types.ReactionDefinition;
 type EdgeTypeDefinition = Types.EdgeTypeDefinition;
 
 cytoscape.use(cytoscapeFcose);
-
-type RelativePosition = { distances: number[]; weights: number[] };
 
 const posToStr = (edge: Edge, pos: Position) => `${edge.id}-${pos.x},${pos.y}`;
 
@@ -688,7 +686,7 @@ export class DiagramService {
         if (connector.type === 'CATALYST' && end) to = scale(end);
 
         // points = addRoundness(from, to, points);
-        const relatives = this.absoluteToRelative(from, to, points);
+        const relatives = absoluteToRelative(from, to, points);
 
         const classes = [...this.edgeTypeMap.get(connector.type)!];
         if (reaction.isDisease) classes.push('disease');
@@ -794,7 +792,7 @@ export class DiagramService {
         const to = points.pop() ?? targetP;
 
         // points = addRoundness(from, to, points);
-        const relatives = this.absoluteToRelative(from, to, points);
+        const relatives = absoluteToRelative(from, to, points);
         const relativeSegments = this.getRelativeSegmentsData(relatives);
 
         const classes = [...this.linkClassMap.get(link.renderableClass)!];
@@ -993,48 +991,6 @@ export class DiagramService {
       weights: weights.join(' '),
       distances: distances.join(' '),
     };
-  }
-
-  /**
-   * Use Matrix power to convert points from an absolute coordinate system to an edge relative system
-   *
-   * Visually explained by https://youtu.be/kYB8IZa5AuE?si=vJKi-MUv2dCRQ5oA<br>
-   * Short version ==> https://math.stackexchange.com/q/1855051/683621
-   * @param source Position position of the edge source:  {x:number, y:number}
-   * @param target Position position of the edge target:  {x:number, y:number}
-   * @param toConvert Array of Position to convert to the edge-relative system
-   * @return The points converted to relative coordinates {distances: number[], weights: number[]}
-   */
-  private absoluteToRelative(
-    source: Position,
-    target: Position,
-    toConvert: Position[]
-  ): RelativePosition {
-    const relatives: RelativePosition = { distances: [], weights: [] };
-    if (toConvert.length === 0) return relatives;
-
-    if (!isFinitePoint(source) || !isFinitePoint(target) || equal(source, target)) return relatives;
-
-    const mainVector = array([target.x - source.x, target.y - source.y]); // Edge vector
-    if (mainVector.x === 0 && mainVector.y === 0) return relatives;
-    const orthoVector = array([-mainVector.y, mainVector.x]) // Perpendicular vector
-      .normalize(); //Normalized to have the distance expressed in pixels https://math.stackexchange.com/a/413235/683621
-    const transform = array([
-      [mainVector.x, mainVector.y],
-      [orthoVector.x, orthoVector.y],
-    ]).inv(); // Should always be invertible if the ortho vector is indeed perpendicular
-
-    for (const coord of toConvert) {
-      if (!isFinitePoint(coord)) continue;
-      const absolute = array([[coord.x - source.x, coord.y - source.y]]);
-      const relative = absolute.multiply(transform);
-      const weight = relative.get(0, 0);
-      const distance = relative.get(0, 1);
-      if (!Number.isFinite(weight) || !Number.isFinite(distance)) continue;
-      relatives.weights.push(weight);
-      relatives.distances.push(distance);
-    }
-    return relatives;
   }
 
   public randomNetwork(): Observable<cytoscape.ElementsDefinition> {
