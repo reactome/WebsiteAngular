@@ -7,7 +7,7 @@ category: "documentation"
 
 The Pathway Browser is the primary means of viewing and interacting with pathways in Reactome.
 
-See our Youtube Video explaining [navigating the Pathway Browser](<https://youtu.be/zfdGmFnsvIU>) for more information. The Pathway Browser also has a short tour of its own: the play button in its top right corner.
+See our Youtube Video explaining [navigating the Pathway Browser](<https://youtu.be/zfdGmFnsvIU>) for more information. The Pathway Browser's Tour button, in its top right corner, plays the same walkthrough, recorded on the former Pathway Browser.
 
 The Pathway Browser includes tools for analysing datasets and exploring pathways. These tools allow several types of analysis:
 
@@ -39,7 +39,7 @@ Features of the Pathway Browser are numbered in the picture below.
 5. **Analyze** – opens the analysis tools, where you can upload your own data. See [Reactome Analysis Tools](</documentation/userguide/analysis>).
 6. **Compare** – for a disease pathway, or a normal pathway with disease variants, shows the normal and the disease pathway side by side.
 7. **Title** – the name of the pathway on screen.
-8. **Tour** – plays a short video tour of the Pathway Browser.
+8. **Tour** – plays a video walkthrough of the Pathway Browser, recorded on the former version.
 9. **Layout** – shows or hides the Event Hierarchy and Details panels, or expands the diagram to fill the window.
 10. **Light and dark** – switches between a light and a dark colour scheme.
 11. **Cite us** – how to cite Reactome, and the pathway on screen.
@@ -47,7 +47,7 @@ Features of the Pathway Browser are numbered in the picture below.
 13. **Zoom and move** – the slider zooms in and out, the arrows move the diagram, and the centre button fits the whole diagram to the panel. You can also drag the diagram, and use your mouse scroll wheel or trackpad to zoom.
 14. **Thumbnail** – an overview of the whole diagram, with the region on screen marked. Drag in it to move around the diagram.
 15. **Legend** – explains the shapes and lines used in diagrams. See [Pathway Diagrams](#pathway-diagrams) below.
-16. **Details panel** – details of what is selected, in tabs: **Details** (a description, literature references and more), **Molecule** (the molecules involved), **Results** and **Expression** (when an analysis is shown), **Info** (help on the view on screen) and **Download** (the diagram and its data in several formats). The content depends on the type of object selected, i.e. pathway, reaction, complex, set, protein or small molecule (see [The Details panel](</documentation/userguide/details-panel>)).
+16. **Details panel** – details of what is selected, in tabs: **Details** (a description, literature references and more), **Molecule** (the molecules involved), **Results** (the results of an analysis, when one is shown), **Expression** (tissue expression from the Gene Expression Atlas), **Info** (help on the view on screen) and **Download** (the diagram and its data in several formats). The content depends on the type of object selected, i.e. pathway, reaction, complex, set, protein or small molecule (see [The Details panel](</documentation/userguide/details-panel>)).
 
 ## <a id="event-hierarchy">Event Hierarchy</a>
 
@@ -117,19 +117,19 @@ In the Event Hierarchy panel, pathways that have an enhanced high-level diagram 
 
 ![An enhanced high-level diagram: Hemostasis](/uploads/documentation/userguide/pathway-browser/enhanced-high-level-diagram.png)
 
-Within a pathway diagram, other pathways are shown as boxes with a pathway icon. Selecting one has the same result as selecting a region of an enhanced high-level diagram as described above. The Legend distinguishes **subpathways**, children of the same parent pathway, from **interacting pathways**, children of a different parent.
+Within a pathway diagram, other pathways are shown as boxes with a pathway icon. Selecting one has the same result as selecting a region of an enhanced high-level diagram as described above. The Legend distinguishes **subpathways**, which are part of the pathway on screen, from **interacting pathways**, which are elsewhere in the hierarchy but connected to this one.
 
 ### **Subpathway Shading**
 
-When a Pathway Diagram contains subpathways, the area containing each subpathway is shaded in a colour of its own and labelled with the subpathway name, to help locate it in the larger diagram. Below is the diagram for Signaling by ERBB4. The four subpathways are represented as four shaded areas.
+When a Pathway Diagram contains subpathways, the reactions of each subpathway are highlighted with a band of colour of its own and labelled with the subpathway name, to help locate it in the larger diagram. Below is the diagram for Signaling by ERBB4. Its four subpathways are shown in four colours.
 
-![Signaling by ERBB4, with its four subpathways shaded](/uploads/documentation/userguide/pathway-browser/subpathway-shading.png)
+![Signaling by ERBB4, with its four subpathways coloured](/uploads/documentation/userguide/pathway-browser/subpathway-shading.png)
 
 ## <a id="pathway-diagram-zoom">**Pathway Diagram zoom detail level**</a>
 
-The pathway diagram shows different levels of detail, depending on the zoom level. When zoomed out, as above, regions corresponding to subpathways are shaded and labelled, and trivial molecules, such as water and ATP, are not shown. As you zoom in, the subpathway shading fades away, and the trivial molecules and, when interactors are shown, the badges marking proteins that have known interactors fade into view:
+The pathway diagram shows different levels of detail, depending on the zoom level. When zoomed out, as above, subpathways are coloured and labelled, and trivial molecules, such as water and ATP, are not shown. As you zoom in, the subpathway colouring fades away and the trivial molecules fade into view; when interactors are shown, the badges marking proteins that have known interactors appear too:
 
-![Zoomed in: subpathway shading gone, small molecules shown](/uploads/documentation/userguide/pathway-browser/zoom-2-small-molecules.png)
+![Zoomed in: subpathway colouring gone, small molecules shown](/uploads/documentation/userguide/pathway-browser/zoom-2-small-molecules.png)
 
 Zoomed in further, proteins and small molecules show their structures, if available:
 
@@ -141,7 +141,7 @@ The Pathway Diagram, Event Hierarchy and Details panels are interactively connec
 
 ![Hovering over a subpathway in the Event Hierarchy highlights it in the diagram](/uploads/documentation/userguide/pathway-browser/subpathway-selection.png)
 
-Similarly, selecting a reaction in the Event Hierarchy highlights that reaction in the pathway diagram and updates the Details panel to show details of the reaction. If the reaction is not in the visible region of the diagram, the view will re-centre and zoom to show it.
+Similarly, selecting a reaction in the Event Hierarchy highlights that reaction in the pathway diagram and updates the Details panel to show details of the reaction. The view re-centres and zooms to show it.
 
 ### **Getting Started**
 
