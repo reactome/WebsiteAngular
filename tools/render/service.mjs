@@ -91,7 +91,10 @@ const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // v9: `layout=reaction` had not reached the page since #277, so every reaction
 // figure cached under v8 is the pathway diagram around it, filed under the
 // reaction's key. A correct render must not be answered from that.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v9';
+// v10: a PowerPoint groups each entity's and each reaction's shapes (#299, in
+// #442), so every .pptx cached under v9 is the ungrouped slide curators could
+// not drag apart.
+const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v10';
 const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
