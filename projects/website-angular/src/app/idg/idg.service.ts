@@ -230,13 +230,12 @@ export class IdgService {
             const id = data['id'];
             const weightedTDL = data['weightedTDL'];
             if (typeof id !== 'string' || typeof weightedTDL !== 'number') continue;
+            const colour = data['weightedTDLColorHex'];
+            const genes = data['geneNumber'];
             levels[id] = {
               weightedTDL,
-              colour:
-                typeof data['weightedTDLColorHex'] === 'string'
-                  ? data['weightedTDLColorHex']
-                  : undefined,
-              genes: typeof data['geneNumber'] === 'number' ? data['geneNumber'] : undefined,
+              ...(typeof colour === 'string' && { colour }),
+              ...(typeof genes === 'number' && { genes }),
             };
           }
           return levels;
@@ -331,7 +330,7 @@ export class IdgService {
 
     return combineLatest([loaded(detail), loaded(ancestors)]).pipe(
       map(([summation, hierarchy]) => ({
-        summation: summation?.value,
+        ...(summation?.value !== undefined && { summation: summation.value }),
         hierarchy: hierarchy?.value ?? [],
         failed: { summation: !summation, hierarchy: !hierarchy },
       }))

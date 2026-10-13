@@ -123,12 +123,13 @@ export class ReleaseCalendarComponent implements OnInit {
 
       if (isNaN(version) || !monthName || isNaN(year)) continue;
 
+      const announcement = announcements.get(version);
       releases.push({
         version,
         month,
         year,
         label: `${monthName} ${year}`,
-        announcement: announcements.get(version),
+        ...(announcement !== undefined && { announcement }),
       });
     }
 

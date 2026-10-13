@@ -17,7 +17,7 @@ export class MethodParameter implements ParameterJSON, Parameter {
   display_name: string;
   scope: Scope;
   type: ParameterType;
-  values: string[] | undefined;
+  values?: string[];
   name: string;
   value: any;
 
@@ -26,7 +26,7 @@ export class MethodParameter implements ParameterJSON, Parameter {
     this.description = definition.description;
     this.scope = definition.scope;
     this.type = definition.type;
-    this.values = definition.values;
+    if (definition.values) this.values = definition.values;
     this.name = definition.name;
 
     switch (definition.type) {

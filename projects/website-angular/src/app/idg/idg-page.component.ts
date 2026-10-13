@@ -272,11 +272,7 @@ export class IdgPageComponent {
       // Waiting for the scores means the threshold is the data's, not a guess.
       return this.scores.hasValue() ? { term, score: this.threshold() } : undefined;
     },
-    stream: ({ params }) =>
-      this.idg.enrichedPathways(params.term, {
-        datasets: 'datasets' in params ? params.datasets : undefined,
-        score: 'score' in params ? params.score : undefined,
-      }),
+    stream: ({ params }) => this.idg.enrichedPathways(params.term, params),
   });
 
   /**
@@ -296,11 +292,7 @@ export class IdgPageComponent {
       }
       return this.scores.hasValue() ? { term, score: this.threshold() } : undefined;
     },
-    stream: ({ params }) =>
-      this.idg.druggability(params.term, {
-        datasets: 'datasets' in params ? params.datasets : undefined,
-        score: 'score' in params ? params.score : undefined,
-      }),
+    stream: ({ params }) => this.idg.druggability(params.term, params),
   });
 
   /**
@@ -431,7 +423,10 @@ export class IdgPageComponent {
           (!this.leavesOnly() || pathway.bottomLevel) &&
           (!this.significantOnly() || pathway.fdr <= 0.05)
       )
-      .map((pathway) => ({ ...pathway, tdl: levels[pathway.stId] }));
+      .map((pathway) => {
+        const tdl = levels[pathway.stId];
+        return tdl ? { ...pathway, tdl } : pathway;
+      });
   });
 
   readonly pathways = computed(() => {

@@ -303,12 +303,17 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
   ),
 
   on(datasetActions.resetSummaryParameters, (state, { id }) =>
-    helper.update(id, state, (dataset) => ({
-      summary: {
-        ...dataset.summary!,
-        parameters: dataset.summary!.parameters?.map((p) => ({ ...p, value: p.default })),
-      },
-    }))
+    helper.update(id, state, (dataset) => {
+      const summary = dataset.summary!;
+      return {
+        summary: {
+          ...summary,
+          ...(summary.parameters && {
+            parameters: summary.parameters.map((p) => ({ ...p, value: p.default })),
+          }),
+        },
+      };
+    })
   )
 );
 

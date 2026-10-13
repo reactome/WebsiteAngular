@@ -68,7 +68,7 @@ export class SearchComponent implements OnInit {
   search() {
     this.store.dispatch(
       searchResultActions.search({
-        species: this.searchForm.value.species,
+        species: this.searchForm.value.species ?? null,
         keywords: this.searchForm.value.keywords as string,
       })
     );

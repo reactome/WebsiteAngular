@@ -19,11 +19,12 @@ function mapDropdownLinks(raw: any): Record<string, NavLink> | undefined {
   Object.entries(raw).forEach(([key, value]: [string, any]) => {
     if (value && typeof value === 'object') {
       const external = value.external || false;
+      const dropdownLinks = mapDropdownLinks(value['dropdown-links']);
       mapped[key] = {
         label: value.label || '',
         link: resolveLink(value.link || '', external),
         external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
+        ...(dropdownLinks && { dropdownLinks }),
       };
     }
   });
@@ -37,12 +38,13 @@ export function mapNavOptions(raw: Record<string, any>): Record<string, NavOptio
   Object.entries(raw).forEach(([key, value]: [string, any]) => {
     if (value && typeof value === 'object') {
       const external = value.external || false;
+      const dropdownLinks = mapDropdownLinks(value['dropdown-links']);
       mapped[key] = {
         label: value.label || '',
         link: resolveLink(value.link || '', external),
         icon: value.icon,
         external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
+        ...(dropdownLinks && { dropdownLinks }),
       };
     }
   });

@@ -10,6 +10,7 @@ import stripFirstH from '../../../utils/stripFirstH';
 import { marked } from 'marked';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
+import { articleIndexItem } from '../../../utils/articleIndexItem';
 
 @Component({
   selector: 'app-article-page',
@@ -72,14 +73,7 @@ export class ArticlePageComponent implements OnInit {
         // Callback kept synchronous: an async one hands a promise to code
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
-          this.articles = result.map((item: ArticleIndexItem) => ({
-            title: item.title,
-            date: new Date(item.date),
-            author: item.author,
-            tags: item.tags || [],
-            slug: item.slug,
-            excerpt: item.excerpt,
-          }));
+          this.articles = result.map(articleIndexItem);
 
           // Awaited as a batch: previously these were started and abandoned,
           // so loading flipped to false while the excerpts were still raw

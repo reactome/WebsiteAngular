@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import formatDate from '../../../utils/formatDate';
 import { ContentService } from '../../../services/content.service';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
+import { articleIndexItem } from '../../../utils/articleIndexItem';
 
 @Component({
   selector: 'app-home-latest-news',
@@ -75,14 +76,7 @@ export class HomeLatestNewsComponent implements OnInit {
     // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getLatestArticles('about/news', 10).subscribe({
       next: (result) => {
-        this.newsList = result.map((item: ArticleIndexItem) => ({
-          title: item.title,
-          date: new Date(item.date),
-          author: item.author,
-          tags: item.tags || [],
-          slug: item.slug,
-          excerpt: item.excerpt,
-        }));
+        this.newsList = result.map(articleIndexItem);
         this.loading = false;
         this.cdr.markForCheck();
       },
