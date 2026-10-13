@@ -22,7 +22,7 @@ export default defineConfig({
     // tools/ too, and .mjs as well as .ts: the render service and its
     // exporters are plain modules, and tools/svg-export-harness/harness.spec.mjs
     // sat in the repo without being run by anything at all.
-    include: ['{src,projects,tools}/**/*.spec.{ts,mjs}'],
+    include: ['{src,projects,tools,deploy}/**/*.spec.{ts,mjs}'],
     css: false,
   },
 });
