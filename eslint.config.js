@@ -166,6 +166,11 @@ module.exports = tseslint.config(
       // A <button> with no type submits its form. Most here are outside forms,
       // where it does nothing, so warned and held rather than required.
       '@angular-eslint/template/button-has-type': 'warn',
+      // NgOptimizedImage (ngSrc) reserves an image's box before it loads, lazy-
+      // loads by default, and takes a priority hint (#338). An <img> that
+      // cannot use it -- a data URL, a src swapped on error, a size nothing here
+      // knows -- says why in a disable comment where it stands.
+      '@angular-eslint/template/prefer-ngsrc': 'error',
     },
   },
   {

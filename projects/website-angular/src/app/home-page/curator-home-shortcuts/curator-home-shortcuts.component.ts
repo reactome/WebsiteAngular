@@ -1,4 +1,5 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
+import { NgOptimizedImage } from '@angular/common';
 import { Component, inject, input } from '@angular/core';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { ButtonComponent } from '../../reactome-components/button/button.component';
@@ -7,7 +8,7 @@ import { environment } from '../../../../../pathway-browser/src/environments/env
 
 @Component({
   selector: 'app-curator-home-shortcuts',
-  imports: [CarouselComponent, ButtonComponent, MatIcon],
+  imports: [CarouselComponent, ButtonComponent, MatIcon, NgOptimizedImage],
   templateUrl: './curator-home-shortcuts.component.html',
   styleUrl: './curator-home-shortcuts.component.scss',
 })

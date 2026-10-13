@@ -92,6 +92,7 @@
     @for (f of figures(); track f.url) {
       @let expanded = figure.expanded() === f;
       <div class="icon-container figure" (click)="figure.toggle(f)" [class.expanded]="expanded">
+        <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- its src is swapped to our origin on error, and a figure can be any size -->
         <img class="icon" [src]="figure.src(f)" [alt]="f.displayName" (error)="figure.fallback($event, f)" />
       </div>
     }
@@ -101,6 +102,7 @@
     <div class="row summation">
       <div class="label-container">Figure</div>
       <div class="composition-container flex-grow">
+        <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- its src is swapped to our origin on error, and a figure can be any size -->
         <img
           class="icon figure expanded"
           [src]="figure.src(f)"
@@ -108,6 +110,7 @@
           [alt]="f.displayName"
           (click)="figure.toggle(f)"
         />
+        <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
       </div>
     </div>
   }

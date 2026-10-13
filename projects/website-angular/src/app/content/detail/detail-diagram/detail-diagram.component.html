@@ -1,5 +1,6 @@
 @if (diagramUrl(); as src) {
   <figure class="detail-diagram">
+    <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- its src is swapped on error, and a diagram can be any size -->
     <img class="diagram-img" [src]="src" [alt]="alt()" loading="lazy" (error)="fallback($event)" />
   </figure>
 }
