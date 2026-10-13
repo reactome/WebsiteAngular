@@ -116,6 +116,9 @@ module.exports = {
   // against 12KB for the whole object). Only this one attribute of Java's
   // /data/query/{id}/{attributeName} is ported, so the pattern names it.
   '^/ContentService/data/query/[^/?]+/stId(\\?|$)': contentNode,
+  // Every route from an event up to a top-level pathway; the Pathway Browser
+  // asks on every pathway it opens.
+  '^/ContentService/data/event/[^/?]+/ancestors(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),

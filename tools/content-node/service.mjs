@@ -614,6 +614,53 @@ export const endpoints = [
       return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
     },
   },
+  {
+    path: '/ContentService/data/event/{id}/ancestors',
+    // A reaction reached by two routes, so the comparison covers more than one path.
+    sample: 'R-HSA-5672965',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/event\/[^/]+\/ancestors: \.url: /],
+    /**
+     * Every route from an event up to a top-level pathway, each as a list that
+     * starts at the event itself. A top-level pathway is its own single route.
+     *
+     * The Pathway Browser asks for this on every pathway it opens, to place it
+     * in the hierarchy and to find a diagram for a pathway that has none.
+     *
+     * Java's query, kept: one match for "is a top-level pathway", one for the
+     * paths up, joined by UNION, which also drops repeated routes. The id is
+     * resolved first on the indexed DatabaseObject properties (see resolveId)
+     * rather than as `:Event{stId}`, and the labels checked after.
+     *
+     * The fields are graph-core's EventProjection, in the order Jackson writes
+     * it: field-backed properties in declaration order, then `inferred` and
+     * `inDisease`, whose getters do not match their `is...` fields. Absent
+     * values are omitted, except the ones the projection defaults: false for
+     * the flags, 0 for the diagram size.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const { where, params } = resolveId(raw);
+      const rows = await read(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         WITH n LIMIT 1
+         MATCH (n:TopLevelPathway)
+         RETURN [n] AS nodes
+         UNION
+         MATCH (n:DatabaseObject) WHERE ${where}
+         WITH n LIMIT 1
+         MATCH route = (n:Event)<-[:hasEvent*]-(:TopLevelPathway)
+         RETURN nodes(route) AS nodes`,
+        params
+      );
+      if (rows.length === 0) return notFound(request, `No ancestors found for given event: ${raw}`);
+      return {
+        status: 200,
+        body: rows.map((row) => row.nodes.map(eventProjection)),
+        type: 'application/json',
+      };
+    },
+  },
 ];
 
 /**
@@ -874,6 +921,40 @@ function only(source, keys) {
     if (source[key] !== undefined && source[key] !== null) out[key] = source[key];
   }
   return out;
+}
+
+/**
+ * An event as graph-core's EventProjection, written as Java writes it.
+ *
+ * Jackson's order: properties backed by a field of the same name, in the order
+ * the fields are declared, then `inferred` and `inDisease`, whose getters do not
+ * match their `isInferred` / `isInDisease` fields. Absent values are omitted,
+ * except the ones the projection defaults: false for the flags, 0 for the
+ * diagram size -- which is why a reaction says `"hasDiagram":false`.
+ */
+export function eventProjection(node) {
+  return {
+    ...only(node, [
+      'dbId',
+      'displayName',
+      'stId',
+      'name',
+      'stIdVersion',
+      'oldStId',
+      'schemaClass',
+      'doi',
+      'speciesName',
+      'releaseDate',
+      'releaseStatus',
+    ]),
+    hasDiagram: node.hasDiagram ?? false,
+    hasEHLD: node.hasEHLD ?? false,
+    diagramWidth: node.diagramWidth ?? 0,
+    diagramHeight: node.diagramHeight ?? 0,
+    ...only(node, ['category', 'isCanonical', 'definition']),
+    inferred: node.isInferred ?? false,
+    inDisease: node.isInDisease ?? false,
+  };
 }
 
 /**
