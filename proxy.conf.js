@@ -49,7 +49,8 @@ const apiPage = (context) => [
   },
 ];
 
-const personList = {
+/** The node content service (tools/content-node), for the paths it answers. */
+const contentNode = {
   target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
   secure: false,
   changeOrigin: true,
@@ -110,7 +111,11 @@ module.exports = {
   // wins -- so under `ng serve` these went to Java (#318). A `^` key stays
   // where it is written. It is matched against the path and query, as Vite
   // does; serve-prod.js reads it the same way. Same pattern as nginx's.
-  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)(\\?|$)': personList,
+  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)(\\?|$)': contentNode,
+  // An object's stable id by any id Java accepts (13 bytes
+  // against 12KB for the whole object). Only this one attribute of Java's
+  // /data/query/{id}/{attributeName} is ported, so the pattern names it.
+  '^/ContentService/data/query/[^/?]+/stId(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),

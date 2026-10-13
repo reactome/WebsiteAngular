@@ -12,7 +12,7 @@
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, endpoints } from './service.mjs';
+import { app, endpoints, pathId, resolveId } from './service.mjs';
 
 let base;
 let server;
@@ -191,4 +191,52 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe('resolveId, as graph-core reads an id', () => {
+  // Each form measured against Java's /data/query/{id}/stId, 13 Oct 2026.
+  const cases = [
+    ['70486', 'n.dbId = toInteger($id)', '70486'],
+    ['0070486', 'n.dbId = toInteger($id)', '0070486'],
+    ['70486.3', 'n.dbId = toInteger($id)', '70486'],
+    ['R-HSA-70486', 'n.stId = $id', 'R-HSA-70486'],
+    ['R-HSA-70486.4', 'n.stId = $id', 'R-HSA-70486'],
+    [' R-HSA-70486 ', 'n.stId = $id', 'R-HSA-70486'],
+    ['REACT_1081.3', 'n.oldStId = $id', 'REACT_1081'],
+    // A reference id keeps its dot: only ids without ':' are cut.
+    ['UniProt:P04637.2', 'n.stId = $id', 'UniProt:P04637.2'],
+    ['Rfoo', 'n.stId = $id', 'Rfoo'],
+    // Java's trim takes every character up to U+0020, control characters too,
+    ['\u000170486\u001f', 'n.dbId = toInteger($id)', '70486'],
+    // and its isNumeric and parseLong take any script's digits.
+    ['\u0667\u0660\u0664\u0668\u0666', 'n.dbId = toInteger($id)', '70486'],
+    ['\uff17\uff10\uff14\uff18\uff16', 'n.dbId = toInteger($id)', '70486'],
+  ];
+  for (const [raw, where, id] of cases) {
+    it(`reads ${JSON.stringify(raw)} as Java does`, () => {
+      expect(resolveId(raw)).toEqual({ where, params: { id } });
+    });
+  }
+
+  it('matches nothing for an id Java would not find, lower case included', () => {
+    // Java's trim leaves a no-break space or a line separator in place.
+    for (const raw of ['abc', 'r-hsa-70486', '', '\u00a070486', '\u202870486']) {
+      expect(resolveId(raw).where).toBe('false');
+    }
+  });
+});
+
+describe('pathId, the id as Spring hands it to a controller', () => {
+  it('drops what follows a semicolon, as Spring does before matching', () => {
+    expect(pathId('70486;x')).toBe('70486');
+    expect(pathId('R-HSA-70486;jsessionid=1;a=b')).toBe('R-HSA-70486');
+  });
+
+  it('keeps an encoded semicolon, which Spring decodes only after', () => {
+    expect(pathId('R-HSA-70486%3Bx')).toBe('R-HSA-70486;x');
+  });
+
+  it('decodes the rest, spaces included', () => {
+    expect(pathId('%20R-HSA-70486%20')).toBe(' R-HSA-70486 ');
+  });
 });

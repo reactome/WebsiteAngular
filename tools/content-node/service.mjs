@@ -576,6 +576,44 @@ export const endpoints = [
       return { status: 200, body, type: 'application/json' };
     }),
   })),
+  {
+    path: '/ContentService/data/query/{id}/stId',
+    // A reaction by dbId, so the comparison covers the lookup the site makes.
+    sample: '70486',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/query\/[^/]+\/stId: \.url: /],
+    /**
+     * An object's stable id, asked for as text.
+     *
+     * The site calls this whenever it meets a dbId -- an old link, a legacy
+     * fragment, a URL parameter -- to swap it for the stable id: 13 bytes, where
+     * fetching the object to read one field is 12KB. Java serves it from the
+     * general `/data/query/{id}/{attributeName}`; only this attribute is ported,
+     * so the route is exact.
+     *
+     * The id is resolved as Java resolves it (see resolveId): a stable id, a
+     * pre-2016 REACT_ id or a dbId, with any version suffix ignored. An object
+     * that has no stable id -- a Species, a ReferenceEntity -- is Java's 404 with
+     * its own message, not an empty 200.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const { where, params } = resolveId(raw);
+      const rows = await read(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         RETURN n.stId AS stId, n.schemaClass AS schemaClass LIMIT 1`,
+        params
+      );
+      const [row] = rows;
+      if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
+      if (row.stId === null || row.stId === undefined)
+        return notFound(
+          request,
+          `Attribute: 'stId' has not been found for object: ${String(row.schemaClass)}`
+        );
+      return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
+    },
+  },
 ];
 
 /**
@@ -710,6 +748,94 @@ function compact(fields) {
     out[key] = value;
   }
   return out;
+}
+
+/**
+ * How Java reads an id, as a Cypher condition on `n`.
+ *
+ * Mirrors graph-core's DatabaseObjectUtils (getIdentifier, trimId, isStId,
+ * isDbId) and AdvancedDatabaseObjectService.findById:
+ *
+ * - trimmed; an id without ':' is also cut at its first '.', so any version
+ *   suffix is ignored (`R-HSA-70486.4`, `70486.3`). An id with ':' -- a
+ *   reference, `UniProt:P04637` -- is only trimmed.
+ * - `REACT_…` is a pre-2016 id: findNewStId looks up the node whose `oldStId`
+ *   it is, and that node is the answer. Here that is one match on `oldStId`.
+ * - starting with 'R', or containing ':', is a stable id; all digits is a
+ *   dbId (leading zeros allowed, as Long.parseLong allows them). Anything else
+ *   is not found, as in Java. Case matters: `r-hsa-70486` is not found.
+ * - One known difference: `.` alone is Java's 500 (it indexes the empty
+ *   result of the split); here it is a 404, the answer it should have been.
+ *
+ * Every branch matches one indexed property on DatabaseObject, never a
+ * disjunction: a disjunction across properties uses no index and scans the
+ * whole graph (see the person endpoints).
+ */
+export function resolveId(raw) {
+  const trimmed = javaTrim(String(raw));
+  const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
+  if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
+  if (id.startsWith('R') || id.includes(':')) return { where: 'n.stId = $id', params: { id } };
+  // StringUtils.isNumeric and Long.parseLong take a digit of any script.
+  if (/^\p{Nd}+$/u.test(id)) {
+    return { where: 'n.dbId = toInteger($id)', params: { id: asciiDigits(id) } };
+  }
+  return { where: 'false', params: {} };
+}
+
+/**
+ * Java's String.trim: every character up to U+0020 off both ends, control
+ * characters included, and nothing above it -- a no-break space stays.
+ */
+function javaTrim(text) {
+  let start = 0;
+  let end = text.length;
+  while (start < end && text.charCodeAt(start) <= 0x20) start += 1;
+  while (end > start && text.charCodeAt(end - 1) <= 0x20) end -= 1;
+  return text.slice(start, end);
+}
+
+/**
+ * A run of digits from any script, as ASCII. Unicode keeps each script's
+ * digits in contiguous runs from 0 to 9, some runs back to back, so a digit's
+ * value is its distance from the start of its run, modulo ten.
+ */
+function asciiDigits(digits) {
+  const isDigit = (code) => /\p{Nd}/u.test(String.fromCodePoint(code));
+  return [...digits]
+    .map((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      let first = code;
+      while (isDigit(first - 1)) first -= 1;
+      return String((code - first) % 10);
+    })
+    .join('');
+}
+
+/**
+ * The id as Spring hands it to a controller, from the path segment as it was
+ * sent. Whatever follows a ';' is a matrix parameter, removed before the path
+ * is decoded and matched, so Java reads `70486;x` as `70486` -- in its answer
+ * and its 404 message alike -- but `70486%3Bx` as `70486;x`. Express decodes
+ * `request.params` first, which loses that difference, so the raw segment is
+ * read instead (nginx passes the request's own URI through).
+ */
+export function pathId(segment) {
+  const kept = String(segment).split(';')[0] ?? '';
+  try {
+    return decodeURIComponent(kept);
+  } catch {
+    return kept;
+  }
+}
+
+/** The raw, undecoded path segment at `index` (`/ContentService/data/query/{id}` is 4). */
+function rawSegment(request, index) {
+  return (
+    String(request.originalUrl ?? '')
+      .split('?')[0]
+      ?.split('/')[index] ?? ''
+  );
 }
 
 /**
