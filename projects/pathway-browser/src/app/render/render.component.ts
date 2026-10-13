@@ -498,7 +498,8 @@ export class RenderComponent {
     const reactionGroup = (element: cytoscape.SingularElementArgument): RenderGrouping => {
       const reactionId: unknown = element.data('reactionId');
       if (reactionId === undefined || reactionId === null) return {};
-      const stId: unknown = element.data('graph')?.stId;
+      const graph: unknown = element.data('graph');
+      const stId = graph && typeof graph === 'object' && 'stId' in graph ? graph.stId : undefined;
       return {
         group: `reaction-${String(reactionId)}`,
         groupName: typeof stId === 'string' ? `Reaction ${stId}` : 'Reaction',
