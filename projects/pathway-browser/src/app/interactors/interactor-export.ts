@@ -13,8 +13,10 @@
  * reason.
  */
 
-/** One interaction, in the shape the graph actually holds. */
-/** Read off the drawn badges, any of which may lack a value: so undefined. */
+/**
+ * One interaction, in the shape the graph actually holds. Read off the drawn
+ * badges, any of which may lack a value: so each may be undefined.
+ */
 export interface ExportableInteraction {
   acc?: string | undefined;
   alias?: string | undefined;
