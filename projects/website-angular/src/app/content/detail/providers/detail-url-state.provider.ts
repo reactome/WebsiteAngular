@@ -35,9 +35,8 @@ export class DetailUrlState implements Partial<UrlStateService> {
   );
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
-  // Mirrors UrlStateService. The content pages do not draw interactors, but a
-  // component they reuse read this param, and finding it missing here is how it
-  // was added.
+  // Mirrors UrlStateService, though the content pages do not draw interactors.
+  // Nothing checks the two stay in step (see the class comment), so keep them so.
   interactorScore = urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number');
   palette = urlParam<any>(null, 'string');
   filterViewMode = urlParam<any>(undefined, 'string');
