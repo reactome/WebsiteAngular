@@ -153,3 +153,46 @@ describe('ContentService.getFaqIndex', () => {
     });
   }
 });
+
+describe('ContentService asks the server, not a saved copy', () => {
+  // A content file keeps its name when it is edited. Served for a while as
+  // cacheable for a year, a rewritten documentation page stayed old in every
+  // browser that had seen it -- and a hard reload does not refetch what the
+  // page's code asks for after it loads. no-cache has the browser check back
+  // (a 304 when nothing changed), whatever the copy it holds says.
+  let service: ContentService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(ContentService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpTesting.verify());
+
+  const calls: [string, (s: ContentService) => unknown, string][] = [
+    ['getPage', (s) => s.getPage('documentation', 'cite'), '/documentation/cite.json'],
+    ['getArticle', (s) => s.getArticle('about/news', 'x'), '/about/news/x.json'],
+    [
+      'getArticleIndexItem',
+      (s) => s.getArticleIndexItem('about/news', 'x'),
+      '/about/news/index.json',
+    ],
+    ['getAllArticles', (s) => s.getAllArticles('about/news'), '/about/news/index.json'],
+    ['getLatestArticles', (s) => s.getLatestArticles('about/news'), '/about/news/index.json'],
+    ['getFaqIndex', (s) => s.getFaqIndex(), '/documentation/faq/index.json'],
+  ];
+
+  for (const [name, call, file] of calls) {
+    it(`${name} revalidates`, () => {
+      const subscription = (call(service) as { subscribe(): { unsubscribe(): void } }).subscribe();
+      const req = httpTesting.expectOne((r) => r.url.endsWith(file));
+      expect(req.request.cache).toBe('no-cache');
+      req.flush({});
+      subscription.unsubscribe();
+    });
+  }
+});

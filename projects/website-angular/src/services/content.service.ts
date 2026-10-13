@@ -46,6 +46,14 @@ function isImageSizes(value: unknown): value is Record<string, [number, number]>
   return isFrontmatter(value);
 }
 
+/**
+ * Content files keep their names when they are edited, so the browser is told to
+ * check with the server rather than trust a copy it saved (a 304 when nothing
+ * changed). Without this, a page served as cacheable stayed old in browsers that
+ * had seen it, and a hard reload does not refetch what the page's code asks for.
+ */
+const REVALIDATE = { cache: 'no-cache' } as const;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -65,48 +73,52 @@ export class ContentService {
     // scripts/stage-content.ts. Frontmatter is already parsed server-side, so
     // the browser just consumes structured data -- no raw markdown fetch, and
     // nothing for vite to mistake for JSX source.
-    return this.http.get<unknown>(`${this.contentBasePath}/${pageType}/${slug}.json`).pipe(
-      map((frontmatter) => {
-        // Not every 200 carries a content file: the SPA fallback answers an
-        // unknown path with index.html, which can reach here as a string
-        // rather than as a parse failure. Anything that is not a frontmatter
-        // object means there is no such page.
-        if (!isFrontmatter(frontmatter)) {
-          return null;
-        }
-        return {
-          title: (frontmatter['title'] as string) || '',
-          description: frontmatter['description'] as string,
-          category: frontmatter['category'] as string,
-          image: frontmatter['image'] as string,
-          body: (frontmatter['body'] as string) || '',
-          // Named explicitly, like everything else here. This mapping lists
-          // the fields it wants, so a field added to the staged JSON reaches
-          // nothing until it is named -- which is how the image sizes came to
-          // be measured, shipped, and then silently dropped one layer before
-          // the renderer that needed them.
-          ...(isImageSizes(frontmatter['imageSizes']) && {
-            imageSizes: frontmatter['imageSizes'],
-          }),
-        };
-      }),
-      catchError((error: unknown) => {
-        if (isMissingContent(error)) return of(null);
-        throw error;
-      })
-    );
+    return this.http
+      .get<unknown>(`${this.contentBasePath}/${pageType}/${slug}.json`, REVALIDATE)
+      .pipe(
+        map((frontmatter) => {
+          // Not every 200 carries a content file: the SPA fallback answers an
+          // unknown path with index.html, which can reach here as a string
+          // rather than as a parse failure. Anything that is not a frontmatter
+          // object means there is no such page.
+          if (!isFrontmatter(frontmatter)) {
+            return null;
+          }
+          return {
+            title: (frontmatter['title'] as string) || '',
+            description: frontmatter['description'] as string,
+            category: frontmatter['category'] as string,
+            image: frontmatter['image'] as string,
+            body: (frontmatter['body'] as string) || '',
+            // Named explicitly, like everything else here. This mapping lists
+            // the fields it wants, so a field added to the staged JSON reaches
+            // nothing until it is named -- which is how the image sizes came to
+            // be measured, shipped, and then silently dropped one layer before
+            // the renderer that needed them.
+            ...(isImageSizes(frontmatter['imageSizes']) && {
+              imageSizes: frontmatter['imageSizes'],
+            }),
+          };
+        }),
+        catchError((error: unknown) => {
+          if (isMissingContent(error)) return of(null);
+          throw error;
+        })
+      );
   }
 
   /**
    * Get article index item by slug
    */
   getArticleIndexItem(path: string, slug: string): Observable<ArticleIndexItem | null> {
-    return this.http.get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`).pipe(
-      map((items) => {
-        const item = items.find((i) => i.slug === slug);
-        return item || null;
-      })
-    );
+    return this.http
+      .get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE)
+      .pipe(
+        map((items) => {
+          const item = items.find((i) => i.slug === slug);
+          return item || null;
+        })
+      );
   }
 
   /**
@@ -114,7 +126,7 @@ export class ContentService {
    */
   getArticle(path: string, slug: string): Observable<Article | null> {
     // See getPage(): content is compiled to JSON at build time.
-    return this.http.get<unknown>(`${this.contentBasePath}/${path}/${slug}.json`).pipe(
+    return this.http.get<unknown>(`${this.contentBasePath}/${path}/${slug}.json`, REVALIDATE).pipe(
       map((frontmatter) => {
         // As in getPage(): anything that is not a frontmatter object means
         // there is no such article.
@@ -153,7 +165,7 @@ export class ContentService {
    * Get all articles
    */
   getAllArticles(path: string): Observable<ArticleIndexItem[]> {
-    return this.http.get<any>(`${this.contentBasePath}/${path}/index.json`).pipe(
+    return this.http.get<any>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE).pipe(
       map((data) => {
         if (Array.isArray(data)) return data;
         if (data?.articles && Array.isArray(data.articles)) return data.articles;
@@ -182,6 +194,9 @@ export class ContentService {
   getFaqIndex(): Observable<FaqIndex> {
     // Every failure reaches the page, a missing index included: the index
     // always ships with the site, so its absence means the content did not.
-    return this.http.get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`);
+    return this.http.get<FaqIndex>(
+      `${this.contentBasePath}/documentation/faq/index.json`,
+      REVALIDATE
+    );
   }
 }

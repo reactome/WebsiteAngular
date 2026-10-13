@@ -57,6 +57,16 @@ describe('serve-prod', () => {
     await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
     await mkdir(path.join(dist, 'assets'), { recursive: true });
     await writeFile(path.join(dist, 'assets', 'thing.txt'), 'an asset', 'utf8');
+    // Build output named by its content, and files that keep their names.
+    await writeFile(path.join(dist, 'main-AB12CD34.js'), 'export {};', 'utf8');
+    await writeFile(path.join(dist, 'chunk-EF56GH78.js'), 'export {};', 'utf8');
+    await mkdir(path.join(dist, 'media'), { recursive: true });
+    await writeFile(path.join(dist, 'media', 'Roboto-IJ90KL12.ttf'), 'font', 'utf8');
+    await mkdir(path.join(dist, 'content', 'documentation'), { recursive: true });
+    await writeFile(path.join(dist, 'content', 'documentation', 'page.json'), '{}', 'utf8');
+    await mkdir(path.join(dist, 'uploads'), { recursive: true });
+    // Looks content-named, but an upload's name is whatever the author chose.
+    await writeFile(path.join(dist, 'uploads', 'figure-ABCDEFGH.png'), 'png', 'utf8');
     embed = await mkdtemp(path.join(tmpdir(), 'serve-prod-embed-'));
     await writeFile(path.join(embed, 'main.js'), 'export const diagram = 1;', 'utf8');
     await writeFile(path.join(embed, 'loader.gif'), 'GIF89a', 'utf8');
@@ -131,6 +141,30 @@ describe('serve-prod', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toMatch(/text\/plain/);
     expect(await response.text()).toBe('an asset');
+  });
+
+  it('caches content-named build output for good', async () => {
+    for (const file of ['/main-AB12CD34.js', '/chunk-EF56GH78.js', '/media/Roboto-IJ90KL12.ttf']) {
+      const response = await fetch(base + file);
+      expect(response.headers.get('cache-control'), file).toBe(
+        'public, max-age=31536000, immutable'
+      );
+    }
+  });
+
+  it('has browsers check back for files that change under the same name', async () => {
+    // Pages, uploads and assets keep their names when they change. Cached for
+    // a year as immutable, a rewritten documentation page stayed old in every
+    // browser that had seen it.
+    for (const file of [
+      '/content/documentation/page.json',
+      '/uploads/figure-ABCDEFGH.png',
+      '/assets/thing.txt',
+    ]) {
+      const response = await fetch(base + file);
+      expect(response.status, file).toBe(200);
+      expect(response.headers.get('cache-control'), file).toBe('no-cache');
+    }
   });
 
   it('answers an application route with the application', async () => {
