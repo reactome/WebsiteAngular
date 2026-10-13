@@ -49,6 +49,10 @@ export interface RenderNodeShape {
   bold: boolean;
   /** A broken border, which the diagram uses to mark inferred entities. */
   dashed: boolean;
+  /** The thing this shape is part of; see {@link RenderGrouping}. */
+  group?: string;
+  /** What that thing is called in the slide's object list. */
+  groupName?: string;
 }
 
 /**
@@ -76,7 +80,20 @@ export interface RenderEdgeShape {
   fill: ShapeColour;
   /** A broken line, which the diagram uses for the links between glyphs. */
   dashed: boolean;
+  /** The thing this shape is part of; see {@link RenderGrouping}. */
+  group?: string;
+  /** What that thing is called in the slide's object list. */
+  groupName?: string;
 }
+
+/**
+ * Shapes sharing a `group` are one thing on the diagram -- an entity's body and
+ * the box carrying its label, or a reaction's lines, arrowheads and node -- and
+ * an exporter that can group shapes (PowerPoint) makes them one object, so a
+ * person moves the thing rather than each piece of it (#299). A group's shapes
+ * are listed together, at the place in the drawing order the group is drawn.
+ */
+export type RenderGrouping = Pick<RenderNodeShape, 'group' | 'groupName'>;
 
 export interface RenderShapes {
   /**
@@ -94,4 +111,29 @@ export interface RenderShapes {
    * does, with compartments behind, connectors next, and entities in front.
    */
   shapes: (RenderNodeShape | RenderEdgeShape)[];
+}
+
+/**
+ * The shapes in drawing order, with each group's shapes brought together at
+ * the place of its first one. Within a group, and between ungrouped shapes,
+ * the order is unchanged.
+ */
+export function gatherGroups<T extends RenderGrouping>(shapes: T[]): T[] {
+  const members = new Map<string, T[]>();
+  for (const shape of shapes) {
+    if (!shape.group) continue;
+    const list = members.get(shape.group);
+    if (list) list.push(shape);
+    else members.set(shape.group, [shape]);
+  }
+  const out: T[] = [];
+  const placed = new Set<string>();
+  for (const shape of shapes) {
+    if (!shape.group) out.push(shape);
+    else if (!placed.has(shape.group)) {
+      placed.add(shape.group);
+      out.push(...(members.get(shape.group) ?? []));
+    }
+  }
+  return out;
 }

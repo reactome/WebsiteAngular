@@ -811,3 +811,58 @@ describe('a glyph the frame cuts through', () => {
     for (const shape of filled) expect(shape.closed, shape.name).toBe(true);
   });
 });
+
+describe('a slide built from shapes, grouped', () => {
+  // Curators moving an entity had to select its border and its centre, and
+  // moving a reaction meant selecting every line (#299). Shapes the page marks
+  // as one thing come out as one PowerPoint group, which drags as a piece.
+  const group = (name) => ({ group: 'reaction-7', groupName: name });
+  const GROUPED = {
+    ...SHAPES,
+    shapes: [
+      NODE,
+      { ...EDGE, ...group('Reaction') },
+      { ...ARROW, ...group('Reaction') },
+      { ...NODE, id: 'r7', label: '', ...group('Reaction') },
+    ],
+  };
+
+  it('wraps the shapes of one thing in one group', () => {
+    const slide = open(pptx({ shapes: GROUPED })).slide();
+    const groups = slide.match(/<p:grpSp>[\s\S]*?<\/p:grpSp>/g) ?? [];
+    expect(groups).toHaveLength(1);
+    expect((groups[0].match(/<p:sp>/g) ?? []).length).toBe(3);
+    expect(groups[0]).toContain('name="Reaction"');
+  });
+
+  it('leaves a shape that belongs to nothing on its own', () => {
+    const slide = open(pptx({ shapes: GROUPED })).slide();
+    const outside = slide.replace(/<p:grpSp>[\s\S]*?<\/p:grpSp>/g, '');
+    // The first node, outside any group.
+    expect((outside.match(/<p:sp>/g) ?? []).length).toBe(1);
+  });
+
+  it('keeps the group in the drawing order of its first shape', () => {
+    const slide = open(pptx({ shapes: GROUPED })).slide();
+    expect(slide.indexOf('<p:grpSp>')).toBeGreaterThan(slide.indexOf('<p:sp>'));
+  });
+
+  it('maps the group onto the slide one to one, so nothing inside it moves', () => {
+    const slide = open(pptx({ shapes: GROUPED })).slide();
+    const xfrm =
+      /<p:grpSp>[\s\S]*?<a:xfrm><a:off x="(\d+)" y="(\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/><a:chOff x="(\d+)" y="(\d+)"\/><a:chExt cx="(\d+)" cy="(\d+)"\/>/.exec(
+        slide
+      );
+    expect(xfrm, 'the group has a transform').not.toBeNull();
+    const [, x, y, cx, cy, chx, chy, chcx, chcy] = xfrm;
+    expect([chx, chy, chcx, chcy]).toEqual([x, y, cx, cy]);
+    expect(Number(cx)).toBeGreaterThan(0);
+  });
+
+  it('still parses, with every id distinct', () => {
+    const slide = open(pptx({ shapes: GROUPED })).slide();
+    expect(parses(slide)).toBe(true);
+    const ids = [...slide.matchAll(/<p:cNvPr id="(\d+)"/g)].map((m) => m[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

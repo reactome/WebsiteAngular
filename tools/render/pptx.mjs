@@ -340,6 +340,45 @@ function edgeShape(shape, id, place, emuPerPx) {
   );
 }
 
+/** A shape's box on the slide, in EMU: its own box, or its points' bounds. */
+function boundsOf(shape, place) {
+  if (shape.kind !== 'edge') return place(shape.x, shape.y, shape.w, shape.h);
+  const points = (shape.points ?? []).filter(
+    (point) => Number.isFinite(point?.x) && Number.isFinite(point?.y)
+  );
+  if (!points.length) return null;
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return place(x, y, Math.max(...xs) - x, Math.max(...ys) - y);
+}
+
+/**
+ * Several shapes as one PowerPoint group.
+ *
+ * The group's frame is its members' bounds, and its child frame the same
+ * rectangle, so the members' own coordinates -- already on the slide -- mean
+ * exactly what they did ungrouped.
+ */
+function groupShape(members, id, one, place) {
+  const boxes = members.map((shape) => boundsOf(shape, place)).filter(Boolean);
+  if (!boxes.length) return members.map(one).join('');
+  const x = Math.min(...boxes.map((box) => box.x));
+  const y = Math.min(...boxes.map((box) => box.y));
+  const cx = Math.max(1, Math.max(...boxes.map((box) => box.x + box.cx)) - x);
+  const cy = Math.max(1, Math.max(...boxes.map((box) => box.y + box.cy)) - y);
+  const name = members.find((shape) => shape.groupName)?.groupName ?? members[0].group;
+  return (
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${escapeXml(name)}"/>` +
+    `<p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
+    `<p:grpSpPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/>` +
+    `<a:chOff x="${x}" y="${y}"/><a:chExt cx="${cx}" cy="${cy}"/></a:xfrm></p:grpSpPr>` +
+    members.map(one).join('') +
+    `</p:grpSp>`
+  );
+}
+
 /**
  * The slide, drawn as shapes.
  *
@@ -357,13 +396,25 @@ function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
   // Shape ids are unique within the tree and 1 is the group itself; the title,
   // when there is one, is 2.
   let nextId = 3;
-  const drawn = shapes.shapes
-    .map((shape) =>
-      shape.kind === 'edge'
-        ? edgeShape(shape, nextId++, place, emuPerPx)
-        : nodeShape(shape, nextId++, place, emuPerPx)
-    )
-    .join('');
+  const one = (shape) =>
+    shape.kind === 'edge'
+      ? edgeShape(shape, nextId++, place, emuPerPx)
+      : nodeShape(shape, nextId++, place, emuPerPx);
+
+  // Shapes the page marks as one thing -- an entity's body and label, a
+  // reaction's lines, arrowheads and node -- become one group, so a curator
+  // drags the thing rather than reassembling it (#299). The page lists a
+  // group's shapes together, in the place the group is drawn.
+  let drawn = '';
+  const list = shapes.shapes;
+  for (let i = 0; i < list.length;) {
+    const key = list[i].group;
+    let end = i + 1;
+    if (key) while (end < list.length && list[end].group === key) end++;
+    const members = list.slice(i, end);
+    drawn += key && members.length > 1 ? groupShape(members, nextId++, one, place) : one(list[i]);
+    i = end;
+  }
 
   return (
     DECLARATION +

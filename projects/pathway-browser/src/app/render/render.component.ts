@@ -24,11 +24,13 @@ import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
 import type {
   RenderEdgeShape,
+  RenderGrouping,
   RenderNodeShape,
   RenderShapes,
   ShapeColour,
   ShapeGeometry,
 } from './render-shapes.model';
+import { gatherGroups } from './render-shapes.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is
@@ -489,9 +491,31 @@ export class RenderComponent {
     const arrowheads: (RenderNodeShape | RenderEdgeShape)[] = [];
     const glyphs: RenderEdgeShape[] = [];
 
+    // Which thing a shape is part of, so a slide can make it one object (#299).
+    // A reaction's node and every line of it carry the reaction's layout id;
+    // any other node is an entity of its own. Compartments are left alone: a
+    // compartment is a backdrop, not something moved with its contents.
+    const reactionGroup = (element: cytoscape.SingularElementArgument): RenderGrouping => {
+      const reactionId: unknown = element.data('reactionId');
+      if (reactionId === undefined || reactionId === null) return {};
+      const stId: unknown = element.data('graph')?.stId;
+      return {
+        group: `reaction-${String(reactionId)}`,
+        groupName: typeof stId === 'string' ? `Reaction ${stId}` : 'Reaction',
+      };
+    };
+
     for (const node of visible) {
       const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
       const label = String(node.data('displayName') ?? '').trim();
+      const grouping: RenderGrouping = this.isCompartment(node)
+        ? {}
+        : node.data('reactionId') !== undefined && node.data('reactionId') !== null
+          ? reactionGroup(node)
+          : {
+              group: `entity-${String(node.id())}`,
+              groupName: label || String(node.data('schemaClass') ?? node.id()),
+            };
       const under = this.underlay(node);
       if (under) {
         nodeUnderlays.push({
@@ -511,13 +535,14 @@ export class RenderComponent {
           fontColor: null,
           bold: false,
           dashed: false,
+          ...grouping,
         });
       }
 
       // A node whose body is an image is drawn as that image's own geometry,
       // and its own rectangle then carries nothing but the label -- otherwise
       // the plain box outlines the glyph a second time.
-      const glyph = this.glyphShapes(node, box);
+      const glyph = this.glyphShapes(node, box).map((shape) => ({ ...shape, ...grouping }));
       glyphs.push(...glyph);
       const bodyIsImage = glyph.length > 0;
 
@@ -540,6 +565,7 @@ export class RenderComponent {
         fontColor: this.colour(node.style('color'), '1'),
         bold: String(node.style('font-weight') ?? '').includes('bold'),
         dashed: this.dashed(node.style('border-style')),
+        ...grouping,
       });
     }
 
@@ -574,6 +600,10 @@ export class RenderComponent {
 
       const stroke = this.colour(edge.style('line-color'), edge.style('opacity'));
       const dashed = this.dashed(edge.style('line-style'));
+      // The band behind a line stays out of the group: it belongs to the layer
+      // behind every line, and drawn with its reaction, one reaction's band
+      // covered another's line where they crossed.
+      const grouping = reactionGroup(edge);
       edges.push({
         kind: 'edge',
         id: String(edge.id()),
@@ -584,10 +614,13 @@ export class RenderComponent {
         closed: false,
         fill: null,
         dashed,
+        ...grouping,
       });
 
       // The arrowhead is drawn after its line, so it sits on top of it.
-      arrowheads.push(...this.arrowhead(edge, points, width));
+      arrowheads.push(
+        ...this.arrowhead(edge, points, width).map((shape) => ({ ...shape, ...grouping }))
+      );
     }
 
     return {
@@ -603,16 +636,20 @@ export class RenderComponent {
       // The underlays are how the diagram tints an event by the sub-pathway it
       // belongs to, and each sits immediately behind the glyph it marks -- so
       // they go in front of the compartments and behind everything else.
-      shapes: this.clipToExtent(framed ? extent : null, [
-        ...compartments,
-        ...edgeUnderlays,
-        ...edges,
-        ...arrowheads,
-        ...nodeUnderlays,
-        // The glyph body sits under the box that carries its label.
-        ...glyphs,
-        ...nodes,
-      ]),
+      // Each thing's shapes together, where its first one is drawn: a reaction
+      // with the lines (behind every entity), an entity with its highlight.
+      shapes: gatherGroups(
+        this.clipToExtent(framed ? extent : null, [
+          ...compartments,
+          ...edgeUnderlays,
+          ...edges,
+          ...arrowheads,
+          ...nodeUnderlays,
+          // The glyph body sits under the box that carries its label.
+          ...glyphs,
+          ...nodes,
+        ])
+      ),
     };
   }
 
