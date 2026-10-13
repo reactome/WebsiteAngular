@@ -9,7 +9,7 @@ import recorded from './edge-geometry.recorded.json';
 function expectClose(actual: number[], expected: number[]) {
   expect(actual).toHaveLength(expected.length);
   actual.forEach((value, i) => {
-    const want = expected[i]!;
+    const want = expected[i] ?? NaN;
     expect(Math.abs(value - want)).toBeLessThan(1e-9 * Math.max(1, Math.abs(want)));
   });
 }
