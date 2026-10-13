@@ -232,7 +232,11 @@ describe('pathId, the id as Spring hands it to a controller', () => {
     expect(pathId('R-HSA-70486;jsessionid=1;a=b')).toBe('R-HSA-70486');
   });
 
-  it('leaves an id without one alone, spaces included', () => {
-    expect(pathId(' R-HSA-70486 ')).toBe(' R-HSA-70486 ');
+  it('keeps an encoded semicolon, which Spring decodes only after', () => {
+    expect(pathId('R-HSA-70486%3Bx')).toBe('R-HSA-70486;x');
+  });
+
+  it('decodes the rest, spaces included', () => {
+    expect(pathId('%20R-HSA-70486%20')).toBe(' R-HSA-70486 ');
   });
 });

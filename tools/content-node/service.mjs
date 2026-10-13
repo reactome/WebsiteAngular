@@ -597,7 +597,7 @@ export const endpoints = [
      * its own message, not an empty 200.
      */
     handler: async (request) => {
-      const raw = pathId(request.params.id);
+      const raw = pathId(rawSegment(request, 4));
       const { where, params } = resolveId(raw);
       const rows = await read(
         `MATCH (n:DatabaseObject) WHERE ${where}
@@ -813,12 +813,29 @@ function asciiDigits(digits) {
 }
 
 /**
- * The id as Spring hands it to a controller: whatever follows a ';' in a path
- * segment is a matrix parameter, removed before the path is matched, so Java
- * reads `70486;x` as `70486`, in its answer and its 404 message alike.
+ * The id as Spring hands it to a controller, from the path segment as it was
+ * sent. Whatever follows a ';' is a matrix parameter, removed before the path
+ * is decoded and matched, so Java reads `70486;x` as `70486` -- in its answer
+ * and its 404 message alike -- but `70486%3Bx` as `70486;x`. Express decodes
+ * `request.params` first, which loses that difference, so the raw segment is
+ * read instead (nginx passes the request's own URI through).
  */
-export function pathId(raw) {
-  return String(raw).split(';')[0] ?? '';
+export function pathId(segment) {
+  const kept = String(segment).split(';')[0] ?? '';
+  try {
+    return decodeURIComponent(kept);
+  } catch {
+    return kept;
+  }
+}
+
+/** The raw, undecoded path segment at `index` (`/ContentService/data/query/{id}` is 4). */
+function rawSegment(request, index) {
+  return (
+    String(request.originalUrl ?? '')
+      .split('?')[0]
+      ?.split('/')[index] ?? ''
+  );
 }
 
 /**
