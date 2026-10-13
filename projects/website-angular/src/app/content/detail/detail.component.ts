@@ -1,6 +1,6 @@
 import { Component, effect, inject, OnInit, signal, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -57,6 +57,7 @@ import { DetailSpeciesService } from './providers/detail-species.provider';
 })
 export class DetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private detailDataService = inject(DetailDataService);
   private dataState = inject(DataStateService) as unknown as DetailDataState;
   private matIconRegistry = inject(MatIconRegistry);
@@ -138,6 +139,21 @@ export class DetailComponent implements OnInit {
     });
   }
 
+  /**
+   * A reader who arrived on a dbId or a versioned id -- an old link, a bookmark
+   * from the previous site -- is moved to the plain stable id, the address
+   * worth keeping: a dbId need not mean the same object next release. Replaced
+   * rather than pushed, so Back does not return to the address being retired.
+   */
+  private keepStableAddress(id: string, data: SelectableObject) {
+    if (!data.stId || data.stId === id) return;
+    void this.router.navigate(['/content/detail', data.stId], {
+      replaceUrl: true,
+      queryParamsHandling: 'preserve',
+      preserveFragment: true,
+    });
+  }
+
   ngOnInit() {
     // Subscribe (not snapshot) so navigation between entity detail pages
     // -- /content/detail/A -> /content/detail/B reuses the same component
@@ -149,6 +165,9 @@ export class DetailComponent implements OnInit {
         this.error.set(true);
         return;
       }
+      // The address was just moved to the stable id of the object on show
+      // (below): nothing new to fetch.
+      if (id === this.obj()?.stId) return;
       this.loading.set(true);
       this.error.set(false);
       this.obj.set(undefined);
@@ -157,6 +176,7 @@ export class DetailComponent implements OnInit {
           if (data) {
             this.obj.set(data);
             this.dataState.selectedElement.set(data);
+            this.keepStableAddress(id, data);
           } else {
             this.error.set(true);
           }
