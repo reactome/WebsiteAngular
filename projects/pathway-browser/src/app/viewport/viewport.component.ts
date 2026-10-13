@@ -455,7 +455,10 @@ export class ViewportComponent {
   }
 
   openCitationDialog() {
-    this.citation.openDialog();
+    // A failed fetch of the dialog's code would otherwise go unreported.
+    this.citation
+      .openDialog()
+      .catch((error) => console.error('Could not open the citation', error));
   }
 
   readonly formerPathwayBrowserURL = computed(() => {

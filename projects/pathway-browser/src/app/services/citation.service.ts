@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, Signal, signal } from '@angular/core';
+import { computed, inject, Injectable, Injector, Signal, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
@@ -6,8 +6,6 @@ import { isPathway } from './utils';
 import { DataStateService } from './data-state.service';
 import { AnalysisService } from './analysis.service';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { CitationComponent } from '../citation/citation.component';
-import { MatDialog } from '@angular/material/dialog';
 
 interface PathwayCitation {
   imageCitation: string;
@@ -38,6 +36,9 @@ export enum ExportFormat {
   TXT = 'txt',
 }
 
+/** The citation dialog's id, so a second open finds the first rather than stacking. */
+const CITATION_DIALOG = 'citation';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -46,7 +47,10 @@ export class CitationService {
   private dataState = inject(DataStateService);
   private analysis = inject(AnalysisService);
 
-  readonly dialog = inject(MatDialog);
+  // The dialog and its component are fetched when it is first opened, not with
+  // the page: the embeddable diagram provides this service but never shows the
+  // dialog, and with them it carried Material's dialog code for nothing (#356).
+  private readonly injector = inject(Injector);
 
   readonly currentCitationId = signal<string | undefined>(undefined);
   readonly currentCitationExportURLS = computed(() =>
@@ -96,9 +100,30 @@ export class CitationService {
       : this.http.get<PathwayCitation>(`${pathwayUrl}`);
   }
 
-  openDialog() {
+  async openDialog(): Promise<void> {
+    // One dialog at a time. The first open now waits while its code loads, and a
+    // reader who clicks again in that moment would otherwise get two.
+    if (this.opening) return;
+    this.opening = true;
+    try {
+      await this.showDialog();
+    } finally {
+      this.opening = false;
+    }
+  }
+
+  private opening = false;
+
+  private async showDialog(): Promise<void> {
     this.currentCitationId.set(this.updatedCitationId());
-    const dialogRef = this.dialog.open(CitationComponent, {
+    const [{ MatDialog }, { CitationComponent }] = await Promise.all([
+      import('@angular/material/dialog'),
+      import('../citation/citation.component'),
+    ]);
+    const dialog = this.injector.get(MatDialog);
+    if (dialog.getDialogById(CITATION_DIALOG)) return;
+    dialog.open(CitationComponent, {
+      id: CITATION_DIALOG,
       data: {
         content: this.citationData.value,
         id: this.currentCitationId,
@@ -107,7 +132,6 @@ export class CitationService {
       enterAnimationDuration: '450ms',
       exitAnimationDuration: '450ms',
     });
-    dialogRef.afterClosed();
   }
 
   getExportUrls(id: string) {

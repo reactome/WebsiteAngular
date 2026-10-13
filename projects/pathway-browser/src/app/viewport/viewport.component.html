@@ -336,7 +336,13 @@
               [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
               id="dark-toggle"
             ></mat-slide-toggle>
-            <button mat-icon-button class="quote" (click)="openCitationDialog()" matTooltip="Cite us">
+            <button
+              mat-icon-button
+              class="quote"
+              aria-label="Cite us"
+              (click)="openCitationDialog()"
+              matTooltip="Cite us"
+            >
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
             <div class="logo" matTooltip="Go to the main page">
