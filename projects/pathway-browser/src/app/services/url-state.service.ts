@@ -144,12 +144,12 @@ export function urlParam<T>(
 /**
  * Every piece of Pathway Browser state, as signals.
  *
- * A factory so the embeddable diagram's in-memory state
- * (projects/reactome-diagram-element) is built from exactly these definitions:
- * two copies of this list would drift, and a param added here but not there is
- * a param the embedded diagram silently ignores.
+ * Built once per state, in UrlStateService below, so the site's address-bar
+ * state and the embeddable diagram's in-memory state are made from exactly
+ * these definitions: two copies of this list would drift, and a param added
+ * here but not there is a param the embedded diagram silently ignores.
  */
-export function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
+function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
   return {
     select: urlParam<string | null>(null, 'id', ['SEL']),
     flag: urlParam<string[]>([], 'id', ['FLG']),
