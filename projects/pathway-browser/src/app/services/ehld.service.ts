@@ -2,7 +2,6 @@ import { computed, ElementRef, Injectable, InjectionToken, inject } from '@angul
 import { Observable, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import type { Analysis } from '../model/analysis.model';
-import { isArray } from 'lodash';
 import { AnalysisService } from './analysis.service';
 import { DataStateService } from './data-state.service';
 import { UrlStateService } from './url-state.service';
@@ -337,7 +336,7 @@ export class EhldService {
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
     values.forEach((exp, _i) => {
       const last = stops.at(-1);
-      const realExp = isArray(exp) ? exp[0] : exp;
+      const realExp = Array.isArray(exp) ? exp[0] : exp;
       if (last && last.exp === realExp) {
         last.stop += delta;
         last.width += delta;
