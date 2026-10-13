@@ -25,6 +25,7 @@
     "strict": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "noPropertyAccessFromIndexSignature": true,
     "allowJs": true,
     "noImplicitReturns": true,
@@ -52,13 +53,18 @@
   // Strictness here is a deliberate trade: each of these was measured against
   // the codebase before being switched on. strictTemplates cost 83 fixes and
   // was worth it; typeCheckHostBindings, strictStandalone and the checks below
-  // all cost nothing. exactOptionalPropertyTypes (72) is not on -- worth
-  // revisiting, but not free. noUncheckedIndexedAccess is on (#345): an index
+  // all cost nothing. noUncheckedIndexedAccess is on (#345): an index
   // out of range or a missing key is undefined, and the code is made to say so.
   // It took 346 findings across the app and the libraries, handled with guards
   // and destructuring rather than non-null assertions, and turned up real bugs
   // among them (an icon search that threw on no results, names and dates that
   // read "undefined"). A first trial had set it aside as mostly assertions.
+  // exactOptionalPropertyTypes is on (#337): `x?: T` means the key may be
+  // missing, not that it may hold undefined. Build objects that leave a value
+  // out by leaving the key out; write `x?: T | undefined` only where undefined
+  // is put there on purpose (a field reset, a value copied across that the
+  // source may lack). Query parameters go through httpParams(), which drops
+  // unset ones, rather than handing HttpClient `params: undefined`.
   // strictStandalone is deliberately absent: reactome-table is still an
   // NgModule library with declared, non-standalone components, and it is
   // published, so converting it is not a config change.

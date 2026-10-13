@@ -12,7 +12,7 @@ import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import type { Analysis } from '../model/analysis.model';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
-import { isArray } from 'lodash';
+import { httpParams } from '../utils/http-params';
 
 const LAYOUT_URL = 'assets/reacfoam/layout.tsv';
 export namespace EventsHierarchy {
@@ -31,13 +31,14 @@ export namespace EventsHierarchy {
     entities?: Analysis.Pathway['entities'];
   }
 
+  /** One left undefined is not sent: there may be no analysis to colour by. */
   export interface QueryParams {
-    pathwaysOnly: boolean;
-    token: string;
-    resource: string;
-    interactors: boolean;
-    importableOnly: boolean;
-    view: 'flatten' | 'nested' | 'nested-aggregated';
+    pathwaysOnly?: boolean;
+    token?: string | undefined;
+    resource?: string | undefined;
+    interactors?: boolean | undefined;
+    importableOnly?: boolean;
+    view?: 'flatten' | 'nested' | 'nested-aggregated';
   }
 }
 
@@ -75,6 +76,7 @@ export namespace Layout {
   }
 }
 
+/** Built from the event, whose layout and analysis values may be undefined. */
 export interface PathwayGroup extends FoamTree.DataObject {
   id: string;
   disease: boolean;
@@ -89,9 +91,9 @@ export interface PathwayGroup extends FoamTree.DataObject {
   familyColor: Signal<chroma.Color>;
   depth: number;
   flag?: boolean;
-  expressions?: number[];
-  fdr?: number;
-  pValue?: number;
+  expressions?: number[] | undefined;
+  fdr?: number | undefined;
+  pValue?: number | undefined;
   path: string[];
 }
 
@@ -113,13 +115,11 @@ export class ReacfoamService {
 
   fetchEventsHierarchy(
     species: Species,
-    params: Partial<EventsHierarchy.QueryParams>
+    params: EventsHierarchy.QueryParams
   ): Observable<EventsHierarchy.Data[]> {
-    cleanObject(params);
-    //console.log('fetch events hierarchy')
     return this.http.get<EventsHierarchy.Data[]>(
       `${CONTENT_SERVICE}/data/eventsHierarchy/${species.taxId}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 
@@ -162,10 +162,10 @@ export class ReacfoamService {
       params: {
         pathwaysOnly: true,
         token: this.state.analysis() || undefined,
-        resource: this.analysis.resourceFilter(),
+        resource: this.analysis.resourceFilter() ?? undefined,
         interactors: this.analysis.result()?.summary.interactors,
         view: 'nested-aggregated',
-      } as EventsHierarchy.QueryParams,
+      } satisfies EventsHierarchy.QueryParams,
     }),
     stream: ({ params }) => this.fetchEventsHierarchy(params.species, params.params),
   });
@@ -348,7 +348,8 @@ export class ReacfoamService {
       diagram: event.diagram,
       disease: isDisease,
       weight: event.totalEntity,
-      initialPosition: layoutNode,
+      // FoamTree's own type: present or left out.
+      ...(layoutNode && { initialPosition: layoutNode }),
       familyColor,
       family,
       depth,
@@ -366,17 +367,4 @@ export class ReacfoamService {
   buildId(stId: string | null, path: string[]): string | null {
     return stId ? path.join('/') + '/' + stId : null;
   }
-}
-
-export function cleanObject<O extends object>(object: O): O {
-  for (const key in object) {
-    if (
-      object[key] === null ||
-      object[key] === undefined ||
-      (isArray(object[key]) && object[key].length === 0)
-    ) {
-      delete object[key];
-    }
-  }
-  return object;
 }

@@ -39,6 +39,6 @@ export interface Event extends DatabaseObject, InDepth, HasFigure {
   /** Set by this site once the lineage is known; no answer carries it. */
   ancestors?: Event[];
   /** None for a top-level event. */
-  parent?: Event;
+  parent?: Event | undefined;
   hit?: boolean;
 }

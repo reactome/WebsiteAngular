@@ -469,6 +469,7 @@ export class DiagramService {
       const subpathways = [...subpathwayStIdToEventIds.entries()].flatMap(
         ([subpathwayId, events]) => (events.includes(item.reactomeId) ? [subpathwayId] : [])
       );
+      const classes = this.reactionTypeMap.get(item.reactionType);
 
       return {
         data: {
@@ -485,7 +486,7 @@ export class DiagramService {
           replacement,
           replacedBy,
         },
-        classes: this.reactionTypeMap.get(item.reactionType),
+        ...(classes && { classes }),
         position: scale(item.position),
       };
     });
@@ -1201,7 +1202,7 @@ function avoidOverlap(definitions: cytoscape.NodeDefinition[]) {
     node.style({ width: bb.w, height: bb.h });
   });
 
-  const layout = nodes.layout({
+  const options: FcoseLayoutOptions = {
     name: 'fcose',
     nodeRepulsion: 15,
     animate: false,
@@ -1209,7 +1210,11 @@ function avoidOverlap(definitions: cytoscape.NodeDefinition[]) {
     packComponents: false,
     randomize: false,
     tile: false,
-  } as FcoseLayoutOptions);
+  };
+  // Checked against fcose's options above. Its typings declare `ready` and the
+  // other handlers as possibly undefined, which cytoscape's own options do not
+  // allow, so they are handed over as cytoscape's.
+  const layout = nodes.layout(options as cytoscape.LayoutOptions);
   layout.run();
 
   definitions.forEach((def) => (def.position = cy.getElementById(def.data.id!).position()));

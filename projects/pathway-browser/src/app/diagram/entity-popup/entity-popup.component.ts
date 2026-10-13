@@ -238,7 +238,9 @@ export class EntityPopupComponent {
                         c.stId,
                         {
                           schemaClass: ref?.schemaClass,
-                          ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(Boolean),
+                          ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(
+                            (id): id is string => typeof id === 'string' && id !== ''
+                          ),
                         },
                       ] as [string, ComponentRef];
                     }),

@@ -59,7 +59,7 @@ export class EventService {
 
   private _subpathwayColors = new BehaviorSubject<Map<number, string> | undefined>(undefined);
   subpathwayColors$ = this._subpathwayColors.asObservable();
-  subpathwayColors?: Map<number, string>;
+  subpathwayColors: Map<number, string> | undefined;
 
   // Todo replace with dataState.currentPathway()
   private _diagramPathway = new BehaviorSubject<Pathway | undefined>(undefined);

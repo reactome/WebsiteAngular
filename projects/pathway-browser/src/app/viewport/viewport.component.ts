@@ -108,7 +108,7 @@ export class ViewportComponent {
   private figure: FigureService = inject(FigureService);
   public analysis: AnalysisService = inject(AnalysisService);
   private readonly snackBar = inject(MatSnackBar);
-  private loadFailureNotice?: MatSnackBarRef<TextOnlySnackBar>;
+  private loadFailureNotice: MatSnackBarRef<TextOnlySnackBar> | undefined;
   public dark: DarkService = inject(DarkService);
   public eventService: EventService = inject(EventService);
   public state: UrlStateService = inject(UrlStateService);
@@ -398,7 +398,7 @@ export class ViewportComponent {
     }
   }
 
-  interval?: number;
+  interval: number | undefined;
   readonly isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
   readonly isLastProfile = computed(
     () => this.analysis.sampleIndex() >= this.analysis.samples().length - 1

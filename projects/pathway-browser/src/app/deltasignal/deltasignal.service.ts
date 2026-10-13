@@ -19,7 +19,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DeltaSignalService {
   private readonly http = inject(HttpClient);
-  private catalogRequest?: Promise<DeltaSignalPathway[]>;
+  private catalogRequest: Promise<DeltaSignalPathway[]> | undefined;
   private loadGeneration = 0;
 
   readonly status = signal<DeltaSignalStatus>('idle');

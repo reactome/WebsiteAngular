@@ -853,9 +853,10 @@ export class DescriptionTabComponent implements OnDestroy {
    */
   private consumeFragment(): void {
     if (!this.route.snapshot.fragment) return;
+    // Navigating without a fragment drops it: the router keeps one only when
+    // asked to (preserveFragment).
     void this.router.navigate([], {
       relativeTo: this.route,
-      fragment: undefined,
       queryParamsHandling: 'preserve',
       replaceUrl: true,
     });

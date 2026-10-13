@@ -92,7 +92,10 @@ export class SearchComponent {
         : of([]),
   });
 
-  readonly suggestionResults = linkedSignal<{ value?: string[]; loading: boolean }, string[]>({
+  readonly suggestionResults = linkedSignal<
+    { value: string[] | undefined; loading: boolean },
+    string[]
+  >({
     source: () => ({ value: this.suggestions.value(), loading: this.suggestions.isLoading() }),
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
   });
@@ -140,18 +143,10 @@ export class SearchComponent {
   });
 
   constructor() {
-    effect(
-      () =>
-        this.diagram() &&
-        this.searchParams.update((params) =>
-          params
-            ? {
-                ...params,
-                diagram: this.diagram(),
-              }
-            : undefined
-        )
-    );
+    effect(() => {
+      const diagram = this.diagram();
+      if (diagram) this.searchParams.update((params) => params && { ...params, diagram });
+    });
     effect(() => {
       // Read to subscribe: the effect re-runs when the results panel is resized or replaced.
       this.resultHeight();
@@ -332,7 +327,7 @@ export class SearchComponent {
   });
 
   readonly selectedResultPathwaysStable = linkedSignal<
-    { results?: Search.Entry[]; loading: boolean },
+    { results: Search.Entry[] | undefined; loading: boolean },
     Search.Entry[]
   >({
     source: () => ({

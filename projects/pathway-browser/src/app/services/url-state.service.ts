@@ -137,10 +137,10 @@ export function urlParam<T>(
   const writableSignal = signal<T>(initialValue, {
     equal: (a, b) => JSON.stringify(a) === JSON.stringify(b),
   }) as UrlParam<T>;
-  writableSignal.otherTokens = otherTokens;
+  if (otherTokens) writableSignal.otherTokens = otherTokens;
   writableSignal.initialValue = initialValue;
   writableSignal.type = type;
-  writableSignal.otherTransform = otherTransform;
+  if (otherTransform) writableSignal.otherTransform = otherTransform;
   return writableSignal;
 }
 

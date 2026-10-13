@@ -98,6 +98,12 @@ export namespace Analysis {
     projectToHuman?: boolean;
   }
 
+  /**
+   * Parameters as a request takes them. One left undefined is not sent (see
+   * httpParams()), so a caller can pass a filter that may not be set.
+   */
+  export type RequestParameters = { [K in keyof Parameters]?: Parameters[K] | undefined };
+
   export interface Pathway {
     dbId: number;
     stId: string;

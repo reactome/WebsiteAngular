@@ -14,12 +14,13 @@
  */
 
 /** One interaction, in the shape the graph actually holds. */
+/** Read off the drawn badges, any of which may lack a value: so undefined. */
 export interface ExportableInteraction {
-  acc?: string;
-  alias?: string;
-  score?: number;
-  evidences?: number;
-  entity?: string;
+  acc?: string | undefined;
+  alias?: string | undefined;
+  score?: number | undefined;
+  evidences?: number | undefined;
+  entity?: string | undefined;
 }
 
 /** The columns, in the order the interactors table already presents them. */
