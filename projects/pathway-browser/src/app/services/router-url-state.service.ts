@@ -1,5 +1,12 @@
 import { effect, inject, Injectable, untracked } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, NavigationExtras, Params, Router } from '@angular/router';
+import {
+  ActivatedRoute,
+  isActive,
+  NavigationEnd,
+  NavigationExtras,
+  Params,
+  Router,
+} from '@angular/router';
 import { filter, map, switchMap } from 'rxjs';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -187,6 +194,12 @@ export class RouterUrlStateService extends UrlStateService {
       const settled = this.settledParams;
       this.settledParams = null;
 
+      // Nothing to write when the address already says this. The router
+      // compares addresses as text, so the same parameters in another order
+      // were a new history entry: the reader's next Back returned to an
+      // identical page (#168).
+      if (this.addressSays(this.pathwayId() ?? null, queryParams)) return;
+
       void this.navigateTo(this.pathwayId() ?? null, {
         queryParams,
         preserveFragment: !this.carriesLegacyPathway(),
@@ -258,6 +271,27 @@ export class RouterUrlStateService extends UrlStateService {
       queryParams[key] = Array.isArray(paramValue) ? paramValue.join(';') : paramValue;
     }
     return queryParams;
+  }
+
+  /** Whether the address is already this pathway with exactly these parameters, in any order. */
+  private addressSays(pathwayId: string | null, queryParams: Record<string, unknown>): boolean {
+    let route = this.router.routerState.root;
+    while (route.firstChild) route = route.firstChild;
+    const target = this.router.createUrlTree(pathwayId ? [pathwayId] : [], {
+      relativeTo: route.parent,
+      // As the address carries them: text.
+      queryParams: Object.fromEntries(Object.entries(queryParams).map(([k, v]) => [k, String(v)])),
+    });
+    // Read untracked: this is asked from inside the writer's effect, which must
+    // not start re-running on every navigation.
+    return untracked(() =>
+      isActive(target, this.router, {
+        paths: 'exact',
+        queryParams: 'exact',
+        fragment: 'ignored',
+        matrixParams: 'ignored',
+      })()
+    );
   }
 
   override navigateTo(pathwayId: string | null, extras: NavigationExtras = {}): Promise<boolean> {
