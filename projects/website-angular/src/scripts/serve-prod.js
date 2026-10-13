@@ -269,7 +269,14 @@ app.use(
     setHeaders: (res, filePath) => {
       res.setHeader(
         'Cache-Control',
-        contentNamed(filePath) ? 'public, max-age=31536000, immutable' : 'no-cache'
+        contentNamed(filePath)
+          ? 'public, max-age=31536000, immutable'
+          : /\.(json|html)$/.test(filePath)
+            ? // Content pages, the search index, index.html: always current.
+              'no-cache'
+            : // Images, uploads, fonts: a few minutes, so a page's pictures are
+              // not refetched on every view, and an edit shows within minutes.
+              'public, max-age=300'
       );
     },
   })

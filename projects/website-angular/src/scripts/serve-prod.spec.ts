@@ -156,14 +156,13 @@ describe('serve-prod', () => {
     // Pages, uploads and assets keep their names when they change. Cached for
     // a year as immutable, a rewritten documentation page stayed old in every
     // browser that had seen it.
-    for (const file of [
-      '/content/documentation/page.json',
-      '/uploads/figure-ABCDEFGH.png',
-      '/assets/thing.txt',
-    ]) {
+    const content = await fetch(base + '/content/documentation/page.json');
+    expect(content.headers.get('cache-control')).toBe('no-cache');
+    // Pictures and other files: minutes, not a year.
+    for (const file of ['/uploads/figure-ABCDEFGH.png', '/assets/thing.txt']) {
       const response = await fetch(base + file);
       expect(response.status, file).toBe(200);
-      expect(response.headers.get('cache-control'), file).toBe('no-cache');
+      expect(response.headers.get('cache-control'), file).toBe('public, max-age=300');
     }
   });
 
