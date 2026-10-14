@@ -27,10 +27,17 @@ import {
   pathwayJson,
   physicalEntityJson,
   referenceEntityJson,
+  javaJson,
+  neo4jFailureMessage,
   resolveId,
+  schemaCountQuery,
+  schemaMinQuery,
+  schemaWindow,
   servletParameter,
+  simpleObjectJson,
   speciesFilter,
   springBoolean,
+  springInteger,
 } from './service.mjs';
 
 let base;
@@ -1031,5 +1038,284 @@ describe('locationsInPWB reads its query as the servlet does', () => {
       `${base}/ContentService/data/detail/foo/locationsInPWB?x=1?&directParticipants=bad`
     );
     expect(response.status).toBe(400);
+  });
+});
+
+describe('springInteger, an Integer request parameter as Spring converts it', () => {
+  // Every case measured against Java's /data/schema/Pathway/min, 14 Oct 2026.
+  const refused = (type, message) =>
+    `Failed to convert value of type '${type}' to required type 'java.lang.Integer'; ` +
+    `nested exception is java.lang.NumberFormatException: ${message}`;
+  const one = (message) => ({ error: refused('java.lang.String', message) });
+  const several = (message) => ({ error: refused('java.lang.String[]', message) });
+
+  it('names a missing parameter, and one that is present but empty', () => {
+    expect(springInteger([], 'page')).toEqual({
+      error: "Required request parameter 'page' for method parameter type Integer is not present",
+    });
+    for (const blank of ['', ' ', '\t', '\u3000']) {
+      expect(springInteger([blank], 'offset')).toEqual({
+        error:
+          "Required request parameter 'offset' for method parameter type Integer is present but converted to null",
+      });
+    }
+  });
+
+  it('reads what NumberUtils.parseNumber reads: signs, hex, any whitespace removed, any digits', () => {
+    const cases = [
+      ['1', 1],
+      ['+1', 1],
+      ['01', 1],
+      ['0x1', 1],
+      ['#1', 1],
+      ['-0x1', -1],
+      ['0X1F', 31],
+      ['1 0', 10],
+      ['\t1', 1],
+      ['\u20031', 1],
+      ['\u30001', 1],
+      ['\u0661', 1],
+      ['\uff11', 1],
+      ['0x\uff21', 10],
+      ['0x7FFFFFFF', 2147483647],
+      ['-2147483648', -2147483648],
+      ['-0x80000000', -2147483648],
+    ];
+    for (const [raw, value] of cases) expect(springInteger([raw], 'page'), raw).toEqual({ value });
+  });
+
+  it("refuses the rest with the NumberFormatException Java's parser throws", () => {
+    expect(springInteger(['x'], 'page')).toEqual(one('For input string: "x"'));
+    expect(springInteger(['2147483648'], 'page')).toEqual(one('For input string: "2147483648"'));
+    expect(springInteger(['99999999999999999999'], 'page')).toEqual(
+      one('For input string: "99999999999999999999"')
+    );
+    expect(springInteger(['1.0'], 'page')).toEqual(one('For input string: "1.0"'));
+    expect(springInteger(['1e2'], 'page')).toEqual(one('For input string: "1e2"'));
+    expect(springInteger(['1,2'], 'page')).toEqual(one('For input string: "1,2"'));
+    expect(springInteger(['-'], 'page')).toEqual(one('For input string: "-"'));
+    expect(springInteger(['+0x1'], 'page')).toEqual(one('For input string: "+0x1"'));
+    // A no-break space is not whitespace to Java, so it is kept and refused.
+    expect(springInteger(['\u00a01'], 'page')).toEqual(one('For input string: "\u00a01"'));
+    expect(springInteger(['\u00a0'], 'page')).toEqual(one('For input string: "\u00a0"'));
+    expect(springInteger(['\u0001'], 'page')).toEqual(one('For input string: "\u0001"'));
+    // Integer.decode's own messages.
+    expect(springInteger(['0x'], 'page')).toEqual(one('For input string: ""'));
+    expect(springInteger(['#'], 'page')).toEqual(one('For input string: ""'));
+    expect(springInteger(['0x80000000'], 'page')).toEqual(one('For input string: "80000000"'));
+    expect(springInteger(['-0xZZ'], 'page')).toEqual(one('For input string: "-ZZ"'));
+    expect(springInteger(['0x-1'], 'page')).toEqual(one('Sign character in wrong position'));
+  });
+
+  it('reads the first of several values, and names them all, joined, when it cannot', () => {
+    expect(springInteger(['1', 'x'], 'page')).toEqual({ value: 1 });
+    expect(springInteger(['1', '2'], 'page')).toEqual({ value: 1 });
+    expect(springInteger(['', '1'], 'page')).toEqual({
+      error:
+        "Required request parameter 'page' for method parameter type Integer is present but converted to null",
+    });
+    expect(springInteger(['x', '1'], 'page')).toEqual(several('For input string: "x,1"'));
+    // The whitespace-only first value fails the converter, and the joined
+    // retry then loses its whitespace as every parse does.
+    expect(springInteger([' ', '1'], 'page')).toEqual(several('For input string: ",1"'));
+  });
+});
+
+describe('schemaWindow, the SKIP and LIMIT of /schema/{className}/min', () => {
+  it('pages as graph-core does: skip (page - 1) * offset, at most 20000 rows', () => {
+    expect(schemaWindow(1, 3)).toEqual({ skip: 0, limit: 3 });
+    expect(schemaWindow(3, 25)).toEqual({ skip: 50, limit: 25 });
+    expect(schemaWindow(2, 25000)).toEqual({ skip: 20000, limit: 20000 });
+    expect(schemaWindow(1, 2147483647)).toEqual({ skip: 0, limit: 20000 });
+  });
+
+  it('passes negative values on for Neo4j to refuse, as Java does', () => {
+    expect(schemaWindow(0, 5)).toEqual({ skip: -5, limit: 5 });
+    expect(schemaWindow(1, -1)).toEqual({ skip: 0, limit: -1 });
+  });
+
+  it("overflows as Java's int arithmetic does", () => {
+    expect(schemaWindow(-2147483648, 1)).toEqual({ skip: 2147483647, limit: 1 });
+    expect(schemaWindow(1073741825, 2)).toEqual({ skip: -2147483648, limit: 2 });
+  });
+});
+
+describe("schema queries, graph-core SchemaRepository's text", () => {
+  // The row order of a page is the plan's, so the text is Java's exactly.
+  const ret =
+    'RETURN DISTINCT(n.dbId) as dbId, n.stId as stId, n.displayName as displayName, labels(n) as labels ' +
+    'ORDER BY n.displayName SKIP $skip LIMIT $limit';
+  it('pages a class, with or without a species', () => {
+    expect(schemaMinQuery('Pathway')).toBe(`MATCH (n:Pathway) ${ret}`);
+    expect(schemaMinQuery('Pathway', 'taxId')).toBe(
+      `MATCH (s:Species{taxId:$taxId})<-[:species]-(n:Pathway) ${ret}`
+    );
+    expect(schemaMinQuery('Pathway', 'speciesName')).toBe(
+      `MATCH (s:Species{displayName:$speciesName})<-[:species]-(n:Pathway) ${ret}`
+    );
+  });
+
+  it('counts a class, with or without a species', () => {
+    expect(schemaCountQuery('Pathway')).toBe('MATCH (n:`Pathway`) RETURN count(n) AS n');
+    expect(schemaCountQuery('Pathway', 'taxId')).toBe(
+      'MATCH (s:Species{taxId:$taxId})<-[:species]-(n:Pathway) RETURN COUNT(n) AS n'
+    );
+    expect(schemaCountQuery('Pathway', 'speciesName')).toBe(
+      'MATCH (s:Species{displayName:$speciesName})<-[:species]-(n:Pathway) RETURN COUNT(n) AS n'
+    );
+  });
+});
+
+describe('simpleObjectJson, SimpleDatabaseObject as Java writes it', () => {
+  it('writes dbId, stId, displayName and the class the labels name, in that order', () => {
+    const row = {
+      labels: ['DatabaseObject', 'Event', 'Pathway', 'Trackable', 'Deletable'],
+      displayName: 'Apoptosis',
+      stId: 'R-HSA-109581',
+      dbId: 109581,
+    };
+    expect(JSON.stringify(simpleObjectJson(row))).toBe(
+      '{"dbId":109581,"stId":"R-HSA-109581","displayName":"Apoptosis","schemaClass":"Pathway"}'
+    );
+  });
+
+  it('leaves out a missing or empty stId, and writes a missing name as asString does', () => {
+    expect(
+      JSON.stringify(
+        simpleObjectJson({
+          dbId: 1,
+          stId: null,
+          displayName: null,
+          labels: ['DatabaseObject', 'Summation'],
+        })
+      )
+    ).toBe('{"dbId":1,"displayName":"null","schemaClass":"Summation"}');
+    expect(
+      JSON.stringify(
+        simpleObjectJson({ dbId: 1, stId: '', displayName: '', labels: ['DatabaseObject'] })
+      )
+    ).toBe('{"dbId":1,"schemaClass":"DatabaseObject"}');
+  });
+});
+
+describe('javaJson, JSON as Jackson writes it', () => {
+  it('escapes control characters with upper-case hex, and the usual ones short', () => {
+    expect(javaJson('\u0001\n\t\u001f\u000b\b\f\r')).toBe('"\\u0001\\n\\t\\u001F\\u000B\\b\\f\\r"');
+  });
+
+  it('leaves DEL, the line separators and / as they are, and escapes " and \\', () => {
+    expect(javaJson('\u007f\u2028/"\\<')).toBe('"\u007f\u2028/\\"\\\\<"');
+  });
+
+  it('does not mistake an escaped backslash for an escape', () => {
+    expect(javaJson('\\u001f')).toBe('"\\\\u001f"');
+    expect(javaJson('\\\u001f')).toBe('"\\\\\\u001F"');
+  });
+});
+
+describe('neo4jFailureMessage, a Neo4j client error as Spring reports it', () => {
+  it("is Neo4j's message, its code, and the driver's exception", () => {
+    const message =
+      "SKIP: Invalid input. '-1' is not a valid value. Must be a non-negative integer.";
+    expect(neo4jFailureMessage({ code: 'Neo.ClientError.Statement.ArgumentError', message })).toBe(
+      `${message}; Error code 'Neo.ClientError.Statement.ArgumentError'; ` +
+        `nested exception is org.neo4j.driver.exceptions.ClientException: ${message}`
+    );
+  });
+
+  it("is nothing for an error that is not an argument error, which is not Java's to mirror", () => {
+    expect(neo4jFailureMessage(new Error('connection refused'))).toBeUndefined();
+  });
+});
+
+describe('/schema/{className}/count and /min without a database', () => {
+  const at = (path) => `${base}/ContentService/data/schema/${path}`;
+  const text = async (path) => {
+    const response = await fetch(at(path));
+    return {
+      status: response.status,
+      type: response.headers.get('content-type'),
+      body: await response.text(),
+    };
+  };
+  const envelope = (code, reason, path, message) =>
+    JSON.stringify({
+      code,
+      reason,
+      url: `${base}/ContentService/data/schema/${path}`,
+      messages: [message],
+      targets: null,
+    });
+
+  it('serves both, on the paths Java uses', () => {
+    const paths = endpoints.map((e) => e.path);
+    expect(paths).toContain('/ContentService/data/schema/{id}/count');
+    expect(paths).toContain('/ContentService/data/schema/{id}/min');
+  });
+
+  it('answers a class Java does not have with its 500, case and all', async () => {
+    for (const [path, url] of [
+      ['Foo/count', 'Foo/count'],
+      ['pathway/count', 'pathway/count'],
+      ['Foo;x=1/count?species=9606', 'Foo;x=1/count'],
+      ['Pathway%3Bx/count', 'Pathway%3Bx/count'],
+      ['Foo/min?page=1&offset=1&species=9606', 'Foo/min'],
+    ]) {
+      const answer = await text(path);
+      expect(answer.status, path).toBe(500);
+      expect(answer.type, path).toMatch(/^application\/json/);
+      expect(answer.body, path).toBe(
+        envelope(500, 'INTERNAL_SERVER_ERROR', url, 'Specified class was not found')
+      );
+    }
+  });
+
+  it('refuses a species for a class without one, before asking the graph', async () => {
+    let answer = await text('Person/count?species=9606');
+    expect(answer.status).toBe(404);
+    expect(answer.body).toBe(
+      envelope(404, 'NOT_FOUND', 'Person/count', 'No entries have been found for species: 9606')
+    );
+    answer = await text('CandidateSet$AjcClosure5/count?species=9606&species=x');
+    expect(answer.body).toBe(
+      envelope(
+        404,
+        'NOT_FOUND',
+        'CandidateSet$AjcClosure5/count',
+        'No entries have been found for species: 9606,x'
+      )
+    );
+    answer = await text('Person/min?page=1&offset=1&species=');
+    expect(answer.status).toBe(404);
+    expect(answer.body).toBe(
+      envelope(404, 'NOT_FOUND', 'Person/min', 'No entries found for class: Person')
+    );
+  });
+
+  it('writes the species as Jackson would, control characters included', async () => {
+    const answer = await text('Person/count?species=%1F%0B');
+    expect(answer.body).toContain('"No entries have been found for species: \\u001F\\u000B"');
+  });
+
+  it('reads page and offset before the class, as Spring binds them first', async () => {
+    let answer = await text('Foo/min');
+    expect(answer.status).toBe(400);
+    expect(answer.body).toBe(
+      envelope(
+        400,
+        'BAD_REQUEST',
+        'Foo/min',
+        "Required request parameter 'page' for method parameter type Integer is not present"
+      )
+    );
+    answer = await text('Foo/min?page=1&offset=%zz');
+    expect(JSON.parse(answer.body).messages).toEqual([
+      "Required request parameter 'offset' for method parameter type Integer is not present",
+    ]);
+    answer = await text('Foo/min?page=x&page=1&offset=1');
+    expect(JSON.parse(answer.body).messages).toEqual([
+      "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Integer'; " +
+        'nested exception is java.lang.NumberFormatException: For input string: "x,1"',
+    ]);
   });
 });
