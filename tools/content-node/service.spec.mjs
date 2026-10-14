@@ -12,10 +12,13 @@
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { createHash } from 'node:crypto';
 import {
   app,
   endpoints,
+  endpointFor,
   eventProjection,
+  fingerprintFiles,
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
@@ -27,15 +30,19 @@ import {
   pathwayJson,
   physicalEntityJson,
   referenceEntityJson,
+  javaError,
   javaJson,
   neo4jFailureMessage,
+  notFound,
   resolveId,
   schemaCountQuery,
   schemaMinQuery,
+  schemaModelQuery,
   schemaWindow,
   servletParameter,
   simpleObjectJson,
   speciesFilter,
+  writeResult,
   springBoolean,
   springInteger,
 } from './service.mjs';
@@ -1317,5 +1324,253 @@ describe('/schema/{className}/count and /min without a database', () => {
       "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Integer'; " +
         'nested exception is java.lang.NumberFormatException: For input string: "x,1"',
     ]);
+  });
+});
+
+describe('error bodies, written as Jackson writes them', () => {
+  // Java (Jackson) writes a control character without a short escape as
+  // `\u001F`; JSON.stringify writes `\u001f`. Measured against Java on
+  // 14 Oct 2026: /data/query/R-HSA-%1F%0B/stId, /data/pathways/top/%1F%0B and
+  // /data/event/R-HSA-%1F/ancestors all answer `\u001F\u000B` in the message.
+  const request = {
+    originalUrl: '/ContentService/data/x/%1F%0B?y=1',
+    protocol: 'http',
+    get: () => 'h',
+  };
+
+  // And, like every Java error url, without the query: request.getRequestURL.
+  // Measured: /data/pathways/low/entity/foo?species=9606 and
+  // /data/pathways/top/99999999?x=1 both name the path alone.
+  it('upper-cases the escapes in a 404 from notFound, and leaves the query out', () => {
+    const answer = notFound(request, 'Id: R-HSA-\u001f\u000b has not been found in the System');
+    expect(answer.status).toBe(404);
+    expect(answer.body).toBe(
+      '{"code":404,"reason":"NOT_FOUND","url":"http://h/ContentService/data/x/%1F%0B",' +
+        '"messages":["Id: R-HSA-\\u001F\\u000B has not been found in the System"],"targets":null}'
+    );
+  });
+
+  it('upper-cases the escapes in any status from javaError', () => {
+    const answer = javaError(request, 400, 'BAD_REQUEST', 'x\u001a\u000e\u000f');
+    expect(answer.body).toBe(
+      '{"code":400,"reason":"BAD_REQUEST","url":"http://h/ContentService/data/x/%1F%0B",' +
+        '"messages":["x\\u001A\\u000E\\u000F"],"targets":null}'
+    );
+  });
+
+  it('reaches the wire that way, as Java answers a bad Boolean', async () => {
+    const response = await fetch(
+      `${base}/ContentService/data/detail/foo/locationsInPWB?directParticipants=x%1F%0B`
+    );
+    expect(response.status).toBe(400);
+    expect(response.headers.get('content-type')).toMatch(/^application\/json/);
+    expect(await response.text()).toContain('Invalid boolean value [x\\u001F\\u000B]"]');
+  });
+});
+
+describe('/schema/{className}/attributes and /referrals without a database', () => {
+  const at = (path) => `${base}/ContentService/data/schema/${path}`;
+  const text = async (path) => {
+    const response = await fetch(at(path));
+    return {
+      status: response.status,
+      type: response.headers.get('content-type'),
+      body: await response.text(),
+    };
+  };
+  const sha = (body) => createHash('sha256').update(body).digest('hex');
+  const classNotFound = (path) =>
+    JSON.stringify({
+      code: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      url: `${base}/ContentService/data/schema/${path}`,
+      messages: ['Specified class was not found'],
+      targets: null,
+    });
+
+  it('serves the three, on the paths Java uses', () => {
+    const paths = endpoints.map((e) => e.path);
+    expect(paths).toContain('/ContentService/data/schema/model');
+    expect(paths).toContain('/ContentService/data/schema/{id}/attributes');
+    expect(paths).toContain('/ContentService/data/schema/{id}/referrals');
+  });
+
+  // Java's own bytes, by sha256, taken from :8080 on 14 Oct 2026 -- not from
+  // the snapshot, so these check the snapshot and the way node composes it.
+  it("answers Java's bytes for a class", async () => {
+    for (const [path, digest, bytes] of [
+      [
+        'Pathway/attributes',
+        '009db4b6cb8deba9925ced5bb4bf933e62a2ffe9c5c218bef4089f02bb1bec86',
+        5526,
+      ],
+      [
+        'Pathway/referrals',
+        '09950303288a8a482850c7386fff022a2e3c2c0db4959118e8910140956ae702',
+        390,
+      ],
+      [
+        'EntityWithAccessionedSequence/attributes',
+        'b1627bdce648b9594dbcb864611aed8c92360ad31a0a9e8affb2fdb83268e392',
+        undefined,
+      ],
+      [
+        'EntityWithAccessionedSequence/referrals',
+        'b86d05805c5a9efaf135cecce067204c94c83f979d7d2c790f4b4effc3d5b1a4',
+        undefined,
+      ],
+      [
+        'DatabaseObject/attributes',
+        'd71208bbe636e76d6c237f42a703d187d8fac3c611969c7b6bb9d2bf5b81ccda',
+        undefined,
+      ],
+      [
+        'DatabaseObject/referrals',
+        'ed2053fed634c6ce67dbb1ff448c00ba4ecaff9fbcaab43ddef2da91f821aaba',
+        136,
+      ],
+      // Person overrides DatabaseObject's created and modified, so it has two
+      // rows of each name: the only class whose order rests on the second sort
+      // key, the declaring class (DatabaseObject before Person).
+      [
+        'Person/attributes',
+        '1ce5c6f49fa346eb703099cbea055d52bb6fbccd104b2b0cbac4e5816053a17c',
+        1884,
+      ],
+      ['Person/referrals', 'c9ce7b4c974487467c14a47f4bc184c638178e3234d7096129bdabceabc161cc', 365],
+    ]) {
+      const answer = await text(path);
+      expect(answer.status, path).toBe(200);
+      expect(answer.type, path).toMatch(/^application\/json/);
+      if (bytes) expect(answer.body.length, path).toBe(bytes);
+      expect(sha(answer.body), path).toBe(digest);
+    }
+  });
+
+  it('answers an interface from its own methods only, as getSuperclass is null', async () => {
+    expect((await text('Trackable/attributes')).body).toBe(
+      '[{"name":"updateTrackers","cardinality":"+","valueTypes":[{"name":"UpdateTracker","databaseObject":true}],"origin":"Trackable"}]'
+    );
+    expect((await text('Trackable/referrals')).body).toBe(
+      '[{"name":"updatedInstance","cardinality":"+","valueTypes":[{"name":"Trackable","databaseObject":false}],"origin":"UpdateTracker"}]'
+    );
+  });
+
+  it("answers a woven closure as AspectJ's AroundClosure", async () => {
+    expect((await text('Pathway$AjcClosure5/attributes')).body).toBe(
+      '[{"name":"flags","cardinality":"1","valueTypes":[{"name":"int","databaseObject":false}],"origin":"AroundClosure"},' +
+        '{"name":"preInitializationState","cardinality":"1","valueTypes":[{"name":"Object[]","databaseObject":false}],"origin":"AroundClosure"},' +
+        '{"name":"state","cardinality":"1","valueTypes":[{"name":"Object[]","databaseObject":false}],"origin":"AroundClosure"}]'
+    );
+    const referrals = await text('Pathway$AjcClosure5/referrals');
+    expect([referrals.status, referrals.body]).toEqual([200, '[]']);
+  });
+
+  it('reads the class as Spring hands it over: a matrix parameter dropped, %3B kept', async () => {
+    const plain = await text('Pathway/attributes');
+    expect((await text('Pathway;x/attributes')).body).toBe(plain.body);
+    expect((await text('Pathway/attributes?x=1')).body).toBe(plain.body);
+  });
+
+  it("answers a name Java's Class.forName does not find with its 500", async () => {
+    for (const [path, url] of [
+      ['Foo/attributes', 'Foo/attributes'],
+      ['Foo/attributes?x=1', 'Foo/attributes'],
+      ['Foo/referrals', 'Foo/referrals'],
+      ['pathway/attributes', 'pathway/attributes'],
+      ['Pathway%3Bx/attributes', 'Pathway%3Bx/attributes'],
+      ['Foo;x/attributes', 'Foo;x/attributes'],
+      ['Pathway.json/attributes', 'Pathway.json/attributes'],
+      ['Pathway$AjcClosure1/referrals', 'Pathway$AjcClosure1/referrals'],
+      ['Object/attributes', 'Object/attributes'],
+      ['model/attributes', 'model/attributes'],
+      ['model/referrals', 'model/referrals'],
+      ['%1F%0B/attributes', '%1F%0B/attributes'],
+    ]) {
+      const answer = await text(path);
+      expect(answer.status, path).toBe(500);
+      expect(answer.type, path).toMatch(/^application\/json/);
+      expect(answer.body, path).toBe(classNotFound(url));
+    }
+  });
+});
+
+describe("/schema/model's query", () => {
+  it("is graph-core SchemaRepository's, kept as written", () => {
+    expect(schemaModelQuery).toBe(
+      'MATCH (n:DatabaseObject) RETURN DISTINCT LABELS(n) AS labels, Count(n) AS count'
+    );
+  });
+});
+
+describe('endpointFor, which endpoint a concrete path belongs to', () => {
+  // The diff harness judges a path by its endpoint's declared differences.
+  // Matching on the text before the first `{` gave every /schema/{id}/... path
+  // to the first of them, /count.
+  it('matches the whole template, not its prefix', () => {
+    expect(endpointFor('/ContentService/data/schema/Pathway/min')?.path).toBe(
+      '/ContentService/data/schema/{id}/min'
+    );
+    expect(endpointFor('/ContentService/data/schema/Pathway/count?species=9606')?.path).toBe(
+      '/ContentService/data/schema/{id}/count'
+    );
+    expect(endpointFor('/ContentService/data/query/70486/stId')?.path).toBe(
+      '/ContentService/data/query/{id}/stId'
+    );
+  });
+
+  it('matches nothing for a path no endpoint serves', () => {
+    expect(endpointFor('/ContentService/data/schema/Pathway')).toBeUndefined();
+    expect(endpointFor('/ContentService/data/query/70486/stId/extra')).toBeUndefined();
+  });
+});
+
+describe('fingerprintFiles, what /health hashes', () => {
+  it('takes the service modules and its data, sorted, and no specs or notes', () => {
+    expect(
+      fingerprintFiles([
+        'service.mjs',
+        'service.spec.mjs',
+        'schema-snapshot.json',
+        'CACHING.md',
+        'graph.mjs',
+        'schema.spec.mjs',
+      ])
+    ).toEqual(['graph.mjs', 'schema-snapshot.json', 'service.mjs']);
+  });
+});
+
+describe('writeResult, how a handler answer goes on the wire', () => {
+  function recorder() {
+    const calls = [];
+    const response = {
+      status: (s) => (calls.push(['status', s]), response),
+      type: (t) => (calls.push(['type', t]), response),
+      send: (b) => (calls.push(['send', b]), response),
+      end: () => (calls.push(['end']), response),
+    };
+    return { response, calls };
+  }
+
+  it('writes an object body as Jackson would, upper-case escapes included', () => {
+    const { response, calls } = recorder();
+    writeResult(response, { status: 200, body: { a: '\u001f' } });
+    expect(calls).toEqual([
+      ['status', 200],
+      ['type', 'application/json'],
+      ['send', '{"a":"\\u001F"}'],
+    ]);
+  });
+
+  it('sends a string as it is, a serialised body as given, and no body at all as nothing', () => {
+    let rec = recorder();
+    writeResult(rec.response, { status: 200, body: 'R-HSA-1', type: 'text/plain' });
+    expect(rec.calls.at(-1)).toEqual(['send', 'R-HSA-1']);
+    rec = recorder();
+    writeResult(rec.response, { status: 200, body: [1], serialised: '[1]' });
+    expect(rec.calls.at(-1)).toEqual(['send', '[1]']);
+    rec = recorder();
+    writeResult(rec.response, { status: 200, body: undefined });
+    expect(rec.calls).toEqual([['status', 200], ['end']]);
   });
 });

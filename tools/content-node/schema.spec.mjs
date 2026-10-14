@@ -7,10 +7,16 @@
 // ContentService runs -- on 14 Oct 2026, Release 97.
 import { describe, expect, it } from 'vitest';
 import {
+  AJC_CLOSURE_NAMES,
+  attributeTable,
   isSchemaClass,
   isSpeciesClass,
+  referralsTable,
   SCHEMA_CLASSES,
   schemaClassOf,
+  schemaModelTree,
+  schemaSnapshot,
+  superclassOf,
   supertypes,
 } from './schema.mjs';
 
@@ -314,5 +320,117 @@ describe('schemaClassOf, DatabaseObjectUtils.getSchemaClass(labels)', () => {
     expect(schemaClassOf(['Foo', 'DatabaseObject', 'Bar', 'Person'])).toBe('Person');
     expect(schemaClassOf([])).toBe('Object');
     expect(schemaClassOf(['Foo'])).toBe('Object');
+  });
+});
+
+describe('superclassOf, Class.getSuperclass within the model', () => {
+  it('is the class extended, and nothing above DatabaseObject or for an interface', () => {
+    expect(superclassOf('Pathway')).toBe('Event');
+    expect(superclassOf('Event')).toBe('DatabaseObject');
+    expect(superclassOf('Regulation')).toBe('DatabaseObject');
+    expect(superclassOf('DatabaseObject')).toBeUndefined();
+    expect(superclassOf('Trackable')).toBeUndefined();
+    expect(superclassOf('Deletable')).toBeUndefined();
+    expect(superclassOf('Foo')).toBeUndefined();
+  });
+
+  it('never names an interface: each table entry lists what it extends first', () => {
+    for (const name of Object.keys(SCHEMA_CLASSES)) {
+      const parent = superclassOf(name);
+      if (parent === undefined) continue;
+      expect(['Trackable', 'Deletable'], name).not.toContain(parent);
+      expect(SCHEMA_CLASSES[parent], `${name} extends a class in the table`).toBeDefined();
+    }
+  });
+});
+
+describe("schema-snapshot.json, Java's reflection answers captured once", () => {
+  const snapshot = schemaSnapshot();
+  const classes = Object.keys(SCHEMA_CLASSES).sort();
+
+  it('has an entry for every class in schema.mjs, and none it does not have', () => {
+    expect(Object.keys(snapshot.declared).sort()).toEqual(classes);
+    expect(Object.keys(snapshot.referrals).sort()).toEqual(classes);
+  });
+
+  it("holds only each class's own methods, and referrals that exist", () => {
+    for (const [name, rows] of Object.entries(snapshot.declared)) {
+      for (const row of rows) expect(row.origin, name).toBe(name);
+    }
+    for (const [name, indexes] of Object.entries(snapshot.referrals)) {
+      for (const index of indexes) expect(snapshot.referralRows[index], name).toBeDefined();
+    }
+  });
+
+  it('answers every class and every closure, and nothing else', () => {
+    for (const name of [...classes, ...AJC_CLOSURE_NAMES]) {
+      expect(Array.isArray(attributeTable(name)), name).toBe(true);
+      expect(Array.isArray(referralsTable(name)), name).toBe(true);
+    }
+    for (const name of ['Foo', 'pathway', 'Object', 'model', 'Pathway$AjcClosure1', '']) {
+      expect(attributeTable(name), name).toBeUndefined();
+      expect(referralsTable(name), name).toBeUndefined();
+    }
+  });
+
+  it("composes a class's table as getAttributeTable does: up the superclasses, by name then origin", () => {
+    const names = attributeTable('Pathway').map((row) => `${row.name}/${row.origin}`);
+    expect(names).toEqual([...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+    expect(new Set(attributeTable('Pathway').map((row) => row.origin))).toEqual(
+      new Set(['Pathway', 'Event', 'DatabaseObject'])
+    );
+  });
+});
+
+describe('schemaModelTree, DatabaseObjectUtils.getGraphModelTree', () => {
+  const { model } = schemaSnapshot();
+
+  /** Java's answer back into the rows it was built from: each class's own count. */
+  const rowsOf = (tree) => {
+    const rows = [];
+    const chain = (name) => {
+      const out = [];
+      for (let at = name; at; at = superclassOf(at)) out.unshift(at);
+      return out;
+    };
+    const visit = (node) => {
+      const below = (node.children ?? []).reduce((sum, child) => sum + child.count, 0);
+      if (node.count > below) {
+        const labels = chain(node.className);
+        // As the graph gives them: an interface label among the classes.
+        if (labels.includes('Event')) labels.splice(1, 0, 'Trackable', 'Deletable');
+        rows.push({ labels, count: node.count - below });
+      }
+      (node.children ?? []).forEach(visit);
+    };
+    visit(tree);
+    return rows;
+  };
+
+  it("rebuilds Java's tree, byte for byte, from the counts it was built from", () => {
+    const rows = rowsOf(model);
+    expect(rows.length).toBeGreaterThan(50);
+    expect(JSON.stringify(schemaModelTree(rows))).toBe(JSON.stringify(model));
+    // The rows' order is the plan's; the tree must not depend on it.
+    expect(JSON.stringify(schemaModelTree([...rows].reverse()))).toBe(JSON.stringify(model));
+  });
+
+  it('adds up rows whose labels name the same class', () => {
+    const tree = schemaModelTree([
+      { labels: ['DatabaseObject', 'Person'], count: 2 },
+      { labels: ['Person', 'DatabaseObject'], count: 3 },
+      { labels: ['DatabaseObject', 'Event', 'Pathway'], count: 4 },
+    ]);
+    expect(JSON.stringify(tree)).toBe(
+      '{"className":"DatabaseObject","count":9,"children":[' +
+        '{"className":"Event","count":4,"children":[{"className":"Pathway","count":4}]},' +
+        '{"className":"Person","count":5}]}'
+    );
+  });
+
+  it('refuses a label it does not know, rather than answer a tree without it', () => {
+    expect(() => schemaModelTree([{ labels: ['DatabaseObject', 'NewClass'], count: 1 }])).toThrow(
+      /NewClass/
+    );
   });
 });

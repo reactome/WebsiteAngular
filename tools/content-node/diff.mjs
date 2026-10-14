@@ -15,7 +15,7 @@
  * shows otherwise -- which has to be argued in a commit message, not assumed at
  * a terminal.
  */
-import { endpoints } from './service.mjs';
+import { endpointFor, endpoints } from './service.mjs';
 
 const JAVA = process.env.JAVA_CONTENT_SERVICE || 'http://localhost:8080';
 const NODE = process.env.NODE_CONTENT_SERVICE || 'http://127.0.0.1:4400';
@@ -232,7 +232,7 @@ async function main() {
   for (const path of list) {
     try {
       const { java, node } = await fetchBoth(path);
-      const endpoint = endpoints.find((e) => path.startsWith(e.path.split('{')[0]));
+      const endpoint = endpointFor(path);
       const found = differences(path, java, node, endpoint);
       const declared = endpoint?.differs ?? [];
       const expected = found.filter((problem) => declared.some((rule) => rule.test(problem)));

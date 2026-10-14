@@ -13,6 +13,13 @@
  * And one more the answer's rows depend on: which class a node's labels name
  * (DatabaseObjectUtils.getSchemaClass), which needs the class hierarchy.
  *
+ * /schema/model, /attributes and /referrals need the rest of the reflection.
+ * The hierarchy here builds the model's tree (schemaModelTree; the counts are
+ * the graph's). A class's attributes and referrals -- its getters and their
+ * types, and other classes' getters that return it -- are Java's own answers,
+ * captured into schema-snapshot.json by snapshot-schema.mjs, which checks that
+ * they cover exactly the classes listed here.
+ *
  * Derived from graph-core's source (src/main/java/org/reactome/server/graph/
  * domain/model, main at 62aef35d, the model's last change, 25 Sep 2025) and
  * checked, on 14 Oct 2026, by reflection over the graph-core-3.0.0-SNAPSHOT jar
@@ -39,7 +46,12 @@
  *     so Java counts them (0) rather than refusing them.
  *  4. The tests in schema.spec.mjs pin the 113, the 27 and the hierarchy;
  *     update them from the new jar, then run the diff harness over every label.
+ *  5. Regenerate schema-snapshot.json from the Java service running the new
+ *     jar: `node tools/content-node/snapshot-schema.mjs` (see its header). It
+ *     holds /schema/{className}/attributes and /referrals, which are
+ *     reflection too, and refuses to write if its classes are not these.
  */
+import { readFileSync } from 'node:fs';
 
 /**
  * Every class in graph-core's domain.model package, and the model classes it
@@ -221,11 +233,15 @@ const AJC_CLOSURES = {
 };
 
 const CLASSES = new Set(Object.keys(SCHEMA_CLASSES));
-const CLOSURES = new Set(
-  Object.entries(AJC_CLOSURES).flatMap(([owner, numbers]) =>
-    numbers.map((number) => `${owner}$AjcClosure${number}`)
-  )
+
+/** Every woven `<Class>$AjcClosure<n>` Class.forName finds, by name. */
+export const AJC_CLOSURE_NAMES = Object.entries(AJC_CLOSURES).flatMap(([owner, numbers]) =>
+  numbers.map((number) => `${owner}$AjcClosure${number}`)
 );
+const CLOSURES = new Set(AJC_CLOSURE_NAMES);
+
+/** The model's own interfaces: no superclass, so their own methods only. */
+const INTERFACES = new Set(['Deletable', 'Trackable']);
 
 /** Whether Java's Class.forName finds `name` in the model package. */
 export function isSchemaClass(name) {
@@ -267,4 +283,109 @@ export function schemaClassOf(labels) {
     if (lowest === 'Object' || supertypes(label).has(lowest)) lowest = label;
   }
   return lowest;
+}
+
+/**
+ * Class.getSuperclass, within the model: the class `name` extends, listed
+ * first in its entry. Undefined above DatabaseObject (Object), for an
+ * interface, and for anything that is not a model class.
+ */
+export function superclassOf(name) {
+  if (!CLASSES.has(name) || INTERFACES.has(name)) return undefined;
+  return SCHEMA_CLASSES[name][0];
+}
+
+let snapshot;
+/**
+ * schema-snapshot.json, read once: Java's /schema/{className}/attributes and
+ * /referrals, captured by snapshot-schema.mjs, in the shape below.
+ *
+ *  - declared: per class, the rows of its attribute table whose origin is the
+ *    class itself -- the getters it declares. A class's table is its own rows
+ *    and every superclass's (attributeTable), so each is stored once.
+ *  - referralRows and referrals: every distinct row of a referrals answer,
+ *    once, and per class the indexes of its rows in Java's order.
+ *  - closure: the one answer of both for every woven $AjcClosure class.
+ *  - model: Java's /schema/model when captured, for schema.spec.mjs only.
+ */
+export function schemaSnapshot() {
+  snapshot ??= JSON.parse(readFileSync(new URL('./schema-snapshot.json', import.meta.url), 'utf8'));
+  return snapshot;
+}
+
+/** Java's String.compareTo: UTF-16 code units, which is what `<` compares. */
+const byCodeUnits = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * DatabaseObjectUtils.getAttributeTable, as the controller writes it: the
+ * getters `name` and each superclass declare, in a TreeSet ordered by name
+ * then by the declaring class's name. Undefined where Class.forName fails.
+ */
+export function attributeTable(name, data = schemaSnapshot()) {
+  if (CLOSURES.has(name)) return data.closure.attributes;
+  if (!CLASSES.has(name)) return undefined;
+  const rows = [];
+  for (let at = name; at !== undefined; at = superclassOf(at)) rows.push(...data.declared[at]);
+  return rows.sort((a, b) => byCodeUnits(a.name, b.name) || byCodeUnits(a.origin, b.origin));
+}
+
+/**
+ * DatabaseObjectUtils.getReferrals, as the controller writes it: the getters
+ * of other classes whose type is `name` or one of its superclasses. Undefined
+ * where Class.forName fails.
+ */
+export function referralsTable(name, data = schemaSnapshot()) {
+  if (CLOSURES.has(name)) return data.closure.referrals;
+  if (!CLASSES.has(name)) return undefined;
+  return data.referrals[name].map((index) => data.referralRows[index]);
+}
+
+/**
+ * DatabaseObjectUtils.getGraphModelTree, from SchemaRepository's rows -- each
+ * a distinct set of labels and how many nodes carry it. Each row's class is
+ * the one its labels name (schemaClassOf); its count goes to that class, and
+ * the class and its superclasses are linked into the tree, children ordered
+ * by class name (SchemaNode's TreeSet). Each count then becomes the sum of its
+ * subtree's. Jackson leaves an empty children set out.
+ *
+ * A label that is not a model class is where Java's Class.forName throws; the
+ * controller swallows it and answers an empty 200, uncached. Here it throws:
+ * the graph has a class this table does not, so schema.mjs is out of date,
+ * and an empty answer would hide that.
+ */
+export function schemaModelTree(rows) {
+  const nodes = new Map();
+  const link = (name, below, count) => {
+    if (name === undefined) return; // Object
+    const existing = nodes.get(name);
+    if (existing) {
+      if (below) existing.children.push(below);
+      else existing.count += count;
+      return;
+    }
+    const node = { className: name, count, children: below ? [below] : [] };
+    nodes.set(name, node);
+    if (INTERFACES.has(name)) {
+      // Java's recursion reaches getSuperclass() == null and fails there.
+      throw new Error(`schema model: rows whose most specific label is the interface ${name}`);
+    }
+    link(superclassOf(name), node, 0);
+  };
+  for (const row of rows) {
+    const unknown = row.labels.find((label) => !isSchemaClass(label));
+    if (unknown !== undefined) {
+      throw new Error(`schema model: label ${unknown} is not a class in schema.mjs`);
+    }
+    const lowest = schemaClassOf(row.labels);
+    link(lowest === 'Object' ? undefined : lowest, undefined, row.count);
+  }
+  const shape = (node) => {
+    const children = node.children.sort((a, b) => byCodeUnits(a.className, b.className)).map(shape);
+    const count = children.reduce((sum, child) => (sum + child.count) | 0, node.count);
+    return children.length
+      ? { className: node.className, count, children }
+      : { className: node.className, count };
+  };
+  const root = nodes.get('DatabaseObject');
+  return root === undefined ? undefined : shape(root);
 }
