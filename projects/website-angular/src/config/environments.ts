@@ -244,7 +244,13 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   },
   curator: {
     variant: 'curator',
-    host: 'https://newcurator.reactome.org',
+    // The same build is served from both newcurator.reactome.org and
+    // curator.reactome.org, so it talks to whichever one it was loaded from.
+    // Naming one broke the other: /download sends no Access-Control-Allow-Origin,
+    // so curator.reactome.org could not fetch diagram JSON from newcurator.
+    // `start:curator` reaches the same paths through proxy.curator.conf.json.
+    host: 'origin',
+    originFallback: 'https://newcurator.reactome.org',
     contentServicePath: '/GraphContentService',
     s3: S3,
     gsaServer: 'production',

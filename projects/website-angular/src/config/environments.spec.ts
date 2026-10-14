@@ -44,6 +44,14 @@ describe('site profiles', () => {
     }
   });
 
+  it('serves the curator build from either curator host', () => {
+    // One build:curator artifact is deployed at both newcurator.reactome.org and
+    // curator.reactome.org. Naming either host left the other fetching diagram
+    // JSON cross-origin from a /download that sends no CORS headers.
+    expect(SITE_PROFILES.curator.host).toBe('origin');
+    expect(SITE_PROFILES.curator.originFallback).toBe('https://newcurator.reactome.org');
+  });
+
   it('names a backend for the artifact that is served from a bucket', () => {
     // `production` is built by deploy.yml and synced to S3. Its origin is
     // download.reactome.org, which answers 403 for /ContentService -- so it is

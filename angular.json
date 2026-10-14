@@ -139,7 +139,8 @@
               "buildTarget": "reactome:build:development"
             },
             "curator": {
-              "buildTarget": "reactome:build:development,curator"
+              "buildTarget": "reactome:build:development,curator",
+              "proxyConfig": "proxy.curator.conf.json"
             },
             "curator-local": {
               "buildTarget": "reactome:build:curator-local",

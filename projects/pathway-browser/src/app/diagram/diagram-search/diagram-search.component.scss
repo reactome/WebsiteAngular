@@ -1,9 +1,10 @@
-// Overlays the diagram top-left, clear of the flag banner in the centre and
-// the legend on the right.
+// Overlays the diagram top-right, clear of the flag banner in the centre, the
+// "Compare with normal" toggle on the left, and the legend handle, which sits
+// halfway down the right edge.
 :host {
   position: absolute;
   top: 10px;
-  left: 10px;
+  right: 10px;
   z-index: 2;
 }
 
