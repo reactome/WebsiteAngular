@@ -661,6 +661,70 @@ export const endpoints = [
       };
     },
   },
+  {
+    path: '/ContentService/data/pathways/low/entity/{id}',
+    // A protein in ten lower-level pathways: every row of the answer is mapped.
+    sample: 'R-HSA-199420',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/pathways\/low\/entity\/[^/]+: \.url: /],
+    /**
+     * The lower-level pathways an entity or event takes part in, optionally in
+     * one species. The Pathway Browser asks for it from the entity popup and
+     * the participating-pathways list ("where else does this appear?").
+     *
+     * Java's three queries, kept as graph-core writes them
+     * (PathwayRepository.getPathwaysFor*): pathways that reach the object
+     * through any participant relationship, pathways that contain it as a
+     * reaction, and the object itself if it is a pathway, joined by UNION.
+     * Kept as written rather than tidied, because the row order of the answer
+     * is the order those queries produce.
+     *
+     * The id is read as everywhere else (resolveId, pathId). A pre-2016 REACT_
+     * id is first swapped for its stable id, as graph-core's getIdentifier does,
+     * so the query is the stable-id one Java runs.
+     *
+     * `species` is read as graph-core's SpeciesService reads it (speciesFilter).
+     * A species that is not found filters nothing, as in Java; the 404 message
+     * repeats the parameter as given, and says "null" when there is none.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 6));
+      const given = request.query?.species;
+      const species = given === undefined ? undefined : [given].flat().join(',');
+      const missing = () =>
+        notFound(request, `No result for ${raw} in ${species === undefined ? 'null' : species}`);
+
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return missing();
+      if (where.startsWith('n.oldStId')) {
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        // Not found: Java keeps the REACT_ id and looks for it as a stable id,
+        // which finds nothing.
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+
+      const taxId = await speciesTaxId(speciesFilter(species));
+      const inSpecies = taxId === undefined ? '' : '-[:species]->(:Species{taxId:$taxId})';
+      const rows = await read(
+        `MATCH (:DatabaseObject${object})<-[:regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*]-()<-[:hasEvent]-(p:Pathway)${inSpecies}
+         RETURN DISTINCT p
+         UNION
+         MATCH (:ReactionLikeEvent${object})<-[:hasEvent]-(p:Pathway)${inSpecies}
+         RETURN DISTINCT p
+         UNION
+         MATCH (p:Pathway${object})${inSpecies}
+         RETURN DISTINCT p`,
+        { ...params, ...(taxId === undefined ? {} : { taxId }) }
+      );
+      if (rows.length === 0) return missing();
+      return { status: 200, body: rows.map((row) => pathwayJson(row.p)), type: 'application/json' };
+    },
+  },
 ];
 
 /**
@@ -955,6 +1019,71 @@ export function eventProjection(node) {
     inferred: node.isInferred ?? false,
     inDisease: node.isInDisease ?? false,
   };
+}
+
+/**
+ * A Pathway as graph-core's domain class serialises it when only the node is
+ * loaded: these keys, in this order, absent values omitted. Measured from
+ * Java's answers, which agree across 150 pathways: `oldStId` and the diagram
+ * size are on the node but not written, and `className` repeats the class.
+ */
+export function pathwayJson(node) {
+  const out = only(node, [
+    'dbId',
+    'displayName',
+    'stId',
+    'stIdVersion',
+    'definition',
+    'isInDisease',
+    'isInferred',
+    'maxDepth',
+    'name',
+    'releaseDate',
+    'releaseStatus',
+    'speciesName',
+    'doi',
+    'hasDiagram',
+    'hasEHLD',
+    'lastUpdatedDate',
+    'schemaClass',
+  ]);
+  if (node.schemaClass) out.className = node.schemaClass;
+  return out;
+}
+
+/**
+ * The `species` parameter as graph-core's SpeciesService.getSpecies reads it:
+ * nothing when absent or empty; digits as a taxId, then as a dbId; anything
+ * else as a name -- lower-cased, runs of '_' and ' ' made one space, first
+ * letter capitalised -- matched against a Species' names.
+ */
+export function speciesFilter(raw) {
+  if (raw === undefined || raw === '') return { kind: 'none' };
+  if (/^\p{Nd}+$/u.test(raw)) return { kind: 'number', value: raw };
+  const name = raw.toLowerCase().replace(/[_ ]+/g, ' ');
+  return { kind: 'name', value: name.charAt(0).toUpperCase() + name.slice(1) };
+}
+
+/** The taxId of the species a filter names, or undefined: none, or not found. */
+async function speciesTaxId(filter) {
+  if (filter.kind === 'none') return undefined;
+  if (filter.kind === 'number') {
+    const [byTaxId] = await read(
+      'MATCH (s:Species {taxId: $value}) RETURN s.taxId AS taxId LIMIT 1',
+      filter
+    );
+    if (byTaxId) return byTaxId.taxId;
+    const [byDbId] = await read(
+      'MATCH (s:Species {dbId: toInteger($value)}) RETURN s.taxId AS taxId LIMIT 1',
+      { value: asciiDigits(filter.value) }
+    );
+    return byDbId?.taxId ?? undefined;
+  }
+  const [byName] = await read(
+    'MATCH (s:Species) WHERE $value IN s.name RETURN s.taxId AS taxId LIMIT 1',
+    filter
+  );
+  return byName?.taxId ?? undefined;
 }
 
 /**

@@ -60,6 +60,16 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/data/pathways/low/entity/R-HSA-199420',
+    '/ContentService/data/pathways/low/entity/R-HSA-199420?species=9606',
+    '/ContentService/data/pathways/low/entity/R-ALL-113592?species=Homo%20sapiens',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -74,6 +84,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
     '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
     '/ContentService/data/eventsHierarchy/9606',
+    // Only the plain lower-level pathways are ported, not every form's.
+    '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms',
+    '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
   ]) {
     it(`leaves ${other} with Java`, async () => {
       expect(await targetOf(other)).toBe(backend);

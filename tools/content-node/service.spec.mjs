@@ -12,7 +12,15 @@
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, endpoints, eventProjection, pathId, resolveId } from './service.mjs';
+import {
+  app,
+  endpoints,
+  eventProjection,
+  pathId,
+  pathwayJson,
+  resolveId,
+  speciesFilter,
+} from './service.mjs';
 
 let base;
 let server;
@@ -291,5 +299,68 @@ describe("eventProjection, graph-core's EventProjection as Java writes it", () =
       inferred: false,
       inDisease: false,
     });
+  });
+});
+
+describe('pathwayJson, a Pathway as graph-core serialises it', () => {
+  // Java's answer for R-HSA-162582 under /data/pathways/low/entity, 14 Oct 2026.
+  const node = {
+    dbId: 162582,
+    oldStId: 'REACT_111102',
+    displayName: 'Signal Transduction',
+    stId: 'R-HSA-162582',
+    stIdVersion: 'R-HSA-162582.13',
+    isInDisease: false,
+    isInferred: false,
+    maxDepth: 13,
+    name: ['Signal Transduction', 'Signaling Pathways'],
+    releaseDate: '2011-09-20',
+    releaseStatus: 'UPDATED',
+    speciesName: 'Homo sapiens',
+    hasDiagram: true,
+    hasEHLD: true,
+    diagramWidth: 631,
+    diagramHeight: 589,
+    lastUpdatedDate: '2023-06-07',
+    schemaClass: 'TopLevelPathway',
+  };
+
+  it("writes Java's keys in Java's order, and not the ones it leaves out", () => {
+    expect(JSON.stringify(pathwayJson(node))).toBe(
+      '{"dbId":162582,"displayName":"Signal Transduction","stId":"R-HSA-162582",' +
+        '"stIdVersion":"R-HSA-162582.13","isInDisease":false,"isInferred":false,"maxDepth":13,' +
+        '"name":["Signal Transduction","Signaling Pathways"],"releaseDate":"2011-09-20",' +
+        '"releaseStatus":"UPDATED","speciesName":"Homo sapiens","hasDiagram":true,"hasEHLD":true,' +
+        '"lastUpdatedDate":"2023-06-07","schemaClass":"TopLevelPathway","className":"TopLevelPathway"}'
+    );
+  });
+
+  it('puts a definition after stIdVersion, and a doi after speciesName', () => {
+    const keys = Object.keys(pathwayJson({ ...node, definition: 'd', doi: '10.3180/x' }));
+    expect(keys.slice(3, 5)).toEqual(['stIdVersion', 'definition']);
+    expect(keys.slice(keys.indexOf('speciesName'), keys.indexOf('speciesName') + 2)).toEqual([
+      'speciesName',
+      'doi',
+    ]);
+  });
+});
+
+describe('speciesFilter, the species parameter as graph-core reads it', () => {
+  // SpeciesService.getSpecies: digits are a taxId, then a dbId; anything else
+  // a name, matched against Species.name after collapsing runs of '_' and ' '
+  // and capitalising the first letter only. Absent or empty: no filter.
+  it('filters by nothing when there is no species', () => {
+    expect(speciesFilter(undefined)).toEqual({ kind: 'none' });
+    expect(speciesFilter('')).toEqual({ kind: 'none' });
+  });
+
+  it('reads digits as a taxId first, then a dbId', () => {
+    expect(speciesFilter('9606')).toEqual({ kind: 'number', value: '9606' });
+  });
+
+  it('reads anything else as a name, the way Java normalises it', () => {
+    expect(speciesFilter('homo_sapiens')).toEqual({ kind: 'name', value: 'Homo sapiens' });
+    expect(speciesFilter('HOMO  SAPIENS')).toEqual({ kind: 'name', value: 'Homo sapiens' });
+    expect(speciesFilter('mus__musculus')).toEqual({ kind: 'name', value: 'Mus musculus' });
   });
 });

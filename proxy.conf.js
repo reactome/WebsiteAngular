@@ -119,6 +119,9 @@ module.exports = {
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors(\\?|$)': contentNode,
+  // The lower-level pathways an entity takes part in, with or without a
+  // species: the entity popup and the participating-pathways list.
+  '^/ContentService/data/pathways/low/entity/[^/?]+(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
