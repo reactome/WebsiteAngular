@@ -175,6 +175,58 @@ services:
       # them without anyone deciding to. Neither belongs on an instance the
       # public can reach.
 
+  # Reactome's graph database, as the project publishes it for each release
+  # (developer docs: documentation/dev/graph-database). Replaces the Neo4j
+  # installed on the host, so the database is a pinned image like everything
+  # else here rather than a system package nobody upgrades in step with a
+  # release. To move to a new release, change the tag and `up -d graphdb`.
+  graphdb:
+    image: public.ecr.aws/reactome/graphdb:Release97
+    restart: unless-stopped
+    # Bolt on loopback only, on the port the host database used, so everything
+    # that reads it -- content-node, the Java ContentService, the analysis
+    # service -- keeps the address it has. Never 0.0.0.0: arbitrary queries are
+    # the cheapest way to make every page on the site slow. Not the HTTP port
+    # (7474): nothing here uses it.
+    ports:
+      - '127.0.0.1:7687:7687'
+    # A network of its own. On the default one, every other container in this
+    # file could reach it by name, which the host install never allowed; its
+    # readers all come in through the loopback port.
+    networks:
+      - graphdb
+    # The image is built with authentication off. The wrapper turns it on with
+    # the credentials the services already hold, read from the same file
+    # content-node mounts (see there for why it is read literally), and refuses
+    # to start if they are missing rather than starting open.
+    entrypoint: ['/bin/bash', '/graphdb-entrypoint.sh']
+    command: ['neo4j']
+    volumes:
+      - ./deploy/graphdb/entrypoint.sh:/graphdb-entrypoint.sh:ro
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/graphdb.env:ro
+      # The store, in a volume named for its release. Docker fills an empty
+      # volume from the image once; after that a restart or a recreate reuses
+      # it. Left in the container's own layer, every start copied all 3.2GB
+      # there, because the image's entrypoint changes the owner of every file.
+      #
+      # Named for the release so that changing the image tag alone cannot keep
+      # serving the previous release's data: the tag and this name move
+      # together (deploy/graphdb/compose.spec.ts checks it), and the old
+      # volume is removed once the new release is live.
+      #
+      # The password is set when the volume is first filled. Changing it later
+      # needs the volume recreated, or ALTER USER in the database.
+      - graphdb-release97:/var/lib/neo4j/data
+      # The image declares both as volumes; named, so a recreate does not leave
+      # another anonymous pair behind each time.
+      - graphdb-logs:/logs
+      - graphdb-unused:/data
+    environment:
+      # The size the host database ran with.
+      - NEO4J_dbms_memory_heap_max__size=3g
+      - NEO4J_dbms_memory_pagecache_size=2g
+      - NEO4J_dbms_default__database=graph.db
+
   content-node:
     build:
       context: .
@@ -223,9 +275,9 @@ services:
     # Defaults to this host's operator; override where the file has a different
     # owner. `id -u`, `id -g`.
     user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
-    # No depends_on: Neo4j is not in this compose file. If it is down the
-    # service starts, fails to build its lists, and rebuilds on the next
-    # request -- which is the behaviour specs/006 D10 asks for.
+    # No depends_on graphdb, deliberately: if the graph is down this starts,
+    # fails to build its lists, and rebuilds on the next request -- which is
+    # the behaviour specs/006 D10 asks for -- rather than refusing to start.
 
   # The front door. Replaces the hand-created `reactome-nginx` container, which
   # mounted its config from /etc/nginx-reactome -- a *copy* of deploy/nginx that
@@ -270,8 +322,12 @@ networks:
   # compose joins it rather than trying to own it, and never removes it.
   reactome_beta:
     external: true
+  graphdb: {}
 
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.
   render-cache:
+  graphdb-release97:
+  graphdb-logs:
+  graphdb-unused:
