@@ -226,6 +226,11 @@ describe('resolveId, as graph-core reads an id', () => {
     });
   }
 
+  it('reads digits from outside the BMP as Java does: not a number', () => {
+    // Java tests each UTF-16 unit; a surrogate pair is never a digit to it.
+    expect(resolveId('\u{1D7CF}\u{1D7CF}\u{1D7D1}').where).toBe('false');
+  });
+
   it('matches nothing for an id Java would not find, lower case included', () => {
     // Java's trim leaves a no-break space or a line separator in place.
     for (const raw of ['abc', 'r-hsa-70486', '', '\u00a070486', '\u202870486']) {
@@ -335,6 +340,19 @@ describe('pathwayJson, a Pathway as graph-core serialises it', () => {
     );
   });
 
+  it('writes isCanonical where Java declares it, and defaults hasEHLD to false', () => {
+    const withoutEhld = { ...node };
+    delete withoutEhld.hasEHLD;
+    const keys = Object.keys(pathwayJson({ ...withoutEhld, isCanonical: 'true' }));
+    expect(keys.slice(keys.indexOf('hasDiagram'), keys.indexOf('hasDiagram') + 4)).toEqual([
+      'hasDiagram',
+      'hasEHLD',
+      'isCanonical',
+      'lastUpdatedDate',
+    ]);
+    expect(pathwayJson(withoutEhld).hasEHLD).toBe(false);
+  });
+
   it('puts a definition after stIdVersion, and a doi after speciesName', () => {
     const keys = Object.keys(pathwayJson({ ...node, definition: 'd', doi: '10.3180/x' }));
     expect(keys.slice(3, 5)).toEqual(['stIdVersion', 'definition']);
@@ -356,6 +374,10 @@ describe('speciesFilter, the species parameter as graph-core reads it', () => {
 
   it('reads digits as a taxId first, then a dbId', () => {
     expect(speciesFilter('9606')).toEqual({ kind: 'number', value: '9606' });
+  });
+
+  it('reads digits from outside the BMP as a name, as Java does', () => {
+    expect(speciesFilter('\u{1D7D2}\u{1D7D6}').kind).toBe('name');
   });
 
   it('reads anything else as a name, the way Java normalises it', () => {

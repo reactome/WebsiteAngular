@@ -888,7 +888,7 @@ export function resolveId(raw) {
   if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
   if (id.startsWith('R') || id.includes(':')) return { where: 'n.stId = $id', params: { id } };
   // StringUtils.isNumeric and Long.parseLong take a digit of any script.
-  if (/^\p{Nd}+$/u.test(id)) {
+  if (javaNumeric(id)) {
     return { where: 'n.dbId = toInteger($id)', params: { id: asciiDigits(id) } };
   }
   return { where: 'false', params: {} };
@@ -904,6 +904,20 @@ function javaTrim(text) {
   while (start < end && text.charCodeAt(start) <= 0x20) start += 1;
   while (end > start && text.charCodeAt(end - 1) <= 0x20) end -= 1;
   return text.slice(start, end);
+}
+
+/**
+ * StringUtils.isNumeric, which Java's id and species readers use: non-empty,
+ * and every UTF-16 unit a decimal digit. Per unit rather than per code point,
+ * because that is what Java tests -- a digit outside the BMP (U+1D7CF) is a
+ * surrogate pair to it, and neither half is a digit.
+ */
+function javaNumeric(text) {
+  if (text.length === 0) return false;
+  for (let i = 0; i < text.length; i += 1) {
+    if (!/\p{Nd}/u.test(String.fromCharCode(text.charCodeAt(i)))) return false;
+  }
+  return true;
 }
 
 /**
@@ -1028,7 +1042,9 @@ export function eventProjection(node) {
  * size are on the node but not written, and `className` repeats the class.
  */
 export function pathwayJson(node) {
-  const out = only(node, [
+  // hasEHLD has a field default of false in Java, should a node lack it (none
+  // does today); isCanonical is declared but on no node yet.
+  const out = only({ ...node, hasEHLD: node.hasEHLD ?? false }, [
     'dbId',
     'displayName',
     'stId',
@@ -1044,6 +1060,7 @@ export function pathwayJson(node) {
     'doi',
     'hasDiagram',
     'hasEHLD',
+    'isCanonical',
     'lastUpdatedDate',
     'schemaClass',
   ]);
@@ -1059,7 +1076,7 @@ export function pathwayJson(node) {
  */
 export function speciesFilter(raw) {
   if (raw === undefined || raw === '') return { kind: 'none' };
-  if (/^\p{Nd}+$/u.test(raw)) return { kind: 'number', value: raw };
+  if (javaNumeric(raw)) return { kind: 'number', value: raw };
   const name = raw.toLowerCase().replace(/[_ ]+/g, ' ');
   return { kind: 'name', value: name.charAt(0).toUpperCase() + name.slice(1) };
 }
