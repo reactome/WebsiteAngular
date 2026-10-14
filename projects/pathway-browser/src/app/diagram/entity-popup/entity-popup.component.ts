@@ -444,7 +444,9 @@ export class EntityPopupComponent {
                     label: p.displayName,
                     detail: p.speciesName,
                     stId: p.stId,
-                    hasDiagram: p.hasDiagram === true,
+                    // As given: absent stays absent, so the diagram keeps the
+                    // selection (the #168 default) rather than guessing.
+                    ...(p.hasDiagram !== undefined && { hasDiagram: p.hasDiagram }),
                   })),
                 },
               ])
