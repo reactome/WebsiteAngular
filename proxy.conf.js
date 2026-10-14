@@ -122,6 +122,9 @@ module.exports = {
   // The lower-level pathways an entity takes part in, with or without a
   // species: the entity popup and the participating-pathways list.
   '^/ContentService/data/pathways/low/entity/[^/?]+(\\?|$)': contentNode,
+  // The reference entities behind an event's participants: the molecule list
+  // and the IDG page.
+  '^/ContentService/data/participants/[^/?]+/referenceEntities(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),

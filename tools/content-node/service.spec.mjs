@@ -18,6 +18,7 @@ import {
   eventProjection,
   pathId,
   pathwayJson,
+  referenceEntityJson,
   resolveId,
   speciesFilter,
 } from './service.mjs';
@@ -384,5 +385,96 @@ describe('speciesFilter, the species parameter as graph-core reads it', () => {
     expect(speciesFilter('homo_sapiens')).toEqual({ kind: 'name', value: 'Homo sapiens' });
     expect(speciesFilter('HOMO  SAPIENS')).toEqual({ kind: 'name', value: 'Homo sapiens' });
     expect(speciesFilter('mus__musculus')).toEqual({ kind: 'name', value: 'Mus musculus' });
+  });
+});
+
+describe('referenceEntityJson, a ReferenceEntity as graph-core serialises it', () => {
+  // Java's answer for UniProt:P01112 under /participants/R-HSA-5672965/
+  // referenceEntities, 14 Oct 2026, keys shortened.
+  const labels = ['DatabaseObject', 'ReferenceEntity', 'ReferenceGeneProduct', 'ReferenceSequence'];
+  const node = {
+    dbId: 62718,
+    displayName: 'UniProt:P01112 HRAS',
+    stId: 'uniprot:P01112',
+    databaseName: 'UniProt',
+    identifier: 'P01112',
+    name: ['HRAS'],
+    otherIdentifier: ['3265'],
+    url: 'http://purl.uniprot.org/uniprot/P01112',
+    checksum: 'C',
+    geneName: ['HRAS', 'HRAS1'],
+    isSequenceChanged: false,
+    sequenceLength: 189,
+    chain: ['chain:1-186'],
+    schemaClass: 'ReferenceGeneProduct',
+  };
+
+  it("writes Java's keys in Java's order, moleculeType from the class", () => {
+    expect(Object.keys(referenceEntityJson(node, labels))).toEqual([
+      'dbId',
+      'displayName',
+      'stId',
+      'databaseName',
+      'identifier',
+      'name',
+      'otherIdentifier',
+      'url',
+      'moleculeType',
+      'checksum',
+      'geneName',
+      'isSequenceChanged',
+      'sequenceLength',
+      'chain',
+      'className',
+      'schemaClass',
+    ]);
+    expect(referenceEntityJson(node, labels).moleculeType).toBe('Protein');
+  });
+
+  it('takes the class from the labels, the most specific one, not schemaClass', () => {
+    const isoform = [
+      'DatabaseObject',
+      'ReferenceEntity',
+      'ReferenceIsoform',
+      'ReferenceGeneProduct',
+    ];
+    expect(
+      referenceEntityJson({ ...node, schemaClass: 'ReferenceIsoform' }, isoform).className
+    ).toBe('ReferenceIsoform');
+    const dna = ['DatabaseObject', 'ReferenceEntity', 'ReferenceSequence', 'ReferenceDNASequence'];
+    const odd = referenceEntityJson({ dbId: 1, schemaClass: '6' }, dna);
+    expect([odd.className, odd.moleculeType, odd.schemaClass]).toEqual([
+      'ReferenceDNASequence',
+      'Entity',
+      '6',
+    ]);
+  });
+
+  it('gives each class the moleculeType its constructor sets, and a group none', () => {
+    const type = (leaf) => referenceEntityJson({ dbId: 1 }, ['ReferenceEntity', leaf]).moleculeType;
+    expect(type('ReferenceMolecule')).toBe('Chemical');
+    expect(type('ReferenceTherapeutic')).toBe('ChemicalDrug');
+    expect(type('ReferenceRNASequence')).toBe('Entity');
+    expect(type('ReferenceGroup')).toBeUndefined();
+  });
+
+  it('leaves out what Java does not write', () => {
+    const json = referenceEntityJson({ ...node, trivial: true }, [
+      'ReferenceEntity',
+      'ReferenceMolecule',
+    ]);
+    expect('trivial' in json).toBe(false);
+  });
+});
+
+describe('an answer with no body', () => {
+  // Java's controller returns null for an id that is neither a stable id nor a
+  // dbId, and Spring sends a 200 with no body and no content type. Reproduced
+  // without the database: the id is refused before any query.
+  it('is a 200 with nothing in it, and no content type', async () => {
+    const response = await fetch(`${base}/ContentService/data/participants/foo/referenceEntities`);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('');
+    expect(response.headers.get('content-type')).toBeNull();
   });
 });
