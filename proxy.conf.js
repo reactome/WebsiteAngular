@@ -127,6 +127,8 @@ module.exports = {
   '^/ContentService/data/participants/[^/?]+/referenceEntities(\\?|$)': contentNode,
   // An event's participants with their reference entities: the molecule list.
   '^/ContentService/data/participants/[^/?]+(\\?|$)': contentNode,
+  // The other forms of a physical entity: the details panel and the popup.
+  '^/ContentService/data/entity/[^/?]+/otherForms(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
