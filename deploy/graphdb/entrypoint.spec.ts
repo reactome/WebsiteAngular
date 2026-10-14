@@ -58,6 +58,24 @@ describe('the graph database wrapper', () => {
     expect(run.stdout.split('\n')[0]).toBe('neo4j/last');
   });
 
+  // What the image's own entrypoint cannot take. Given any of these it either
+  // prints NEO4J_AUTH -- password included -- to the container log, or exits,
+  // or (a password ending /true) makes the password expire on first use.
+  for (const [what, credentials] of [
+    ['a password with a slash', 'NEO4J_USER=neo4j\nNEO4J_PASSWORD=pa/ss\n'],
+    ['a password ending /true', 'NEO4J_USER=neo4j\nNEO4J_PASSWORD=pass/true\n'],
+    ['a user other than neo4j', 'NEO4J_USER=reader\nNEO4J_PASSWORD=secret\n'],
+    ['the default password', 'NEO4J_USER=neo4j\nNEO4J_PASSWORD=neo4j\n'],
+  ]) {
+    it(`refuses ${what}, without printing it`, () => {
+      const run = start(credentials ?? '');
+      expect(run.status).toBe(1);
+      expect(run.stdout).toBe('');
+      expect(run.stderr).not.toMatch(/secret|pa\/ss|pass\/true|NEO4J_PASSWORD=/);
+      expect(run.stderr).toMatch(/graphdb:/);
+    });
+  }
+
   for (const [what, credentials] of [
     ['no password', 'NEO4J_USER=neo4j\n'],
     ['an empty password', 'NEO4J_USER=neo4j\nNEO4J_PASSWORD=\n'],

@@ -43,6 +43,23 @@ if [ -z "$user" ] || [ -z "$password" ]; then
   exit 1
 fi
 
+# The image's entrypoint takes NEO4J_AUTH only as neo4j/<password>. Given
+# anything else it prints the whole value -- password included -- to the
+# container log and stops; a password ending /true would also expire on first
+# use. So these are refused here, and the messages never name the values.
+if [ "$user" != "neo4j" ]; then
+  echo >&2 "graphdb: NEO4J_USER in $file must be neo4j for this image; not starting"
+  exit 1
+fi
+if [[ "$password" == */* ]]; then
+  echo >&2 "graphdb: NEO4J_PASSWORD in $file contains '/', which this image cannot take; not starting"
+  exit 1
+fi
+if [ "$password" = "neo4j" ]; then
+  echo >&2 "graphdb: NEO4J_PASSWORD in $file is the default, which this image refuses; not starting"
+  exit 1
+fi
+
 export NEO4J_AUTH="$user/$password"
 export NEO4J_dbms_security_auth__enabled=true
 unset user password

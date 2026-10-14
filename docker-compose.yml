@@ -183,13 +183,18 @@ services:
   graphdb:
     image: public.ecr.aws/reactome/graphdb:Release97
     restart: unless-stopped
-    # Loopback only, on the ports the host database used, so everything that
-    # reads it -- content-node, the Java ContentService, the analysis service
-    # -- keeps the address it has. Never 0.0.0.0: arbitrary queries are the
-    # cheapest way to make every page on the site slow.
+    # Bolt on loopback only, on the port the host database used, so everything
+    # that reads it -- content-node, the Java ContentService, the analysis
+    # service -- keeps the address it has. Never 0.0.0.0: arbitrary queries are
+    # the cheapest way to make every page on the site slow. Not the HTTP port
+    # (7474): nothing here uses it.
     ports:
       - '127.0.0.1:7687:7687'
-      - '127.0.0.1:7474:7474'
+    # A network of its own. On the default one, every other container in this
+    # file could reach it by name, which the host install never allowed; its
+    # readers all come in through the loopback port.
+    networks:
+      - graphdb
     # The image is built with authentication off. The wrapper turns it on with
     # the credentials the services already hold, read from the same file
     # content-node mounts (see there for why it is read literally), and refuses
@@ -199,13 +204,28 @@ services:
     volumes:
       - ./deploy/graphdb/entrypoint.sh:/graphdb-entrypoint.sh:ro
       - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/graphdb.env:ro
+      # The store, in a volume named for its release. Docker fills an empty
+      # volume from the image once; after that a restart or a recreate reuses
+      # it. Left in the container's own layer, every start copied all 3.2GB
+      # there, because the image's entrypoint changes the owner of every file.
+      #
+      # Named for the release so that changing the image tag alone cannot keep
+      # serving the previous release's data: the tag and this name move
+      # together (deploy/graphdb/compose.spec.ts checks it), and the old
+      # volume is removed once the new release is live.
+      #
+      # The password is set when the volume is first filled. Changing it later
+      # needs the volume recreated, or ALTER USER in the database.
+      - graphdb-release97:/var/lib/neo4j/data
+      # The image declares both as volumes; named, so a recreate does not leave
+      # another anonymous pair behind each time.
+      - graphdb-logs:/logs
+      - graphdb-unused:/data
     environment:
       # The size the host database ran with.
       - NEO4J_dbms_memory_heap_max__size=3g
       - NEO4J_dbms_memory_pagecache_size=2g
       - NEO4J_dbms_default__database=graph.db
-    # The data is inside the image and only read, so nothing needs a volume:
-    # recreating the container starts it again from the published release.
 
   content-node:
     build:
@@ -302,8 +322,12 @@ networks:
   # compose joins it rather than trying to own it, and never removes it.
   reactome_beta:
     external: true
+  graphdb: {}
 
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.
   render-cache:
+  graphdb-release97:
+  graphdb-logs:
+  graphdb-unused:
