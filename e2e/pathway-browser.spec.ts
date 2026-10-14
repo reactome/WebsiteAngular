@@ -307,6 +307,8 @@ test.describe('Hierarchy and illustration together', () => {
 });
 
 test('a link to a pathway drawn in its parent keeps the entity it selected', async ({ page }) => {
+  // Its steps wait up to 90s each, longer than the global 60s.
+  test.setTimeout(3 * 60 * 1000);
   // Synthesis of PIPs at the plasma membrane has no diagram of its own, so the
   // browser shows its parent's, PI Metabolism. A link that also named an entity
   // in it -- PTEN, here -- lost that selection on the way: the hand-off always
@@ -330,6 +332,9 @@ test('a link to a pathway drawn in its parent keeps the entity it selected', asy
 });
 
 test.describe('a link to a reaction', () => {
+  // Each step waits up to 90s for a cold backend; the global 60s would cut a
+  // slow hand-off short and report a timeout instead of the step that failed.
+  test.describe.configure({ timeout: 3 * 60 * 1000 });
   // A reaction has no diagram of its own; the pathway that contains it does.
   // A link straight to one used to show the "nothing to draw" notice. It now
   // opens the parent pathway's diagram with the reaction selected in it.
