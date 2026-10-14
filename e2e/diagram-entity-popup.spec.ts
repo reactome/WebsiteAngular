@@ -133,6 +133,63 @@ test.describe('Diagram entity popup', () => {
     await expect(rows.first().or(note)).toBeVisible({ timeout: 20_000 });
   });
 
+  test('choosing a pathway in it selects that pathway, even one drawn in this diagram', async ({
+    page,
+  }) => {
+    // PTEN in PI Metabolism. Its pathways are mostly sub-pathways without a
+    // diagram of their own, drawn in this same diagram: choosing one hands off
+    // back here. The choice has to say which pathway it was, or the hand-off
+    // keeps the entity selected and the reader's click appears to do nothing.
+    const PARENT = 'R-HSA-1483255';
+    const SUBPATHWAY = 'R-HSA-1660499';
+    const PTEN = 'R-HSA-199420';
+    await page.goto(`/PathwayBrowser/${PARENT}`);
+    const container = page.locator('#cytoscape').first();
+    await expect(container).toBeVisible({ timeout: BOOT });
+    // Canvas nodes have no element to click: ask cytoscape where PTEN is
+    // drawn, bring it into view, and right-click there.
+    const at = async () =>
+      page.evaluate((stId) => {
+        const el = document.querySelector('#cytoscape') as
+          (HTMLElement & { _cyreg?: { cy?: any } }) | null;
+        const cy = el?._cyreg?.cy;
+        const node = cy?.nodes().filter((n: any) => n.data('graph.stId') === stId);
+        if (!node || node.length === 0) return null;
+        const p = node.first().renderedPosition();
+        return { x: p.x as number, y: p.y as number };
+      }, PTEN);
+    await expect.poll(at, { timeout: BOOT }).not.toBeNull();
+    await page.evaluate((stId) => {
+      const cy = (document.querySelector('#cytoscape') as any)._cyreg.cy;
+      const node = cy
+        .nodes()
+        .filter((n: any) => n.data('graph.stId') === stId)
+        .first();
+      cy.zoom(2);
+      cy.center(node);
+    }, PTEN);
+    await page.waitForTimeout(1500);
+    const point = (await at())!;
+    const box = (await container.boundingBox())!;
+    await page.mouse.click(box.x + point.x, box.y + point.y, { button: 'right' });
+    await expect(page.locator('.entity-popup')).toBeVisible({ timeout: 20_000 });
+
+    await page.locator('.entity-popup__tabs button', { hasText: 'Pathways' }).click();
+    await page
+      .locator('.entity-popup__content li', { hasText: 'Synthesis of PIPs at the plasma membrane' })
+      .first()
+      .click({ timeout: 20_000 });
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: BOOT })
+      .toBe(SUBPATHWAY);
+    // Drawn in its parent's diagram, which is the one it was chosen from.
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: BOOT })
+      .toBe(`/PathwayBrowser/${PARENT}`);
+    expect(new URL(page.url()).searchParams.get('select')).toBe(SUBPATHWAY);
+  });
+
   test('explains itself when an entity cannot have interactors', async ({ page }) => {
     await page.goto(PATHWAY);
     await openPopupOnAnyEntity(page);

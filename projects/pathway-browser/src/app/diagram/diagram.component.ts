@@ -2059,11 +2059,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * What production leaves you without is a way back, which is the confusing
    * part rather than the movement itself; the popup title does that here.
    */
-  onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
+  onPopupNavigate(event: { stId: string; kind: EntityPopupTab; hasDiagram?: boolean }): void {
     if (event.kind === 'pathways') {
       this.popupTarget.set(null);
+      // The entity right-clicked stays selected, so it is found again in the
+      // pathway chosen -- as a double-click on a pathway keeps the selection
+      // (#168). Except for a pathway drawn in a parent's diagram: it hands off
+      // to that diagram keeping the selection, which for most of an entity's
+      // pathways is the diagram already on screen, so choosing one appeared to
+      // do nothing. Selecting the pathway itself shows where it is.
       void this.state.navigateTo(event.stId, {
-        queryParamsHandling: 'preserve',
+        ...(event.hasDiagram === false
+          ? { queryParams: { select: event.stId }, queryParamsHandling: 'merge' as const }
+          : { queryParamsHandling: 'preserve' as const }),
         preserveFragment: true,
       });
       return;

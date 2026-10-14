@@ -62,6 +62,8 @@ interface PopupRow {
   detail?: string;
   /** Diagram entity or pathway to go to when clicked. */
   stId?: string;
+  /** For a pathway: whether it has a diagram of its own, or is drawn in a parent's. */
+  hasDiagram?: boolean;
   /** External link, for interactors. */
   href?: string;
 }
@@ -153,7 +155,7 @@ export class EntityPopupComponent {
   readonly target = input<EntityPopupTarget | null>(null);
 
   /** A row was chosen; the diagram decides whether to select or navigate. */
-  readonly navigate = output<{ stId: string; kind: EntityPopupTab }>();
+  readonly navigate = output<{ stId: string; kind: EntityPopupTab; hasDiagram?: boolean }>();
   /** The title was clicked: return the diagram to the entity this is about. */
   readonly recenter = output<void>();
   readonly dismissed = output<void>();
@@ -438,6 +440,7 @@ export class EntityPopupComponent {
                   label: p.displayName,
                   detail: p.speciesName,
                   stId: p.stId,
+                  hasDiagram: p.hasDiagram === true,
                 })),
               },
             ])
@@ -523,7 +526,13 @@ export class EntityPopupComponent {
       window.open(row.href, '_blank', 'noopener');
       return;
     }
-    if (row.stId) this.navigate.emit({ stId: row.stId, kind: this.tab() });
+    if (row.stId) {
+      this.navigate.emit({
+        stId: row.stId,
+        kind: this.tab(),
+        ...(row.hasDiagram !== undefined && { hasDiagram: row.hasDiagram }),
+      });
+    }
   }
 
   close(): void {
