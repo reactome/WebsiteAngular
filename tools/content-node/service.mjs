@@ -825,6 +825,49 @@ export const endpoints = [
       return { status: 200, body: rows.map(participantJson), type: 'application/json' };
     },
   },
+  {
+    path: '/ContentService/data/entity/{id}/otherForms',
+    // PTEN: 120 other forms, all proteins.
+    sample: 'R-HSA-199420',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/entity\/[^/]+\/otherForms: \.url: /],
+    /**
+     * The other physical entities made from the same reference entity -- the
+     * same protein modified, in another compartment, or another species' form.
+     * The details panel and the entity popup show them.
+     *
+     * Java's query (graph-core PhysicalEntityRepository.getOtherFormsOf), kept
+     * as written. The id is read as everywhere else; a REACT_ id is swapped for
+     * its stable id first. Nothing found -- an unknown id, one with no other
+     * forms, one that is not an entity -- is Java's 404.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return missing();
+      if (where.startsWith('n.oldStId')) {
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+      const rows = await read(
+        `MATCH (n:PhysicalEntity${object})-[:referenceEntity]->(m:ReferenceEntity)<-[:referenceEntity]-(k)
+         WHERE NOT n=k RETURN k`,
+        params
+      );
+      if (rows.length === 0) return missing();
+      return {
+        status: 200,
+        body: rows.map((row) => physicalEntityJson(row.k)),
+        type: 'application/json',
+      };
+    },
+  },
 ];
 
 /**
@@ -1281,6 +1324,59 @@ export function participantJson(row) {
       url: asJavaString(ref.url),
     })),
   };
+}
+
+/** EntityWithAccessionedSequence.getClassName: by the reference type. */
+const EWAS_CLASS_NAMES = {
+  ReferenceGeneProduct: 'Protein',
+  ReferenceDNASequence: 'DNA Sequence',
+  ReferenceRNASequence: 'RNA Sequence',
+};
+
+/** The stored fields, in the order Jackson writes them for every class here. */
+const PHYSICAL_ENTITY_FIELDS = [
+  'dbId',
+  'displayName',
+  'stId',
+  'stIdVersion',
+  'definition',
+  'maxDepth',
+  'name',
+  'speciesName',
+  'systematicName',
+  'endCoordinate',
+  'referenceType',
+  'startCoordinate',
+];
+
+/**
+ * A physical entity -- of the classes that have a reference entity -- as
+ * graph-core serialises a bare node. Measured from Java over every class that
+ * appears as an other form, and the class names from graph-core's getters:
+ *
+ * - an EWAS is named by its reference type (Protein, DNA Sequence, RNA
+ *   Sequence), and anything else -- an isoform's -- falls back to
+ *   GenomeEncodedEntity's "Genes and Transcripts";
+ * - a SimpleEntity is a "Chemical Compound";
+ * - a drug has no override, so DatabaseObject's simple class name, and
+ *   Jackson writes it last rather than before inDisease.
+ *
+ * `isInDisease` is written as `inDisease`; `oldStId` never (@JsonIgnore).
+ */
+export function physicalEntityJson(node) {
+  const head = only(node, PHYSICAL_ENTITY_FIELDS);
+  const tail = only({ inDisease: node.isInDisease, schemaClass: node.schemaClass }, [
+    'inDisease',
+    'schemaClass',
+  ]);
+  if (node.schemaClass === 'EntityWithAccessionedSequence') {
+    const className = EWAS_CLASS_NAMES[node.referenceType] ?? 'Genes and Transcripts';
+    return { ...head, className, ...tail };
+  }
+  if (node.schemaClass === 'SimpleEntity') {
+    return { ...head, className: 'Chemical Compound', ...tail };
+  }
+  return { ...head, ...tail, ...(node.schemaClass && { className: node.schemaClass }) };
 }
 
 /**

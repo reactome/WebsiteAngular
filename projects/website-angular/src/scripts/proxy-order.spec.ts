@@ -70,6 +70,10 @@ describe('the dev server proxy', () => {
     });
   }
 
+  it('sends the other forms of an entity to the content service', async () => {
+    expect(await targetOf('/ContentService/data/entity/R-HSA-199420/otherForms')).toBe(contentNode);
+  });
+
   it('sends the participants of an event to the content service', async () => {
     expect(await targetOf('/ContentService/data/participants/R-HSA-5672965')).toBe(contentNode);
     expect(await targetOf('/ContentService/data/participants/5672965?x=1')).toBe(contentNode);
@@ -100,6 +104,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
     // Only the participants and their reference entities are ported.
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
+    // Only the other forms of an entity are ported.
+    '/ContentService/data/entity/R-HSA-199420/in-depth',
+    '/ContentService/data/entity/R-HSA-199420/componentOf',
   ]) {
     it(`leaves ${other} with Java`, async () => {
       expect(await targetOf(other)).toBe(backend);
