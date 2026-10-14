@@ -18,6 +18,7 @@ import {
   eventProjection,
   pathId,
   participantJson,
+  participantsFrom,
   pathwayJson,
   referenceEntityJson,
   resolveId,
@@ -516,5 +517,22 @@ describe('participantJson, graph-core Participant as Java writes it', () => {
   it('leaves out a missing participant name or class, as asString(null) does', () => {
     const json = participantJson({ ...row, displayName: null });
     expect('displayName' in json).toBe(false);
+  });
+});
+
+describe('participantsFrom, the relationships Java follows from the event', () => {
+  // Java's two queries differ, and the difference shows: for a Cell, the dbId
+  // form reaches its RNA markers and the stable-id form returns [] (checked
+  // against Java with R-HSA-9910609 / 9910609, 14 Oct 2026).
+  it('follows RNAMarker and proteinMarker for a dbId', () => {
+    expect(participantsFrom(true).split('|')).toEqual(
+      expect.arrayContaining(['RNAMarker', 'proteinMarker'])
+    );
+  });
+
+  it('does not for a stable id', () => {
+    const relationships = participantsFrom(false).split('|');
+    expect(relationships).not.toContain('RNAMarker');
+    expect(relationships).not.toContain('proteinMarker');
   });
 });

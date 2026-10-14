@@ -799,9 +799,7 @@ export const endpoints = [
       }
       const byDbId = where.startsWith('n.dbId');
       const object = byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}';
-      const from = byDbId
-        ? 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|RNAMarker|proteinMarker|regulator'
-        : 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator';
+      const from = participantsFrom(byDbId);
       const rows = await read(
         `MATCH (n:DatabaseObject${object})-[:${from}*]->(m:PhysicalEntity)
          OPTIONAL MATCH (m)-[:referenceEntity]->(re1:ReferenceEntity)
@@ -1250,6 +1248,18 @@ export function referenceEntityJson(node, labels) {
  */
 function asJavaString(value) {
   return value === null || value === undefined ? 'null' : String(value);
+}
+
+/**
+ * The relationships Java's participants queries follow from the event. The
+ * dbId query also follows RNAMarker and proteinMarker and the stable-id one
+ * does not -- a difference in graph-core, kept, because it shows: for a Cell
+ * the dbId form reaches its RNA markers and the stable-id form returns [].
+ */
+export function participantsFrom(byDbId) {
+  return byDbId
+    ? 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|RNAMarker|proteinMarker|regulator'
+    : 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator';
 }
 
 /**
