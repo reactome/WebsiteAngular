@@ -111,7 +111,9 @@ export const endpoints = [
      *    set from the pathway: no stId, no dates.
      */
     handler: async (request) => {
-      const taxId = String(request.params.id);
+      // As Spring binds it: a ';' matrix parameter dropped from the segment as
+      // sent, then decoded (pathId) -- so 9606;x is 9606.
+      const taxId = pathId(rawSegment(request, 5));
       // content-service decodes the species once more (URLDecoder), so
       // 'Homo+sapiens' finds human; a malformed escape is Java's 500. The 404
       // message below names the species before that decoding, as Java's does.
