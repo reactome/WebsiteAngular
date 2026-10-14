@@ -216,6 +216,24 @@ function paths() {
   return expanded;
 }
 
+/**
+ * The endpoint a path was expanded from, by its whole template. Matching on
+ * the text before the first `{` gave every /schema/{id}/... path to the first
+ * of them, /count, so /min was judged by /count's declared differences and
+ * failed on a difference it declares itself.
+ */
+function endpointFor(path) {
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return endpoints.find((e) =>
+    new RegExp(
+      `^${e.path
+        .split(/\{\w+\}/)
+        .map(escape)
+        .join('[^/?]+')}(\\?|$)`
+    ).test(path)
+  );
+}
+
 async function main() {
   const list = paths();
   if (!list.length) {
@@ -232,7 +250,7 @@ async function main() {
   for (const path of list) {
     try {
       const { java, node } = await fetchBoth(path);
-      const endpoint = endpoints.find((e) => path.startsWith(e.path.split('{')[0]));
+      const endpoint = endpointFor(path);
       const found = differences(path, java, node, endpoint);
       const declared = endpoint?.differs ?? [];
       const expected = found.filter((problem) => declared.some((rule) => rule.test(problem)));

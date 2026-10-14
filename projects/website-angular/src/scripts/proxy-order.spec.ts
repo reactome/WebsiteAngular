@@ -102,6 +102,14 @@ describe('the dev server proxy', () => {
     '/ContentService/data/schema/Pathway/min?page=1&offset=20000',
     '/ContentService/data/schema/Pathway/min?page=2&offset=25&species=Homo%20sapiens',
     '/ContentService/data/schema/CandidateSet$AjcClosure5/min?page=1&offset=1',
+    '/ContentService/data/schema/model',
+    '/ContentService/data/schema/model?x=1',
+    '/ContentService/data/schema/Pathway/attributes',
+    '/ContentService/data/schema/Pathway/referrals',
+    '/ContentService/data/schema/Trackable/referrals?x=1',
+    '/ContentService/data/schema/Pathway$AjcClosure5/attributes',
+    // Not a class, which node answers with Java's 500, as Java does.
+    '/ContentService/data/schema/model/attributes',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -137,14 +145,14 @@ describe('the dev server proxy', () => {
     // The event hierarchy needs the analysis service's pathway sizes.
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true',
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true&token=x',
-    // Only the count and the simplified list are ported under /schema: the
-    // model, attributes and referrals are reflection over graph-core's Java
-    // classes, and the full objects and references are not ported.
-    '/ContentService/data/schema/model',
+    // Under /schema, the full objects and references are not ported; only the
+    // model, the count, the simplified list, attributes and referrals are.
     '/ContentService/data/schema/Pathway',
     '/ContentService/data/schema/Pathway?page=1&offset=25',
-    '/ContentService/data/schema/Pathway/attributes',
-    '/ContentService/data/schema/Pathway/referrals',
+    '/ContentService/data/schema/models',
+    '/ContentService/data/schema/model/',
+    '/ContentService/data/schema/Pathway/attributesAll',
+    '/ContentService/data/schema/Pathway/referrals/x',
     '/ContentService/data/schema/ReferenceMolecule/reference?page=1&offset=10',
     '/ContentService/data/schema/Pathway/countAll',
     '/ContentService/data/schema/Pathway/minimal?page=1&offset=1',

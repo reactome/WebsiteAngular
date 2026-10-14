@@ -23,7 +23,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
-import { isSchemaClass, isSpeciesClass, schemaClassOf } from './schema.mjs';
+import {
+  attributeTable,
+  isSchemaClass,
+  isSpeciesClass,
+  referralsTable,
+  schemaClassOf,
+  schemaModelTree,
+} from './schema.mjs';
 
 const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
 const HOST = process.env.CONTENT_NODE_HOST || '127.0.0.1';
@@ -1011,12 +1018,7 @@ export const endpoints = [
       // A String parameter given more than once is Spring's comma-joined value.
       const species = given.join(',');
       const none = () =>
-        jacksonError(
-          request,
-          404,
-          'NOT_FOUND',
-          `No entries have been found for species: ${species}`
-        );
+        javaError(request, 404, 'NOT_FOUND', `No entries have been found for species: ${species}`);
       if (!isSpeciesClass(className)) return none();
       const by = javaNumeric(species) ? 'taxId' : 'speciesName';
       const [row] = await read(schemaCountQuery(className, by), { [by]: species });
@@ -1049,13 +1051,13 @@ export const endpoints = [
       // In the controller's parameter order: species is a String and cannot fail.
       const given = queryValues(request, 'species');
       const page = springInteger(queryValues(request, 'page'), 'page');
-      if (page.error) return jacksonError(request, 400, 'BAD_REQUEST', page.error);
+      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
       const offset = springInteger(queryValues(request, 'offset'), 'offset');
-      if (offset.error) return jacksonError(request, 400, 'BAD_REQUEST', offset.error);
+      if (offset.error) return javaError(request, 400, 'BAD_REQUEST', offset.error);
 
       if (!isSchemaClass(className)) return classNotFound(request);
       const none = () =>
-        jacksonError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
+        javaError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
       const species = given.length ? given.join(',') : undefined;
       let by;
       if (species !== undefined) {
@@ -1073,13 +1075,80 @@ export const endpoints = [
       } catch (failure) {
         const message = neo4jFailureMessage(failure);
         if (message === undefined) throw failure;
-        return jacksonError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
       }
       if (rows.length === 0) return none();
       return { status: 200, body: javaJson(rows.map(simpleObjectJson)), type: 'application/json' };
     },
   },
+  {
+    path: '/ContentService/data/schema/model',
+    /**
+     * Every class with nodes in the graph, as a tree from DatabaseObject down,
+     * each with how many nodes it and its subclasses hold: the schema
+     * browser's class tree.
+     *
+     * DatabaseObjectUtils.getGraphModelTree over SchemaRepository's label
+     * counts. The counts are the graph's and are read here; what Java gets by
+     * reflection -- which class a set of labels names, and each class's
+     * superclass -- comes from schema.mjs (schemaModelTree, which says how the
+     * tree is built). schema.spec.mjs rebuilds the tree Java answered when the
+     * snapshot was taken, from its own counts, byte for byte.
+     *
+     * Cached for the life of the process, as Java caches it (`cacheSchema`,
+     * once per deployment): the counts change only when the database is
+     * replaced, which restarts this -- see cached(). The query reads every
+     * DatabaseObject, a few seconds, so it is paid at startup, not by a reader.
+     */
+    handler: cached('schema model', async () => {
+      const rows = await read(schemaModelQuery);
+      const tree = schemaModelTree(rows);
+      // Java's answer to an empty graph is an empty 200 that it does not cache;
+      // a graph without a DatabaseObject is not one this serves.
+      if (tree === undefined) throw new Error('schema model: the graph has no DatabaseObject');
+      return { status: 200, body: tree, type: 'application/json' };
+    }),
+  },
+  {
+    path: '/ContentService/data/schema/{id}/attributes',
+    sample: 'Pathway',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+\/attributes: \.url: /],
+    /**
+     * A class's attributes, its own and inherited, each with its cardinality,
+     * value types and the class declaring it: the schema browser's class page.
+     *
+     * DatabaseObjectUtils.getAttributeTable is reflection over graph-core's
+     * classes and reads no database, so this is Java's answer captured once
+     * (schema-snapshot.json, by snapshot-schema.mjs) and composed as Java
+     * composes it (schema.mjs, attributeTable). A name Class.forName does not
+     * find is Java's 500, as for /count.
+     */
+    handler: async (request) => {
+      const table = attributeTable(pathId(rawSegment(request, 4)));
+      if (table === undefined) return classNotFound(request);
+      return { status: 200, body: javaJson(table), type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/data/schema/{id}/referrals',
+    sample: 'Pathway',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+\/referrals: \.url: /],
+    /**
+     * The attributes of other classes that can point at this one: the schema
+     * browser's "referrals". DatabaseObjectUtils.getReferrals, reflection
+     * again, so captured like /attributes (schema.mjs, referralsTable).
+     */
+    handler: async (request) => {
+      const table = referralsTable(pathId(rawSegment(request, 4)));
+      if (table === undefined) return classNotFound(request);
+      return { status: 200, body: javaJson(table), type: 'application/json' };
+    },
+  },
 ];
+
+/** graph-core SchemaRepository.getSchemaClassCounts, as written. */
+export const schemaModelQuery =
+  'MATCH (n:DatabaseObject) RETURN DISTINCT LABELS(n) AS labels, Count(n) AS count';
 
 /**
  * graph-core SchemaRepository's queries for /schema/{className}/min, by
@@ -1164,14 +1233,9 @@ export function neo4jFailureMessage(failure) {
 }
 
 /** Java's error envelope, written as Jackson writes it. */
-function jacksonError(request, code, reason, message) {
-  const error = javaError(request, code, reason, message);
-  return { ...error, body: javaJson(error.body) };
-}
-
 /** The ContentService's answer to a ClassNotFoundException. */
 function classNotFound(request) {
-  return jacksonError(request, 500, 'INTERNAL_SERVER_ERROR', 'Specified class was not found');
+  return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Specified class was not found');
 }
 
 /**
@@ -1253,8 +1317,7 @@ function cached(name, build) {
     // process lives, and `res.json` would stringify a quarter of a megabyte
     // every time somebody asked. Measured over 20 requests: 5.4ms before,
     // against Java's 3.1ms, and the gap was this.
-    answer.serialised ??=
-      typeof answer.body === 'string' ? answer.body : JSON.stringify(answer.body);
+    answer.serialised ??= typeof answer.body === 'string' ? answer.body : javaJson(answer.body);
     return answer;
   };
   // Marks this one for warming at startup; a handler that reads its request
@@ -1452,22 +1515,14 @@ function rawSegment(request, index) {
  *
  * `url` is rebuilt from the request. Behind nginx that is the external URL,
  * because `proxy_set_header Host $host` preserves it; asked directly on
- * loopback it is the loopback address, which is what Java would say too.
+ * loopback it is the loopback address, which is what Java would say too. It
+ * leaves the query out, as every Java error url does (javaError): this one
+ * used to keep it, so `/pathways/low/entity/foo?species=9606` named the
+ * species in its url where Java does not -- hidden from the diff harness by
+ * the `.url` differences endpoints declare for the host.
  */
-function notFound(request, message) {
-  const host = request.get?.('host') ?? 'localhost';
-  const protocol = request.protocol ?? 'http';
-  return {
-    status: 404,
-    type: 'application/json',
-    body: {
-      code: 404,
-      reason: 'NOT_FOUND',
-      url: `${protocol}://${host}${request.originalUrl ?? ''}`,
-      messages: [message],
-      targets: null,
-    },
-  };
+export function notFound(request, message) {
+  return javaError(request, 404, 'NOT_FOUND', message);
 }
 
 /** The named properties that are actually present. Absent means omitted, not null. */
@@ -2235,16 +2290,24 @@ function queryValues(request, name) {
 
 /**
  * Java's error envelope for any status. Its `url` is the request's without the
- * query string, which is how Java writes it.
+ * query string, which is how Java writes it. Serialised here, as Jackson
+ * writes it (javaJson): a message carrying a control character -- the id or
+ * parameter as given -- is `\u001F` in Java's, and was `\u001f` in ours.
  */
-function javaError(request, code, reason, message) {
+export function javaError(request, code, reason, message) {
   const host = request.get?.('host') ?? 'localhost';
   const protocol = request.protocol ?? 'http';
   const url = String(request.originalUrl ?? '').split('?')[0];
   return {
     status: code,
     type: 'application/json',
-    body: { code, reason, url: `${protocol}://${host}${url}`, messages: [message], targets: null },
+    body: javaJson({
+      code,
+      reason,
+      url: `${protocol}://${host}${url}`,
+      messages: [message],
+      targets: null,
+    }),
   };
 }
 
@@ -2294,8 +2357,10 @@ async function speciesTaxId(filter) {
  *
  * A content hash rather than a git sha, because a sha has to be passed in at
  * build time and anything that has to be remembered eventually is not. Compare
- * it against a checkout with `ls tools/content-node/*.mjs | grep -v spec | xargs cat | sha256sum`, taking
- * the files sorted by name as readdir gives them here.
+ * it against a checkout with
+ * `LC_ALL=C ls tools/content-node/*.mjs tools/content-node/*.json | grep -v spec | xargs cat | sha256sum`,
+ * taking the files sorted by name, as here. The JSON is schema-snapshot.json:
+ * data the service answers with, so a regenerated snapshot is a different build.
  */
 function buildId() {
   try {
@@ -2306,7 +2371,7 @@ function buildId() {
       // that changes when a test is edited reports a deployment difference that
       // is not one. Caught by this very endpoint: adding service.spec.mjs moved
       // the hash without changing a line the service runs.
-      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.spec.mjs'))
+      .filter((name) => /\.(mjs|json)$/.test(name) && !name.endsWith('.spec.mjs'))
       .sort();
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));
@@ -2384,7 +2449,8 @@ export function app() {
         // A cached endpoint carries its own serialised body; anything else is
         // small enough that stringifying per request costs nothing.
         else if (result.serialised) response.type('application/json').send(result.serialised);
-        else response.json(result.body);
+        // As Jackson writes it, not res.json's JSON.stringify: see javaJson.
+        else response.type('application/json').send(javaJson(result.body));
       } catch (failure) {
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.

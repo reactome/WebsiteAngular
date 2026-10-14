@@ -36,3 +36,7 @@ projects/website-angular/public/admin/index.html
 # by the replayer, and reformatting them would put thousands of lines of churn in
 # every re-record's diff.
 e2e/har/
+
+# Java's schema answers, captured by tools/content-node/snapshot-schema.mjs and
+# written one class per line so a regeneration's diff names what changed.
+tools/content-node/schema-snapshot.json
