@@ -1074,15 +1074,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // Back returned to this pathway, which handed off again: Back did
           // nothing (#168). The diagram loads from the new address, as for any
           // other pathway.
+          //
+          // The sub-pathway is selected to show where it sits in the parent --
+          // unless the address already selects something: an entity a link
+          // pointed at is what the reader came for, and selecting the
+          // sub-pathway over it landed them on the wrong details.
+          const select = untracked(() => this.state.select()) ?? event.stId;
           void this.state
             .navigateTo(newDiagramId, {
               queryParamsHandling: 'merge',
-              queryParams: { select: event.stId },
+              queryParams: { select },
               replaceUrl: true,
             })
             // Only if this navigation happened: one the reader's next click
             // superseded resolves false, and the selection belongs to it.
-            .then((navigated) => navigated && this.state.select.set(event.stId))
+            .then((navigated) => navigated && this.state.select.set(select))
             // navigateTo reports a failure itself; this derived promise must
             // not go unhandled.
             .catch(() => undefined);
@@ -2053,11 +2059,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * What production leaves you without is a way back, which is the confusing
    * part rather than the movement itself; the popup title does that here.
    */
-  onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
+  onPopupNavigate(event: { stId: string; kind: EntityPopupTab; hasDiagram?: boolean }): void {
     if (event.kind === 'pathways') {
       this.popupTarget.set(null);
+      // The entity right-clicked stays selected, so it is found again in the
+      // pathway chosen -- as a double-click on a pathway keeps the selection
+      // (#168). Except for a pathway drawn in a parent's diagram: it hands off
+      // to that diagram keeping the selection, which for most of an entity's
+      // pathways is the diagram already on screen, so choosing one appeared to
+      // do nothing. Selecting the pathway itself shows where it is.
       void this.state.navigateTo(event.stId, {
-        queryParamsHandling: 'preserve',
+        ...(event.hasDiagram === false
+          ? { queryParams: { select: event.stId }, queryParamsHandling: 'merge' as const }
+          : { queryParamsHandling: 'preserve' as const }),
         preserveFragment: true,
       });
       return;

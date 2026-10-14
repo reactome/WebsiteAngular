@@ -305,3 +305,26 @@ test.describe('Hierarchy and illustration together', () => {
     await expect.poll(region).toContain('drop-shadow');
   });
 });
+
+test('a link to a pathway drawn in its parent keeps the entity it selected', async ({ page }) => {
+  // Synthesis of PIPs at the plasma membrane has no diagram of its own, so the
+  // browser shows its parent's, PI Metabolism. A link that also named an entity
+  // in it -- PTEN, here -- lost that selection on the way: the hand-off always
+  // selected the sub-pathway instead, so the reader landed on the pathway's
+  // details rather than the entity's they were sent to.
+  const NO_DIAGRAM = 'R-HSA-1660499';
+  const PARENT = 'R-HSA-1483255';
+  const PTEN = 'R-HSA-199420';
+  await page.goto(`/PathwayBrowser/${NO_DIAGRAM}?select=${PTEN}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await expect
+    .poll(() => new URL(page.url()).pathname, { timeout: 90_000 })
+    .toBe(`/PathwayBrowser/${PARENT}`);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: 90_000 })
+    .toBe(PTEN);
+  await expect(page.locator('cr-description-tab').first()).toContainText(PTEN, {
+    timeout: 90_000,
+  });
+});
