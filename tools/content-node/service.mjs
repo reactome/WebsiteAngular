@@ -20,7 +20,7 @@ import express from 'express';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath, URLSearchParams } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 
@@ -1784,9 +1784,13 @@ export function pathwayBrowserJson(node) {
 
 /**
  * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
- * the first value, trimmed as String.trim trims; empty is absent; true, on, yes
- * and 1 or false, off, no and 0 in any case; anything else Java's 400, naming
- * the value as it was sent.
+ * the first value decides, trimmed as String.trim trims; empty is absent; true,
+ * on, yes and 1 or false, off, no and 0 in any case; anything else Java's 400.
+ *
+ * The 400 names what Spring was given: one value is a String, named as sent;
+ * several are a String[], and the message lists all of them joined by ','
+ * (untrimmed) even though only the first was read. A refused later value
+ * changes nothing -- `true&foo` is true. All measured against Java.
  */
 export function springBoolean(values) {
   const [raw] = values;
@@ -1795,21 +1799,79 @@ export function springBoolean(values) {
   if (value === '') return { value: undefined };
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
     error:
-      "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; " +
-      `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${raw}]`,
+      `Failed to convert value of type '${type}' to required type 'java.lang.Boolean'; ` +
+      `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values.join(',')}]`,
   };
+}
+
+/**
+ * One query parameter's values as Tomcat reads them, in order: the query is
+ * split on '&' and each pair at its first '='; a pair with no name is skipped;
+ * name and value are percent-decoded, '+' as a space, the bytes read as UTF-8
+ * with U+FFFD for a bad sequence. A pair whose name or value holds a malformed
+ * escape (`%zz`, a lone `%`) is dropped whole -- Tomcat logs it and carries on
+ * -- which URLSearchParams does not do: it keeps the text as it is.
+ */
+export function servletParameter(query, name) {
+  const values = [];
+  for (const pair of String(query).split('&')) {
+    if (pair === '') continue;
+    const at = pair.indexOf('=');
+    const key = servletDecode(at === -1 ? pair : pair.slice(0, at));
+    const value = servletDecode(at === -1 ? '' : pair.slice(at + 1));
+    if (key === null || value === null || key === '') continue;
+    if (key === name) values.push(value);
+  }
+  return values;
+}
+
+/** Percent-decoding as Tomcat's query parser does it, or null when malformed. */
+function servletDecode(text) {
+  const bytes = [];
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '+') {
+      bytes.push(0x20);
+    } else if (char === '%') {
+      const hex = text.slice(i + 1, i + 3);
+      if (!/^[0-9a-fA-F]{2}$/.test(hex)) return null;
+      bytes.push(parseInt(hex, 16));
+      i += 2;
+    } else {
+      bytes.push(...Buffer.from(char, 'utf8'));
+    }
+  }
+  return javaUtf8(bytes);
+}
+
+/**
+ * Bytes to text as Java's UTF-8 decoder does with REPLACE, Tomcat's setting.
+ * The WHATWG decoder agrees with it everywhere measured but one place: an
+ * encoded surrogate -- ED then A0..BF, then a continuation byte if there is
+ * one -- is a single U+FFFD to Java, where WHATWG gives one per byte. A byte
+ * order mark is kept, as Java keeps it.
+ */
+function javaUtf8(bytes) {
+  const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
+  let text = '';
+  let start = 0;
+  for (let i = 0; i < bytes.length; i += 1) {
+    if (bytes[i] !== 0xed || !(bytes[i + 1] >= 0xa0 && bytes[i + 1] <= 0xbf)) continue;
+    text += decoder.decode(Uint8Array.from(bytes.slice(start, i))) + '\ufffd';
+    i += bytes[i + 2] >= 0x80 && bytes[i + 2] <= 0xbf ? 2 : 1;
+    start = i + 1;
+  }
+  return text + decoder.decode(Uint8Array.from(bytes.slice(start)));
 }
 
 /** The values of one query parameter as the servlet reads them, in order. */
 function queryValues(request, name) {
-  const query = String(request.originalUrl ?? '').split('?')[1] ?? '';
-  try {
-    return new URLSearchParams(query).getAll(name);
-  } catch {
-    return [];
-  }
+  const url = String(request.originalUrl ?? '');
+  const at = url.indexOf('?');
+  return servletParameter(at === -1 ? '' : url.slice(at + 1), name);
 }
 
 /**

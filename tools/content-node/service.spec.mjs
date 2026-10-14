@@ -28,6 +28,7 @@ import {
   physicalEntityJson,
   referenceEntityJson,
   resolveId,
+  servletParameter,
   speciesFilter,
   springBoolean,
 } from './service.mjs';
@@ -936,4 +937,99 @@ describe("locationsQuery, graph-core's locations queries", () => {
       expect(locationsQuery(byDbId, directParticipants).startsWith(java)).toBe(true);
     });
   }
+});
+
+describe('servletParameter, a query parameter as Tomcat reads it', () => {
+  // Each case measured against Java's /detail/{id}/locationsInPWB, 14 Oct 2026.
+  it('drops a pair whose name or value has a malformed escape, keeping the rest', () => {
+    expect(servletParameter('directParticipants=%zz', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=%', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=%2', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=true%zz', 'directParticipants')).toEqual([]);
+    expect(servletParameter('direct%zzParticipants=true', 'directParticipants')).toEqual([]);
+    expect(
+      servletParameter('directParticipants=%zz&directParticipants=true', 'directParticipants')
+    ).toEqual(['true']);
+    expect(servletParameter('%zz=1&directParticipants=true', 'directParticipants')).toEqual([
+      'true',
+    ]);
+  });
+
+  it('decodes names and values as UTF-8, + as a space, a bad sequence as U+FFFD', () => {
+    expect(servletParameter('direct%50articipants=tr%75e', 'directParticipants')).toEqual(['true']);
+    expect(servletParameter('directParticipants=+on+', 'directParticipants')).toEqual([' on ']);
+    expect(servletParameter('directParticipants=%2Btrue', 'directParticipants')).toEqual(['+true']);
+    expect(servletParameter('directParticipants=%C3%A9', 'directParticipants')).toEqual(['\u00e9']);
+    expect(servletParameter('directParticipants=%FF', 'directParticipants')).toEqual(['\ufffd']);
+    expect(servletParameter('directParticipants=%e2%80', 'directParticipants')).toEqual(['\ufffd']);
+    // Java's decoder, not the WHATWG one, where they part: an encoded surrogate
+    // (ED A0..BF, then a continuation if present) is one U+FFFD, not one per byte.
+    const decoded = (escapes) => servletParameter(`d=${escapes}`, 'd')[0];
+    expect(decoded('%ED%A0%80')).toBe('\ufffd');
+    expect(decoded('%ED%BF%BF')).toBe('\ufffd');
+    expect(decoded('%ED%A0')).toBe('\ufffd');
+    expect(decoded('%ED%A0%41')).toBe('\ufffdA');
+    expect(decoded('%ED%A0%80%ED%B0%80')).toBe('\ufffd\ufffd');
+    expect(decoded('%ED%9F%BF')).toBe('\ud7ff');
+    // and where they agree: one per byte of an overlong or out-of-range form.
+    expect(decoded('%E0%80%80')).toBe('\ufffd\ufffd\ufffd');
+    expect(decoded('%F8%88%80%80%80')).toBe('\ufffd'.repeat(5));
+    expect(decoded('%E2%80%41')).toBe('\ufffdA');
+    // A byte order mark is a character like any other to Java's decoder.
+    expect(servletParameter('directParticipants=%EF%BB%BFtrue', 'directParticipants')).toEqual([
+      '\ufefftrue',
+    ]);
+  });
+
+  it('reads a name without = as an empty value, and splits only at the first =', () => {
+    expect(servletParameter('directParticipants', 'directParticipants')).toEqual(['']);
+    expect(servletParameter('directParticipants=a=b', 'directParticipants')).toEqual(['a=b']);
+    expect(servletParameter('&&=true&directParticipants=true;x', 'directParticipants')).toEqual([
+      'true;x',
+    ]);
+  });
+});
+
+describe('springBoolean with several values', () => {
+  const several = (values) =>
+    "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Boolean'; " +
+    `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values}]`;
+
+  it('is decided by the first value', () => {
+    expect(springBoolean(['true', 'foo'])).toEqual({ value: true });
+    expect(springBoolean(['false', 'foo'])).toEqual({ value: false });
+    expect(springBoolean(['', 'true'])).toEqual({ value: undefined });
+    expect(springBoolean([' ', 'true'])).toEqual({ value: undefined });
+  });
+
+  it('names the array type and every value, joined and untrimmed, when the first is refused', () => {
+    expect(springBoolean(['foo', 'true'])).toEqual({ error: several('foo,true') });
+    expect(springBoolean(['foo', ''])).toEqual({ error: several('foo,') });
+    expect(springBoolean([' foo ', 'x'])).toEqual({ error: several(' foo ,x') });
+    expect(springBoolean(['foo', 'bar', 'baz'])).toEqual({ error: several('foo,bar,baz') });
+  });
+});
+
+describe('locationsInPWB reads its query as the servlet does', () => {
+  it('ignores a parameter it cannot decode rather than refusing it', async () => {
+    // No database: an unreadable id answers before any query, so a 404 here
+    // means the malformed pair was dropped, and a 400 that it was not.
+    for (const query of [
+      'directParticipants=%zz',
+      'directParticipants=%',
+      'directParticipants=true&omitNonDisplayableItems=%zz',
+    ]) {
+      const response = await fetch(
+        `${base}/ContentService/data/detail/foo/locationsInPWB?${query}`
+      );
+      expect(response.status, query).toBe(404);
+    }
+  });
+
+  it('reads everything after the first ?, a second ? included', async () => {
+    const response = await fetch(
+      `${base}/ContentService/data/detail/foo/locationsInPWB?x=1?&directParticipants=bad`
+    );
+    expect(response.status).toBe(400);
+  });
 });
