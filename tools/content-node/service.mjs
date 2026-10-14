@@ -725,6 +725,49 @@ export const endpoints = [
       return { status: 200, body: rows.map((row) => pathwayJson(row.p)), type: 'application/json' };
     },
   },
+  {
+    path: '/ContentService/data/participants/{id}/referenceEntities',
+    // A reaction with 141 reference entities of four classes.
+    sample: 'R-HSA-5672965',
+    /**
+     * The reference entities -- the proteins, genes, chemicals and drugs --
+     * behind every participant of an event, all the way down. The Pathway
+     * Browser's molecule list and the IDG page ask for it.
+     *
+     * Java's one query (graph-core ReferenceEntityRepository
+     * .getParticipatingReferenceEntities), kept as written so the rows come in
+     * Java's order. The id is read as everywhere else; a REACT_ id is swapped
+     * for its stable id first, as getIdentifier does.
+     *
+     * Not a 404 when nothing is found, which is Java's contract and not ours to
+     * change: an unknown id is `[]`, and an id that is neither a stable id nor
+     * a dbId is a 200 with no body at all (the controller returns null).
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return { status: 200, body: undefined };
+      if (where.startsWith('n.oldStId')) {
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+      const rows = await read(
+        `MATCH (n:DatabaseObject${object})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|referenceEntity|proteinMarker|RNAMarker*]->(m:ReferenceEntity)
+         RETURN DISTINCT m, labels(m) AS labels`,
+        params
+      );
+      return {
+        status: 200,
+        body: rows.map((row) => referenceEntityJson(row.m, row.labels)),
+        type: 'application/json',
+      };
+    },
+  },
 ];
 
 /**
@@ -1069,6 +1112,79 @@ export function pathwayJson(node) {
 }
 
 /**
+ * The ReferenceEntity classes, most specific first: a node carries the labels
+ * of its class and every superclass, in no reliable order (an isoform lists
+ * ReferenceGeneProduct after ReferenceIsoform), and graph-core maps it to the
+ * most specific -- which is also what `className` says, even on the two nodes
+ * whose schemaClass property reads "6".
+ */
+const REFERENCE_CLASSES = [
+  'ReferenceIsoform',
+  'ReferenceGeneProduct',
+  'ReferenceDNASequence',
+  'ReferenceRNASequence',
+  'ReferenceTherapeutic',
+  'ReferenceMolecule',
+  'ReferenceGroup',
+  'ReferenceSequence',
+  'ReferenceEntity',
+];
+
+/** What each class's constructor sets moleculeType to; ReferenceGroup sets none. */
+const MOLECULE_TYPES = {
+  ReferenceIsoform: 'Protein',
+  ReferenceGeneProduct: 'Protein',
+  ReferenceDNASequence: 'Entity',
+  ReferenceRNASequence: 'Entity',
+  ReferenceSequence: 'Entity',
+  ReferenceTherapeutic: 'ChemicalDrug',
+  ReferenceMolecule: 'Chemical',
+};
+
+/**
+ * A ReferenceEntity as graph-core serialises a bare node, whatever its class:
+ * one key order fits them all, measured from Java over 16,000 entities of six
+ * classes. Stored but never written: ReferenceMolecule's `trivial`.
+ */
+export function referenceEntityJson(node, labels) {
+  const className = REFERENCE_CLASSES.find((name) => labels.includes(name)) ?? 'ReferenceEntity';
+  const moleculeType = MOLECULE_TYPES[className];
+  return {
+    ...only(node, [
+      'dbId',
+      'displayName',
+      'stId',
+      'databaseName',
+      'identifier',
+      'name',
+      'otherIdentifier',
+      'url',
+    ]),
+    ...(moleculeType && { moleculeType }),
+    ...only(node, [
+      'formula',
+      'checksum',
+      'comment',
+      'description',
+      'geneName',
+      'isSequenceChanged',
+      'keyword',
+      'secondaryIdentifier',
+      'sequenceLength',
+      'chain',
+      'variantIdentifier',
+      'abbreviation',
+      'approvalSource',
+      'approved',
+      'inn',
+      'type',
+    ]),
+    className,
+    ...only(node, ['schemaClass']),
+  };
+}
+
+/**
  * The `species` parameter as graph-core's SpeciesService.getSpecies reads it:
  * nothing when absent or empty; digits as a taxId, then as a dbId; anything
  * else as a name -- lower-cased, runs of '_' and ' ' made one space, first
@@ -1197,7 +1313,10 @@ export function app() {
         if (result.type) response.type(result.type);
         // Objects go out as JSON; strings as they are, so a text/plain endpoint
         // is not quoted into JSON.
-        if (typeof result.body === 'string') response.send(result.body);
+        // No body at all, as Java sends when a controller returns null: not
+        // send(''), which would add a text/html content type Java does not.
+        if (result.body === undefined && !result.serialised) response.end();
+        else if (typeof result.body === 'string') response.send(result.body);
         // A cached endpoint carries its own serialised body; anything else is
         // small enough that stringifying per request costs nothing.
         else if (result.serialised) response.type('application/json').send(result.serialised);
