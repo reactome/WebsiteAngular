@@ -984,8 +984,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // in-diagram selection, or the select effect animates a fit to the
           // node and a right-click would yank the whole diagram around.
           this.popupViewport = { zoom: cy.zoom(), pan: { ...cy.pan() } };
-          this.selecting = true;
-          this.state.select.set(stId);
+          this.selectInDiagram(stId);
         });
 
         // Right-clicking the background dismisses it.
@@ -1976,8 +1975,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .subscribe((e) => {
       const elements: cytoscape.NodeSingular = e.detail.element;
       const reactomeIds = elements.map((el) => el.data('graph.stId'));
-      this.selecting = true;
-      this.state.select.set(reactomeIds[0]);
+      this.selectInDiagram(reactomeIds[0]);
     });
 
   diagramUnselect2state = this.reactomeEvents$
@@ -2050,6 +2048,22 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
+   * Select from within the diagram: flagged, so the select effect leaves the
+   * view where the reader has it instead of fitting to the element.
+   *
+   * Flagged only when the selection is going to change. The effect is what
+   * lowers the flag, and a signal set to the value it already holds does not
+   * run it -- so right-clicking the entity already selected left the flag up,
+   * and the next selection from outside the diagram (a search hit, a link,
+   * the details panel) was then ignored.
+   */
+  private selectInDiagram(stId: string): void {
+    if (untracked(() => this.state.select()) === stId) return;
+    this.selecting = true;
+    this.state.select.set(stId);
+  }
+
+  /**
    * A row in the popup was clicked.
    *
    * A pathway is somewhere to go, so it navigates. A molecule is selected,
@@ -2092,8 +2106,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     // Re-select without letting the select effect fit, then put the viewport
     // back exactly where it was.
-    this.selecting = true;
-    this.state.select.set(target.stId);
+    this.selectInDiagram(target.stId);
 
     const viewport = this.popupViewport;
     if (viewport) {
