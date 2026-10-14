@@ -768,6 +768,63 @@ export const endpoints = [
       };
     },
   },
+  {
+    path: '/ContentService/data/participants/{id}',
+    // A reaction with five participants of four classes.
+    sample: 'R-HSA-5672965',
+    /**
+     * Every physical entity taking part in an event, all the way down, each
+     * with the reference entities behind it. The Pathway Browser's molecule
+     * list asks for it.
+     *
+     * Java's two queries (graph-core ParticipantRepository.getParticipants),
+     * one per kind of id, kept as written -- they differ: the dbId one also
+     * follows RNAMarker and proteinMarker from the event. The id is read as
+     * everywhere else; a REACT_ id is swapped for its stable id first.
+     *
+     * Java's contract, as for /referenceEntities: an unknown id is [], an id
+     * that is neither a stable id nor a dbId a 200 with no body.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return { status: 200, body: undefined };
+      if (where.startsWith('n.oldStId')) {
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const byDbId = where.startsWith('n.dbId');
+      const object = byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}';
+      const from = participantsFrom(byDbId);
+      const rows = await read(
+        `MATCH (n:DatabaseObject${object})-[:${from}*]->(m:PhysicalEntity)
+         OPTIONAL MATCH (m)-[:referenceEntity]->(re1:ReferenceEntity)
+         OPTIONAL MATCH (m)-[:hasMember|hasComponent|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity)-[:referenceEntity]->(re2:ReferenceEntity)
+         WITH DISTINCT m,
+              CASE WHEN re1 IS NULL THEN re2 ELSE re1 END AS re,
+              CASE WHEN pe IS NULL THEN m.schemaClass ELSE pe.schemaClass END AS icon
+         WHERE NOT re IS NULL
+         RETURN m.dbId AS peDbId,
+                m.displayName AS displayName,
+                m.schemaClass AS schemaClass,
+                COLLECT(DISTINCT({
+                       dbId: re.dbId,
+                       stId: re.stId,
+                       displayName: re.displayName,
+                       identifier: CASE WHEN re.variantIdentifier IS NOT NULL THEN re.variantIdentifier ELSE re.identifier END,
+                       url: re.url,
+                       schemaClass: re.schemaClass,
+                       icon: icon
+                })) AS refEntities`,
+        params
+      );
+      return { status: 200, body: rows.map(participantJson), type: 'application/json' };
+    },
+  },
 ];
 
 /**
@@ -1181,6 +1238,48 @@ export function referenceEntityJson(node, labels) {
     ]),
     className,
     ...only(node, ['schemaClass']),
+  };
+}
+
+/**
+ * The driver's Value.asString() as graph-core calls it on a reference
+ * entity's fields: a missing value is not left out but written as the text
+ * "null", because NullValue.asString() returns that.
+ */
+function asJavaString(value) {
+  return value === null || value === undefined ? 'null' : String(value);
+}
+
+/**
+ * The relationships Java's participants queries follow from the event. The
+ * dbId query also follows RNAMarker and proteinMarker and the stable-id one
+ * does not -- a difference in graph-core, kept, because it shows: for a Cell
+ * the dbId form reaches its RNA markers and the stable-id form returns [].
+ */
+export function participantsFrom(byDbId) {
+  return byDbId
+    ? 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|RNAMarker|proteinMarker|regulator'
+    : 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator';
+}
+
+/**
+ * graph-core's Participant as Java writes it: the entity's dbId, name and
+ * class (a missing name or class left out -- asString(null) there), then its
+ * reference entities in ParticipantRefEntities' field order.
+ */
+export function participantJson(row) {
+  return {
+    peDbId: row.peDbId,
+    ...only(row, ['displayName', 'schemaClass']),
+    refEntities: (row.refEntities ?? []).map((ref) => ({
+      dbId: ref.dbId,
+      stId: asJavaString(ref.stId),
+      identifier: asJavaString(ref.identifier),
+      schemaClass: asJavaString(ref.schemaClass),
+      displayName: asJavaString(ref.displayName),
+      icon: asJavaString(ref.icon),
+      url: asJavaString(ref.url),
+    })),
   };
 }
 

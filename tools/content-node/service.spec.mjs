@@ -17,6 +17,8 @@ import {
   endpoints,
   eventProjection,
   pathId,
+  participantJson,
+  participantsFrom,
   pathwayJson,
   referenceEntityJson,
   resolveId,
@@ -476,5 +478,61 @@ describe('an answer with no body', () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('');
     expect(response.headers.get('content-type')).toBeNull();
+  });
+});
+
+describe('participantJson, graph-core Participant as Java writes it', () => {
+  // Java's answer for R-HSA-5672965 under /participants, 14 Oct 2026, one row.
+  const row = {
+    peDbId: 5672601,
+    displayName: 'RAS GEFs [plasma membrane]',
+    schemaClass: 'DefinedSet',
+    refEntities: [
+      {
+        icon: 'EntityWithAccessionedSequence',
+        displayName: 'UniProt:P29353-2 SHC1',
+        url: 'http://purl.uniprot.org/uniprot/P29353-2',
+        schemaClass: 'ReferenceIsoform',
+        identifier: 'P29353-2',
+        stId: 'uniprot:P29353-2',
+        dbId: 248232,
+      },
+    ],
+  };
+
+  it("writes Java's keys in Java's order, at both levels", () => {
+    expect(JSON.stringify(participantJson(row))).toBe(
+      '{"peDbId":5672601,"displayName":"RAS GEFs [plasma membrane]","schemaClass":"DefinedSet",' +
+        '"refEntities":[{"dbId":248232,"stId":"uniprot:P29353-2","identifier":"P29353-2",' +
+        '"schemaClass":"ReferenceIsoform","displayName":"UniProt:P29353-2 SHC1",' +
+        '"icon":"EntityWithAccessionedSequence","url":"http://purl.uniprot.org/uniprot/P29353-2"}]}'
+    );
+  });
+
+  it('writes a missing reference value as the text "null", as the driver\'s asString does', () => {
+    const json = participantJson({ ...row, refEntities: [{ ...row.refEntities[0], url: null }] });
+    expect(json.refEntities[0].url).toBe('null');
+  });
+
+  it('leaves out a missing participant name or class, as asString(null) does', () => {
+    const json = participantJson({ ...row, displayName: null });
+    expect('displayName' in json).toBe(false);
+  });
+});
+
+describe('participantsFrom, the relationships Java follows from the event', () => {
+  // Java's two queries differ, and the difference shows: for a Cell, the dbId
+  // form reaches its RNA markers and the stable-id form returns [] (checked
+  // against Java with R-HSA-9910609 / 9910609, 14 Oct 2026).
+  it('follows RNAMarker and proteinMarker for a dbId', () => {
+    expect(participantsFrom(true).split('|')).toEqual(
+      expect.arrayContaining(['RNAMarker', 'proteinMarker'])
+    );
+  });
+
+  it('does not for a stable id', () => {
+    const relationships = participantsFrom(false).split('|');
+    expect(relationships).not.toContain('RNAMarker');
+    expect(relationships).not.toContain('proteinMarker');
   });
 });
