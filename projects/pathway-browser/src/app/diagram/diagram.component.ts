@@ -1074,15 +1074,21 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // Back returned to this pathway, which handed off again: Back did
           // nothing (#168). The diagram loads from the new address, as for any
           // other pathway.
+          //
+          // The sub-pathway is selected to show where it sits in the parent --
+          // unless the address already selects something: an entity a link
+          // pointed at is what the reader came for, and selecting the
+          // sub-pathway over it landed them on the wrong details.
+          const select = untracked(() => this.state.select()) ?? event.stId;
           void this.state
             .navigateTo(newDiagramId, {
               queryParamsHandling: 'merge',
-              queryParams: { select: event.stId },
+              queryParams: { select },
               replaceUrl: true,
             })
             // Only if this navigation happened: one the reader's next click
             // superseded resolves false, and the selection belongs to it.
-            .then((navigated) => navigated && this.state.select.set(event.stId))
+            .then((navigated) => navigated && this.state.select.set(select))
             // navigateTo reports a failure itself; this derived promise must
             // not go unhandled.
             .catch(() => undefined);
