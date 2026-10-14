@@ -85,6 +85,16 @@ describe('the dev server proxy', () => {
     ).toBe(contentNode);
   });
 
+  for (const url of [
+    '/ContentService/data/detail/R-HSA-199420/locationsInPWB',
+    '/ContentService/data/detail/199420/locationsInPWB?directParticipants=true',
+    '/ContentService/data/detail/REACT_13069/locationsInPWB?omitNonDisplayableItems=false',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -107,6 +117,13 @@ describe('the dev server proxy', () => {
     // Only the other forms of an entity are ported.
     '/ContentService/data/entity/R-HSA-199420/in-depth',
     '/ContentService/data/entity/R-HSA-199420/componentOf',
+    // Only the locations are ported, not their neighbours under /detail.
+    '/ContentService/data/detail/R-HSA-199420/getReverseGraph',
+    '/ContentService/data/detail/R-HSA-109581/getSubGraph',
+    '/ContentService/data/detail/R-HSA-199420/locationsInPWBAndMore',
+    // The event hierarchy needs the analysis service's pathway sizes.
+    '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true',
+    '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true&token=x',
   ]) {
     it(`leaves ${other} with Java`, async () => {
       expect(await targetOf(other)).toBe(backend);

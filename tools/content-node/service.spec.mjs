@@ -16,14 +16,21 @@ import {
   app,
   endpoints,
   eventProjection,
+  locationsInPathwayBrowser,
+  locationsQuery,
+  parseHierarchy,
   pathId,
+  PathwayBrowserNode,
+  pathwayBrowserJson,
   participantJson,
   participantsFrom,
   pathwayJson,
   physicalEntityJson,
   referenceEntityJson,
   resolveId,
+  servletParameter,
   speciesFilter,
+  springBoolean,
 } from './service.mjs';
 
 let base;
@@ -617,5 +624,412 @@ describe('physicalEntityJson, an other form as graph-core serialises it', () => 
 
   it('never writes oldStId, which DatabaseObject ignores', () => {
     expect('oldStId' in physicalEntityJson(ewas)).toBe(false);
+  });
+});
+
+/** A graph-core HierarchyTreeItem row: [stId, displayName, hasDiagram, speciesName, schemaClass, labels, order]. */
+const item = (
+  stId,
+  schemaClass = 'Pathway',
+  { diagram = false, order = 0, species = 'Homo sapiens' } = {}
+) => [stId, `${stId} name`, diagram, species, schemaClass, ['DatabaseObject'], order];
+
+describe("PathwayBrowserNode children, graph-core's TreeSet", () => {
+  const node = (name, { species = 'Homo sapiens', order } = {}) =>
+    Object.assign(new PathwayBrowserNode(), { stId: name, name, species, order });
+
+  it('orders by species, then order, then name by UTF-16 unit, as compareTo does', () => {
+    const parent = new PathwayBrowserNode();
+    for (const child of [
+      node('b'),
+      node('a', { order: 1 }),
+      node('c'),
+      node('a', { species: 'Mus musculus' }),
+      node('B'),
+    ]) {
+      parent.addChild(child);
+    }
+    expect(parent.children.map((c) => `${c.species}/${c.order ?? 0}/${c.name}`)).toEqual([
+      'Homo sapiens/0/B',
+      'Homo sapiens/0/b',
+      'Homo sapiens/0/c',
+      'Homo sapiens/1/a',
+      'Mus musculus/0/a',
+    ]);
+  });
+
+  it('keeps the first of two nodes that compare equal, as a TreeSet does', () => {
+    const parent = new PathwayBrowserNode();
+    const first = node('same');
+    parent.addChild(first);
+    parent.addChild(node('same'));
+    expect(parent.children).toEqual([first]);
+    expect(parent.children[0]).toBe(first);
+  });
+
+  it('sorts a node with no species before one with a species', () => {
+    const parent = new PathwayBrowserNode();
+    parent.addChild(node('z'));
+    parent.addChild(node('y', { species: null }));
+    expect(parent.children.map((c) => c.name)).toEqual(['y', 'z']);
+  });
+});
+
+describe('parseHierarchy, graph-core HierarchyRepository.parseRaw', () => {
+  const root = item('R-HSA-1', 'EntityWithAccessionedSequence');
+  root[5] = ['DatabaseObject', 'PhysicalEntity'];
+
+  it('extends the previous path by its last step, and restarts from the root otherwise', () => {
+    const tree = parseHierarchy(
+      root,
+      [
+        [item('A')],
+        [item('A'), item('B')],
+        [item('A'), item('B'), item('C')],
+        [item('D')],
+        [item('D'), item('B')],
+      ],
+      true
+    );
+    expect(tree.children.map((c) => c.stId)).toEqual(['A', 'D']);
+    const [a, d] = tree.children;
+    // One node per stId: B is shared, reached from A and from D.
+    expect(a.children[0]).toBe(d.children[0]);
+    expect(a.children[0].children.map((c) => c.stId)).toEqual(['C']);
+    expect(a.children[0].parent.map((p) => p.stId)).toEqual(['A', 'D']);
+  });
+
+  it('keeps the quirk: a longer path is attached to the previous node, whatever it starts with', () => {
+    // Java only compares lengths, so a two-step path after a one-step one hangs
+    // its last node off the previous path's end.
+    const tree = parseHierarchy(root, [[item('A')], [item('C'), item('E')]], true);
+    expect(tree.children.map((c) => c.stId)).toEqual(['A']);
+    expect(tree.children[0].children.map((c) => c.stId)).toEqual(['E']);
+  });
+
+  it('skips what the browser cannot show, unless asked not to', () => {
+    const paths = [
+      [item('X', 'Reaction')],
+      [item('X', 'Reaction'), item(null, 'CatalystActivity')],
+      [item('X', 'Reaction'), item(null, 'CatalystActivity'), item('Y')],
+    ];
+    const omitted = parseHierarchy(root, paths, true);
+    expect(omitted.children[0].children.map((c) => c.stId)).toEqual(['Y']);
+    const kept = parseHierarchy(root, paths, false);
+    expect(kept.children[0].children.map((c) => c.type)).toEqual(['CatalystActivity']);
+  });
+
+  it('gives the root a species only for an event or entity, and a diagram flag only for a pathway', () => {
+    expect(parseHierarchy(root, [], true)).toMatchObject({ species: 'Homo sapiens' });
+    expect(parseHierarchy(root, [], true).diagram).toBeUndefined();
+    const other = item('R-HSA-2', 'ReferenceGeneProduct');
+    expect(parseHierarchy(other, [], true).species).toBeUndefined();
+    const pathway = item('R-HSA-3', 'TopLevelPathway', { diagram: true });
+    pathway[5] = ['DatabaseObject', 'Event', 'Pathway', 'TopLevelPathway'];
+    expect(parseHierarchy(pathway, [], true)).toMatchObject({
+      diagram: true,
+      species: 'Homo sapiens',
+    });
+  });
+
+  it('reads a missing order and diagram as Java does: 0 and false', () => {
+    const tree = parseHierarchy(
+      root,
+      [[['A', 'A', null, 'Homo sapiens', 'Pathway', [], null]]],
+      true
+    );
+    expect(tree.children[0]).toMatchObject({ order: 0, diagram: false });
+  });
+});
+
+describe('locationsInPathwayBrowser, PathwayBrowserLocationsUtils', () => {
+  const entity = () => {
+    const root = item('E', 'EntityWithAccessionedSequence');
+    root[5] = ['DatabaseObject', 'PhysicalEntity'];
+    return root;
+  };
+
+  it('turns the reverse graph into trees from each top-level pathway, with browser urls', () => {
+    const rx = item('Rx', 'Reaction');
+    const p1 = item('P1', 'Pathway', { diagram: true });
+    const t = item('T', 'TopLevelPathway', { diagram: true });
+    const trees = locationsInPathwayBrowser(
+      parseHierarchy(entity(), [[rx], [rx, p1], [rx, p1, t]], true)
+    );
+    expect(JSON.stringify(trees.map(pathwayBrowserJson))).toBe(
+      JSON.stringify([
+        {
+          stId: 'T',
+          name: 'T name',
+          species: 'Homo sapiens',
+          url: '/PathwayBrowser/#/T',
+          type: 'TopLevelPathway',
+          children: [
+            {
+              stId: 'P1',
+              name: 'P1 name',
+              species: 'Homo sapiens',
+              url: '/PathwayBrowser/#/P1',
+              type: 'Pathway',
+              children: [
+                {
+                  stId: 'Rx',
+                  name: 'Rx name',
+                  species: 'Homo sapiens',
+                  url: '/PathwayBrowser/#/P1&amp;SEL=Rx&amp;PATH=T',
+                  type: 'Reaction',
+                  children: [
+                    {
+                      stId: 'E',
+                      name: 'E name',
+                      species: 'Homo sapiens',
+                      url: '/PathwayBrowser/#/P1&amp;SEL=E&amp;PATH=T',
+                      type: 'EntityWithAccessionedSequence',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ])
+    );
+  });
+
+  it('gives a pathway in two places its own address, and the entity the last diagram', () => {
+    const p = item('P', 'Pathway');
+    const t1 = item('T1', 'TopLevelPathway', { diagram: true });
+    const t2 = item('T2', 'TopLevelPathway', { diagram: true });
+    const trees = locationsInPathwayBrowser(
+      parseHierarchy(entity(), [[p], [p, t1], [p, t2]], true)
+    );
+    expect(trees.map((t) => t.stId)).toEqual(['T1', 'T2']);
+    expect(trees[0].children[0].url).toBe('/PathwayBrowser/#/P');
+    expect(trees[0].children[0].children[0].url).toBe('/PathwayBrowser/#/T1&amp;SEL=E');
+    expect(trees[1].children[0].children[0].url).toBe('/PathwayBrowser/#/T2&amp;SEL=E');
+  });
+
+  it('drops branches that end anywhere but a top-level pathway', () => {
+    const trees = locationsInPathwayBrowser(
+      parseHierarchy(entity(), [[item('C', 'Complex')], [item('P', 'Pathway')]], true)
+    );
+    expect(trees).toEqual([]);
+  });
+
+  it('answers a top-level pathway with itself', () => {
+    const t = item('T', 'TopLevelPathway', { diagram: true });
+    t[5] = ['DatabaseObject', 'Event', 'Pathway', 'TopLevelPathway'];
+    expect(locationsInPathwayBrowser(parseHierarchy(t, [], true)).map(pathwayBrowserJson)).toEqual([
+      {
+        stId: 'T',
+        name: 'T name',
+        species: 'Homo sapiens',
+        url: '/PathwayBrowser/#/T',
+        type: 'TopLevelPathway',
+      },
+    ]);
+  });
+});
+
+describe('pathwayBrowserJson, PathwayBrowserNode as Jackson writes it', () => {
+  it("writes Java's keys in field order, leaving out what is empty", () => {
+    const node = Object.assign(new PathwayBrowserNode(), {
+      type: 'Pathway',
+      diagram: false,
+      stId: 'R-HSA-1',
+      name: 'x',
+      order: 3,
+      unique: true,
+    });
+    expect(JSON.stringify(pathwayBrowserJson(node))).toBe(
+      '{"stId":"R-HSA-1","name":"x","type":"Pathway","diagram":false}'
+    );
+  });
+});
+
+describe('springBoolean, a Boolean request parameter as Spring converts it', () => {
+  it('is absent for no value or an empty one', () => {
+    expect(springBoolean([])).toEqual({ value: undefined });
+    expect(springBoolean([''])).toEqual({ value: undefined });
+    expect(springBoolean(['  '])).toEqual({ value: undefined });
+  });
+
+  it('accepts true/on/yes/1 and false/off/no/0, any case, trimmed', () => {
+    for (const raw of ['true', 'TRUE', 'on', 'Yes', '1', ' true ']) {
+      expect(springBoolean([raw])).toEqual({ value: true });
+    }
+    for (const raw of ['false', 'OFF', 'no', '0']) {
+      expect(springBoolean([raw])).toEqual({ value: false });
+    }
+  });
+
+  it('takes the first of several values', () => {
+    expect(springBoolean(['false', 'true'])).toEqual({ value: false });
+  });
+
+  it("refuses anything else with Spring's message, the value as sent", () => {
+    expect(springBoolean([' foo '])).toEqual({
+      error:
+        "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; " +
+        'nested exception is java.lang.IllegalArgumentException: Invalid boolean value [ foo ]',
+    });
+    expect(springBoolean(['\u2028']).error).toMatch(/\[\u2028\]$/);
+  });
+});
+
+describe('/detail/{id}/locationsInPWB without a database', () => {
+  const path = '/ContentService/data/detail/{id}/locationsInPWB';
+
+  it('is served, on the path Java uses', () => {
+    expect(endpoints.map((e) => e.path)).toContain(path);
+  });
+
+  it("refuses an unreadable boolean with Java's 400, before reading the id", async () => {
+    const response = await fetch(
+      `${base}/ContentService/data/detail/foo/locationsInPWB?directParticipants=true&omitNonDisplayableItems=bar`
+    );
+    expect(response.status).toBe(400);
+    expect(response.headers.get('content-type')).toMatch(/^application\/json/);
+    const body = await response.json();
+    expect(body).toMatchObject({ code: 400, reason: 'BAD_REQUEST', targets: null });
+    expect(body.messages).toEqual([
+      "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; " +
+        'nested exception is java.lang.IllegalArgumentException: Invalid boolean value [bar]',
+    ]);
+    // Java's url leaves the query out.
+    expect(body.url).toMatch(/\/ContentService\/data\/detail\/foo\/locationsInPWB$/);
+  });
+
+  it("answers a dbId past a long's range with Java's 500, as Long.parseLong fails", async () => {
+    const response = await fetch(
+      `${base}/ContentService/data/detail/99999999999999999999.2/locationsInPWB`
+    );
+    expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual(['For input string: "99999999999999999999"']);
+  });
+
+  it("answers an id that is neither a stable id nor a dbId with Java's 404", async () => {
+    const response = await fetch(`${base}/ContentService/data/detail/foo/locationsInPWB`);
+    expect(response.status).toBe(404);
+    expect((await response.json()).messages).toEqual(['Reverse sub graph found for id: foo']);
+  });
+});
+
+describe("locationsQuery, graph-core's locations queries", () => {
+  // The paths' order is the answer's, so the match and the expansion must be
+  // Java's text exactly (HierarchyRepository, the deployed graph-core jar).
+  const all =
+    'regulatedBy|regulator|physicalEntity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|activeUnit|catalystActivity|repeatedUnit|hasMember|hasCandidate|hasComponent|input|output|hasEvent|proteinMarker|RNAMarker';
+  const direct =
+    'regulatedBy|regulator|physicalEntity|catalystActivity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|input|output|hasEvent';
+  const cases = [
+    [false, false, `MATCH (n:DatabaseObject{stId:$stId}) OPTIONAL MATCH path=(n)<-[:${all}*]-() `],
+    [true, false, `MATCH (n:DatabaseObject{dbId:$dbId}) OPTIONAL MATCH path=(n)<-[:${all}*]-() `],
+    [
+      false,
+      true,
+      `MATCH (n:DatabaseObject{stId:$stId}) OPTIONAL MATCH path=(n)<-[:${direct}*]-() `,
+    ],
+    [true, true, `MATCH (n:DatabaseObject{dbId:$dbId}) OPTIONAL MATCH path=(n)<-[:${direct}*]-() `],
+  ];
+  for (const [byDbId, directParticipants, java] of cases) {
+    it(`matches and expands as Java does (dbId ${byDbId}, direct ${directParticipants})`, () => {
+      expect(locationsQuery(byDbId, directParticipants).startsWith(java)).toBe(true);
+    });
+  }
+});
+
+describe('servletParameter, a query parameter as Tomcat reads it', () => {
+  // Each case measured against Java's /detail/{id}/locationsInPWB, 14 Oct 2026.
+  it('drops a pair whose name or value has a malformed escape, keeping the rest', () => {
+    expect(servletParameter('directParticipants=%zz', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=%', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=%2', 'directParticipants')).toEqual([]);
+    expect(servletParameter('directParticipants=true%zz', 'directParticipants')).toEqual([]);
+    expect(servletParameter('direct%zzParticipants=true', 'directParticipants')).toEqual([]);
+    expect(
+      servletParameter('directParticipants=%zz&directParticipants=true', 'directParticipants')
+    ).toEqual(['true']);
+    expect(servletParameter('%zz=1&directParticipants=true', 'directParticipants')).toEqual([
+      'true',
+    ]);
+  });
+
+  it('decodes names and values as UTF-8, + as a space, a bad sequence as U+FFFD', () => {
+    expect(servletParameter('direct%50articipants=tr%75e', 'directParticipants')).toEqual(['true']);
+    expect(servletParameter('directParticipants=+on+', 'directParticipants')).toEqual([' on ']);
+    expect(servletParameter('directParticipants=%2Btrue', 'directParticipants')).toEqual(['+true']);
+    expect(servletParameter('directParticipants=%C3%A9', 'directParticipants')).toEqual(['\u00e9']);
+    expect(servletParameter('directParticipants=%FF', 'directParticipants')).toEqual(['\ufffd']);
+    expect(servletParameter('directParticipants=%e2%80', 'directParticipants')).toEqual(['\ufffd']);
+    // Java's decoder, not the WHATWG one, where they part: an encoded surrogate
+    // (ED A0..BF, then a continuation if present) is one U+FFFD, not one per byte.
+    const decoded = (escapes) => servletParameter(`d=${escapes}`, 'd')[0];
+    expect(decoded('%ED%A0%80')).toBe('\ufffd');
+    expect(decoded('%ED%BF%BF')).toBe('\ufffd');
+    expect(decoded('%ED%A0')).toBe('\ufffd');
+    expect(decoded('%ED%A0%41')).toBe('\ufffdA');
+    expect(decoded('%ED%A0%80%ED%B0%80')).toBe('\ufffd\ufffd');
+    expect(decoded('%ED%9F%BF')).toBe('\ud7ff');
+    // and where they agree: one per byte of an overlong or out-of-range form.
+    expect(decoded('%E0%80%80')).toBe('\ufffd\ufffd\ufffd');
+    expect(decoded('%F8%88%80%80%80')).toBe('\ufffd'.repeat(5));
+    expect(decoded('%E2%80%41')).toBe('\ufffdA');
+    // A byte order mark is a character like any other to Java's decoder.
+    expect(servletParameter('directParticipants=%EF%BB%BFtrue', 'directParticipants')).toEqual([
+      '\ufefftrue',
+    ]);
+  });
+
+  it('reads a name without = as an empty value, and splits only at the first =', () => {
+    expect(servletParameter('directParticipants', 'directParticipants')).toEqual(['']);
+    expect(servletParameter('directParticipants=a=b', 'directParticipants')).toEqual(['a=b']);
+    expect(servletParameter('&&=true&directParticipants=true;x', 'directParticipants')).toEqual([
+      'true;x',
+    ]);
+  });
+});
+
+describe('springBoolean with several values', () => {
+  const several = (values) =>
+    "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Boolean'; " +
+    `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values}]`;
+
+  it('is decided by the first value', () => {
+    expect(springBoolean(['true', 'foo'])).toEqual({ value: true });
+    expect(springBoolean(['false', 'foo'])).toEqual({ value: false });
+    expect(springBoolean(['', 'true'])).toEqual({ value: undefined });
+    expect(springBoolean([' ', 'true'])).toEqual({ value: undefined });
+  });
+
+  it('names the array type and every value, joined and untrimmed, when the first is refused', () => {
+    expect(springBoolean(['foo', 'true'])).toEqual({ error: several('foo,true') });
+    expect(springBoolean(['foo', ''])).toEqual({ error: several('foo,') });
+    expect(springBoolean([' foo ', 'x'])).toEqual({ error: several(' foo ,x') });
+    expect(springBoolean(['foo', 'bar', 'baz'])).toEqual({ error: several('foo,bar,baz') });
+  });
+});
+
+describe('locationsInPWB reads its query as the servlet does', () => {
+  it('ignores a parameter it cannot decode rather than refusing it', async () => {
+    // No database: an unreadable id answers before any query, so a 404 here
+    // means the malformed pair was dropped, and a 400 that it was not.
+    for (const query of [
+      'directParticipants=%zz',
+      'directParticipants=%',
+      'directParticipants=true&omitNonDisplayableItems=%zz',
+    ]) {
+      const response = await fetch(
+        `${base}/ContentService/data/detail/foo/locationsInPWB?${query}`
+      );
+      expect(response.status, query).toBe(404);
+    }
+  });
+
+  it('reads everything after the first ?, a second ? included', async () => {
+    const response = await fetch(
+      `${base}/ContentService/data/detail/foo/locationsInPWB?x=1?&directParticipants=bad`
+    );
+    expect(response.status).toBe(400);
   });
 });
