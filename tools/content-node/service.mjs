@@ -20,7 +20,8 @@ import express from 'express';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, URLSearchParams } from 'node:url';
+import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 
 const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
@@ -868,7 +869,144 @@ export const endpoints = [
       };
     },
   },
+  {
+    path: '/ContentService/data/detail/{id}/locationsInPWB',
+    // PTEN: 18 trees, reached through reactions, sets and complexes.
+    sample: 'R-HSA-199420',
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/detail\/[^/]+\/locationsInPWB(\?\S*)?: \.url: /],
+    /**
+     * Every place in the Pathway Browser an object appears: one tree per
+     * top-level pathway, down to the object itself, each node with the address
+     * that opens it there. The details page's "Locations in the Pathway
+     * Browser" tree asks for it.
+     *
+     * graph-core's HierarchyService and HierarchyRepository, and the
+     * controller's PathwayBrowserLocationsUtils, kept line for line
+     * (parseHierarchy, locationsInPathwayBrowser): the query's paths are read
+     * in the order Neo4j returns them and the answer depends on that order, so
+     * the four queries match and expand as Java's do (locationsQuery). The id
+     * is read as everywhere
+     * else; a REACT_ id is swapped for its stable id first, as getIdentifier
+     * does.
+     *
+     * Not cached: the answer is per id, and Java holds nothing either. Most
+     * answer in tens of milliseconds; a common small molecule takes seconds in
+     * both.
+     *
+     * `directParticipants` (default false) follows only the relationships that
+     * put an entity directly in a reaction; `omitNonDisplayableItems` (default
+     * true) leaves catalyses and regulations out of the tree. Both are read as
+     * Spring reads a Boolean, and a value it cannot read is its 400. Asking for
+     * the non-displayable items is Java's 500 for most entities -- every node
+     * without a stable id becomes one node, which makes cycles -- and here too.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      // In the controller's parameter order: the first that cannot be read is
+      // the one Java names.
+      const direct = springBoolean(queryValues(request, 'directParticipants'));
+      if (direct.error) return javaError(request, 400, 'BAD_REQUEST', direct.error);
+      const omit = springBoolean(queryValues(request, 'omitNonDisplayableItems'));
+      if (omit.error) return javaError(request, 400, 'BAD_REQUEST', omit.error);
+
+      const missing = () =>
+        javaError(request, 404, 'NOT_FOUND', `Reverse sub graph found for id: ${raw}`);
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return missing();
+      if (where.startsWith('n.oldStId')) {
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const byDbId = where.startsWith('n.dbId');
+      // Long.parseLong past a long's range is Java's 500, naming the digits as
+      // given; neo4j.int would wrap round instead and find some other object.
+      if (byDbId && BigInt(params.id) > 9223372036854775807n) {
+        const digits = javaTrim(raw).split('.')[0];
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
+      }
+      const rows = await read(
+        locationsQuery(byDbId, direct.value ?? false),
+        byDbId ? { dbId: neo4j.int(params.id) } : { stId: params.id }
+      );
+      const [row] = rows;
+      if (!row) return missing();
+
+      try {
+        // One row per path; no path at all is one row with none, which Java's
+        // collect drops.
+        const paths = rows.map((each) => each.steps).filter((steps) => steps !== null);
+        const root = parseHierarchy(row.db, paths, omit.value ?? true);
+        const trees = locationsInPathwayBrowser(root);
+        if (trees.length === 0) {
+          return javaError(
+            request,
+            404,
+            'NOT_FOUND',
+            `No Locations in the PathwayBrowser could have been found for id: ${raw}`
+          );
+        }
+        return { status: 200, body: trees.map(pathwayBrowserJson), type: 'application/json' };
+      } catch (failure) {
+        // The two ways graph-core fails on this graph, answered as Java answers
+        // them: a cycle overflows the stack, which Spring reports by name, and
+        // a null it dereferences is the generic message.
+        if (failure instanceof RangeError) {
+          return javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            'Handler dispatch failed; nested exception is java.lang.StackOverflowError'
+          );
+        }
+        if (failure instanceof JavaNullPointer) {
+          return javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            'Something unexpected happened and the error has been reported.'
+          );
+        }
+        throw failure;
+      }
+    },
+  },
 ];
+
+/**
+ * graph-core's four locations queries (HierarchyRepository), by kind of id and
+ * by `directParticipants`: Java's MATCH and expansion exactly, because the
+ * paths come back in the order the plan expands them and parseHierarchy builds
+ * the tree from that order.
+ *
+ * Only the RETURN differs, and only in shape. Java collects every path into one
+ * record; for a small molecule that is one record of 94,690 paths, and the node
+ * driver decodes a record that spans many network chunks byte by byte -- 32s
+ * for an answer Java gives in 2.8s, and nothing at all within two minutes for
+ * the largest. One row per path streams instead (7.6s for that one, against
+ * Java's 7.0s). The step's labels are left out, as nothing but the root reads
+ * them. Checked rather than assumed: the streamed rows and Java's collected
+ * list were compared path for path over twelve ids, both relationship sets,
+ * and agreed every time; the diff harness then compares the answers.
+ */
+export function locationsQuery(byDbId, directParticipants) {
+  const match = byDbId
+    ? 'MATCH (n:DatabaseObject{dbId:$dbId}) '
+    : 'MATCH (n:DatabaseObject{stId:$stId}) ';
+  const relationships = directParticipants
+    ? 'regulatedBy|regulator|physicalEntity|catalystActivity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|input|output|hasEvent'
+    : 'regulatedBy|regulator|physicalEntity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|activeUnit|catalystActivity|repeatedUnit|hasMember|hasCandidate|hasComponent|input|output|hasEvent|proteinMarker|RNAMarker';
+  return (
+    match +
+    `OPTIONAL MATCH path=(n)<-[:${relationships}*]-() ` +
+    'RETURN [n.stId, n.displayName, n.hasDiagram, n.speciesName, n.schemaClass, labels(n), 0] AS db, ' +
+    '[rel IN relationships(path) | [startNode(rel).stId, startNode(rel).displayName, startNode(rel).hasDiagram, startNode(rel).speciesName, startNode(rel).schemaClass, null, rel.order]] AS steps'
+  );
+}
 
 /**
  * Build once, serve from memory, and heal from a bad start.
@@ -1377,6 +1515,316 @@ export function physicalEntityJson(node) {
     return { ...head, className: 'Chemical Compound', ...tail };
   }
   return { ...head, ...tail, ...(node.schemaClass && { className: node.schemaClass }) };
+}
+
+/**
+ * What a NullPointerException would have been in Java: graph-core dereferences
+ * a few values without checking them, and Java answers its generic 500 then.
+ */
+class JavaNullPointer extends Error {}
+
+/** Java's String.compareTo: by UTF-16 unit, which is also what `<` compares. */
+function javaCompare(a, b) {
+  if (a === null || a === undefined) throw new JavaNullPointer('compareTo on null');
+  if (b === null || b === undefined) throw new JavaNullPointer('compareTo with null');
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * graph-core's PathwayBrowserNode (service/helper), the node of every tree the
+ * Pathway Browser's hierarchy endpoints answer with.
+ *
+ * Its children and parents are TreeSets ordered by compareTo -- species, then
+ * the curated `order`, then name -- and a TreeSet keeps the first of two
+ * entries that compare equal, so two different events with the same name,
+ * species and order under one parent are one child. Kept, because Java's
+ * answer is that: here they are arrays held in that order, with that rule.
+ *
+ * There is no equals or hashCode, and no identity in the JSON: a node reached
+ * from two parents is one object, written out in full under each.
+ */
+export class PathwayBrowserNode {
+  stId = undefined;
+  name = undefined;
+  species = undefined;
+  url = undefined;
+  type = undefined;
+  diagram = undefined;
+  unique = undefined;
+  order = undefined;
+  children = null;
+  parent = null;
+
+  addChild(node) {
+    this.children = sortedAdd(this.children, node);
+  }
+
+  addParent(node) {
+    this.parent = sortedAdd(this.parent, node);
+  }
+
+  hasDiagram() {
+    return this.diagram ?? false;
+  }
+
+  /** PathwayBrowserNode.compareTo. */
+  compareTo(node) {
+    const species = javaCompare(this.species ?? '', node.species ?? '');
+    if (species !== 0) return species;
+    const order = (this.order ?? 0) - (node.order ?? 0);
+    if (order !== 0) return order;
+    return javaCompare(this.name, node.name);
+  }
+
+  /** getLeaves: a TreeSet, so leaves that compare equal are one. */
+  getLeaves() {
+    if (this.children === null) return [this];
+    let leaves = null;
+    for (const child of this.children) {
+      for (const leaf of child.getLeaves()) leaves = sortedAdd(leaves, leaf);
+    }
+    return leaves ?? [];
+  }
+}
+
+/** TreeSet.add: in compareTo order, and nothing added when an equal one is there. */
+function sortedAdd(set, node) {
+  const list = set ?? [];
+  // TreeMap.put on an empty map still compares the key with itself.
+  if (list.length === 0) node.compareTo(node);
+  let low = 0;
+  let high = list.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    const order = node.compareTo(list[middle]);
+    if (order === 0) return list;
+    if (order < 0) high = middle;
+    else low = middle + 1;
+  }
+  list.splice(low, 0, node);
+  return list;
+}
+
+/**
+ * HierarchyTreeItem.build: one `[stId, displayName, hasDiagram, speciesName,
+ * schemaClass, labels, order]` row of the query, read with the driver's
+ * defaults -- a missing flag is false and a missing order 0.
+ */
+function treeItem(row) {
+  return {
+    stId: row[0] ?? null,
+    displayName: row[1] ?? null,
+    hasDiagram: row[2] ?? false,
+    speciesName: row[3] ?? null,
+    schemaClass: row[4] ?? null,
+    labels: row[5] ?? [],
+    order: row[6] ?? 0,
+  };
+}
+
+/** The types the browser cannot place, which the tree skips unless told not to. */
+function displayable(type) {
+  if (type === null || type === undefined) throw new JavaNullPointer('type');
+  return (
+    type !== 'CatalystActivity' &&
+    !type.includes('Regulation') &&
+    type !== 'Requirement' &&
+    type !== 'EntityFunctionalStatus'
+  );
+}
+
+/**
+ * HierarchyRepository.parseRaw, kept line for line: the tree from the query's
+ * root and its paths, each path a list of tree items.
+ *
+ * One node per stId (a HashMap, so every item without a stable id is the one
+ * node too). A path longer than the previous one is taken to extend it, and
+ * only its last step is added, to whatever node the previous path ended on --
+ * true of the order Neo4j expands paths in, and not checked. Anything else
+ * starts again from the root. That rule is why the query is run exactly as
+ * Java writes it: the rows' order is part of the answer.
+ */
+export function parseHierarchy(rootRow, paths, omitNonDisplayableItems) {
+  const rootItem = treeItem(rootRow);
+  const root = new PathwayBrowserNode();
+  root.stId = rootItem.stId ?? undefined;
+  root.name = rootItem.displayName ?? undefined;
+  root.type = rootItem.schemaClass ?? undefined;
+  if (rootItem.labels.includes('Event')) {
+    root.species = rootItem.speciesName ?? undefined;
+    if (rootItem.labels.includes('Pathway')) root.diagram = rootItem.hasDiagram;
+  } else if (rootItem.labels.includes('PhysicalEntity')) {
+    root.species = rootItem.speciesName ?? undefined;
+  }
+
+  const nodes = new Map([[rootItem.stId, root]]);
+  const addNode = (previous, row) => {
+    const found = treeItem(row);
+    let node = nodes.get(found.stId);
+    if (!node) {
+      node = new PathwayBrowserNode();
+      node.stId = found.stId ?? undefined;
+      node.name = found.displayName ?? undefined;
+      node.diagram = found.hasDiagram;
+      node.species = found.speciesName ?? undefined;
+      node.type = found.schemaClass ?? undefined;
+      node.order = found.order;
+      nodes.set(found.stId, node);
+    }
+    if (!omitNonDisplayableItems || displayable(node.type)) {
+      previous.addChild(node);
+      node.addParent(previous);
+      return node;
+    }
+    return previous;
+  };
+
+  let previous = root;
+  let previousSize = 0;
+  for (const path of paths ?? []) {
+    if (path.length > previousSize) {
+      previous = addNode(previous, path[path.length - 1]);
+    } else {
+      previous = root;
+      for (const row of path) previous = addNode(previous, row);
+    }
+    previousSize = path.length;
+  }
+  return root;
+}
+
+const PATHWAY_BROWSER_URL = '/PathwayBrowser/#/';
+const PATHWAY_TYPES = new Set(['Pathway', 'CellLineagePath', 'TopLevelPathway']);
+
+/**
+ * The controller's getLeaves, PathwayBrowserLocationsUtils.removeOrphans and
+ * buildTreesFromLeaves: the reverse graph turned round, one tree per top-level
+ * pathway, each node carrying the browser address that opens it in place.
+ * Kept line for line, `unique` included: it is written onto the shared graph
+ * nodes as the walk goes, so a node's address depends on the walk's order.
+ */
+export function locationsInPathwayBrowser(root) {
+  const leaves = root.getLeaves().filter((leaf) => leaf.type === 'TopLevelPathway');
+  let trees = null;
+  for (const leaf of leaves) trees = sortedAdd(trees, treeFromLeaf(leaf, '', '', '', ''));
+  return trees ?? [];
+}
+
+function treeFromLeaf(leaf, sel, path, shortPath, lastNodeWithDiagram) {
+  const tree = new PathwayBrowserNode();
+  tree.stId = leaf.stId;
+  tree.name = leaf.name;
+  tree.species = leaf.species;
+  tree.type = leaf.type;
+
+  if (leaf.type === null || leaf.type === undefined) throw new JavaNullPointer('type');
+  const isPathway = PATHWAY_TYPES.has(leaf.type);
+  const hasDiagram = leaf.hasDiagram();
+  leaf.unique = false;
+
+  let main;
+  if (isPathway) {
+    main = leaf.stId;
+  } else {
+    sel = leaf.stId;
+    main = lastNodeWithDiagram;
+  }
+
+  const children = leaf.children;
+  if (isPathway) {
+    if (children === null) {
+      leaf.unique = true;
+    } else if (children.length === 1) {
+      const only = children[0].unique;
+      if (only === null || only === undefined) throw new JavaNullPointer('isUnique');
+      if (only) leaf.unique = true;
+    }
+  }
+
+  // StringBuilder.append(null) writes "null".
+  const text = (value) => (value === null || value === undefined ? 'null' : String(value));
+  let url = PATHWAY_BROWSER_URL;
+  if (leaf.unique) {
+    url += text(leaf.stId);
+  } else {
+    url += text(main);
+    if (sel === null || sel === undefined) throw new JavaNullPointer('sel');
+    if (sel !== '') url += `&amp;SEL=${sel}`;
+    const trail = isPathway ? path : shortPath;
+    if (trail !== '') url += `&amp;PATH=${trail}`;
+  }
+  tree.url = url;
+
+  if (isPathway) {
+    if (hasDiagram) {
+      shortPath += shortPath === '' ? text(lastNodeWithDiagram) : `,${text(lastNodeWithDiagram)}`;
+    } else {
+      path += path === '' ? text(leaf.stId) : `,${text(leaf.stId)}`;
+    }
+  }
+  if (hasDiagram) lastNodeWithDiagram = leaf.stId;
+
+  for (const node of leaf.parent ?? []) {
+    tree.addChild(treeFromLeaf(node, sel, path, shortPath, lastNodeWithDiagram));
+  }
+  return tree;
+}
+
+/**
+ * A PathwayBrowserNode as Jackson writes it: the field-backed properties in
+ * declaration order, the @JsonIgnore'd ones (unique, order, parent and two
+ * flags) never, and -- under the service's non_empty -- nothing that is null,
+ * and no empty children.
+ */
+export function pathwayBrowserJson(node) {
+  const out = only(node, ['stId', 'name', 'species', 'url', 'type', 'diagram']);
+  if (node.children?.length) out.children = node.children.map(pathwayBrowserJson);
+  return out;
+}
+
+/**
+ * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
+ * the first value, trimmed as String.trim trims; empty is absent; true, on, yes
+ * and 1 or false, off, no and 0 in any case; anything else Java's 400, naming
+ * the value as it was sent.
+ */
+export function springBoolean(values) {
+  const [raw] = values;
+  if (raw === undefined) return { value: undefined };
+  const value = javaTrim(raw).toLowerCase();
+  if (value === '') return { value: undefined };
+  if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
+  if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  return {
+    error:
+      "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; " +
+      `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${raw}]`,
+  };
+}
+
+/** The values of one query parameter as the servlet reads them, in order. */
+function queryValues(request, name) {
+  const query = String(request.originalUrl ?? '').split('?')[1] ?? '';
+  try {
+    return new URLSearchParams(query).getAll(name);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Java's error envelope for any status. Its `url` is the request's without the
+ * query string, which is how Java writes it.
+ */
+function javaError(request, code, reason, message) {
+  const host = request.get?.('host') ?? 'localhost';
+  const protocol = request.protocol ?? 'http';
+  const url = String(request.originalUrl ?? '').split('?')[0];
+  return {
+    status: code,
+    type: 'application/json',
+    body: { code, reason, url: `${protocol}://${host}${url}`, messages: [message], targets: null },
+  };
 }
 
 /**
