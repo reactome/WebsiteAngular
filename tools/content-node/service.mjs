@@ -112,15 +112,16 @@ export const endpoints = [
      */
     handler: async (request) => {
       const taxId = String(request.params.id);
+      const { where, params } = topSpeciesMatch(taxId);
       const rows = await read(
         `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
-         WHERE s.taxId = $taxId
+         WHERE ${where}
          RETURN properties(p) AS pathway, properties(s) AS species
          // toLower, as /content/toc already does. Neo4j orders by code point,
          // so uppercase sorts before lowercase and "DNA Repair" landed before
          // "Developmental Biology"; Java's collation is case-insensitive.
          ORDER BY toLower(p.displayName)`,
-        { taxId }
+        params
       );
       // Java answers 404, not an empty list, when a species has no top-level
       // pathways -- checked for both an unknown id and taxId 1, which exists.
@@ -140,21 +141,7 @@ export const endpoints = [
         };
       };
 
-      const body = rows.map(({ pathway, species }) => ({
-        ...only(pathway, [
-          'dbId',
-          'displayName',
-          'stId',
-          'stIdVersion',
-          'isInDisease',
-          'isInferred',
-          'maxDepth',
-          'name',
-          'releaseDate',
-          'speciesName',
-          'doi',
-          'releaseStatus',
-        ]),
+      const body = rows.map(({ pathway, species }) =>
         // Jackson writes a repeated object once and then refers back to it by
         // dbId -- the default of the service-wide `includeRef` parameter, which
         // only changes the *form* of the back-reference to JSOG `{@ref}`. So
@@ -165,11 +152,8 @@ export const endpoints = [
         // a number on all but the first item. Nothing caught this because the
         // diff expands `{id}` only when given `--ids`, so this endpoint had
         // never once been compared.
-        species: [seenSpecies.has(species.dbId) ? species.dbId : full(species)],
-        ...only(pathway, ['hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
-        schemaClass: pathway.schemaClass,
-        className: pathway.schemaClass,
-      }));
+        topPathwayJson(pathway, seenSpecies.has(species.dbId) ? species.dbId : full(species))
+      );
       return { status: 200, body, type: 'application/json' };
     },
   },
@@ -1583,6 +1567,47 @@ export function eventProjection(node) {
     ...only(node, ['category', 'isCanonical', 'definition']),
     inferred: node.isInferred ?? false,
     inDisease: node.isInDisease ?? false,
+  };
+}
+
+/**
+ * The species of /pathways/top/{species}, as graph-core's
+ * TopLevelPathwayService reads it: StringUtils.isNumeric is a taxId, anything
+ * else must equal a Species' displayName exactly -- "Homo sapiens" answers,
+ * "homo sapiens" and "Homo_sapiens" are 404s. Not the looser speciesFilter
+ * other endpoints use.
+ */
+export function topSpeciesMatch(raw) {
+  return javaNumeric(raw)
+    ? { where: 's.taxId = $species', params: { species: raw } }
+    : { where: 's.displayName = $species', params: { species: raw } };
+}
+
+/**
+ * A top-level pathway as Java writes it under /pathways/top/{species}: the
+ * Pathway fields in Jackson's order -- releaseStatus before speciesName, then
+ * the species, then doi -- with `species` the one-element array the caller
+ * builds (the Species object the first time, its dbId after).
+ */
+export function topPathwayJson(pathway, species) {
+  return {
+    ...only(pathway, [
+      'dbId',
+      'displayName',
+      'stId',
+      'stIdVersion',
+      'isInDisease',
+      'isInferred',
+      'maxDepth',
+      'name',
+      'releaseDate',
+      'releaseStatus',
+      'speciesName',
+    ]),
+    species: [species],
+    ...only(pathway, ['doi', 'hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
+    schemaClass: pathway.schemaClass,
+    className: pathway.schemaClass,
   };
 }
 
