@@ -112,15 +112,25 @@ export const endpoints = [
      */
     handler: async (request) => {
       const taxId = String(request.params.id);
+      // content-service decodes the species once more (URLDecoder), so
+      // 'Homo+sapiens' finds human; a malformed escape is Java's 500. The 404
+      // message below names the species before that decoding, as Java's does.
+      let decoded;
+      try {
+        decoded = javaUrlDecode(taxId);
+      } catch (failure) {
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.message);
+      }
+      const { where, params } = topSpeciesMatch(decoded);
       const rows = await read(
         `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
-         WHERE s.taxId = $taxId
+         WHERE ${where}
          RETURN properties(p) AS pathway, properties(s) AS species
          // toLower, as /content/toc already does. Neo4j orders by code point,
          // so uppercase sorts before lowercase and "DNA Repair" landed before
          // "Developmental Biology"; Java's collation is case-insensitive.
          ORDER BY toLower(p.displayName)`,
-        { taxId }
+        params
       );
       // Java answers 404, not an empty list, when a species has no top-level
       // pathways -- checked for both an unknown id and taxId 1, which exists.
@@ -140,21 +150,7 @@ export const endpoints = [
         };
       };
 
-      const body = rows.map(({ pathway, species }) => ({
-        ...only(pathway, [
-          'dbId',
-          'displayName',
-          'stId',
-          'stIdVersion',
-          'isInDisease',
-          'isInferred',
-          'maxDepth',
-          'name',
-          'releaseDate',
-          'speciesName',
-          'doi',
-          'releaseStatus',
-        ]),
+      const body = rows.map(({ pathway, species }) =>
         // Jackson writes a repeated object once and then refers back to it by
         // dbId -- the default of the service-wide `includeRef` parameter, which
         // only changes the *form* of the back-reference to JSOG `{@ref}`. So
@@ -165,11 +161,8 @@ export const endpoints = [
         // a number on all but the first item. Nothing caught this because the
         // diff expands `{id}` only when given `--ids`, so this endpoint had
         // never once been compared.
-        species: [seenSpecies.has(species.dbId) ? species.dbId : full(species)],
-        ...only(pathway, ['hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
-        schemaClass: pathway.schemaClass,
-        className: pathway.schemaClass,
-      }));
+        topPathwayJson(pathway, seenSpecies.has(species.dbId) ? species.dbId : full(species))
+      );
       return { status: 200, body, type: 'application/json' };
     },
   },
@@ -1583,6 +1576,116 @@ export function eventProjection(node) {
     ...only(node, ['category', 'isCanonical', 'definition']),
     inferred: node.isInferred ?? false,
     inDisease: node.isInDisease ?? false,
+  };
+}
+
+/**
+ * java.net.URLDecoder.decode(s, "UTF-8"), which content-service applies to
+ * /pathways/top's species on top of the servlet's own decoding: '+' is a
+ * space, runs of %XX are bytes decoded as UTF-8 (javaUtf8), and a '%' with
+ * fewer than two characters after it, or two that Integer.parseInt(…, 16)
+ * refuses, throws Java's own message -- which Java answers as a 500.
+ * parseInt takes a sign, so '%-1' is the "negative value" error and '%+F' is
+ * 0x0F, as in Java; its digits are Character.digit's.
+ */
+export function javaUrlDecode(text) {
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '+') {
+      out += ' ';
+      i += 1;
+    } else if (c === '%') {
+      const bytes = [];
+      while (i + 2 < text.length && text[i] === '%') {
+        bytes.push(javaHexByte(text.slice(i + 1, i + 3)));
+        i += 3;
+      }
+      if (i < text.length && text[i] === '%') {
+        throw new Error('URLDecoder: Incomplete trailing escape (%) pattern');
+      }
+      out += javaUtf8(Uint8Array.from(bytes));
+    } else {
+      out += c;
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/** Integer.parseInt(two, 16) as URLDecoder uses it, with its messages. */
+function javaHexByte(two) {
+  const digit = (ch) => {
+    if (/^[0-9a-fA-F]$/.test(ch)) return parseInt(ch, 16);
+    const code = ch.charCodeAt(0);
+    // Fullwidth A-F and a-f, which Character.digit accepts.
+    if (code >= 0xff21 && code <= 0xff26) return code - 0xff21 + 10;
+    if (code >= 0xff41 && code <= 0xff46) return code - 0xff41 + 10;
+    if (javaNumeric(ch)) return Number(asciiDigits(ch));
+    return -1;
+  };
+  const refuse = (index) =>
+    new Error(
+      `URLDecoder: Illegal hex characters in escape (%) pattern - Error at index ${index} in: "${two}"`
+    );
+  let sign = 1;
+  let start = 0;
+  if (two[0] === '-' || two[0] === '+') {
+    sign = two[0] === '-' ? -1 : 1;
+    start = 1;
+  }
+  let value = 0;
+  for (let k = start; k < two.length; k += 1) {
+    const d = digit(two[k]);
+    if (d < 0) throw refuse(k);
+    value = value * 16 + d;
+  }
+  value *= sign;
+  if (value < 0) {
+    throw new Error('URLDecoder: Illegal hex characters in escape (%) pattern - negative value');
+  }
+  return value;
+}
+
+/**
+ * The species of /pathways/top/{species}, as graph-core's
+ * TopLevelPathwayService reads it: StringUtils.isNumeric is a taxId, anything
+ * else must equal a Species' displayName exactly -- "Homo sapiens" answers,
+ * "homo sapiens" and "Homo_sapiens" are 404s. Not the looser speciesFilter
+ * other endpoints use.
+ */
+export function topSpeciesMatch(raw) {
+  return javaNumeric(raw)
+    ? { where: 's.taxId = $species', params: { species: raw } }
+    : { where: 's.displayName = $species', params: { species: raw } };
+}
+
+/**
+ * A top-level pathway as Java writes it under /pathways/top/{species}: the
+ * Pathway fields in Jackson's order -- releaseStatus before speciesName, then
+ * the species, then doi -- with `species` the one-element array the caller
+ * builds (the Species object the first time, its dbId after).
+ */
+export function topPathwayJson(pathway, species) {
+  return {
+    ...only(pathway, [
+      'dbId',
+      'displayName',
+      'stId',
+      'stIdVersion',
+      'isInDisease',
+      'isInferred',
+      'maxDepth',
+      'name',
+      'releaseDate',
+      'releaseStatus',
+      'speciesName',
+    ]),
+    species: [species],
+    ...only(pathway, ['doi', 'hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
+    schemaClass: pathway.schemaClass,
+    className: pathway.schemaClass,
   };
 }
 

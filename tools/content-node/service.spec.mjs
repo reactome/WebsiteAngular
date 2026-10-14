@@ -42,6 +42,9 @@ import {
   servletParameter,
   simpleObjectJson,
   speciesFilter,
+  topPathwayJson,
+  topSpeciesMatch,
+  javaUrlDecode,
   writeResult,
   springBoolean,
   springInteger,
@@ -1572,5 +1575,95 @@ describe('writeResult, how a handler answer goes on the wire', () => {
     rec = recorder();
     writeResult(rec.response, { status: 200, body: undefined });
     expect(rec.calls).toEqual([['status', 200], ['end']]);
+  });
+});
+
+describe('topPathwayJson, a top-level pathway as Java writes it', () => {
+  // Java's key order for /pathways/top/9606, 14 Oct 2026: releaseStatus before
+  // speciesName, and doi after species -- node had them the other way about.
+  it("writes Java's keys in Java's order", () => {
+    const pathway = {
+      dbId: 1,
+      displayName: 'd',
+      stId: 'R-HSA-1',
+      stIdVersion: 'R-HSA-1.1',
+      isInDisease: false,
+      isInferred: false,
+      maxDepth: 3,
+      name: ['d'],
+      releaseDate: '2020-01-01',
+      releaseStatus: 'UPDATED',
+      speciesName: 'Homo sapiens',
+      doi: '10.3180/R-HSA-1.1',
+      hasDiagram: true,
+      hasEHLD: false,
+      lastUpdatedDate: '2024-01-01',
+      schemaClass: 'TopLevelPathway',
+    };
+    expect(Object.keys(topPathwayJson(pathway, 48887))).toEqual([
+      'dbId',
+      'displayName',
+      'stId',
+      'stIdVersion',
+      'isInDisease',
+      'isInferred',
+      'maxDepth',
+      'name',
+      'releaseDate',
+      'releaseStatus',
+      'speciesName',
+      'species',
+      'doi',
+      'hasDiagram',
+      'hasEHLD',
+      'lastUpdatedDate',
+      'schemaClass',
+      'className',
+    ]);
+    expect(topPathwayJson(pathway, 48887).species).toEqual([48887]);
+  });
+});
+
+describe('topSpeciesMatch, how /pathways/top reads its species', () => {
+  // graph-core's TopLevelPathwayService: StringUtils.isNumeric is a taxId,
+  // anything else an exact displayName. Measured against Java, 14 Oct 2026:
+  // "Homo sapiens" answers, "homo sapiens" and "Homo_sapiens" are 404s.
+  it('reads digits as a taxId', () => {
+    expect(topSpeciesMatch('9606')).toEqual({
+      where: 's.taxId = $species',
+      params: { species: '9606' },
+    });
+  });
+
+  it('reads anything else as an exact display name, case and all', () => {
+    expect(topSpeciesMatch('Homo sapiens')).toEqual({
+      where: 's.displayName = $species',
+      params: { species: 'Homo sapiens' },
+    });
+    expect(topSpeciesMatch('homo_sapiens').params.species).toBe('homo_sapiens');
+  });
+});
+
+describe('javaUrlDecode, java.net.URLDecoder.decode(s, "UTF-8")', () => {
+  // /pathways/top decodes its species a second time, as content-service's
+  // controller does, so Homo+sapiens and Homo%2520sapiens find human. Each
+  // case measured against Java, 14 Oct 2026.
+  it('turns + into a space and decodes %XX as UTF-8', () => {
+    expect(javaUrlDecode('Homo+sapiens')).toBe('Homo sapiens');
+    expect(javaUrlDecode('Homo%20sapiens')).toBe('Homo sapiens');
+    expect(javaUrlDecode('Homo%2Bsapiens')).toBe('Homo+sapiens');
+    expect(javaUrlDecode('%C3%A9')).toBe('é');
+    expect(javaUrlDecode('9606')).toBe('9606');
+  });
+
+  it("throws Java's messages for an incomplete or non-hex escape", () => {
+    for (const raw of ['%', 'a%', '%%', '%1']) {
+      expect(() => javaUrlDecode(raw), raw).toThrow(
+        'URLDecoder: Incomplete trailing escape (%) pattern'
+      );
+    }
+    expect(() => javaUrlDecode('%zz')).toThrow(
+      'URLDecoder: Illegal hex characters in escape (%) pattern - Error at index 0 in: "zz"'
+    );
   });
 });
