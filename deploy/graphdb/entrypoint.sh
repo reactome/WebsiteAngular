@@ -69,4 +69,17 @@ unset user password
 if [ -n "${GRAPHDB_EXEC:-}" ]; then
   exec "$GRAPHDB_EXEC" "$@"
 fi
-exec /sbin/tini -g -- /docker-entrypoint.sh "$@"
+
+# tini comes from the PATH: Reactome's Neo4j 4.3 image keeps it in /sbin, the
+# 4.4 one in /usr/bin, and naming /sbin/tini made the move to 4.4 restart-loop
+# on "/sbin/tini: No such file or directory". The entrypoint is the first of
+# these the image has: 4.4's is /startup/docker-entrypoint.sh (with
+# /docker-entrypoint.sh linked to it), 4.3's only /docker-entrypoint.sh.
+IFS=':' read -r -a candidates <<< "${GRAPHDB_ENTRYPOINTS:-/startup/docker-entrypoint.sh:/docker-entrypoint.sh}"
+for entrypoint in "${candidates[@]}"; do
+  if [ -x "$entrypoint" ]; then
+    exec tini -g -- "$entrypoint" "$@"
+  fi
+done
+echo >&2 "graphdb: no entrypoint found in this image (looked for ${candidates[*]}); not starting"
+exit 1

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -88,4 +88,41 @@ describe('the graph database wrapper', () => {
       expect(run.stderr).toMatch(/not starting without authentication/);
     });
   }
+
+  describe("handing over to the image's own entrypoint", () => {
+    // Images differ: Reactome's 4.3 image starts /sbin/tini and
+    // /docker-entrypoint.sh, the 4.4 one tini from /usr/bin and
+    // /startup/docker-entrypoint.sh. The wrapper hard-coded the first, and the
+    // second restart-looped on "/sbin/tini: No such file or directory".
+    const bin = join(scratch, 'bin');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, 'tini'), '#!/bin/bash\nprintf "%s|" "$@"\n', { mode: 0o755 });
+
+    function hand(entrypoints: string) {
+      const file = join(scratch, 'graphdb.env');
+      writeFileSync(file, 'NEO4J_USER=neo4j\nNEO4J_PASSWORD=secret\n');
+      return spawnSync('bash', [join(__dirname, 'entrypoint.sh'), 'neo4j'], {
+        env: {
+          PATH: `${bin}:${process.env['PATH'] ?? ''}`,
+          GRAPHDB_CREDENTIALS_FILE: file,
+          GRAPHDB_ENTRYPOINTS: entrypoints,
+        },
+        encoding: 'utf8',
+      });
+    }
+
+    it('runs tini from the PATH with the first entrypoint the image has', () => {
+      const present = join(scratch, 'docker-entrypoint.sh');
+      writeFileSync(present, '', { mode: 0o755 });
+      const run = hand(`${join(scratch, 'startup', 'docker-entrypoint.sh')}:${present}`);
+      expect(run.status).toBe(0);
+      expect(run.stdout).toBe(`-g|--|${present}|neo4j|`);
+    });
+
+    it('says so and stops when the image has none of them', () => {
+      const run = hand(join(scratch, 'nowhere', 'docker-entrypoint.sh'));
+      expect(run.status).toBe(1);
+      expect(run.stderr).toMatch(/graphdb: no entrypoint/);
+    });
+  });
 });
