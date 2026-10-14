@@ -113,7 +113,7 @@ describe('the graph database wrapper', () => {
 
     it('runs tini from the PATH with the first entrypoint the image has', () => {
       const present = join(scratch, 'docker-entrypoint.sh');
-      writeFileSync(present, '');
+      writeFileSync(present, '', { mode: 0o755 });
       const run = hand(`${join(scratch, 'startup', 'docker-entrypoint.sh')}:${present}`);
       expect(run.status).toBe(0);
       expect(run.stdout).toBe(`-g|--|${present}|neo4j|`);
