@@ -175,6 +175,38 @@ services:
       # them without anyone deciding to. Neither belongs on an instance the
       # public can reach.
 
+  # Reactome's graph database, as the project publishes it for each release
+  # (developer docs: documentation/dev/graph-database). Replaces the Neo4j
+  # installed on the host, so the database is a pinned image like everything
+  # else here rather than a system package nobody upgrades in step with a
+  # release. To move to a new release, change the tag and `up -d graphdb`.
+  graphdb:
+    image: public.ecr.aws/reactome/graphdb:Release97
+    restart: unless-stopped
+    # Loopback only, on the ports the host database used, so everything that
+    # reads it -- content-node, the Java ContentService, the analysis service
+    # -- keeps the address it has. Never 0.0.0.0: arbitrary queries are the
+    # cheapest way to make every page on the site slow.
+    ports:
+      - '127.0.0.1:7687:7687'
+      - '127.0.0.1:7474:7474'
+    # The image is built with authentication off. The wrapper turns it on with
+    # the credentials the services already hold, read from the same file
+    # content-node mounts (see there for why it is read literally), and refuses
+    # to start if they are missing rather than starting open.
+    entrypoint: ['/bin/bash', '/graphdb-entrypoint.sh']
+    command: ['neo4j']
+    volumes:
+      - ./deploy/graphdb/entrypoint.sh:/graphdb-entrypoint.sh:ro
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/graphdb.env:ro
+    environment:
+      # The size the host database ran with.
+      - NEO4J_dbms_memory_heap_max__size=3g
+      - NEO4J_dbms_memory_pagecache_size=2g
+      - NEO4J_dbms_default__database=graph.db
+    # The data is inside the image and only read, so nothing needs a volume:
+    # recreating the container starts it again from the published release.
+
   content-node:
     build:
       context: .
@@ -223,9 +255,9 @@ services:
     # Defaults to this host's operator; override where the file has a different
     # owner. `id -u`, `id -g`.
     user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
-    # No depends_on: Neo4j is not in this compose file. If it is down the
-    # service starts, fails to build its lists, and rebuilds on the next
-    # request -- which is the behaviour specs/006 D10 asks for.
+    # No depends_on graphdb, deliberately: if the graph is down this starts,
+    # fails to build its lists, and rebuilds on the next request -- which is
+    # the behaviour specs/006 D10 asks for -- rather than refusing to start.
 
   # The front door. Replaces the hand-created `reactome-nginx` container, which
   # mounted its config from /etc/nginx-reactome -- a *copy* of deploy/nginx that
