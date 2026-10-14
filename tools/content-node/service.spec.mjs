@@ -466,3 +466,15 @@ describe('referenceEntityJson, a ReferenceEntity as graph-core serialises it', (
     expect('trivial' in json).toBe(false);
   });
 });
+
+describe('an answer with no body', () => {
+  // Java's controller returns null for an id that is neither a stable id nor a
+  // dbId, and Spring sends a 200 with no body and no content type. Reproduced
+  // without the database: the id is refused before any query.
+  it('is a 200 with nothing in it, and no content type', async () => {
+    const response = await fetch(`${base}/ContentService/data/participants/foo/referenceEntities`);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('');
+    expect(response.headers.get('content-type')).toBeNull();
+  });
+});
