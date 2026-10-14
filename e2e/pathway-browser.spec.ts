@@ -328,3 +328,68 @@ test('a link to a pathway drawn in its parent keeps the entity it selected', asy
     timeout: 90_000,
   });
 });
+
+test.describe('a link to a reaction', () => {
+  // A reaction has no diagram of its own; the pathway that contains it does.
+  // A link straight to one used to show the "nothing to draw" notice. It now
+  // opens the parent pathway's diagram with the reaction selected in it.
+  const REACTION = 'R-HSA-5672965'; // RAS GEFs promote RAS nucleotide exchange
+  const PARENT = 'R-HSA-5673001'; // RAF/MAP kinase cascade
+  const drawn = (page: import('@playwright/test').Page) =>
+    page.waitForFunction(
+      () => {
+        const container = document.querySelector('#cytoscape') as
+          (HTMLElement & { _cyreg?: { cy?: { elements(): { length: number } } } }) | null;
+        return (container?._cyreg?.cy?.elements().length ?? 0) > 0;
+      },
+      { timeout: 90_000 }
+    );
+
+  test("opens its parent pathway's diagram with the reaction selected", async ({ page }) => {
+    await page.goto(`/PathwayBrowser/${REACTION}`, { waitUntil: 'domcontentloaded' });
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 90_000 })
+      .toBe(`/PathwayBrowser/${PARENT}`);
+    expect(new URL(page.url()).searchParams.get('select')).toBe(REACTION);
+    await drawn(page);
+    // Selected in the drawing, not just named in the address.
+    await expect
+      .poll(
+        () =>
+          page.evaluate((stId) => {
+            const container = document.querySelector('#cytoscape') as
+              | (HTMLElement & {
+                  _cyreg?: {
+                    cy?: {
+                      $(selector: string): {
+                        map(f: (e: { data(k: string): unknown }) => unknown): unknown[];
+                      };
+                    };
+                  };
+                })
+              | null;
+            return container?._cyreg?.cy
+              ?.$(':selected')
+              .map((e) => e.data('graph.stId'))
+              .includes(stId);
+          }, REACTION),
+        { timeout: 30_000 }
+      )
+      .toBe(true);
+    await expect(page.locator('cr-description-tab').first()).toContainText(REACTION, {
+      timeout: 30_000,
+    });
+  });
+
+  test('keeps an entity the link selected in it', async ({ page }) => {
+    const ENTITY = 'R-HSA-109783'; // p21 RAS:GTP, drawn in the parent's diagram
+    await page.goto(`/PathwayBrowser/${REACTION}?select=${ENTITY}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 90_000 })
+      .toBe(`/PathwayBrowser/${PARENT}`);
+    expect(new URL(page.url()).searchParams.get('select')).toBe(ENTITY);
+    await drawn(page);
+  });
+});
