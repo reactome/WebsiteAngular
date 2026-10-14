@@ -44,6 +44,7 @@ import {
   speciesFilter,
   topPathwayJson,
   topSpeciesMatch,
+  javaUrlDecode,
   writeResult,
   springBoolean,
   springInteger,
@@ -1640,5 +1641,29 @@ describe('topSpeciesMatch, how /pathways/top reads its species', () => {
       params: { species: 'Homo sapiens' },
     });
     expect(topSpeciesMatch('homo_sapiens').params.species).toBe('homo_sapiens');
+  });
+});
+
+describe('javaUrlDecode, java.net.URLDecoder.decode(s, "UTF-8")', () => {
+  // /pathways/top decodes its species a second time, as content-service's
+  // controller does, so Homo+sapiens and Homo%2520sapiens find human. Each
+  // case measured against Java, 14 Oct 2026.
+  it('turns + into a space and decodes %XX as UTF-8', () => {
+    expect(javaUrlDecode('Homo+sapiens')).toBe('Homo sapiens');
+    expect(javaUrlDecode('Homo%20sapiens')).toBe('Homo sapiens');
+    expect(javaUrlDecode('Homo%2Bsapiens')).toBe('Homo+sapiens');
+    expect(javaUrlDecode('%C3%A9')).toBe('é');
+    expect(javaUrlDecode('9606')).toBe('9606');
+  });
+
+  it("throws Java's messages for an incomplete or non-hex escape", () => {
+    for (const raw of ['%', 'a%', '%%', '%1']) {
+      expect(() => javaUrlDecode(raw), raw).toThrow(
+        'URLDecoder: Incomplete trailing escape (%) pattern'
+      );
+    }
+    expect(() => javaUrlDecode('%zz')).toThrow(
+      'URLDecoder: Illegal hex characters in escape (%) pattern - Error at index 0 in: "zz"'
+    );
   });
 });
