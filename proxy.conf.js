@@ -127,6 +127,11 @@ module.exports = {
   '^/ContentService/data/participants/[^/?]+/referenceEntities(\\?|$)': contentNode,
   // An event's participants with their reference entities: the molecule list.
   '^/ContentService/data/participants/[^/?]+(\\?|$)': contentNode,
+  // The release number (asked on every page load) and the database name, and
+  // a species' top-level pathways -- ported first and long byte-identical,
+  // but never switched over.
+  '^/ContentService/data/database/(version|name)(\\?|$)': contentNode,
+  '^/ContentService/data/pathways/top/[^/?]+(\\?|$)': contentNode,
   // The other forms of a physical entity: the details panel and the popup.
   '^/ContentService/data/entity/[^/?]+/otherForms(\\?|$)': contentNode,
   // Every place an object appears in the Pathway Browser: the details page's
