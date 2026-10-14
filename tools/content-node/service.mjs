@@ -23,6 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
+import { isSchemaClass, isSpeciesClass, schemaClassOf } from './schema.mjs';
 
 const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
 const HOST = process.env.CONTENT_NODE_HOST || '127.0.0.1';
@@ -975,7 +976,203 @@ export const endpoints = [
       }
     },
   },
+  {
+    path: '/ContentService/data/schema/{id}/count',
+    // The id is the class name; Java calls it {className}.
+    sample: 'Pathway',
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/schema\/[^/]+\/count: \.url: /],
+    /**
+     * How many objects of a schema class there are, optionally in one species.
+     * The schema browser asks for it beside every class it lists.
+     *
+     * Two of Java's answers come from reflection over graph-core's classes --
+     * whether the name is a class at all, and whether it has a species -- and
+     * are answered here from schema.mjs, which says how it was derived and how
+     * to keep it current. A name that is not a class is Java's 500, case
+     * included: `pathway` is not `Pathway`.
+     *
+     * Without a species this is Spring Data's count of the class's label, which
+     * Neo4j answers from its count store: a few milliseconds, where Java takes
+     * about a second for any class. With one, graph-core's query, the species
+     * read as SchemaService reads it -- digits are a taxId, anything else a
+     * displayName exactly as given -- and not as SpeciesService reads it
+     * elsewhere: no dbId, no normalising the name. None found, a class without
+     * a species, or an empty `species=` are all Java's 404.
+     */
+    handler: async (request) => {
+      const className = pathId(rawSegment(request, 4));
+      const given = queryValues(request, 'species');
+      if (!isSchemaClass(className)) return classNotFound(request);
+      if (given.length === 0) {
+        const [row] = await read(schemaCountQuery(className));
+        return { status: 200, body: String(row?.n ?? 0), type: 'application/json' };
+      }
+      // A String parameter given more than once is Spring's comma-joined value.
+      const species = given.join(',');
+      const none = () =>
+        jacksonError(
+          request,
+          404,
+          'NOT_FOUND',
+          `No entries have been found for species: ${species}`
+        );
+      if (!isSpeciesClass(className)) return none();
+      const by = javaNumeric(species) ? 'taxId' : 'speciesName';
+      const [row] = await read(schemaCountQuery(className, by), { [by]: species });
+      if (!row?.n) return none();
+      return { status: 200, body: String(row.n), type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/data/schema/{id}/min',
+    sample: 'Pathway',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+\/min: \.url: /],
+    /**
+     * One page of a schema class's objects, each as dbId, stId, name and
+     * class: the schema browser's list of instances.
+     *
+     * graph-core's query, kept as written: the rows are ordered by name alone,
+     * and the order of rows that share one -- thousands do in DatabaseObject --
+     * is the plan's, so the same text is what keeps every page Java's.
+     *
+     * `page` and `offset` are required Integers, read as Spring reads them
+     * (springInteger), page first: a missing or unreadable one is Java's 400
+     * before the class is looked at. Then as the controller and graph-core do
+     * it: offset capped at 20000, skip (page - 1) * offset in int arithmetic,
+     * and a negative skip or limit passed to Neo4j, whose refusal is Java's
+     * 500. A class Java does not have is its 500; a species for a class
+     * without one, or no rows, its 404.
+     */
+    handler: async (request) => {
+      const className = pathId(rawSegment(request, 4));
+      // In the controller's parameter order: species is a String and cannot fail.
+      const given = queryValues(request, 'species');
+      const page = springInteger(queryValues(request, 'page'), 'page');
+      if (page.error) return jacksonError(request, 400, 'BAD_REQUEST', page.error);
+      const offset = springInteger(queryValues(request, 'offset'), 'offset');
+      if (offset.error) return jacksonError(request, 400, 'BAD_REQUEST', offset.error);
+
+      if (!isSchemaClass(className)) return classNotFound(request);
+      const none = () =>
+        jacksonError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
+      const species = given.length ? given.join(',') : undefined;
+      let by;
+      if (species !== undefined) {
+        if (!isSpeciesClass(className)) return none();
+        by = javaNumeric(species) ? 'taxId' : 'speciesName';
+      }
+      const { skip, limit } = schemaWindow(page.value, offset.value);
+      let rows;
+      try {
+        rows = await read(schemaMinQuery(className, by), {
+          ...(by && { [by]: species }),
+          skip: neo4j.int(skip),
+          limit: neo4j.int(limit),
+        });
+      } catch (failure) {
+        const message = neo4jFailureMessage(failure);
+        if (message === undefined) throw failure;
+        return jacksonError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+      }
+      if (rows.length === 0) return none();
+      return { status: 200, body: javaJson(rows.map(simpleObjectJson)), type: 'application/json' };
+    },
+  },
 ];
+
+/**
+ * graph-core SchemaRepository's queries for /schema/{className}/min, by
+ * species taxId, species name or neither. `className` is spliced in, as Java
+ * splices it, and is only ever a name isSchemaClass accepted.
+ */
+export function schemaMinQuery(className, by) {
+  return (
+    `${schemaMatch(className, by)} ` +
+    'RETURN DISTINCT(n.dbId) as dbId, n.stId as stId, n.displayName as displayName, labels(n) as labels ' +
+    'ORDER BY n.displayName ' +
+    'SKIP $skip LIMIT $limit'
+  );
+}
+
+/**
+ * The count for /schema/{className}/count. With a species, graph-core's query;
+ * without, the label count Spring Data's `count(Class)` makes, which reads
+ * Neo4j's count store. Quoted, because a woven `X$AjcClosure3` is a class too.
+ */
+export function schemaCountQuery(className, by) {
+  if (by === undefined) return `MATCH (n:\`${className}\`) RETURN count(n) AS n`;
+  return `${schemaMatch(className, by)} RETURN COUNT(n) AS n`;
+}
+
+function schemaMatch(className, by) {
+  if (by === 'taxId') return `MATCH (s:Species{taxId:$taxId})<-[:species]-(n:${className})`;
+  if (by === 'speciesName') {
+    return `MATCH (s:Species{displayName:$speciesName})<-[:species]-(n:${className})`;
+  }
+  return `MATCH (n:${className})`;
+}
+
+/**
+ * SKIP and LIMIT as the controller and graph-core compute them: offset capped
+ * at 20000, skip `(page - 1) * offset` in Java's int arithmetic, overflow and
+ * all. Negative values are left for Neo4j to refuse, as Java leaves them.
+ */
+export function schemaWindow(page, offset) {
+  const limit = offset > 20000 ? 20000 : offset;
+  return { skip: Math.imul((page - 1) | 0, limit), limit };
+}
+
+/**
+ * graph-core's SimpleDatabaseObject as Jackson writes it. stId is read with
+ * asString(null), so a missing one is left out; displayName with asString(),
+ * which writes a missing one as the text "null". The class is the one the
+ * labels name (schemaClassOf), not the schemaClass property.
+ */
+export function simpleObjectJson(row) {
+  const out = { dbId: row.dbId };
+  if (row.stId !== null && row.stId !== undefined && row.stId !== '') out.stId = row.stId;
+  const displayName = row.displayName ?? 'null';
+  if (displayName !== '') out.displayName = displayName;
+  out.schemaClass = schemaClassOf(row.labels);
+  return out;
+}
+
+/**
+ * Text as Jackson writes it, which differs from JSON.stringify in one place:
+ * a control character without a short escape is `\u001F`, upper-case, where
+ * JSON.stringify writes `\u001f`. Only an escape is changed -- an odd run of
+ * backslashes before `u00` -- never a literal backslash followed by text.
+ */
+export function javaJson(value) {
+  return JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
+    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+  );
+}
+
+/**
+ * A Neo4j argument error as Spring's exception translation reports it, which
+ * is what Java answers a negative SKIP or LIMIT with. Undefined for any other
+ * failure: those are not part of Java's contract to mirror.
+ */
+export function neo4jFailureMessage(failure) {
+  if (failure?.code !== 'Neo.ClientError.Statement.ArgumentError') return undefined;
+  return (
+    `${failure.message}; Error code '${failure.code}'; ` +
+    `nested exception is org.neo4j.driver.exceptions.ClientException: ${failure.message}`
+  );
+}
+
+/** Java's error envelope, written as Jackson writes it. */
+function jacksonError(request, code, reason, message) {
+  const error = javaError(request, code, reason, message);
+  return { ...error, body: javaJson(error.body) };
+}
+
+/** The ContentService's answer to a ClassNotFoundException. */
+function classNotFound(request) {
+  return jacksonError(request, 500, 'INTERNAL_SERVER_ERROR', 'Specified class was not found');
+}
 
 /**
  * graph-core's four locations queries (HierarchyRepository), by kind of id and
@@ -1805,6 +2002,168 @@ export function springBoolean(values) {
       `Failed to convert value of type '${type}' to required type 'java.lang.Boolean'; ` +
       `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values.join(',')}]`,
   };
+}
+
+/**
+ * An `Integer` request parameter as Spring binds it, given its values as the
+ * servlet reads them (queryValues). Measured against Java case by case:
+ *
+ * - none is Spring's "not present" 400; an empty first value converts to null,
+ *   which is its "present but converted to null" 400.
+ * - the ConversionService reads the first value with NumberUtils.parseNumber:
+ *   every Java whitespace character removed (anywhere, not just the ends),
+ *   then `0x`, `0X` or `#` after an optional '-' is Integer.decode's hex, and
+ *   anything else Integer.valueOf -- a '+' sign, leading zeros and digits of
+ *   any script accepted.
+ * - when that fails Spring tries again with the CustomNumberEditor, on the
+ *   value -- or all of them joined by ',' -- which reads blank as null and
+ *   otherwise parses the same way. The NumberFormatException of that second
+ *   attempt is the 400's message, naming String or String[].
+ */
+export function springInteger(values, name) {
+  const required = `Required request parameter '${name}' for method parameter type Integer`;
+  if (values.length === 0) return { error: `${required} is not present` };
+  const empty = { error: `${required} is present but converted to null` };
+  const attempt = (text) => {
+    try {
+      return { value: javaParseInteger(text) };
+    } catch (failure) {
+      if (failure instanceof JavaNumberFormat) return { failure: failure.message };
+      throw failure;
+    }
+  };
+
+  const [first] = values;
+  if (first === '') return empty;
+  const converted = attempt(first);
+  if ('value' in converted) return converted;
+
+  const text = values.join(',');
+  if (javaTrimAll(text) === '') return empty;
+  const retried = attempt(text);
+  if ('value' in retried) return retried;
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type 'java.lang.Integer'; ` +
+      `nested exception is java.lang.NumberFormatException: ${retried.failure}`,
+  };
+}
+
+/** A java.lang.NumberFormatException, carrying Java's message. */
+class JavaNumberFormat extends Error {}
+
+/**
+ * Character.isWhitespace in Java 11, which the service runs on: the space,
+ * line and paragraph separators but the no-break ones, and the ASCII controls
+ * \t-\r and \u001C-\u001F.
+ */
+const JAVA_WHITESPACE = new RegExp(
+  `[${[
+    [0x09, 0x0d],
+    [0x1c, 0x20],
+    [0x1680, 0x1680],
+    [0x2000, 0x2006],
+    [0x2008, 0x200a],
+    [0x2028, 0x2029],
+    [0x205f, 0x205f],
+    [0x3000, 0x3000],
+  ]
+    .map(([from, to]) => `${String.fromCharCode(from)}-${String.fromCharCode(to)}`)
+    .join('')}]`,
+  'g'
+);
+
+/** Spring's StringUtils.trimAllWhitespace. */
+function javaTrimAll(text) {
+  return text.replace(JAVA_WHITESPACE, '');
+}
+
+/** NumberUtils.parseNumber(text, Integer.class). */
+function javaParseInteger(text) {
+  const trimmed = javaTrimAll(text);
+  const at = trimmed.startsWith('-') ? 1 : 0;
+  const hex =
+    trimmed.startsWith('0x', at) || trimmed.startsWith('0X', at) || trimmed.startsWith('#', at);
+  return hex ? javaDecode(trimmed) : javaParseInt(trimmed, 10);
+}
+
+/** Integer.decode, as far as parseNumber reaches it. */
+function javaDecode(text) {
+  if (text === '') throw new JavaNumberFormat('Zero length string');
+  let index = 0;
+  let radix = 10;
+  const negative = text[0] === '-';
+  if (negative || text[0] === '+') index += 1;
+  if (text.startsWith('0x', index) || text.startsWith('0X', index)) {
+    index += 2;
+    radix = 16;
+  } else if (text.startsWith('#', index)) {
+    index += 1;
+    radix = 16;
+  } else if (text.startsWith('0', index) && text.length > 1 + index) {
+    index += 1;
+    radix = 8;
+  }
+  if (text.startsWith('-', index) || text.startsWith('+', index)) {
+    throw new JavaNumberFormat('Sign character in wrong position');
+  }
+  const rest = text.slice(index);
+  try {
+    const result = javaParseInt(rest, radix);
+    return negative ? -result | 0 : result;
+  } catch (failure) {
+    if (!(failure instanceof JavaNumberFormat)) throw failure;
+    // Java retries with the sign attached, for the one value that needs it
+    // (-0x80000000), and that attempt's message is the one reported.
+    return javaParseInt(negative ? `-${rest}` : rest, radix);
+  }
+}
+
+/** Integer.parseInt(text, radix), Java 11's, per UTF-16 unit. */
+function javaParseInt(text, radix) {
+  const refuse = () => {
+    throw new JavaNumberFormat(`For input string: "${text}"`);
+  };
+  if (text.length === 0) refuse();
+  let i = 0;
+  let negative = false;
+  let limit = -2147483647;
+  if (text[0] < '0') {
+    if (text[0] === '-') {
+      negative = true;
+      limit = -2147483648;
+    } else if (text[0] !== '+') refuse();
+    if (text.length === 1) refuse();
+    i += 1;
+  }
+  const multmin = Math.trunc(limit / radix);
+  let result = 0;
+  while (i < text.length) {
+    const digit = javaDigit(text[i], radix);
+    i += 1;
+    if (digit < 0 || result < multmin) refuse();
+    result *= radix;
+    if (result < limit + digit) refuse();
+    result -= digit;
+  }
+  return (negative ? result : -result) | 0;
+}
+
+/**
+ * Character.digit(char, radix): a decimal digit of any script, and for hex the
+ * Latin letters A-F in either case, fullwidth ones included.
+ */
+function javaDigit(char, radix) {
+  const code = char.charCodeAt(0);
+  if (radix === 16) {
+    for (const start of [0x41, 0x61, 0xff21, 0xff41]) {
+      if (code >= start && code <= start + 5) return code - start + 10;
+    }
+  }
+  if (!/\p{Nd}/u.test(char)) return -1;
+  const value = Number(asciiDigits(char));
+  return value < radix ? value : -1;
 }
 
 /**

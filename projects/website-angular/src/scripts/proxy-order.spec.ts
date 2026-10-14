@@ -95,6 +95,19 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/data/schema/Pathway/count',
+    '/ContentService/data/schema/Pathway/count?species=9606',
+    '/ContentService/data/schema/DatabaseObject/count',
+    '/ContentService/data/schema/Pathway/min?page=1&offset=20000',
+    '/ContentService/data/schema/Pathway/min?page=2&offset=25&species=Homo%20sapiens',
+    '/ContentService/data/schema/CandidateSet$AjcClosure5/min?page=1&offset=1',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -124,6 +137,18 @@ describe('the dev server proxy', () => {
     // The event hierarchy needs the analysis service's pathway sizes.
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true',
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true&token=x',
+    // Only the count and the simplified list are ported under /schema: the
+    // model, attributes and referrals are reflection over graph-core's Java
+    // classes, and the full objects and references are not ported.
+    '/ContentService/data/schema/model',
+    '/ContentService/data/schema/Pathway',
+    '/ContentService/data/schema/Pathway?page=1&offset=25',
+    '/ContentService/data/schema/Pathway/attributes',
+    '/ContentService/data/schema/Pathway/referrals',
+    '/ContentService/data/schema/ReferenceMolecule/reference?page=1&offset=10',
+    '/ContentService/data/schema/Pathway/countAll',
+    '/ContentService/data/schema/Pathway/minimal?page=1&offset=1',
+    '/ContentService/data/schema/Pathway/count/x',
   ]) {
     it(`leaves ${other} with Java`, async () => {
       expect(await targetOf(other)).toBe(backend);

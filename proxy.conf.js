@@ -132,6 +132,11 @@ module.exports = {
   // Every place an object appears in the Pathway Browser: the details page's
   // locations tree. Only this one of Java's /data/detail/{id}/... paths.
   '^/ContentService/data/detail/[^/?]+/locationsInPWB(\\?|$)': contentNode,
+  // A schema class's count and one page of its objects: the schema browser.
+  // Only these two of Java's /data/schema/{className}/... paths; the model,
+  // attributes and referrals are reflection over graph-core's Java classes and
+  // stay with Java, as do the full objects and /reference.
+  '^/ContentService/data/schema/[^/?]+/(count|min)(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
