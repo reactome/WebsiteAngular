@@ -433,18 +433,22 @@ export class EntityPopupComponent {
     params: () => (this.tab() === 'pathways' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
-        ? this.http.get<any[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`).pipe(
-            map((items): PopupGroup[] => [
-              {
-                rows: items.map((p) => ({
-                  label: p.displayName,
-                  detail: p.speciesName,
-                  stId: p.stId,
-                  hasDiagram: p.hasDiagram === true,
-                })),
-              },
-            ])
-          )
+        ? this.http
+            .get<
+              { stId: string; displayName: string; speciesName: string; hasDiagram?: boolean }[]
+            >(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
+            .pipe(
+              map((items): PopupGroup[] => [
+                {
+                  rows: items.map((p) => ({
+                    label: p.displayName,
+                    detail: p.speciesName,
+                    stId: p.stId,
+                    hasDiagram: p.hasDiagram === true,
+                  })),
+                },
+              ])
+            )
         : of<PopupGroup[] | undefined>(undefined),
   });
 

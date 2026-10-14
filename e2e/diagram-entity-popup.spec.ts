@@ -148,29 +148,34 @@ test.describe('Diagram entity popup', () => {
     await expect(container).toBeVisible({ timeout: BOOT });
     // Canvas nodes have no element to click: ask cytoscape where PTEN is
     // drawn, bring it into view, and right-click there.
-    const at = async () =>
-      page.evaluate((stId) => {
-        const el = document.querySelector('#cytoscape') as
-          (HTMLElement & { _cyreg?: { cy?: any } }) | null;
-        const cy = el?._cyreg?.cy;
-        const node = cy?.nodes().filter((n: any) => n.data('graph.stId') === stId);
-        if (!node || node.length === 0) return null;
-        const p = node.first().renderedPosition();
-        return { x: p.x as number, y: p.y as number };
-      }, PTEN);
-    await expect.poll(at, { timeout: BOOT }).not.toBeNull();
-    await page.evaluate((stId) => {
-      const cy = (document.querySelector('#cytoscape') as any)._cyreg.cy;
-      const node = cy
-        .nodes()
-        .filter((n: any) => n.data('graph.stId') === stId)
-        .first();
-      cy.zoom(2);
-      cy.center(node);
-    }, PTEN);
+    const at = (zoomIn: boolean) =>
+      page.evaluate(
+        ({ stId, zoomIn }) => {
+          type Node = { data(key: string): unknown; renderedPosition(): { x: number; y: number } };
+          type Cy = {
+            nodes(): { filter(test: (node: Node) => boolean): Node[] };
+            zoom(level: number): void;
+            center(node: Node): void;
+          };
+          const el = document.querySelector('#cytoscape') as
+            (HTMLElement & { _cyreg?: { cy?: Cy } }) | null;
+          const cy = el?._cyreg?.cy;
+          const node = cy?.nodes().filter((n) => n.data('graph.stId') === stId)[0];
+          if (!cy || !node) return null;
+          if (zoomIn) {
+            cy.zoom(2);
+            cy.center(node);
+          }
+          return node.renderedPosition();
+        },
+        { stId: PTEN, zoomIn }
+      );
+    await expect.poll(() => at(false), { timeout: BOOT }).not.toBeNull();
+    await at(true);
     await page.waitForTimeout(1500);
-    const point = (await at())!;
-    const box = (await container.boundingBox())!;
+    const point = await at(false);
+    const box = await container.boundingBox();
+    if (!point || !box) throw new Error('PTEN is not drawn');
     await page.mouse.click(box.x + point.x, box.y + point.y, { button: 'right' });
     await expect(page.locator('.entity-popup')).toBeVisible({ timeout: 20_000 });
 
