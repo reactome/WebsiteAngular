@@ -1146,6 +1146,24 @@ export const endpoints = [
   },
 ];
 
+/**
+ * The endpoint a path was expanded from, by its whole template. Matching on
+ * the text before the first `{` gave every /schema/{id}/... path to the first
+ * of them, /count, so /min was judged by /count's declared differences and
+ * failed on a difference it declares itself.
+ */
+export function endpointFor(path) {
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return endpoints.find((e) =>
+    new RegExp(
+      `^${e.path
+        .split(/\{\w+\}/)
+        .map(escape)
+        .join('[^/?]+')}(\\?|$)`
+    ).test(path)
+  );
+}
+
 /** graph-core SchemaRepository.getSchemaClassCounts, as written. */
 export const schemaModelQuery =
   'MATCH (n:DatabaseObject) RETURN DISTINCT LABELS(n) AS labels, Count(n) AS count';
@@ -2347,6 +2365,19 @@ async function speciesTaxId(filter) {
 }
 
 /**
+ * The files /health's build fingerprint hashes: the service's modules and the
+ * data it answers with (schema-snapshot.json), sorted by name. Specs excluded.
+ * They ship in the image -- the Dockerfile copies the directory -- but they are
+ * not what the service does, and a fingerprint that changes when a test is
+ * edited reports a deployment difference that is not one. Caught by this very
+ * endpoint: adding service.spec.mjs moved the hash without changing a line the
+ * service runs.
+ */
+export function fingerprintFiles(names) {
+  return names.filter((name) => /\.(mjs|json)$/.test(name) && !name.endsWith('.spec.mjs')).sort();
+}
+
+/**
  * A fingerprint of the code this process is actually running.
  *
  * The image bakes these modules in, so `docker compose build` is a separate act
@@ -2365,14 +2396,7 @@ async function speciesTaxId(filter) {
 function buildId() {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const names = readdirSync(here)
-      // Specs excluded. They ship in the image -- the Dockerfile copies the
-      // directory -- but they are not what the service does, and a fingerprint
-      // that changes when a test is edited reports a deployment difference that
-      // is not one. Caught by this very endpoint: adding service.spec.mjs moved
-      // the hash without changing a line the service runs.
-      .filter((name) => /\.(mjs|json)$/.test(name) && !name.endsWith('.spec.mjs'))
-      .sort();
+    const names = fingerprintFiles(readdirSync(here));
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));
     return { build: hash.digest('hex').slice(0, 12), modules: names.length };
@@ -2380,6 +2404,23 @@ function buildId() {
     // Never fail a health check over its own metadata.
     return { build: 'unknown', modules: 0 };
   }
+}
+
+/**
+ * A handler's answer on the wire. Objects go out as JSON written as Jackson
+ * writes it (javaJson, not res.json's JSON.stringify); strings as they are, so
+ * a text/plain endpoint is not quoted into JSON; a cached endpoint's body as it
+ * was serialised once; and no body at all as nothing -- as Java sends when a
+ * controller returns null, where send('') would add a text/html content type
+ * Java does not.
+ */
+export function writeResult(response, result) {
+  response.status(result.status);
+  if (result.type) response.type(result.type);
+  if (result.body === undefined && !result.serialised) response.end();
+  else if (typeof result.body === 'string') response.send(result.body);
+  else if (result.serialised) response.type('application/json').send(result.serialised);
+  else response.type('application/json').send(javaJson(result.body));
 }
 
 export function app() {
@@ -2437,20 +2478,7 @@ export function app() {
     // exactly what the Java service calls it.
     server.get(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), async (request, response) => {
       try {
-        const result = await endpoint.handler(request);
-        response.status(result.status);
-        if (result.type) response.type(result.type);
-        // Objects go out as JSON; strings as they are, so a text/plain endpoint
-        // is not quoted into JSON.
-        // No body at all, as Java sends when a controller returns null: not
-        // send(''), which would add a text/html content type Java does not.
-        if (result.body === undefined && !result.serialised) response.end();
-        else if (typeof result.body === 'string') response.send(result.body);
-        // A cached endpoint carries its own serialised body; anything else is
-        // small enough that stringifying per request costs nothing.
-        else if (result.serialised) response.type('application/json').send(result.serialised);
-        // As Jackson writes it, not res.json's JSON.stringify: see javaJson.
-        else response.type('application/json').send(javaJson(result.body));
+        writeResult(response, await endpoint.handler(request));
       } catch (failure) {
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.

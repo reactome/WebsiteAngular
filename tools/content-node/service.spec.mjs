@@ -16,7 +16,9 @@ import { createHash } from 'node:crypto';
 import {
   app,
   endpoints,
+  endpointFor,
   eventProjection,
+  fingerprintFiles,
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
@@ -40,6 +42,7 @@ import {
   servletParameter,
   simpleObjectJson,
   speciesFilter,
+  writeResult,
   springBoolean,
   springInteger,
 } from './service.mjs';
@@ -1426,6 +1429,15 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
         'ed2053fed634c6ce67dbb1ff448c00ba4ecaff9fbcaab43ddef2da91f821aaba',
         136,
       ],
+      // Person overrides DatabaseObject's created and modified, so it has two
+      // rows of each name: the only class whose order rests on the second sort
+      // key, the declaring class (DatabaseObject before Person).
+      [
+        'Person/attributes',
+        '1ce5c6f49fa346eb703099cbea055d52bb6fbccd104b2b0cbac4e5816053a17c',
+        1884,
+      ],
+      ['Person/referrals', 'c9ce7b4c974487467c14a47f4bc184c638178e3234d7096129bdabceabc161cc', 365],
     ]) {
       const answer = await text(path);
       expect(answer.status, path).toBe(200);
@@ -1488,5 +1500,77 @@ describe("/schema/model's query", () => {
     expect(schemaModelQuery).toBe(
       'MATCH (n:DatabaseObject) RETURN DISTINCT LABELS(n) AS labels, Count(n) AS count'
     );
+  });
+});
+
+describe('endpointFor, which endpoint a concrete path belongs to', () => {
+  // The diff harness judges a path by its endpoint's declared differences.
+  // Matching on the text before the first `{` gave every /schema/{id}/... path
+  // to the first of them, /count.
+  it('matches the whole template, not its prefix', () => {
+    expect(endpointFor('/ContentService/data/schema/Pathway/min')?.path).toBe(
+      '/ContentService/data/schema/{id}/min'
+    );
+    expect(endpointFor('/ContentService/data/schema/Pathway/count?species=9606')?.path).toBe(
+      '/ContentService/data/schema/{id}/count'
+    );
+    expect(endpointFor('/ContentService/data/query/70486/stId')?.path).toBe(
+      '/ContentService/data/query/{id}/stId'
+    );
+  });
+
+  it('matches nothing for a path no endpoint serves', () => {
+    expect(endpointFor('/ContentService/data/schema/Pathway')).toBeUndefined();
+    expect(endpointFor('/ContentService/data/query/70486/stId/extra')).toBeUndefined();
+  });
+});
+
+describe('fingerprintFiles, what /health hashes', () => {
+  it('takes the service modules and its data, sorted, and no specs or notes', () => {
+    expect(
+      fingerprintFiles([
+        'service.mjs',
+        'service.spec.mjs',
+        'schema-snapshot.json',
+        'CACHING.md',
+        'graph.mjs',
+        'schema.spec.mjs',
+      ])
+    ).toEqual(['graph.mjs', 'schema-snapshot.json', 'service.mjs']);
+  });
+});
+
+describe('writeResult, how a handler answer goes on the wire', () => {
+  function recorder() {
+    const calls = [];
+    const response = {
+      status: (s) => (calls.push(['status', s]), response),
+      type: (t) => (calls.push(['type', t]), response),
+      send: (b) => (calls.push(['send', b]), response),
+      end: () => (calls.push(['end']), response),
+    };
+    return { response, calls };
+  }
+
+  it('writes an object body as Jackson would, upper-case escapes included', () => {
+    const { response, calls } = recorder();
+    writeResult(response, { status: 200, body: { a: '\u001f' } });
+    expect(calls).toEqual([
+      ['status', 200],
+      ['type', 'application/json'],
+      ['send', '{"a":"\\u001F"}'],
+    ]);
+  });
+
+  it('sends a string as it is, a serialised body as given, and no body at all as nothing', () => {
+    let rec = recorder();
+    writeResult(rec.response, { status: 200, body: 'R-HSA-1', type: 'text/plain' });
+    expect(rec.calls.at(-1)).toEqual(['send', 'R-HSA-1']);
+    rec = recorder();
+    writeResult(rec.response, { status: 200, body: [1], serialised: '[1]' });
+    expect(rec.calls.at(-1)).toEqual(['send', '[1]']);
+    rec = recorder();
+    writeResult(rec.response, { status: 200, body: undefined });
+    expect(rec.calls).toEqual([['status', 200], ['end']]);
   });
 });
