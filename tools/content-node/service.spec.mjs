@@ -1667,3 +1667,15 @@ describe('javaUrlDecode, java.net.URLDecoder.decode(s, "UTF-8")', () => {
     );
   });
 });
+
+describe('/pathways/top drops a matrix parameter before reading the species', () => {
+  // Spring strips ';...' from a path segment before binding it, so Java reads
+  // /pathways/top/9606;x as 9606. Proved without a database through the one
+  // answer that needs none: '%25;x' is '%' once the parameter is dropped --
+  // URLDecoder's incomplete-escape 500 -- and ';x' would be the other one.
+  it("reads '%25;x' as '%', as Java does", async () => {
+    const response = await fetch(`${base}/ContentService/data/pathways/top/%25;x`);
+    expect(response.status).toBe(500);
+    expect(await response.text()).toContain('URLDecoder: Incomplete trailing escape (%) pattern');
+  });
+});

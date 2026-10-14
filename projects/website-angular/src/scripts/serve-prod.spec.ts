@@ -337,7 +337,9 @@ describe('serve-prod and the API roots', () => {
   });
 
   for (const api of [
-    '/ContentService/data/database/version',
+    // A path still answered by Java. /database/version was the example until it
+    // moved to the node content service; it is checked below.
+    '/ContentService/data/query/70486/displayName',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',
@@ -347,6 +349,11 @@ describe('serve-prod and the API roots', () => {
       expect(body).toBe(`backend ${api}`);
     });
   }
+
+  it('sends /ContentService/data/database/version to the node content service', async () => {
+    const body = await (await fetch(base + '/ContentService/data/database/version')).text();
+    expect(body).toBe('content-node /ContentService/data/database/version');
+  });
 
   it('leaves ExperimentDigester alone, which has no page here', async () => {
     const body = await (await fetch(base + '/ExperimentDigester/')).text();

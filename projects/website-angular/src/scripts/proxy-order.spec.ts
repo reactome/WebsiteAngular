@@ -74,6 +74,17 @@ describe('the dev server proxy', () => {
     expect(await targetOf('/ContentService/data/entity/R-HSA-199420/otherForms')).toBe(contentNode);
   });
 
+  for (const url of [
+    '/ContentService/data/database/version',
+    '/ContentService/data/database/name',
+    '/ContentService/data/pathways/top/9606',
+    '/ContentService/data/pathways/top/Homo+sapiens',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   it('sends the participants of an event to the content service', async () => {
     expect(await targetOf('/ContentService/data/participants/R-HSA-5672965')).toBe(contentNode);
     expect(await targetOf('/ContentService/data/participants/5672965?x=1')).toBe(contentNode);
@@ -125,7 +136,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/person/68285',
     '/ContentService/data/person/68285/publications',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
-    '/ContentService/data/database/version',
     // Only the ancestors of an event are ported.
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
     '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
@@ -133,6 +143,9 @@ describe('the dev server proxy', () => {
     // Only the plain lower-level pathways are ported, not every form's.
     '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms',
     '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
+    // The curated top-level pathways and the database's other info are not.
+    '/ContentService/data/pathways/top/9606/curated',
+    '/ContentService/data/database/info',
     // Only the participants and their reference entities are ported.
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
     // Only the other forms of an entity are ported.

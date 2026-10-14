@@ -179,7 +179,12 @@ services:
   # (developer docs: documentation/dev/graph-database). Replaces the Neo4j
   # installed on the host, so the database is a pinned image like everything
   # else here rather than a system package nobody upgrades in step with a
-  # release. To move to a new release, change the tag and `up -d graphdb`.
+  # release. To move to a new release, change the tag and `up -d graphdb`, then
+  # RESTART content-node (`docker compose restart content-node`): it holds the
+  # release number and the cached lists in memory, and the release number keys
+  # every diagram, figure and icon URL, so a missed restart sends them all to the
+  # previous release's files without an error. Check with `curl
+  # 127.0.0.1:4400/health`: its "release" must be the new one.
   graphdb:
     image: public.ecr.aws/reactome/graphdb:Release97
     restart: unless-stopped
