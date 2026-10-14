@@ -96,8 +96,21 @@ async function rightClickNode(page: Page, stId: string): Promise<void> {
     );
   await expect.poll(() => at(false), { timeout: BOOT }).not.toBeNull();
   await at(true);
-  await page.waitForTimeout(1500);
-  const point = await at(false);
+  // Wait for the node to stop moving: a page opened with a selection fits the
+  // view to it with an animation, which can still be running here.
+  let point = await at(false);
+  await expect
+    .poll(
+      async () => {
+        await page.waitForTimeout(300);
+        const next = await at(false);
+        const still = !!next && !!point && next.x === point.x && next.y === point.y;
+        point = next;
+        return still;
+      },
+      { timeout: BOOT }
+    )
+    .toBe(true);
   const box = await container.boundingBox();
   if (!point || !box) throw new Error(`${stId} is not drawn`);
   await page.mouse.click(box.x + point.x, box.y + point.y, { button: 'right' });
