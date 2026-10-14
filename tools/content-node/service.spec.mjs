@@ -17,6 +17,7 @@ import {
   endpoints,
   eventProjection,
   pathId,
+  participantJson,
   pathwayJson,
   referenceEntityJson,
   resolveId,
@@ -476,5 +477,44 @@ describe('an answer with no body', () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('');
     expect(response.headers.get('content-type')).toBeNull();
+  });
+});
+
+describe('participantJson, graph-core Participant as Java writes it', () => {
+  // Java's answer for R-HSA-5672965 under /participants, 14 Oct 2026, one row.
+  const row = {
+    peDbId: 5672601,
+    displayName: 'RAS GEFs [plasma membrane]',
+    schemaClass: 'DefinedSet',
+    refEntities: [
+      {
+        icon: 'EntityWithAccessionedSequence',
+        displayName: 'UniProt:P29353-2 SHC1',
+        url: 'http://purl.uniprot.org/uniprot/P29353-2',
+        schemaClass: 'ReferenceIsoform',
+        identifier: 'P29353-2',
+        stId: 'uniprot:P29353-2',
+        dbId: 248232,
+      },
+    ],
+  };
+
+  it("writes Java's keys in Java's order, at both levels", () => {
+    expect(JSON.stringify(participantJson(row))).toBe(
+      '{"peDbId":5672601,"displayName":"RAS GEFs [plasma membrane]","schemaClass":"DefinedSet",' +
+        '"refEntities":[{"dbId":248232,"stId":"uniprot:P29353-2","identifier":"P29353-2",' +
+        '"schemaClass":"ReferenceIsoform","displayName":"UniProt:P29353-2 SHC1",' +
+        '"icon":"EntityWithAccessionedSequence","url":"http://purl.uniprot.org/uniprot/P29353-2"}]}'
+    );
+  });
+
+  it('writes a missing reference value as the text "null", as the driver\'s asString does', () => {
+    const json = participantJson({ ...row, refEntities: [{ ...row.refEntities[0], url: null }] });
+    expect(json.refEntities[0].url).toBe('null');
+  });
+
+  it('leaves out a missing participant name or class, as asString(null) does', () => {
+    const json = participantJson({ ...row, displayName: null });
+    expect('displayName' in json).toBe(false);
   });
 });

@@ -125,6 +125,8 @@ module.exports = {
   // The reference entities behind an event's participants: the molecule list
   // and the IDG page.
   '^/ContentService/data/participants/[^/?]+/referenceEntities(\\?|$)': contentNode,
+  // An event's participants with their reference entities: the molecule list.
+  '^/ContentService/data/participants/[^/?]+(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
