@@ -28,15 +28,19 @@ export class DetailEntityService implements Partial<EntityService> {
     return this.http.get<PhysicalEntity[]>(url);
   }
 
-  // The description panel's "Other Pathways". Unlike EntityService's, no
-  // species: a content page's species is always human (DetailSpeciesService),
-  // and an object's pathways are its own species' anyway -- filtered by human,
-  // a mouse entity's ten pathways were a 404 and the section vanished. A 404 is
-  // "none", anything else an error the panel reports.
-  getParticipatingPathways(stId: string): Observable<Pathway[]> {
+  // The description panel's "Other Pathways". A content page's species is
+  // always human (DetailSpeciesService), so the species is not the page's:
+  // an object of one species is asked for without one -- its pathways are its
+  // own species' anyway, and filtered by human a mouse entity's ten were a 404
+  // and the section vanished -- while a chemical, shared by every species
+  // (R-ALL-), keeps it: unfiltered, ATP listed 4,794 pathways in every
+  // species, unlabelled, against 660. A 404 is "none", anything else an error
+  // the panel reports.
+  getParticipatingPathways(stId: string, taxId: string): Observable<Pathway[]> {
     const url = `${CONTENT_SERVICE}/data/pathways/low/entity/${stId}`;
+    const params: Record<string, string> = stId.startsWith('R-ALL-') ? { species: taxId } : {};
     return this.http
-      .get<Pathway[]>(url)
+      .get<Pathway[]>(url, { params })
       .pipe(
         catchError((error: unknown) =>
           error instanceof HttpErrorResponse && error.status === 404

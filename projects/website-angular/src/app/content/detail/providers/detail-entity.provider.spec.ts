@@ -37,13 +37,31 @@ describe('DetailEntityService.getParticipatingPathways', () => {
     const service = TestBed.inject(DetailEntityService);
     const http = TestBed.inject(HttpTestingController);
     let answer: unknown;
-    service.getParticipatingPathways('R-MMU-2562550').subscribe((value) => (answer = value));
+    service
+      .getParticipatingPathways('R-MMU-2562550', '9606')
+      .subscribe((value) => (answer = value));
     const request = http.expectOne((r) =>
       r.url.endsWith('/data/pathways/low/entity/R-MMU-2562550')
     );
     expect(request.request.params.keys()).toEqual([]);
     request.flush([{ stId: 'R-MMU-1' }]);
     expect(answer).toEqual([{ stId: 'R-MMU-1' }]);
+    http.verify();
+  });
+
+  // A chemical is shared by every species: unfiltered, ATP's page listed its
+  // 4,794 pathways in every species, unlabelled, against 660 in the current
+  // one. So for those the current species stays.
+  it('keeps the current species for an object shared by every species', () => {
+    TestBed.configureTestingModule({
+      providers: [DetailEntityService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(DetailEntityService);
+    const http = TestBed.inject(HttpTestingController);
+    service.getParticipatingPathways('R-ALL-113592', '9606').subscribe();
+    const request = http.expectOne((r) => r.url.endsWith('/data/pathways/low/entity/R-ALL-113592'));
+    expect(request.request.params.get('species')).toBe('9606');
+    request.flush([]);
     http.verify();
   });
 });
