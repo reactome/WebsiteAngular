@@ -35,6 +35,7 @@
  *   RENDER_CACHE_MAX    bytes of cache to keep, default 2 GB (0 disables)
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
+ * highlight=<stId>,<stId>...,
  * layout=reaction,
  * and delay and
  * maxSize for GIF.
@@ -192,6 +193,7 @@ function cacheKey({
   dark,
   select,
   layout,
+  highlight,
 }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
@@ -209,6 +211,8 @@ function cacheKey({
         dark,
         select,
         layout,
+        // Only when given, so every figure cached before it existed keeps its key.
+        ...(highlight ? [highlight] : []),
       ].join(' ')
     )
     .digest('hex');
@@ -495,6 +499,20 @@ app.get('/render/:name.:ext', async (req, res) => {
     });
   }
 
+  // select frames the figure on one event; highlight marks events on the whole
+  // diagram. Together they would draw a crop with some of it marked, which
+  // neither caller asked for.
+  if (req.query.select && req.query.highlight) {
+    return res.status(400).json({
+      error: '"select" and "highlight" cannot be used together',
+      canonical: canonicalUrl(
+        name,
+        format,
+        Object.fromEntries(Object.entries(req.query).filter(([key]) => key !== 'select'))
+      ),
+    });
+  }
+
   const outOfRange = Object.keys(BOUNDS).filter(
     (key) => key in req.query && !inBounds(key, req.query[key])
   );
@@ -526,6 +544,10 @@ app.get('/render/:name.:ext', async (req, res) => {
     // Frames the figure on one event: a reaction page asks for its own reaction,
     // not the diagram around it.
     select: typeof req.query.select === 'string' ? req.query.select : '',
+    // Events marked as selected on the whole diagram, nothing framed: how Java's
+    // exporter draws a subpathway (its reactions) or a reaction on the diagram
+    // that holds it. Comma-separated stable ids, handed to the page as given.
+    highlight: typeof req.query.highlight === 'string' ? req.query.highlight : '',
     // The only layout worth naming: everything else the page decides for itself
     // from the id it is given. `layout` all the way through: renamed from
     // `view` on one side only (#277), it never reached the page, and every

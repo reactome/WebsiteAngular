@@ -21,6 +21,7 @@
  *   --dark      render the dark theme (light by default, whatever the host prefers)
  *   --select    frame the figure on one event, e.g. a reaction's stable id
  *   --layout    reaction, to draw a reaction's own layout rather than a diagram
+ *   --highlight comma-separated events to mark on the whole diagram, nothing framed
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX is drawn as shapes, one per
@@ -57,6 +58,7 @@ const KNOWN = [
   'dark',
   'select',
   'layout',
+  'highlight',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
@@ -94,6 +96,7 @@ try {
     dark: args.includes('--dark'),
     select: flag('select', ''),
     layout: flag('layout', ''),
+    highlight: flag('highlight', ''),
   });
 
   await writeFile(out, bytes);

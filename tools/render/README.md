@@ -21,7 +21,20 @@ node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 | `--delay`          | GIF milliseconds per frame (default 1000)                |
 | `--max-size`       | GIF longest side in pixels (default 2000)                |
 | `--no-subpathways` | leave out sub-pathway tints and labels                   |
+| `--select`         | frame the figure on one event                            |
+| `--highlight`      | events to mark on the whole diagram, comma-separated     |
 | `--out`            | output path                                              |
+
+## Framing one event, or marking several
+
+`select` and `highlight` (the service's query parameters, and the CLI's flags)
+draw different figures, and the service refuses both together. `select` frames
+the figure on one event: what a reaction page wants. `highlight` marks events as
+selected on the whole diagram and frames nothing: what ContentService's
+`/exporter/diagram/<id>.<ext>` has always answered for a subpathway (its
+parent's diagram, its reactions selected) or a reaction (the diagram that holds
+it). content-node resolves those ids (graph-core's DiagramRepository) and asks
+for the diagram with `highlight` (#273).
 
 ## The theme is an explicit choice
 

@@ -114,6 +114,17 @@ export class RenderComponent {
   private readonly selection = this.route.snapshot.queryParamMap.get('select') ?? '';
 
   /**
+   * ?highlight=<stId>,<stId>... marks events as selected on the whole diagram,
+   * framing nothing. This is how Java's exporter draws a figure of a subpathway
+   * (its parent's diagram, the subpathway's reactions selected) or of a
+   * reaction (the diagram that holds it, the reaction selected) -- the figure
+   * ContentService's /exporter/diagram has always answered with.
+   */
+  private readonly highlighted = (this.route.snapshot.queryParamMap.get('highlight') ?? '')
+    .split(',')
+    .filter(Boolean);
+
+  /**
    * ?view=reaction draws the reaction's own layout instead of the pathway
    * diagram, which is what the reaction page shows and therefore what its
    * downloads have to contain. `select` frames the curated diagram on an event
@@ -393,6 +404,15 @@ export class RenderComponent {
     // page is disposable, so nothing needs restoring.
     if (diagram && !this.wantsSubpathways) {
       instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
+    }
+    // The diagram's own lookup, as selecting in the app uses, without the fit
+    // that select() animates: the whole diagram is the figure.
+    if (diagram && this.highlighted.length) {
+      instances.forEach((cy) => {
+        cy.elements(':selected').unselect();
+        const marked = diagram.getElements(this.highlighted, cy);
+        if ('select' in marked) marked.select();
+      });
     }
     return { diagram, instances };
   }

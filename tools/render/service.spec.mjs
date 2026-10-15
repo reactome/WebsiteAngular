@@ -65,6 +65,18 @@ describe('the request handler runs at all', () => {
     expect((await response.json()).error).toContain('scale');
   });
 
+  it('refuses select and highlight together, which ask for two different figures', async () => {
+    // select frames the figure on one event; highlight marks events on the whole
+    // diagram, as Java's exporter draws a selection.
+    const response = await fetch(
+      `${base}/render/R-HSA-69620.svg?select=R-HSA-69608&highlight=R-HSA-69608`
+    );
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain(
+      '"select" and "highlight" cannot be used together'
+    );
+  });
+
   it('refuses a format it cannot draw', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.tiff`);
     expect(response.status).toBe(400);
