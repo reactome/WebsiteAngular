@@ -20,7 +20,7 @@ import express from 'express';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 import {
@@ -2754,7 +2754,13 @@ export function timedOut(request, failure) {
     code.startsWith('Neo.ClientError.Transaction.TransactionTimedOut') ||
     code.endsWith('.Transaction.Terminated') ||
     code === 'Neo.TransientError.General.TransactionMemoryLimit' ||
-    code === 'Neo.TransientError.General.MemoryPoolOutOfMemoryError';
+    code === 'Neo.TransientError.General.MemoryPoolOutOfMemoryError' ||
+    // The database itself out of memory, or not there: the driver's own codes
+    // for an unreachable server or a lost session.
+    code === 'Neo.TransientError.General.OutOfMemoryError' ||
+    code === 'Neo.TransientError.Database.DatabaseUnavailable' ||
+    code === 'ServiceUnavailable' ||
+    code === 'SessionExpired';
   if (!ended) return undefined;
   return javaError(
     request,
@@ -2817,10 +2823,26 @@ export function failureAnswer(request, path, failure) {
     !/is too large$/.test(failure.message)
   )
     return undefined;
+  // Java names the text it failed to parse: the id (as read: trimmed, any
+  // version cut), or a query parameter that was converted the same way, such
+  // as /pathways/low/entity's species. Neo4j names the digits it was given.
+  const refused = failure.message.match(/integer, (\S+), is too large$/)?.[1];
   const idAt = path.split('/').indexOf('{id}');
-  if (idAt < 0) return undefined;
-  const id = javaTrim(pathId(rawSegment(request, idAt))).split('.')[0];
-  return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${id}"`);
+  const candidates = [
+    ...(idAt < 0 ? [] : [javaTrim(pathId(rawSegment(request, idAt))).split('.')[0]]),
+    ...[...new URLSearchParams(String(request.originalUrl ?? '').split('?')[1] ?? '').values()],
+  ];
+  const named = candidates.find((text) => {
+    const trimmed = javaTrim(text);
+    return javaNumeric(trimmed) && asciiDigits(trimmed).replace(/^0+(?=\d)/, '') === refused;
+  });
+  if (named === undefined && idAt < 0) return undefined;
+  return javaError(
+    request,
+    500,
+    'INTERNAL_SERVER_ERROR',
+    `For input string: "${named ?? candidates[0] ?? refused}"`
+  );
 }
 
 /**
@@ -2960,12 +2982,12 @@ export function app() {
   });
 
   // Before any route, as Tomcat and Spring look at a path before any
-  // controller does. An encoded slash or backslash is Tomcat's 400 -- its page
+  // controller does. A slash or backslash encoded, or a raw backslash, is Tomcat's 400 -- its page
   // names the server and its version, which this does not copy -- and a
   // doubled slash matches no mapping, which is Spring's own 404.
   server.use('/ContentService', (request, response, next) => {
     const path = String(request.originalUrl ?? '').split('?')[0];
-    if (/%2f|%5c/i.test(path))
+    if (/%2f|%5c|\\/i.test(path))
       return response
         .status(400)
         .type('text/html')
@@ -2973,6 +2995,17 @@ export function app() {
           '<!doctype html><html lang="en"><head><title>HTTP Status 400 – Bad Request</title></head><body><h1>HTTP Status 400 – Bad Request</h1></body></html>'
         );
     if (path.includes('//')) return writeResult(response, springNotFound(request));
+    // Spring reads matrix parameters out of every segment, not only an id's:
+    // /data/query;x/R-HSA-70486/stId is /data/query/R-HSA-70486/stId to Java.
+    // Routing here sees the path without them; handlers still read the id
+    // from the path as it came (rawSegment). A segment that was only one is
+    // no segment, which matches no mapping: Spring's 404.
+    const [relative, query] = String(request.url).split(/\?(.*)/s);
+    const segments = relative.split('/');
+    const stripped = segments.map((segment) => segment.split(';')[0]);
+    if (stripped.some((segment, at) => segment === '' && segments[at].includes(';')))
+      return writeResult(response, springNotFound(request));
+    request.url = stripped.join('/') + (query === undefined ? '' : `?${query}`);
     next();
   });
 
