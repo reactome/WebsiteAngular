@@ -12,7 +12,7 @@
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app } from './service.mjs';
+import { app, cacheKey } from './service.mjs';
 
 let base;
 let server;
@@ -41,6 +41,31 @@ describe('/health', () => {
     const body = await (await fetch(`${base}/health`)).json();
     expect(body.build, 'a fingerprint of its own modules').toMatch(/^[0-9a-f]{12}$/);
     expect(body.modules, 'the number of modules hashed').toBeGreaterThan(1);
+  });
+});
+
+describe('the cache key', () => {
+  const figure = {
+    pathway: 'R-HSA-69620',
+    format: 'svg',
+    token: '',
+    scale: 2,
+    subpathways: true,
+    delay: 1000,
+    maxSize: 0,
+    dark: false,
+    select: '',
+    layout: '',
+    highlight: '',
+  };
+
+  it('tells a highlight from a select that differs only in spaces', () => {
+    // Joined with spaces these two were one key, so either figure could be
+    // served for the other.
+    expect(cacheKey({ ...figure, layout: '', highlight: 'a,b ' })).not.toBe(
+      cacheKey({ ...figure, select: ' a,b', layout: '' })
+    );
+    expect(cacheKey({ ...figure, layout: ' ' })).not.toBe(cacheKey({ ...figure, highlight: ' ' }));
   });
 });
 

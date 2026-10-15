@@ -67,6 +67,13 @@ if (unknown.length) {
   process.exit(2);
 }
 
+// Two different figures: one framed on an event, one marking events on the
+// whole diagram. The service refuses both together; so does this.
+if (flag('select', '') && flag('highlight', '')) {
+  console.error('--select and --highlight cannot be used together');
+  process.exit(2);
+}
+
 const pathway = flag('pathway', '');
 const format = (flag('format', 'svg') || '').toLowerCase();
 const out = flag('out', `${pathway || 'genome-wide'}.${format}`);

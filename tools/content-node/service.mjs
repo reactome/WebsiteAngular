@@ -1672,8 +1672,11 @@ export const endpoints = [
   {
     path: '/ContentService/exporter/diagram/{id}',
     // The error path, which is all the diff harness can compare: the figure
-    // itself is drawn by another renderer.
+    // itself is drawn by another renderer. Never expanded over --ids, which
+    // would have Java draw a full figure for every one (a versioned id's
+    // version reads as the extension).
     sample: 'XYZ.svg',
+    samplesOnly: true,
     differs: [/: \.url: /],
     /**
      * A diagram figure, as ImageExporterController.diagramImage answers it:
@@ -1707,29 +1710,57 @@ export const endpoints = [
       if (!result)
         return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not an event`);
       const ext = name.ext.toLowerCase();
-      if (!EXPORT_FORMATS.includes(ext))
-        return javaError(
-          request,
-          500,
-          'INTERNAL_SERVER_ERROR',
-          `Unsupported file extension ${name.ext}`
-        );
-      // quality * 0.3 for the raster budget, unboxed whatever the format.
-      if (asked.values.quality === null) return unexpected(request);
-      if (ext === 'gif')
+      const problem = figureProblem(asked.values, ext);
+      if (problem === 'unexpected') return unexpected(request);
+      if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      const figure = diagramExportRequest(result, { ...asked.values, ext });
+      // Java selects on an illustration too; the render page does not yet.
+      if (figure.searchParams.has('highlight') && (await hasIllustration(result.diagramStId)))
         return javaError(
           request,
           400,
           'BAD_REQUEST',
-          'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.'
+          `Not drawn by this service yet: a selection on ${result.diagramStId}'s illustration. Ask with ehld=false once that is drawn, or for the pathway itself.`
         );
-      return renderFigure(request, diagramExportRequest(result, { ...asked.values, ext }), ext);
+      return renderFigure(request, figure, ext);
     },
   },
 ];
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
 const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
+
+/**
+ * What diagramImage fails on once the id is resolved, in its order, or
+ * undefined: pdf, by its own literal message; a blank quality, unboxed for
+ * the raster budget (the service's generic 500, 'unexpected'); a quality
+ * outside 1-10, which RasterArgs refuses; a blank ehld, unboxed. Then what
+ * this service does not draw: an extension Java has no check for -- its
+ * ImageIO writes nothing and it answers an empty 200; this names it -- and
+ * gif, whose renderer draws the expression animation, not a still.
+ */
+export function figureProblem(values, ext) {
+  const fail = (message) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
+  if (ext === 'pdf') return fail('Unsupported file extension pdf');
+  if (values.quality === null) return 'unexpected';
+  if (values.quality < 1 || values.quality > 10) return fail('quality must be in the range [1-10]');
+  if (values.ehld === null) return 'unexpected';
+  if (!EXPORT_FORMATS.includes(ext)) return fail(`Unsupported file extension ${ext}`);
+  if (ext === 'gif')
+    return {
+      status: 400,
+      reason: 'BAD_REQUEST',
+      message:
+        'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.',
+    };
+  return undefined;
+}
+
+/** Whether a pathway is drawn as its illustration (hasEHLD), as the render page draws it. */
+async function hasIllustration(stId) {
+  const [row] = await read('MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld', { stId });
+  return row?.ehld === true;
+}
 
 /** Where the render service listens: loopback only, never public. */
 const RENDER_SERVICE = process.env.RENDER_SERVICE_URL || 'http://127.0.0.1:4310';
@@ -1759,15 +1790,28 @@ function exporterParameters(request) {
     values[name] = read.value;
     return undefined;
   };
+  // Absent or a single empty value is the default; a blank one converts to
+  // null, which the controller then passes on as it is.
   const boolean = (name, fallback) => {
-    const read = springBoolean(queryValues(request, name));
+    const given = queryValues(request, name);
+    if (given.length === 0 || (given.length === 1 && given[0] === '')) {
+      values[name] = fallback;
+      return undefined;
+    }
+    const read = springBoolean(given);
     if (read.error) return javaError(request, 400, 'BAD_REQUEST', read.error);
-    values[name] = read.value ?? fallback;
+    values[name] = read.value ?? null;
     return undefined;
   };
+  // A String: repeated values arrive joined by ',', as Spring joins a String[].
   const text = (name, fallback) => {
-    const [first] = queryValues(request, name);
-    values[name] = first === undefined || first === '' ? fallback : first;
+    const given = queryValues(request, name);
+    values[name] =
+      given.length > 1
+        ? given.join(',')
+        : given[0] === undefined || given[0] === ''
+          ? fallback
+          : given[0];
   };
   const answer =
     integer('quality', 5) ||
@@ -1808,9 +1852,15 @@ function notDrawnYet(values) {
     resource: 'TOTAL',
     analysisProfile: 'Standard',
   };
+  // Left for after the resolution, where Java fails on them (figureProblem):
+  // a quality outside 1-10, and a blank quality or ehld.
+  const later = (name) =>
+    (name === 'quality' &&
+      (values.quality === null || values.quality < 1 || values.quality > 10)) ||
+    (name === 'ehld' && values.ehld === null);
   const named = Object.entries(defaults)
-    .filter(([name, fallback]) => values[name] !== null && values[name] !== fallback)
-    .map(([name]) => `${name}=${values[name]}`);
+    .filter(([name, fallback]) => !later(name) && values[name] !== fallback)
+    .map(([name]) => `${name}=${values[name] ?? ''}`);
   // Opt-in: anything given is something not drawn.
   for (const name of ['flg', 'expColumn'])
     if (values[name] !== null && values[name] !== undefined) named.push(`${name}=${values[name]}`);
@@ -1865,11 +1915,12 @@ export function diagramExportRequest(result, { ext, sel, token }) {
 }
 
 /** The content type Java sends with each format. */
+// UTF-8 on every type, images included: the service forces the encoding.
 const FIGURE_TYPE = {
   svg: 'image/svg+xml;charset=UTF-8',
-  png: 'image/png',
-  jpg: 'image/jpg',
-  jpeg: 'image/jpeg',
+  png: 'image/png;charset=UTF-8',
+  jpg: 'image/jpg;charset=UTF-8',
+  jpeg: 'image/jpeg;charset=UTF-8',
 };
 
 /**
@@ -1881,8 +1932,14 @@ async function renderFigure(request, url, ext) {
   let response;
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
-  } catch {
-    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The figure service cannot be reached');
+  } catch (failure) {
+    const late = failure?.name === 'TimeoutError';
+    return javaError(
+      request,
+      503,
+      'SERVICE_UNAVAILABLE',
+      late ? 'The figure took too long to draw' : 'The figure service cannot be reached'
+    );
   }
   if (response.status === 503)
     return {

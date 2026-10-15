@@ -216,7 +216,8 @@ function paths() {
     // own sample when none are. Without the sample it expanded to *nothing* and
     // was silently absent from every run: `/data/pathways/top/{id}` was merged
     // for weeks, never once compared, and carried three real differences.
-    const use = ids.length ? ids : endpoint.sample ? [endpoint.sample] : [];
+    const use =
+      ids.length && !endpoint.samplesOnly ? ids : endpoint.sample ? [endpoint.sample] : [];
     if (!use.length) skipped.push(endpoint.path);
     return use.map((id) => template.replace('{id}', id));
   });

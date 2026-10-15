@@ -193,13 +193,17 @@ function cacheKey({
   dark,
   select,
   layout,
-  highlight,
+  highlight = '',
 }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
+  //
+  // As JSON, not joined with spaces: joined, a highlight ending in a space and
+  // a select starting with one gave the same key, so either figure could be
+  // served for the other. Every key changed with it, once.
   return createHash('sha256')
     .update(
-      [
+      JSON.stringify([
         CACHE_KEY,
         pathway,
         format,
@@ -211,9 +215,8 @@ function cacheKey({
         dark,
         select,
         layout,
-        // Only when given, so every figure cached before it existed keeps its key.
-        ...(highlight ? [highlight] : []),
-      ].join(' ')
+        highlight,
+      ])
     )
     .digest('hex');
 }
@@ -624,7 +627,7 @@ app.get('/render/:name.:ext', async (req, res) => {
  * content-node has been guarded this way all along; this brings the render
  * service into line.
  */
-export { app };
+export { app, cacheKey };
 
 const started = process.argv[1]?.endsWith('service.mjs');
 const server = started

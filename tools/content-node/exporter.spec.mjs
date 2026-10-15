@@ -5,7 +5,7 @@
 // refused before anything is resolved, and how a resolution becomes the render
 // request. Java's answers measured on 15 Oct 2026.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, diagramExportRequest, splitExportName } from './service.mjs';
+import { app, diagramExportRequest, figureProblem, splitExportName } from './service.mjs';
 
 let base;
 let server;
@@ -65,6 +65,10 @@ describe('the parameters, converted before anything is resolved', () => {
     ]);
   });
 
+  it('leaves a quality outside 1-10 to the resolution, where Java fails on it', async () => {
+    expect((await envelope(await at('XYZ.svg?quality=11')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+
   it('refuses, by name, a parameter it does not draw yet, rather than ignore it', async () => {
     // #273: a figure that silently leaves out what was asked for is a 200 no
     // caller can detect.
@@ -78,6 +82,49 @@ describe('the parameters, converted before anything is resolved', () => {
     const response = await at('XYZ.svg?quality=5&title=true&margin=15&diagramProfile=Modern');
     // Past the parameters to the resolution, which this id fails.
     expect((await envelope(response))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+});
+
+describe('repeated and blank values, as Spring binds them', () => {
+  it('joins a repeated String with commas, so flg=&flg=TP53 is not an empty flg', async () => {
+    // Spring joins a String[] for a String parameter: Java flags ",TP53".
+    const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?flg=&flg=TP53'));
+    expect(status).toBe(400);
+    expect(message).toContain('flg=,TP53');
+  });
+
+  it('reads a blank Boolean as null, which is not its default', async () => {
+    const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?title=%20'));
+    expect(status).toBe(400);
+    expect(message).toContain('title=');
+  });
+});
+
+describe('figureProblem, what diagramImage fails on once the id is resolved', () => {
+  const values = { quality: 5, ehld: true };
+
+  it('names pdf by its own literal, whatever the case it was asked in', () => {
+    expect(figureProblem(values, 'pdf')).toEqual({
+      status: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      message: 'Unsupported file extension pdf',
+    });
+  });
+
+  it('refuses a quality outside 1-10 with RasterArgs’ message, not as undrawn', () => {
+    expect(figureProblem({ ...values, quality: 11 }, 'svg')?.message).toBe(
+      'quality must be in the range [1-10]'
+    );
+  });
+
+  it('is the service’s generic 500 for a blank quality or ehld', () => {
+    expect(figureProblem({ ...values, quality: null }, 'svg')).toBe('unexpected');
+    expect(figureProblem({ ...values, ehld: null }, 'svg')).toBe('unexpected');
+  });
+
+  it('draws svg, png and jpeg', () => {
+    for (const ext of ['svg', 'png', 'jpg', 'jpeg'])
+      expect(figureProblem(values, ext), ext).toBe(undefined);
   });
 });
 

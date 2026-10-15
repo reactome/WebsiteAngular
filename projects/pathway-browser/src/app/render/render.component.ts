@@ -395,6 +395,19 @@ export class RenderComponent {
     return true;
   }
 
+  /**
+   * The illustration being drawn, if it is one. A highlight is refused here
+   * rather than dropped: the illustration does not mark events yet, and a
+   * figure without the selection asked for is a 200 nobody can detect.
+   */
+  private illustration() {
+    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    if (svg && this.highlighted.length) {
+      throw new Error('highlight is not drawn on an illustration yet');
+    }
+    return svg;
+  }
+
   /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
   private exportableInstances() {
     const diagram = this.diagram();
@@ -407,11 +420,16 @@ export class RenderComponent {
     }
     // The diagram's own lookup, as selecting in the app uses, without the fit
     // that select() animates: the whole diagram is the figure.
+    // One token at a time: getElements only looks a token up as a subpathway
+    // while nothing has been found, so a subpathway after a reaction in one
+    // list would be dropped.
     if (diagram && this.highlighted.length) {
       instances.forEach((cy) => {
         cy.elements(':selected').unselect();
-        const marked = diagram.getElements(this.highlighted, cy);
-        if ('select' in marked) marked.select();
+        for (const token of this.highlighted) {
+          const marked = diagram.getElements([token], cy);
+          if ('select' in marked) marked.select();
+        }
       });
     }
     return { diagram, instances };
@@ -451,7 +469,7 @@ export class RenderComponent {
     // rasterised. That belongs to the illustration's own service, which knows
     // that its styling comes from the page's stylesheets and has to be inlined
     // before the markup means anything on its own.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) {
       return await this.ehldService.rasterise(svg, scale, this.wantsDark ? '#0d1617' : '#ffffff');
     }
@@ -1472,7 +1490,7 @@ export class RenderComponent {
 
     // Through the illustration's own service, which knows that its styling has
     // to be inlined and its size written down before the markup stands alone.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) return this.ehldService.svgMarkup(svg).markup;
 
     // The genome-wide view draws to a canvas via FoamTree, so it has its own
@@ -1542,7 +1560,7 @@ export class RenderComponent {
     // same rasteriser the animation frames use. Without this a .png of any
     // illustrated pathway was a 500 -- and illustrations are the top-level
     // pathways, so it was the ones a report is most likely to want.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) {
       const canvas = await this.ehldService.rasterise(svg, scale, jpeg ? '#ffffff' : undefined);
       return canvas.toDataURL(jpeg ? 'image/jpeg' : 'image/png', 1.0);
