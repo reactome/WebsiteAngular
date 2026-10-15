@@ -103,54 +103,134 @@ const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
 export function mapResult({ root, nodes, relationships: returned, order }) {
-  // A relationship returned twice -- on two paths, in-depth -- is one
-  // relationship to SDN: kept where it first appears.
+  // extractRelationships / extractNodes: each relationship and node once, in
+  // the order of first appearance -- the nodes of list columns first, then
+  // single-node columns, so the root sits where it first appears in a list
+  // and otherwise last.
   const seenRelationships = new Set();
-  const relationships = returned.filter(
-    (relationship) =>
-      relationship.id === undefined ||
-      (!seenRelationships.has(relationship.id) && seenRelationships.add(relationship.id))
-  );
-  const entities = new Map();
-  const rootClass = schemaClassOf(root.labels);
-  entities.set(root.id, new Entity(root.id, rootClass, root.props));
-  const byId = new Map(nodes.filter(Boolean).map((node) => [node.id, node]));
-  // A related node's class is chosen for the root's field that reaches it.
-  for (const field of SNAPSHOT().graph[rootClass]?.fields ?? []) {
-    if (field.length === 2) continue;
-    const [, type, direction, target] = field;
-    for (const relationship of relationships) {
-      if (relationship.type !== type) continue;
-      const outgoing = direction === 'OUTGOING';
-      if ((outgoing ? relationship.start : relationship.end) !== root.id) continue;
-      const node = byId.get(outgoing ? relationship.end : relationship.start);
-      if (!node || entities.has(node.id)) continue;
-      entities.set(node.id, new Entity(node.id, classFor(target, node.labels), node.props));
-    }
-  }
-  for (const node of byId.values())
-    if (!entities.has(node.id))
-      entities.set(node.id, new Entity(node.id, schemaClassOf(node.labels), node.props));
-  // The order SDN visits related nodes in: first appearance in the result,
-  // as its extractNodes builds it -- the nodes of list columns first, then
-  // single-node columns. So the root sits where it first appears in a list,
-  // and only otherwise last: Java lists a regulation that is its own
-  // reaction's regulator third among that reaction's four, not first.
+  const relationships = returned
+    // One without an id (a test's) is its own relationship, under a key of its own.
+    .map((relationship, at) =>
+      relationship.id === undefined ? { ...relationship, id: `#${at}` } : relationship
+    )
+    .filter(
+      (relationship) =>
+        !seenRelationships.has(relationship.id) && seenRelationships.add(relationship.id)
+    );
+  const listed = nodes.filter(Boolean);
+  const byId = new Map();
+  for (const node of [...listed, root]) if (!byId.has(node.id)) byId.set(node.id, node);
   const position = new Map();
-  for (const id of [...(order ?? nodes.filter(Boolean).map((node) => node.id)), root.id])
+  for (const id of [...(order ?? listed.map((node) => node.id)), root.id])
     if (!position.has(id)) position.set(id, position.size);
-  // Each relationship under both of its ends, so a field finds its own at once.
-  const byEnd = new Map();
-  const add = (key, relationship) => {
-    if (!byEnd.has(key)) byEnd.set(key, []);
-    byEnd.get(key).push(relationship);
+  const state = {
+    byId,
+    position,
+    relationships,
+    removed: new Set(),
+    processed: new Map(),
+    known: new Map(),
+    byEnd: new Map(),
   };
   for (const relationship of relationships) {
-    add(`OUTGOING ${relationship.type} ${relationship.start}`, relationship);
-    add(`INCOMING ${relationship.type} ${relationship.end}`, relationship);
+    for (const key of [
+      `OUTGOING ${relationship.type} ${relationship.start}`,
+      `INCOMING ${relationship.type} ${relationship.end}`,
+    ]) {
+      if (!state.byEnd.has(key)) state.byEnd.set(key, []);
+      state.byEnd.get(key).push(relationship);
+    }
   }
-  for (const entity of entities.values()) fill(entity, entities, byEnd, position);
-  return entities.get(root.id);
+  return map(state, root, undefined);
+}
+
+/**
+ * DefaultNeo4jEntityConverter.map and createInstanceOfRelationships: the
+ * root as an entity, and everything its fields reach.
+ *
+ * A node becomes an entity once, its class decided by the field that first
+ * reaches it (classFor) -- so which field reaches a node first matters, and
+ * SDN goes depth first: an entity met in a field has its own fields filled
+ * before that field goes on to the next. Done here with a stack of frames, in
+ * that order, rather than by recursion, which a deep in-depth answer -- an
+ * object reached through thousands of others -- would run out of stack on.
+ *
+ * Each field: the candidates are the result's nodes that carry the target's
+ * label, in result order; for each, the field's relationships to it, each
+ * mapped as it is met. A relationship is counted per direction each time a
+ * field uses it, and once one has been used twice in the same direction it
+ * leaves the result for every field after -- SDN's guard against cycles,
+ * which decides what some fields of highly linked objects hold. Filling node
+ * by node rather than relationship by relationship is visible when one node
+ * is reached twice: an entity that is both a reaction's input (order 2) and
+ * its output (order 1) is the first output, because it was met among the
+ * inputs; Java writes R-CEL-156804's reaction that way.
+ */
+function map(state, node, target) {
+  const frames = [];
+  const make = (from, to) => {
+    const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
+    const entity = new Entity(from.id, schemaClass, from.props);
+    // Known before its fields are filled, so a field leading back finds it.
+    state.known.set(from.id, entity);
+    const graph = SNAPSHOT().graph[schemaClass];
+    if (graph) {
+      for (const field of graph.fields)
+        if (field.length === 2)
+          entity.fields[field[0]] = entity.properties[field[1]] ?? graph.defaults?.[field[0]];
+      frames.push({ entity, fields: graph.fields.filter((field) => field.length > 2), at: 0 });
+    }
+    return entity;
+  };
+  const root = make(node, target);
+  while (frames.length) {
+    const frame = frames[frames.length - 1];
+    if (!frame.matching) {
+      if (frame.at === frame.fields.length) {
+        frames.pop();
+        continue;
+      }
+      frame.matching = matchingFor(state, frame.entity, frame.fields[frame.at]);
+      frame.next = 0;
+      frame.found = [];
+    }
+    const [name, , direction, target, collection, relationClass] = frame.fields[frame.at];
+    if (frame.next === frame.matching.length) {
+      frame.entity.fields[name] = collect(frame.found, collection, relationClass);
+      frame.matching = undefined;
+      frame.at += 1;
+      continue;
+    }
+    const relationship = frame.matching[frame.next];
+    frame.next += 1;
+    const key = `${direction} ${relationship.id}`;
+    const used = state.processed.get(key) ?? 0;
+    if (used === 2) state.removed.add(relationship.id);
+    else state.processed.set(key, used + 1);
+    const otherId = direction === 'OUTGOING' ? relationship.end : relationship.start;
+    // A new entity pushes its frame: its fields are filled before this one goes on.
+    const other =
+      otherId === frame.entity.id
+        ? frame.entity
+        : (state.known.get(otherId) ?? make(state.byId.get(otherId), target));
+    frame.found.push(
+      relationClass ? new Relation(relationClass, other, relationship.props) : other
+    );
+  }
+  return root;
+}
+
+/** One field's relationships, in candidate order (see map). */
+function matchingFor(state, entity, [, type, direction, target]) {
+  const outgoing = direction === 'OUTGOING';
+  const otherEnd = (relationship) => (outgoing ? relationship.end : relationship.start);
+  return (
+    (state.byEnd.get(`${direction} ${type} ${entity.id}`) ?? [])
+      .filter((relationship) => !state.removed.has(relationship.id))
+      .filter((relationship) => state.byId.get(otherEnd(relationship))?.labels.includes(target))
+      // Candidate order; stable, so relationships to one node keep theirs.
+      .sort((a, b) => state.position.get(otherEnd(a)) - state.position.get(otherEnd(b)))
+  );
 }
 
 /**
@@ -176,39 +256,6 @@ function classFor(target, labels) {
     if (missing < fewest) [best, fewest] = [name, missing];
   }
   return best ?? schemaClassOf(labels);
-}
-
-/**
- * One entity's fields. A relationship field is filled node by node, in the
- * order the nodes first appear in the result, and only then relationship by
- * relationship -- not in the relationships' own order. The difference shows
- * when one node is reached twice: an entity that is both a reaction's input
- * (order 2) and its output (order 1) is the *first* output, because it was
- * met among the inputs; Java writes R-CEL-156804's reaction that way.
- */
-function fill(entity, entities, byEnd, position) {
-  const graph = SNAPSHOT().graph[entity.schemaClass];
-  if (!graph) return;
-  for (const field of graph.fields) {
-    if (field.length === 2) {
-      entity.fields[field[0]] = entity.properties[field[1]] ?? graph.defaults?.[field[0]];
-      continue;
-    }
-    const [name, type, direction, target, collection, relationClass] = field;
-    const outgoing = direction === 'OUTGOING';
-    const otherEnd = (relationship) => (outgoing ? relationship.end : relationship.start);
-    // Stable: relationships to the same node keep their own order.
-    const matching = [...(byEnd.get(`${direction} ${type} ${entity.id}`) ?? [])].sort(
-      (a, b) => position.get(otherEnd(a)) - position.get(otherEnd(b))
-    );
-    const found = [];
-    for (const relationship of matching) {
-      const other = entities.get(otherEnd(relationship));
-      if (!other || !isA(other.schemaClass, target)) continue;
-      found.push(relationClass ? new Relation(relationClass, other, relationship.props) : other);
-    }
-    entity.fields[name] = collect(found, collection, relationClass);
-  }
 }
 
 /** The field's collection as SDN creates it: ArrayList, LinkedHashSet, TreeSet. */
