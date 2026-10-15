@@ -6,7 +6,15 @@
 // does not take. Every expected value below was measured against Java's
 // /data/orthology and /data/orthologies on 15 Oct 2026.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, JavaHashMap, orthologyIds, plainTextProblem, springPathLong } from './service.mjs';
+import {
+  app,
+  JavaHashMap,
+  orthologyIds,
+  orthologyMap,
+  plainText,
+  plainTextProblem,
+  springPathLong,
+} from './service.mjs';
 import { JsonMap, mapNodes, VIEW, writeDomain } from './domain.mjs';
 
 let base;
@@ -117,6 +125,88 @@ describe('JavaHashMap, in the order Java iterates a HashMap', () => {
       (a, b) => (hash(a) & 31) - (hash(b) & 31) || keys.indexOf(a) - keys.indexOf(b)
     );
     expect([...map.keys()]).toEqual(expected);
+  });
+});
+
+describe("JavaHashMap's tree bins", () => {
+  it('puts thirteen ids that share a hash in the order the JDK does', () => {
+    // String.hashCode('Aa') === String.hashCode('BB'), so these thirteen share
+    // one bucket: past ten it is a red-black tree, its root moved to the
+    // front. java.util.HashMap's own order, JDK 11.
+    const ids = [
+      'AaAaAaAa',
+      'AaAaAaBB',
+      'AaAaBBAa',
+      'AaAaBBBB',
+      'AaBBAaAa',
+      'AaBBAaBB',
+      'AaBBBBAa',
+      'AaBBBBBB',
+      'BBAaAaAa',
+      'BBAaAaBB',
+      'BBAaBBAa',
+      'BBAaBBBB',
+      'BBBBAaAa',
+    ].map((suffix) => `R-HSA-69620.${suffix}`);
+    const map = new JavaHashMap();
+    for (const id of ids) map.set(id, id);
+    expect([...map.keys()]).toEqual([ids[3], ...ids.filter((_, at) => at !== 3)]);
+  });
+});
+
+describe('orthologyMap, the two maps getOrthologies builds', () => {
+  it('leaves an id that is no id out of the first, so it does not grow it', () => {
+    // Java answered with R-HSA-69620.11 first. Put in the first map, the
+    // eleven non-ids grew it to 32 buckets and changed the order.
+    const ids = [
+      'R-HSA-69620.11',
+      'R-HSA-69620.9',
+      ...Array.from({ length: 11 }, (_, at) => `x${at + 1}`),
+    ];
+    const found = new Map(ids.map((id) => [id, id.startsWith('R') ? { id } : null]));
+    expect([...orthologyMap(ids, found).keys()]).toEqual(['R-HSA-69620.11', 'R-HSA-69620.9']);
+  });
+
+  it('drops an id with nothing found', () => {
+    const found = new Map([
+      ['R-HSA-69620', { id: 1 }],
+      ['R-ALL-29358', undefined],
+    ]);
+    expect([...orthologyMap(['R-HSA-69620', 'R-ALL-29358'], found).keys()]).toEqual([
+      'R-HSA-69620',
+    ]);
+  });
+});
+
+describe('plainText, the POST body in its charset as the JDK decodes it', () => {
+  // Each expected string is the JDK's new String(bytes, charset).
+  const read = (charset, hex) =>
+    plainText(Buffer.from(hex, 'hex'), `text/plain;charset=${charset}`);
+
+  it('reads UTF-16 big-endian without a mark, and by its mark with one', () => {
+    expect(read('UTF-16', '0052002d00480053')).toBe('R-HS');
+    expect(read('UTF-16', 'fffe52002d0048005300')).toBe('R-HS');
+    expect(read('UTF-16BE', 'feff0052')).toBe('﻿R');
+    expect(read('UTF-16BE', '0052fffe')).toBe('R�');
+    expect(read('UTF-16', '3820d80040')).toBe('㠠�');
+  });
+
+  it('reads UTF-32, dropping a mark in its own order', () => {
+    expect(read('UTF-32', '000000520000002d')).toBe('R-');
+    expect(read('x-utf-32le', 'fffe000052000000')).toBe('R');
+    expect(read('UTF-32BE', '0000feff00000052')).toBe('R');
+    // The other order's mark is a value past U+10FFFF.
+    expect(read('UTF-32LE', '0000feff52000000')).toBe('\ufffdR');
+  });
+
+  it("reads Java's ASCII and Latin-1, not TextDecoder's windows-1252", () => {
+    expect(read('us-ascii', '52e9')).toBe('R�');
+    expect(read('l1', '52e9')).toBe('Ré');
+    expect(plainText(Buffer.from('52e9', 'hex'), 'text/plain')).toBe('Ré');
+  });
+
+  it('takes UTF-32, which Java takes and TextDecoder does not', () => {
+    expect(plainTextProblem('text/plain;charset=UTF-32')).toBe(undefined);
   });
 });
 

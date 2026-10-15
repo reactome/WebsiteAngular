@@ -1535,6 +1535,8 @@ export const endpoints = [
       const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
       if (species.error)
         return javaError(request, species.status, REASON[species.status], species.error);
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
       if (!Buffer.isBuffer(request.body) || request.body.length === 0)
         return javaError(
           request,
@@ -1545,12 +1547,11 @@ export const endpoints = [
       const ids = orthologyIds(plainText(request.body, contentType));
       const refused = longPastRange(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
-      const unique = [...new Set(ids)];
-      const found = await Promise.all(unique.map((id) => orthologyOf(id, species.value)));
-      const byId = new JavaHashMap();
-      for (const id of ids) byId.set(id, found[unique.indexOf(id)]);
-      const kept = new JavaHashMap();
-      for (const [id, object] of byId.entries()) if (object) kept.set(id, object);
+      // One at a time, as Java asks, so twenty ids are not twenty queries at
+      // once on the database the site shares.
+      const found = new Map();
+      for (const id of ids) if (!found.has(id)) found.set(id, await orthologyOf(id, species.value));
+      const kept = orthologyMap(ids, found);
       if (kept.size === 0) return notFound(request, 'No orthologies found');
       const entries = [...kept.entries()].map(([id, object]) => [id, mapNodes([object])[0]]);
       return {
@@ -1561,6 +1562,20 @@ export const endpoints = [
     },
   },
 ];
+
+/**
+ * getOrthologies' two HashMaps, given each id's orthologyOf: the service puts
+ * every id that is an id (not null) -- found or not -- and the controller
+ * keeps those found, iterating the first. How far the first grows decides
+ * the second's order, so an id that is no id must not be put in it.
+ */
+export function orthologyMap(ids, found) {
+  const byId = new JavaHashMap();
+  for (const id of ids) if (found.get(id) !== null) byId.set(id, found.get(id));
+  const kept = new JavaHashMap();
+  for (const [id, object] of byId.entries()) if (object) kept.set(id, object);
+  return kept;
+}
 
 /** The reason Java's envelope gives with each status these endpoints send. */
 const REASON = { 400: 'BAD_REQUEST', 500: 'INTERNAL_SERVER_ERROR' };
@@ -1663,41 +1678,141 @@ export function plainTextProblem(header) {
 }
 
 function knownCharset(value) {
-  try {
-    new TextDecoder(value.replace(/^"(.*)"$/, '$1'));
-    return true;
-  } catch {
-    return false;
-  }
+  return decoderFor(value.replace(/^"(.*)"$/, '$1').toLowerCase()) !== undefined;
 }
 
 /**
  * A text/plain body as StringHttpMessageConverter reads it: in the header's
- * charset, else ISO-8859-1 -- latin1 proper, not the windows-1252 that
- * TextDecoder gives that label.
+ * charset, else ISO-8859-1, a malformed sequence read as U+FFFD.
  */
-function plainText(body, header) {
+export function plainText(body, header) {
   const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i
     .exec(header ?? '')?.[1]
     ?.trim()
     .toLowerCase();
-  if (!charset || ['iso-8859-1', 'latin1', 'iso_8859_1'].includes(charset))
-    return body.toString('latin1');
-  if (charset === 'utf-8' || charset === 'utf8') return body.toString('utf8');
-  return new TextDecoder(charset).decode(body);
+  return (decoderFor(charset ?? 'iso-8859-1') ?? decoderFor('iso-8859-1'))(body);
+}
+
+/** Java's names for the charsets decoded here as Java decodes them. */
+const JAVA_CHARSETS = [
+  [
+    'iso-8859-1 iso8859_1 iso_8859_1 iso_8859-1 iso8859-1 8859_1 latin1 l1 ibm819 ibm-819 cp819 819 csisolatin1 iso-ir-100 iso_8859-1:1987',
+    (body) => body.toString('latin1'),
+  ],
+  [
+    'us-ascii ascii us iso646-us 646 ascii7 default csascii cp367 ibm367 iso-ir-6 ansi_x3.4-1968 ansi_x3.4-1986 iso_646.irv:1983 iso_646.irv:1991',
+    (body) =>
+      Array.from(body, (byte) => (byte < 0x80 ? String.fromCharCode(byte) : '\ufffd')).join(''),
+  ],
+  ['utf-8 utf8 unicode-1-1-utf-8', (body) => body.toString('utf8')],
+  ['utf-16 utf_16 utf16 unicode', (body) => utf16(body, undefined)],
+  ['utf-16be utf_16be x-utf-16be iso-10646-ucs-2 unicodebigunmarked', (body) => utf16(body, 'be')],
+  ['utf-16le utf_16le x-utf-16le unicodelittleunmarked', (body) => utf16(body, 'le')],
+  ['utf-32 utf_32 utf32', (body) => utf32(body, undefined)],
+  ['utf-32be utf_32be x-utf-32be', (body) => utf32(body, 'be')],
+  ['utf-32le utf_32le x-utf-32le', (body) => utf32(body, 'le')],
+].flatMap(([names, decode]) => names.split(' ').map((name) => [name, decode]));
+const JAVA_DECODERS = new Map(JAVA_CHARSETS);
+
+/**
+ * How to read a body in a charset named in a Content-Type, lower-cased, or
+ * undefined for one this cannot read -- Spring's 415. Latin-1, ASCII and the
+ * UTF family are read as the JDK reads them (orthology.spec.mjs holds the
+ * JDK's answers); any other charset by TextDecoder when it knows the name,
+ * which for a body of stable ids reads the same. A charset only Java knows
+ * (an EBCDIC code page) is refused here and read by Java.
+ */
+function decoderFor(charset) {
+  if (JAVA_DECODERS.has(charset)) return JAVA_DECODERS.get(charset);
+  try {
+    const decoder = new TextDecoder(charset);
+    return (body) => decoder.decode(body);
+  } catch {
+    return undefined;
+  }
 }
 
 /**
- * A java.util.HashMap's iteration order, for answers Java writes from one:
- * by bucket -- String.hashCode, its high half folded in, masked to the table
- * size -- then in the order keys reached the bucket. The table starts at 16,
- * doubles past three quarters full or when a bucket reaches nine keys while
- * it is under 64, and each bucket splits in order. Past 64 Java makes a bucket
- * of nine into a tree, which this does not follow; twenty ids never get
- * there.
+ * The JDK's UTF-16 decoders: with no order given, a byte-order mark decides it
+ * and is dropped, and without one it is big-endian; with an order, a mark is
+ * a character. A reversed mark (U+FFFE) anywhere, a lone surrogate or an odd
+ * last byte is U+FFFD -- one for a high surrogate and the odd byte after it.
+ */
+function utf16(body, order) {
+  let at = 0;
+  let little = order === 'le';
+  if (order === undefined && body.length >= 2) {
+    if (body[0] === 0xfe && body[1] === 0xff) at = 2;
+    else if (body[0] === 0xff && body[1] === 0xfe) {
+      at = 2;
+      little = true;
+    }
+  }
+  const units = [];
+  for (; at + 1 < body.length; at += 2)
+    units.push(little ? body[at] | (body[at + 1] << 8) : (body[at] << 8) | body[at + 1]);
+  let text = '';
+  for (let i = 0; i < units.length; i += 1) {
+    const unit = units[i];
+    if (unit >= 0xd800 && unit <= 0xdbff && units[i + 1] >= 0xdc00 && units[i + 1] <= 0xdfff) {
+      text += String.fromCharCode(unit, units[i + 1]);
+      i += 1;
+    } else
+      text +=
+        (unit >= 0xd800 && unit <= 0xdfff) || unit === 0xfffe
+          ? '\ufffd'
+          : String.fromCharCode(unit);
+  }
+  // A high surrogate waiting at the end takes the odd byte with it: one U+FFFD.
+  const last = units.at(-1);
+  const waiting = last >= 0xd800 && last <= 0xdbff;
+  return at < body.length && !waiting ? `${text}\ufffd` : text;
+}
+
+/**
+ * The JDK's UTF-32 decoders: a leading byte-order mark is dropped -- and,
+ * with no order given, decides it (big-endian without one) -- unless it is
+ * the other order's mark; a value past U+10FFFF, a surrogate, or a short last
+ * group is U+FFFD.
+ */
+function utf32(body, order) {
+  let at = 0;
+  let little = order === 'le';
+  if (body.length >= 4) {
+    const first = body.readUInt32BE(0);
+    if (first === 0xfeff && order !== 'le') {
+      at = 4;
+      little = false;
+    } else if (first === 0xfffe0000 && order !== 'be') {
+      at = 4;
+      little = true;
+    }
+  }
+  let text = '';
+  for (; at + 3 < body.length; at += 4) {
+    const point = little ? body.readUInt32LE(at) : body.readUInt32BE(at);
+    text +=
+      point > 0x10ffff || (point >= 0xd800 && point <= 0xdfff)
+        ? '\ufffd'
+        : String.fromCodePoint(point);
+  }
+  return at < body.length ? `${text}\ufffd` : text;
+}
+
+/**
+ * A java.util.HashMap's iteration order, for answers Java writes from one --
+ * its put, resize and tree bins ported from the JDK the service runs on
+ * (11). A key's bucket is String.hashCode, its high half folded in, masked
+ * to the table size; the table starts at 16 and doubles past three quarters
+ * full. A bucket keeps keys in the order they arrived until a ninth arrives:
+ * then, under 64 buckets, the table doubles; at 64, the bucket becomes a
+ * red-black tree ordered by hash then String.compareTo, whose root is moved
+ * to the front and whose later keys are linked in after their parent -- so
+ * eleven ids sharing a hash come out in Java's order, not arrival's. Checked
+ * against the JDK's own HashMap (orthology.spec.mjs).
  */
 export class JavaHashMap {
-  #table = Array.from({ length: 16 }, () => []);
+  #table = new Array(16).fill(null);
   size = 0;
 
   static #hash(key) {
@@ -1707,33 +1822,261 @@ export class JavaHashMap {
   }
 
   set(key, value) {
-    const bucket = this.#table[JavaHashMap.#hash(key) & (this.#table.length - 1)];
-    const entry = bucket.find(([existing]) => existing === key);
-    if (entry) {
-      entry[1] = value;
+    const hash = JavaHashMap.#hash(key);
+    const table = this.#table;
+    const index = (table.length - 1) & hash;
+    let p = table[index];
+    let existing = null;
+    if (p === null) table[index] = { hash, key, value, next: null };
+    else if (p.hash === hash && p.key === key) existing = p;
+    else if (p.tree) existing = this.#putTreeValue(table, hash, key, value);
+    else {
+      for (let count = 0; ; count += 1) {
+        const e = p.next;
+        if (e === null) {
+          p.next = { hash, key, value, next: null };
+          if (count >= 7) this.#treeifyBin(hash);
+          break;
+        }
+        if (e.hash === hash && e.key === key) {
+          existing = e;
+          break;
+        }
+        p = e;
+      }
+    }
+    if (existing) {
+      existing.value = value;
       return this;
     }
-    bucket.push([key, value]);
-    if (bucket.length >= 9 && this.#table.length < 64) this.#grow();
     this.size += 1;
-    if (this.size > this.#table.length * 0.75) this.#grow();
+    if (this.size > this.#table.length * 0.75) this.#resize();
     return this;
   }
 
-  #grow() {
-    const table = Array.from({ length: this.#table.length * 2 }, () => []);
-    for (const bucket of this.#table)
-      for (const entry of bucket)
-        table[JavaHashMap.#hash(entry[0]) & (table.length - 1)].push(entry);
-    this.#table = table;
-  }
-
   *entries() {
-    for (const bucket of this.#table) for (const [key, value] of bucket) yield [key, value];
+    for (let node of this.#table) for (; node; node = node.next) yield [node.key, node.value];
   }
 
   *keys() {
     for (const [key] of this.entries()) yield key;
+  }
+
+  #resize() {
+    const old = this.#table;
+    const table = new Array(old.length * 2).fill(null);
+    this.#table = table;
+    for (let index = 0; index < old.length; index += 1) {
+      const head = old[index];
+      if (!head) continue;
+      if (head.next === null) table[head.hash & (table.length - 1)] = head;
+      else if (head.tree) this.#split(table, head, index, old.length);
+      else {
+        const [lo, hi] = [[], []];
+        for (let node = head; node; node = node.next)
+          ((node.hash & old.length) === 0 ? lo : hi).push(node);
+        for (const [list, at] of [
+          [lo, index],
+          [hi, index + old.length],
+        ]) {
+          if (!list.length) continue;
+          list.forEach((node, i) => (node.next = list[i + 1] ?? null));
+          table[at] = list[0];
+        }
+      }
+    }
+  }
+
+  #treeifyBin(hash) {
+    const table = this.#table;
+    if (table.length < 64) return this.#resize();
+    const index = (table.length - 1) & hash;
+    let previous = null;
+    for (let node = table[index]; node; node = node.next) {
+      Object.assign(node, {
+        tree: true,
+        prev: previous,
+        parent: null,
+        left: null,
+        right: null,
+        red: false,
+      });
+      previous = node;
+    }
+    this.#treeify(table, table[index]);
+  }
+
+  /** TreeNode.split: the bucket's nodes, in order, to the two halves of a doubled table. */
+  #split(table, head, index, bit) {
+    const [lo, hi] = [[], []];
+    for (let node = head; node; node = node.next) ((node.hash & bit) === 0 ? lo : hi).push(node);
+    for (const [list, at, other] of [
+      [lo, index, hi],
+      [hi, index + bit, lo],
+    ]) {
+      if (!list.length) continue;
+      list.forEach((node, i) => {
+        node.next = list[i + 1] ?? null;
+        node.prev = list[i - 1] ?? null;
+      });
+      if (list.length <= 6) {
+        for (const node of list) {
+          node.tree = false;
+          node.parent = node.left = node.right = node.prev = null;
+        }
+        table[at] = list[0];
+      } else {
+        table[at] = list[0];
+        if (other.length) this.#treeify(table, list[0]);
+      }
+    }
+  }
+
+  static #direction(hash, key, node) {
+    if (node.hash > hash) return -1;
+    if (node.hash < hash) return 1;
+    return key < node.key ? -1 : key > node.key ? 1 : 0;
+  }
+
+  #treeify(table, head) {
+    let root = null;
+    for (let x = head, next; x; x = next) {
+      next = x.next;
+      x.left = x.right = null;
+      if (root === null) {
+        x.parent = null;
+        x.red = false;
+        root = x;
+        continue;
+      }
+      for (let p = root; ;) {
+        const dir = JavaHashMap.#direction(x.hash, x.key, p);
+        const xp = p;
+        p = dir <= 0 ? p.left : p.right;
+        if (p === null) {
+          x.parent = xp;
+          if (dir <= 0) xp.left = x;
+          else xp.right = x;
+          root = JavaHashMap.#balanceInsertion(root, x);
+          break;
+        }
+      }
+    }
+    JavaHashMap.#moveRootToFront(table, root);
+  }
+
+  #putTreeValue(table, hash, key, value) {
+    const root = table[(table.length - 1) & hash];
+    for (let p = root; ;) {
+      if (p.hash === hash && p.key === key) return p;
+      const dir = JavaHashMap.#direction(hash, key, p);
+      const xp = p;
+      p = dir <= 0 ? p.left : p.right;
+      if (p === null) {
+        const xpn = xp.next;
+        const x = {
+          hash,
+          key,
+          value,
+          next: xpn,
+          tree: true,
+          prev: xp,
+          parent: xp,
+          left: null,
+          right: null,
+          red: false,
+        };
+        if (dir <= 0) xp.left = x;
+        else xp.right = x;
+        xp.next = x;
+        if (xpn) xpn.prev = x;
+        JavaHashMap.#moveRootToFront(table, JavaHashMap.#balanceInsertion(root, x));
+        return null;
+      }
+    }
+  }
+
+  static #moveRootToFront(table, root) {
+    const index = (table.length - 1) & root.hash;
+    const first = table[index];
+    if (root === first) return;
+    table[index] = root;
+    const { prev: rp, next: rn } = root;
+    if (rn) rn.prev = rp;
+    if (rp) rp.next = rn;
+    if (first) first.prev = root;
+    root.next = first;
+    root.prev = null;
+  }
+
+  static #rotateLeft(root, p) {
+    const r = p.right;
+    if (!r) return root;
+    const rl = (p.right = r.left);
+    if (rl) rl.parent = p;
+    const pp = (r.parent = p.parent);
+    if (!pp) (root = r).red = false;
+    else if (pp.left === p) pp.left = r;
+    else pp.right = r;
+    r.left = p;
+    p.parent = r;
+    return root;
+  }
+
+  static #rotateRight(root, p) {
+    const l = p.left;
+    if (!l) return root;
+    const lr = (p.left = l.right);
+    if (lr) lr.parent = p;
+    const pp = (l.parent = p.parent);
+    if (!pp) (root = l).red = false;
+    else if (pp.right === p) pp.right = l;
+    else pp.left = l;
+    l.right = p;
+    p.parent = l;
+    return root;
+  }
+
+  static #balanceInsertion(root, x) {
+    x.red = true;
+    for (;;) {
+      const xp = x.parent;
+      if (!xp) {
+        x.red = false;
+        return x;
+      }
+      const xpp = xp.parent;
+      if (!xp.red || !xpp) return root;
+      const xppl = xpp.left;
+      const xppr = xpp.right;
+      const uncle = xp === xppl ? xppr : xppl;
+      if (uncle && uncle.red) {
+        uncle.red = false;
+        xp.red = false;
+        xpp.red = true;
+        x = xpp;
+        continue;
+      }
+      // x's parent is red and its uncle black: rotate x up to where its parent
+      // was if it is the inner grandchild, then rotate the grandparent.
+      const left = xp === xppl;
+      let parent = xp;
+      if (x === (left ? xp.right : xp.left)) {
+        x = xp;
+        root = left ? JavaHashMap.#rotateLeft(root, x) : JavaHashMap.#rotateRight(root, x);
+        parent = x.parent;
+      }
+      const grand = parent ? parent.parent : null;
+      if (parent) {
+        parent.red = false;
+        if (grand) {
+          grand.red = true;
+          root = left
+            ? JavaHashMap.#rotateRight(root, grand)
+            : JavaHashMap.#rotateLeft(root, grand);
+        }
+      }
+    }
   }
 }
 
@@ -3442,6 +3785,27 @@ export function writeResult(response, result) {
   else response.type('application/json').send(javaJson(result.body));
 }
 
+/**
+ * A POST's body, as the bytes that came: not inflated (Tomcat does not
+ * inflate a request), and not refused for its type, which the handler checks
+ * as Spring does. Past 10MB the rest is read and dropped and the handler
+ * answers 413, where Java would read on; no client sends that many ids.
+ */
+function readBody(request, _response, next) {
+  const chunks = [];
+  let size = 0;
+  request.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > 10 * 1024 * 1024) request.tooLarge = true;
+    else chunks.push(chunk);
+  });
+  request.on('end', () => {
+    request.body = Buffer.concat(chunks);
+    next();
+  });
+  request.on('error', next);
+}
+
 export function app() {
   const server = express();
   server.disable('x-powered-by');
@@ -3526,8 +3890,7 @@ export function app() {
     const idAt = endpoint.path.split('/').indexOf('{id}');
     const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
     // A POST's body arrives as bytes; its handler decodes them as Java would.
-    const body =
-      endpoint.method === 'post' ? [express.raw({ type: () => true, limit: '10mb' })] : [];
+    const body = endpoint.method === 'post' ? [readBody] : [];
     server[endpoint.method ?? 'get'](route, ...body, async (request, response) => {
       // An id that is only a matrix parameter is no id to Spring: no mapping
       // matches, and it answers its own 404.
