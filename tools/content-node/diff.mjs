@@ -27,8 +27,19 @@ function flag(name, fallback = '') {
 
 /** Fetch one path from both, as text plus content type. */
 async function fetchBoth(path) {
+  // A POST endpoint is sent its sample body, or the --ids given, as text.
+  const endpoint = endpointFor(path);
+  const post = endpoint?.method === 'post';
+  const ids = flag('ids');
+  const init = post
+    ? {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: ids || endpoint.sampleBody,
+      }
+    : {};
   const get = async (base) => {
-    const response = await fetch(base + path, { redirect: 'follow' });
+    const response = await fetch(base + path, { redirect: 'follow', ...init });
     return {
       status: response.status,
       type: (response.headers.get('content-type') || '').split(';')[0].trim(),
@@ -196,14 +207,18 @@ function paths() {
 
   const skipped = [];
   const expanded = chosen.flatMap((endpoint) => {
-    if (!endpoint.path.includes('{id}')) return [endpoint.path];
+    // Path variables other than {id} take the endpoint's own sample values.
+    let template = endpoint.path;
+    for (const [name, value] of Object.entries(endpoint.samplePath ?? {}))
+      template = template.replace(`{${name}}`, value);
+    if (!template.includes('{id}')) return [template];
     // An endpoint that takes an id is expanded over the ids given, or over its
     // own sample when none are. Without the sample it expanded to *nothing* and
     // was silently absent from every run: `/data/pathways/top/{id}` was merged
     // for weeks, never once compared, and carried three real differences.
     const use = ids.length ? ids : endpoint.sample ? [endpoint.sample] : [];
     if (!use.length) skipped.push(endpoint.path);
-    return use.map((id) => endpoint.path.replace('{id}', id));
+    return use.map((id) => template.replace('{id}', id));
   });
 
   // Said out loud. A run that tests fewer endpoints than the table holds is the

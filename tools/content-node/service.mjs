@@ -29,6 +29,7 @@ import {
   findByIdQuery,
   inDepthQuery,
   isA,
+  JsonMap,
   mapNodes,
   oldEnhancedQuery,
   mapResult,
@@ -1470,7 +1471,614 @@ export const endpoints = [
       return { status: 200, body: javaJson(table), type: 'application/json' };
     },
   },
+  {
+    path: '/ContentService/data/orthology/{id}/species/{speciesId}',
+    // A human pathway, in mouse; the diff harness is given more forms.
+    sample: 'R-HSA-69620',
+    samplePath: { speciesId: '48892' },
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    // '.' is not found here; Java's is a 500 (see resolveId).
+    differs: [/^\/ContentService\/data\/orthology\/[^/]+\/species\/[^/]+: \.url: /],
+    /**
+     * An event's or entity's counterpart in another species: graph-core's
+     * OrthologyService.getOrthology, the first object it finds, alone (no
+     * relationships), written by the domain serialiser in Java's views. The
+     * Pathway Browser asks when the species is changed with an event open.
+     *
+     * Java's answers: an id that is neither a stable id nor a dbId is a 404
+     * naming it and the species; an id with no counterpart there is a 500 with
+     * no message -- the controller takes the first of an empty list.
+     */
+    handler: async (request) => {
+      const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
+      if (species.error)
+        return javaError(request, species.status, REASON[species.status], species.error);
+      const raw = pathId(rawSegment(request, 4));
+      const refused = longPastRange([raw]);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const found = await orthologyOf(raw, species.value);
+      if (found === null)
+        return notFound(request, `No orthology found for '${raw}' in species '${species.value}'`);
+      if (found === undefined) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
+      return {
+        status: 200,
+        serialised: writeDomain(mapNodes([found])[0], ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/orthologies/ids/species/{speciesId}',
+    method: 'post',
+    samplePath: { speciesId: '48892' },
+    // Two ids for one pathway, one with none and one that is no id.
+    sampleBody: 'R-HSA-69620,R-HSA-69608;69620\nREACT_1538\txyz,R-ALL-29358',
+    differs: [/^\/ContentService\/data\/orthologies\/ids\/species\/[^/]+: \.url: /],
+    /**
+     * OrthologyController.getOrthologies: the ids in a text/plain body, split
+     * on , ; newline and tab and trimmed; past twenty, the first twenty in a
+     * HashSet. Each id's first counterpart, as the GET above finds it, keyed
+     * by the id as sent, in a HashMap -- written in that HashMap's order
+     * (JavaHashMap), each value its own object. Ids with none are left out;
+     * none at all is a 404. The Pathway Browser sends every id in its URL when
+     * the species changes.
+     *
+     * Spring checks the content type first, then the species, then that there
+     * is a body. A dbId past a long anywhere in the list is Java's 500 for the
+     * whole request, as is '.' -- which here is an id with no counterpart, as
+     * the GET reads it.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
+      if (species.error)
+        return javaError(request, species.status, REASON[species.status], species.error);
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Required request body is missing: public java.util.Map<java.lang.Object, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.OrthologyController.getOrthologies(java.lang.Long,java.lang.String)'
+        );
+      const ids = orthologyIds(plainText(request.body, contentType));
+      const refused = longPastRange(ids);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      // One at a time, as Java asks, so twenty ids are not twenty queries at
+      // once on the database the site shares.
+      const found = new Map();
+      for (const id of ids) if (!found.has(id)) found.set(id, await orthologyOf(id, species.value));
+      const kept = orthologyMap(ids, found);
+      if (kept.size === 0) return notFound(request, 'No orthologies found');
+      const entries = [...kept.entries()].map(([id, object]) => [id, mapNodes([object])[0]]);
+      return {
+        status: 200,
+        serialised: writeDomain(new JsonMap(entries), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
 ];
+
+/**
+ * getOrthologies' two HashMaps, given each id's orthologyOf: the service puts
+ * every id that is an id (not null) -- found or not -- and the controller
+ * keeps those found, iterating the first. How far the first grows decides
+ * the second's order, so an id that is no id must not be put in it.
+ */
+export function orthologyMap(ids, found) {
+  const byId = new JavaHashMap();
+  for (const id of ids) if (found.get(id) !== null) byId.set(id, found.get(id));
+  const kept = new JavaHashMap();
+  for (const [id, object] of byId.entries()) if (object) kept.set(id, object);
+  return kept;
+}
+
+/** The reason Java's envelope gives with each status these endpoints send. */
+const REASON = { 400: 'BAD_REQUEST', 500: 'INTERNAL_SERVER_ERROR' };
+
+/**
+ * graph-core's OrthologyRepository, as OrthologyService chooses between its
+ * two queries: an object's counterparts in a species, inferred from it or it
+ * from them (one step either way) or sharing the object they were both
+ * inferred from (two steps). The Cypher is Java's, in a subquery so the
+ * result comes back as a map; the first row is the one Java keeps.
+ *
+ * null when the id is no id (Java's null); undefined when nothing is found
+ * (Java's empty list). A REACT_ id is the object whose oldStId it is, or, when
+ * there is none, looked for as a stable id -- and not found, as in Java.
+ */
+async function orthologyOf(raw, species) {
+  const id = inDepthId(raw);
+  if (!id) return null;
+  let { idType, id: value } = id;
+  if (idType === 'oldStId') {
+    const [old] = await read(
+      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+      { id: value }
+    );
+    value = old?.stId ?? value;
+    idType = 'stId';
+  }
+  const anchor = idType === 'dbId' ? '{dbId:$id}' : '{stId:$id}';
+  const rows = await read(
+    `CALL {
+       MATCH (:DatabaseObject${anchor})<-[:inferredTo]-()-[:inferredTo]->(o:DatabaseObject)-[:species]->(:Species{dbId:$speciesId}) RETURN DISTINCT o
+       UNION
+       MATCH (:DatabaseObject${anchor})-[:inferredTo]-(o:DatabaseObject)-[:species]->(:Species{dbId:$speciesId}) RETURN DISTINCT o
+     }
+     RETURN {id: id(o), labels: labels(o), props: properties(o)} AS o`,
+    { id: idType === 'dbId' ? neo4j.int(value) : value, speciesId: neo4j.int(String(species)) }
+  );
+  return rows[0]?.o;
+}
+
+/**
+ * Long.parseLong's 500 for the first id that is a dbId past a long, naming it
+ * as Java read it (trimmed, any version cut), or undefined. neo4j.int would
+ * wrap round instead and find some other object.
+ */
+function longPastRange(ids) {
+  for (const raw of ids) {
+    const id = inDepthId(raw);
+    if (id?.idType === 'dbId' && BigInt(id.id) > 9223372036854775807n)
+      return `For input string: "${javaTrim(raw).split('.')[0]}"`;
+  }
+  return undefined;
+}
+
+/**
+ * The ids in getOrthologies' body: String.split on , ; newline or tab --
+ * trailing empty strings dropped, as Java's split drops them -- each trimmed;
+ * more than twenty, the first twenty collected into a HashSet, in its order.
+ */
+export function orthologyIds(body) {
+  const parts = body.split(/,|;|\n|\t/);
+  if (parts.length > 1) while (parts.length && parts.at(-1) === '') parts.pop();
+  const ids = parts.map((part) => javaTrim(part));
+  if (ids.length <= 20) return ids;
+  const set = new JavaHashMap();
+  for (const id of ids.slice(0, 20)) set.set(id, true);
+  return [...set.keys()];
+}
+
+/**
+ * Whether Spring takes a Content-Type for `consumes = "text/plain"`: undefined
+ * if so, else the 415's message. It parses the header as MimeTypeUtils does
+ * -- the type and subtype lower-cased, parameters as given, a charset Java
+ * must know -- and only text/plain is compatible: `text/*` is not.
+ */
+export function plainTextProblem(header) {
+  if (!header) return "Content type '' not supported";
+  const invalid = (why) => `Invalid mime type "${header}": ${why}`;
+  const [first = '', ...rest] = header.split(';');
+  const full = first.trim() === '*' ? '*/*' : first.trim();
+  const slash = full.indexOf('/');
+  if (slash === -1) return invalid("does not contain '/'");
+  if (slash === full.length - 1) return invalid("does not contain subtype after '/'");
+  const type = full.slice(0, slash).toLowerCase();
+  const subtype = full.slice(slash + 1).toLowerCase();
+  if (type === '*' && subtype !== '*')
+    return invalid("wildcard type is legal only in '*/*' (all mime types)");
+  const parameters = [];
+  for (const parameter of rest) {
+    const at = parameter.indexOf('=');
+    if (at === -1) continue;
+    const name = parameter.slice(0, at).trim();
+    const value = parameter.slice(at + 1).trim();
+    if (name.toLowerCase() === 'charset' && !knownCharset(value))
+      return invalid(`unsupported charset '${value.replace(/^"(.*)"$/, '$1')}'`);
+    parameters.push(`;${name}=${value}`);
+  }
+  if (type === 'text' && subtype === 'plain') return undefined;
+  return `Content type '${type}/${subtype}${parameters.join('')}' not supported`;
+}
+
+function knownCharset(value) {
+  return decoderFor(value.replace(/^"(.*)"$/, '$1').toLowerCase()) !== undefined;
+}
+
+/**
+ * A text/plain body as StringHttpMessageConverter reads it: in the header's
+ * charset, else ISO-8859-1, a malformed sequence read as U+FFFD.
+ */
+export function plainText(body, header) {
+  const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i
+    .exec(header ?? '')?.[1]
+    ?.trim()
+    .toLowerCase();
+  return (decoderFor(charset ?? 'iso-8859-1') ?? decoderFor('iso-8859-1'))(body);
+}
+
+/** Java's names for the charsets decoded here as Java decodes them. */
+const JAVA_CHARSETS = [
+  [
+    'iso-8859-1 iso8859_1 iso_8859_1 iso_8859-1 iso8859-1 8859_1 latin1 l1 ibm819 ibm-819 cp819 819 csisolatin1 iso-ir-100 iso_8859-1:1987',
+    (body) => body.toString('latin1'),
+  ],
+  [
+    'us-ascii ascii us iso646-us 646 ascii7 default csascii cp367 ibm367 iso-ir-6 ansi_x3.4-1968 ansi_x3.4-1986 iso_646.irv:1983 iso_646.irv:1991',
+    (body) =>
+      Array.from(body, (byte) => (byte < 0x80 ? String.fromCharCode(byte) : '\ufffd')).join(''),
+  ],
+  ['utf-8 utf8 unicode-1-1-utf-8', (body) => body.toString('utf8')],
+  ['utf-16 utf_16 utf16 unicode', (body) => utf16(body, undefined)],
+  ['utf-16be utf_16be x-utf-16be iso-10646-ucs-2 unicodebigunmarked', (body) => utf16(body, 'be')],
+  ['utf-16le utf_16le x-utf-16le unicodelittleunmarked', (body) => utf16(body, 'le')],
+  ['utf-32 utf_32 utf32', (body) => utf32(body, undefined)],
+  ['utf-32be utf_32be x-utf-32be', (body) => utf32(body, 'be')],
+  ['utf-32le utf_32le x-utf-32le', (body) => utf32(body, 'le')],
+].flatMap(([names, decode]) => names.split(' ').map((name) => [name, decode]));
+const JAVA_DECODERS = new Map(JAVA_CHARSETS);
+
+/**
+ * How to read a body in a charset named in a Content-Type, lower-cased, or
+ * undefined for one this cannot read -- Spring's 415. Latin-1, ASCII and the
+ * UTF family are read as the JDK reads them (orthology.spec.mjs holds the
+ * JDK's answers); any other charset by TextDecoder when it knows the name,
+ * which for a body of stable ids reads the same. A charset only Java knows
+ * (an EBCDIC code page) is refused here and read by Java.
+ */
+function decoderFor(charset) {
+  if (JAVA_DECODERS.has(charset)) return JAVA_DECODERS.get(charset);
+  try {
+    const decoder = new TextDecoder(charset);
+    return (body) => decoder.decode(body);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The JDK's UTF-16 decoders: with no order given, a byte-order mark decides it
+ * and is dropped, and without one it is big-endian; with an order, a mark is
+ * a character. A reversed mark (U+FFFE) anywhere, a lone surrogate or an odd
+ * last byte is U+FFFD -- one for a high surrogate and the odd byte after it.
+ */
+function utf16(body, order) {
+  let at = 0;
+  let little = order === 'le';
+  if (order === undefined && body.length >= 2) {
+    if (body[0] === 0xfe && body[1] === 0xff) at = 2;
+    else if (body[0] === 0xff && body[1] === 0xfe) {
+      at = 2;
+      little = true;
+    }
+  }
+  const units = [];
+  for (; at + 1 < body.length; at += 2)
+    units.push(little ? body[at] | (body[at + 1] << 8) : (body[at] << 8) | body[at + 1]);
+  let text = '';
+  for (let i = 0; i < units.length; i += 1) {
+    const unit = units[i];
+    if (unit >= 0xd800 && unit <= 0xdbff && units[i + 1] >= 0xdc00 && units[i + 1] <= 0xdfff) {
+      text += String.fromCharCode(unit, units[i + 1]);
+      i += 1;
+    } else
+      text +=
+        (unit >= 0xd800 && unit <= 0xdfff) || unit === 0xfffe
+          ? '\ufffd'
+          : String.fromCharCode(unit);
+  }
+  // A high surrogate waiting at the end takes the odd byte with it: one U+FFFD.
+  const last = units.at(-1);
+  const waiting = last >= 0xd800 && last <= 0xdbff;
+  return at < body.length && !waiting ? `${text}\ufffd` : text;
+}
+
+/**
+ * The JDK's UTF-32 decoders: a leading byte-order mark is dropped -- and,
+ * with no order given, decides it (big-endian without one) -- unless it is
+ * the other order's mark; a value past U+10FFFF, a surrogate, or a short last
+ * group is U+FFFD.
+ */
+function utf32(body, order) {
+  let at = 0;
+  let little = order === 'le';
+  if (body.length >= 4) {
+    const first = body.readUInt32BE(0);
+    if (first === 0xfeff && order !== 'le') {
+      at = 4;
+      little = false;
+    } else if (first === 0xfffe0000 && order !== 'be') {
+      at = 4;
+      little = true;
+    }
+  }
+  let text = '';
+  for (; at + 3 < body.length; at += 4) {
+    const point = little ? body.readUInt32LE(at) : body.readUInt32BE(at);
+    text +=
+      point > 0x10ffff || (point >= 0xd800 && point <= 0xdfff)
+        ? '\ufffd'
+        : String.fromCodePoint(point);
+  }
+  return at < body.length ? `${text}\ufffd` : text;
+}
+
+/**
+ * A java.util.HashMap's iteration order, for answers Java writes from one --
+ * its put, resize and tree bins ported from the JDK the service runs on
+ * (11). A key's bucket is String.hashCode, its high half folded in, masked
+ * to the table size; the table starts at 16 and doubles past three quarters
+ * full. A bucket keeps keys in the order they arrived until a ninth arrives:
+ * then, under 64 buckets, the table doubles; at 64, the bucket becomes a
+ * red-black tree ordered by hash then String.compareTo, whose root is moved
+ * to the front and whose later keys are linked in after their parent -- so
+ * eleven ids sharing a hash come out in Java's order, not arrival's. Checked
+ * against the JDK's own HashMap (orthology.spec.mjs).
+ */
+export class JavaHashMap {
+  #table = new Array(16).fill(null);
+  size = 0;
+
+  static #hash(key) {
+    let h = 0;
+    for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
+    return h ^ (h >>> 16);
+  }
+
+  set(key, value) {
+    const hash = JavaHashMap.#hash(key);
+    const table = this.#table;
+    const index = (table.length - 1) & hash;
+    let p = table[index];
+    let existing = null;
+    if (p === null) table[index] = { hash, key, value, next: null };
+    else if (p.hash === hash && p.key === key) existing = p;
+    else if (p.tree) existing = this.#putTreeValue(table, hash, key, value);
+    else {
+      for (let count = 0; ; count += 1) {
+        const e = p.next;
+        if (e === null) {
+          p.next = { hash, key, value, next: null };
+          if (count >= 7) this.#treeifyBin(hash);
+          break;
+        }
+        if (e.hash === hash && e.key === key) {
+          existing = e;
+          break;
+        }
+        p = e;
+      }
+    }
+    if (existing) {
+      existing.value = value;
+      return this;
+    }
+    this.size += 1;
+    if (this.size > this.#table.length * 0.75) this.#resize();
+    return this;
+  }
+
+  *entries() {
+    for (let node of this.#table) for (; node; node = node.next) yield [node.key, node.value];
+  }
+
+  *keys() {
+    for (const [key] of this.entries()) yield key;
+  }
+
+  #resize() {
+    const old = this.#table;
+    const table = new Array(old.length * 2).fill(null);
+    this.#table = table;
+    for (let index = 0; index < old.length; index += 1) {
+      const head = old[index];
+      if (!head) continue;
+      if (head.next === null) table[head.hash & (table.length - 1)] = head;
+      else if (head.tree) this.#split(table, head, index, old.length);
+      else {
+        const [lo, hi] = [[], []];
+        for (let node = head; node; node = node.next)
+          ((node.hash & old.length) === 0 ? lo : hi).push(node);
+        for (const [list, at] of [
+          [lo, index],
+          [hi, index + old.length],
+        ]) {
+          if (!list.length) continue;
+          list.forEach((node, i) => (node.next = list[i + 1] ?? null));
+          table[at] = list[0];
+        }
+      }
+    }
+  }
+
+  #treeifyBin(hash) {
+    const table = this.#table;
+    if (table.length < 64) return this.#resize();
+    const index = (table.length - 1) & hash;
+    let previous = null;
+    for (let node = table[index]; node; node = node.next) {
+      Object.assign(node, {
+        tree: true,
+        prev: previous,
+        parent: null,
+        left: null,
+        right: null,
+        red: false,
+      });
+      previous = node;
+    }
+    this.#treeify(table, table[index]);
+  }
+
+  /** TreeNode.split: the bucket's nodes, in order, to the two halves of a doubled table. */
+  #split(table, head, index, bit) {
+    const [lo, hi] = [[], []];
+    for (let node = head; node; node = node.next) ((node.hash & bit) === 0 ? lo : hi).push(node);
+    for (const [list, at, other] of [
+      [lo, index, hi],
+      [hi, index + bit, lo],
+    ]) {
+      if (!list.length) continue;
+      list.forEach((node, i) => {
+        node.next = list[i + 1] ?? null;
+        node.prev = list[i - 1] ?? null;
+      });
+      if (list.length <= 6) {
+        for (const node of list) {
+          node.tree = false;
+          node.parent = node.left = node.right = node.prev = null;
+        }
+        table[at] = list[0];
+      } else {
+        table[at] = list[0];
+        if (other.length) this.#treeify(table, list[0]);
+      }
+    }
+  }
+
+  static #direction(hash, key, node) {
+    if (node.hash > hash) return -1;
+    if (node.hash < hash) return 1;
+    return key < node.key ? -1 : key > node.key ? 1 : 0;
+  }
+
+  #treeify(table, head) {
+    let root = null;
+    for (let x = head, next; x; x = next) {
+      next = x.next;
+      x.left = x.right = null;
+      if (root === null) {
+        x.parent = null;
+        x.red = false;
+        root = x;
+        continue;
+      }
+      for (let p = root; ;) {
+        const dir = JavaHashMap.#direction(x.hash, x.key, p);
+        const xp = p;
+        p = dir <= 0 ? p.left : p.right;
+        if (p === null) {
+          x.parent = xp;
+          if (dir <= 0) xp.left = x;
+          else xp.right = x;
+          root = JavaHashMap.#balanceInsertion(root, x);
+          break;
+        }
+      }
+    }
+    JavaHashMap.#moveRootToFront(table, root);
+  }
+
+  #putTreeValue(table, hash, key, value) {
+    const root = table[(table.length - 1) & hash];
+    for (let p = root; ;) {
+      if (p.hash === hash && p.key === key) return p;
+      const dir = JavaHashMap.#direction(hash, key, p);
+      const xp = p;
+      p = dir <= 0 ? p.left : p.right;
+      if (p === null) {
+        const xpn = xp.next;
+        const x = {
+          hash,
+          key,
+          value,
+          next: xpn,
+          tree: true,
+          prev: xp,
+          parent: xp,
+          left: null,
+          right: null,
+          red: false,
+        };
+        if (dir <= 0) xp.left = x;
+        else xp.right = x;
+        xp.next = x;
+        if (xpn) xpn.prev = x;
+        JavaHashMap.#moveRootToFront(table, JavaHashMap.#balanceInsertion(root, x));
+        return null;
+      }
+    }
+  }
+
+  static #moveRootToFront(table, root) {
+    const index = (table.length - 1) & root.hash;
+    const first = table[index];
+    if (root === first) return;
+    table[index] = root;
+    const { prev: rp, next: rn } = root;
+    if (rn) rn.prev = rp;
+    if (rp) rp.next = rn;
+    if (first) first.prev = root;
+    root.next = first;
+    root.prev = null;
+  }
+
+  static #rotateLeft(root, p) {
+    const r = p.right;
+    if (!r) return root;
+    const rl = (p.right = r.left);
+    if (rl) rl.parent = p;
+    const pp = (r.parent = p.parent);
+    if (!pp) (root = r).red = false;
+    else if (pp.left === p) pp.left = r;
+    else pp.right = r;
+    r.left = p;
+    p.parent = r;
+    return root;
+  }
+
+  static #rotateRight(root, p) {
+    const l = p.left;
+    if (!l) return root;
+    const lr = (p.left = l.right);
+    if (lr) lr.parent = p;
+    const pp = (l.parent = p.parent);
+    if (!pp) (root = l).red = false;
+    else if (pp.right === p) pp.right = l;
+    else pp.left = l;
+    l.right = p;
+    p.parent = l;
+    return root;
+  }
+
+  static #balanceInsertion(root, x) {
+    x.red = true;
+    for (;;) {
+      const xp = x.parent;
+      if (!xp) {
+        x.red = false;
+        return x;
+      }
+      const xpp = xp.parent;
+      if (!xp.red || !xpp) return root;
+      const xppl = xpp.left;
+      const xppr = xpp.right;
+      const uncle = xp === xppl ? xppr : xppl;
+      if (uncle && uncle.red) {
+        uncle.red = false;
+        xp.red = false;
+        xpp.red = true;
+        x = xpp;
+        continue;
+      }
+      // x's parent is red and its uncle black: rotate x up to where its parent
+      // was if it is the inner grandchild, then rotate the grandparent.
+      const left = xp === xppl;
+      let parent = xp;
+      if (x === (left ? xp.right : xp.left)) {
+        x = xp;
+        root = left ? JavaHashMap.#rotateLeft(root, x) : JavaHashMap.#rotateRight(root, x);
+        parent = x.parent;
+      }
+      const grand = parent ? parent.parent : null;
+      if (parent) {
+        parent.red = false;
+        if (grand) {
+          grand.red = true;
+          root = left
+            ? JavaHashMap.#rotateRight(root, grand)
+            : JavaHashMap.#rotateLeft(root, grand);
+        }
+      }
+    }
+  }
+}
 
 /**
  * The endpoint a path was expanded from, by its whole template. Matching on
@@ -2600,17 +3208,21 @@ function javaTrimAll(text) {
   return text.replace(JAVA_WHITESPACE, '');
 }
 
-/** NumberUtils.parseNumber(text, Integer.class). */
-function javaParseInteger(text) {
+/**
+ * NumberUtils.parseNumber(text, Integer.class), or Long.class for 64 bits:
+ * Integer's as a number, Long's as a bigint.
+ */
+function javaParseInteger(text, bits = 32) {
   const trimmed = javaTrimAll(text);
   const at = trimmed.startsWith('-') ? 1 : 0;
   const hex =
     trimmed.startsWith('0x', at) || trimmed.startsWith('0X', at) || trimmed.startsWith('#', at);
-  return hex ? javaDecode(trimmed) : javaParseInt(trimmed, 10);
+  const value = hex ? javaDecode(trimmed, bits) : javaParseInt(trimmed, 10, bits);
+  return bits === 32 ? Number(value) : value;
 }
 
-/** Integer.decode, as far as parseNumber reaches it. */
-function javaDecode(text) {
+/** Integer.decode, or Long.decode, as far as parseNumber reaches it. */
+function javaDecode(text, bits) {
   if (text === '') throw new JavaNumberFormat('Zero length string');
   let index = 0;
   let radix = 10;
@@ -2631,44 +3243,49 @@ function javaDecode(text) {
   }
   const rest = text.slice(index);
   try {
-    const result = javaParseInt(rest, radix);
-    return negative ? -result | 0 : result;
+    const result = javaParseInt(rest, radix, bits);
+    return negative ? BigInt.asIntN(bits, -result) : result;
   } catch (failure) {
     if (!(failure instanceof JavaNumberFormat)) throw failure;
     // Java retries with the sign attached, for the one value that needs it
     // (-0x80000000), and that attempt's message is the one reported.
-    return javaParseInt(negative ? `-${rest}` : rest, radix);
+    return javaParseInt(negative ? `-${rest}` : rest, radix, bits);
   }
 }
 
-/** Integer.parseInt(text, radix), as the service's JVM has it, per UTF-16 unit. */
-function javaParseInt(text, radix) {
+/**
+ * Integer.parseInt(text, radix), or Long.parseLong for 64 bits, as the
+ * service's JVM has them, per UTF-16 unit. A bigint either way.
+ */
+function javaParseInt(text, radix, bits) {
   const refuse = () => {
     throw new JavaNumberFormat(`For input string: "${text}"`);
   };
   if (text.length === 0) refuse();
+  const min = -(1n << BigInt(bits - 1));
   let i = 0;
   let negative = false;
-  let limit = -2147483647;
+  let limit = min + 1n;
   if (text[0] < '0') {
     if (text[0] === '-') {
       negative = true;
-      limit = -2147483648;
+      limit = min;
     } else if (text[0] !== '+') refuse();
     if (text.length === 1) refuse();
     i += 1;
   }
-  const multmin = Math.trunc(limit / radix);
-  let result = 0;
+  const base = BigInt(radix);
+  const multmin = limit / base;
+  let result = 0n;
   while (i < text.length) {
     const digit = javaDigit(text[i], radix);
     i += 1;
     if (digit < 0 || result < multmin) refuse();
-    result *= radix;
-    if (result < limit + digit) refuse();
-    result -= digit;
+    result *= base;
+    if (result < limit + BigInt(digit)) refuse();
+    result -= BigInt(digit);
   }
-  return (negative ? result : -result) | 0;
+  return negative ? result : -result;
 }
 
 /**
@@ -2879,6 +3496,69 @@ export function springIntWithDefault(values, fallback) {
       `Failed to convert value of type '${type}' to required type 'int'; ` +
       `nested exception is java.lang.NumberFormatException: ${retried.failure}`,
   };
+}
+
+/** rfd-snapshot.json's extensions, read on first use. */
+let safeExtensions;
+
+/**
+ * Whether Java would mark this answer `Content-Disposition:
+ * inline;filename=f.txt` -- Spring's guard against a reflected download
+ * (AbstractMessageConverterMethodProcessor.addContentDispositionHeader), on
+ * every body it writes but a redirect's. The request path's last segment is
+ * read up to any ';', percent-decoded, and its extension -- after the last
+ * '.' -- checked; so is the extension of the matrix parameters after it. An
+ * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.mjs says
+ * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
+ * much as `.exe`.
+ */
+export function downloadGuard(request) {
+  const uri = String(request.originalUrl ?? '').split('?')[0];
+  const last = uri.slice(uri.lastIndexOf('/') + 1);
+  const at = last.indexOf(';');
+  const name = at === -1 ? last : last.slice(0, at);
+  const parameters = at === -1 ? '' : last.slice(at);
+  safeExtensions ??= new Set(
+    JSON.parse(readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')).safe
+  );
+  const trusted = (text) => {
+    let decoded = text;
+    try {
+      decoded = decodeURIComponent(text);
+    } catch {
+      // Left as it came; Tomcat has refused a malformed escape before this.
+    }
+    const dot = decoded.lastIndexOf('.');
+    if (dot === -1 || decoded.lastIndexOf('/') > dot) return true;
+    const extension = decoded.slice(dot + 1);
+    return javaTrimAll(extension) === '' || safeExtensions.has(extension.toLowerCase());
+  };
+  return !trusted(name) || !trusted(parameters);
+}
+
+/**
+ * A `Long` path variable as Spring binds it: the ConversionService's
+ * NumberUtils.parseNumber (see springInteger), then the CustomNumberEditor on
+ * the same text, which reads one with no text as null -- for a path variable,
+ * Java's 500. Otherwise the 400 names the second attempt's failure.
+ */
+export function springPathLong(text, name) {
+  try {
+    return { value: javaParseInteger(text, 64) };
+  } catch (failure) {
+    if (!(failure instanceof JavaNumberFormat)) throw failure;
+    if (javaTrimAll(text) === '')
+      return {
+        status: 500,
+        error: `Required URI template variable '${name}' for method parameter type Long is present but converted to null`,
+      };
+    return {
+      status: 400,
+      error:
+        "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Long'; " +
+        `nested exception is java.lang.NumberFormatException: ${failure.message}`,
+    };
+  }
 }
 
 /**
@@ -3095,10 +3775,35 @@ function buildId() {
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
+  const body = result.body !== undefined || Boolean(result.serialised);
+  const redirect = result.status >= 300 && result.status < 400;
+  if (body && !redirect && response.req && downloadGuard(response.req))
+    response.setHeader('Content-Disposition', 'inline;filename=f.txt');
   if (result.body === undefined && !result.serialised) response.end();
   else if (typeof result.body === 'string') response.send(result.body);
   else if (result.serialised) response.type('application/json').send(result.serialised);
   else response.type('application/json').send(javaJson(result.body));
+}
+
+/**
+ * A POST's body, as the bytes that came: not inflated (Tomcat does not
+ * inflate a request), and not refused for its type, which the handler checks
+ * as Spring does. Past 10MB the rest is read and dropped and the handler
+ * answers 413, where Java would read on; no client sends that many ids.
+ */
+function readBody(request, _response, next) {
+  const chunks = [];
+  let size = 0;
+  request.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > 10 * 1024 * 1024) request.tooLarge = true;
+    else chunks.push(chunk);
+  });
+  request.on('end', () => {
+    request.body = Buffer.concat(chunks);
+    next();
+  });
+  request.on('error', next);
 }
 
 export function app() {
@@ -3183,7 +3888,10 @@ export function app() {
     // string means the diff harness and proxy.conf.js can address an endpoint by
     // exactly what the Java service calls it.
     const idAt = endpoint.path.split('/').indexOf('{id}');
-    server.get(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), async (request, response) => {
+    const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
+    // A POST's body arrives as bytes; its handler decodes them as Java would.
+    const body = endpoint.method === 'post' ? [readBody] : [];
+    server[endpoint.method ?? 'get'](route, ...body, async (request, response) => {
       // An id that is only a matrix parameter is no id to Spring: no mapping
       // matches, and it answers its own 404.
       if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
@@ -3196,9 +3904,26 @@ export function app() {
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.
         console.error(`${endpoint.path}: ${failure.message}`);
-        response.status(500).type('text/plain').send('content service error');
+        writeResult(response, { status: 500, type: 'text/plain', body: 'content service error' });
       }
     });
+  }
+
+  // Any other method on these paths is Java's 405: nginx sends every method
+  // here, and Express's own answer was an HTML 404. After every route, so a
+  // path two templates match is answered by the one that takes the method.
+  for (const endpoint of endpoints) {
+    server.all(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), (request, response) =>
+      writeResult(
+        response,
+        javaError(
+          request,
+          405,
+          'METHOD_NOT_ALLOWED',
+          `Request method '${request.method}' not supported`
+        )
+      )
+    );
   }
 
   return server;
