@@ -112,6 +112,11 @@ module.exports = {
   // where it is written. It is matched against the path and query, as Vite
   // does; serve-prod.js reads it the same way. Same pattern as nginx's.
   '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)(\\?|$)': contentNode,
+  // One object with everything it points to, in any of Java's views
+  // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
+  // /query/enhanced|abridged/{id} are other endpoints.
+  // `ids` is Java's POST /query/ids, a batch, which node does not serve.
+  '^/ContentService/data/query/(?!ids(\\?|$))[^/?]+(\\?|$)': contentNode,
   // An object's stable id by any id Java accepts (13 bytes against 12KB for
   // the whole object), and a disease pathway's normal pathway. Only these two
   // attributes of Java's /data/query/{id}/{attributeName} are ported, so the

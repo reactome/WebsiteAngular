@@ -47,6 +47,7 @@ import {
   topSpeciesMatch,
   javaUrlDecode,
   writeResult,
+  writerFor,
   springBoolean,
   springInteger,
 } from './service.mjs';
@@ -228,6 +229,27 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe("writerFor, Java's view and identity for a request", () => {
+  const writer = (query) => writerFor({ originalUrl: `/ContentService/data/query/1${query}` });
+  // CustomMessageConverter.getObjectWriter, measured against Java 15 Oct 2026.
+  for (const [query, view, jsog] of [
+    ['', 1, false],
+    ['?view=nested', 2, false],
+    ['?view=nested-aggregated', 4, false],
+    ['?view=flatten', 1, false],
+    ['?view=NESTED', 1, false],
+    ['?view=nested&view=nested-aggregated', 2, false],
+    ['?includeRef=true', 1, true],
+    ['?includeRef=TRUE&view=nested', 2, true],
+    ['?includeRef=yes', 1, false],
+    ['?includeRef=false&includeRef=true', 1, false],
+  ]) {
+    it(`reads ${JSON.stringify(query)} as view ${view}${jsog ? ' with JSOG' : ''}`, () => {
+      expect(writer(query)).toEqual([view, { jsog }]);
+    });
+  }
 });
 
 describe('databaseObjectTsv, as ControllerUtils.toTSV writes an object', () => {
@@ -1549,6 +1571,9 @@ describe('endpointFor, which endpoint a concrete path belongs to', () => {
     );
     expect(endpointFor('/ContentService/data/query/70486/stId')?.path).toBe(
       '/ContentService/data/query/{id}/stId'
+    );
+    expect(endpointFor('/ContentService/data/query/R-HSA-70486?view=nested')?.path).toBe(
+      '/ContentService/data/query/{id}'
     );
     expect(endpointFor('/ContentService/data/query/R-HSA-6802957/normalPathway')?.path).toBe(
       '/ContentService/data/query/{id}/normalPathway'

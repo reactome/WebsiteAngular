@@ -71,6 +71,16 @@ describe('the dev server proxy', () => {
   }
 
   for (const url of [
+    '/ContentService/data/query/R-HSA-70486',
+    '/ContentService/data/query/70486?view=nested-aggregated',
+    '/ContentService/data/query/R-HSA-70486?includeRef=true',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
+  for (const url of [
     '/ContentService/data/query/R-HSA-6802957/normalPathway',
     '/ContentService/data/query/6802957/normalPathway?x=1',
   ]) {
@@ -147,8 +157,12 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/enhanced/normalPathway',
     // Java matches attribute names in any case; only the site's spelling is routed.
     '/ContentService/data/query/70486/NORMALPATHWAY',
-    '/ContentService/data/query/70486',
+    // Spring also matches a trailing slash; only the plain object is routed.
+    '/ContentService/data/query/70486/',
+    // Java's POST /query/ids (a batch of objects); node serves no POST.
+    '/ContentService/data/query/ids',
     '/ContentService/data/query/enhanced/70486',
+    '/ContentService/data/query/abridged/70486',
     '/ContentService/data/person/68285',
     '/ContentService/data/person/68285/publications',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',

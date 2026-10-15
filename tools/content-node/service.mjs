@@ -24,6 +24,14 @@ import { fileURLToPath } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 import {
+  findByIdParameters,
+  findByIdQuery,
+  mapResult,
+  rootLabelsQuery,
+  VIEW,
+  writeDomain,
+} from './domain.mjs';
+import {
   attributeTable,
   isSchemaClass,
   isSpeciesClass,
@@ -616,6 +624,48 @@ export const endpoints = [
           `Attribute: 'stId' has not been found for object: ${String(row.schemaClass)}`
         );
       return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
+    },
+  },
+  {
+    path: '/ContentService/data/query/{id}',
+    // A reaction: inputs with stoichiometry, a catalyst, preceding events.
+    sample: 'R-HSA-70486',
+    differs: [
+      // The 404 body names the service that answered; see /pathways/top/{id}.
+      /^\/ContentService\/data\/query\/[^/]+: \.url: /,
+      // JSOG numbers objects in the order it meets them, and in the nested
+      // views Java meets some properties in an order it does not keep from one
+      // start to the next (domain.mjs, writeDomain): R-HSA-5672965's inputs
+      // and outputs swap. The references still agree within each answer.
+      /^[^:]*(?=[^:]*includeRef=true)(?=[^:]*view=nested)[^:]*: \S*\.@(id|ref): /,
+    ],
+    /**
+     * One object with everything it points to: graph-core's
+     * findById(id, OUTGOING), written as Java's Jackson writes it (domain.mjs
+     * does both). The Pathway Browser's details panel and the website's detail
+     * pages read it for every object they show.
+     *
+     * Java's message converter reads two parameters on every response it
+     * writes: `view` picks the StoichiometryView (nested, nested-aggregated,
+     * or flatten for anything else) and `includeRef=true` swaps dbId
+     * references for JSOG's @id/@ref. Both are read here as the servlet reads
+     * them -- the first value, `true` in any case.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const { where, params } = resolveId(raw);
+      const [found] = await read(rootLabelsQuery(where), params);
+      if (!found) return notFound(request, `Id: ${raw} has not been found in the System`);
+      const [row] = await read(findByIdQuery(where), {
+        ...params,
+        ...findByIdParameters(found.labels),
+      });
+      if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
+      return {
+        status: 200,
+        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        type: 'application/json',
+      };
     },
   },
   {
@@ -2290,7 +2340,7 @@ export function springInteger(values, name) {
 class JavaNumberFormat extends Error {}
 
 /**
- * Character.isWhitespace in Java 11, which the service runs on: the space,
+ * Character.isWhitespace as the service's JVM has it: the space,
  * line and paragraph separators but the no-break ones, and the ASCII controls
  * \t-\r and \u001C-\u001F.
  */
@@ -2356,7 +2406,7 @@ function javaDecode(text) {
   }
 }
 
-/** Integer.parseInt(text, radix), Java 11's, per UTF-16 unit. */
+/** Integer.parseInt(text, radix), as the service's JVM has it, per UTF-16 unit. */
 function javaParseInt(text, radix) {
   const refuse = () => {
     throw new JavaNumberFormat(`For input string: "${text}"`);
@@ -2460,6 +2510,24 @@ function javaUtf8(bytes) {
     start = i + 1;
   }
   return text + decoder.decode(Uint8Array.from(bytes.slice(start)));
+}
+
+/**
+ * CustomMessageConverter.getObjectWriter: the view and identity Java writes
+ * domain objects with, from `?view=` and `?includeRef=`, as writeDomain's
+ * arguments. getParameter is the first value; Boolean.parseBoolean ignores case.
+ */
+export function writerFor(request) {
+  const [view] = queryValues(request, 'view');
+  const [includeRef] = queryValues(request, 'includeRef');
+  return [
+    view === 'nested'
+      ? VIEW.nested
+      : view === 'nested-aggregated'
+        ? VIEW.nestedAggregated
+        : VIEW.flatten,
+    { jsog: String(includeRef).toLowerCase() === 'true' },
+  ];
 }
 
 /** The values of one query parameter as the servlet reads them, in order. */

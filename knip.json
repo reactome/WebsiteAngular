@@ -15,6 +15,7 @@
     "projects/*/src/index.ts",
     "projects/website-angular/tina/config.ts",
     "tools/render/{render,service}.mjs",
+    "tools/content-node/snapshot-*.mjs",
     "tools/svg-export-harness/*.mjs"
   ],
   "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs", "tools/**/*.mjs"],
