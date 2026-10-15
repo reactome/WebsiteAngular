@@ -11,6 +11,7 @@ import {
   interactionWithEntitiesJson,
   interactorJson,
   interactorsJson,
+  pagingUnboxFails,
   springIntegerWithDefault,
 } from './service.mjs';
 
@@ -122,6 +123,44 @@ describe('customInteractionJson, graph-core’s CustomInteraction', () => {
   });
 });
 
+describe("customInteractionJson's nulls, as its Record constructor reads them", () => {
+  const row = {
+    dbId: 1,
+    score: 0.5,
+    evidenceCount: 2,
+    identifier: null,
+    databaseName: null,
+    displayName: null,
+    variantIdentifier: null,
+    geneName: null,
+    url: null,
+    evidenceURL: null,
+    speciesName: null,
+    entitiesCount: 0,
+  };
+
+  it('writes the text "null" for the columns read with asString()', () => {
+    expect(customInteractionJson(row)).toBe(
+      '{"dbId":1,"identifier":"null","score":0.5,"evidenceCount":2,"url":"null","evidenceURL":"null",' +
+        '"databaseName":"null","entitiesCount":0,"displayName":"null"}'
+    );
+  });
+
+  it('is undefined -- the service fails -- for a null asLong() or asDouble() reads', () => {
+    for (const column of ['dbId', 'score', 'evidenceCount'])
+      expect(customInteractionJson({ ...row, [column]: null }), column).toBe(undefined);
+  });
+});
+
+describe('pagingUnboxFails, where the service unboxes a null page or pageSize', () => {
+  it('unboxes page always, and pageSize only when page is not -1', () => {
+    expect(pagingUnboxFails({ page: null, pageSize: 3 })).toBe(true);
+    expect(pagingUnboxFails({ page: -1, pageSize: null })).toBe(false);
+    expect(pagingUnboxFails({ page: 2, pageSize: null })).toBe(true);
+    expect(pagingUnboxFails({ page: 2, pageSize: 3 })).toBe(false);
+  });
+});
+
 describe('interactionWithEntitiesJson', () => {
   it('sorts the entities by name, ignoring case, as String.CASE_INSENSITIVE_ORDER does', () => {
     const written = interactionWithEntitiesJson({
@@ -208,8 +247,8 @@ describe('the interactor endpoints, before any query', () => {
     ]);
   });
 
-  const post = (body, type = 'text/plain') =>
-    at('/molecules/details', {
+  const post = (body, type = 'text/plain', query = '') =>
+    at(`/molecules/details${query}`, {
       method: 'POST',
       headers: type ? { 'Content-Type': type } : {},
       body,
@@ -222,6 +261,18 @@ describe('the interactor endpoints, before any query', () => {
     expect(message).toBe(
       'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsDetailsByAccs(java.lang.Integer,java.lang.Integer,java.lang.String)'
     );
+  });
+
+  it('unboxes a null page only when there is an accession to ask about', async () => {
+    // The body is resolved before the method runs; an empty set never reaches
+    // the service. Both measured against Java.
+    const missing = await post(undefined, 'text/plain', '?page=%20');
+    expect(missing.status).toBe(422);
+    expect(await envelope(await post(',', 'text/plain', '?page=%20'))).toEqual([
+      404,
+      'NOT_FOUND',
+      ['No interactors found for accession: ,'],
+    ]);
   });
 
   it('is a 405 for a GET of the POST', async () => {

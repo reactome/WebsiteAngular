@@ -1578,6 +1578,8 @@ export const endpoints = [
       if (window.answer) return window.answer;
       const rows = await interactionsOf(request, acc, window);
       if (rows.answer) return rows.answer;
+      // getAccession().size() on an interaction with none.
+      if (rows.some((row) => row.accession === null)) return unexpected(request);
       if (rows.length === 0) return notFound(request, `No interactors found for accession: ${acc}`);
       return { status: 200, body: interactorsJson([[acc, rows]]), type: 'application/json' };
     },
@@ -1616,6 +1618,7 @@ export const endpoints = [
       for (const acc of accs.keys()) {
         const rows = await interactionsOf(request, acc, window);
         if (rows.answer) return rows.answer;
+        if (rows.some((row) => row.accession === null)) return unexpected(request);
         entities.push([acc, rows]);
       }
       if (entities.every(([, rows]) => rows.length === 0))
@@ -1638,11 +1641,9 @@ export const endpoints = [
         `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)-[ir:interactor]->(re:ReferenceEntity) WHERE t.variantIdentifier = $identifier OR (t.variantIdentifier IS NULL AND t.identifier = $identifier) OPTIONAL MATCH (pe:PhysicalEntity)-[r:referenceEntity]->(re) OPTIONAL MATCH (se:Species)<-[s:species]-(re) WITH in, re, se, pe, t ORDER BY in.score DESC RETURN DISTINCT in.dbId AS dbId, in.score AS score, SIZE(in.accession) AS evidenceCount, re.identifier AS identifier, re.databaseName AS databaseName, re.displayName AS displayName, re.variantIdentifier as variantIdentifier, re.geneName AS geneName, re.url as url, in.url AS evidenceURL,  se.displayName AS speciesName, COUNT(pe) AS entitiesCount`,
         { identifier: acc }
       );
-      return {
-        status: 200,
-        body: `[${rows.map(customInteractionJson).join(',')}]`,
-        type: 'application/json',
-      };
+      const written = rows.map(customInteractionJson);
+      if (written.includes(undefined)) return unexpected(request);
+      return { status: 200, body: `[${written.join(',')}]`, type: 'application/json' };
     },
   },
   {
@@ -1672,24 +1673,34 @@ export const endpoints = [
 
 /**
  * The `page` and `pageSize` of the static details endpoints: Integers that
- * default to -1, paging only when neither is -1. One read as null (a blank
- * value) is the service's NullPointerException: Java's generic 500.
+ * default to -1, paging only when neither is -1. A blank one is null, which
+ * the service may fail on (pagingUnboxFails).
  */
 function interactorPaging(request) {
   const page = springIntegerWithDefault(queryValues(request, 'page'), -1);
   if (page.error) return { answer: javaError(request, 400, 'BAD_REQUEST', page.error) };
   const pageSize = springIntegerWithDefault(queryValues(request, 'pageSize'), -1);
   if (pageSize.error) return { answer: javaError(request, 400, 'BAD_REQUEST', pageSize.error) };
-  if (page.value === null || pageSize.value === null)
-    return {
-      answer: javaError(
-        request,
-        500,
-        'INTERNAL_SERVER_ERROR',
-        'Something unexpected happened and the error has been reported.'
-      ),
-    };
   return { page: page.value, pageSize: pageSize.value };
+}
+
+/**
+ * Whether graph-core's getInteractions fails unboxing a null page or
+ * pageSize: it reads page first, and pageSize only when page is not -1. It
+ * runs once per accession, so a request with none never fails here.
+ */
+export function pagingUnboxFails({ page, pageSize }) {
+  return page === null || (page !== -1 && pageSize === null);
+}
+
+/** Java's answer to an exception its handler has no mapping for: a NullPointerException. */
+function unexpected(request) {
+  return javaError(
+    request,
+    500,
+    'INTERNAL_SERVER_ERROR',
+    'Something unexpected happened and the error has been reported.'
+  );
 }
 
 /**
@@ -1701,6 +1712,7 @@ function interactorPaging(request) {
  * returned as `answer`.
  */
 async function interactionsOf(request, acc, { page, pageSize }) {
+  if (pagingUnboxFails({ page, pageSize })) return { answer: unexpected(request) };
   const paged = page !== -1 && pageSize !== -1;
   try {
     return await read(
@@ -1780,20 +1792,28 @@ export function interactorsJson(entities) {
   return `{"resource":"static","entities":[${written.join(',')}]}`;
 }
 
-/** graph-core's CustomInteraction, a row of its query, in field order. */
+/**
+ * graph-core's CustomInteraction, a row of its query, in field order, as its
+ * Record constructor reads it: asString() writes a missing value as the text
+ * "null"; speciesName and variantIdentifier are asString(null); a missing
+ * geneName is an empty list. A missing dbId, score or evidenceCount fails
+ * asLong() or asDouble(): undefined, the service's failure.
+ */
 export function customInteractionJson(row) {
+  if ([row.dbId, row.score, row.evidenceCount].some((value) => value === null)) return undefined;
+  const text = (value) => value ?? 'null';
   return nonEmptyJson([
     ['dbId', row.dbId],
-    ['identifier', row.identifier],
+    ['identifier', text(row.identifier)],
     ['score', row.score, true],
     ['evidenceCount', row.evidenceCount],
-    ['url', row.url],
-    ['evidenceURL', row.evidenceURL],
+    ['url', text(row.url)],
+    ['evidenceURL', text(row.evidenceURL)],
     ['geneName', row.geneName],
-    ['databaseName', row.databaseName],
+    ['databaseName', text(row.databaseName)],
     ['entitiesCount', row.entitiesCount],
     ['speciesName', row.speciesName],
-    ['displayName', row.displayName],
+    ['displayName', text(row.displayName)],
     ['variantIdentifier', row.variantIdentifier],
   ]);
 }
