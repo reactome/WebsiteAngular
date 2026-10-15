@@ -24,6 +24,7 @@ import {
   locationsQuery,
   parseHierarchy,
   pathId,
+  timedOut,
   inDepthAttributes,
   inDepthId,
   springIntWithDefault,
@@ -233,6 +234,21 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe('a query past its time limit', () => {
+  it('is a 503 in the envelope, so the database is not held for one request', () => {
+    const failure = Object.assign(new Error('The transaction has been terminated.'), {
+      code: 'Neo.ClientError.Transaction.TransactionTimedOut',
+    });
+    const answer = timedOut(
+      { originalUrl: '/ContentService/data/event/R-HSA-162582/in-depth?maxDepth=-1' },
+      failure
+    );
+    expect(answer?.status).toBe(503);
+    expect(JSON.parse(answer.body)).toMatchObject({ code: 503, reason: 'SERVICE_UNAVAILABLE' });
+    expect(timedOut({ originalUrl: '/x' }, new Error('boom'))).toBe(undefined);
+  });
 });
 
 describe('the in-depth parameters, as the in-depth controllers read them', () => {

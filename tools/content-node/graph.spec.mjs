@@ -3,7 +3,7 @@
 // The graph connection's socket, without a database.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import net from 'node:net';
-import './graph.mjs';
+import { READ_TIMEOUT_MS } from './graph.mjs';
 
 describe('the connections graph.mjs opens', () => {
   let server;
@@ -24,5 +24,14 @@ describe('the connections graph.mjs opens', () => {
     await new Promise((resolve) => socket.on('close', resolve));
     expect(setNoDelay).toHaveBeenCalledWith(true);
     setNoDelay.mockRestore();
+  });
+});
+
+describe('the time a read may take', () => {
+  // Above the slowest query the service needs (~10s, the content tables at
+  // startup), and far below the minutes a runaway in-depth query held the
+  // shared database for on 15 Oct 2026 before it ran out of memory.
+  it('is limited, to 30 seconds', () => {
+    expect(READ_TIMEOUT_MS).toBe(30_000);
   });
 });

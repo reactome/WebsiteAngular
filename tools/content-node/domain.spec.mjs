@@ -192,6 +192,27 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
   });
 });
 
+describe('writeDomain on a deep graph', () => {
+  // Deep in-depth answers nest thousands of objects; a recursive writer ran
+  // out of stack on them (review of #472) and rebuilt every level's string.
+  it('writes 20,000 levels without running out of stack', () => {
+    const count = 20_000;
+    const events = Array.from({ length: count }, (_, at) =>
+      node(100 + at, EVENT, { displayName: `e${at}` })
+    );
+    const row = {
+      root: events[0],
+      nodes: events.slice(1),
+      relationships: events.slice(1).map((event, at) => rel('precedingEvent', 100 + at, event.id)),
+    };
+    const text = writeDomain(mapResult(row));
+    expect(text.startsWith('{"dbId":100,')).toBe(true);
+    expect(text.split('"precedingEvent"').length - 1).toBe(count - 1);
+    // Identity holds: the last event is written once, then referred to.
+    expect(JSON.parse(text).precedingEvent[0].followingEvent).toEqual([100]);
+  });
+});
+
 describe('mapNodes, a query that returns nodes alone', () => {
   const book = node(30, ['DatabaseObject', 'Publication', 'Book'], { displayName: 'b' });
   it('writes each node with its properties and no relationships', () => {

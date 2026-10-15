@@ -329,39 +329,79 @@ const empty = (value) =>
  * the nested view while the snapshot has them the other way. So in the nested
  * views a few keys can sit elsewhere than Java's answer of the day -- the same
  * data, and the same thing a Tomcat restart does -- and under JSOG the numbers
- * follow. The default (flatten) view matched Java byte for byte over 20,279
- * objects of every class.
+ * follow. Seen happen: before a Tomcat restart on 15 Oct 2026 Java wrote an
+ * EntityWithAccessionedSequence's componentOfComplexes before candidateOfSet,
+ * after it the other way. So the nested views are compared with Java as data;
+ * the default (flatten) view, which matched Java byte for byte over 20,279
+ * objects of every class, did so before that restart and after it.
  */
 export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
-  return write(value, { view, jsog, seen: new Map() });
+  // Iterative, not recursive: an in-depth answer nests thousands of objects
+  // deep, which overflowed the stack, and building each level's text to hand
+  // to the level above copied the same bytes once per level. Pieces go into
+  // one array, joined once. Work is a stack of what is still to be written,
+  // in reverse; an object is opened -- and, being an entity, marked written
+  // -- when it is taken off, so references fall exactly where they did when
+  // this recursed.
+  const out = [];
+  const seen = new Map();
+  const work = [{ value, floating: false }];
+  while (work.length) {
+    const item = work.pop();
+    if (typeof item === 'string') {
+      out.push(item);
+      continue;
+    }
+    const { value: current, floating } = item;
+    if (current instanceof Entity) {
+      if (seen.has(current)) {
+        out.push(jsog ? `{"@ref":"${seen.get(current)}"}` : number(current.fields.dbId));
+        continue;
+      }
+      seen.set(current, seen.size + 1);
+      open(out, work, current, view, jsog ? `"@id":"${seen.size}"` : undefined);
+    } else if (current instanceof Relation) {
+      open(out, work, current, view);
+    } else if (Array.isArray(current)) {
+      out.push('[');
+      work.push(']');
+      for (let at = current.length - 1; at >= 0; at -= 1) {
+        work.push({ value: current[at], floating });
+        if (at > 0) work.push(',');
+      }
+    } else {
+      out.push(scalar(current, floating));
+    }
+  }
+  return out.join('');
 }
 
-function write(value, context, floating = false) {
-  if (value instanceof Entity) {
-    const { seen, jsog } = context;
-    if (seen.has(value)) return jsog ? `{"@ref":"${seen.get(value)}"}` : number(value.fields.dbId);
-    seen.set(value, seen.size + 1);
-    return members(value, context, jsog ? `"@id":"${seen.size}"` : undefined);
+/** An object's opening, and its members queued in order (reversed onto the stack). */
+function open(out, work, target, view, first) {
+  const members = [];
+  for (const [name, source, views, floating] of SNAPSHOT().json[target.schemaClass] ?? []) {
+    if (!(views & view)) continue;
+    const value = valueOf(target, source);
+    if (empty(value)) continue;
+    members.push([name, value, floating === 'D']);
   }
-  if (value instanceof Relation) return members(value, context);
-  if (Array.isArray(value))
-    return `[${value.map((item) => write(item, context, floating)).join(',')}]`;
+  out.push('{');
+  if (first) out.push(first, members.length ? ',' : '');
+  work.push('}');
+  for (let at = members.length - 1; at >= 0; at -= 1) {
+    const [name, value, floating] = members[at];
+    work.push({ value, floating });
+    work.push(`${javaString(name)}:`);
+    if (at > 0) work.push(',');
+  }
+}
+
+function scalar(value, floating) {
   if (typeof value === 'string') return javaString(value);
   if (typeof value === 'boolean') return String(value);
   if (typeof value === 'number') return floating ? javaDouble(value) : number(value);
   if (typeof value === 'bigint') return String(value);
   throw new Error(`domain: cannot write ${typeof value}`);
-}
-
-function members(target, context, first) {
-  const parts = first ? [first] : [];
-  for (const [name, source, views, floating] of SNAPSHOT().json[target.schemaClass] ?? []) {
-    if (!(views & context.view)) continue;
-    const value = valueOf(target, source);
-    if (empty(value)) continue;
-    parts.push(`${javaString(name)}:${write(value, context, floating === 'D')}`);
-  }
-  return `{${parts.join(',')}}`;
 }
 
 /** A whole number as Java writes a Long; graph.mjs hands an unsafe one over as text. */

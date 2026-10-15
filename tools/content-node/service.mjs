@@ -2743,6 +2743,22 @@ export function springIntWithDefault(values, fallback) {
 }
 
 /**
+ * A query the database ended at graph.mjs's time limit: 503 in Java's
+ * envelope -- the request is not malformed, the service will not answer it
+ * -- or undefined for any other failure.
+ */
+export function timedOut(request, failure) {
+  if (!String(failure?.code ?? '').startsWith('Neo.ClientError.Transaction.TransactionTimedOut'))
+    return undefined;
+  return javaError(
+    request,
+    503,
+    'SERVICE_UNAVAILABLE',
+    'The query took longer than this service allows; ask for less (a smaller maxDepth, fewer attributes)'
+  );
+}
+
+/**
  * CustomMessageConverter.getObjectWriter: the view and identity Java writes
  * domain objects with, from `?view=` and `?includeRef=`, as writeDomain's
  * arguments. getParameter is the first value; Boolean.parseBoolean ignores case.
@@ -2941,6 +2957,8 @@ export function app() {
       try {
         writeResult(response, await endpoint.handler(request));
       } catch (failure) {
+        const tooLong = timedOut(request, failure);
+        if (tooLong) return writeResult(response, tooLong);
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.
         console.error(`${endpoint.path}: ${failure.message}`);
