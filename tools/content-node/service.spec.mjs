@@ -15,6 +15,7 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createHash } from 'node:crypto';
 import {
   app,
+  databaseObjectTsv,
   endpoints,
   endpointFor,
   eventProjection,
@@ -227,6 +228,35 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe('databaseObjectTsv, as ControllerUtils.toTSV writes an object', () => {
+  // Measured against Java's /data/query/R-HSA-6802957/normalPathway, 15 Oct 2026.
+  it('writes the stable id, the name and the class, tab-separated, no newline', () => {
+    expect(
+      databaseObjectTsv({
+        dbId: 5673001,
+        stId: 'R-HSA-5673001',
+        displayName: 'RAF/MAP kinase cascade',
+        schemaClass: 'Pathway',
+      })
+    ).toBe('R-HSA-5673001\tRAF/MAP kinase cascade\tPathway');
+  });
+
+  it('writes the dbId when there is no stable id, or an empty one', () => {
+    expect(
+      databaseObjectTsv({ dbId: 48887, displayName: 'Homo sapiens', schemaClass: 'Species' })
+    ).toBe('48887\tHomo sapiens\tSpecies');
+    expect(databaseObjectTsv({ dbId: 1, stId: '', displayName: 'x', schemaClass: 'Pathway' })).toBe(
+      '1\tx\tPathway'
+    );
+  });
+
+  it('writes a missing name as Java concatenates it: null', () => {
+    expect(databaseObjectTsv({ dbId: 1, stId: 'R-HSA-1', schemaClass: 'Pathway' })).toBe(
+      'R-HSA-1\tnull\tPathway'
+    );
+  });
 });
 
 describe('resolveId, as graph-core reads an id', () => {
@@ -1519,6 +1549,9 @@ describe('endpointFor, which endpoint a concrete path belongs to', () => {
     );
     expect(endpointFor('/ContentService/data/query/70486/stId')?.path).toBe(
       '/ContentService/data/query/{id}/stId'
+    );
+    expect(endpointFor('/ContentService/data/query/R-HSA-6802957/normalPathway')?.path).toBe(
+      '/ContentService/data/query/{id}/normalPathway'
     );
   });
 
