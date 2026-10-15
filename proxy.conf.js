@@ -115,8 +115,10 @@ module.exports = {
   // An object's stable id by any id Java accepts (13 bytes against 12KB for
   // the whole object), and a disease pathway's normal pathway. Only these two
   // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
-  // pattern names them.
-  '^/ContentService/data/query/[^/?]+/(stId|normalPathway)(\\?|$)': contentNode,
+  // pattern names them. `abridged` and `enhanced` are not ids: Java's more
+  // specific /query/abridged/{id} and /query/enhanced/{id} take those paths.
+  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(stId|normalPathway)(\\?|$)':
+    contentNode,
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors(\\?|$)': contentNode,

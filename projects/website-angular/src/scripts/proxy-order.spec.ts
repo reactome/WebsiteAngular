@@ -141,6 +141,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/70486/displayName',
     '/ContentService/data/query/70486/stIdVersion',
     '/ContentService/data/query/70486/normalPathways',
+    // Java's more specific /query/abridged/{id} and /query/enhanced/{id} take
+    // these, reading the attribute's name as the id.
+    '/ContentService/data/query/abridged/stId',
+    '/ContentService/data/query/enhanced/normalPathway',
     // Java matches attribute names in any case; only the site's spelling is routed.
     '/ContentService/data/query/70486/NORMALPATHWAY',
     '/ContentService/data/query/70486',
