@@ -29,6 +29,7 @@ import {
   findByIdQuery,
   inDepthQuery,
   isA,
+  javaDouble,
   JsonMap,
   mapNodes,
   oldEnhancedQuery,
@@ -1561,7 +1562,302 @@ export const endpoints = [
       };
     },
   },
+  {
+    path: '/ContentService/interactors/static/molecule/{id}/details',
+    sample: 'P04637',
+    differs: [/: \.url: /],
+    /**
+     * An accession's interactors from IntAct, as the Pathway Browser's entity
+     * popup lists them: graph-core's InteractionsRepository.getByAcc, paged
+     * when `page` and `pageSize` are both given, each interaction written as
+     * the content service's Interactor (interactorsJson).
+     */
+    handler: async (request) => {
+      const acc = pathId(rawSegment(request, 5));
+      const window = interactorPaging(request);
+      if (window.answer) return window.answer;
+      const rows = await interactionsOf(request, acc, window);
+      if (rows.answer) return rows.answer;
+      if (rows.length === 0) return notFound(request, `No interactors found for accession: ${acc}`);
+      return { status: 200, body: interactorsJson([[acc, rows]]), type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/interactors/static/molecules/details',
+    method: 'post',
+    sampleBody: 'P04637,Q00987, P38398\nXYZ',
+    differs: [/: \.url: /],
+    /**
+     * Interactors for many accessions, which the Pathway Browser asks for every
+     * protein in a diagram when the static resource is chosen: the body split
+     * and trimmed into a HashSet (its order is the answer's), each accession
+     * as the GET above, one at a time as Java asks. One with none is still an
+     * entry, with its count; none for any is a 404 naming the body as sent.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      const window = interactorPaging(request);
+      if (window.answer) return window.answer;
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of accessions');
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsDetailsByAccs(java.lang.Integer,java.lang.Integer,java.lang.String)'
+        );
+      const proteins = plainText(request.body, contentType);
+      const accs = new JavaHashMap();
+      for (const acc of plainIds(proteins)) accs.set(acc, true);
+      const entities = [];
+      for (const acc of accs.keys()) {
+        const rows = await interactionsOf(request, acc, window);
+        if (rows.answer) return rows.answer;
+        entities.push([acc, rows]);
+      }
+      if (entities.every(([, rows]) => rows.length === 0))
+        return notFound(request, `No interactors found for accession: ${proteins}`);
+      return { status: 200, body: interactorsJson(entities), type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/interactors/static/molecule/enhanced/{id}/details',
+    sample: 'P04637',
+    /**
+     * The same interactions with more about each partner, for the website's
+     * and the Pathway Browser's interactor tables: graph-core's
+     * CustomInteractionsRepository, as written, each row a CustomInteraction.
+     * None is `[]`, not a 404: the controller only refuses a null.
+     */
+    handler: async (request) => {
+      const acc = pathId(rawSegment(request, 6));
+      const rows = await read(
+        `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)-[ir:interactor]->(re:ReferenceEntity) WHERE t.variantIdentifier = $identifier OR (t.variantIdentifier IS NULL AND t.identifier = $identifier) OPTIONAL MATCH (pe:PhysicalEntity)-[r:referenceEntity]->(re) OPTIONAL MATCH (se:Species)<-[s:species]-(re) WITH in, re, se, pe, t ORDER BY in.score DESC RETURN DISTINCT in.dbId AS dbId, in.score AS score, SIZE(in.accession) AS evidenceCount, re.identifier AS identifier, re.databaseName AS databaseName, re.displayName AS displayName, re.variantIdentifier as variantIdentifier, re.geneName AS geneName, re.url as url, in.url AS evidenceURL,  se.displayName AS speciesName, COUNT(pe) AS entitiesCount`,
+        { identifier: acc }
+      );
+      return {
+        status: 200,
+        body: `[${rows.map(customInteractionJson).join(',')}]`,
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/interactors/static/molecule/{id}/withEntities',
+    sample: 'P04637',
+    differs: [/: \.url: /],
+    /**
+     * Each interaction with the Reactome entities its partner is, for the
+     * website's interactor page: the content service's own query, as written,
+     * each row an InteractionWithEntities.
+     */
+    handler: async (request) => {
+      const acc = pathId(rawSegment(request, 5));
+      const rows = await read(
+        'MATCH (s:ReferenceEntity)<-[:interactor]-(it:Interaction),       (it)-[ir:interactor]->(in:ReferenceEntity)<-[re:referenceEntity]-(pe:PhysicalEntity),       (:ReactionLikeEvent)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(pe) WHERE s.variantIdentifier = $accession OR (s.variantIdentifier IS NULL AND s.identifier = $accession) RETURN DISTINCT it.score AS score, in.identifier AS accession, in.url AS accessionURL,                 COLLECT(DISTINCT{                          dbId: pe.dbId,                          stId: pe.stId,                          displayName: pe.displayName,                          schemaClass: pe.schemaClass                 }) AS physicalEntity,                 SIZE(it.accession) AS evidences,                 it.url AS url ORDER BY score DESC, accession',
+        { accession: acc }
+      );
+      if (rows.length === 0) return notFound(request, `No interactors found for accession: ${acc}`);
+      return {
+        status: 200,
+        body: `[${rows.map(interactionWithEntitiesJson).join(',')}]`,
+        type: 'application/json',
+      };
+    },
+  },
 ];
+
+/**
+ * The `page` and `pageSize` of the static details endpoints: Integers that
+ * default to -1, paging only when neither is -1. One read as null (a blank
+ * value) is the service's NullPointerException: Java's generic 500.
+ */
+function interactorPaging(request) {
+  const page = springIntegerWithDefault(queryValues(request, 'page'), -1);
+  if (page.error) return { answer: javaError(request, 400, 'BAD_REQUEST', page.error) };
+  const pageSize = springIntegerWithDefault(queryValues(request, 'pageSize'), -1);
+  if (pageSize.error) return { answer: javaError(request, 400, 'BAD_REQUEST', pageSize.error) };
+  if (page.value === null || pageSize.value === null)
+    return {
+      answer: javaError(
+        request,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        'Something unexpected happened and the error has been reported.'
+      ),
+    };
+  return { page: page.value, pageSize: pageSize.value };
+}
+
+/**
+ * graph-core's InteractionsRepository.getByAcc, as written -- the plan, and so
+ * the order of equal scores, is the query's -- with each interaction's partner
+ * taken from its result. Every interaction has two interactors, the accession
+ * and its partner, so the partner list holds one (the accession itself for a
+ * homodimer). A negative SKIP or LIMIT is Java's 500 with Neo4j's message,
+ * returned as `answer`.
+ */
+async function interactionsOf(request, acc, { page, pageSize }) {
+  const paged = page !== -1 && pageSize !== -1;
+  try {
+    return await read(
+      `CALL {
+         MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)-[ir:interactor]->(re:ReferenceEntity) WHERE t.variantIdentifier = $acc OR (t.variantIdentifier IS NULL AND t.identifier = $acc) OPTIONAL MATCH (pe:PhysicalEntity)-[r:referenceEntity]->(re) RETURN DISTINCT in, COLLECT(DISTINCT ir) AS irs, COLLECT(DISTINCT re) AS res, COLLECT(DISTINCT r) AS rs, COLLECT(DISTINCT pe)[..20] AS pe ORDER BY in.score DESC${paged ? ' SKIP ($page - 1) * $pageSize LIMIT $pageSize' : ''}
+       }
+       RETURN in.dbId AS id, in.score AS score, in.accession AS accession, in.url AS url,
+              [x IN res | {labels: labels(x), identifier: x.identifier,
+                           variantIdentifier: x.variantIdentifier, url: x.url,
+                           geneName: x.geneName}] AS partners`,
+      { acc, ...(paged && { page: neo4j.int(page), pageSize: neo4j.int(pageSize) }) }
+    );
+  } catch (failure) {
+    const message = neo4jFailureMessage(failure);
+    if (message === undefined) throw failure;
+    return { answer: javaError(request, 500, 'INTERNAL_SERVER_ERROR', message) };
+  }
+}
+
+/**
+ * A Java object as the content service's NON_EMPTY mapper writes it: the
+ * members in order, any null, empty text or empty list left out. A `double`
+ * member is written as Java writes a Double (1.0, not 1).
+ */
+function nonEmptyJson(members) {
+  const out = [];
+  for (const [name, value, double] of members) {
+    if (value === null || value === undefined || value === '') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    const written =
+      value instanceof RawJson ? value.text : double ? javaDouble(value) : javaJson(value);
+    out.push(`${javaJson(name)}:${written}`);
+  }
+  return `{${out.join(',')}}`;
+}
+
+/** Text already written as JSON, for nonEmptyJson. */
+class RawJson {
+  constructor(text) {
+    this.text = text;
+  }
+}
+
+/**
+ * The content service's Interactor, from one interactionsOf row: the partner's
+ * variant identifier if it is an isoform with one, else its identifier; its
+ * first gene name as the alias; the evidence count, score and URLs.
+ */
+export function interactorJson(row) {
+  const [partner = {}] = row.partners;
+  const isoform = partner.labels?.includes('ReferenceIsoform');
+  const acc = isoform && partner.variantIdentifier ? partner.variantIdentifier : partner.identifier;
+  const alias = partner.labels?.includes('ReferenceSequence') ? partner.geneName?.[0] : undefined;
+  return nonEmptyJson([
+    ['acc', acc],
+    ['alias', alias],
+    ['id', row.id],
+    ['evidences', row.accession?.length],
+    ['score', row.score, true],
+    ['accURL', partner.url],
+    ['evidencesURL', row.url],
+  ]);
+}
+
+/**
+ * The content service's Interactors: `static`, and an entry for each
+ * accession -- its interactors' count, and the list, left out when empty.
+ */
+export function interactorsJson(entities) {
+  const written = entities.map(([acc, rows]) =>
+    nonEmptyJson([
+      ['acc', acc],
+      ['count', rows.length],
+      ['interactors', rows.length ? new RawJson(`[${rows.map(interactorJson).join(',')}]`) : []],
+    ])
+  );
+  return `{"resource":"static","entities":[${written.join(',')}]}`;
+}
+
+/** graph-core's CustomInteraction, a row of its query, in field order. */
+export function customInteractionJson(row) {
+  return nonEmptyJson([
+    ['dbId', row.dbId],
+    ['identifier', row.identifier],
+    ['score', row.score, true],
+    ['evidenceCount', row.evidenceCount],
+    ['url', row.url],
+    ['evidenceURL', row.evidenceURL],
+    ['geneName', row.geneName],
+    ['databaseName', row.databaseName],
+    ['entitiesCount', row.entitiesCount],
+    ['speciesName', row.speciesName],
+    ['displayName', row.displayName],
+    ['variantIdentifier', row.variantIdentifier],
+  ]);
+}
+
+/**
+ * The content service's InteractionWithEntities, a row of its query, as
+ * build() reads it -- score and evidences as 0 when missing -- with the
+ * entities sorted by name as String.CASE_INSENSITIVE_ORDER sorts (stably).
+ * Each entity is a SimpleDatabaseObject built from a map: stId asString(null),
+ * displayName and schemaClass asString(), which writes a missing one "null".
+ */
+export function interactionWithEntitiesJson(row) {
+  const entities = (row.physicalEntity ?? [])
+    .map((pe) => ({ ...pe, displayName: pe.displayName ?? 'null' }))
+    .sort((a, b) => caseInsensitive(a.displayName, b.displayName));
+  const written = entities.map((pe) =>
+    nonEmptyJson([
+      ['dbId', pe.dbId],
+      ['stId', pe.stId],
+      ['displayName', pe.displayName],
+      ['schemaClass', pe.schemaClass ?? 'null'],
+    ])
+  );
+  return nonEmptyJson([
+    ['score', row.score ?? 0, true],
+    ['accession', row.accession],
+    ['accessionURL', row.accessionURL],
+    ['physicalEntity', written.length ? new RawJson(`[${written.join(',')}]`) : []],
+    ['evidences', row.evidences ?? 0],
+    ['url', row.url],
+  ]);
+}
+
+/** case-snapshot.json, as two maps from a UTF-16 unit to its case, read on first use. */
+let javaCase;
+
+/**
+ * String.CASE_INSENSITIVE_ORDER: per UTF-16 unit, equal if their upper cases
+ * are, else ordered by the lower cases of those upper cases (so the long s, ſ,
+ * sorts as s) -- each the JVM's Character mapping
+ * (case-snapshot.json; snapshot-case.mjs says why not JavaScript's).
+ */
+function caseInsensitive(a, b) {
+  if (!javaCase) {
+    const { upper, lower } = JSON.parse(
+      readFileSync(new URL('./case-snapshot.json', import.meta.url), 'utf8')
+    );
+    const pairs = (flat) =>
+      new Map(flat.flatMap((unit, at) => (at % 2 ? [] : [[unit, flat[at + 1]]])));
+    javaCase = { upper: pairs(upper), lower: pairs(lower) };
+  }
+  const length = Math.min(a.length, b.length);
+  for (let at = 0; at < length; at += 1) {
+    const x = a.charCodeAt(at);
+    const y = b.charCodeAt(at);
+    if (x === y) continue;
+    const upperX = javaCase.upper.get(x) ?? x;
+    const upperY = javaCase.upper.get(y) ?? y;
+    const lowerX = javaCase.lower.get(upperX) ?? upperX;
+    const lowerY = javaCase.lower.get(upperY) ?? upperY;
+    if (lowerX !== lowerY) return lowerX - lowerY;
+  }
+  return a.length - b.length;
+}
 
 /**
  * getOrthologies' two HashMaps, given each id's orthologyOf: the service puts
@@ -1636,13 +1932,22 @@ function longPastRange(ids) {
  * more than twenty, the first twenty collected into a HashSet, in its order.
  */
 export function orthologyIds(body) {
-  const parts = body.split(/,|;|\n|\t/);
-  if (parts.length > 1) while (parts.length && parts.at(-1) === '') parts.pop();
-  const ids = parts.map((part) => javaTrim(part));
+  const ids = plainIds(body);
   if (ids.length <= 20) return ids;
   const set = new JavaHashMap();
   for (const id of ids.slice(0, 20)) set.set(id, true);
   return [...set.keys()];
+}
+
+/**
+ * A text/plain body of ids as the controllers split it: String.split on , ;
+ * newline or tab -- trailing empty strings dropped, as Java's split drops
+ * them -- each trimmed.
+ */
+function plainIds(body) {
+  const parts = body.split(/,|;|\n|\t/);
+  if (parts.length > 1) while (parts.length && parts.at(-1) === '') parts.pop();
+  return parts.map((part) => javaTrim(part));
 }
 
 /**
@@ -3534,6 +3839,37 @@ export function downloadGuard(request) {
     return javaTrimAll(extension) === '' || safeExtensions.has(extension.toLowerCase());
   };
   return !trusted(name) || !trusted(parameters);
+}
+
+/**
+ * An `Integer` request parameter with a default, as Spring binds it: none, or
+ * one empty value, is the default; otherwise the first value converts -- an
+ * empty one to null -- and failing that, all of them joined, which with no
+ * text is null too. A null is the caller's to answer.
+ */
+export function springIntegerWithDefault(values, fallback) {
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
+  if (values[0] === '') return { value: null };
+  const attempt = (text) => {
+    try {
+      return { value: javaParseInteger(text) };
+    } catch (failure) {
+      if (failure instanceof JavaNumberFormat) return { failure: failure.message };
+      throw failure;
+    }
+  };
+  const converted = attempt(values[0]);
+  if ('value' in converted) return converted;
+  const text = values.join(',');
+  if (javaTrimAll(text) === '') return { value: null };
+  const retried = attempt(text);
+  if ('value' in retried) return retried;
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type 'java.lang.Integer'; ` +
+      `nested exception is java.lang.NumberFormatException: ${retried.failure}`,
+  };
 }
 
 /**
