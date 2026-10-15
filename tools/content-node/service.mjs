@@ -2743,13 +2743,19 @@ export function springIntWithDefault(values, fallback) {
 }
 
 /**
- * A query the database ended at graph.mjs's time limit: 503 in Java's
- * envelope -- the request is not malformed, the service will not answer it
- * -- or undefined for any other failure.
+ * A query the database ended -- at graph.mjs's time limit, by terminating
+ * it, or at its memory limit: 503 in Java's envelope -- the request is not
+ * malformed, the service will not answer it -- or undefined for any other
+ * failure.
  */
 export function timedOut(request, failure) {
-  if (!String(failure?.code ?? '').startsWith('Neo.ClientError.Transaction.TransactionTimedOut'))
-    return undefined;
+  const code = String(failure?.code ?? '');
+  const ended =
+    code.startsWith('Neo.ClientError.Transaction.TransactionTimedOut') ||
+    code.endsWith('.Transaction.Terminated') ||
+    code === 'Neo.TransientError.General.TransactionMemoryLimit' ||
+    code === 'Neo.TransientError.General.MemoryPoolOutOfMemoryError';
+  if (!ended) return undefined;
   return javaError(
     request,
     503,
@@ -2781,6 +2787,40 @@ function queryValues(request, name) {
   const url = String(request.originalUrl ?? '');
   const at = url.indexOf('?');
   return servletParameter(at === -1 ? '' : url.slice(at + 1), name);
+}
+
+/**
+ * Spring's own 404, for a path no mapping matches: not Java's envelope but
+ * BasicErrorController's, with the time it was answered and the path as it
+ * came, matrix parameters included.
+ */
+function springNotFound(request) {
+  const path = String(request.originalUrl ?? '').split('?')[0];
+  return {
+    status: 404,
+    type: 'application/json',
+    body: javaJson({ timestamp: Date.now(), status: 404, error: 'Not Found', path }),
+  };
+}
+
+/**
+ * A failure Java answers in its own way, or undefined. A dbId past a long's
+ * range: Java's Long.parseLong throws, naming the id as it read it (trimmed,
+ * any version cut); Neo4j's toInteger refuses it the same way, which is how
+ * this sees it -- on every endpoint, whatever its id rules.
+ */
+export function failureAnswer(request, path, failure) {
+  const tooLong = timedOut(request, failure);
+  if (tooLong) return tooLong;
+  if (
+    failure?.code !== 'Neo.ClientError.Statement.TypeError' ||
+    !/is too large$/.test(failure.message)
+  )
+    return undefined;
+  const idAt = path.split('/').indexOf('{id}');
+  if (idAt < 0) return undefined;
+  const id = javaTrim(pathId(rawSegment(request, idAt))).split('.')[0];
+  return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${id}"`);
 }
 
 /**
@@ -2919,6 +2959,23 @@ export function app() {
     response.sendStatus(200);
   });
 
+  // Before any route, as Tomcat and Spring look at a path before any
+  // controller does. An encoded slash or backslash is Tomcat's 400 -- its page
+  // names the server and its version, which this does not copy -- and a
+  // doubled slash matches no mapping, which is Spring's own 404.
+  server.use('/ContentService', (request, response, next) => {
+    const path = String(request.originalUrl ?? '').split('?')[0];
+    if (/%2f|%5c/i.test(path))
+      return response
+        .status(400)
+        .type('text/html')
+        .send(
+          '<!doctype html><html lang="en"><head><title>HTTP Status 400 – Bad Request</title></head><body><h1>HTTP Status 400 – Bad Request</h1></body></html>'
+        );
+    if (path.includes('//')) return writeResult(response, springNotFound(request));
+    next();
+  });
+
   server.get('/health', async (_request, response) => {
     // The release this process is holding, which is the one thing here that can
     // be wrong without anything looking wrong. Caches live for the life of the
@@ -2953,12 +3010,17 @@ export function app() {
     // The table stores the Java path with {id}; express wants :id. Keeping one
     // string means the diff harness and proxy.conf.js can address an endpoint by
     // exactly what the Java service calls it.
+    const idAt = endpoint.path.split('/').indexOf('{id}');
     server.get(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), async (request, response) => {
+      // An id that is only a matrix parameter is no id to Spring: no mapping
+      // matches, and it answers its own 404.
+      if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
+        return writeResult(response, springNotFound(request));
       try {
         writeResult(response, await endpoint.handler(request));
       } catch (failure) {
-        const tooLong = timedOut(request, failure);
-        if (tooLong) return writeResult(response, tooLong);
+        const answer = failureAnswer(request, endpoint.path, failure);
+        if (answer) return writeResult(response, answer);
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.
         console.error(`${endpoint.path}: ${failure.message}`);
