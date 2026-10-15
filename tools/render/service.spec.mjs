@@ -12,7 +12,7 @@
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app } from './service.mjs';
+import { app, cacheKey } from './service.mjs';
 
 let base;
 let server;
@@ -44,6 +44,31 @@ describe('/health', () => {
   });
 });
 
+describe('the cache key', () => {
+  const figure = {
+    pathway: 'R-HSA-69620',
+    format: 'svg',
+    token: '',
+    scale: 2,
+    subpathways: true,
+    delay: 1000,
+    maxSize: 0,
+    dark: false,
+    select: '',
+    layout: '',
+    highlight: '',
+  };
+
+  it('tells a highlight from a select that differs only in spaces', () => {
+    // Joined with spaces these two were one key, so either figure could be
+    // served for the other.
+    expect(cacheKey({ ...figure, layout: '', highlight: 'a,b ' })).not.toBe(
+      cacheKey({ ...figure, select: ' a,b', layout: '' })
+    );
+    expect(cacheKey({ ...figure, layout: ' ' })).not.toBe(cacheKey({ ...figure, highlight: ' ' }));
+  });
+});
+
 describe('the request handler runs at all', () => {
   it('refuses an unknown parameter instead of throwing', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?bogus=1`);
@@ -63,6 +88,18 @@ describe('the request handler runs at all', () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?scale=4`);
     expect(response.status).toBe(400);
     expect((await response.json()).error).toContain('scale');
+  });
+
+  it('refuses select and highlight together, which ask for two different figures', async () => {
+    // select frames the figure on one event; highlight marks events on the whole
+    // diagram, as Java's exporter draws a selection.
+    const response = await fetch(
+      `${base}/render/R-HSA-69620.svg?select=R-HSA-69608&highlight=R-HSA-69608`
+    );
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain(
+      '"select" and "highlight" cannot be used together'
+    );
   });
 
   it('refuses a format it cannot draw', async () => {

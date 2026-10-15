@@ -50,6 +50,7 @@ function renderUrl({
   dark = false,
   select = '',
   layout = '',
+  highlight = '',
 }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
@@ -62,6 +63,9 @@ function renderUrl({
   // Frames the figure on one event -- what a reaction page wants, rather than
   // the whole diagram the reaction happens to live in.
   if (select) url.searchParams.set('select', select);
+  // Marks events on the whole diagram, framing nothing -- how Java's exporter
+  // draws a subpathway or a reaction on the diagram that holds it.
+  if (highlight) url.searchParams.set('highlight', highlight);
   // layout=reaction draws the reaction's own layout, which is the figure the
   // reaction page shows -- so its downloads are that picture rather than the
   // pathway diagram the reaction sits in.
@@ -88,6 +92,7 @@ export async function render(
     dark = false,
     select = '',
     layout = '',
+    highlight = '',
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -106,10 +111,13 @@ export async function render(
   page.on('console', onConsole);
 
   try {
-    await page.goto(renderUrl({ base, pathway, token, subpathways, dark, select, layout }), {
-      waitUntil: 'load',
-      timeout,
-    });
+    await page.goto(
+      renderUrl({ base, pathway, token, subpathways, dark, select, layout, highlight }),
+      {
+        waitUntil: 'load',
+        timeout,
+      }
+    );
 
     // The page's own signal, and its failure signal. A diagram fetches its
     // layout, its overlays and its fonts, and no fixed wait is both correct and

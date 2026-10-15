@@ -1669,7 +1669,303 @@ export const endpoints = [
       };
     },
   },
+  {
+    path: '/ContentService/exporter/diagram/{id}',
+    // The error path, which is all the diff harness can compare: the figure
+    // itself is drawn by another renderer. Never expanded over --ids, which
+    // would have Java draw a full figure for every one (a versioned id's
+    // version reads as the extension).
+    sample: 'XYZ.svg',
+    samplesOnly: true,
+    differs: [/: \.url: /],
+    /**
+     * A diagram figure, as ImageExporterController.diagramImage answers it:
+     * graph-core's DiagramService resolves the id to the diagram that draws
+     * it and the events to select there, and the drawing is the render
+     * service's (tools/render) -- the site's own renderer -- asked over
+     * loopback, the whole diagram with those events highlighted.
+     *
+     * Not routed yet (#273). Every parameter Java takes is converted as Spring
+     * converts it; any this does not draw yet is refused by name at a value
+     * other than its default, because a figure that leaves out what was asked
+     * for is a 200 no caller can detect.
+     */
+    handler: async (request) => {
+      const name = splitExportName(pathId(rawSegment(request, 4)));
+      if (!name) return springNotFound(request);
+      const asked = exporterParameters(request);
+      if (asked.answer) return asked.answer;
+      const unsupported = notDrawnYet(asked.values);
+      if (unsupported.length)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          `Not drawn by this service yet: ${unsupported.join(', ')}. Ask without them, or at their defaults.`
+        );
+
+      const refused = longPastRange([name.identifier]);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const result = await diagramResult(name.identifier);
+      if (!result)
+        return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not an event`);
+      const ext = name.ext.toLowerCase();
+      const problem = figureProblem(asked.values, ext);
+      if (problem === 'unexpected') return unexpected(request);
+      if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      const figure = diagramExportRequest(result, { ...asked.values, ext });
+      // Java selects on an illustration too; the render page does not yet.
+      if (figure.searchParams.has('highlight') && (await hasIllustration(result.diagramStId)))
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          `Not drawn by this service yet: a selection on ${result.diagramStId}'s illustration. Ask with ehld=false once that is drawn, or for the pathway itself.`
+        );
+      return renderFigure(request, figure, ext);
+    },
+  },
 ];
+
+/** The extensions ImageExporterController answers, pdf aside (its own 500). */
+const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
+
+/**
+ * What diagramImage fails on once the id is resolved, in its order, or
+ * undefined: pdf, by its own literal message; a blank quality, unboxed for
+ * the raster budget (the service's generic 500, 'unexpected'); a quality
+ * outside 1-10, which RasterArgs refuses; a blank ehld, unboxed. Then what
+ * this service does not draw: an extension Java has no check for -- its
+ * ImageIO writes nothing and it answers an empty 200; this names it -- and
+ * gif, whose renderer draws the expression animation, not a still.
+ */
+export function figureProblem(values, ext) {
+  const fail = (message) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
+  if (ext === 'pdf') return fail('Unsupported file extension pdf');
+  if (values.quality === null) return 'unexpected';
+  if (values.quality < 1 || values.quality > 10) return fail('quality must be in the range [1-10]');
+  if (values.ehld === null) return 'unexpected';
+  if (!EXPORT_FORMATS.includes(ext)) return fail(`Unsupported file extension ${ext}`);
+  if (ext === 'gif')
+    return {
+      status: 400,
+      reason: 'BAD_REQUEST',
+      message:
+        'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.',
+    };
+  return undefined;
+}
+
+/** Whether a pathway is drawn as its illustration (hasEHLD), as the render page draws it. */
+async function hasIllustration(stId) {
+  const [row] = await read('MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld', { stId });
+  return row?.ehld === true;
+}
+
+/** Where the render service listens: loopback only, never public. */
+const RENDER_SERVICE = process.env.RENDER_SERVICE_URL || 'http://127.0.0.1:4310';
+
+/**
+ * Spring's `{identifier}.{ext:.*}`: both variables are `(.*)`, the first
+ * greedy, so the extension is what follows the last dot and a versioned id
+ * keeps its version (graph-core then cuts it). No dot matches nothing.
+ */
+export function splitExportName(segment) {
+  const dot = segment.lastIndexOf('.');
+  if (dot === -1) return undefined;
+  return { identifier: segment.slice(0, dot), ext: segment.slice(dot + 1) };
+}
+
+/**
+ * diagramImage's parameters, converted in its order as Spring converts them,
+ * with their defaults: Integers and Booleans as springIntegerWithDefault and
+ * springBoolean read them, `sel` a List<String> -- one value split on commas
+ * and trimmed, several taken as they are.
+ */
+function exporterParameters(request) {
+  const values = {};
+  const integer = (name, fallback) => {
+    const read = springIntegerWithDefault(queryValues(request, name), fallback);
+    if (read.error) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    values[name] = read.value;
+    return undefined;
+  };
+  // Absent or a single empty value is the default; a blank one converts to
+  // null, which the controller then passes on as it is.
+  const boolean = (name, fallback) => {
+    const given = queryValues(request, name);
+    if (given.length === 0 || (given.length === 1 && given[0] === '')) {
+      values[name] = fallback;
+      return undefined;
+    }
+    const read = springBoolean(given);
+    if (read.error) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    values[name] = read.value ?? null;
+    return undefined;
+  };
+  // A String: repeated values arrive joined by ',', as Spring joins a String[].
+  const text = (name, fallback) => {
+    const given = queryValues(request, name);
+    values[name] =
+      given.length > 1
+        ? given.join(',')
+        : given[0] === undefined || given[0] === ''
+          ? fallback
+          : given[0];
+  };
+  const answer =
+    integer('quality', 5) ||
+    (text('flg', null), undefined) ||
+    boolean('flgInteractors', true) ||
+    (() => {
+      const given = queryValues(request, 'sel');
+      values.sel =
+        given.length === 1
+          ? given[0].split(',').map((part) => part.trim())
+          : given.filter((value) => value !== '');
+      values.sel = values.sel.filter((value) => value !== '');
+      return undefined;
+    })() ||
+    boolean('title', true) ||
+    integer('margin', 15) ||
+    boolean('ehld', true) ||
+    (text('diagramProfile', 'Modern'), undefined) ||
+    (text('token', null), undefined) ||
+    (text('resource', 'TOTAL'), undefined) ||
+    (text('analysisProfile', 'Standard'), undefined) ||
+    integer('expColumn', null);
+  return answer ? { answer } : { values };
+}
+
+/**
+ * The parameters given at something other than their default that the render
+ * service does not draw yet (#273, step 4), as `name=value`.
+ */
+function notDrawnYet(values) {
+  const defaults = {
+    quality: 5,
+    flgInteractors: true,
+    title: true,
+    margin: 15,
+    ehld: true,
+    diagramProfile: 'Modern',
+    resource: 'TOTAL',
+    analysisProfile: 'Standard',
+  };
+  // Left for after the resolution, where Java fails on them (figureProblem):
+  // a quality outside 1-10, and a blank quality or ehld.
+  const later = (name) =>
+    (name === 'quality' &&
+      (values.quality === null || values.quality < 1 || values.quality > 10)) ||
+    (name === 'ehld' && values.ehld === null) ||
+    // RasterArgs.setMargin(null) keeps its 15: a blank margin is the default.
+    (name === 'margin' && values.margin === null);
+  const named = Object.entries(defaults)
+    .filter(([name, fallback]) => !later(name) && values[name] !== fallback)
+    .map(([name]) => `${name}=${values[name] ?? ''}`);
+  // Opt-in: anything given is something not drawn.
+  for (const name of ['flg', 'expColumn'])
+    if (values[name] !== null && values[name] !== undefined) named.push(`${name}=${values[name]}`);
+  return named;
+}
+
+/**
+ * graph-core's DiagramRepository.getDiagramResult, as DiagramService picks
+ * it: by stable id or by dbId as getIdentifier reads the id (REACT_ ids
+ * translated), else none. The diagram that draws the event, and the events
+ * to select there: none for a pathway with a diagram of its own, a
+ * subpathway's reactions, or the reaction itself.
+ */
+async function diagramResult(raw) {
+  const id = inDepthId(raw);
+  if (!id) return undefined;
+  let { idType, id: value } = id;
+  if (idType === 'oldStId') {
+    const [old] = await read(
+      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+      { id: value }
+    );
+    value = old?.stId ?? value;
+    idType = 'stId';
+  }
+  const rows = await read(
+    idType === 'dbId' ? DIAGRAM_RESULT_BY_DBID : DIAGRAM_RESULT_BY_STID,
+    idType === 'dbId' ? { dbId: neo4j.int(value) } : { stId: value }
+  );
+  return rows[0];
+}
+
+const DIAGRAM_RESULT_BY_STID =
+  'MATCH (d:Pathway{stId:$stId, hasDiagram:true}) RETURN d.stId AS diagramStId, [] AS events, d.diagramWidth AS width, d.diagramHeight AS height, 1 AS level UNION MATCH path=(d:Pathway{hasDiagram:true})-[:hasEvent*1..100]->(s:Pathway{stId:$stId, hasDiagram:false}) WHERE single(x IN nodes(path) WHERE (x:Pathway) AND x.hasDiagram) OPTIONAL MATCH aux=(s)-[:hasEvent*1..100]->(rle:ReactionLikeEvent) WHERE none(x IN nodes(aux) WHERE (x:Pathway) AND x.hasDiagram) WITH DISTINCT d, s, collect(DISTINCT rle.stId) AS events OPTIONAL MATCH depth=shortestPath((tlp:TopLevelPathway)-[:hasEvent*1..100]->(d)) WHERE NOT (d:TopLevelPathway) RETURN d.stId AS diagramStId, events, d.diagramWidth AS width, d.diagramHeight AS height, size(nodes(depth)) AS level ORDER BY level LIMIT 1 UNION MATCH path=(d:Pathway{hasDiagram:true})-[:hasEvent*1..100]->(r:ReactionLikeEvent{stId:$stId}) WHERE single(x IN nodes(path) WHERE (x:Pathway) AND x.hasDiagram) WITH DISTINCT d, r OPTIONAL MATCH depth=shortestPath((tlp:TopLevelPathway)-[:hasEvent*1..100]->(d)) WHERE NOT (d:TopLevelPathway) RETURN d.stId AS diagramStId, [r.stId] AS events, d.diagramWidth AS width, d.diagramHeight AS height, size(nodes(depth)) AS level ORDER BY level LIMIT 1';
+
+const DIAGRAM_RESULT_BY_DBID =
+  'MATCH (d:Pathway{dbId:$dbId, hasDiagram:true}) RETURN d.stId AS diagramStId, [] AS events, d.diagramWidth AS width, d.diagramHeight AS height, 1 AS level UNION MATCH path=(d:Pathway{hasDiagram:true})-[:hasEvent*]->(s:Pathway{dbId:$dbId, hasDiagram:false}) WHERE single(x IN nodes(path) WHERE (x:Pathway) AND x.hasDiagram) OPTIONAL MATCH aux=(s)-[:hasEvent*]->(rle:ReactionLikeEvent) WHERE none(x IN nodes(aux) WHERE (x:Pathway) AND x.hasDiagram) WITH DISTINCT d, s, collect(DISTINCT rle.stId) AS events OPTIONAL MATCH depth=shortestPath((tlp:TopLevelPathway)-[:hasEvent*]->(d)) WHERE NOT (d:TopLevelPathway) RETURN d.stId AS diagramStId, events, d.diagramWidth AS width, d.diagramHeight AS height, size(nodes(depth)) AS level ORDER BY level LIMIT 1 UNION MATCH path=(d:Pathway{hasDiagram:true})-[:hasEvent*]->(r:ReactionLikeEvent{dbId:$dbId}) WHERE single(x IN nodes(path) WHERE (x:Pathway) AND x.hasDiagram) WITH DISTINCT d, r OPTIONAL MATCH depth=shortestPath((tlp:TopLevelPathway)-[:hasEvent*]->(d)) WHERE NOT (d:TopLevelPathway) RETURN d.stId AS diagramStId, [r.stId] AS events, d.diagramWidth AS width, d.diagramHeight AS height, size(nodes(depth)) AS level ORDER BY level LIMIT 1';
+
+/**
+ * The render service's request for a resolved figure: the diagram that draws
+ * it, with Java's selection -- the resolved events, then `sel` -- as
+ * `highlight`, which marks them on the whole diagram and frames nothing, as
+ * Java draws a selection. jpg is jpeg to the render service.
+ */
+export function diagramExportRequest(result, { ext, sel, token }) {
+  const format = ext === 'jpg' ? 'jpeg' : ext;
+  const url = new URL(`${RENDER_SERVICE}/render/${result.diagramStId}.${format}`);
+  const highlight = [...(result.events ?? []), ...(sel ?? [])];
+  if (highlight.length) url.searchParams.set('highlight', highlight.join(','));
+  if (token) url.searchParams.set('token', token);
+  return url;
+}
+
+/** The content type Java sends with each format. */
+// UTF-8 on every type, images included: the service forces the encoding.
+const FIGURE_TYPE = {
+  svg: 'image/svg+xml;charset=UTF-8',
+  png: 'image/png;charset=UTF-8',
+  jpg: 'image/jpg;charset=UTF-8',
+  jpeg: 'image/jpeg;charset=UTF-8',
+};
+
+/**
+ * Ask the render service for a figure and pass its bytes on. Its 503 -- a
+ * full queue -- is passed on with its Retry-After; any other failure is a 500
+ * naming it, and a render service that cannot be reached is a 503.
+ */
+async function renderFigure(request, url, ext) {
+  let response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
+  } catch (failure) {
+    const late = failure?.name === 'TimeoutError';
+    return javaError(
+      request,
+      503,
+      'SERVICE_UNAVAILABLE',
+      late ? 'The figure took too long to draw' : 'The figure service cannot be reached'
+    );
+  }
+  if (response.status === 503)
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Too many figures are being drawn; try again shortly'
+      ),
+      headers: { 'Retry-After': response.headers.get('retry-after') ?? '5' },
+    };
+  if (!response.ok) {
+    const reason = await response
+      .json()
+      .then((body) => body.error)
+      .catch(() => `the figure service answered ${response.status}`);
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', reason);
+  }
+  return {
+    status: 200,
+    body: Buffer.from(await response.arrayBuffer()),
+    type: FIGURE_TYPE[ext],
+  };
+}
 
 /**
  * The `page` and `pageSize` of the static details endpoints: Integers that
@@ -4131,12 +4427,15 @@ function buildId() {
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
+  for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
   const body = result.body !== undefined || Boolean(result.serialised);
   const redirect = result.status >= 300 && result.status < 400;
   if (body && !redirect && response.req && downloadGuard(response.req))
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');
   if (result.body === undefined && !result.serialised) response.end();
   else if (typeof result.body === 'string') response.send(result.body);
+  // A figure's bytes, under the type the handler set.
+  else if (Buffer.isBuffer(result.body)) response.end(result.body);
   else if (result.serialised) response.type('application/json').send(result.serialised);
   else response.type('application/json').send(javaJson(result.body));
 }

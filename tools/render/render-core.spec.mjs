@@ -28,6 +28,14 @@ describe('the render page address', () => {
     expect(url.searchParams.get('layout')).toBe('reaction');
   });
 
+  it('passes the events to highlight, as one comma-separated list', async () => {
+    // Java's exporter draws a subpathway as its parent's diagram with the
+    // subpathway's reactions selected: sixteen of them for one.
+    const url = await addressFor({ highlight: 'R-HSA-69608,R-HSA-69600' });
+    expect(url.searchParams.get('highlight')).toBe('R-HSA-69608,R-HSA-69600');
+    expect(url.searchParams.has('select')).toBe(false);
+  });
+
   it('draws the diagram when no layout is asked for', async () => {
     const url = await addressFor({});
     expect(url.searchParams.has('layout')).toBe(false);

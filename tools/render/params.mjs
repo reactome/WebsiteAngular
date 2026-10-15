@@ -29,6 +29,7 @@
 export const ACCEPTED = [
   'layout',
   'select',
+  'highlight',
   'scale',
   'subpathways',
   'dark',

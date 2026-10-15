@@ -21,6 +21,7 @@
  *   --dark      render the dark theme (light by default, whatever the host prefers)
  *   --select    frame the figure on one event, e.g. a reaction's stable id
  *   --layout    reaction, to draw a reaction's own layout rather than a diagram
+ *   --highlight comma-separated events to mark on the whole diagram, nothing framed
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX is drawn as shapes, one per
@@ -57,11 +58,19 @@ const KNOWN = [
   'dark',
   'select',
   'layout',
+  'highlight',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
   console.error(`unknown flag${unknown.length > 1 ? 's' : ''} ${unknown.join(', ')}`);
   console.error(`known flags: ${KNOWN.map((name) => '--' + name).join(', ')}`);
+  process.exit(2);
+}
+
+// Two different figures: one framed on an event, one marking events on the
+// whole diagram. The service refuses both together; so does this.
+if (flag('select', '') && flag('highlight', '')) {
+  console.error('--select and --highlight cannot be used together');
   process.exit(2);
 }
 
@@ -94,6 +103,7 @@ try {
     dark: args.includes('--dark'),
     select: flag('select', ''),
     layout: flag('layout', ''),
+    highlight: flag('highlight', ''),
   });
 
   await writeFile(out, bytes);
