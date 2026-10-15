@@ -1,3 +1,6 @@
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { describe, expect, it } from 'vitest';
 
 import { EntityService } from '../../../../../../pathway-browser/src/app/services/entity.service';
@@ -20,5 +23,27 @@ describe('DetailEntityService, standing in for EntityService', () => {
   it('has every method EntityService has', () => {
     const own = new Set(methods(DetailEntityService));
     expect(methods(EntityService).filter((name) => !own.has(name))).toEqual([]);
+  });
+});
+
+describe('DetailEntityService.getParticipatingPathways', () => {
+  // A content page's species is always human; an object's pathways are its own
+  // species' anyway. Filtered by human, a mouse entity's ten pathways were a
+  // 404, and "Other Pathways" vanished from its page.
+  it('asks for the pathways without a species', () => {
+    TestBed.configureTestingModule({
+      providers: [DetailEntityService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(DetailEntityService);
+    const http = TestBed.inject(HttpTestingController);
+    let answer: unknown;
+    service.getParticipatingPathways('R-MMU-2562550').subscribe((value) => (answer = value));
+    const request = http.expectOne((r) =>
+      r.url.endsWith('/data/pathways/low/entity/R-MMU-2562550')
+    );
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush([{ stId: 'R-MMU-1' }]);
+    expect(answer).toEqual([{ stId: 'R-MMU-1' }]);
+    http.verify();
   });
 });
