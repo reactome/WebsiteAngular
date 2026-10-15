@@ -71,6 +71,16 @@ describe('the dev server proxy', () => {
   }
 
   for (const url of [
+    '/ContentService/data/entity/R-HSA-109796/in-depth',
+    '/ContentService/data/entity/109796/in-depth?includeRef=true&view=nested-aggregated',
+    '/ContentService/data/event/R-HSA-69620/in-depth?maxDepth=2',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
+  for (const url of [
     '/ContentService/data/person/68285',
     '/ContentService/data/person/0000-0002-3218-5631?view=nested',
     '/ContentService/data/person/68285/publications',
@@ -186,8 +196,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/database/info',
     // Only the participants and their reference entities are ported.
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
-    // Only the other forms of an entity are ported.
-    '/ContentService/data/entity/R-HSA-199420/in-depth',
+    // Only the other forms and in-depth of an entity are ported.
     '/ContentService/data/entity/R-HSA-199420/componentOf',
     // Only the locations are ported, not their neighbours under /detail.
     '/ContentService/data/detail/R-HSA-199420/getReverseGraph',

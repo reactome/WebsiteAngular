@@ -102,7 +102,15 @@ const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * `order` -- every related node's id, kept or not (findByIdQuery) -- is the
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
-export function mapResult({ root, nodes, relationships, order }) {
+export function mapResult({ root, nodes, relationships: returned, order }) {
+  // A relationship returned twice -- on two paths, in-depth -- is one
+  // relationship to SDN: kept where it first appears.
+  const seenRelationships = new Set();
+  const relationships = returned.filter(
+    (relationship) =>
+      relationship.id === undefined ||
+      (!seenRelationships.has(relationship.id) && seenRelationships.add(relationship.id))
+  );
   const entities = new Map();
   const rootClass = schemaClassOf(root.labels);
   entities.set(root.id, new Entity(root.id, rootClass, root.props));
@@ -421,6 +429,33 @@ export function findByIdQuery(
 /** The labels of the object findByIdQuery will load, to pick its parameters by. */
 export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
   return `MATCH (${anchor}) WHERE ${where} RETURN labels(n) AS labels LIMIT 1`;
+}
+
+/**
+ * graph-core's getPhysicalEntityInDepth / getEventInDepth: the root, every
+ * path below it along `follow` up to `maxDepth` steps, and from each node on a
+ * path its `attributes` relationships -- as Java's MATCH, so a root with no
+ * such path is no result at all. `attributes` must already be checked to be
+ * relationship type names (inDepthAttributes); Java writes it into the query
+ * text as it comes, and so does this, which is why it is checked.
+ *
+ * The lists come back as Java collects them, a list per row, flattened here
+ * in order; a relationship on several paths is deduplicated by mapResult.
+ */
+export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
+  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r) =>
+    `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
+  return `MATCH (root:DatabaseObject) WHERE root.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'} AND root:${label}
+     MATCH path=(root)-[:${follow}*1..${maxDepth}]->(:${label})
+     WITH root, nodes(path) AS nodesPath, relationships(path) AS rels
+     UNWIND nodesPath AS nodePath
+     OPTIONAL MATCH p2=(nodePath)-[:${attributes}]->(attributes)
+     WITH root, collect(nodesPath) + collect(nodes(p2)) AS nodeLists,
+          collect(rels) + collect(relationships(p2)) AS relationshipLists
+     RETURN ${node('root')} AS root,
+            [list IN nodeLists | [n IN list | ${node('n')}]] AS nodeLists,
+            [list IN relationshipLists | [r IN list | ${rel('r')}]] AS relationshipLists`;
 }
 
 /**

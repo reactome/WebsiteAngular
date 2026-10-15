@@ -80,6 +80,24 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
     expect(json.output.map((entry) => entry.dbId ?? entry)).toEqual([4, 3]);
   });
 
+  it('counts a relationship returned twice once, as SDN does', () => {
+    // On two paths, in-depth returns the same relationship twice. `species`
+    // is a List, so a second copy would be a second species.
+    const species = node(9, ['DatabaseObject', 'Taxon', 'Species'], {
+      displayName: 'Homo sapiens',
+    });
+    const row = {
+      ...reaction,
+      nodes: [...reaction.nodes, species, species],
+      relationships: [
+        ...reaction.relationships,
+        { ...rel('species', 1, 9), id: 77 },
+        { ...rel('species', 1, 9), id: 77 },
+      ],
+    };
+    expect(write(row).species).toEqual([expect.objectContaining({ dbId: 9 })]);
+  });
+
   it('gives a related object the fields that point back at the root, by stoichiometry too', () => {
     // As Java writes reaction 9834076's: an input of two is consumed by it twice.
     expect(write(reaction).input[0].consumedByEvent).toEqual([1, 1]);
