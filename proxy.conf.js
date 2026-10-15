@@ -102,9 +102,12 @@ module.exports = {
       },
     ])
   ),
+  // A person, and the publications they authored. Not the other attributes
+  // under /person/{id}/, which Java serves.
+  '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,
   // The person page's four lists. A pattern rather than a prefix: these take an
-  // id in the middle, and `/ContentService/data/person` would also claim
-  // `/data/person/{id}` and `/publications`, which node does not serve.
+  // id in the middle, and `/ContentService/data/person` would also claim the
+  // other attributes under /person/{id}/, which node does not serve.
   //
   // A `^` regex, not a glob. The dev server moves every glob key to the end of
   // the table, after the general /ContentService rule, and the first match
