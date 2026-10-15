@@ -780,10 +780,8 @@ export const endpoints = [
      * As Java: `maxDepth` (default 1) of 0 means 1 and below 0 means no limit;
      * `attributes` (default species,compartment) is split on commas, trailing
      * empties dropped, and an empty list means species. An id is read as
-     * graph-core's getIdentifier reads it -- trimmed, a version cut unless it
-     * has a ':' -- and is a stable id if it starts with R or has a ':', else a
-     * dbId if numeric. A REACT_ id is therefore looked up as a stable id, and
-     * not found. With no path below it there is no answer at all: an entity
+     * graph-core's getIdentifier reads it (inDepthId). With no path below it
+     * there is no answer at all: an entity
      * is Java's empty 200, an event its 404.
      */
     handler: async (request) => {
@@ -2691,12 +2689,16 @@ export function personWhere(id, { email = false } = {}) {
 /**
  * graph-core's DatabaseObjectUtils.getIdentifier then isStId / isDbId, as the
  * in-depth services read an id: trimmed, a version cut unless the id has a
- * ':', then a stable id if it starts with R or has a ':', else a dbId if
- * numeric (any script's digits), else nothing.
+ * ':', a pre-2016 REACT_ id translated to the object it was, then a stable id
+ * if it starts with R or has a ':', else a dbId if numeric (any script's
+ * digits), else nothing.
  */
 export function inDepthId(raw) {
   const trimmed = javaTrim(raw);
   const id = trimmed.includes(':') ? trimmed : trimmed.split('.')[0];
+  // getIdentifier swaps an old REACT_ id for the stable id it became: the
+  // object whose oldStId it is.
+  if (id.startsWith('REACT_')) return { idType: 'oldStId', id };
   if (id.startsWith('R') || id.includes(':')) return { idType: 'stId', id };
   if (javaNumeric(id)) return { idType: 'dbId', id: asciiDigits(id) };
   return undefined;

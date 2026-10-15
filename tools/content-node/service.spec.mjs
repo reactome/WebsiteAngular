@@ -266,8 +266,8 @@ describe('the in-depth parameters, as the in-depth controllers read them', () =>
     expect(inDepthId('R-HSA-109796.2')).toEqual({ idType: 'stId', id: 'R-HSA-109796' });
     expect(inDepthId(' 109796 ')).toEqual({ idType: 'dbId', id: '109796' });
     expect(inDepthId('UniProt:P01112.2')).toEqual({ idType: 'stId', id: 'UniProt:P01112.2' });
-    // A REACT_ id starts with R: looked up as a stable id, and not found.
-    expect(inDepthId('REACT_1081')).toEqual({ idType: 'stId', id: 'REACT_1081' });
+    // getIdentifier translates a pre-2016 REACT_ id to the stable id it became.
+    expect(inDepthId('REACT_6542.3')).toEqual({ idType: 'oldStId', id: 'REACT_6542' });
     expect(inDepthId('foo')).toBeUndefined();
   });
 });
