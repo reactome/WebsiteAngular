@@ -80,6 +80,27 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
     expect(json.output.map((entry) => entry.dbId ?? entry)).toEqual([4, 3]);
   });
 
+  it('puts the root among the candidates where it first appears, else last, as SDN does', () => {
+    // A regulation whose reaction is also regulated by another: the root is a
+    // candidate for the reaction's regulatedBy alongside the other one.
+    const regulation = ['DatabaseObject', 'Regulation', 'PositiveRegulation'];
+    const make = (nodes) => ({
+      root: node(50, regulation, { displayName: 'root' }),
+      nodes,
+      relationships: [rel('regulatedBy', 51, 50), rel('regulatedBy', 51, 52)],
+    });
+    const reaction = node(51, EVENT, { displayName: 'reaction' });
+    const other = node(52, regulation, { displayName: 'other' });
+    const order = (row) =>
+      write(row).regulatedEntity[0].regulatedBy.map((entry) => entry.dbId ?? entry);
+    // Not in any list: last.
+    expect(order(make([reaction, other]))).toEqual([52, 50]);
+    // In a list before the other: there.
+    expect(order(make([reaction, node(50, regulation, { displayName: 'root' }), other]))).toEqual([
+      50, 52,
+    ]);
+  });
+
   it('counts a relationship returned twice once, as SDN does', () => {
     // On two paths, in-depth returns the same relationship twice. `species`
     // is a List, so a second copy would be a second species.

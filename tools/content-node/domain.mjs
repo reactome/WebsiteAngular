@@ -131,9 +131,13 @@ export function mapResult({ root, nodes, relationships: returned, order }) {
   for (const node of byId.values())
     if (!entities.has(node.id))
       entities.set(node.id, new Entity(node.id, schemaClassOf(node.labels), node.props));
-  // The order SDN visits related nodes in: first appearance in the result.
+  // The order SDN visits related nodes in: first appearance in the result,
+  // as its extractNodes builds it -- the nodes of list columns first, then
+  // single-node columns. So the root sits where it first appears in a list,
+  // and only otherwise last: Java lists a regulation that is its own
+  // reaction's regulator third among that reaction's four, not first.
   const position = new Map();
-  for (const id of [root.id, ...(order ?? nodes.filter(Boolean).map((node) => node.id))])
+  for (const id of [...(order ?? nodes.filter(Boolean).map((node) => node.id)), root.id])
     if (!position.has(id)) position.set(id, position.size);
   // Each relationship under both of its ends, so a field finds its own at once.
   const byEnd = new Map();
@@ -209,7 +213,8 @@ function fill(entity, entities, byEnd, position) {
 
 /** The field's collection as SDN creates it: ArrayList, LinkedHashSet, TreeSet. */
 function collect(found, collection, relationClass) {
-  if (collection === '') return found.length ? found[found.length - 1] : undefined;
+  // A single value is the first found (createInstanceOfRelationships: value.get(0)).
+  if (collection === '') return found.length ? found[0] : undefined;
   if (collection === 'List') return found;
   // Has.equals compares elements; DatabaseObject.equals, the node.
   const key = relationClass ? (item) => item.element : (item) => item;
@@ -509,6 +514,30 @@ export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
      RETURN ${node('root')} AS root,
             [n IN nodes | ${node('n')}] AS nodes,
             [r IN relationships | ${rel('r')}] AS relationships`;
+}
+
+/**
+ * graph-core's findOldEnhancedObjectById: the object, everything it is
+ * related to (outgoing only, or both ways), those objects' species, and their
+ * regulations, physical entities, references and markers one step further.
+ *
+ * Java collects every row's nodes, repeats and all, which for a busy object
+ * is the same nodes many times over. Only the order of first appearance
+ * matters to the mapping (fill), and collecting each list DISTINCT keeps that
+ * order: a node first appears where it first appears in its first list.
+ */
+export function oldEnhancedQuery({ idType, outgoingOnly }) {
+  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r) =>
+    `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
+  return `MATCH (n:DatabaseObject) WHERE n.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'}
+     OPTIONAL MATCH (n)-[r1]-${outgoingOnly ? '>' : ''}(m)
+     OPTIONAL MATCH (m)-[r2:species]->(s)
+     OPTIONAL MATCH (m)-[r3:regulator|regulatedBy|physicalEntity|crossReference|referenceGene|literatureReference|marker]-(o)
+     WITH n, collect(DISTINCT m) AS ms, collect(DISTINCT s) AS ss, collect(DISTINCT o) AS os,
+          collect(DISTINCT r1) + collect(DISTINCT r2) + collect(DISTINCT r3) AS rs
+     RETURN ${node('n')} AS root, [x IN ms + ss + os | ${node('x')}] AS nodes,
+            [r IN rs | ${rel('r')}] AS relationships`;
 }
 
 /**

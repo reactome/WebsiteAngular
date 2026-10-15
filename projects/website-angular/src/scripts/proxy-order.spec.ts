@@ -71,6 +71,18 @@ describe('the dev server proxy', () => {
   }
 
   for (const url of [
+    '/ContentService/data/query/enhanced/R-HSA-70486',
+    '/ContentService/data/query/enhanced/70486?includeRef=true',
+    // Java's /query/enhanced/{id} with the id `normalPathway`, not
+    // /query/{id}/normalPathway with the id `enhanced`.
+    '/ContentService/data/query/enhanced/normalPathway',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
+  for (const url of [
     '/ContentService/data/entity/R-HSA-109796/in-depth',
     '/ContentService/data/entity/109796/in-depth?includeRef=true&view=nested-aggregated',
     '/ContentService/data/event/R-HSA-69620/in-depth?maxDepth=2',
@@ -171,17 +183,17 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/70486/displayName',
     '/ContentService/data/query/70486/stIdVersion',
     '/ContentService/data/query/70486/normalPathways',
-    // Java's more specific /query/abridged/{id} and /query/enhanced/{id} take
-    // these, reading the attribute's name as the id.
+    // Java's more specific /query/abridged/{id} takes this, reading the
+    // attribute's name as the id. (/query/enhanced/{id} does the same, and
+    // is node's now: see above.)
     '/ContentService/data/query/abridged/stId',
-    '/ContentService/data/query/enhanced/normalPathway',
     // Java matches attribute names in any case; only the site's spelling is routed.
     '/ContentService/data/query/70486/NORMALPATHWAY',
     // Spring also matches a trailing slash; only the plain object is routed.
     '/ContentService/data/query/70486/',
     // Java's POST /query/ids (a batch of objects); node serves no POST.
     '/ContentService/data/query/ids',
-    '/ContentService/data/query/enhanced/70486',
+    '/ContentService/data/query/enhanced/v2/70486',
     '/ContentService/data/query/abridged/70486',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
     // Only the ancestors of an event are ported.
