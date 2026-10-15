@@ -102,8 +102,10 @@ module.exports = {
       },
     ])
   ),
-  // An object with its neighbours and some of theirs (the older enhanced
-  // query). Not /enhanced/v2/, which Java still serves.
+  // An object with everything around it, for the details panel and the
+  // website's detail pages; a reference entity as a summary of its entities.
+  '^/ContentService/data/query/enhanced/v2/[^/?]+(\\?|$)': contentNode,
+  // An object with its neighbours and some of theirs (the older enhanced query).
   '^/ContentService/data/query/enhanced/[^/?]+(\\?|$)': contentNode,
   // An entity or an event and everything below it, for the object tree.
   '^/ContentService/data/(entity|event)/[^/?]+/in-depth(\\?|$)': contentNode,

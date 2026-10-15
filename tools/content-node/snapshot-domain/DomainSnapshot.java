@@ -50,7 +50,20 @@ public class DomainSnapshot {
 
     public static void main(String[] args) throws Exception {
         List<Class<?>> classes = new ArrayList<>();
-        for (String name : args) classes.add(Class.forName(name));
+        // Classes after "--serialised-only" are written but never mapped: the
+        // content service's own (SummaryEntity), built in code from mapped ones.
+        // Kept out of SDN's mapping context, which they would join and reorder.
+        Set<Class<?>> serialisedOnly = new LinkedHashSet<>();
+        boolean only = false;
+        for (String name : args) {
+            if (name.equals("--serialised-only")) {
+                only = true;
+                continue;
+            }
+            Class<?> type = Class.forName(name);
+            classes.add(type);
+            if (only) serialisedOnly.add(type);
+        }
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
@@ -63,7 +76,8 @@ public class DomainSnapshot {
         Neo4jMappingContext context = new Neo4jMappingContext();
         // Has.Default is only serialized: it is built in code, never mapped.
         Set<Class<?>> mapped = new LinkedHashSet<>();
-        for (Class<?> type : classes) if (!type.isMemberClass()) mapped.add(type);
+        for (Class<?> type : classes)
+            if (!type.isMemberClass() && !serialisedOnly.contains(type)) mapped.add(type);
         context.setInitialEntitySet(mapped);
         context.initialize();
 

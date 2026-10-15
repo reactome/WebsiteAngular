@@ -30,6 +30,7 @@ import {
   inDepthAttributes,
   inDepthId,
   springIntWithDefault,
+  springPrimitiveBoolean,
   personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
@@ -389,6 +390,24 @@ describe("needsIncoming, QueryObjectController's needsIncomingRelationship", () 
     expect(await needsIncoming(' 70486')).toBe(false);
     expect(await needsIncoming('foo')).toBe(false);
     expect(await needsIncoming('99999999999999999999')).toBe(false);
+  });
+});
+
+describe('springPrimitiveBoolean, a boolean with a default as Spring reads it', () => {
+  // Measured against Java's /query/enhanced/v2, 15 Oct 2026.
+  it('takes the default for absent or empty, and reads the words Spring knows', () => {
+    expect(springPrimitiveBoolean([], true)).toEqual({ value: true });
+    expect(springPrimitiveBoolean([''], false)).toEqual({ value: false });
+    expect(springPrimitiveBoolean(['TRUE'], false)).toEqual({ value: true });
+    expect(springPrimitiveBoolean(['off'], true)).toEqual({ value: false });
+  });
+
+  it("is Spring's 400 for blank or anything else, naming boolean", () => {
+    expect(springPrimitiveBoolean([' '], true).error).toBe(
+      "Failed to convert value of type 'java.lang.String' to required type 'boolean'; " +
+        'nested exception is java.lang.IllegalArgumentException: Invalid boolean value [ ]'
+    );
+    expect(springPrimitiveBoolean(['x', 'y'], true).error).toMatch(/String\[\]' .*\[x,y\]$/);
   });
 });
 

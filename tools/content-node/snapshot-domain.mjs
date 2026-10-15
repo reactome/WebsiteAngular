@@ -83,6 +83,10 @@ try {
   );
   // Has.Util.wrapUniqueElements wraps a plain relationship as this, for composedOf.
   const wrapper = `${DOMAIN}relationship/Has$Default`.replaceAll('/', '.');
+  // The content service's own: what /query/enhanced/v2 writes a reference
+  // entity as (domain.mjs, summaryEntity). In the webapp's classes, not a jar.
+  const CLASSES = path.join(LIB, '..', 'classes');
+  const summary = 'org.reactome.server.service.model.graph.SummaryEntity';
 
   const build = path.join(work, 'build');
   run('javac', [
@@ -94,10 +98,28 @@ try {
     path.join(HERE, 'snapshot-domain', 'DomainSnapshot.java'),
   ]);
   const dump = JSON.parse(
-    run('java', ['-cp', `${build}${path.delimiter}${LIB}/*`, 'DomainSnapshot', ...classes, wrapper])
+    run('java', [
+      '-cp',
+      [build, CLASSES, `${LIB}/*`].join(path.delimiter),
+      'DomainSnapshot',
+      ...classes,
+      wrapper,
+      '--serialised-only',
+      summary,
+    ])
   );
 
-  const bodies = methodBodies(run('javap', ['-c', '-p', '-cp', work, ...classes, wrapper]));
+  const bodies = methodBodies(
+    run('javap', [
+      '-c',
+      '-p',
+      '-cp',
+      [work, CLASSES].join(path.delimiter),
+      ...classes,
+      wrapper,
+      summary,
+    ])
+  );
   const computed = new Set(COMPUTED_GETTERS);
   const json = {};
   for (const [schemaClass, properties] of Object.entries(dump.json)) {
@@ -112,8 +134,8 @@ try {
         throw new Error(
           `${schemaClass}.${name}: ${key} computes its value; implement it in domain.mjs`
         );
-      // Has.Default is built in code, not mapped from the graph.
-      if (source === field && schemaClass !== 'Default') {
+      // Has.Default and SummaryEntity are built in code, not mapped from the graph.
+      if (source === field && schemaClass !== 'Default' && schemaClass !== 'SummaryEntity') {
         const mapped = dump.graph[schemaClass]?.fields.some(([fieldName]) => fieldName === field);
         if (!mapped)
           throw new Error(`${schemaClass}.${name}: reads ${field}, which SDN does not map`);

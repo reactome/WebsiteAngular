@@ -10,6 +10,7 @@ import {
   javaDouble,
   mapNodes,
   mapResult,
+  summaryEntity,
   VIEW,
   writeDomain,
 } from './domain.mjs';
@@ -261,6 +262,89 @@ describe('writeDomain on a deep graph', () => {
     expect(text.split('"precedingEvent"').length - 1).toBe(count - 1);
     // Identity holds: the last event is written once, then referred to.
     expect(JSON.parse(text).precedingEvent[0].followingEvent).toEqual([100]);
+  });
+});
+
+describe("summaryEntity, the content service's SummaryEntity", () => {
+  // A protein referred to by two EWASs, the lower dbId with a modified residue: as
+  // /query/enhanced/v2?summariseReferenceEntity=true writes uniprot:P01112.
+  const EWAS = [
+    'DatabaseObject',
+    'PhysicalEntity',
+    'GenomeEncodedEntity',
+    'EntityWithAccessionedSequence',
+  ];
+  const row = {
+    root: node(
+      70,
+      ['DatabaseObject', 'ReferenceEntity', 'ReferenceSequence', 'ReferenceGeneProduct'],
+      {
+        stId: 'uniprot:P01112',
+        displayName: 'UniProt:P01112 HRAS',
+        identifier: 'P01112',
+        name: ['HRAS'],
+        geneName: ['HRAS'],
+      }
+    ),
+    nodes: [
+      node(72, EWAS, { displayName: 'p-HRAS', referenceType: 'ReferenceGeneProduct' }),
+      node(71, EWAS, { displayName: 'HRAS', referenceType: 'ReferenceGeneProduct' }),
+      node(80, ['DatabaseObject', 'Compartment', 'GO_CellularComponent'], {
+        displayName: 'plasma membrane',
+      }),
+      node(81, ['DatabaseObject', 'Compartment', 'GO_CellularComponent'], {
+        displayName: 'cytosol',
+      }),
+      node(
+        90,
+        [
+          'DatabaseObject',
+          'AbstractModifiedResidue',
+          'TranslationalModification',
+          'ModifiedResidue',
+        ],
+        {}
+      ),
+      node(95, ['DatabaseObject', 'Taxon', 'Species'], { displayName: 'Homo sapiens' }),
+    ],
+    relationships: [
+      rel('referenceEntity', 72, 70),
+      rel('referenceEntity', 71, 70),
+      rel('compartment', 72, 80, { order: 0 }),
+      rel('compartment', 71, 81, { order: 0 }),
+      rel('compartment', 71, 80, { order: 1 }),
+      rel('hasModifiedResidue', 71, 90, { order: 0 }),
+      rel('species', 71, 95),
+    ],
+  };
+  const summary = () => JSON.parse(writeDomain(summaryEntity(mapResult(row))));
+
+  it('is the reference entity under its own identity, written as a SummaryEntity', () => {
+    const json = summary();
+    expect(json).toMatchObject({
+      dbId: 70,
+      stId: 'uniprot:P01112',
+      schemaClass: 'SummaryEntity',
+      className: 'Protein',
+    });
+    expect(json.identifier).toBe('P01112');
+    expect(json.geneName).toEqual(['HRAS']);
+  });
+
+  it('lists the entities by modified residues, then dbId', () => {
+    // 71 has a modified residue, so it comes after 72 despite its lower dbId.
+    expect(summary().summarisedEntities.map((entity) => entity.dbId ?? entity)).toEqual([72, 71]);
+  });
+
+  it('merges their compartments once each, in the order met', () => {
+    // 72 brings plasma membrane; 71 cytosol, and plasma membrane again.
+    expect(summary().compartment.map((entity) => entity.dbId ?? entity)).toEqual([80, 81]);
+  });
+
+  it("takes an entity's species and reference type when it has one", () => {
+    const json = summary();
+    expect(json.species).toEqual(95);
+    expect(json.referenceType).toBe('ReferenceGeneProduct');
   });
 });
 
