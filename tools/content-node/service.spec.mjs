@@ -408,6 +408,10 @@ describe('springPrimitiveBoolean, a boolean with a default as Spring reads it', 
         'nested exception is java.lang.IllegalArgumentException: Invalid boolean value [ ]'
     );
     expect(springPrimitiveBoolean(['x', 'y'], true).error).toMatch(/String\[\]' .*\[x,y\]$/);
+    // Only a single empty value is the default; repeated, the first being
+    // empty, Spring converts the array and fails (review of #476).
+    expect(springPrimitiveBoolean(['', 'true'], false).error).toMatch(/String\[\]' .*\[,true\]$/);
+    expect(springPrimitiveBoolean(['', ''], false).error).toMatch(/\[,\]$/);
   });
 });
 
@@ -418,6 +422,10 @@ describe('the in-depth parameters, as the in-depth controllers read them', () =>
     expect(springIntWithDefault([''], 1)).toEqual({ value: 1 });
     expect(springIntWithDefault(['0x2'], 1)).toEqual({ value: 2 });
     expect(springIntWithDefault(['1', '2'], 1)).toEqual({ value: 1 });
+    expect(springIntWithDefault(['', '2'], 1).error).toBe(
+      "Failed to convert value of type 'java.lang.String[]' to required type 'int'; " +
+        'nested exception is java.lang.NumberFormatException: For input string: ",2"'
+    );
     expect(springIntWithDefault(['x'], 1).error).toBe(
       "Failed to convert value of type 'java.lang.String' to required type 'int'; " +
         'nested exception is java.lang.NumberFormatException: For input string: "x"'

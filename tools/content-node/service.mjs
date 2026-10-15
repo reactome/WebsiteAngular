@@ -2839,7 +2839,8 @@ export function inDepthAttributes(values, fallback = 'species,compartment') {
  * /query/enhanced/v2.
  */
 export function springPrimitiveBoolean(values, fallback) {
-  if (values.length === 0 || values[0] === '') return { value: fallback };
+  // Only one empty value is Spring's "absent": repeated, the array is converted.
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   const value = javaTrim(values[0]).toLowerCase();
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
@@ -2858,7 +2859,8 @@ export function springPrimitiveBoolean(values, fallback) {
  * failing both, the 400 names `int` and the second attempt's message.
  */
 export function springIntWithDefault(values, fallback) {
-  if (values.length === 0 || values[0] === '') return { value: fallback };
+  // Only one empty value is Spring's "absent": repeated, the array is converted.
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   const attempt = (text) => {
     try {
       return { value: javaParseInteger(text) };
