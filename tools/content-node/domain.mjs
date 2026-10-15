@@ -439,8 +439,11 @@ export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
  * relationship type names (inDepthAttributes); Java writes it into the query
  * text as it comes, and so does this, which is why it is checked.
  *
- * The lists come back as Java collects them, a list per row, flattened here
- * in order; a relationship on several paths is deduplicated by mapResult.
+ * Java collects a list per path per node on it, the same nodes over and over:
+ * 254,598 occurrences of 1,800 nodes for one set at full depth, 87MB written
+ * out whole, which took node minutes to read and stalled every other request
+ * meanwhile. Each node and relationship comes back once instead, in the order
+ * of its first appearance -- the only order the mapping uses (mapResult).
  */
 export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
   const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
@@ -453,9 +456,19 @@ export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
      OPTIONAL MATCH p2=(nodePath)-[:${attributes}]->(attributes)
      WITH root, collect(nodesPath) + collect(nodes(p2)) AS nodeLists,
           collect(rels) + collect(relationships(p2)) AS relationshipLists
+     CALL {
+       WITH nodeLists
+       UNWIND nodeLists AS list UNWIND list AS n
+       RETURN collect(DISTINCT n) AS nodes
+     }
+     CALL {
+       WITH relationshipLists
+       UNWIND relationshipLists AS list UNWIND list AS r
+       RETURN collect(DISTINCT r) AS relationships
+     }
      RETURN ${node('root')} AS root,
-            [list IN nodeLists | [n IN list | ${node('n')}]] AS nodeLists,
-            [list IN relationshipLists | [r IN list | ${rel('r')}]] AS relationshipLists`;
+            [n IN nodes | ${node('n')}] AS nodes,
+            [r IN relationships | ${rel('r')}] AS relationships`;
 }
 
 /**

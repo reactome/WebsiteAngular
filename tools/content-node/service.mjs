@@ -805,14 +805,7 @@ export const endpoints = [
       if (!row) return none;
       return {
         status: 200,
-        serialised: writeDomain(
-          mapResult({
-            root: row.root,
-            nodes: row.nodeLists.flat(),
-            relationships: row.relationshipLists.flat(),
-          }),
-          ...writerFor(request)
-        ),
+        serialised: writeDomain(mapResult(row), ...writerFor(request)),
         type: 'application/json',
       };
     },
