@@ -93,6 +93,10 @@ describe('repeated and blank values, as Spring binds them', () => {
     expect(message).toContain('flg=,TP53');
   });
 
+  it('takes a blank margin as its default, as RasterArgs.setMargin(null) does', async () => {
+    expect((await envelope(await at('XYZ.svg?margin=%20')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+
   it('reads a blank Boolean as null, which is not its default', async () => {
     const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?title=%20'));
     expect(status).toBe(400);

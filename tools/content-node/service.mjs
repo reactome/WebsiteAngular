@@ -1857,7 +1857,9 @@ function notDrawnYet(values) {
   const later = (name) =>
     (name === 'quality' &&
       (values.quality === null || values.quality < 1 || values.quality > 10)) ||
-    (name === 'ehld' && values.ehld === null);
+    (name === 'ehld' && values.ehld === null) ||
+    // RasterArgs.setMargin(null) keeps its 15: a blank margin is the default.
+    (name === 'margin' && values.margin === null);
   const named = Object.entries(defaults)
     .filter(([name, fallback]) => !later(name) && values[name] !== fallback)
     .map(([name]) => `${name}=${values[name] ?? ''}`);
