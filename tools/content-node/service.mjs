@@ -26,6 +26,7 @@ import { read, configured, close } from './graph.mjs';
 import {
   findByIdParameters,
   findByIdQuery,
+  mapNodes,
   mapResult,
   rootLabelsQuery,
   VIEW,
@@ -385,6 +386,80 @@ export const endpoints = [
      */
     unordered: (entry) => entry.person.dbId,
     differs: [/^\/ContentService\/data\/content\/contributors: order differs from java's$/],
+  },
+  {
+    path: '/ContentService/data/person/{id}',
+    // A curator with affiliations, an ORCID cross-reference and publications.
+    sample: '1169272',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/person\/[^/]+: \.url: /],
+    /**
+     * A person, by dbId or ORCID, with their affiliations, cross-references and
+     * publications: graph-core's findPersonByDbId / findPersonByOrcidId,
+     * written by the domain serialiser (domain.mjs) in Java's views.
+     *
+     * Java matches `(n:Person{dbId:$dbId})`, which no index serves: 1.1s on
+     * every request. The same person by its indexed DatabaseObject dbId is the
+     * same node, expanded the same way -- Java's answer by dbId and by ORCID
+     * are byte for byte the same -- in milliseconds.
+     */
+    handler: async (request) => {
+      const id = pathId(rawSegment(request, 4));
+      const person = personWhere(id);
+      if (!person) return notFound(request, `No person found for id: ${id}`);
+      const options = { anchor: person.anchor, ordered: false, without: 'InstanceEdit' };
+      const [found] = await read(rootLabelsQuery(person.where, options), person.params);
+      if (!found) return notFound(request, `No person found for id: ${id}`);
+      const [row] = await read(findByIdQuery(person.where, options), {
+        ...person.params,
+        ...findByIdParameters(found.labels),
+      });
+      return {
+        status: 200,
+        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/person/{id}/publications',
+    sample: '1169272',
+    /**
+     * The publications a person is an author of: graph-core's
+     * getPublicationsOfPerson, by dbId, ORCID or e-mail address, each
+     * publication alone (no relationships), written by the domain serialiser.
+     *
+     * Java's own order is not one order: by dbId it scans from the
+     * publications' side and lists them reversed against its answer by ORCID
+     * (person 1169272: 9023676 first by dbId, 9861032 first by ORCID).
+     * Here both come in the ORCID order -- the person's own, from the indexed
+     * person -- so `unordered` compares the sets.
+     *
+     * An id that is none of the three is Java's bare empty 200; this answers
+     * `[]`, as the person's four event lists do (see them, below).
+     */
+    unordered: (entry) => (typeof entry === 'number' ? entry : entry.dbId),
+    differs: [
+      /^\/ContentService\/data\/person\/[^/]+\/publications: order differs from java's$/,
+      // An unreadable id: `[]` here, Java's empty 200 (see above).
+      /^\/ContentService\/data\/person\/[^/]+\/publications: (content-type "application\/json"|body "\[\]"), java says ""$/,
+    ],
+    handler: async (request) => {
+      const id = pathId(rawSegment(request, 4));
+      const person = personWhere(id, { email: true });
+      if (!person) return { status: 200, serialised: '[]', type: 'application/json' };
+      const rows = await read(
+        `MATCH (${person.anchor}) WHERE ${person.where}
+         MATCH (n)-[:author]-(pub:Publication)
+         RETURN {id: id(pub), labels: labels(pub), props: properties(pub)} AS pub`,
+        person.params
+      );
+      return {
+        status: 200,
+        serialised: writeDomain(mapNodes(rows.map((row) => row.pub)), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
   },
   ...['authored', 'reviewed'].flatMap((role) =>
     [
@@ -2510,6 +2585,31 @@ function javaUtf8(bytes) {
     start = i + 1;
   }
   return text + decoder.decode(Uint8Array.from(bytes.slice(start)));
+}
+
+/**
+ * How graph-core's PersonService reads a person's id, as a match on `n`:
+ * a dbId when StringUtils.isNumeric says so (any script's digits), else an
+ * ORCID by its pattern (ASCII digits), else -- for publications only -- an
+ * e-mail address by its pattern. Undefined for anything else, which Java
+ * answers as no person. The id is not trimmed: Java does not trim it here.
+ *
+ * A dbId is matched under DatabaseObject, where it is indexed, and the label
+ * asserted after; an ORCID is indexed on Person (see the person lists).
+ */
+export function personWhere(id, { email = false } = {}) {
+  // Pattern.matches: the whole id; `.` stops at Java's line terminators.
+  if (email && /^[^\n\r\u0085\u2028\u2029]+@[^\n\r\u0085\u2028\u2029]+\.[a-z]+$/.test(id))
+    return { anchor: 'n:Person', where: 'n.eMailAddress = $id', params: { id } };
+  if (javaNumeric(id))
+    return {
+      anchor: 'n:DatabaseObject',
+      where: 'n.dbId = toInteger($id) AND n:Person',
+      params: { id: asciiDigits(id) },
+    };
+  if (/^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/.test(id))
+    return { anchor: 'n:Person', where: 'n.orcidId = $id', params: { id } };
+  return undefined;
 }
 
 /**

@@ -5,7 +5,14 @@
 // Jackson that Java showed under the diff harness (15 Oct 2026), pinned here so
 // a change to domain.mjs that loses it fails without a graph to compare with.
 import { describe, expect, it } from 'vitest';
-import { findByIdParameters, javaDouble, mapResult, VIEW, writeDomain } from './domain.mjs';
+import {
+  findByIdParameters,
+  javaDouble,
+  mapNodes,
+  mapResult,
+  VIEW,
+  writeDomain,
+} from './domain.mjs';
 
 const EVENT = [
   'DatabaseObject',
@@ -164,6 +171,19 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       relationships: [],
     };
     expect(write(row).className).toBe('Genes and Transcripts');
+  });
+});
+
+describe('mapNodes, a query that returns nodes alone', () => {
+  const book = node(30, ['DatabaseObject', 'Publication', 'Book'], { displayName: 'b' });
+  it('writes each node with its properties and no relationships', () => {
+    expect(JSON.parse(writeDomain(mapNodes([book])))).toEqual([
+      { dbId: 30, displayName: 'b', className: 'Book', schemaClass: 'Book' },
+    ]);
+  });
+
+  it('maps a node that comes back twice to one object, written the second time as its dbId', () => {
+    expect(JSON.parse(writeDomain(mapNodes([book, book])))[1]).toBe(30);
   });
 });
 

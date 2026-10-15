@@ -24,6 +24,7 @@ import {
   locationsQuery,
   parseHierarchy,
   pathId,
+  personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
   participantJson,
@@ -229,6 +230,34 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe("personWhere, as graph-core's PersonService reads a person's id", () => {
+  // Measured against Java's /data/person/{id} and /publications, 15 Oct 2026.
+  it("reads digits as a dbId, any script's, matched under the indexed label", () => {
+    expect(personWhere('1169272')).toEqual({
+      anchor: 'n:DatabaseObject',
+      where: 'n.dbId = toInteger($id) AND n:Person',
+      params: { id: '1169272' },
+    });
+    expect(personWhere('\u0661\u0662')?.params).toEqual({ id: '12' });
+  });
+
+  it('reads an ORCID by its pattern, with ASCII digits and a final X allowed', () => {
+    expect(personWhere('0000-0002-3218-5631')?.where).toBe('n.orcidId = $id');
+    expect(personWhere('0000-0002-1825-009X')?.where).toBe('n.orcidId = $id');
+    expect(personWhere('0000-0002-3218-563')).toBeUndefined();
+  });
+
+  it('does not trim: a padded dbId is no id at all, as in Java', () => {
+    expect(personWhere(' 1169272')).toBeUndefined();
+  });
+
+  it('reads an e-mail address only for publications', () => {
+    expect(personWhere('x@example.org')).toBeUndefined();
+    expect(personWhere('x@example.org', { email: true })?.where).toBe('n.eMailAddress = $id');
+    expect(personWhere('x@example.ORG', { email: true })).toBeUndefined();
+  });
 });
 
 describe("writerFor, Java's view and identity for a request", () => {

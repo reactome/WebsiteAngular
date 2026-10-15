@@ -304,12 +304,14 @@ describe('serve-prod and the API roots', () => {
   });
 
   // The same routes the dev server's are checked against (proxy-order.spec.ts):
-  // the four lists go to node, and nothing else under a person does.
+  // the person, their publications and the four lists go to node, and nothing
+  // else under a person does.
   for (const [url, to] of [
     ['/ContentService/data/person/68285/authoredPathways', 'content-node'],
     ['/ContentService/data/person/68285/reviewedReactions?page=1', 'content-node'],
-    ['/ContentService/data/person/68285', 'backend'],
-    ['/ContentService/data/person/68285/publications', 'backend'],
+    ['/ContentService/data/person/68285', 'content-node'],
+    ['/ContentService/data/person/68285/publications', 'content-node'],
+    ['/ContentService/data/person/68285/displayName', 'backend'],
     ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'backend'],
     ['/ContentService/data/query/R-HSA-70486', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],

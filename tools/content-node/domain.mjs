@@ -388,6 +388,10 @@ export function javaDouble(value) {
  * its RETURN taken apart so the driver's nodes and relationships can be mapped
  * here. The order is Java's: by relationship type, then by its `order`.
  *
+ * `anchor`, `ordered` and `without` give graph-core's other forms of the same
+ * query: findPersonByDbId matches a Person, leaves InstanceEdits out and has
+ * no ORDER BY, so its relationships come in the graph's own order.
+ *
  * Java loads every related node; most of a curator's are the InstanceEdits
  * they authored -- 16,900 for one person -- which no Person field can hold.
  * Only nodes some field of the root's class can hold come back whole (`keep`,
@@ -397,10 +401,13 @@ export function javaDouble(value) {
  * appearance decides where it sits in a list (fill). For that person: 1.6s
  * with all of them, ~100ms without.
  */
-export function findByIdQuery(where) {
-  return `MATCH (n:DatabaseObject) WHERE ${where}
-     OPTIONAL MATCH (n)-[r]->(m)
-     WITH n, r, m ORDER BY TYPE(r) ASC, r.order ASC
+export function findByIdQuery(
+  where,
+  { anchor = 'n:DatabaseObject', ordered = true, without } = {}
+) {
+  return `MATCH (${anchor}) WHERE ${where}
+     OPTIONAL MATCH (n)-[r]->(m) ${without ? `WHERE NOT m:${without}` : ''}
+     ${ordered ? 'WITH n, r, m ORDER BY TYPE(r) ASC, r.order ASC' : ''}
      WITH n, COLLECT(r) AS rs, COLLECT(m) AS ms
      WITH n, rs, ms, [r IN rs WHERE any(target IN coalesce($keep[type(r)], [])
                         WHERE target IN labels(endNode(r))) | id(endNode(r))] AS kept
@@ -412,8 +419,23 @@ export function findByIdQuery(where) {
 }
 
 /** The labels of the object findByIdQuery will load, to pick its parameters by. */
-export function rootLabelsQuery(where) {
-  return `MATCH (n:DatabaseObject) WHERE ${where} RETURN labels(n) AS labels LIMIT 1`;
+export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
+  return `MATCH (${anchor}) WHERE ${where} RETURN labels(n) AS labels LIMIT 1`;
+}
+
+/**
+ * Nodes on their own, as SDN maps a query that returns only nodes: each with
+ * its properties and no relationships, one instance per node, so a node that
+ * comes back twice is the same object -- and written the second time as its
+ * dbId.
+ */
+export function mapNodes(nodes) {
+  const mapped = new Map();
+  return nodes.map((node) => {
+    if (!mapped.has(node.id))
+      mapped.set(node.id, mapResult({ root: node, nodes: [], relationships: [] }));
+    return mapped.get(node.id);
+  });
 }
 
 /**

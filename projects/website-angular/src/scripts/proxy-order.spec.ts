@@ -71,6 +71,16 @@ describe('the dev server proxy', () => {
   }
 
   for (const url of [
+    '/ContentService/data/person/68285',
+    '/ContentService/data/person/0000-0002-3218-5631?view=nested',
+    '/ContentService/data/person/68285/publications',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
+  for (const url of [
     '/ContentService/data/query/R-HSA-70486',
     '/ContentService/data/query/70486?view=nested-aggregated',
     '/ContentService/data/query/R-HSA-70486?includeRef=true',
@@ -163,8 +173,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/ids',
     '/ContentService/data/query/enhanced/70486',
     '/ContentService/data/query/abridged/70486',
-    '/ContentService/data/person/68285',
-    '/ContentService/data/person/68285/publications',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
     // Only the ancestors of an event are ported.
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
