@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   UrlStateService,
@@ -8,15 +8,40 @@ import {
 import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/app/interactors/interactor-threshold';
 
 /**
- * The state the content pages read, for the Pathway Browser components they
- * reuse. Partial on purpose, and so unchecked: nothing makes it carry the rest
- * of UrlStateService (settle, navigateTo, isFirstNavigation, queryParams), and
- * nothing on these pages calls them -- their diagram is an image, not
- * cr-diagram. Reuse a component that does, and it will need them.
+ * Members of UrlStateService the content pages leave out, each because nothing
+ * on them calls it -- their diagram is an image, not cr-diagram. Everything
+ * else UrlStateService has, this must have too: the type says so. It was
+ * `Partial`, which let navigateTo stay missing while the description panel's
+ * "Other Pathways" called it.
  */
+type NotOnContentPages =
+  | 'settle'
+  | 'isFirstNavigation'
+  | 'queryParams'
+  | 'ensureStId'
+  | 'dbIdToStId'
+  // The Pathway Browser's viewport reads these to keep old tab names working.
+  | 'oldToNewTab'
+  | 'newToOldTab';
+
+/** The state the content pages read, for the Pathway Browser components they reuse. */
 @Injectable()
-export class DetailUrlState implements Partial<UrlStateService> {
+export class DetailUrlState implements Omit<UrlStateService, NotOnContentPages> {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /**
+   * A content page is not inside a pathway: going to one is opening it in the
+   * Pathway Browser, with this page's object selected there -- "Other
+   * Pathways" lists the pathways it takes part in. The Browser's own query
+   * parameters (the caller's extras) mean nothing here.
+   */
+  navigateTo(pathwayId: string | null): Promise<boolean> {
+    const select = this.route.snapshot.paramMap.get('id') ?? undefined;
+    return this.router.navigate(pathwayId ? ['/PathwayBrowser', pathwayId] : ['/PathwayBrowser'], {
+      queryParams: select ? { select } : {},
+    });
+  }
 
   readonly section = toSignal(this.route.fragment);
   summariseDisease = urlParam<boolean | undefined>(undefined, 'boolean');
