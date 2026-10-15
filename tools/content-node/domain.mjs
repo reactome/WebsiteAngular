@@ -160,7 +160,12 @@ export function mapResult({ root, nodes, relationships: returned, order }) {
  * mapped as it is met. A relationship is counted per direction each time a
  * field uses it, and once one has been used twice in the same direction it
  * leaves the result for every field after -- SDN's guard against cycles,
- * which decides what some fields of highly linked objects hold. Filling node
+ * kept for fidelity: on Reactome's model only PhysicalEntity has fields
+ * sharing a type and direction (three `regulator` INCOMING), a node can match
+ * at most two, and each owner is mapped once, so it does not fire. Not
+ * reproduced: SDN gathers a list column's relationships into a HashSet, so two
+ * parallel edges of one type between the same nodes would come in its hash
+ * order, not the result's; whether the graph has any is unchecked. Filling node
  * by node rather than relationship by relationship is visible when one node
  * is reached twice: an entity that is both a reaction's input (order 2) and
  * its output (order 1) is the first output, because it was met among the
