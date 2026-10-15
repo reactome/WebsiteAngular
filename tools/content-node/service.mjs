@@ -619,6 +619,52 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/data/query/{id}/normalPathway',
+    // A disease pathway, by stable id; the diff harness is given more forms.
+    sample: 'R-HSA-6802957',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/query\/[^/]+\/normalPathway: \.url: /],
+    /**
+     * The normal pathway a disease pathway is drawn on, as one line of text.
+     *
+     * The Pathway Browser asks for this when a disease pathway has no diagram
+     * of its own, then loads the normal pathway's diagram in its place. Java
+     * serves it from the general `/data/query/{id}/{attributeName}`, as it does
+     * stId: the object's getter, written by ControllerUtils.toTSV (see
+     * databaseObjectTsv). Only Pathway and its subclasses have the getter, so
+     * for anything else -- and for a pathway without one -- it is Java's 404
+     * naming the object's class.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const { where, params } = resolveId(raw);
+      const rows = await read(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         OPTIONAL MATCH (n:Pathway)-[:normalPathway]->(m:DatabaseObject)
+         RETURN labels(n) AS labels, m.dbId AS dbId, m.stId AS stId,
+                m.displayName AS displayName, labels(m) AS targetLabels LIMIT 1`,
+        params
+      );
+      const [row] = rows;
+      if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
+      if (row.dbId === null || row.dbId === undefined)
+        return notFound(
+          request,
+          `Attribute: 'normalPathway' has not been found for object: ${schemaClassOf(row.labels)}`
+        );
+      return {
+        status: 200,
+        body: databaseObjectTsv({
+          dbId: row.dbId,
+          stId: row.stId,
+          displayName: row.displayName,
+          schemaClass: schemaClassOf(row.targetLabels),
+        }),
+        type: 'text/plain;charset=UTF-8',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/event/{id}/ancestors',
     // A reaction reached by two routes, so the comparison covers more than one path.
     sample: 'R-HSA-5672965',
@@ -1379,6 +1425,18 @@ async function peopleByPathway(pattern, overrides = {}) {
     }
   }
   return out;
+}
+
+/**
+ * One object as ControllerUtils.toTSV writes it for `/data/query/{id}/{attr}`:
+ * the stable id (the dbId when there is none or it is empty), the name and the
+ * class, tab-separated, with no newline after. A missing name is Java's string
+ * concatenation of null. toTSV prefers a `getText()` over the name; no class
+ * served through here has one, so it is not read.
+ */
+export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
+  const id = stId !== null && stId !== undefined && stId !== '' ? stId : dbId;
+  return `${id}\t${displayName ?? 'null'}\t${schemaClass}`;
 }
 
 /** The five fields Java's SimplePerson carries, in its order. */

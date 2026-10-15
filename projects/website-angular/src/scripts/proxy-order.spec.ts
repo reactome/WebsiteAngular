@@ -70,6 +70,15 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/data/query/R-HSA-6802957/normalPathway',
+    '/ContentService/data/query/6802957/normalPathway?x=1',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   it('sends the other forms of an entity to the content service', async () => {
     expect(await targetOf('/ContentService/data/entity/R-HSA-199420/otherForms')).toBe(contentNode);
   });
@@ -131,6 +140,9 @@ describe('the dev server proxy', () => {
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
     '/ContentService/data/query/70486/stIdVersion',
+    '/ContentService/data/query/70486/normalPathways',
+    // Java matches attribute names in any case; only the site's spelling is routed.
+    '/ContentService/data/query/70486/NORMALPATHWAY',
     '/ContentService/data/query/70486',
     '/ContentService/data/query/enhanced/70486',
     '/ContentService/data/person/68285',
