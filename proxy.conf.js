@@ -113,6 +113,11 @@ module.exports = {
   // up to twenty (POST), for the species selector.
   '^/ContentService/data/(orthology/[^/?]+/species|orthologies/ids/species)/[^/?]+(\\?|$)':
     contentNode,
+  // An accession's interactors (details, enhanced details, with entities), and
+  // the diagram's POST for many. PSICQUIC, uploads, tokens and summaries stay
+  // with Java.
+  '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)(\\?|$)':
+    contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

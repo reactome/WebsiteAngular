@@ -191,6 +191,19 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/interactors/static/molecule/P04637/details',
+    '/ContentService/interactors/static/molecule/P04637/details?page=1&pageSize=3',
+    '/ContentService/interactors/static/molecule/enhanced/Q9BXM7-1/details',
+    '/ContentService/interactors/static/molecule/P04637/withEntities',
+    // The diagram's POST, for every protein in it.
+    '/ContentService/interactors/static/molecules/details',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -207,6 +220,13 @@ describe('the dev server proxy', () => {
     // Java's POST /query/ids (a batch of objects), which node does not serve.
     '/ContentService/data/query/ids',
     '/ContentService/data/query/abridged/70486',
+    // The interactor endpoints node does not serve.
+    '/ContentService/interactors/static/molecule/P04637/summary',
+    '/ContentService/interactors/static/molecules/summary',
+    '/ContentService/interactors/static/molecule/P04637/pathways',
+    '/ContentService/interactors/psicquic/molecules/IntAct/details',
+    '/ContentService/interactors/upload/tuple/content',
+    '/ContentService/interactors/static/molecule/P04637/details.pdf',
     // Spring's own 404s: no species, or more after it.
     '/ContentService/data/orthology/R-HSA-69620/species/',
     '/ContentService/data/orthologies/ids/species/48892/x',
