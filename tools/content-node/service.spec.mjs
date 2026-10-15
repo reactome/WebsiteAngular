@@ -25,6 +25,7 @@ import {
   parseHierarchy,
   pathId,
   timedOut,
+  failureAnswer,
   inDepthAttributes,
   inDepthId,
   springIntWithDefault,
@@ -248,6 +249,121 @@ describe('a query past its time limit', () => {
     expect(answer?.status).toBe(503);
     expect(JSON.parse(answer.body)).toMatchObject({ code: 503, reason: 'SERVICE_UNAVAILABLE' });
     expect(timedOut({ originalUrl: '/x' }, new Error('boom'))).toBe(undefined);
+  });
+
+  // The same answer for the database ending a query any other way: a
+  // transaction it terminated, or one that reached its memory limit -- what
+  // ran it out of memory on 15 Oct 2026.
+  for (const code of [
+    'Neo.ClientError.Transaction.Terminated',
+    'Neo.TransientError.Transaction.Terminated',
+    'Neo.TransientError.General.TransactionMemoryLimit',
+    'Neo.TransientError.General.MemoryPoolOutOfMemoryError',
+    // The database itself out of memory, or not there at all.
+    'Neo.TransientError.General.OutOfMemoryError',
+    'Neo.TransientError.Database.DatabaseUnavailable',
+    'ServiceUnavailable',
+    'SessionExpired',
+  ]) {
+    it(`is a 503 for ${code} too`, () => {
+      const failure = Object.assign(new Error('ended'), { code });
+      expect(timedOut({ originalUrl: '/x' }, failure)?.status).toBe(503);
+    });
+  }
+
+  it('leaves other failures alone', () => {
+    const failure = Object.assign(new Error('bad'), {
+      code: 'Neo.ClientError.Statement.SyntaxError',
+    });
+    expect(timedOut({ originalUrl: '/x' }, failure)).toBe(undefined);
+  });
+});
+
+describe('the edges of a path, answered as Tomcat and Spring answer them', () => {
+  // Each measured against Java, 15 Oct 2026, on every endpoint node serves.
+  const springNotFound = async (path) => {
+    const response = await fetch(base + path);
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toMatch(/^application\/json/);
+    const body = await response.json();
+    expect(Object.keys(body)).toEqual(['timestamp', 'status', 'error', 'path']);
+    expect(body).toMatchObject({ status: 404, error: 'Not Found', path });
+    expect(Number.isInteger(body.timestamp)).toBe(true);
+  };
+
+  it("answers an id that is only a matrix parameter with Spring's own 404", async () => {
+    await springNotFound('/ContentService/data/query/;x');
+    await springNotFound('/ContentService/data/person/;x/publications');
+  });
+
+  it("answers a doubled slash with Spring's own 404", async () => {
+    await springNotFound('/ContentService/data/query//R-HSA-109606');
+    await springNotFound('/ContentService/data/event//R-HSA-69620/ancestors');
+  });
+
+  it('reads matrix parameters out of every segment, as Spring does, not only the id', async () => {
+    // Java answers these 200; an empty segment left behind is Spring's 404.
+    await springNotFound('/ContentService/data/;x/query/R-HSA-70486/stId');
+    const response = await fetch(base + '/ContentService/data/query;x/R-HSA-70486/stId');
+    expect(response.headers.get('content-type') ?? '').not.toMatch(/html/);
+  });
+
+  it("answers a raw backslash with Tomcat's 400, as an encoded one", async () => {
+    const { request } = await import('node:http');
+    const status = await new Promise((resolve, reject) => {
+      const url = new URL(base);
+      const call = request(
+        { host: url.hostname, port: url.port, path: '/ContentService/data/query/R-HSA-1\\x' },
+        (response) => {
+          response.resume();
+          resolve(response.statusCode);
+        }
+      );
+      call.on('error', reject);
+      call.end();
+    });
+    expect(status).toBe(400);
+  });
+
+  it("answers an encoded slash or backslash with Tomcat's 400, naming no server", async () => {
+    for (const path of [
+      '/ContentService/data/query/R-HSA-1%2Fx',
+      '/ContentService/data/query/R-HSA-1%5cx',
+    ]) {
+      const response = await fetch(base + path);
+      expect(response.status).toBe(400);
+      expect(response.headers.get('content-type')).toMatch(/^text\/html/);
+      expect(await response.text()).not.toMatch(/tomcat|apache/i);
+    }
+  });
+
+  it("answers a dbId beyond a long's range with Java's 500, naming the id as given", () => {
+    const failure = Object.assign(new Error('integer, 99999999999999999999, is too large'), {
+      code: 'Neo.ClientError.Statement.TypeError',
+    });
+    const request = { originalUrl: '/ContentService/data/query/%2099999999999999999999.3%20' };
+    const answer = failureAnswer(request, '/ContentService/data/query/{id}', failure);
+    expect(answer?.status).toBe(500);
+    expect(JSON.parse(answer.body)).toMatchObject({
+      code: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      messages: ['For input string: "99999999999999999999"'],
+    });
+    // The number Neo4j refused may be a query parameter's, not the id's:
+    // Java names what it failed to parse.
+    const species = {
+      originalUrl:
+        '/ContentService/data/pathways/low/entity/R-HSA-199420?species=99999999999999999999',
+    };
+    expect(
+      JSON.parse(
+        failureAnswer(species, '/ContentService/data/pathways/low/entity/{id}', failure).body
+      ).messages
+    ).toEqual(['For input string: "99999999999999999999"']);
+    // Any other failure is not Java's to mirror.
+    expect(failureAnswer(request, '/ContentService/data/query/{id}', new Error('boom'))).toBe(
+      undefined
+    );
   });
 });
 
