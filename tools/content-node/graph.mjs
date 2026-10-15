@@ -12,6 +12,7 @@
  * has not replaced anything.
  */
 import neo4j from 'neo4j-driver';
+import net from 'node:net';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -38,6 +39,29 @@ function fromFile() {
   } catch {
     return {};
   }
+}
+
+/**
+ * TCP_NODELAY on every connection this process opens, the graph's included.
+ *
+ * neo4j-driver sets keep-alive on its socket and nothing else, so Nagle's
+ * algorithm stays on. A request bigger than one segment -- about 1.4KB of
+ * Cypher and parameters, which several endpoints' queries are -- then holds
+ * its last segment back until the server acknowledges the first, and the
+ * server delays that acknowledgement: 43ms on every such query against 2ms,
+ * measured on beta's graph container (15 Oct 2026). Java's driver turns Nagle
+ * off; the driver gives no option to, so the socket's connect does. The
+ * process's other outgoing connections (fetch, through undici) set it already.
+ */
+const connect = net.Socket.prototype.connect;
+if (!connect.noDelay) {
+  net.Socket.prototype.connect = Object.assign(
+    function connectWithoutDelay(...args) {
+      this.setNoDelay(true);
+      return connect.apply(this, args);
+    },
+    { noDelay: true }
+  );
 }
 
 const file = fromFile();
