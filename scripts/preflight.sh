@@ -203,14 +203,16 @@ if [ "$mode" != "fast" ]; then
       kill -0 "$render_pid" 2>/dev/null || break
       kill -0 "$content_pid" 2>/dev/null || break
       curl -fsS -m 2 http://127.0.0.1:4312/health >/dev/null 2>&1 &&
-        curl -fsS -m 2 http://127.0.0.1:4313/health >/dev/null 2>&1 && { render_up=1; break; }
+        curl -fsS -m 2 http://127.0.0.1:4313/health 2>/dev/null | grep -q '"graph":true' &&
+        { render_up=1; break; }
       sleep 1
     done
     # Refused, not skipped: with no service the render tests skip themselves and
     # the step would read "ok" having checked nothing.
     if [ -z "$render_up" ]; then
       printf '  %-34s FAILED\n' "render, live"
-      echo "      the render or content service did not start; their logs:"
+      echo "      the render service did not start, or the content service has no graph"
+      echo "      (it reads ~/.content-node.env); their logs:"
       tail -12 "$render_cache/service.log" | sed 's/^/      /'
       tail -12 "$render_cache/content-node.log" | sed 's/^/      /'
       failed+=("render, live")

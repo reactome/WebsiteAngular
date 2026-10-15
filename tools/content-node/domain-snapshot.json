@@ -1,5 +1,4 @@
 {
-  "graphCore": "graph-core-3.0.0-SNAPSHOT.jar",
   "properties": [
     ["dbId","dbId",7],
     ["displayName","displayName",7],

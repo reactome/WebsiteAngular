@@ -176,7 +176,7 @@ try {
       .join(',\n');
   writeFileSync(
     OUT,
-    `{\n  "graphCore": ${JSON.stringify(jar)},\n` +
+    `{\n` +
       `  "properties": [\n${list(properties)}\n  ],\n  "json": {\n${map(jsonByIndex)}\n  },\n` +
       `  "fields": [\n${list(fields)}\n  ],\n  "graph": {\n${map(graphByIndex)}\n  },\n` +
       `  "interfaces": ${JSON.stringify(interfaces)},\n  "store": [\n${list(store)}\n  ]\n}\n`
