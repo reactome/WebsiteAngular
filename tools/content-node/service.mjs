@@ -24,13 +24,16 @@ import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 import {
+  enhancedQuery,
   findByIdParameters,
   findByIdQuery,
   inDepthQuery,
+  isA,
   mapNodes,
   oldEnhancedQuery,
   mapResult,
   rootLabelsQuery,
+  summaryEntity,
   VIEW,
   writeDomain,
 } from './domain.mjs';
@@ -665,6 +668,62 @@ export const endpoints = [
       return { status: 200, body, type: 'application/json' };
     }),
   })),
+  {
+    path: '/ContentService/data/query/enhanced/v2/{id}',
+    sample:
+      'R-HSA-70486?fetchIncomingRelationships=true&summariseReferenceEntity=true&includeDisease=true&includeRef=true&view=nested-aggregated',
+    differs: [/^\/ContentService\/data\/query\/enhanced\/v2\/[^/]+[^:]*: \.url: /],
+    /**
+     * An object with everything around it, for the Pathway Browser's details
+     * panel and the website's detail pages -- the site's busiest content
+     * call. graph-core's findEnhancedObjectById (enhancedQuery), written by
+     * the domain serialiser in the request's view; a reference entity, when
+     * asked to summarise, as the content service's SummaryEntity
+     * (summaryEntity).
+     *
+     * As QueryObjectController: three primitive booleans with defaults
+     * (fetchIncomingRelationships true, summariseReferenceEntity false,
+     * includeDisease true); incoming relationships only when asked for and
+     * needsIncoming agrees; an object found only with its disease data,
+     * asked for without, looked up again with it.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 6));
+      const flags = {};
+      for (const [name, fallback] of [
+        ['fetchIncomingRelationships', true],
+        ['summariseReferenceEntity', false],
+        ['includeDisease', true],
+      ]) {
+        const parsed = springPrimitiveBoolean(queryValues(request, name), fallback);
+        if (parsed.error) return javaError(request, 400, 'BAD_REQUEST', parsed.error);
+        flags[name] = parsed.value;
+      }
+      const id = inDepthId(raw);
+      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+      if (!id) return missing();
+      const options = {
+        idType: id.idType,
+        summarise: flags.summariseReferenceEntity,
+        includeDisease: flags.includeDisease,
+        outgoingOnly: !(flags.fetchIncomingRelationships && (await needsIncoming(raw))),
+      };
+      let [row] = await read(enhancedQuery(options), { id: id.id });
+      if (!row && !options.includeDisease)
+        [row] = await read(enhancedQuery({ ...options, includeDisease: true }), { id: id.id });
+      if (!row) return missing();
+      const found = mapResult(row);
+      const object =
+        flags.summariseReferenceEntity && isA(found.schemaClass, 'ReferenceEntity')
+          ? summaryEntity(found)
+          : found;
+      return {
+        status: 200,
+        serialised: writeDomain(object, ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
   {
     // Before /query/{id}/stId and /normalPathway, as Spring ranks its literal
     // `enhanced` above their {id}: /query/enhanced/stId is this, with id stId.
@@ -2773,13 +2832,35 @@ export function inDepthAttributes(values, fallback = 'species,compartment') {
 }
 
 /**
+ * A primitive `boolean` request parameter with a default, as Spring reads it:
+ * absent or empty takes the default; otherwise as springBoolean reads a
+ * Boolean, except that blank is no longer "absent" but a value Spring cannot
+ * put in a primitive -- its 400, naming `boolean`. Measured against Java's
+ * /query/enhanced/v2.
+ */
+export function springPrimitiveBoolean(values, fallback) {
+  // Only one empty value is Spring's "absent": repeated, the array is converted.
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
+  const value = javaTrim(values[0]).toLowerCase();
+  if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
+  if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type 'boolean'; ` +
+      `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values.join(',')}]`,
+  };
+}
+
+/**
  * A primitive `int` request parameter with a default, as Spring reads it:
  * absent or empty takes the default; otherwise the first value parsed as
  * NumberUtils.parseNumber does (see springInteger), then all of them joined;
  * failing both, the 400 names `int` and the second attempt's message.
  */
 export function springIntWithDefault(values, fallback) {
-  if (values.length === 0 || values[0] === '') return { value: fallback };
+  // Only one empty value is Spring's "absent": repeated, the array is converted.
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   const attempt = (text) => {
     try {
       return { value: javaParseInteger(text) };

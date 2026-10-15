@@ -255,7 +255,10 @@
     ["type","OutputForReactionLikeEvent.getType",7],
     ["type","PublicationAuthor.getType",7],
     ["type","RepeatedUnit.getType",7],
-    ["type","RepeatedUnitForPhysicalEntity.getType",7]
+    ["type","RepeatedUnitForPhysicalEntity.getType",7],
+    ["summarisedEntities","summarisedEntities",7],
+    ["hasModifiedResidue","SummaryEntity.getHasModifiedResidue",1],
+    ["className","SummaryEntity.getClassName",7]
   ],
   "json": {
     "Affiliation": [0,1,2,3,4,5,6,7,8,9],
@@ -366,7 +369,8 @@
     "PublicationAuthor": [253,233,234,235],
     "RepeatedUnit": [254,233,234,235],
     "RepeatedUnitForPhysicalEntity": [255,233,234,235],
-    "Default": [221,233,234,235]
+    "Default": [221,233,234,235],
+    "SummaryEntity": [0,1,2,3,4,5,11,19,7,22,50,23,80,81,82,24,26,27,30,83,84,34,85,35,86,87,88,89,90,91,92,38,39,41,93,94,47,48,256,201,10,12,200,14,16,137,185,202,203,204,205,206,207,40,211,212,213,215,216,154,127,153,155,257,258,158,71,101,102,104,103,105,106,107,9]
   },
   "fields": [
     ["referenceSequence","referenceSequence","OUTGOING","ReferenceSequence","",null],

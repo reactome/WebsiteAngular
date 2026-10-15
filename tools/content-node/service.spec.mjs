@@ -30,6 +30,7 @@ import {
   inDepthAttributes,
   inDepthId,
   springIntWithDefault,
+  springPrimitiveBoolean,
   personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
@@ -392,6 +393,28 @@ describe("needsIncoming, QueryObjectController's needsIncomingRelationship", () 
   });
 });
 
+describe('springPrimitiveBoolean, a boolean with a default as Spring reads it', () => {
+  // Measured against Java's /query/enhanced/v2, 15 Oct 2026.
+  it('takes the default for absent or empty, and reads the words Spring knows', () => {
+    expect(springPrimitiveBoolean([], true)).toEqual({ value: true });
+    expect(springPrimitiveBoolean([''], false)).toEqual({ value: false });
+    expect(springPrimitiveBoolean(['TRUE'], false)).toEqual({ value: true });
+    expect(springPrimitiveBoolean(['off'], true)).toEqual({ value: false });
+  });
+
+  it("is Spring's 400 for blank or anything else, naming boolean", () => {
+    expect(springPrimitiveBoolean([' '], true).error).toBe(
+      "Failed to convert value of type 'java.lang.String' to required type 'boolean'; " +
+        'nested exception is java.lang.IllegalArgumentException: Invalid boolean value [ ]'
+    );
+    expect(springPrimitiveBoolean(['x', 'y'], true).error).toMatch(/String\[\]' .*\[x,y\]$/);
+    // Only a single empty value is the default; repeated, the first being
+    // empty, Spring converts the array and fails (review of #476).
+    expect(springPrimitiveBoolean(['', 'true'], false).error).toMatch(/String\[\]' .*\[,true\]$/);
+    expect(springPrimitiveBoolean(['', ''], false).error).toMatch(/\[,\]$/);
+  });
+});
+
 describe('the in-depth parameters, as the in-depth controllers read them', () => {
   // Each measured against Java's /data/entity/{id}/in-depth, 15 Oct 2026.
   it('reads maxDepth as a primitive int with a default', () => {
@@ -399,6 +422,10 @@ describe('the in-depth parameters, as the in-depth controllers read them', () =>
     expect(springIntWithDefault([''], 1)).toEqual({ value: 1 });
     expect(springIntWithDefault(['0x2'], 1)).toEqual({ value: 2 });
     expect(springIntWithDefault(['1', '2'], 1)).toEqual({ value: 1 });
+    expect(springIntWithDefault(['', '2'], 1).error).toBe(
+      "Failed to convert value of type 'java.lang.String[]' to required type 'int'; " +
+        'nested exception is java.lang.NumberFormatException: For input string: ",2"'
+    );
     expect(springIntWithDefault(['x'], 1).error).toBe(
       "Failed to convert value of type 'java.lang.String' to required type 'int'; " +
         'nested exception is java.lang.NumberFormatException: For input string: "x"'

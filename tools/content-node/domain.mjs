@@ -90,7 +90,8 @@ function composedOf(entity) {
   throw new Error(`domain: ${entity.schemaClass} is not a CompositionAggregator`);
 }
 
-const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
+/** Whether a class is, or descends from, another (Class.isAssignableFrom). */
+export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
 
 /**
  * What SDN's mapping makes of one query result: the root and every node
@@ -345,6 +346,15 @@ const COMPUTED = {
   'Has.getStoichiometry': (relation) => relation.stoichiometry,
   'Has.getElement': (relation) => relation.element,
   'CompositionAggregator.getComposedOf': composedOf,
+  // The content service's SummaryEntity (summaryEntity, below).
+  'SummaryEntity.getHasModifiedResidue': expanding('hasModifiedResidue'),
+  // Otherwise super.getClassName(): DatabaseObject's, the class's own name.
+  'SummaryEntity.getClassName': (entity) =>
+    ({
+      ReferenceGeneProduct: 'Protein',
+      ReferenceDNASequence: 'DNA Sequence',
+      ReferenceRNASequence: 'RNA Sequence',
+    })[entity.fields.referenceType] ?? 'SummaryEntity',
 };
 
 /** The computed getters, by name, for snapshot-domain.mjs to check against graph-core. */
@@ -590,6 +600,201 @@ export function oldEnhancedQuery({ idType, outgoingOnly }) {
           collect(DISTINCT r1) + collect(DISTINCT r2) + collect(DISTINCT r3) AS rs
      RETURN ${node('n')} AS root, [x IN ms + ss + os | ${node('x')}] AS nodes,
             [r IN rs | ${rel('r')}] AS relationships`;
+}
+
+/**
+ * graph-core's findEnhancedObjectById (/query/enhanced/v2), as its
+ * AdvancedDatabaseObjectRepository writes it: the object -- or, summarising
+ * a reference entity, the object and every physical entity referring to it --
+ * with everything related to each (outgoing only, or both ways), their
+ * species, reference entities, authors, compartments, regulations and the
+ * rest one step further. UpdateTrackers are left out; so, unless
+ * `includeDisease`, is anything in disease. Java's text, with its RETURN
+ * taken apart as findByIdQuery's is.
+ */
+export function enhancedQuery({ idType, summarise, includeDisease, outgoingOnly }) {
+  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r) =>
+    `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
+  const expand = !summarise
+    ? 'WITH root, root AS n '
+    : `OPTIONAL MATCH (root:ReferenceEntity)<-[:referenceEntity]-(pe:PhysicalEntity${includeDisease ? '' : ' {isInDisease: false}'})
+       WITH collect(pe) + root AS ns, root
+       UNWIND ns AS n `;
+  const filter = includeDisease
+    ? 'WHERE NOT m:UpdateTracker '
+    : 'WHERE (m.isInDisease IS NULL OR m.isInDisease = false) AND NOT m:UpdateTracker ';
+  return `MATCH (root:DatabaseObject) WHERE root.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'}
+     ${expand}
+     OPTIONAL MATCH (n)-[r1]-${outgoingOnly ? '>' : ''}(m:DatabaseObject)
+     ${filter}
+     OPTIONAL MATCH (m)-[r2:species]->(s)
+     OPTIONAL MATCH (m)-[r9:referenceEntity]->(rf:ReferenceEntity)
+     OPTIONAL MATCH (m:Publication)<-[r5:author]-(p2:Person)
+     OPTIONAL MATCH (m:InstanceEdit)<-[r6:author]-(p3:Person)
+     OPTIONAL MATCH (m:Event)-[r7:compartment]->(c:Compartment)
+     OPTIONAL MATCH (m)-[r3:regulator|regulatedBy|physicalEntity|crossReference|referenceGene|
+                        referenceTranscript|literatureReference|marker|regulation|
+                        catalystActivity|activeUnit|activity|psiMod|modification|
+                        goBiologicalProcess]-(o)
+     OPTIONAL MATCH (o:Publication)<-[r4:author]-(p:Person)
+     OPTIONAL MATCH (o)-[r8:species]->(s1:Species)
+     WITH root,
+          collect(DISTINCT n) AS ns, collect(DISTINCT m) AS ms, collect(DISTINCT s) AS ss,
+          collect(DISTINCT o) AS os, collect(DISTINCT p) AS ps, collect(DISTINCT p2) AS ps2,
+          collect(DISTINCT p3) AS ps3, collect(DISTINCT c) AS cs, collect(DISTINCT s1) AS s1s,
+          collect(DISTINCT rf) AS rfs,
+          collect(DISTINCT r1) AS r1s, collect(DISTINCT r2) AS r2s, collect(DISTINCT r3) AS r3s,
+          collect(DISTINCT r4) AS r4s, collect(DISTINCT r5) AS r5s, collect(DISTINCT r6) AS r6s,
+          collect(DISTINCT r7) AS r7s, collect(DISTINCT r8) AS r8s, collect(DISTINCT r9) AS r9s
+     RETURN ${node('root')} AS root,
+            [x IN ns + ms + ss + os + ps + ps2 + ps3 + cs + s1s + rfs | ${node('x')}] AS nodes,
+            [r IN r1s + r2s + r3s + r4s + r5s + r6s + r7s + r8s + r9s | ${rel('r')}] AS relationships`;
+}
+
+/**
+ * The content service's SummaryEntity: a reference entity written as one
+ * physical entity standing for all that refer to it, which /query/enhanced/v2
+ * answers with when asked to summarise. Its constructor, in its order:
+ *
+ * - the reference entity's identity, names, database, links and cross
+ *   references; a sequence's genes, checksum, comments, keywords, length and
+ *   species; a gene product's chains, genes and transcripts; an isoform's
+ *   variant and parent;
+ * - the physical entities, sorted -- in the reference entity's own list too,
+ *   which is sorted in place -- by their modified residues (none for all but
+ *   an EWAS), then dbId, as `summarisedEntities`;
+ * - then, entity by entity, each property merged in: a list joined to what
+ *   is there already, each element once (LinkedHashSet), through the
+ *   SummaryEntity's own getter and PhysicalEntity's setter -- which for the
+ *   stoichiometric ones (compartment, componentOf, memberOf, candidateOf)
+ *   expands and re-aggregates; a single value (species, referenceType)
+ *   replaced by the entity's if it has one.
+ */
+export function summaryEntity(reference) {
+  const summary = new Entity(reference.id, 'SummaryEntity', {});
+  const from = reference.fields;
+  const to = summary.fields;
+  const copy = (...names) => {
+    for (const name of names) to[name] = from[name];
+  };
+  copy('dbId', 'stId', 'displayName', 'name');
+  to.referenceEntity = reference;
+  copy(
+    'moleculeType',
+    'databaseName',
+    'identifier',
+    'url',
+    'referenceDatabase',
+    'otherIdentifier',
+    'crossReference'
+  );
+  const is = (name) => isA(reference.schemaClass, name);
+  if (is('ReferenceSequence'))
+    copy(
+      'geneName',
+      'secondaryIdentifier',
+      'checksum',
+      'comment',
+      'description',
+      'keyword',
+      'sequenceLength',
+      'species',
+      'isSequenceChanged'
+    );
+  if (is('ReferenceGeneProduct')) copy('chain', 'referenceGene', 'referenceTranscript');
+  if (is('ReferenceIsoform')) copy('variantIdentifier', 'isoformParent');
+
+  const residues = (entity) =>
+    isA(entity.schemaClass, 'EntityWithAccessionedSequence')
+      ? (entity.fields.hasModifiedResidue ?? []).length
+      : 0;
+  const entities = from.physicalEntity ?? [];
+  entities.sort(
+    (a, b) => residues(a) - residues(b) || Number(a.fields.dbId) - Number(b.fields.dbId)
+  );
+  to.summarisedEntities = entities;
+
+  const union = (existing, added) => [...new Set([...(existing ?? []), ...added])];
+  const unionRelations = (existing, added) => {
+    const out = [...(existing ?? [])];
+    for (const relation of added)
+      if (!out.some((kept) => kept.element === relation.element)) out.push(relation);
+    return out;
+  };
+  // PhysicalEntity's setter for a stoichiometric list: one relation per element,
+  // in the order given (Has.Util.aggregateStoichiometry).
+  const aggregate = (elements, relationClass) =>
+    elements.map(
+      (element, order) => new Relation(relationClass, element, { order, stoichiometry: 1 })
+    );
+  const plain = [
+    'disease',
+    'crossReference',
+    'isRequired',
+    'inferredFrom',
+    'inferredTo',
+    'catalystActivities',
+    'literatureReference',
+    'positivelyRegulates',
+    'negativelyRegulates',
+    'markingReferences',
+  ];
+  const stoichiometric = {
+    compartment: 'HasCompartment',
+    componentOf: 'ComponentOf',
+    memberOf: 'MemberOf',
+    candidateOf: 'CandidateOf',
+  };
+  // In the accessors' order (SummaryEntity.accessors).
+  const order = [
+    'disease',
+    'crossReference',
+    'compartment',
+    'componentOf',
+    'memberOf',
+    'candidateOf',
+    'isRequired',
+    'inferredFrom',
+    'inferredTo',
+    'consumedByEvent',
+    'producedByEvent',
+    'catalystActivities',
+    'literatureReference',
+    'positivelyRegulates',
+    'negativelyRegulates',
+    'markingReferences',
+  ];
+  for (const entity of entities) {
+    for (const name of order) {
+      if (plain.includes(name)) {
+        const value = entity.fields[name];
+        if (!value?.length) continue;
+        to[name] = union(to[name], value);
+      } else if (name in stoichiometric) {
+        const value = expand(entity.fields[name]);
+        if (!value?.length) continue;
+        to[name] = aggregate(union(expand(to[name]), value), stoichiometric[name]);
+      } else {
+        // inputFor / outputFor: the relations themselves, one per element.
+        const value = entity.fields[name];
+        if (!value?.length) continue;
+        to[name] = unionRelations(to[name], value);
+      }
+    }
+    if (isA(entity.schemaClass, 'GenomeEncodedEntity') || isA(entity.schemaClass, 'SimpleEntity')) {
+      if (entity.fields.species !== undefined && entity.fields.species !== null)
+        to.species = entity.fields.species;
+    }
+    if (
+      isA(entity.schemaClass, 'SimpleEntity') ||
+      isA(entity.schemaClass, 'EntityWithAccessionedSequence')
+    ) {
+      if (entity.fields.referenceType !== undefined && entity.fields.referenceType !== null)
+        to.referenceType = entity.fields.referenceType;
+    }
+  }
+  return summary;
 }
 
 /**
