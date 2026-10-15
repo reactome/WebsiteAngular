@@ -24,6 +24,10 @@ import {
   locationsQuery,
   parseHierarchy,
   pathId,
+  timedOut,
+  inDepthAttributes,
+  inDepthId,
+  springIntWithDefault,
   personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
@@ -230,6 +234,58 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe('a query past its time limit', () => {
+  it('is a 503 in the envelope, so the database is not held for one request', () => {
+    const failure = Object.assign(new Error('The transaction has been terminated.'), {
+      code: 'Neo.ClientError.Transaction.TransactionTimedOut',
+    });
+    const answer = timedOut(
+      { originalUrl: '/ContentService/data/event/R-HSA-162582/in-depth?maxDepth=-1' },
+      failure
+    );
+    expect(answer?.status).toBe(503);
+    expect(JSON.parse(answer.body)).toMatchObject({ code: 503, reason: 'SERVICE_UNAVAILABLE' });
+    expect(timedOut({ originalUrl: '/x' }, new Error('boom'))).toBe(undefined);
+  });
+});
+
+describe('the in-depth parameters, as the in-depth controllers read them', () => {
+  // Each measured against Java's /data/entity/{id}/in-depth, 15 Oct 2026.
+  it('reads maxDepth as a primitive int with a default', () => {
+    expect(springIntWithDefault([], 1)).toEqual({ value: 1 });
+    expect(springIntWithDefault([''], 1)).toEqual({ value: 1 });
+    expect(springIntWithDefault(['0x2'], 1)).toEqual({ value: 2 });
+    expect(springIntWithDefault(['1', '2'], 1)).toEqual({ value: 1 });
+    expect(springIntWithDefault(['x'], 1).error).toBe(
+      "Failed to convert value of type 'java.lang.String' to required type 'int'; " +
+        'nested exception is java.lang.NumberFormatException: For input string: "x"'
+    );
+    expect(springIntWithDefault([' '], 1).error).toMatch(/For input string: ""$/);
+    expect(springIntWithDefault(['99999999999'], 1).error).toMatch(
+      /For input string: "99999999999"$/
+    );
+  });
+
+  it('reads attributes as Java joins and splits them, and refuses anything but type names', () => {
+    expect(inDepthAttributes([])).toEqual({ value: 'species|compartment' });
+    expect(inDepthAttributes([''])).toEqual({ value: 'species|compartment' });
+    expect(inDepthAttributes(['species,'])).toEqual({ value: 'species' });
+    expect(inDepthAttributes(['species', 'compartment'])).toEqual({ value: 'species|compartment' });
+    expect(inDepthAttributes([','])).toEqual({ value: 'species' });
+    expect(inDepthAttributes(['foo-bar']).error).toBeDefined();
+    expect(inDepthAttributes(['species]->(x) DETACH DELETE x //']).error).toBeDefined();
+  });
+
+  it('reads an id as getIdentifier, isStId and isDbId do', () => {
+    expect(inDepthId('R-HSA-109796.2')).toEqual({ idType: 'stId', id: 'R-HSA-109796' });
+    expect(inDepthId(' 109796 ')).toEqual({ idType: 'dbId', id: '109796' });
+    expect(inDepthId('UniProt:P01112.2')).toEqual({ idType: 'stId', id: 'UniProt:P01112.2' });
+    // getIdentifier translates a pre-2016 REACT_ id to the stable id it became.
+    expect(inDepthId('REACT_6542.3')).toEqual({ idType: 'oldStId', id: 'REACT_6542' });
+    expect(inDepthId('foo')).toBeUndefined();
+  });
 });
 
 describe("personWhere, as graph-core's PersonService reads a person's id", () => {

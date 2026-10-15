@@ -102,6 +102,8 @@ module.exports = {
       },
     ])
   ),
+  // An entity or an event and everything below it, for the object tree.
+  '^/ContentService/data/(entity|event)/[^/?]+/in-depth(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

@@ -26,6 +26,7 @@ import { read, configured, close } from './graph.mjs';
 import {
   findByIdParameters,
   findByIdQuery,
+  inDepthQuery,
   mapNodes,
   mapResult,
   rootLabelsQuery,
@@ -743,6 +744,72 @@ export const endpoints = [
       };
     },
   },
+  ...[
+    {
+      kind: 'entity',
+      label: 'PhysicalEntity',
+      follow: 'hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker',
+      // A complex of a complex, so there is more than one level to follow.
+      sample: 'R-HSA-109796?includeRef=true&view=nested-aggregated',
+    },
+    {
+      kind: 'event',
+      label: 'Event',
+      follow: 'hasEvent',
+      sample: 'R-HSA-69620?includeRef=true&view=nested-aggregated',
+    },
+  ].map(({ kind, label, follow, sample }) => ({
+    path: `/ContentService/data/${kind}/{id}/in-depth`,
+    sample,
+    differs: [
+      // The 404 body names the service that answered; see /pathways/top/{id}.
+      new RegExp(`^/ContentService/data/${kind}/[^/]+/in-depth[^:]*: \\.url: `),
+      // An `attributes` that is not relationship type names: Java writes it
+      // into its query and answers Neo4j's syntax error; node refuses it before
+      // any query, with a message of its own.
+      new RegExp(`^/ContentService/data/${kind}/[^/]+/in-depth[^:]*: \\.messages\\[0\\]: `),
+    ],
+    /**
+     * An entity or an event and everything below it -- the Pathway Browser's
+     * object tree and details panel read them -- as graph-core's
+     * getPhysicalEntityInDepth / getEventInDepth: every path from it along
+     * its structure (`follow`) up to `maxDepth` steps, each node with
+     * its `attributes` relationships, written by the domain serialiser in the
+     * view the request asks for (the site asks nested-aggregated with JSOG).
+     *
+     * As Java: `maxDepth` (default 1) of 0 means 1 and below 0 means no limit;
+     * `attributes` (default species,compartment) is split on commas, trailing
+     * empties dropped, and an empty list means species. An id is read as
+     * graph-core's getIdentifier reads it (inDepthId). With no path below it
+     * there is no answer at all: an entity
+     * is Java's empty 200, an event its 404.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const depth = springIntWithDefault(queryValues(request, 'maxDepth'), 1);
+      if (depth.error) return javaError(request, 400, 'BAD_REQUEST', depth.error);
+      const attributes = inDepthAttributes(queryValues(request, 'attributes'));
+      if (attributes.error)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', attributes.error);
+      const id = inDepthId(raw);
+      const none =
+        kind === 'entity'
+          ? { status: 200, body: undefined }
+          : notFound(request, `No event found for given identifier: ${raw}`);
+      if (!id) return none;
+      const maxDepth = depth.value === 0 ? 1 : depth.value < 0 ? 2147483647 : depth.value;
+      const [row] = await read(
+        inDepthQuery({ label, follow, idType: id.idType, maxDepth, attributes: attributes.value }),
+        { id: id.id }
+      );
+      if (!row) return none;
+      return {
+        status: 200,
+        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  })),
   {
     path: '/ContentService/data/query/{id}/normalPathway',
     // A disease pathway, by stable id; the diff harness is given more forms.
@@ -2613,6 +2680,85 @@ export function personWhere(id, { email = false } = {}) {
 }
 
 /**
+ * graph-core's DatabaseObjectUtils.getIdentifier then isStId / isDbId, as the
+ * in-depth services read an id: trimmed, a version cut unless the id has a
+ * ':', a pre-2016 REACT_ id translated to the object it was, then a stable id
+ * if it starts with R or has a ':', else a dbId if numeric (any script's
+ * digits), else nothing.
+ */
+export function inDepthId(raw) {
+  const trimmed = javaTrim(raw);
+  const id = trimmed.includes(':') ? trimmed : trimmed.split('.')[0];
+  // getIdentifier swaps an old REACT_ id for the stable id it became: the
+  // object whose oldStId it is.
+  if (id.startsWith('REACT_')) return { idType: 'oldStId', id };
+  if (id.startsWith('R') || id.includes(':')) return { idType: 'stId', id };
+  if (javaNumeric(id)) return { idType: 'dbId', id: asciiDigits(id) };
+  return undefined;
+}
+
+/**
+ * `attributes` as the in-depth controllers read it: Spring joins repeated
+ * values with ',', and an empty one takes the default; String.split(',')
+ * drops trailing empties; an empty list means species. Joined with '|' for
+ * the relationship pattern -- and refused unless that is relationship type
+ * names, because Java writes it into the query text unchecked.
+ */
+export function inDepthAttributes(values, fallback = 'species,compartment') {
+  const text = values.length && values.join(',') !== '' ? values.join(',') : fallback;
+  const parts = text.split(',');
+  while (parts.length && parts[parts.length - 1] === '') parts.pop();
+  const joined = (parts.length ? parts : ['species']).join('|');
+  if (!/^[A-Za-z_][A-Za-z0-9_]*(\|[A-Za-z_][A-Za-z0-9_]*)*$/.test(joined))
+    return { error: `attributes must be relationship type names, not: ${text}` };
+  return { value: joined };
+}
+
+/**
+ * A primitive `int` request parameter with a default, as Spring reads it:
+ * absent or empty takes the default; otherwise the first value parsed as
+ * NumberUtils.parseNumber does (see springInteger), then all of them joined;
+ * failing both, the 400 names `int` and the second attempt's message.
+ */
+export function springIntWithDefault(values, fallback) {
+  if (values.length === 0 || values[0] === '') return { value: fallback };
+  const attempt = (text) => {
+    try {
+      return { value: javaParseInteger(text) };
+    } catch (failure) {
+      if (failure instanceof JavaNumberFormat) return { failure: failure.message };
+      throw failure;
+    }
+  };
+  const converted = attempt(values[0]);
+  if ('value' in converted) return converted;
+  const retried = attempt(values.join(','));
+  if ('value' in retried) return retried;
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type 'int'; ` +
+      `nested exception is java.lang.NumberFormatException: ${retried.failure}`,
+  };
+}
+
+/**
+ * A query the database ended at graph.mjs's time limit: 503 in Java's
+ * envelope -- the request is not malformed, the service will not answer it
+ * -- or undefined for any other failure.
+ */
+export function timedOut(request, failure) {
+  if (!String(failure?.code ?? '').startsWith('Neo.ClientError.Transaction.TransactionTimedOut'))
+    return undefined;
+  return javaError(
+    request,
+    503,
+    'SERVICE_UNAVAILABLE',
+    'The query took longer than this service allows; ask for less (a smaller maxDepth, fewer attributes)'
+  );
+}
+
+/**
  * CustomMessageConverter.getObjectWriter: the view and identity Java writes
  * domain objects with, from `?view=` and `?includeRef=`, as writeDomain's
  * arguments. getParameter is the first value; Boolean.parseBoolean ignores case.
@@ -2811,6 +2957,8 @@ export function app() {
       try {
         writeResult(response, await endpoint.handler(request));
       } catch (failure) {
+        const tooLong = timedOut(request, failure);
+        if (tooLong) return writeResult(response, tooLong);
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.
         console.error(`${endpoint.path}: ${failure.message}`);

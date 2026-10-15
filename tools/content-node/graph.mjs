@@ -140,13 +140,26 @@ function connection() {
  * It would make every label match fast for the Java service too. It is a schema
  * write on a shared instance, so it is not taken here.
  */
+/**
+ * How long one read may run before the database ends it.
+ *
+ * The database is shared with the Java service beta depends on. On 15 Oct
+ * 2026 deep in-depth queries -- the kind any caller can ask for with
+ * maxDepth=-1 and a long `attributes` -- ran it out of memory, and Tomcat,
+ * which cannot start without it, was down until it was restarted. The
+ * slowest query this service needs is ~10s (the content tables, at startup);
+ * past 30s the request is answered 503 (service.mjs, timedOut) and the
+ * database is let go.
+ */
+export const READ_TIMEOUT_MS = 30_000;
+
 export async function read(cypher, parameters = {}) {
   const session = connection().session({
     database: DATABASE,
     defaultAccessMode: neo4j.session.READ,
   });
   try {
-    const result = await session.run(cypher, parameters);
+    const result = await session.run(cypher, parameters, { timeout: READ_TIMEOUT_MS });
     return result.records.map((record) => plain(record.toObject()));
   } finally {
     await session.close();

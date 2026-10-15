@@ -80,6 +80,24 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
     expect(json.output.map((entry) => entry.dbId ?? entry)).toEqual([4, 3]);
   });
 
+  it('counts a relationship returned twice once, as SDN does', () => {
+    // On two paths, in-depth returns the same relationship twice. `species`
+    // is a List, so a second copy would be a second species.
+    const species = node(9, ['DatabaseObject', 'Taxon', 'Species'], {
+      displayName: 'Homo sapiens',
+    });
+    const row = {
+      ...reaction,
+      nodes: [...reaction.nodes, species, species],
+      relationships: [
+        ...reaction.relationships,
+        { ...rel('species', 1, 9), id: 77 },
+        { ...rel('species', 1, 9), id: 77 },
+      ],
+    };
+    expect(write(row).species).toEqual([expect.objectContaining({ dbId: 9 })]);
+  });
+
   it('gives a related object the fields that point back at the root, by stoichiometry too', () => {
     // As Java writes reaction 9834076's: an input of two is consumed by it twice.
     expect(write(reaction).input[0].consumedByEvent).toEqual([1, 1]);
@@ -171,6 +189,27 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       relationships: [],
     };
     expect(write(row).className).toBe('Genes and Transcripts');
+  });
+});
+
+describe('writeDomain on a deep graph', () => {
+  // Deep in-depth answers nest thousands of objects; a recursive writer ran
+  // out of stack on them (review of #472) and rebuilt every level's string.
+  it('writes 20,000 levels without running out of stack', () => {
+    const count = 20_000;
+    const events = Array.from({ length: count }, (_, at) =>
+      node(100 + at, EVENT, { displayName: `e${at}` })
+    );
+    const row = {
+      root: events[0],
+      nodes: events.slice(1),
+      relationships: events.slice(1).map((event, at) => rel('precedingEvent', 100 + at, event.id)),
+    };
+    const text = writeDomain(mapResult(row));
+    expect(text.startsWith('{"dbId":100,')).toBe(true);
+    expect(text.split('"precedingEvent"').length - 1).toBe(count - 1);
+    // Identity holds: the last event is written once, then referred to.
+    expect(JSON.parse(text).precedingEvent[0].followingEvent).toEqual([100]);
   });
 });
 

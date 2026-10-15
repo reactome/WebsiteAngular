@@ -102,7 +102,15 @@ const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * `order` -- every related node's id, kept or not (findByIdQuery) -- is the
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
-export function mapResult({ root, nodes, relationships, order }) {
+export function mapResult({ root, nodes, relationships: returned, order }) {
+  // A relationship returned twice -- on two paths, in-depth -- is one
+  // relationship to SDN: kept where it first appears.
+  const seenRelationships = new Set();
+  const relationships = returned.filter(
+    (relationship) =>
+      relationship.id === undefined ||
+      (!seenRelationships.has(relationship.id) && seenRelationships.add(relationship.id))
+  );
   const entities = new Map();
   const rootClass = schemaClassOf(root.labels);
   entities.set(root.id, new Entity(root.id, rootClass, root.props));
@@ -321,39 +329,79 @@ const empty = (value) =>
  * the nested view while the snapshot has them the other way. So in the nested
  * views a few keys can sit elsewhere than Java's answer of the day -- the same
  * data, and the same thing a Tomcat restart does -- and under JSOG the numbers
- * follow. The default (flatten) view matched Java byte for byte over 20,279
- * objects of every class.
+ * follow. Seen happen: before a Tomcat restart on 15 Oct 2026 Java wrote an
+ * EntityWithAccessionedSequence's componentOfComplexes before candidateOfSet,
+ * after it the other way. So the nested views are compared with Java as data;
+ * the default (flatten) view, which matched Java byte for byte over 20,279
+ * objects of every class, did so before that restart and after it.
  */
 export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
-  return write(value, { view, jsog, seen: new Map() });
+  // Iterative, not recursive: an in-depth answer nests thousands of objects
+  // deep, which overflowed the stack, and building each level's text to hand
+  // to the level above copied the same bytes once per level. Pieces go into
+  // one array, joined once. Work is a stack of what is still to be written,
+  // in reverse; an object is opened -- and, being an entity, marked written
+  // -- when it is taken off, so references fall exactly where they did when
+  // this recursed.
+  const out = [];
+  const seen = new Map();
+  const work = [{ value, floating: false }];
+  while (work.length) {
+    const item = work.pop();
+    if (typeof item === 'string') {
+      out.push(item);
+      continue;
+    }
+    const { value: current, floating } = item;
+    if (current instanceof Entity) {
+      if (seen.has(current)) {
+        out.push(jsog ? `{"@ref":"${seen.get(current)}"}` : number(current.fields.dbId));
+        continue;
+      }
+      seen.set(current, seen.size + 1);
+      open(out, work, current, view, jsog ? `"@id":"${seen.size}"` : undefined);
+    } else if (current instanceof Relation) {
+      open(out, work, current, view);
+    } else if (Array.isArray(current)) {
+      out.push('[');
+      work.push(']');
+      for (let at = current.length - 1; at >= 0; at -= 1) {
+        work.push({ value: current[at], floating });
+        if (at > 0) work.push(',');
+      }
+    } else {
+      out.push(scalar(current, floating));
+    }
+  }
+  return out.join('');
 }
 
-function write(value, context, floating = false) {
-  if (value instanceof Entity) {
-    const { seen, jsog } = context;
-    if (seen.has(value)) return jsog ? `{"@ref":"${seen.get(value)}"}` : number(value.fields.dbId);
-    seen.set(value, seen.size + 1);
-    return members(value, context, jsog ? `"@id":"${seen.size}"` : undefined);
+/** An object's opening, and its members queued in order (reversed onto the stack). */
+function open(out, work, target, view, first) {
+  const members = [];
+  for (const [name, source, views, floating] of SNAPSHOT().json[target.schemaClass] ?? []) {
+    if (!(views & view)) continue;
+    const value = valueOf(target, source);
+    if (empty(value)) continue;
+    members.push([name, value, floating === 'D']);
   }
-  if (value instanceof Relation) return members(value, context);
-  if (Array.isArray(value))
-    return `[${value.map((item) => write(item, context, floating)).join(',')}]`;
+  out.push('{');
+  if (first) out.push(first, members.length ? ',' : '');
+  work.push('}');
+  for (let at = members.length - 1; at >= 0; at -= 1) {
+    const [name, value, floating] = members[at];
+    work.push({ value, floating });
+    work.push(`${javaString(name)}:`);
+    if (at > 0) work.push(',');
+  }
+}
+
+function scalar(value, floating) {
   if (typeof value === 'string') return javaString(value);
   if (typeof value === 'boolean') return String(value);
   if (typeof value === 'number') return floating ? javaDouble(value) : number(value);
   if (typeof value === 'bigint') return String(value);
   throw new Error(`domain: cannot write ${typeof value}`);
-}
-
-function members(target, context, first) {
-  const parts = first ? [first] : [];
-  for (const [name, source, views, floating] of SNAPSHOT().json[target.schemaClass] ?? []) {
-    if (!(views & context.view)) continue;
-    const value = valueOf(target, source);
-    if (empty(value)) continue;
-    parts.push(`${javaString(name)}:${write(value, context, floating === 'D')}`);
-  }
-  return `{${parts.join(',')}}`;
 }
 
 /** A whole number as Java writes a Long; graph.mjs hands an unsafe one over as text. */
@@ -421,6 +469,46 @@ export function findByIdQuery(
 /** The labels of the object findByIdQuery will load, to pick its parameters by. */
 export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
   return `MATCH (${anchor}) WHERE ${where} RETURN labels(n) AS labels LIMIT 1`;
+}
+
+/**
+ * graph-core's getPhysicalEntityInDepth / getEventInDepth: the root, every
+ * path below it along `follow` up to `maxDepth` steps, and from each node on a
+ * path its `attributes` relationships -- as Java's MATCH, so a root with no
+ * such path is no result at all. `attributes` must already be checked to be
+ * relationship type names (inDepthAttributes); Java writes it into the query
+ * text as it comes, and so does this, which is why it is checked.
+ *
+ * Java collects a list per path per node on it, the same nodes over and over:
+ * 254,598 occurrences of 1,800 nodes for one set at full depth, 87MB written
+ * out whole, which took node minutes to read and stalled every other request
+ * meanwhile. Each node and relationship comes back once instead, in the order
+ * of its first appearance -- the only order the mapping uses (mapResult).
+ */
+export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
+  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r) =>
+    `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
+  return `MATCH (root:DatabaseObject) WHERE root.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'} AND root:${label}
+     MATCH path=(root)-[:${follow}*1..${maxDepth}]->(:${label})
+     WITH root, nodes(path) AS nodesPath, relationships(path) AS rels
+     UNWIND nodesPath AS nodePath
+     OPTIONAL MATCH p2=(nodePath)-[:${attributes}]->(attributes)
+     WITH root, collect(nodesPath) + collect(nodes(p2)) AS nodeLists,
+          collect(rels) + collect(relationships(p2)) AS relationshipLists
+     CALL {
+       WITH nodeLists
+       UNWIND nodeLists AS list UNWIND list AS n
+       RETURN collect(DISTINCT n) AS nodes
+     }
+     CALL {
+       WITH relationshipLists
+       UNWIND relationshipLists AS list UNWIND list AS r
+       RETURN collect(DISTINCT r) AS relationships
+     }
+     RETURN ${node('root')} AS root,
+            [n IN nodes | ${node('n')}] AS nodes,
+            [r IN relationships | ${rel('r')}] AS relationships`;
 }
 
 /**
