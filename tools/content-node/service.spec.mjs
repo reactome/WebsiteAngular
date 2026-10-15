@@ -25,6 +25,7 @@ import {
   parseHierarchy,
   pathId,
   timedOut,
+  needsIncoming,
   failureAnswer,
   inDepthAttributes,
   inDepthId,
@@ -364,6 +365,30 @@ describe('the edges of a path, answered as Tomcat and Spring answer them', () =>
     expect(failureAnswer(request, '/ContentService/data/query/{id}', new Error('boom'))).toBe(
       undefined
     );
+  });
+});
+
+describe('/query/enhanced/{id} ranks above /query/{id}/{attribute}, as in Spring', () => {
+  it('reads /query/enhanced/stId as the enhanced object with the id stId', async () => {
+    const response = await fetch(`${base}/ContentService/data/query/enhanced/stId`);
+    expect(response.status).toBe(404);
+    expect((await response.json()).messages).toEqual(['Id: stId has not been found in the System']);
+  });
+});
+
+describe("needsIncoming, QueryObjectController's needsIncomingRelationship", () => {
+  // The branches that need no graph; measured against Java's /query/enhanced.
+  it('wants them for a stable id, except a chemical', async () => {
+    expect(await needsIncoming('R-HSA-70486')).toBe(true);
+    expect(await needsIncoming('REACT_432')).toBe(true);
+    expect(await needsIncoming('R-ALL-113592')).toBe(false);
+    expect(await needsIncoming('chebi:15422')).toBe(false);
+  });
+
+  it("does not for what Long.valueOf refuses: padding, words, a long's overflow", async () => {
+    expect(await needsIncoming(' 70486')).toBe(false);
+    expect(await needsIncoming('foo')).toBe(false);
+    expect(await needsIncoming('99999999999999999999')).toBe(false);
   });
 });
 

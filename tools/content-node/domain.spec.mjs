@@ -80,6 +80,27 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
     expect(json.output.map((entry) => entry.dbId ?? entry)).toEqual([4, 3]);
   });
 
+  it('puts the root among the candidates where it first appears, else last, as SDN does', () => {
+    // A regulation whose reaction is also regulated by another: the root is a
+    // candidate for the reaction's regulatedBy alongside the other one.
+    const regulation = ['DatabaseObject', 'Regulation', 'PositiveRegulation'];
+    const make = (nodes) => ({
+      root: node(50, regulation, { displayName: 'root' }),
+      nodes,
+      relationships: [rel('regulatedBy', 51, 50), rel('regulatedBy', 51, 52)],
+    });
+    const reaction = node(51, EVENT, { displayName: 'reaction' });
+    const other = node(52, regulation, { displayName: 'other' });
+    const order = (row) =>
+      write(row).regulatedEntity[0].regulatedBy.map((entry) => entry.dbId ?? entry);
+    // Not in any list: last.
+    expect(order(make([reaction, other]))).toEqual([52, 50]);
+    // In a list before the other: there.
+    expect(order(make([reaction, node(50, regulation, { displayName: 'root' }), other]))).toEqual([
+      50, 52,
+    ]);
+  });
+
   it('counts a relationship returned twice once, as SDN does', () => {
     // On two paths, in-depth returns the same relationship twice. `species`
     // is a List, so a second copy would be a second species.
@@ -152,6 +173,36 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       relationships: [],
     };
     expect(write(direct).schemaClass).toBe('Pathway');
+  });
+
+  it('gives a node the class of the field that reaches it first, depth first, as SDN does', () => {
+    // Two plain PositiveRegulations replacing a deleted one. The first is
+    // reached through replacementInstances, an interface (Deletable), and SDN
+    // takes the first class in its store that fits: a gene expression
+    // regulation. Mapping it reaches its reaction, whose regulatedBy (a class)
+    // reaches the second before the deleted one's loop does: the second keeps
+    // its labels' class. Java writes deleted 9034526's two replacements so.
+    const regulation = ['DatabaseObject', 'Deletable', 'PositiveRegulation', 'Regulation'];
+    const row = {
+      root: node(60, ['DatabaseObject', 'MetaDatabaseObject', 'Deleted'], {}),
+      nodes: [
+        node(61, regulation, { displayName: 'first' }),
+        node(62, regulation, { displayName: 'second' }),
+        node(63, EVENT, { displayName: 'reaction' }),
+      ],
+      relationships: [
+        rel('replacementInstances', 60, 61),
+        rel('replacementInstances', 60, 62),
+        rel('regulatedBy', 63, 61),
+        rel('regulatedBy', 63, 62),
+      ],
+    };
+    const [first, second] = write(row).replacementInstances;
+    expect(first.schemaClass).toBe('PositiveGeneExpressionRegulation');
+    // Written in full where it was first met, inside the first's reaction.
+    expect(second).toBe(62);
+    const [, nested] = first.regulatedEntity[0].regulatedBy;
+    expect(nested).toMatchObject({ dbId: 62, schemaClass: 'PositiveRegulation' });
   });
 
   it("keeps a constructor's value where the node has none: moleculeType", () => {

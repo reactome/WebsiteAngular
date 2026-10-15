@@ -28,6 +28,7 @@ import {
   findByIdQuery,
   inDepthQuery,
   mapNodes,
+  oldEnhancedQuery,
   mapResult,
   rootLabelsQuery,
   VIEW,
@@ -664,6 +665,39 @@ export const endpoints = [
       return { status: 200, body, type: 'application/json' };
     }),
   })),
+  {
+    // Before /query/{id}/stId and /normalPathway, as Spring ranks its literal
+    // `enhanced` above their {id}: /query/enhanced/stId is this, with id stId.
+    path: '/ContentService/data/query/enhanced/{id}',
+    sample: 'R-HSA-70486',
+    differs: [/^\/ContentService\/data\/query\/enhanced\/[^/]+: \.url: /],
+    /**
+     * An object with its neighbours and some of theirs: graph-core's
+     * findOldEnhancedObjectById (oldEnhancedQuery), written by the domain
+     * serialiser in the request's view. The entity popup, the website's
+     * content pages and the IDG panel read it.
+     *
+     * Its relationships go both ways unless QueryObjectController's
+     * needsIncomingRelationship says not (needsIncoming). The id is read as
+     * getIdentifier reads it (inDepthId).
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 5));
+      const id = inDepthId(raw);
+      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+      if (!id) return missing();
+      const outgoingOnly = !(await needsIncoming(raw));
+      const [row] = await read(oldEnhancedQuery({ idType: id.idType, outgoingOnly }), {
+        id: id.id,
+      });
+      if (!row) return missing();
+      return {
+        status: 200,
+        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
   {
     path: '/ContentService/data/query/{id}/stId',
     // A reaction by dbId, so the comparison covers the lookup the site makes.
@@ -2695,6 +2729,30 @@ export function inDepthId(raw) {
   if (id.startsWith('R') || id.includes(':')) return { idType: 'stId', id };
   if (javaNumeric(id)) return { idType: 'dbId', id: asciiDigits(id) };
   return undefined;
+}
+
+/**
+ * QueryObjectController.needsIncomingRelationship, on the id as it came (not
+ * as getIdentifier reads it): a stable id needs them unless it is a chemical
+ * (R-ALL-, chebi:); a dbId -- Long.valueOf, so a sign but no padding -- unless
+ * the object is a Species, Summation, Person, Compartment or SimpleEntity.
+ * Anything Long.valueOf refuses, or no such object, is Java's caught
+ * exception: false.
+ */
+export async function needsIncoming(raw) {
+  if (raw.startsWith('R') || raw.includes(':'))
+    return !raw.startsWith('R-ALL-') && !raw.startsWith('chebi:');
+  const sign = /^[+-]/.test(raw) ? raw[0] : '';
+  const digits = raw.slice(sign.length);
+  if (!javaNumeric(digits)) return false;
+  const value = BigInt(`${sign === '-' ? '-' : ''}${asciiDigits(digits)}`);
+  if (value > 9223372036854775807n || value < -9223372036854775808n) return false;
+  const [row] = await read(
+    `MATCH (n:DatabaseObject) WHERE n.dbId = $id
+     RETURN NOT (n:Species OR n:Summation OR n:Person OR n:Compartment OR n:SimpleEntity) AS needs`,
+    { id: neo4j.int(value.toString()) }
+  );
+  return row?.needs ?? false;
 }
 
 /**

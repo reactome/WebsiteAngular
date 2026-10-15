@@ -102,6 +102,9 @@ module.exports = {
       },
     ])
   ),
+  // An object with its neighbours and some of theirs (the older enhanced
+  // query). Not /enhanced/v2/, which Java still serves.
+  '^/ContentService/data/query/enhanced/[^/?]+(\\?|$)': contentNode,
   // An entity or an event and everything below it, for the object tree.
   '^/ContentService/data/(entity|event)/[^/?]+/in-depth(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
