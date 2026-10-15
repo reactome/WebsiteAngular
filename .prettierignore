@@ -40,3 +40,7 @@ e2e/har/
 # Java's schema answers, captured by tools/content-node/snapshot-schema.mjs and
 # written one class per line so a regeneration's diff names what changed.
 tools/content-node/schema-snapshot.json
+# graph-core's classes as Jackson and Spring Data Neo4j read them, written one
+# entry per line by tools/content-node/snapshot-domain.mjs so a model change is
+# a readable diff. Generated; reflowing it would undo that.
+tools/content-node/domain-snapshot.json
