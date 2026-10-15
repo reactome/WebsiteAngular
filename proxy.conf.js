@@ -109,6 +109,10 @@ module.exports = {
   '^/ContentService/data/query/enhanced/[^/?]+(\\?|$)': contentNode,
   // An entity or an event and everything below it, for the object tree.
   '^/ContentService/data/(entity|event)/[^/?]+/in-depth(\\?|$)': contentNode,
+  // An event's or entity's counterpart in another species: one id (GET), or
+  // up to twenty (POST), for the species selector.
+  '^/ContentService/data/(orthology/[^/?]+/species|orthologies/ids/species)/[^/?]+(\\?|$)':
+    contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

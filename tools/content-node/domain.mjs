@@ -59,6 +59,18 @@ class Relation {
   }
 }
 
+/**
+ * A Java Map written as a JSON object, its entries in the order given -- the
+ * Map's own iteration order, which the caller decides (see JavaHashMap in
+ * service.mjs). Its values are written in one pass with everything else, so
+ * `@id` numbering runs on across them as Jackson's does.
+ */
+export class JsonMap {
+  constructor(entries) {
+    this.entries = entries;
+  }
+}
+
 /** Has.Util.wrapUniqueElements: a plain relationship as Has.Default, for composedOf. */
 const wrap = (entities, type) =>
   (entities ?? []).map((entity) => new Relation('Default', entity, {}, type));
@@ -429,6 +441,15 @@ export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
       open(out, work, current, view, jsog ? `"@id":"${seen.size}"` : undefined);
     } else if (current instanceof Relation) {
       open(out, work, current, view);
+    } else if (current instanceof JsonMap) {
+      out.push('{');
+      work.push('}');
+      for (let at = current.entries.length - 1; at >= 0; at -= 1) {
+        const [key, entry] = current.entries[at];
+        work.push({ value: entry, floating });
+        work.push(`${javaString(key)}:`);
+        if (at > 0) work.push(',');
+      }
     } else if (Array.isArray(current)) {
       out.push('[');
       work.push(']');

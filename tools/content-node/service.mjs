@@ -29,6 +29,7 @@ import {
   findByIdQuery,
   inDepthQuery,
   isA,
+  JsonMap,
   mapNodes,
   oldEnhancedQuery,
   mapResult,
@@ -1470,7 +1471,271 @@ export const endpoints = [
       return { status: 200, body: javaJson(table), type: 'application/json' };
     },
   },
+  {
+    path: '/ContentService/data/orthology/{id}/species/{speciesId}',
+    // A human pathway, in mouse; the diff harness is given more forms.
+    sample: 'R-HSA-69620',
+    samplePath: { speciesId: '48892' },
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    // '.' is not found here; Java's is a 500 (see resolveId).
+    differs: [/^\/ContentService\/data\/orthology\/[^/]+\/species\/[^/]+: \.url: /],
+    /**
+     * An event's or entity's counterpart in another species: graph-core's
+     * OrthologyService.getOrthology, the first object it finds, alone (no
+     * relationships), written by the domain serialiser in Java's views. The
+     * Pathway Browser asks when the species is changed with an event open.
+     *
+     * Java's answers: an id that is neither a stable id nor a dbId is a 404
+     * naming it and the species; an id with no counterpart there is a 500 with
+     * no message -- the controller takes the first of an empty list.
+     */
+    handler: async (request) => {
+      const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
+      if (species.error)
+        return javaError(request, species.status, REASON[species.status], species.error);
+      const raw = pathId(rawSegment(request, 4));
+      const refused = longPastRange([raw]);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const found = await orthologyOf(raw, species.value);
+      if (found === null)
+        return notFound(request, `No orthology found for '${raw}' in species '${species.value}'`);
+      if (found === undefined) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
+      return {
+        status: 200,
+        serialised: writeDomain(mapNodes([found])[0], ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/orthologies/ids/species/{speciesId}',
+    method: 'post',
+    samplePath: { speciesId: '48892' },
+    // Two ids for one pathway, one with none and one that is no id.
+    sampleBody: 'R-HSA-69620,R-HSA-69608;69620\nREACT_1538\txyz,R-ALL-29358',
+    differs: [/^\/ContentService\/data\/orthologies\/ids\/species\/[^/]+: \.url: /],
+    /**
+     * OrthologyController.getOrthologies: the ids in a text/plain body, split
+     * on , ; newline and tab and trimmed; past twenty, the first twenty in a
+     * HashSet. Each id's first counterpart, as the GET above finds it, keyed
+     * by the id as sent, in a HashMap -- written in that HashMap's order
+     * (JavaHashMap), each value its own object. Ids with none are left out;
+     * none at all is a 404. The Pathway Browser sends every id in its URL when
+     * the species changes.
+     *
+     * Spring checks the content type first, then the species, then that there
+     * is a body. A dbId past a long anywhere in the list is Java's 500 for the
+     * whole request, as is '.' -- which here is an id with no counterpart, as
+     * the GET reads it.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
+      if (species.error)
+        return javaError(request, species.status, REASON[species.status], species.error);
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Required request body is missing: public java.util.Map<java.lang.Object, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.OrthologyController.getOrthologies(java.lang.Long,java.lang.String)'
+        );
+      const ids = orthologyIds(plainText(request.body, contentType));
+      const refused = longPastRange(ids);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const unique = [...new Set(ids)];
+      const found = await Promise.all(unique.map((id) => orthologyOf(id, species.value)));
+      const byId = new JavaHashMap();
+      for (const id of ids) byId.set(id, found[unique.indexOf(id)]);
+      const kept = new JavaHashMap();
+      for (const [id, object] of byId.entries()) if (object) kept.set(id, object);
+      if (kept.size === 0) return notFound(request, 'No orthologies found');
+      const entries = [...kept.entries()].map(([id, object]) => [id, mapNodes([object])[0]]);
+      return {
+        status: 200,
+        serialised: writeDomain(new JsonMap(entries), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
 ];
+
+/** The reason Java's envelope gives with each status these endpoints send. */
+const REASON = { 400: 'BAD_REQUEST', 500: 'INTERNAL_SERVER_ERROR' };
+
+/**
+ * graph-core's OrthologyRepository, as OrthologyService chooses between its
+ * two queries: an object's counterparts in a species, inferred from it or it
+ * from them (one step either way) or sharing the object they were both
+ * inferred from (two steps). The Cypher is Java's, in a subquery so the
+ * result comes back as a map; the first row is the one Java keeps.
+ *
+ * null when the id is no id (Java's null); undefined when nothing is found
+ * (Java's empty list). A REACT_ id is the object whose oldStId it is, or, when
+ * there is none, looked for as a stable id -- and not found, as in Java.
+ */
+async function orthologyOf(raw, species) {
+  const id = inDepthId(raw);
+  if (!id) return null;
+  let { idType, id: value } = id;
+  if (idType === 'oldStId') {
+    const [old] = await read(
+      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+      { id: value }
+    );
+    value = old?.stId ?? value;
+    idType = 'stId';
+  }
+  const anchor = idType === 'dbId' ? '{dbId:$id}' : '{stId:$id}';
+  const rows = await read(
+    `CALL {
+       MATCH (:DatabaseObject${anchor})<-[:inferredTo]-()-[:inferredTo]->(o:DatabaseObject)-[:species]->(:Species{dbId:$speciesId}) RETURN DISTINCT o
+       UNION
+       MATCH (:DatabaseObject${anchor})-[:inferredTo]-(o:DatabaseObject)-[:species]->(:Species{dbId:$speciesId}) RETURN DISTINCT o
+     }
+     RETURN {id: id(o), labels: labels(o), props: properties(o)} AS o`,
+    { id: idType === 'dbId' ? neo4j.int(value) : value, speciesId: neo4j.int(String(species)) }
+  );
+  return rows[0]?.o;
+}
+
+/**
+ * Long.parseLong's 500 for the first id that is a dbId past a long, naming it
+ * as Java read it (trimmed, any version cut), or undefined. neo4j.int would
+ * wrap round instead and find some other object.
+ */
+function longPastRange(ids) {
+  for (const raw of ids) {
+    const id = inDepthId(raw);
+    if (id?.idType === 'dbId' && BigInt(id.id) > 9223372036854775807n)
+      return `For input string: "${javaTrim(raw).split('.')[0]}"`;
+  }
+  return undefined;
+}
+
+/**
+ * The ids in getOrthologies' body: String.split on , ; newline or tab --
+ * trailing empty strings dropped, as Java's split drops them -- each trimmed;
+ * more than twenty, the first twenty collected into a HashSet, in its order.
+ */
+export function orthologyIds(body) {
+  const parts = body.split(/,|;|\n|\t/);
+  if (parts.length > 1) while (parts.length && parts.at(-1) === '') parts.pop();
+  const ids = parts.map((part) => javaTrim(part));
+  if (ids.length <= 20) return ids;
+  const set = new JavaHashMap();
+  for (const id of ids.slice(0, 20)) set.set(id, true);
+  return [...set.keys()];
+}
+
+/**
+ * Whether Spring takes a Content-Type for `consumes = "text/plain"`: undefined
+ * if so, else the 415's message. It parses the header as MimeTypeUtils does
+ * -- the type and subtype lower-cased, parameters as given, a charset Java
+ * must know -- and only text/plain is compatible: `text/*` is not.
+ */
+export function plainTextProblem(header) {
+  if (!header) return "Content type '' not supported";
+  const invalid = (why) => `Invalid mime type "${header}": ${why}`;
+  const [first = '', ...rest] = header.split(';');
+  const full = first.trim() === '*' ? '*/*' : first.trim();
+  const slash = full.indexOf('/');
+  if (slash === -1) return invalid("does not contain '/'");
+  if (slash === full.length - 1) return invalid("does not contain subtype after '/'");
+  const type = full.slice(0, slash).toLowerCase();
+  const subtype = full.slice(slash + 1).toLowerCase();
+  if (type === '*' && subtype !== '*')
+    return invalid("wildcard type is legal only in '*/*' (all mime types)");
+  const parameters = [];
+  for (const parameter of rest) {
+    const at = parameter.indexOf('=');
+    if (at === -1) continue;
+    const name = parameter.slice(0, at).trim();
+    const value = parameter.slice(at + 1).trim();
+    if (name.toLowerCase() === 'charset' && !knownCharset(value))
+      return invalid(`unsupported charset '${value.replace(/^"(.*)"$/, '$1')}'`);
+    parameters.push(`;${name}=${value}`);
+  }
+  if (type === 'text' && subtype === 'plain') return undefined;
+  return `Content type '${type}/${subtype}${parameters.join('')}' not supported`;
+}
+
+function knownCharset(value) {
+  try {
+    new TextDecoder(value.replace(/^"(.*)"$/, '$1'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A text/plain body as StringHttpMessageConverter reads it: in the header's
+ * charset, else ISO-8859-1 -- latin1 proper, not the windows-1252 that
+ * TextDecoder gives that label.
+ */
+function plainText(body, header) {
+  const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i
+    .exec(header ?? '')?.[1]
+    ?.trim()
+    .toLowerCase();
+  if (!charset || ['iso-8859-1', 'latin1', 'iso_8859_1'].includes(charset))
+    return body.toString('latin1');
+  if (charset === 'utf-8' || charset === 'utf8') return body.toString('utf8');
+  return new TextDecoder(charset).decode(body);
+}
+
+/**
+ * A java.util.HashMap's iteration order, for answers Java writes from one:
+ * by bucket -- String.hashCode, its high half folded in, masked to the table
+ * size -- then in the order keys reached the bucket. The table starts at 16,
+ * doubles past three quarters full or when a bucket reaches nine keys while
+ * it is under 64, and each bucket splits in order. Past 64 Java makes a bucket
+ * of nine into a tree, which this does not follow; twenty ids never get
+ * there.
+ */
+export class JavaHashMap {
+  #table = Array.from({ length: 16 }, () => []);
+  size = 0;
+
+  static #hash(key) {
+    let h = 0;
+    for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
+    return h ^ (h >>> 16);
+  }
+
+  set(key, value) {
+    const bucket = this.#table[JavaHashMap.#hash(key) & (this.#table.length - 1)];
+    const entry = bucket.find(([existing]) => existing === key);
+    if (entry) {
+      entry[1] = value;
+      return this;
+    }
+    bucket.push([key, value]);
+    if (bucket.length >= 9 && this.#table.length < 64) this.#grow();
+    this.size += 1;
+    if (this.size > this.#table.length * 0.75) this.#grow();
+    return this;
+  }
+
+  #grow() {
+    const table = Array.from({ length: this.#table.length * 2 }, () => []);
+    for (const bucket of this.#table)
+      for (const entry of bucket)
+        table[JavaHashMap.#hash(entry[0]) & (table.length - 1)].push(entry);
+    this.#table = table;
+  }
+
+  *entries() {
+    for (const bucket of this.#table) for (const [key, value] of bucket) yield [key, value];
+  }
+
+  *keys() {
+    for (const [key] of this.entries()) yield key;
+  }
+}
 
 /**
  * The endpoint a path was expanded from, by its whole template. Matching on
@@ -2600,17 +2865,21 @@ function javaTrimAll(text) {
   return text.replace(JAVA_WHITESPACE, '');
 }
 
-/** NumberUtils.parseNumber(text, Integer.class). */
-function javaParseInteger(text) {
+/**
+ * NumberUtils.parseNumber(text, Integer.class), or Long.class for 64 bits:
+ * Integer's as a number, Long's as a bigint.
+ */
+function javaParseInteger(text, bits = 32) {
   const trimmed = javaTrimAll(text);
   const at = trimmed.startsWith('-') ? 1 : 0;
   const hex =
     trimmed.startsWith('0x', at) || trimmed.startsWith('0X', at) || trimmed.startsWith('#', at);
-  return hex ? javaDecode(trimmed) : javaParseInt(trimmed, 10);
+  const value = hex ? javaDecode(trimmed, bits) : javaParseInt(trimmed, 10, bits);
+  return bits === 32 ? Number(value) : value;
 }
 
-/** Integer.decode, as far as parseNumber reaches it. */
-function javaDecode(text) {
+/** Integer.decode, or Long.decode, as far as parseNumber reaches it. */
+function javaDecode(text, bits) {
   if (text === '') throw new JavaNumberFormat('Zero length string');
   let index = 0;
   let radix = 10;
@@ -2631,44 +2900,49 @@ function javaDecode(text) {
   }
   const rest = text.slice(index);
   try {
-    const result = javaParseInt(rest, radix);
-    return negative ? -result | 0 : result;
+    const result = javaParseInt(rest, radix, bits);
+    return negative ? BigInt.asIntN(bits, -result) : result;
   } catch (failure) {
     if (!(failure instanceof JavaNumberFormat)) throw failure;
     // Java retries with the sign attached, for the one value that needs it
     // (-0x80000000), and that attempt's message is the one reported.
-    return javaParseInt(negative ? `-${rest}` : rest, radix);
+    return javaParseInt(negative ? `-${rest}` : rest, radix, bits);
   }
 }
 
-/** Integer.parseInt(text, radix), as the service's JVM has it, per UTF-16 unit. */
-function javaParseInt(text, radix) {
+/**
+ * Integer.parseInt(text, radix), or Long.parseLong for 64 bits, as the
+ * service's JVM has them, per UTF-16 unit. A bigint either way.
+ */
+function javaParseInt(text, radix, bits) {
   const refuse = () => {
     throw new JavaNumberFormat(`For input string: "${text}"`);
   };
   if (text.length === 0) refuse();
+  const min = -(1n << BigInt(bits - 1));
   let i = 0;
   let negative = false;
-  let limit = -2147483647;
+  let limit = min + 1n;
   if (text[0] < '0') {
     if (text[0] === '-') {
       negative = true;
-      limit = -2147483648;
+      limit = min;
     } else if (text[0] !== '+') refuse();
     if (text.length === 1) refuse();
     i += 1;
   }
-  const multmin = Math.trunc(limit / radix);
-  let result = 0;
+  const base = BigInt(radix);
+  const multmin = limit / base;
+  let result = 0n;
   while (i < text.length) {
     const digit = javaDigit(text[i], radix);
     i += 1;
     if (digit < 0 || result < multmin) refuse();
-    result *= radix;
-    if (result < limit + digit) refuse();
-    result -= digit;
+    result *= base;
+    if (result < limit + BigInt(digit)) refuse();
+    result -= BigInt(digit);
   }
-  return (negative ? result : -result) | 0;
+  return negative ? result : -result;
 }
 
 /**
@@ -2879,6 +3153,69 @@ export function springIntWithDefault(values, fallback) {
       `Failed to convert value of type '${type}' to required type 'int'; ` +
       `nested exception is java.lang.NumberFormatException: ${retried.failure}`,
   };
+}
+
+/** rfd-snapshot.json's extensions, read on first use. */
+let safeExtensions;
+
+/**
+ * Whether Java would mark this answer `Content-Disposition:
+ * inline;filename=f.txt` -- Spring's guard against a reflected download
+ * (AbstractMessageConverterMethodProcessor.addContentDispositionHeader), on
+ * every body it writes but a redirect's. The request path's last segment is
+ * read up to any ';', percent-decoded, and its extension -- after the last
+ * '.' -- checked; so is the extension of the matrix parameters after it. An
+ * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.mjs says
+ * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
+ * much as `.exe`.
+ */
+export function downloadGuard(request) {
+  const uri = String(request.originalUrl ?? '').split('?')[0];
+  const last = uri.slice(uri.lastIndexOf('/') + 1);
+  const at = last.indexOf(';');
+  const name = at === -1 ? last : last.slice(0, at);
+  const parameters = at === -1 ? '' : last.slice(at);
+  safeExtensions ??= new Set(
+    JSON.parse(readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')).safe
+  );
+  const trusted = (text) => {
+    let decoded = text;
+    try {
+      decoded = decodeURIComponent(text);
+    } catch {
+      // Left as it came; Tomcat has refused a malformed escape before this.
+    }
+    const dot = decoded.lastIndexOf('.');
+    if (dot === -1 || decoded.lastIndexOf('/') > dot) return true;
+    const extension = decoded.slice(dot + 1);
+    return javaTrimAll(extension) === '' || safeExtensions.has(extension.toLowerCase());
+  };
+  return !trusted(name) || !trusted(parameters);
+}
+
+/**
+ * A `Long` path variable as Spring binds it: the ConversionService's
+ * NumberUtils.parseNumber (see springInteger), then the CustomNumberEditor on
+ * the same text, which reads one with no text as null -- for a path variable,
+ * Java's 500. Otherwise the 400 names the second attempt's failure.
+ */
+export function springPathLong(text, name) {
+  try {
+    return { value: javaParseInteger(text, 64) };
+  } catch (failure) {
+    if (!(failure instanceof JavaNumberFormat)) throw failure;
+    if (javaTrimAll(text) === '')
+      return {
+        status: 500,
+        error: `Required URI template variable '${name}' for method parameter type Long is present but converted to null`,
+      };
+    return {
+      status: 400,
+      error:
+        "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Long'; " +
+        `nested exception is java.lang.NumberFormatException: ${failure.message}`,
+    };
+  }
 }
 
 /**
@@ -3095,6 +3432,10 @@ function buildId() {
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
+  const body = result.body !== undefined || Boolean(result.serialised);
+  const redirect = result.status >= 300 && result.status < 400;
+  if (body && !redirect && response.req && downloadGuard(response.req))
+    response.setHeader('Content-Disposition', 'inline;filename=f.txt');
   if (result.body === undefined && !result.serialised) response.end();
   else if (typeof result.body === 'string') response.send(result.body);
   else if (result.serialised) response.type('application/json').send(result.serialised);
@@ -3183,7 +3524,11 @@ export function app() {
     // string means the diff harness and proxy.conf.js can address an endpoint by
     // exactly what the Java service calls it.
     const idAt = endpoint.path.split('/').indexOf('{id}');
-    server.get(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), async (request, response) => {
+    const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
+    // A POST's body arrives as bytes; its handler decodes them as Java would.
+    const body =
+      endpoint.method === 'post' ? [express.raw({ type: () => true, limit: '10mb' })] : [];
+    server[endpoint.method ?? 'get'](route, ...body, async (request, response) => {
       // An id that is only a matrix parameter is no id to Spring: no mapping
       // matches, and it answers its own 404.
       if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
@@ -3196,9 +3541,26 @@ export function app() {
         // The message, not a stack: this stands in for a service whose errors
         // reach real clients.
         console.error(`${endpoint.path}: ${failure.message}`);
-        response.status(500).type('text/plain').send('content service error');
+        writeResult(response, { status: 500, type: 'text/plain', body: 'content service error' });
       }
     });
+  }
+
+  // Any other method on these paths is Java's 405: nginx sends every method
+  // here, and Express's own answer was an HTML 404. After every route, so a
+  // path two templates match is answered by the one that takes the method.
+  for (const endpoint of endpoints) {
+    server.all(endpoint.path.replace(/\{(\w+)\}/g, ':$1'), (request, response) =>
+      writeResult(
+        response,
+        javaError(
+          request,
+          405,
+          'METHOD_NOT_ALLOWED',
+          `Request method '${request.method}' not supported`
+        )
+      )
+    );
   }
 
   return server;

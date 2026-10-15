@@ -180,6 +180,17 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/data/orthology/R-HSA-69620/species/48892',
+    '/ContentService/data/orthology/69620/species/0xBEFC?view=nested',
+    // The POST the species selector sends.
+    '/ContentService/data/orthologies/ids/species/48892',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -193,9 +204,12 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/70486/NORMALPATHWAY',
     // Spring also matches a trailing slash; only the plain object is routed.
     '/ContentService/data/query/70486/',
-    // Java's POST /query/ids (a batch of objects); node serves no POST.
+    // Java's POST /query/ids (a batch of objects), which node does not serve.
     '/ContentService/data/query/ids',
     '/ContentService/data/query/abridged/70486',
+    // Spring's own 404s: no species, or more after it.
+    '/ContentService/data/orthology/R-HSA-69620/species/',
+    '/ContentService/data/orthologies/ids/species/48892/x',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
     // Only the ancestors of an event are ported.
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
