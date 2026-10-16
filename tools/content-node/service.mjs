@@ -5265,6 +5265,10 @@ function readBody(request, _response, next) {
 export function app() {
   const server = express();
   server.disable('x-powered-by');
+  // Spring matches a mapping's literal segments by case; Express, by
+  // default, does not -- /search/icon/QUERY was the icon page here and an
+  // icon id to Java.
+  server.set('case sensitive routing', true);
 
   // Readable from any origin, as Java's ContentService is: pages on other sites
   // read it -- the embeddable diagram (spec 009) asks for the species list from
@@ -5376,6 +5380,12 @@ export function app() {
       )
     );
   }
+
+  // A path no mapping matches is Spring's own 404 -- JSON, not Express's
+  // HTML page. Since routing is by case, /data/database/VERSION is one.
+  server.use('/ContentService', (request, response) =>
+    writeResult(response, springNotFound(request))
+  );
 
   // Express decodes route parameters before any handler runs, and a segment
   // that is not valid UTF-8 (%FF) made it answer its own HTML 400 -- a stack

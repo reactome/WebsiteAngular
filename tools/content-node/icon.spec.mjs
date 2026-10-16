@@ -349,4 +349,31 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     await fetch(`${base}/ContentService/search/icon/f%61cet`);
     expect(asked[0][0]).toBe('/solr/reactome/icon/facet');
   });
+
+  it('routes by case, as Spring does: a capital, sent plain or escaped, is an id', async () => {
+    answer = found([]);
+    for (const path of ['icon/QUERY', 'icon/%51uery', 'icon/%46acet']) {
+      const response = await fetch(`${base}/ContentService/search/${path}`);
+      expect([path, response.status]).toEqual([path, 404]);
+    }
+    const escaped = await fetch(`${base}/ContentService/search/icon/%51uery`);
+    expect((await escaped.json()).messages).toEqual(['Icon not found: Query']);
+  });
+
+  it("leaves '.', ';' and '/' escaped, so an escaped one stays inside the id", async () => {
+    answer = found([]);
+    const response = await fetch(`${base}/ContentService/search/icon/qu%65ry%3Bx`);
+    expect((await response.json()).messages).toEqual(['Icon not found: query;x']);
+  });
+
+  it("answers a path no mapping matches with Spring's JSON 404", async () => {
+    const response = await fetch(`${base}/ContentService/data/database/VERSION`);
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect([body.status, body.error, body.path]).toEqual([
+      404,
+      'Not Found',
+      '/ContentService/data/database/VERSION',
+    ]);
+  });
 });
