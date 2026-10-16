@@ -4713,10 +4713,9 @@ export function app() {
 /**
  * How many deep queries (an endpoint marked `deep`) may run at once. The
  * graph pool is 32 so that a few slow requests cannot hold every connection;
- * these routes can each run for the full read timeout, and are the ones that
- * ran the shared graph out of memory, so they keep a smaller share. One past
- * it is a 503 at once rather than a wait, as the render service answers a
- * full queue.
+ * these routes can each run for the full read timeout and cost the database
+ * the most, so they keep a smaller share. One past it is a 503 at once rather
+ * than a wait, as the render service answers a full queue.
  */
 export function deepShare(max) {
   let running = 0;
@@ -4728,7 +4727,13 @@ export function deepShare(max) {
   };
 }
 
-const DEEP = deepShare(Number(process.env.DEEP_QUERY_LIMIT) || 4);
+/** DEEP_QUERY_LIMIT when it is a whole number from 1 to 32 (the pool's default); otherwise 4. */
+export function deepLimit(setting) {
+  const limit = Number(setting);
+  return Number.isInteger(limit) && limit >= 1 && limit <= 32 ? limit : 4;
+}
+
+const DEEP = deepShare(deepLimit(process.env.DEEP_QUERY_LIMIT));
 
 /**
  * One endpoint's answer to one request: its handler's result, or what a

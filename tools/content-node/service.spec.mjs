@@ -59,6 +59,7 @@ import {
   springBoolean,
   springInteger,
   deepShare,
+  deepLimit,
 } from './service.mjs';
 
 let base;
@@ -304,6 +305,14 @@ describe('the deep queries, held to their own share of the graph', () => {
       '/ContentService/data/event/{id}/in-depth',
       '/ContentService/data/detail/{id}/locationsInPWB',
     ]);
+  });
+
+  it('takes DEEP_QUERY_LIMIT only as a whole number from 1 to 32, and 4 otherwise', () => {
+    // -1 refused every deep request for good; 2.5 let three run.
+    expect(deepLimit('8')).toBe(8);
+    for (const setting of [undefined, '', '-1', '0', '2.5', 'many', '100']) {
+      expect(deepLimit(setting), String(setting)).toBe(4);
+    }
   });
 
   it('lets four run at once and refuses the fifth', () => {
