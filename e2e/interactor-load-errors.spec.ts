@@ -113,3 +113,36 @@ test('the notice is about the pathway on screen', async ({ page }) => {
     .toBeGreaterThan(0);
   await expect(banner(page)).not.toContainText('BioGrid');
 });
+
+test('a resource left behind cannot report on the one chosen after it', async ({ page }) => {
+  // The reader chose MINT, then IntAct before MINT answered. MINT's late
+  // failure put its notice over IntAct's interactors and stopped the spinner
+  // of whatever was loading then: nothing checked that the answer was still
+  // for the resource on screen.
+  test.setTimeout(150_000);
+  const thrown = collectThrown(page);
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(/\/interactors\/psicquic\/molecules\/mint\/details/i, async (route) => {
+    await held;
+    await route.abort('failed');
+  });
+  await page.goto(`/PathwayBrowser/${PATHWAY}`);
+  await page.locator('.species-interactor-container .interactor').click({ timeout: LOAD });
+  const panel = page.locator('cr-interactors');
+  await panel.getByRole('button', { name: 'MINT' }).click();
+  await panel.getByRole('button', { name: 'IntAct' }).click();
+  const drawn = () =>
+    page.evaluate<number>(`(() => {
+      const cy = document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy;
+      return cy ? cy.nodes('.InteractorOccurrences').length : 0;
+    })()`);
+  await expect.poll(drawn, { timeout: LOAD }).toBeGreaterThan(0);
+
+  release();
+  // Long enough for the late failure to have landed, had it been heard.
+  await page.waitForTimeout(1_500);
+  await expect(banner(page)).not.toContainText('MINT');
+  expect(await drawn()).toBeGreaterThan(0);
+  expect(thrown).toEqual([]);
+});

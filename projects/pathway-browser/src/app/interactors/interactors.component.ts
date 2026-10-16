@@ -2,11 +2,14 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   effect,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import {
   InteractorToken,
   PsicquicResource,
@@ -78,7 +81,27 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
-  psicquicResourcesFailed = false;
+  /**
+   * The PSICQUIC registry could not be asked. A signal: the app is zoneless,
+   * and a plain field set in an HTTP callback schedules no change detection,
+   * so the notice waited for something unrelated to redraw the panel.
+   */
+  readonly psicquicResourcesFailed = signal(false);
+
+  /**
+   * The requests for the resource being loaded. A new choice, or clearing the
+   * overlay, cancels them first: a late answer for a resource the reader has
+   * left -- a failure especially -- reported itself over the one chosen after
+   * it and stopped that one's spinner.
+   */
+  private loading = new Subscription();
+
+  private startLoading() {
+    this.loading.unsubscribe();
+    this.loading = new Subscription();
+    this.isDataFromPsicquicLoading = false;
+    this.loadingResource = null;
+  }
   /** What each resource turned out to hold here, once we have asked it. */
   readonly resourceCounts = this.interactors.resourceCounts;
 
@@ -122,6 +145,9 @@ export class InteractorsComponent implements AfterViewInit {
   readonly panelOpen = input(false);
 
   constructor() {
+    // Requests still out when the panel goes have no one to answer.
+    inject(DestroyRef).onDestroy(() => this.loading.unsubscribe());
+
     // The prefetch needs three things that arrive in any order: the reader
     // opening the panel, the resource list, and a graph to ask about.
     // ngAfterViewInit runs when this panel is created, which is before the
@@ -276,44 +302,50 @@ export class InteractorsComponent implements AfterViewInit {
     } else {
       return;
     }
+    this.startLoading();
     this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, resource).subscribe({
-        next: (interactors) => {
-          this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
-          this.initialiseReplaceElements.emit();
-        },
-        // Unless the diagram it was for has been replaced since.
-        error: (error: unknown) => {
-          if (!cy.destroyed()) this.interactors.failedToLoad(resource, error);
-        },
-      });
+      this.loading.add(
+        this.interactors.fetchInteractorData(cy, resource).subscribe({
+          next: (interactors) => {
+            this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
+            this.initialiseReplaceElements.emit();
+          },
+          // Unless the diagram it was for has been replaced since.
+          error: (error: unknown) => {
+            if (!cy.destroyed()) this.interactors.failedToLoad(resource, error);
+          },
+        })
+      );
       this.state.overlay.set(resource);
     });
   }
 
   getPsicquicResourceInteractors(selectedResource: string) {
+    this.startLoading();
     this.isDataFromPsicquicLoading = true;
     this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
     this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, selectedResource).subscribe({
-        next: (interactors) => {
-          this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
-          this.isDataFromPsicquicLoading = false;
-          this.loadingResource = null;
-          this.state.overlay.set(selectedResource);
-        },
-        // The resource's spinner stopped only on success, so a failure left it
-        // turning for good.
-        error: (error: unknown) => {
-          this.isDataFromPsicquicLoading = false;
-          this.loadingResource = null;
-          if (!cy.destroyed()) this.interactors.failedToLoad(selectedResource, error);
-        },
-      });
+      this.loading.add(
+        this.interactors.fetchInteractorData(cy, selectedResource).subscribe({
+          next: (interactors) => {
+            this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
+            this.isDataFromPsicquicLoading = false;
+            this.loadingResource = null;
+            this.state.overlay.set(selectedResource);
+          },
+          // The resource's spinner stopped only on success, so a failure left it
+          // turning for good.
+          error: (error: unknown) => {
+            this.isDataFromPsicquicLoading = false;
+            this.loadingResource = null;
+            if (!cy.destroyed()) this.interactors.failedToLoad(selectedResource, error);
+          },
+        })
+      );
     });
   }
 
@@ -433,6 +465,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   clearInteractors() {
+    this.startLoading();
     this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.clearAllInteractorNodes(cy);
@@ -458,7 +491,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   getPsicquicResources() {
-    this.psicquicResourcesFailed = false;
+    this.psicquicResourcesFailed.set(false);
     this.interactors.getPsicquicResources().subscribe({
       next: (resources) => {
         this.psicquicResources = resources;
@@ -470,7 +503,7 @@ export class InteractorsComponent implements AfterViewInit {
       },
       // The panel lists none, and says why rather than looking as though
       // there were none to list.
-      error: () => (this.psicquicResourcesFailed = true),
+      error: () => this.psicquicResourcesFailed.set(true),
     });
   }
 }
