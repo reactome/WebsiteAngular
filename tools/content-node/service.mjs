@@ -493,7 +493,9 @@ export const endpoints = [
        * page renders.
        */
       handler: async (request) => {
-        const id = String(request.params.id);
+        // The raw segment, as every handler reads its id: Express's decoded
+        // params lose the matrix-parameter difference (see pathId).
+        const id = pathId(rawSegment(request, 4));
         // Matched on one property, chosen before the query runs, and **under the
         // label the index is on**.
         //
@@ -616,7 +618,12 @@ export const endpoints = [
             })
         );
       },
-      differs: [/: java normalised by the endpoint's own rule before comparing$/],
+      differs: [
+        /: java normalised by the endpoint's own rule before comparing$/,
+        // An id that matches nothing: `[]` here, Java's bare empty 200 (see the
+        // handler's note), as /publications declares too.
+        /^\/ContentService\/data\/person\/[^/]+\/(authored|reviewed)(Pathways|Reactions): (content-type "application\/json"|body "\[\]"), java says ""$/,
+      ],
     }))
   ),
   ...[
@@ -855,6 +862,8 @@ export const endpoints = [
     },
   ].map(({ kind, label, follow, sample }) => ({
     path: `/ContentService/data/${kind}/{id}/in-depth`,
+    // A whole tree below an object: may run for the full read timeout.
+    deep: true,
     sample,
     differs: [
       // The 404 body names the service that answered; see /pathways/top/{id}.
@@ -1026,8 +1035,10 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 6));
-      const given = request.query?.species;
-      const species = given === undefined ? undefined : [given].flat().join(',');
+      // By the servlet's rules (queryValues), not Express's query parser, which
+      // reads brackets in a name as structure; repeated, Spring joins them.
+      const given = queryValues(request, 'species');
+      const species = given.length ? given.join(',') : undefined;
       const missing = () =>
         notFound(request, `No result for ${raw} in ${species === undefined ? 'null' : species}`);
 
@@ -1207,6 +1218,8 @@ export const endpoints = [
   },
   {
     path: '/ContentService/data/detail/{id}/locationsInPWB',
+    // Every route up to a diagram: seconds for a common small molecule.
+    deep: true,
     // PTEN: 18 trees, reached through reactions, sets and complexes.
     sample: 'R-HSA-199420',
     // The error bodies name the service that answered; see /pathways/top/{id}.
@@ -3073,11 +3086,116 @@ function asciiDigits(digits) {
  */
 export function pathId(segment) {
   const kept = String(segment).split(';')[0] ?? '';
-  try {
-    return decodeURIComponent(kept);
-  } catch {
-    return kept;
+  return javaPathDecode(kept);
+}
+
+/**
+ * A path segment percent-decoded as Tomcat decodes it: the bytes read as
+ * UTF-8, each malformed sequence U+FFFD -- Java answers person/%FF with "No
+ * person found for id: \ufffd". decodeURIComponent throws on those instead.
+ */
+function javaPathDecode(text) {
+  if (!text.includes('%')) return text;
+  const bytes = [];
+  for (let at = 0; at < text.length; at += 1) {
+    if (text[at] === '%' && /^[0-9A-Fa-f]{2}$/.test(text.slice(at + 1, at + 3))) {
+      bytes.push(parseInt(text.slice(at + 1, at + 3), 16));
+      at += 2;
+    } else {
+      const code = text.codePointAt(at);
+      if (code > 0xffff) at += 1;
+      bytes.push(...Buffer.from(String.fromCodePoint(code), 'utf8'));
+    }
   }
+  return javaUtf8(bytes);
+}
+
+/**
+ * Bytes to text as the JDK's UTF-8 decoder (sun.nio.cs.UTF_8, the one Tomcat
+ * reads a path with) does with malformed input replaced: each malformed
+ * sequence one U+FFFD, its length by the JDK's rules -- an encoded surrogate
+ * (ED A0 80) is one, where the WHATWG decoder Node uses makes three -- and an
+ * incomplete sequence at the end one more.
+ */
+export function javaUtf8(bytes) {
+  const continuation = (b) => (b & 0xc0) === 0x80;
+  const malformed3 = (b1, b2) => (b1 === 0xe0 && (b2 & 0xe0) === 0x80) || !continuation(b2);
+  const malformed4 = (b1, b2) =>
+    b1 > 0xf4 ||
+    (b1 === 0xf0 && (b2 < 0x90 || b2 > 0xbf)) ||
+    (b1 === 0xf4 && (b2 & 0xf0) !== 0x80) ||
+    !continuation(b2);
+  let text = '';
+  let at = 0;
+  while (at < bytes.length) {
+    const b1 = bytes[at];
+    const left = bytes.length - at;
+    if (b1 < 0x80) {
+      text += String.fromCharCode(b1);
+      at += 1;
+    } else if (b1 >= 0xc2 && b1 <= 0xdf) {
+      if (left < 2) break;
+      if (!continuation(bytes[at + 1])) {
+        text += '\ufffd';
+        at += 1;
+        continue;
+      }
+      text += String.fromCharCode(((b1 & 0x1f) << 6) | (bytes[at + 1] & 0x3f));
+      at += 2;
+    } else if (b1 >= 0xe0 && b1 <= 0xef) {
+      if (left < 3) {
+        if (left > 1 && malformed3(b1, bytes[at + 1])) {
+          text += '\ufffd';
+          at += 1;
+          continue;
+        }
+        break;
+      }
+      const [b2, b3] = [bytes[at + 1], bytes[at + 2]];
+      if (malformed3(b1, b2) || !continuation(b3)) {
+        text += '\ufffd';
+        at += malformed3(b1, b2) ? 1 : 2;
+        continue;
+      }
+      const char = ((b1 & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (b3 & 0x3f);
+      text += char >= 0xd800 && char <= 0xdfff ? '\ufffd' : String.fromCharCode(char);
+      at += 3;
+    } else if (b1 >= 0xf0 && b1 <= 0xf7) {
+      if (left < 4) {
+        if (b1 > 0xf4 || (left > 1 && malformed4(b1, bytes[at + 1]))) {
+          text += '\ufffd';
+          at += 1;
+          continue;
+        }
+        if (left > 2 && !continuation(bytes[at + 2])) {
+          text += '\ufffd';
+          at += 2;
+          continue;
+        }
+        break;
+      }
+      const [b2, b3, b4] = [bytes[at + 1], bytes[at + 2], bytes[at + 3]];
+      const point = ((b1 & 0x07) << 18) | ((b2 & 0x3f) << 12) | ((b3 & 0x3f) << 6) | (b4 & 0x3f);
+      if (
+        !continuation(b2) ||
+        !continuation(b3) ||
+        !continuation(b4) ||
+        point < 0x10000 ||
+        point > 0x10ffff
+      ) {
+        text += '\ufffd';
+        at += malformed4(b1, b2) ? 1 : !continuation(b3) ? 2 : 3;
+        continue;
+      }
+      text += String.fromCodePoint(point);
+      at += 4;
+    } else {
+      text += '\ufffd';
+      at += 1;
+    }
+  }
+  // What is left is an incomplete sequence: one replacement for all of it.
+  return at < bytes.length ? `${text}\ufffd` : text;
 }
 
 /** The raw, undecoded path segment at `index` (`/ContentService/data/query/{id}` is 4). */
@@ -3966,26 +4084,6 @@ function servletDecode(text) {
 }
 
 /**
- * Bytes to text as Java's UTF-8 decoder does with REPLACE, Tomcat's setting.
- * The WHATWG decoder agrees with it everywhere measured but one place: an
- * encoded surrogate -- ED then A0..BF, then a continuation byte if there is
- * one -- is a single U+FFFD to Java, where WHATWG gives one per byte. A byte
- * order mark is kept, as Java keeps it.
- */
-function javaUtf8(bytes) {
-  const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
-  let text = '';
-  let start = 0;
-  for (let i = 0; i < bytes.length; i += 1) {
-    if (bytes[i] !== 0xed || !(bytes[i + 1] >= 0xa0 && bytes[i + 1] <= 0xbf)) continue;
-    text += decoder.decode(Uint8Array.from(bytes.slice(start, i))) + '\ufffd';
-    i += bytes[i + 2] >= 0x80 && bytes[i + 2] <= 0xbf ? 2 : 1;
-    start = i + 1;
-  }
-  return text + decoder.decode(Uint8Array.from(bytes.slice(start)));
-}
-
-/**
  * How graph-core's PersonService reads a person's id, as a match on `n`:
  * a dbId when StringUtils.isNumeric says so (any script's digits), else an
  * ORCID by its pattern (ASCII digits), else -- for publications only -- an
@@ -4221,6 +4319,10 @@ export function springPathLong(text, name) {
  */
 export function timedOut(request, failure) {
   const code = String(failure?.code ?? '');
+  // Every connection in use: the driver says so in its message alone. Not the
+  // caller's fault and not for long, so the same 503 with a reason that fits.
+  if (String(failure?.message ?? '').startsWith('Connection acquisition timed out'))
+    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The service is busy; try again shortly');
   const ended =
     code.startsWith('Neo.ClientError.Transaction.TransactionTimedOut') ||
     code.endsWith('.Transaction.Terminated') ||
@@ -4542,26 +4644,12 @@ export function app() {
     // The table stores the Java path with {id}; express wants :id. Keeping one
     // string means the diff harness and proxy.conf.js can address an endpoint by
     // exactly what the Java service calls it.
-    const idAt = endpoint.path.split('/').indexOf('{id}');
     const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
     // A POST's body arrives as bytes; its handler decodes them as Java would.
     const body = endpoint.method === 'post' ? [readBody] : [];
-    server[endpoint.method ?? 'get'](route, ...body, async (request, response) => {
-      // An id that is only a matrix parameter is no id to Spring: no mapping
-      // matches, and it answers its own 404.
-      if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
-        return writeResult(response, springNotFound(request));
-      try {
-        writeResult(response, await endpoint.handler(request));
-      } catch (failure) {
-        const answer = failureAnswer(request, endpoint.path, failure);
-        if (answer) return writeResult(response, answer);
-        // The message, not a stack: this stands in for a service whose errors
-        // reach real clients.
-        console.error(`${endpoint.path}: ${failure.message}`);
-        writeResult(response, { status: 500, type: 'text/plain', body: 'content service error' });
-      }
-    });
+    server[endpoint.method ?? 'get'](route, ...body, (request, response) =>
+      answerWith(endpoint, request, response)
+    );
   }
 
   // Any other method on these paths is Java's 405: nginx sends every method
@@ -4581,7 +4669,103 @@ export function app() {
     );
   }
 
+  // Express decodes route parameters before any handler runs, and a segment
+  // that is not valid UTF-8 (%FF) made it answer its own HTML 400 -- a stack
+  // trace, NODE_ENV being unset -- where Java decodes it to U+FFFD and answers
+  // as usual. Handlers read the raw path (rawSegment), so the endpoint is run
+  // regardless.
+  server.use((failure, request, response, next) => {
+    if (!(failure instanceof URIError) || response.headersSent) return next(failure);
+    // The path as routing saw it -- matrix parameters already stripped from
+    // every segment -- less a trailing slash, which Express ignores too.
+    const path = String(request.url)
+      .split('?')[0]
+      .replace(/(.)\/$/, '$1');
+    const endpoint = endpointFor(path);
+    if (!endpoint) return next(failure);
+    // HEAD is answered as GET, as Express answers it; any other method the
+    // template does not take is Java's 405, as for a decodable id.
+    const method = request.method === 'HEAD' ? 'get' : request.method.toLowerCase();
+    if ((endpoint.method ?? 'get') !== method)
+      return writeResult(
+        response,
+        javaError(
+          request,
+          405,
+          'METHOD_NOT_ALLOWED',
+          `Request method '${request.method}' not supported`
+        )
+      );
+    const body = endpoint.method === 'post' ? readBody : (_request, _response, done) => done();
+    body(request, response, () => answerWith(endpoint, request, response));
+  });
+
+  // Anything else that reaches here is this service's failure: Java's
+  // envelope, never Express's page with a stack trace in it.
+  server.use((failure, request, response, _next) => {
+    console.error(`${request.path}: ${failure?.message}`);
+    writeResult(response, unexpected(request));
+  });
+
   return server;
+}
+
+/**
+ * How many deep queries (an endpoint marked `deep`) may run at once. The
+ * graph pool is 32 so that a few slow requests cannot hold every connection;
+ * these routes can each run for the full read timeout, and are the ones that
+ * ran the shared graph out of memory, so they keep a smaller share. One past
+ * it is a 503 at once rather than a wait, as the render service answers a
+ * full queue.
+ */
+export function deepShare(max) {
+  let running = 0;
+  return {
+    enter: () => (running < max ? ((running += 1), true) : false),
+    leave: () => {
+      running = Math.max(0, running - 1);
+    },
+  };
+}
+
+const DEEP = deepShare(Number(process.env.DEEP_QUERY_LIMIT) || 4);
+
+/**
+ * One endpoint's answer to one request: its handler's result, or what a
+ * failure means in Java's terms, never a stack trace.
+ */
+async function answerWith(endpoint, request, response) {
+  if (endpoint.deep) {
+    if (!DEEP.enter())
+      return writeResult(response, {
+        ...javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The service is busy; try again shortly'),
+        headers: { 'Retry-After': '5' },
+      });
+    try {
+      return await answer(endpoint, request, response);
+    } finally {
+      DEEP.leave();
+    }
+  }
+  return answer(endpoint, request, response);
+}
+
+async function answer(endpoint, request, response) {
+  // An id that is only a matrix parameter is no id to Spring: no mapping
+  // matches, and it answers its own 404.
+  const idAt = endpoint.path.split('/').indexOf('{id}');
+  if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
+    return writeResult(response, springNotFound(request));
+  try {
+    writeResult(response, await endpoint.handler(request));
+  } catch (failure) {
+    const answer = failureAnswer(request, endpoint.path, failure);
+    if (answer) return writeResult(response, answer);
+    // The message, not a stack: this stands in for a service whose errors
+    // reach real clients.
+    console.error(`${endpoint.path}: ${failure.message}`);
+    writeResult(response, { status: 500, type: 'text/plain', body: 'content service error' });
+  }
 }
 
 // Started directly rather than imported by a test.

@@ -79,6 +79,12 @@ export function configured() {
   return Boolean(USER && PASSWORD);
 }
 
+/** GRAPH_POOL_SIZE when it is a whole number from 1 to 100; otherwise 32. */
+export function poolSize(setting) {
+  const size = Number(setting);
+  return Number.isInteger(size) && size >= 1 && size <= 100 ? size : 32;
+}
+
 function connection() {
   if (!configured()) {
     throw new Error(
@@ -88,10 +94,12 @@ function connection() {
     );
   }
   driver ??= neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD), {
-    // Small: this shares a database with the service it is being compared
-    // against, and a diff run over thousands of ids should not be what makes
-    // beta slow.
-    maxConnectionPoolSize: 8,
+    // Bounded, because the database is shared with the Java service, but not
+    // so small that a few slow requests hold every connection: at 8 -- sized
+    // for the diff harness -- eight parallel deep queries from one client
+    // stalled every other graph route for the acquisition timeout. Java's pool
+    // holds 100. A request that still finds none free is a 503 (timedOut).
+    maxConnectionPoolSize: poolSize(process.env.GRAPH_POOL_SIZE),
     connectionAcquisitionTimeout: 10_000,
   });
   return driver;
