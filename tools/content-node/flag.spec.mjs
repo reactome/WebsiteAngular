@@ -10,13 +10,17 @@ const objects = {
   'R-HSA-446203': { labels: ['Pathway', 'Event', 'DatabaseObject'], hasDiagram: true },
 };
 const species = {
+  Twice: [
+    { dbId: 1, displayName: 'Twice', abbreviation: 'TWA' },
+    { dbId: 2, displayName: 'Twice', abbreviation: 'TWB' },
+  ],
   'Homo sapiens': { dbId: 48887, displayName: 'Homo sapiens', abbreviation: 'HSA' },
   'Mus musculus': { dbId: 48892, displayName: 'Mus musculus', abbreviation: 'MMU' },
 };
 
 vi.mock('./graph.mjs', () => ({
   read: async (cypher, params) => {
-    if (cypher.includes(':Species')) return species[params.name] ? [species[params.name]] : [];
+    if (cypher.includes(':Species')) return [species[params.name] ?? []].flat();
     return objects[params.id] ? [objects[params.id]] : [];
   },
   configured: () => true,
@@ -74,6 +78,18 @@ describe('JavaHashMap.delete, as HashSet.remove', () => {
     map.delete('missing');
     expect([...map.keys()]).toEqual(['a', 'b']);
     expect(map.size).toBe(2);
+  });
+
+  it('refuses to remove from a tree bin, whose rebalancing it does not port, rather than corrupt it', () => {
+    // Strings of "Aa" and "BB" share a hash; sixteen of them, past 64 buckets, make a tree bin.
+    const map = new JavaHashMap();
+    for (let at = 0; at < 60; at += 1) map.set(`filler${at}`, true);
+    const colliding = [];
+    for (let bits = 0; bits < 16; bits += 1)
+      colliding.push([0, 1, 2, 3].map((bit) => (bits & (1 << bit) ? 'BB' : 'Aa')).join(''));
+    for (const key of colliding) map.set(key, true);
+    expect(() => map.delete(colliding[3])).toThrow(/tree bin/);
+    expect(map.delete('filler7')).toBe(true);
   });
 });
 
@@ -196,5 +212,12 @@ describe('/fireworks/flag', () => {
         "No entries found for query: 'x' in species 'Species {dbId=48892, displayName='Mus musculus'}'",
       ],
     ]);
+  });
+
+  it("is Java's failure, not a guess, when two Species share the name", async () => {
+    asked = [];
+    const response = await get('fireworks/flag?query=x&species=Twice');
+    expect(response.status).toBe(500);
+    expect(asked).toHaveLength(0);
   });
 });

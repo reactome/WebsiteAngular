@@ -2037,10 +2037,14 @@ export const endpoints = [
         return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
       const name = singleString(queryValues(request, 'species'), 'Homo sapiens');
       // SpeciesService.getSpeciesByName: a Species with exactly that name.
-      const [species] = await read(
-        'MATCH (n:Species) WHERE $name IN n.name RETURN n.dbId AS dbId, n.displayName AS displayName, n.abbreviation AS abbreviation LIMIT 1',
+      const named = await read(
+        'MATCH (n:Species) WHERE $name IN n.name RETURN n.dbId AS dbId, n.displayName AS displayName, n.abbreviation AS abbreviation LIMIT 2',
         { name }
       );
+      // The repository returns one Species: two of the same name is Spring
+      // Data's failure, not a choice between them.
+      if (named.length > 1) return unexpectedFailure(request);
+      const [species] = named;
       if (!species) return javaError(request, 400, 'BAD_REQUEST', `No species found for '${name}'`);
       const query = given.join(',');
       return fromSolr(request, '/ContentService/search/fireworks/flag', async (signal) => {
@@ -2898,19 +2902,21 @@ export class JavaHashMap {
 
   /**
    * HashSet.remove: the key unlinked from its bucket, the rest in order. A
-   * tree bin is unlinked the same way; Java may then rebalance it and move
-   * a different root to the front -- eight keys in one bucket of 64 or
-   * more, which these sets of stable ids never come near.
+   * tree bin -- eight keys sharing a bucket of 64 or more, which sets of
+   * stable ids never come near -- is refused: Java rebalances it and moves
+   * a new root to the front, which is not ported, and unlinking alone
+   * would leave the tree to give wrong answers later.
    */
   delete(key) {
     const hash = JavaHashMap.#hash(key);
     const index = (this.#table.length - 1) & hash;
+    if (this.#table[index]?.tree)
+      throw new Error('JavaHashMap.delete from a tree bin is not ported');
     let previous = null;
     for (let node = this.#table[index]; node; previous = node, node = node.next) {
       if (node.hash !== hash || node.key !== key) continue;
       if (previous) previous.next = node.next;
       else this.#table[index] = node.next;
-      if (node.next && node.tree) node.next.prev = previous;
       this.size -= 1;
       return true;
     }
