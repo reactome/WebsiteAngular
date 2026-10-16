@@ -1799,8 +1799,24 @@ export const endpoints = [
         );
       const scope = springScope(queryValues(request, 'scope'));
       if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
-      const force = springBoolean(queryValues(request, 'Force filters'));
+      const forced = queryValues(request, 'Force filters');
+      const force = springBoolean(forced);
       if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
+      const unexpected = () =>
+        javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          'Something unexpected happened and the error has been reported.'
+        );
+      // Only one empty value takes the default; any other blank converts to
+      // null, which SearchService's primitive forceFilters cannot take.
+      if (
+        force.value === undefined &&
+        forced.length > 0 &&
+        !(forced.length === 1 && forced[0] === '')
+      )
+        return unexpected();
       const query = {
         query: given.join(','),
         scope: scope.value,
@@ -1811,13 +1827,7 @@ export const endpoints = [
       };
       // An empty query is SearchService's null, before any scope is read.
       if (query.query === '') return { status: 200 };
-      if (scope.value === null)
-        return javaError(
-          request,
-          500,
-          'INTERNAL_SERVER_ERROR',
-          'Something unexpected happened and the error has been reported.'
-        );
+      if (scope.value === null) return unexpected();
       return fromSolr(request, '/ContentService/search/facet_query', async (signal) => ({
         status: 200,
         type: 'application/json',
@@ -4617,17 +4627,21 @@ const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
 
 /**
  * The `scope` parameter, a Query.Scope defaulting to PHYSICAL_ENTITY, as
- * Spring converts it: absent or one empty value takes the default; otherwise
- * the first value, trimmed, must be a constant's exact name -- anything else
- * is the 400 below. Blank converts to null, which search-core's
- * configureScope cannot switch on: Java's 500 (null here).
+ * Spring converts it, measured: absent or one empty value takes the default.
+ * One value is trimmed, and blank is null -- which search-core's
+ * configureScope cannot switch on: Java's 500 (null here). Of several, the
+ * first is converted by StringToEnumConverterFactory, for which only an
+ * exactly empty value is null; anything else is trimmed and must be a
+ * constant's exact name. The 400 quotes the value as sent and names the
+ * constant it looked for, trimmed.
  */
 export function springScope(values) {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) {
     return { value: 'PHYSICAL_ENTITY' };
   }
-  const name = javaTrim(values[0]);
-  if (name === '') return { value: null };
+  const [sent] = values;
+  const name = javaTrim(sent);
+  if (values.length === 1 ? name === '' : sent === '') return { value: null };
   if (SCOPES.includes(name)) return { value: name };
   const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
@@ -4635,7 +4649,7 @@ export function springScope(values) {
       `Failed to convert value of type '${type}' to required type 'org.reactome.server.search.domain.Query$Scope'; ` +
       'nested exception is org.springframework.core.convert.ConversionFailedException: Failed to convert from type ' +
       '[java.lang.String] to type [@io.swagger.v3.oas.annotations.Parameter @org.springframework.web.bind.annotation.RequestParam ' +
-      `org.reactome.server.search.domain.Query$Scope] for value '${name}'; nested exception is ` +
+      `org.reactome.server.search.domain.Query$Scope] for value '${sent}'; nested exception is ` +
       `java.lang.IllegalArgumentException: No enum constant org.reactome.server.search.domain.Query.Scope.${name}`,
   };
 }

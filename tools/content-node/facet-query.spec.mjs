@@ -40,6 +40,17 @@ describe('springScope, the Query.Scope parameter with its default', () => {
   });
   it("is null when blank, which Java's configureScope cannot take: its 500", () => {
     expect(springScope([' '])).toEqual({ value: null });
+    expect(springScope(['', 'BOTH'])).toEqual({ value: null });
+  });
+  it('quotes the value as sent, and names the constant trimmed', () => {
+    expect(springScope([' bad'])).toEqual({
+      error: message('java.lang.String', ' bad').replace('Scope. bad', 'Scope.bad'),
+    });
+  });
+  it('of several, a blank first value is not null but a name that is no constant', () => {
+    expect(springScope([' ', 'BOTH'])).toEqual({
+      error: message('java.lang.String[]', ' ').replace('Scope. ', 'Scope.'),
+    });
   });
 });
 
@@ -209,8 +220,45 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
       500,
       ['Something unexpected happened and the error has been reported.'],
     ]);
+    const unexpected = ['Something unexpected happened and the error has been reported.'];
+    // A blank Boolean is null, which the primitive forceFilters cannot take --
+    // before the empty-query check; a single empty value is the default.
+    for (const forced of [
+      'query=TP53&Force%20filters=%20',
+      'query=&Force%20filters=%20',
+      'query=TP53&Force%20filters=&Force%20filters=true',
+    ]) {
+      const response = await fetch(`${base}/ContentService/search/facet_query?${forced}`);
+      expect([forced, response.status, (await response.json()).messages]).toEqual([
+        forced,
+        500,
+        unexpected,
+      ]);
+    }
     const emptyBlank = await fetch(`${base}/ContentService/search/facet_query?query=&scope=%20`);
     expect([emptyBlank.status, await emptyBlank.text()]).toEqual([200, '']);
     expect(asked).toHaveLength(0);
+  });
+
+  it("asks once when the only names dropped were empty: Java's lists lose them first", async () => {
+    asked = [];
+    answer = counts;
+    const response = await fetch(
+      `${base}/ContentService/search/facet_query?query=TP53&species=,Homo%20sapiens`
+    );
+    expect(response.status).toBe(200);
+    expect(asked).toHaveLength(1);
+  });
+
+  it("is Java's failure when a list was given for a facet Solr did not count", async () => {
+    asked = [];
+    answer = () => ({
+      response: { numFound: 1 },
+      facet_counts: { facet_fields: { type_facet: [] } },
+    });
+    const response = await fetch(
+      `${base}/ContentService/search/facet_query?query=TP53&species=Homo%20sapiens`
+    );
+    expect(response.status).toBe(500);
   });
 });
