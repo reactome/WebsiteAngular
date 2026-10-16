@@ -204,6 +204,16 @@ describe('the dev server proxy', () => {
     });
   }
 
+  for (const url of [
+    '/ContentService/search/suggest?query=apop',
+    '/ContentService/search/spellcheck?query=apoptosys',
+    '/ContentService/search/suggest',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      expect(await targetOf(url)).toBe(contentNode);
+    });
+  }
+
   for (const other of [
     // Other attributes of the same Java endpoint are not ported.
     '/ContentService/data/query/70486/displayName',
@@ -220,6 +230,10 @@ describe('the dev server proxy', () => {
     // Java's POST /query/ids (a batch of objects), which node does not serve.
     '/ContentService/data/query/ids',
     '/ContentService/data/query/abridged/70486',
+    // The search endpoints node does not serve yet.
+    '/ContentService/search/query?query=apoptosis',
+    '/ContentService/search/suggestions?query=apop',
+    '/ContentService/search/suggest/x',
     // The interactor endpoints node does not serve.
     '/ContentService/interactors/static/molecule/P04637/summary',
     '/ContentService/interactors/static/molecules/summary',

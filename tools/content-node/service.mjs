@@ -23,6 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
+import { solr } from './solr.mjs';
 import {
   enhancedQuery,
   findByIdParameters,
@@ -1738,6 +1739,31 @@ export const endpoints = [
       return renderFigure(request, figure, ext);
     },
   },
+  ...['suggest', 'spellcheck'].map((handler) => ({
+    path: `/ContentService/search/${handler}`,
+    // Search-core's getAutocompleteSuggestions / getSpellcheckSuggestions:
+    // the collations Solr's own /suggest or /spellcheck handler offers for
+    // `query`, each kept only if /exists finds it in the index. What is
+    // offered, in what order and how many is solrconfig.xml's, as for Java.
+    // An empty query is Java's null: a 200 with no body and no type.
+    handler: async (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'query' for method parameter type String is not present"
+        );
+      const query = given.join(',');
+      if (query === '') return { status: 200 };
+      return {
+        status: 200,
+        type: 'application/json',
+        body: await suggestionsFrom(`/${handler}`, query),
+      };
+    },
+  })),
 ];
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
@@ -4416,6 +4442,38 @@ export function failureAnswer(request, path, failure) {
     'INTERNAL_SERVER_ERROR',
     `For input string: "${named ?? candidates[0] ?? refused}"`
   );
+}
+
+/**
+ * The collations of a Solr spellcheck answer, as SolrJ's
+ * getCollatedResults reads them: JSON gives the list flat, name then value,
+ * and a value is the collation itself or, when extended, an object carrying
+ * it as collationQuery.
+ */
+export function collations(answer) {
+  const flat = answer?.spellcheck?.collations ?? [];
+  const found = [];
+  for (let at = 0; at + 1 < flat.length; at += 2) {
+    if (flat[at] !== 'collation') continue;
+    const value = flat[at + 1];
+    found.push(typeof value === 'string' ? value : value?.collationQuery);
+  }
+  return found.filter((value) => typeof value === 'string');
+}
+
+/**
+ * SolrConverter.getSuggestions: the collations `handler` offers for `query`,
+ * in order, less those /exists finds nothing for. One at a time, as Java
+ * asks: Solr's heap is small and the list is a handful.
+ */
+export async function suggestionsFrom(handler, query, ask = solr) {
+  const offered = collations(await ask(handler, [['spellcheck.q', query]]));
+  const kept = [];
+  for (const collation of offered) {
+    const exists = await ask('/exists', [['q', collation]]);
+    if ((exists?.response?.numFound ?? 0) > 0) kept.push(collation);
+  }
+  return kept;
 }
 
 /**
