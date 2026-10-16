@@ -414,6 +414,7 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
     await page.locator('button.mat-mdc-fab').first().click();
+    const failed = page.waitForResponse('**/GSAServer/upload');
     await page
       .locator('gsa-local-data input.file-input')
       .first()
@@ -422,6 +423,8 @@ test.describe('Quantitative analysis: adding a dataset', () => {
         mimeType: 'text/plain',
         buffer: Buffer.from('gene\tA\nTP53\t1\n'),
       });
+    await failed;
+    const failedAt = Date.now();
     const dialog = page.locator('mat-dialog-container');
     await dialog.getByRole('button', { name: 'Cancel' }).click({ timeout: 20_000 });
     await expect(dialog).toHaveCount(0);
@@ -430,6 +433,13 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible({
       timeout: 20_000,
     });
+    // The stale close fires two seconds after the failure. Opened later than
+    // that, the next dialog would be safe with the bug present too, and this
+    // would pass for nothing -- so the run has to be quick enough to say.
+    expect(
+      Date.now() - failedAt,
+      'the next dialog opened after the stale close could have fired'
+    ).toBeLessThan(1_800);
     await page.waitForTimeout(3000);
     await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible();
   });

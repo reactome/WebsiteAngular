@@ -189,7 +189,10 @@ test.describe('The IDG page', () => {
       await json(page, ancestors, []);
       await open(page);
       await expect(row(page)).toContainText('No description available.', { timeout: LOAD });
-      await expect(row(page)).not.toContainText("couldn't be loaded");
+      // The words the row uses when something fails, and its failure class: the
+      // check here looked for "couldn't be loaded", which no message says.
+      await expect(row(page)).not.toContainText("Couldn't load");
+      await expect(row(page).locator('.failed')).toHaveCount(0);
     });
   });
 });

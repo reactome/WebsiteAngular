@@ -510,3 +510,36 @@ test.describe('Logo downloads', () => {
     expect(file.suggestedFilename()).toBe('Reactome_Imagotype_Positive_100mm.png');
   });
 });
+
+test.describe('The render page, without the render service', () => {
+  // The slide's grouping (#299) was checked only inside the PPTX download
+  // test, which needs the render service and so never runs in CI. What makes
+  // the groups is the render page, which CI does serve: its shapes are read
+  // here directly.
+  test('names a group for every entity and reaction it draws', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const shapes = await page.evaluate(() => {
+      const api = (window as unknown as Record<string, { shapes: () => unknown }>)[
+        '__renderExport'
+      ];
+      return api.shapes() as { shapes: { group?: string; groupName?: string }[] } | null;
+    });
+    expect(shapes, 'the render page drew shapes').not.toBeNull();
+    const grouped = (shapes?.shapes ?? []).filter((shape) => shape.group);
+    const groups = new Set(grouped.map((shape) => shape.group));
+    expect(groups.size, 'entities and reactions grouped').toBeGreaterThan(10);
+    // Each group is one thing, so it has one name; not every shape carries
+    // it (the slide takes the first that does), but none may carry another.
+    for (const group of groups) {
+      const names = new Set(
+        grouped
+          .filter((shape) => shape.group === group && shape.groupName)
+          .map((shape) => shape.groupName)
+      );
+      expect([...names], `group ${group} has one name`).toHaveLength(1);
+    }
+  });
+});

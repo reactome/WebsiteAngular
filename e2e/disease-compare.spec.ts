@@ -119,8 +119,10 @@ test.describe('a disease pathway, and its comparison with the normal one', () =>
     }
   });
 
-  // Well inside the slide, which the waits around it put at about 600ms.
-  const SAYS_AT_ONCE = 200;
+  // Inside the slide, which the waits around it put at about 600ms, so a
+  // label that waited for it still fails -- with room for a loaded runner,
+  // where 200ms was a guess that left almost none.
+  const SAYS_AT_ONCE = 400;
 
   test('a second click while it slides out brings it back', async ({ page }) => {
     await open(page, DISEASE);

@@ -27,7 +27,45 @@ describe('the graph database service', () => {
   });
 
   it('publishes bolt on loopback only', () => {
-    const published = [...service.matchAll(/^\s*-\s*'([^']*:\d+:\d+)'\s*$/gm)].map((m) => m[1]);
-    expect(published).toEqual(['127.0.0.1:7687:7687']);
+    expect(portsOf(service)).toEqual(['127.0.0.1:7687:7687']);
+  });
+
+  it('reads every form a port can be published in', () => {
+    // The check matched only single-quoted short entries: "7474:7474",
+    // 7687:7687 unquoted, or a long-syntax published: entry slipped past it
+    // with the database exposed on every interface.
+    const ports = (lines: string[]) =>
+      portsOf(
+        ['  graphdb:', '    ports:', ...lines.map((line) => `      ${line}`), '    volumes:'].join(
+          '\n'
+        )
+      );
+    expect(ports(["- '127.0.0.1:7687:7687'", '- "7474:7474"', '- 7687:7687'])).toEqual([
+      '127.0.0.1:7687:7687',
+      '7474:7474',
+      '7687:7687',
+    ]);
+    expect(ports(['- target: 7687', '  published: 7687'])).toEqual(['long syntax: target: 7687']);
   });
 });
+
+/**
+ * Every port a service block publishes, as written: short entries unquoted,
+ * and a long-syntax entry named as such, so it cannot pass as loopback.
+ */
+function portsOf(block: string): string[] {
+  const lines = block.split('\n');
+  const start = lines.findIndex((line) => /^\s*ports:\s*$/.test(line));
+  if (start === -1) return [];
+  const indent = lines[start].search(/\S/);
+  const found: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.trim() === '') continue;
+    if (line.search(/\S/) <= indent) break;
+    const entry = /^\s*-\s*(.+?)\s*$/.exec(line)?.[1];
+    if (entry === undefined) continue;
+    const value = entry.replace(/^(['"])(.*)\1$/, '$2');
+    found.push(/^\w+:\s/.test(value) ? `long syntax: ${value}` : value);
+  }
+  return found;
+}
