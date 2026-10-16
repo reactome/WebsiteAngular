@@ -233,33 +233,39 @@ export class InteractorsComponent implements AfterViewInit {
     // previous resource happened to be showing (FR-004a).
     this.interactors.restoreThreshold(name);
 
-    this.interactors.getResourceType(resource as string).subscribe({
-      next: (resourceType) => {
-        switch (resourceType) {
-          case ResourceType.STATIC:
-          case ResourceType.DISGENET:
-            this.getStaticInteractors(resource as string);
-            break;
-          case ResourceType.PSICQUIC:
-            this.getPsicquicResourceInteractors(resource as string);
-            break;
-          case ResourceType.CUSTOM:
-            // A string here is a token out of the address, not a token object.
-            // It used to be cast straight to InteractorToken, so `summary` was
-            // undefined and `getCustomResourceInteractors` returned at its first
-            // line -- silently. That is why a link carrying a shared overlay
-            // opened with nothing drawn, which is the whole of what the "share
-            // by link" choice promises.
-            this.getCustomResourceInteractors(this.asToken(resource));
-            break;
-          default:
-            // Null: the registry that says what a name is could not be asked.
-            this.interactors.failedToLoad(name, null);
-        }
-      },
+    // From here this is the choice: whatever an earlier one still has out --
+    // its lookup included, which for a PSICQUIC name is a request of its own --
+    // is cancelled, so a slow answer for it cannot cancel or overwrite this.
+    this.startLoading();
+    this.loading.add(
+      this.interactors.getResourceType(resource as string).subscribe({
+        next: (resourceType) => {
+          switch (resourceType) {
+            case ResourceType.STATIC:
+            case ResourceType.DISGENET:
+              this.getStaticInteractors(resource as string);
+              break;
+            case ResourceType.PSICQUIC:
+              this.getPsicquicResourceInteractors(resource as string);
+              break;
+            case ResourceType.CUSTOM:
+              // A string here is a token out of the address, not a token object.
+              // It used to be cast straight to InteractorToken, so `summary` was
+              // undefined and `getCustomResourceInteractors` returned at its first
+              // line -- silently. That is why a link carrying a shared overlay
+              // opened with nothing drawn, which is the whole of what the "share
+              // by link" choice promises.
+              this.getCustomResourceInteractors(this.asToken(resource));
+              break;
+            default:
+              // Null: the registry that says what a name is could not be asked.
+              this.interactors.failedToLoad(name, null);
+          }
+        },
 
-      error: (error: unknown) => this.interactors.failedToLoad(name, error),
-    });
+        error: (error: unknown) => this.interactors.failedToLoad(name, error),
+      })
+    );
   }
 
   /**
@@ -363,6 +369,8 @@ export class InteractorsComponent implements AfterViewInit {
       dialogRef.afterClosed().subscribe((_result) => {
         const resource = dialogRef.componentInstance.token;
         if (resource) {
+          // The dialog drew it; nothing chosen before may answer over it.
+          this.startLoading();
           this.resourceTokens!.push(resource);
           this.clear = false;
           this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
@@ -381,6 +389,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   getCustomResourceInteractors(resource: InteractorToken) {
+    this.startLoading();
     // A resource parsed in this page has no token, because there is nothing on a
     // server to point at. Asking for one would be a request for `token/` with an
     // empty id -- so it redraws from what is already held, and the address is
@@ -398,25 +407,27 @@ export class InteractorsComponent implements AfterViewInit {
 
     this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchCustomInteractors(resource, cy).subscribe({
-        next: (result) => {
-          this.interactors.addInteractorOccurrenceNode(
-            result.interactors,
-            cy,
-            result.interactors.resource
-          );
-          this.clear = false;
-          this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
-          this.state.overlay.set(resource.summary.token);
-        },
-        // A link naming an overlay that does not exist is asked for as an
-        // upload's token, and answered 404.
-        error: (error: unknown) => {
-          if (cy.destroyed()) return;
-          const named = resource.summary.token || resource.summary.name;
-          this.interactors.failedToLoad(named, error, 'token');
-        },
-      });
+      this.loading.add(
+        this.interactors.fetchCustomInteractors(resource, cy).subscribe({
+          next: (result) => {
+            this.interactors.addInteractorOccurrenceNode(
+              result.interactors,
+              cy,
+              result.interactors.resource
+            );
+            this.clear = false;
+            this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
+            this.state.overlay.set(resource.summary.token);
+          },
+          // A link naming an overlay that does not exist is asked for as an
+          // upload's token, and answered 404.
+          error: (error: unknown) => {
+            if (cy.destroyed()) return;
+            const named = resource.summary.token || resource.summary.name;
+            this.interactors.failedToLoad(named, error, 'token');
+          },
+        })
+      );
     });
   }
 

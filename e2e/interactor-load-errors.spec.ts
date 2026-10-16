@@ -146,3 +146,40 @@ test('a resource left behind cannot report on the one chosen after it', async ({
   expect(await drawn()).toBeGreaterThan(0);
   expect(thrown).toEqual([]);
 });
+
+test('a choice still being looked up cannot displace the one made after it', async ({ page }) => {
+  // Choosing a PSICQUIC resource first asks for the resource list again, to
+  // tell what kind it is, and nothing cancelled that: MINT's lookup landing
+  // after IntAct was chosen cancelled IntAct and loaded MINT -- the resource
+  // chosen last was the one dropped.
+  test.setTimeout(150_000);
+  const thrown = collectThrown(page);
+  let lists = 0;
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route('**/interactors/psicquic/resources/', async (route) => {
+    lists += 1;
+    // The panel's own list goes through; a lookup's waits.
+    if (lists > 1) await held;
+    await route.fallback();
+  });
+  await page.goto(`/PathwayBrowser/${PATHWAY}`);
+  await page.locator('.species-interactor-container .interactor').click({ timeout: LOAD });
+  const panel = page.locator('cr-interactors');
+  await panel.getByRole('button', { name: 'MINT' }).click();
+  await panel.getByRole('button', { name: 'IntAct' }).click();
+  const drawn = () =>
+    page.evaluate<number>(`(() => {
+      const cy = document.querySelector('cr-diagram #cytoscape')?._cyreg?.cy;
+      return cy ? cy.nodes('.InteractorOccurrences').length : 0;
+    })()`);
+  await expect.poll(drawn, { timeout: LOAD }).toBeGreaterThan(0);
+
+  release();
+  // Long enough for MINT's lookup, and its load had it started, to land.
+  await page.waitForTimeout(3_000);
+  await expect(page).toHaveURL(/overlay=IntAct/);
+  await expect(page).not.toHaveURL(/overlay=MINT/);
+  expect(await drawn()).toBeGreaterThan(0);
+  expect(thrown).toEqual([]);
+});
