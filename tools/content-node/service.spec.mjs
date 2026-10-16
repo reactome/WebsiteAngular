@@ -1413,6 +1413,21 @@ describe('servletParameter, a query parameter as Tomcat reads it', () => {
   });
 });
 
+describe("springBoolean's second try, Spring's CustomBooleanEditor", () => {
+  // StringToBooleanConverter lower-cases and fails on the long s; the
+  // editor Spring falls back to compares with equalsIgnoreCase, for which
+  // ſ is s. Java bound /search/facet_query's "Force filters=yeſ" as true
+  // (16 Oct 2026). The editor reads every value joined by ','.
+  it('matches the words as String.equalsIgnoreCase does', () => {
+    expect(springBoolean(['yeſ'])).toEqual({ value: true });
+    expect(springBoolean([' falſe '])).toEqual({ value: false });
+    expect(springPrimitiveBoolean(['yeſ'], false)).toEqual({ value: true });
+  });
+  it('reads several values joined, so a second value makes it fail', () => {
+    expect(springBoolean(['yeſ', 'true']).error).toMatch(/Invalid boolean value \[yeſ,true\]/);
+  });
+});
+
 describe('springBoolean with several values', () => {
   const several = (values) =>
     "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Boolean'; " +

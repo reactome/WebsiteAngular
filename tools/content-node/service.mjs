@@ -1784,6 +1784,58 @@ export const endpoints = [
       ),
   },
   {
+    path: '/ContentService/search/facet_query',
+    // SearchController.facet_type: the facets of a query, filtered by the
+    // species, types, keywords and compartments given, in a scope. The
+    // search page asks for it with every search.
+    handler: (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'query' for method parameter type String is not present"
+        );
+      const scope = springScope(queryValues(request, 'scope'));
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const forced = queryValues(request, 'Force filters');
+      const force = springBoolean(forced);
+      if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
+      const unexpected = () =>
+        javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          'Something unexpected happened and the error has been reported.'
+        );
+      // Only one empty value takes the default; any other blank converts to
+      // null, which SearchService's primitive forceFilters cannot take.
+      if (
+        force.value === undefined &&
+        forced.length > 0 &&
+        !(forced.length === 1 && forced[0] === '')
+      )
+        return unexpected();
+      const query = {
+        query: given.join(','),
+        scope: scope.value,
+        species: springList(queryValues(request, 'species')),
+        types: springList(queryValues(request, 'types')),
+        keywords: springList(queryValues(request, 'keywords')),
+        compartments: springList(queryValues(request, 'compartments')),
+      };
+      // An empty query is SearchService's null, before any scope is read.
+      if (query.query === '') return { status: 200 };
+      if (scope.value === null) return unexpected();
+      return fromSolr(request, '/ContentService/search/facet_query', async (signal) => ({
+        status: 200,
+        type: 'application/json',
+        body: await facetsOf(query, force.value === true, signal),
+      }));
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
@@ -3902,9 +3954,24 @@ export function pathwayBrowserJson(node) {
 }
 
 /**
+ * Spring's second try when its converter refuses a Boolean: CustomBooleanEditor
+ * on every value joined by ',', trimmed, compared with equalsIgnoreCase --
+ * for which the long s, ſ, is s, so "yeſ" is true. Undefined when that fails
+ * too, and the converter's 400 stands. Measured against Java.
+ */
+function booleanEditor(values) {
+  const text = javaTrim(values.join(','));
+  const is = (words) => words.some((word) => caseInsensitive(text, word) === 0);
+  if (is(['true', 'on', 'yes', '1'])) return true;
+  if (is(['false', 'off', 'no', '0'])) return false;
+  return undefined;
+}
+
+/**
  * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
  * the first value decides, trimmed as String.trim trims; empty is absent; true,
- * on, yes and 1 or false, off, no and 0 in any case; anything else Java's 400.
+ * on, yes and 1 or false, off, no and 0 in any case; anything else gets
+ * Spring's second try (booleanEditor), and failing that Java's 400.
  *
  * The 400 names what Spring was given: one value is a String, named as sent;
  * several are a String[], and the message lists all of them joined by ','
@@ -3918,6 +3985,8 @@ export function springBoolean(values) {
   if (value === '') return { value: undefined };
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const edited = booleanEditor(values);
+  if (edited !== undefined) return { value: edited };
   const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
     error:
@@ -4225,7 +4294,8 @@ export function inDepthAttributes(values, fallback = 'species,compartment') {
  * A primitive `boolean` request parameter with a default, as Spring reads it:
  * absent or empty takes the default; otherwise as springBoolean reads a
  * Boolean, except that blank is no longer "absent" but a value Spring cannot
- * put in a primitive -- its 400, naming `boolean`. Measured against Java's
+ * put in a primitive -- its 400, naming `boolean`, once booleanEditor has
+ * also refused it. Measured against Java's
  * /query/enhanced/v2.
  */
 export function springPrimitiveBoolean(values, fallback) {
@@ -4234,6 +4304,8 @@ export function springPrimitiveBoolean(values, fallback) {
   const value = javaTrim(values[0]).toLowerCase();
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const edited = booleanEditor(values);
+  if (edited !== undefined) return { value: edited };
   const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
     error:
@@ -4512,6 +4584,15 @@ async function fromSolr(request, path, work) {
         headers: { 'Retry-After': '5' },
       };
     console.error(`${path}: ${failure.message}`);
+    // What Java answers when its own code fails, not Solr: a
+    // NullPointerException, through GlobalExceptionHandler.
+    if (failure.unexpected)
+      return javaError(
+        request,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        'Something unexpected happened and the error has been reported.'
+      );
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Solr exception occurred');
   }
 }
@@ -4556,6 +4637,144 @@ export function facetMapping(answer) {
   const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
   for (const key of FACET_FIELDS.values()) if (key in lists) mapping[key] = lists[key];
   return mapping;
+}
+
+/**
+ * A `List<String>` request parameter as Spring binds it: absent is null; one
+ * value is split at commas and each part trimmed (StringToCollectionConverter
+ * -- so "" is the empty list); several are taken as they are, neither split
+ * nor trimmed. Measured against Java's /search/facet_query.
+ */
+export function springList(values) {
+  if (values.length === 0) return null;
+  if (values.length > 1) return [...values];
+  if (values[0] === '') return [];
+  return values[0].split(',').map(javaTrim);
+}
+
+const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
+
+/**
+ * The `scope` parameter, a Query.Scope defaulting to PHYSICAL_ENTITY, as
+ * Spring converts it, measured: absent or one empty value takes the default.
+ * One value is trimmed, and blank is null -- which search-core's
+ * configureScope cannot switch on: Java's 500 (null here). Of several, the
+ * first is converted by StringToEnumConverterFactory, for which only an
+ * exactly empty value is null; anything else is trimmed and must be a
+ * constant's exact name. The 400 quotes the value as sent and names the
+ * constant it looked for, trimmed.
+ */
+export function springScope(values) {
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) {
+    return { value: 'PHYSICAL_ENTITY' };
+  }
+  const [sent] = values;
+  const name = javaTrim(sent);
+  if (values.length === 1 ? name === '' : sent === '') return { value: null };
+  if (SCOPES.includes(name)) return { value: name };
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type 'org.reactome.server.search.domain.Query$Scope'; ` +
+      'nested exception is org.springframework.core.convert.ConversionFailedException: Failed to convert from type ' +
+      '[java.lang.String] to type [@io.swagger.v3.oas.annotations.Parameter @org.springframework.web.bind.annotation.RequestParam ' +
+      `org.reactome.server.search.domain.Query$Scope] for value '${sent}'; nested exception is ` +
+      `java.lang.IllegalArgumentException: No enum constant org.reactome.server.search.domain.Query.Scope.${name}`,
+  };
+}
+
+/** SolrCore.configureScope's filter for each scope; BOTH has none. */
+const SCOPE_FILTER = {
+  REFERENCE_ENTITY: 'hasReferenceEntity:false',
+  PHYSICAL_ENTITY: '-isReferenceSummary:true',
+};
+
+/** The filters a query takes, in the order SolrCore adds them, with its tag and field. */
+const QUERY_FILTERS = [
+  ['species', '{!tag=sf}', 'species_facet', 'speciesFacet'],
+  ['types', '{!tag=tf}', 'type_facet', 'typeFacet'],
+  ['keywords', '{!tag=kf}', 'keywords_facet', 'keywordFacet'],
+  ['compartments', '{!tag=cf}', 'compartment_facet', 'compartmentFacet'],
+];
+
+/**
+ * What SolrCore.getFacetingInformation(Query) sends the /facet handler: the
+ * scope's filter, one tagged filter for each list given, not deleted, the
+ * query. getFilterString drops empty names from a list as it goes -- they
+ * are dropped here too, so the caller sees the lists as Java's are after --
+ * and a list with nothing left is a bare tag, as Java sends it.
+ */
+export function facetQueryParams(query) {
+  const params = [];
+  if (SCOPE_FILTER[query.scope]) params.push(['fq', SCOPE_FILTER[query.scope]]);
+  for (const [list, tag, field] of QUERY_FILTERS) {
+    const given = query[list];
+    if (!given || given.length === 0) continue;
+    const kept = given.filter((name) => name !== '' && name !== null);
+    given.splice(0, given.length, ...kept);
+    params.push(['fq', kept.length ? `${tag}${field}:("${kept.join('" OR "')}")` : tag]);
+  }
+  params.push(['fq', '-deleted'], ['q', query.query]);
+  return params;
+}
+
+/** One FacetContainer, NON_EMPTY: a null or empty name is left out. */
+function facetContainer(name, count) {
+  return name === null || name === '' ? { count } : { name, count };
+}
+
+/**
+ * SolrConverter.getFacetMap(response, query): each of the four facets split
+ * into the names the query selected and the rest, as FacetList(selected,
+ * available) -- a facet Solr did not count is left out, empty lists too.
+ */
+function facetMappingFor(answer, query) {
+  const fields = answer?.facet_counts?.facet_fields ?? {};
+  const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
+  const selected = {};
+  for (const [list, , field, key] of QUERY_FILTERS) {
+    if (!(field in fields)) continue;
+    const flat = fields[field] ?? [];
+    const chosen = [];
+    const available = [];
+    for (let at = 0; at + 1 < flat.length; at += 2) {
+      const container = facetContainer(flat[at], flat[at + 1]);
+      (query[list]?.includes(flat[at]) ? chosen : available).push(container);
+    }
+    selected[list] = chosen.map((container) => container.name ?? null);
+    mapping[key] = {
+      ...(chosen.length ? { selected: chosen } : {}),
+      ...(available.length ? { available } : {}),
+    };
+  }
+  return { mapping, selected };
+}
+
+/**
+ * SearchService.getFacetingInformation(query, forceFilters): the facets of
+ * `query`; unless filters are forced, a list whose names were not all found
+ * is cut to those that were, and Solr asked again -- so a filter that
+ * selects nothing is no filter. A list with no facet to check is Java's
+ * NullPointerException, a failure here too.
+ */
+async function facetsOf(query, forceFilters, signal) {
+  const ask = async () =>
+    facetMappingFor(await solr('/facet', facetQueryParams(query), { signal }), query);
+  const first = await ask();
+  if (forceFilters) return first.mapping;
+  let correct = true;
+  for (const [list] of QUERY_FILTERS) {
+    if (!query[list]) continue;
+    if (!(list in first.selected))
+      throw Object.assign(new Error(`no ${list} facet to check the filter against`), {
+        unexpected: true,
+      });
+    if (first.selected[list].length !== query[list].length) {
+      correct = false;
+      query[list] = first.selected[list];
+    }
+  }
+  return correct ? first.mapping : (await ask()).mapping;
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
