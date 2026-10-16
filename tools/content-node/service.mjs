@@ -1878,6 +1878,53 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/search/diagram/{pathwayId}/flag',
+    // SearchController.getEntitiesInDiagramForIdentifier, which the Pathway
+    // Browser asks when flagging a term in the diagram on screen.
+    handler: async (request) => {
+      const pathway = pathId(rawSegment(request, 4));
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const interactors = springBoolean(queryValues(request, 'includeInteractors'));
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(pathway).catch((failure) => failure);
+      if (problems instanceof Error) {
+        if (problems.unexpected) return unexpectedFailure(request);
+        if (problems.javaMessage)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', problems.javaMessage);
+        throw problems;
+      }
+      if (problems) return javaError(request, 400, 'BAD_REQUEST', problems);
+      if (blankBoolean(queryValues(request, 'includeInteractors'), interactors))
+        return unexpectedFailure(request);
+      const query = given.join(',');
+      const field = interactors.value === true ? 'occurrencesWithInteractor' : 'occurrences';
+      return fromSolr(
+        request,
+        '/ContentService/search/diagram/{pathwayId}/flag',
+        async (signal) => {
+          const flags = diagramFlags(
+            await solr(
+              '/diagrams/flagging',
+              [
+                ['q', `"${query}" AND ${field}:${pathway}*`],
+                ['fl', `${field},stId`],
+                ['rows', '100'],
+              ],
+              { signal }
+            ),
+            pathway,
+            field
+          );
+          if (!flags.occurrences && !flags.interactsWith)
+            return notFound(request, `No entities with identifier '${query}' found for ${pathway}`);
+          return { status: 200, type: 'application/json', body: flags };
+        }
+      );
+    },
+  },
+  {
     path: '/ContentService/search/diagram/{diagram}/occurrences/{instance}',
     // SearchController.getDiagramOccurrences: where an object occurs in a
     // diagram -- its subpathways there, and what it interacts with -- read
@@ -1977,6 +2024,45 @@ export const endpoints = [
         if (!(result.found > 0))
           return notFound(request, `No entries found for '${query.query}' in diagram '${diagram}'`);
         return { status: 200, type: 'application/json', body: result };
+      });
+    },
+  },
+  {
+    path: '/ContentService/search/fireworks/flag',
+    // SearchController.fireworksFlagging, which the Pathway Browser asks to
+    // flag a term across the whole species overview.
+    handler: async (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const name = singleString(queryValues(request, 'species'), 'Homo sapiens');
+      // SpeciesService.getSpeciesByName: a Species with exactly that name.
+      const [species] = await read(
+        'MATCH (n:Species) WHERE $name IN n.name RETURN n.dbId AS dbId, n.displayName AS displayName, n.abbreviation AS abbreviation LIMIT 1',
+        { name }
+      );
+      if (!species) return javaError(request, 400, 'BAD_REQUEST', `No species found for '${name}'`);
+      const query = given.join(',');
+      return fromSolr(request, '/ContentService/search/fireworks/flag', async (signal) => {
+        const flags = fireworksFlags(
+          await solr(
+            '/fireworks/flagging',
+            [
+              ['fl', 'llps,occurrences'],
+              ['q', query],
+              ['fq', `fireworksSpecies:("${species.displayName}" OR "Entries without species")`],
+              ['rows', '100'],
+            ],
+            { signal }
+          ),
+          species.abbreviation
+        );
+        if (!flags.llps && !flags.interactsWith)
+          return notFound(
+            request,
+            `No entries found for query: '${query}' in species '${speciesToString(species)}'`
+          );
+        return { status: 200, type: 'application/json', body: flags };
       });
     },
   },
@@ -2808,6 +2894,27 @@ export class JavaHashMap {
     this.size += 1;
     if (this.size > this.#table.length * 0.75) this.#resize();
     return this;
+  }
+
+  /**
+   * HashSet.remove: the key unlinked from its bucket, the rest in order. A
+   * tree bin is unlinked the same way; Java may then rebalance it and move
+   * a different root to the front -- eight keys in one bucket of 64 or
+   * more, which these sets of stable ids never come near.
+   */
+  delete(key) {
+    const hash = JavaHashMap.#hash(key);
+    const index = (this.#table.length - 1) & hash;
+    let previous = null;
+    for (let node = this.#table[index]; node; previous = node, node = node.next) {
+      if (node.hash !== hash || node.key !== key) continue;
+      if (previous) previous.next = node.next;
+      else this.#table[index] = node.next;
+      if (node.next && node.tree) node.next.prev = previous;
+      this.size -= 1;
+      return true;
+    }
+    return false;
   }
 
   *entries() {
@@ -5419,6 +5526,85 @@ function blankBoolean(values, read) {
   return (
     read.value === undefined && values.length > 0 && !(values.length === 1 && values[0] === '')
   );
+}
+
+/** A java.util.HashSet of these strings, added in this order, as its iteration order. */
+function hashSetOf(items) {
+  const map = new JavaHashMap();
+  for (const item of items) map.set(item, true);
+  return map;
+}
+
+/**
+ * SearchManager.getDiagramOccurrencesResult: the documents Solr's
+ * /diagrams/flagging finds for the term in the pathway (every scope, the
+ * first hundred), each occurrence in the pathway folded into one result --
+ * the document's own stable id when it is in the diagram, its subpathways,
+ * and what it interacts with -- each a HashSet, NON_EMPTY leaving out none.
+ */
+function diagramFlags(answer, pathway, field) {
+  const occurrences = new JavaHashMap();
+  const interactsWith = new JavaHashMap();
+  for (const doc of answer?.response?.docs ?? []) {
+    for (const raw of solrStrings(doc, field)) {
+      if (!raw.startsWith(pathway)) continue;
+      const line = javaSplit(raw, ':');
+      if (line.length < 4)
+        throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
+          unexpected: true,
+        });
+      // extractRawOccurrence with the document: the entity is its stId
+      // when it is in the diagram, and in the diagram if that is non-empty.
+      const entity = line[1].toLowerCase() === 'true' ? solrValue(doc, 'stId') : null;
+      if (entity !== null && entity !== undefined && entity !== '') occurrences.set(entity, true);
+      // Each list is first the occurrence's own HashSet, then added to the
+      // whole one in that set's order.
+      if (line[2] !== '#')
+        for (const id of hashSetOf(javaSplit(line[2], ',')).keys()) occurrences.set(id, true);
+      if (line[3] !== '#')
+        for (const id of hashSetOf(javaSplit(line[3], ',')).keys()) interactsWith.set(id, true);
+    }
+  }
+  return {
+    ...(occurrences.size ? { occurrences: [...occurrences.keys()] } : {}),
+    ...(interactsWith.size ? { interactsWith: [...interactsWith.keys()] } : {}),
+  };
+}
+
+/**
+ * SolrConverter.fireworksFlagging then SearchManager's species filter: the
+ * documents' lower-level pathways, and the diagrams where they have
+ * interactors less those pathways, kept to the species' own ids
+ * ("R-" + its abbreviation) -- each a HashSet, refilled after the filter.
+ */
+function fireworksFlags(answer, abbreviation) {
+  const llps = new JavaHashMap();
+  const interactsWith = new JavaHashMap();
+  for (const doc of answer?.response?.docs ?? []) {
+    for (const id of solrStrings(doc, 'llps')) llps.set(id, true);
+    for (const raw of solrStrings(doc, 'occurrences')) {
+      const line = javaSplit(raw, ':');
+      if (line.length < 4)
+        throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
+          unexpected: true,
+        });
+      if (line[3] !== '#') interactsWith.set(line[0], true);
+    }
+  }
+  if (llps.size && interactsWith.size) for (const id of llps.keys()) interactsWith.delete(id);
+  const prefix = `R-${abbreviation}`;
+  const kept = (map) => hashSetOf([...map.keys()].filter((id) => id.startsWith(prefix)));
+  const species = kept(llps);
+  const interacting = kept(interactsWith);
+  return {
+    ...(species.size ? { llps: [...species.keys()] } : {}),
+    ...(interacting.size ? { interactsWith: [...interacting.keys()] } : {}),
+  };
+}
+
+/** A DatabaseObject's toString in graph-core, as Java's messages write a Species. */
+function speciesToString(row) {
+  return `Species {dbId=${row.dbId}, displayName='${row.displayName}'}`;
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
