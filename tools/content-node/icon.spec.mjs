@@ -372,13 +372,19 @@ describe('the icon endpoints, against a stand-in Solr', () => {
   });
 
   it("routes /query/{id}/{attribute} by the attribute in any case, as Java's getter lookup does", async () => {
-    // Without a graph the handler fails, but it is the handler that answers,
-    // not the 404 for a path no mapping matches.
-    for (const attribute of ['stid', 'STID', 'NormalPathway', 'normalpathway'])
-      for (const id of ['R-HSA-70486']) {
-        const response = await fetch(`${base}/ContentService/data/query/${id}/${attribute}`);
-        const body = await response.text();
-        expect([attribute, body.includes('"error":"Not Found"')]).toEqual([attribute, false]);
-      }
+    // Without a graph the handler fails, but it is a handler that answers,
+    // not the 404 for a path no mapping matches. "ids" is an id here: Java
+    // has no GET mapping under /query/ids/.
+    for (const path of [
+      'R-HSA-70486/stid',
+      'R-HSA-70486/STID',
+      'R-HSA-70486/NormalPathway',
+      'R-HSA-70486/STID/',
+      'ids/STID',
+    ]) {
+      const response = await fetch(`${base}/ContentService/data/query/${path}`);
+      const body = await response.text();
+      expect([path, body.includes('"error":"Not Found"')]).toEqual([path, false]);
+    }
   });
 });

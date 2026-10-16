@@ -800,7 +800,8 @@ export const endpoints = [
       if (row.stId === null || row.stId === undefined)
         return notFound(
           request,
-          `Attribute: 'stId' has not been found for object: ${String(row.schemaClass)}`
+          // The attribute as it was sent: routing matched it ignoring case.
+          `Attribute: '${pathId(rawSegment(request, 5))}' has not been found for object: ${String(row.schemaClass)}`
         );
       return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
     },
@@ -947,7 +948,7 @@ export const endpoints = [
       if (row.dbId === null || row.dbId === undefined)
         return notFound(
           request,
-          `Attribute: 'normalPathway' has not been found for object: ${schemaClassOf(row.labels)}`
+          `Attribute: '${pathId(rawSegment(request, 5))}' has not been found for object: ${schemaClassOf(row.labels)}`
         );
       return {
         status: 200,
@@ -5324,14 +5325,15 @@ export function app() {
       })
       // Java's /query/{id}/{attributeName} finds the attribute's getter
       // ignoring case (ControllerUtils.getProperty); node's two are literal
-      // routes, so the attribute is put in their case. Not under Java's
-      // more specific /query/enhanced, /abridged and /ids mappings, where
-      // that segment is an id.
-      .replace(/^(\/data\/query\/([^/]+)\/)([^/]+)$/, (path, head, id, attribute) =>
-        ['enhanced', 'abridged', 'ids'].includes(id)
-          ? path
-          : head + (QUERY_ATTRIBUTES[attribute.toLowerCase()] ?? attribute)
-      );
+      // routes, so the attribute is put in their case, a trailing slash
+      // kept. Not under Java's more specific /query/enhanced/{id} and
+      // /query/abridged/{id}, where that segment is an id.
+      .replace(/^(\/data\/query\/([^/]+)\/)([^/]+)(\/?)$/, (path, head, id, attribute, slash) => {
+        const lower = attribute.toLowerCase();
+        if (['enhanced', 'abridged'].includes(id) || !Object.hasOwn(QUERY_ATTRIBUTES, lower))
+          return path;
+        return head + QUERY_ATTRIBUTES[lower] + slash;
+      });
     request.url = routed + (query === undefined ? '' : `?${query}`);
     next();
   });
