@@ -4531,9 +4531,11 @@ const FACET_FIELDS = new Map([
 /**
  * A FacetMapping as ContentService writes it: every count Solr gave, in its
  * order, under the field its facet fills, and what the mapper's NON_EMPTY
- * leaves out left out -- an empty list, a null name. Java's null, no facet
- * fields at all, is undefined. A facet field Java has no place for is its
- * NullPointerException, so a failure here too.
+ * leaves out left out -- an empty list, a null or empty name. Java's null, no
+ * facet fields at all, is undefined. A facet field Java has no place for is
+ * its NullPointerException, so a failure here too: a 500, though in the
+ * envelope where Java's is Spring's own error page -- only a change to
+ * solrconfig.xml could reach it.
  */
 export function facetMapping(answer) {
   const fields = answer?.facet_counts?.facet_fields ?? {};
@@ -4545,7 +4547,9 @@ export function facetMapping(answer) {
     const available = [];
     for (let at = 0; at + 1 < (flat ?? []).length; at += 2)
       available.push(
-        flat[at] === null ? { count: flat[at + 1] } : { name: flat[at], count: flat[at + 1] }
+        flat[at] === null || flat[at] === ''
+          ? { count: flat[at + 1] }
+          : { name: flat[at], count: flat[at + 1] }
       );
     lists[key] = available.length ? { available } : {};
   }

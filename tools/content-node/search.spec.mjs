@@ -70,11 +70,13 @@ describe('facetMapping, as SolrConverter.getFacetMap builds it', () => {
     );
   });
 
-  it('leaves out what NON_EMPTY leaves out: an empty list, a null name', () => {
+  it('leaves out what NON_EMPTY leaves out: an empty list, a null or empty name', () => {
     expect(
-      JSON.stringify(facetMapping(answer({ iconCategories_facet: [], species_facet: [null, 4] })))
+      JSON.stringify(
+        facetMapping(answer({ iconCategories_facet: [], species_facet: [null, 4, '', 2] }))
+      )
     ).toBe(
-      '{"totalNumFount":7,"speciesFacet":{"available":[{"count":4}]},"iconCategoriesFacet":{}}'
+      '{"totalNumFount":7,"speciesFacet":{"available":[{"count":4},{"count":2}]},"iconCategoriesFacet":{}}'
     );
   });
 
@@ -359,14 +361,21 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
   });
 
   for (const [route, handler, params] of [
-    ['facet', '/facetall', { q: '*:*', fq: 'hasReferenceEntity:false' }],
-    ['icon/facet', '/icon/facet', { q: '{!term f=type}icon' }],
+    [
+      'facet',
+      '/facetall',
+      [
+        ['q', '*:*'],
+        ['fq', 'hasReferenceEntity:false'],
+      ],
+    ],
+    ['icon/facet', '/icon/facet', [['q', '{!term f=type}icon']]],
   ])
     it(`/${route} asks ${handler} as search-core does, and writes its FacetMapping`, async () => {
       useSolr();
       const asked = [];
       answer = (request, sent, response) => {
-        asked.push([request.url, Object.fromEntries(sent)]);
+        asked.push([request.url, [...sent]]);
         response.setHeader('Content-Type', 'application/json');
         response.end(
           JSON.stringify({
@@ -383,7 +392,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
         '{"totalNumFount":9,"typeFacet":{"available":[{"name":"Protein","count":9}]}}'
       );
       expect(asked).toEqual([
-        [`/solr/reactome${handler}`, { wt: 'json', 'json.nl': 'flat', ...params }],
+        [`/solr/reactome${handler}`, [['wt', 'json'], ['json.nl', 'flat'], ...params]],
       ]);
     });
 
