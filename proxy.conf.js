@@ -122,6 +122,9 @@ module.exports = {
   // everything and of a query, and the icon library (its facets, pages and
   // icons). The rest of /search is Java's for now.
   '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/[^/?]+)(\\?|$)': contentNode,
+  // Search within a diagram, where an object occurs in it, and the summary of
+  // both; not /diagram/{id}/flag, which is Java's for now.
+  '^/ContentService/search/diagram/[^/?]+(/occurrences/[^/?]+)?(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

@@ -1803,13 +1803,7 @@ export const endpoints = [
       const forced = queryValues(request, 'Force filters');
       const force = springBoolean(forced);
       if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
-      const unexpected = () =>
-        javaError(
-          request,
-          500,
-          'INTERNAL_SERVER_ERROR',
-          'Something unexpected happened and the error has been reported.'
-        );
+      const unexpected = () => unexpectedFailure(request);
       // Only one empty value takes the default; any other blank converts to
       // null, which SearchService's primitive forceFilters cannot take.
       if (
@@ -1837,6 +1831,156 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/search/diagram/summary',
+    // SearchService.getDiagramSearchSummary, for the Pathway Browser's
+    // search: how many match in the diagram and in the whole fireworks, for
+    // a species and the entries without one -- counts only. Not checked as
+    // an identifier: Java does not. Before /diagram/{diagram}, which would
+    // otherwise take "summary" for a diagram.
+    handler: (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const species = queryValues(request, 'species');
+      const diagram = queryValues(request, 'diagram');
+      if (diagram.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('diagram'));
+      const scope = springScope(queryValues(request, 'scope'), 'REFERENCE_ENTITY');
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const interactors = springBoolean(queryValues(request, 'includeInteractors'));
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      if (blankBoolean(queryValues(request, 'includeInteractors'), interactors))
+        return unexpectedFailure(request);
+      const query = {
+        query: given.join(','),
+        species: [singleString(species, 'Homo sapiens'), 'Entries without species'],
+        diagram: diagram.join(','),
+        scope: scope.value,
+        includeInteractors: interactors.value === true,
+        start: 0,
+        rows: 0,
+      };
+      if (query.scope === null) return unexpectedFailure(request);
+      return fromSolr(request, '/ContentService/search/diagram/summary', async (signal) => {
+        const ask = async () => [
+          entriesResult(await solr('/diagrams', diagramParams(query), { signal })),
+          entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
+            fireworks: true,
+          }),
+        ];
+        let [diagramResult, fireworksResult] = await ask();
+        if (!(fireworksResult.found > 0)) {
+          query.scope = 'BOTH';
+          [diagramResult, fireworksResult] = await ask();
+        }
+        return { status: 200, type: 'application/json', body: { diagramResult, fireworksResult } };
+      });
+    },
+  },
+  {
+    path: '/ContentService/search/diagram/{diagram}/occurrences/{instance}',
+    // SearchController.getDiagramOccurrences: where an object occurs in a
+    // diagram -- its subpathways there, and what it interacts with -- read
+    // from the first of its occurrences that starts with the diagram's id.
+    handler: async (request) => {
+      const diagram = pathId(rawSegment(request, 4));
+      const instance = pathId(rawSegment(request, 6));
+      // types is bound, but getDiagramOccurrences never reads it.
+      const interactors = springBoolean(queryValues(request, 'includeInteractors'));
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(diagram, instance).catch((failure) => failure);
+      if (problems instanceof Error) {
+        if (problems.unexpected) return unexpectedFailure(request);
+        if (problems.javaMessage)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', problems.javaMessage);
+        throw problems;
+      }
+      if (problems) return javaError(request, 400, 'BAD_REQUEST', problems);
+      if (blankBoolean(queryValues(request, 'includeInteractors'), interactors))
+        return unexpectedFailure(request);
+      const field = interactors.value === true ? 'occurrencesWithInteractor' : 'occurrences';
+      return fromSolr(
+        request,
+        '/ContentService/search/diagram/{diagram}/occurrences/{instance}',
+        async (signal) => {
+          const ask = async (scope) => {
+            const answer = await solr(
+              '/diagrams/occurrences',
+              [
+                ...(SCOPE_FILTER[scope] ? [['fq', SCOPE_FILTER[scope]]] : []),
+                ['q', instance],
+                ['fl', field],
+              ],
+              { signal }
+            );
+            for (const doc of answer?.response?.docs ?? [])
+              for (const raw of solrStrings(doc, field))
+                if (raw.startsWith(diagram)) return rawOccurrence(raw);
+            return undefined;
+          };
+          const result = (await ask('REFERENCE_ENTITY')) ?? (await ask('BOTH'));
+          if (!result)
+            return notFound(request, `No occurrences of '${instance}' found in '${diagram}'`);
+          return { status: 200, type: 'application/json', body: result };
+        }
+      );
+    },
+  },
+  {
+    path: '/ContentService/search/diagram/{diagram}',
+    // SearchController.getDiagramResult: the Pathway Browser's search within
+    // a diagram -- Solr's /diagrams handler, filtered to the diagram as given
+    // (so a dbId or a versioned id, which pass the check, find nothing),
+    // asked again in every scope when the first finds nothing.
+    handler: async (request) => {
+      const diagram = pathId(rawSegment(request, 4));
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const types = springList(queryValues(request, 'types'));
+      const start = springIntegerWithDefault(queryValues(request, 'start'), null);
+      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      const rows = springIntegerWithDefault(queryValues(request, 'rows'), null);
+      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      const scope = springScope(queryValues(request, 'scope'));
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const interactors = springBoolean(queryValues(request, 'includeInteractors'));
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(diagram).catch((failure) => failure);
+      if (problems instanceof Error) {
+        if (problems.unexpected) return unexpectedFailure(request);
+        if (problems.javaMessage)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', problems.javaMessage);
+        throw problems;
+      }
+      if (problems) return javaError(request, 400, 'BAD_REQUEST', problems);
+      if (
+        blankBoolean(queryValues(request, 'includeInteractors'), interactors) ||
+        scope.value === null
+      )
+        return unexpectedFailure(request);
+      const query = {
+        query: given.join(','),
+        types,
+        start: start.value,
+        rows: rows.value,
+        scope: scope.value,
+        includeInteractors: interactors.value === true,
+        diagram,
+      };
+      return fromSolr(request, '/ContentService/search/diagram/{diagram}', async (signal) => {
+        let result = entriesResult(await solr('/diagrams', diagramParams(query), { signal }));
+        if (!(result.found > 0)) {
+          query.scope = 'BOTH';
+          result = entriesResult(await solr('/diagrams', diagramParams(query), { signal }));
+        }
+        if (!(result.found > 0))
+          return notFound(request, `No entries found for '${query.query}' in diagram '${diagram}'`);
+        return { status: 200, type: 'application/json', body: result };
+      });
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
@@ -1859,13 +2003,7 @@ export const endpoints = [
       const size = springIntegerWithDefault(queryValues(request, 'pageSize'), 28);
       if (size.error) return javaError(request, 400, 'BAD_REQUEST', size.error);
       // rows * (page - 1) unboxes both: a null is Java's NullPointerException.
-      if (page.value === null || size.value === null)
-        return javaError(
-          request,
-          500,
-          'INTERNAL_SERVER_ERROR',
-          'Something unexpected happened and the error has been reported.'
-        );
+      if (page.value === null || size.value === null) return unexpectedFailure(request);
       let q = '';
       const inCategory = category.join(',');
       if (inCategory !== '')
@@ -4733,7 +4871,8 @@ export function springList(values) {
 const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
 
 /**
- * The `scope` parameter, a Query.Scope defaulting to PHYSICAL_ENTITY, as
+ * The `scope` parameter, a Query.Scope defaulting to PHYSICAL_ENTITY (or
+ * `fallback`), as
  * Spring converts it, measured: absent or one empty value takes the default.
  * One value is trimmed, and blank is null -- which search-core's
  * configureScope cannot switch on: Java's 500 (null here). Of several, the
@@ -4742,9 +4881,9 @@ const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
  * constant's exact name. The 400 quotes the value as sent and names the
  * constant it looked for, trimmed.
  */
-export function springScope(values) {
+export function springScope(values, fallback = 'PHYSICAL_ENTITY') {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) {
-    return { value: 'PHYSICAL_ENTITY' };
+    return { value: fallback };
   }
   const [sent] = values;
   const name = javaTrim(sent);
@@ -4871,7 +5010,10 @@ function solrStrings(doc, field) {
 /** String.split on a literal, as Java's: trailing empty strings removed. */
 function javaSplit(text, separator) {
   const parts = text.split(separator);
-  while (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+  // No separator at all is the text itself, even empty; otherwise every
+  // trailing empty string goes, so "," is nothing at all.
+  if (parts.length === 1) return parts;
+  while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
   return parts;
 }
 
@@ -4976,7 +5118,7 @@ const ENTRY_FIELDS = [
  * with no snippet is none; otherwise the summation is the document's own,
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
  */
-export function searchEntry(doc, highlighting) {
+export function searchEntry(doc, highlighting, { fireworks = false } = {}) {
   const entry = {
     dbId: solrValue(doc, 'dbId'),
     stId: solrValue(doc, 'stId'),
@@ -5023,6 +5165,9 @@ export function searchEntry(doc, highlighting) {
     entry.regulatedEntity = solrValue(doc, 'regulatedEntity');
     entry.referenceIdentifier = referenceIdentifier(doc);
   }
+  // SolrConverter.getFireworksResult adds the document's fireworks species.
+  if (fireworks && 'fireworksSpecies' in doc)
+    entry.fireworksSpecies = solrStrings(doc, 'fireworksSpecies');
   for (const field of [
     'iconName',
     'iconCuratorName',
@@ -5093,6 +5238,187 @@ function searchResult(answer, highlight) {
     entriesCount: answer?.response?.numFound ?? 0,
     rowCount: entries.length,
   };
+}
+
+/** Java's GlobalExceptionHandler answer to its own NullPointerException. */
+function unexpectedFailure(request) {
+  return javaError(
+    request,
+    500,
+    'INTERNAL_SERVER_ERROR',
+    'Something unexpected happened and the error has been reported.'
+  );
+}
+
+/**
+ * SearchController.checkIdentifiers: what is wrong with a diagram id and,
+ * when given, an object id, each looked up as graph-core's findById reads an
+ * id -- in a TreeSet, so in String order, joined by " and " for Java's 400;
+ * undefined when nothing is. Every id the graph does not have "cannot be
+ * found", a blank one too, named as it was sent.
+ */
+async function identifierProblems(diagram, object) {
+  const report = [];
+  const found = async (id) => {
+    // graph-core's trimId splits an id without ':' at '.', and Java's split
+    // of dots alone is empty: indexing it is the 500 below. Then findById's
+    // Long.parseLong refuses a dbId past a long.
+    const trimmed = javaTrim(id);
+    if (!trimmed.includes(':') && trimmed !== '' && javaSplit(trimmed, '.').length === 0)
+      throw Object.assign(new Error('an id of dots'), {
+        javaMessage: 'Index 0 out of bounds for length 0',
+      });
+    const pastLong = longPastRange([id]);
+    if (pastLong) throw Object.assign(new Error(pastLong), { javaMessage: pastLong });
+    const { where, params } = resolveId(id);
+    if (where === 'false') return undefined;
+    const [row] = await read(
+      `MATCH (n:DatabaseObject) WHERE ${where}
+       RETURN labels(n) AS labels, n.hasDiagram AS hasDiagram LIMIT 1`,
+      params
+    );
+    return row;
+  };
+  const d = await found(diagram);
+  if (!d) report.push(`'${diagram}' cannot be found`);
+  else if (!d.labels.includes('Pathway')) report.push(`'${diagram}' does not belong to a pathway`);
+  else if (d.hasDiagram === null || d.hasDiagram === undefined)
+    // getHasDiagram() unboxed: Java's NullPointerException.
+    throw Object.assign(new Error(`${diagram} has no hasDiagram`), { unexpected: true });
+  else if (!d.hasDiagram) report.push(`'${diagram}' the pathway does not have diagram`);
+  if (object !== undefined && !(await found(object))) report.push(`'${object}' cannot be found`);
+  if (report.length === 0) return undefined;
+  return [...new Set(report)].sort(compareJavaStrings).join(' and ');
+}
+
+/** String.compareTo: by UTF-16 unit, then by length. */
+function compareJavaStrings(a, b) {
+  const length = Math.min(a.length, b.length);
+  for (let at = 0; at < length; at += 1) {
+    const difference = a.charCodeAt(at) - b.charCodeAt(at);
+    if (difference) return difference;
+  }
+  return a.length - b.length;
+}
+
+/** The FacetContainers of Solr's type facet, as search-core's diagram and fireworks results keep them. */
+function typeFacets(answer) {
+  const flat = answer?.facet_counts?.facet_fields?.type_facet ?? [];
+  const facets = [];
+  for (let at = 0; at + 1 < flat.length; at += 2)
+    facets.push(facetContainer(flat[at], flat[at + 1]));
+  return facets;
+}
+
+/**
+ * A DiagramResult or FireworksResult: the documents as Entries (never
+ * highlighted), the type facets, and Solr's count -- NON_EMPTY leaving out
+ * no entries or no facets.
+ */
+function entriesResult(answer, options = {}) {
+  const entries = (answer?.response?.docs ?? []).map((doc) => searchEntry(doc, null, options));
+  const facets = typeFacets(answer);
+  return {
+    ...(entries.length ? { entries } : {}),
+    ...(facets.length ? { facets } : {}),
+    found: answer?.response?.numFound ?? 0,
+  };
+}
+
+/** The filters SolrCore adds for a query's species (fireworksSpecies) and types. */
+function speciesAndTypes(query) {
+  const params = [];
+  const filter = (list, field) => {
+    const kept = list.filter((name) => name !== '' && name !== null);
+    list.splice(0, list.length, ...kept);
+    return kept.length ? `${field}:("${kept.join('" OR "')}")` : '';
+  };
+  if (query.species?.length) params.push(['fq', filter(query.species, 'fireworksSpecies')]);
+  if (query.types?.length) params.push(['fq', `{!tag=tf}${filter(query.types, 'type_facet')}`]);
+  return params;
+}
+
+/** start and rows, as SolrQuery sets them: a null one is left out. */
+function paging(query) {
+  return [
+    ...(query.start === null || query.start === undefined ? [] : [['start', String(query.start)]]),
+    ...(query.rows === null || query.rows === undefined ? [] : [['rows', String(query.rows)]]),
+  ];
+}
+
+/** SolrCore.getDiagrams: the documents in a diagram matching the query. */
+function diagramParams(query) {
+  return [
+    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
+    ...speciesAndTypes(query),
+    ['fq', `${query.includeInteractors ? 'diagramsWithInteractor' : 'diagrams'}:${query.diagram}`],
+    ...paging(query),
+    ['q', query.query],
+  ];
+}
+
+/** SolrCore.getFireworksResult: the species filter is always sent, empty or not. */
+function fireworksParams(query) {
+  const species = query.species ?? [];
+  const kept = species.filter((name) => name !== '' && name !== null);
+  const types = query.types?.length ? speciesAndTypes({ types: query.types }) : [];
+  return [
+    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
+    ['fq', kept.length ? `fireworksSpecies:("${kept.join('" OR "')}")` : ''],
+    ...types,
+    ...paging(query),
+    ['q', query.query],
+  ];
+}
+
+/**
+ * SolrConverter's extractRawOccurrence: "diagram:inDiagram:occurrences:
+ * interactsWith", '#' for none, as a DiagramOccurrencesResult -- each list a
+ * HashSet, so written in a java.util.HashMap's order, and left out empty.
+ * Fewer than four parts is Java's ArrayIndexOutOfBoundsException.
+ */
+function rawOccurrence(raw) {
+  const line = javaSplit(raw, ':');
+  if (line.length < 4)
+    throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
+      unexpected: true,
+    });
+  const set = (text) => {
+    if (text === '#') return undefined;
+    const map = new JavaHashMap();
+    for (const item of javaSplit(text, ',')) map.set(item, true);
+    const keys = [...map.keys()];
+    return keys.length ? keys : undefined;
+  };
+  const result = { diagramEntity: line[0], inDiagram: line[1].toLowerCase() === 'true' };
+  if (result.diagramEntity === '') delete result.diagramEntity;
+  const occurrences = set(line[2]);
+  if (occurrences) result.occurrences = occurrences;
+  const interactsWith = set(line[3]);
+  if (interactsWith) result.interactsWith = interactsWith;
+  return result;
+}
+
+/** Spring's 400 for a missing required String parameter. */
+function requiredString(name) {
+  return `Required request parameter '${name}' for method parameter type String is not present`;
+}
+
+/** A String parameter with a default: absent or one empty value is the default; several are joined. */
+function singleString(values, fallback) {
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return fallback;
+  return values.join(',');
+}
+
+/**
+ * A Boolean with a default that converts to null -- given, but blank (not
+ * the single empty value, which is the default): Java's code then unboxes
+ * it, its NullPointerException.
+ */
+function blankBoolean(values, read) {
+  return (
+    read.value === undefined && values.length > 0 && !(values.length === 1 && values[0] === '')
+  );
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
