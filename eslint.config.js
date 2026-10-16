@@ -202,6 +202,7 @@ module.exports = tseslint.config(
         clearTimeout: 'readonly',
         URL: 'readonly',
         AbortSignal: 'readonly',
+        AbortController: 'readonly',
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
         window: 'readonly',

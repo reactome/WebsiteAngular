@@ -118,6 +118,9 @@ module.exports = {
   // with Java.
   '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)(\\?|$)':
     contentNode,
+  // The search box's completions and its "did you mean". The rest of /search
+  // is Java's for now.
+  '^/ContentService/search/(suggest|spellcheck)(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

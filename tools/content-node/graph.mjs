@@ -67,6 +67,9 @@ if (!connect.noDelay) {
 const file = fromFile();
 const setting = (key, fallback = '') => process.env[key] || file[key] || fallback;
 
+/** A setting from the environment or, failing that, the credentials file -- for solr.mjs too. */
+export const envSetting = setting;
+
 const URI = setting('NEO4J_URI', 'bolt://127.0.0.1:7687');
 const USER = setting('NEO4J_USER');
 const PASSWORD = setting('NEO4J_PASSWORD');

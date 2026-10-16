@@ -1,0 +1,149 @@
+/**
+ * Reactome's Solr, for the node port of the content service's /search.
+ *
+ * search-core (the Java library ContentService searches with) does its work in
+ * Solr's own request handlers -- /suggest, /spellcheck, /exists, /search and
+ * the rest, configured in the core's solrconfig.xml -- and sends them a few
+ * parameters by POST. This sends the same parameters to the same handlers, so
+ * what is matched, ranked and cut is Solr's, as it is for Java.
+ *
+ * SOLR_URL (the core, e.g. http://localhost:8983/solr/reactome), SOLR_USER and
+ * SOLR_PASSWORD come from the environment or the credentials file graph.mjs
+ * reads, and nowhere else.
+ */
+import { URLSearchParams } from 'node:url';
+import { envSetting } from './graph.mjs';
+
+/**
+ * A call that has not been answered this long after it was made -- waiting
+ * its turn included -- is abandoned, as a graph read is at graph.mjs's.
+ */
+const SOLR_TIMEOUT_MS = 30_000;
+
+/**
+ * How many requests Solr is sent at once; the rest wait their turn, as they
+ * do behind Java's client, HttpClient's default of two connections to one
+ * host. The search box asks on every keystroke, and each ask is one request
+ * plus one per collation. SOLR_CONCURRENCY, 1-16, read once, at first use.
+ */
+let limit;
+function solrConcurrency() {
+  if (limit === undefined) {
+    const given = Number(envSetting('SOLR_CONCURRENCY', '2'));
+    limit = Number.isInteger(given) && given >= 1 && given <= 16 ? given : 2;
+  }
+  return limit;
+}
+
+/** Past this many waiting, a request is refused rather than queued. */
+const MOST_WAITING = 64;
+
+let open = 0;
+const waiting = [];
+
+/**
+ * A slot, now or when one is free. A waiter whose `signal` aborts -- its
+ * deadline passed, or its client went away -- leaves the queue, so Solr is
+ * never asked on behalf of nobody.
+ */
+function turn(signal) {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  if (open < solrConcurrency()) {
+    open += 1;
+    return Promise.resolve();
+  }
+  if (waiting.length >= MOST_WAITING)
+    return Promise.reject(Object.assign(new Error('Solr is busy'), { busy: true }));
+  return new Promise((resolve, reject) => {
+    // Handed a slot by done(), which has already taken it off the queue.
+    const enter = () => {
+      signal.removeEventListener('abort', leave);
+      resolve();
+    };
+    const leave = () => {
+      // Always still queued -- enter() removes this listener as done()
+      // dequeues it -- but a splice at -1 would drop someone else.
+      const at = waiting.indexOf(enter);
+      if (at > -1) waiting.splice(at, 1);
+      reject(signal.reason);
+    };
+    signal.addEventListener('abort', leave, { once: true });
+    waiting.push(enter);
+  });
+}
+
+/** How many calls are waiting for a slot: for the specs. */
+export const queued = () => waiting.length;
+
+function done() {
+  const next = waiting.shift();
+  if (next) next();
+  else open -= 1;
+}
+
+/**
+ * Whether Solr can be asked: a URL that is one and carries no credentials,
+ * and a user only with a password.
+ */
+export function solrConfigured() {
+  try {
+    coreUrl();
+  } catch {
+    return false;
+  }
+  return !envSetting('SOLR_USER') === !envSetting('SOLR_PASSWORD');
+}
+
+/**
+ * The core's URL, refused when it carries credentials: fetch will not send
+ * them, and its error repeats the URL, password and all, into the log.
+ */
+function coreUrl() {
+  const given = envSetting('SOLR_URL');
+  if (!given) throw new Error('SOLR_URL is not set');
+  let url;
+  try {
+    url = new URL(given);
+  } catch {
+    throw new Error('SOLR_URL is not a URL');
+  }
+  if (url.username || url.password)
+    throw new Error('SOLR_URL must not carry credentials: set SOLR_USER and SOLR_PASSWORD');
+  return given.replace(/\/$/, '');
+}
+
+/**
+ * Ask one of the core's request handlers, as SolrJ's POST does: the
+ * parameters form-encoded, the answer as JSON with named lists flat -- the
+ * layout collations() reads, pinned so a handler default cannot change it.
+ * `params` is a list of [name, value] pairs, since a name may repeat. Basic
+ * authentication when a user is set, as Java sends it only then.
+ */
+export async function solr(handler, params, { signal } = {}) {
+  const url = `${coreUrl()}${handler}`;
+  if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
+    throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
+  const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
+  if (envSetting('SOLR_USER'))
+    headers.Authorization = `Basic ${Buffer.from(
+      `${envSetting('SOLR_USER')}:${envSetting('SOLR_PASSWORD')}`
+    ).toString('base64')}`;
+  const deadline = AbortSignal.timeout(SOLR_TIMEOUT_MS);
+  const until = signal ? AbortSignal.any([deadline, signal]) : deadline;
+  await turn(until);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]),
+      signal: until,
+    });
+    if (!response.ok)
+      throw Object.assign(new Error(`Solr answered ${response.status}`), { solr: true });
+    return await response.json();
+  } catch (failure) {
+    throw Object.assign(failure, { solr: true });
+  } finally {
+    done();
+  }
+}
