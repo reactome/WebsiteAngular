@@ -3954,6 +3954,20 @@ export function pathwayBrowserJson(node) {
 }
 
 /**
+ * Spring's second try when its converter refuses a Boolean: CustomBooleanEditor
+ * on every value joined by ',', trimmed, compared with equalsIgnoreCase --
+ * for which the long s, ſ, is s, so "yeſ" is true. Undefined when that fails
+ * too, and the converter's 400 stands. Measured against Java.
+ */
+function booleanEditor(values) {
+  const text = javaTrim(values.join(','));
+  const is = (words) => words.some((word) => caseInsensitive(text, word) === 0);
+  if (is(['true', 'on', 'yes', '1'])) return true;
+  if (is(['false', 'off', 'no', '0'])) return false;
+  return undefined;
+}
+
+/**
  * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
  * the first value decides, trimmed as String.trim trims; empty is absent; true,
  * on, yes and 1 or false, off, no and 0 in any case; anything else Java's 400.
@@ -3970,6 +3984,8 @@ export function springBoolean(values) {
   if (value === '') return { value: undefined };
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const edited = booleanEditor(values);
+  if (edited !== undefined) return { value: edited };
   const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
     error:
@@ -4286,6 +4302,8 @@ export function springPrimitiveBoolean(values, fallback) {
   const value = javaTrim(values[0]).toLowerCase();
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
+  const edited = booleanEditor(values);
+  if (edited !== undefined) return { value: edited };
   const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
   return {
     error:
@@ -4564,6 +4582,15 @@ async function fromSolr(request, path, work) {
         headers: { 'Retry-After': '5' },
       };
     console.error(`${path}: ${failure.message}`);
+    // What Java answers when its own code fails, not Solr: a
+    // NullPointerException, through GlobalExceptionHandler.
+    if (failure.unexpected)
+      return javaError(
+        request,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        'Something unexpected happened and the error has been reported.'
+      );
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Solr exception occurred');
   }
 }
@@ -4736,7 +4763,10 @@ async function facetsOf(query, forceFilters, signal) {
   let correct = true;
   for (const [list] of QUERY_FILTERS) {
     if (!query[list]) continue;
-    if (!(list in first.selected)) throw new Error(`no ${list} facet to check the filter against`);
+    if (!(list in first.selected))
+      throw Object.assign(new Error(`no ${list} facet to check the filter against`), {
+        unexpected: true,
+      });
     if (first.selected[list].length !== query[list].length) {
       correct = false;
       query[list] = first.selected[list];

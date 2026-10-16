@@ -240,6 +240,16 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
     expect(asked).toHaveLength(0);
   });
 
+  it('takes the default for one empty Force filters value, and asks Solr', async () => {
+    asked = [];
+    answer = counts;
+    const response = await fetch(
+      `${base}/ContentService/search/facet_query?query=TP53&Force%20filters=`
+    );
+    expect(response.status).toBe(200);
+    expect(asked).toHaveLength(1);
+  });
+
   it("asks once when the only names dropped were empty: Java's lists lose them first", async () => {
     asked = [];
     answer = counts;
@@ -259,6 +269,10 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
     const response = await fetch(
       `${base}/ContentService/search/facet_query?query=TP53&species=Homo%20sapiens`
     );
-    expect(response.status).toBe(500);
+    // Java's NullPointerException, not a Solr failure.
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Something unexpected happened and the error has been reported.'],
+    ]);
   });
 });
