@@ -800,7 +800,8 @@ export const endpoints = [
       if (row.stId === null || row.stId === undefined)
         return notFound(
           request,
-          `Attribute: 'stId' has not been found for object: ${String(row.schemaClass)}`
+          // The attribute as it was sent: routing matched it ignoring case.
+          `Attribute: '${pathId(rawSegment(request, 5))}' has not been found for object: ${String(row.schemaClass)}`
         );
       return { status: 200, body: String(row.stId), type: 'text/plain;charset=UTF-8' };
     },
@@ -947,7 +948,7 @@ export const endpoints = [
       if (row.dbId === null || row.dbId === undefined)
         return notFound(
           request,
-          `Attribute: 'normalPathway' has not been found for object: ${schemaClassOf(row.labels)}`
+          `Attribute: '${pathId(rawSegment(request, 5))}' has not been found for object: ${schemaClassOf(row.labels)}`
         );
       return {
         status: 200,
@@ -5262,9 +5263,16 @@ function readBody(request, _response, next) {
   request.on('error', next);
 }
 
+/** The /data/query/{id}/{attribute} names node answers, by their lower case. */
+const QUERY_ATTRIBUTES = { stid: 'stId', normalpathway: 'normalPathway' };
+
 export function app() {
   const server = express();
   server.disable('x-powered-by');
+  // Spring matches a mapping's literal segments by case; Express, by
+  // default, does not -- /search/icon/QUERY was the icon page here and an
+  // icon id to Java.
+  server.set('case sensitive routing', true);
 
   // Readable from any origin, as Java's ContentService is: pages on other sites
   // read it -- the embeddable diagram (spec 009) asks for the species list from
@@ -5305,7 +5313,28 @@ export function app() {
     const stripped = segments.map((segment) => segment.split(';')[0]);
     if (stripped.some((segment, at) => segment === '' && segments[at].includes(';')))
       return writeResult(response, springNotFound(request));
-    request.url = stripped.join('/') + (query === undefined ? '' : `?${query}`);
+    // Tomcat decodes the path before Spring matches it, so /icon/qu%65ry is
+    // /icon/query to Java. Routing here sees letters, digits, '-', '_' and
+    // '~' decoded too -- all a literal segment holds -- and handlers still
+    // read ids from the path as it came.
+    const routed = stripped
+      .join('/')
+      .replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
+        const char = String.fromCharCode(parseInt(hex, 16));
+        return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
+      })
+      // Java's /query/{id}/{attributeName} finds the attribute's getter
+      // ignoring case (ControllerUtils.getProperty); node's two are literal
+      // routes, so the attribute is put in their case, a trailing slash
+      // kept. Not under Java's more specific /query/enhanced/{id} and
+      // /query/abridged/{id}, where that segment is an id.
+      .replace(/^(\/data\/query\/([^/]+)\/)([^/]+)(\/?)$/, (path, head, id, attribute, slash) => {
+        const lower = attribute.toLowerCase();
+        if (['enhanced', 'abridged'].includes(id) || !Object.hasOwn(QUERY_ATTRIBUTES, lower))
+          return path;
+        return head + QUERY_ATTRIBUTES[lower] + slash;
+      });
+    request.url = routed + (query === undefined ? '' : `?${query}`);
     next();
   });
 
@@ -5368,6 +5397,12 @@ export function app() {
       )
     );
   }
+
+  // A path no mapping matches is Spring's own 404 -- JSON, not Express's
+  // HTML page. Since routing is by case, /data/database/VERSION is one.
+  server.use('/ContentService', (request, response) =>
+    writeResult(response, springNotFound(request))
+  );
 
   // Express decodes route parameters before any handler runs, and a segment
   // that is not valid UTF-8 (%FF) made it answer its own HTML 400 -- a stack

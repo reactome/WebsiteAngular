@@ -334,4 +334,57 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     await fetch(`${base}/ContentService/search/icon/query?page=2147483647&pageSize=2`);
     expect(asked[0][1].find(([name]) => name === 'start')).toEqual(['start', '-4']);
   });
+
+  it('routes a literal segment sent percent-encoded as Java does: decoded first', async () => {
+    asked = [];
+    answer = found([], 0);
+    const query = await fetch(`${base}/ContentService/search/icon/qu%65ry?pageSize=5`);
+    expect(query.status).toBe(200);
+    expect(asked[0][1].find(([name]) => name === 'rows')).toEqual(['rows', '5']);
+    asked = [];
+    answer = () => ({
+      response: { numFound: 0 },
+      facet_counts: { facet_fields: { iconCategories_facet: [] } },
+    });
+    await fetch(`${base}/ContentService/search/icon/f%61cet`);
+    expect(asked[0][0]).toBe('/solr/reactome/icon/facet');
+  });
+
+  it('routes by case, as Spring does: a capital, sent plain or escaped, is an id', async () => {
+    answer = found([]);
+    for (const path of ['icon/QUERY', 'icon/%51uery', 'icon/%46acet']) {
+      const response = await fetch(`${base}/ContentService/search/${path}`);
+      expect([path, response.status]).toEqual([path, 404]);
+    }
+    const escaped = await fetch(`${base}/ContentService/search/icon/%51uery`);
+    expect((await escaped.json()).messages).toEqual(['Icon not found: Query']);
+  });
+
+  it("answers a path no mapping matches with Spring's JSON 404", async () => {
+    const response = await fetch(`${base}/ContentService/data/database/VERSION`);
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect([body.status, body.error, body.path]).toEqual([
+      404,
+      'Not Found',
+      '/ContentService/data/database/VERSION',
+    ]);
+  });
+
+  it("routes /query/{id}/{attribute} by the attribute in any case, as Java's getter lookup does", async () => {
+    // Without a graph the handler fails, but it is a handler that answers,
+    // not the 404 for a path no mapping matches. "ids" is an id here: Java
+    // has no GET mapping under /query/ids/.
+    for (const path of [
+      'R-HSA-70486/stid',
+      'R-HSA-70486/STID',
+      'R-HSA-70486/NormalPathway',
+      'R-HSA-70486/STID/',
+      'ids/STID',
+    ]) {
+      const response = await fetch(`${base}/ContentService/data/query/${path}`);
+      const body = await response.text();
+      expect([path, body.includes('"error":"Not Found"')]).toEqual([path, false]);
+    }
+  });
 });
