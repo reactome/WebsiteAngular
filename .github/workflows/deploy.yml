@@ -45,8 +45,11 @@ jobs:
       - name: Determine version
         id: version
         # Through env, never pasted into the script (tools/workflows.spec.mjs).
+        # The branch that was tested: under workflow_run, github.ref_name is the
+        # default branch whichever branch Tests ran on, so a prod deploy was
+        # versioned as the next release.
         env:
-          REF_NAME: ${{ github.ref_name }}
+          REF_NAME: ${{ github.event.workflow_run.head_branch || github.ref_name }}
         run: |
           PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
           echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"

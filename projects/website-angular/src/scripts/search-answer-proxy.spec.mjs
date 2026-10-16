@@ -315,6 +315,25 @@ describe('what stops a script spending money', () => {
     ).toBe('203.0.113.7');
   });
 
+  it('trusts a proxy named in TRUSTED_PROXIES, as it trusts loopback', () => {
+    // serve-prod in the compose `app` container sees nginx at the Docker
+    // gateway, not loopback; without this every reader would share one key.
+    const request = {
+      headers: { 'x-real-ip': '9.9.9.9' },
+      socket: { remoteAddress: '172.18.0.1' },
+    };
+    const saved = process.env.TRUSTED_PROXIES;
+    try {
+      process.env.TRUSTED_PROXIES = '172.18.0.1, 10.0.0.2';
+      expect(clientKey(request)).toBe('9.9.9.9');
+      delete process.env.TRUSTED_PROXIES;
+      expect(clientKey(request)).toBe('172.18.0.1');
+    } finally {
+      if (saved === undefined) delete process.env.TRUSTED_PROXIES;
+      else process.env.TRUSTED_PROXIES = saved;
+    }
+  });
+
   it('never takes a header the caller can set, even through nginx', () => {
     expect(
       clientKey({
