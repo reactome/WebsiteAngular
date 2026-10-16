@@ -4888,6 +4888,9 @@ function javaIsBlank(text) {
  */
 function iconPhysicalEntities(doc) {
   const set = [];
+  // Each entity's display name, kept apart: NON_EMPTY may leave it out of
+  // what is written, but the TreeSet still orders by it.
+  const names = [];
   for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
     const [stId, type, name, compartments] = javaSplit(packed, '#');
     if (compartments === undefined)
@@ -4895,15 +4898,13 @@ function iconPhysicalEntities(doc) {
         unexpected: true,
       });
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
-    const at = set.findIndex((other) => caseInsensitive(displayName, other.displayName) <= 0);
-    if (at > -1 && caseInsensitive(displayName, set[at].displayName) === 0) continue;
+    const at = names.findIndex((other) => caseInsensitive(displayName, other) <= 0);
+    if (at > -1 && caseInsensitive(displayName, names[at]) === 0) continue;
+    const where = at === -1 ? set.length : at;
     // NON_EMPTY reaches into the bean: an empty part is left out.
     const parts = Object.entries({ stId, type, name, compartments, displayName });
-    set.splice(
-      at === -1 ? set.length : at,
-      0,
-      Object.fromEntries(parts.filter(([, value]) => value !== ''))
-    );
+    set.splice(where, 0, Object.fromEntries(parts.filter(([, value]) => value !== '')));
+    names.splice(where, 0, displayName);
   }
   return set;
 }
@@ -5040,14 +5041,26 @@ export function searchEntry(doc, highlighting) {
   entry.explanation = solrValue(doc, 'explanation');
   const date = solrValue(doc, 'date');
   entry.date = date === undefined || date === null ? date : Date.parse(date);
-  // getLongListField: Long.parseLong on each, which takes a sign and digits
-  // only; anything else is its NumberFormatException.
-  entry.replacementDbIds = solrStrings(doc, 'replacementDbIds').map((id) => {
-    if (!/^[+-]?\d+$/.test(id))
-      throw Object.assign(new Error(`a replacement dbId that is no long: ${id}`), {
-        unexpected: true,
-      });
-    return Number(id);
+  // getLongListField: each value cast to String -- anything else is Java's
+  // ClassCastException -- and read by Long.parseLong, digits of any script
+  // and nothing else; written as the long it is, exactly.
+  const replaced = doc.replacementDbIds;
+  entry.replacementDbIds = (
+    replaced === undefined || replaced === null
+      ? []
+      : Array.isArray(replaced)
+        ? replaced
+        : [replaced]
+  ).map((id) => {
+    const refused = () =>
+      Object.assign(new Error(`a replacement dbId that is no long: ${id}`), { unexpected: true });
+    if (typeof id !== 'string') throw refused();
+    try {
+      return JSON.rawJSON(String(javaParseInt(id, 10, 64)));
+    } catch (failure) {
+      if (failure instanceof JavaNumberFormat) throw refused();
+      throw failure;
+    }
   });
   entry.replacementStIds = solrStrings(doc, 'replacementStIds');
 

@@ -5,7 +5,7 @@
 // Spring's reading of the parameters. Java's answers measured 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, searchEntry } from './service.mjs';
+import { app, javaJson, searchEntry } from './service.mjs';
 
 const icon = {
   dbId: '013428',
@@ -105,12 +105,28 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
     ).toEqual([{ name: 'n', compartments: 'c', displayName: 'n [c]' }]);
   });
 
-  it('reads replacement dbIds as Long.parseLong does, failing on anything else', () => {
-    expect(searchEntry({ dbId: '1', replacementDbIds: ['+7', '-8'] }, {}).replacementDbIds).toEqual(
-      [7, -8]
-    );
-    for (const bad of ['', ' 5', '1e3', '0x10'])
-      expect(() => searchEntry({ dbId: '1', replacementDbIds: [bad] }, {}), bad).toThrow();
+  it('reads replacement dbIds as Long.parseLong does, any script, written exactly', () => {
+    const ids = (values) =>
+      javaJson(searchEntry({ dbId: '1', replacementDbIds: values }, {}).replacementDbIds);
+    expect(ids(['+7', '-8', '٣٤', '１', '9007199254740993'])).toBe('[7,-8,34,1,9007199254740993]');
+  });
+
+  it('fails as Java does on a dbId Long.parseLong refuses, or one that is not a String', () => {
+    for (const bad of ['', ' 5', '1e3', '0x10', '9223372036854775808', 7])
+      expect(() => searchEntry({ dbId: '1', replacementDbIds: [bad] }, {}), String(bad)).toThrow(
+        expect.objectContaining({ unexpected: true })
+      );
+  });
+
+  it('orders by display name even when one is empty, and leaves it out', () => {
+    const entities = searchEntry(
+      { dbId: '1', iconPhysicalEntities: ['s#t## ', 's2#t#n#c'] },
+      {}
+    ).iconPhysicalEntities;
+    expect(entities).toEqual([
+      { stId: 's', type: 't', compartments: ' ' },
+      { stId: 's2', type: 't', name: 'n', compartments: 'c', displayName: 'n [c]' },
+    ]);
   });
 
   it('without highlighting, the summation is the summation even when absent', () => {
@@ -163,7 +179,7 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
       'disease',
     ]);
     expect(entry.date).toBe(Date.UTC(2020, 0, 2));
-    expect(entry.replacementDbIds).toEqual([7]);
+    expect(javaJson(entry.replacementDbIds)).toBe('[7]');
   });
 });
 
