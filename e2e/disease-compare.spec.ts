@@ -119,10 +119,11 @@ test.describe('a disease pathway, and its comparison with the normal one', () =>
     }
   });
 
-  // Inside the slide, which the waits around it put at about 600ms, so a
-  // label that waited for it still fails -- with room for a loaded runner,
-  // where 200ms was a guess that left almost none.
-  const SAYS_AT_ONCE = 400;
+  // Well inside the slide -- toggleCompare's 400ms -- so a label that waits
+  // for it still fails, and the second click lands while the first slide is
+  // still running. A bit more room than the 200ms it had for a loaded runner,
+  // and no more: at 400 the timeout equalled the slide.
+  const SAYS_AT_ONCE = 250;
 
   test('a second click while it slides out brings it back', async ({ page }) => {
     await open(page, DISEASE);

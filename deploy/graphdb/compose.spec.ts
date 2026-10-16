@@ -46,6 +46,19 @@ describe('the graph database service', () => {
       '7687:7687',
     ]);
     expect(ports(['- target: 7687', '  published: 7687'])).toEqual(['long syntax: target: 7687']);
+    // A comment at key indent between entries does not end the block.
+    expect(
+      portsOf(
+        [
+          '  graphdb:',
+          '    ports:',
+          "      - '127.0.0.1:7687:7687'",
+          '    # a note',
+          "      - '7474:7474'",
+          '    volumes:',
+        ].join('\n')
+      )
+    ).toEqual(['127.0.0.1:7687:7687', '7474:7474']);
   });
 });
 
@@ -60,7 +73,9 @@ function portsOf(block: string): string[] {
   const indent = lines[start].search(/\S/);
   const found: string[] = [];
   for (const line of lines.slice(start + 1)) {
-    if (line.trim() === '') continue;
+    // A comment, at whatever indent, is not the next key: compose's own
+    // comments sit at key indent between entries.
+    if (line.trim() === '' || line.trim().startsWith('#')) continue;
     if (line.search(/\S/) <= indent) break;
     const entry = /^\s*-\s*(.+?)\s*$/.exec(line)?.[1];
     if (entry === undefined) continue;

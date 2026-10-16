@@ -531,6 +531,15 @@ test.describe('The render page, without the render service', () => {
     const grouped = (shapes?.shapes ?? []).filter((shape) => shape.group);
     const groups = new Set(grouped.map((shape) => shape.group));
     expect(groups.size, 'entities and reactions grouped').toBeGreaterThan(10);
+    // A group that holds more than one node -- an entity with its
+    // modification badge -- or the name check below holds trivially.
+    const nodesIn = (group: string) =>
+      grouped.filter(
+        (shape) => shape.group === group && (shape as { kind?: string }).kind === 'node'
+      ).length;
+    expect([...groups].some((group) => group?.startsWith('entity-') && nodesIn(group) > 1)).toBe(
+      true
+    );
     // Each group is one thing, so it has one name; not every shape carries
     // it (the slide takes the first that does), but none may carry another.
     for (const group of groups) {
