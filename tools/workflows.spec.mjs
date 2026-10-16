@@ -71,3 +71,20 @@ describe('the rule itself', () => {
     expect(lines.some(([, line]) => pastes(line))).toBe(true);
   });
 });
+
+describe('deploy.yml', () => {
+  // Tests runs on pull requests too, forks included, and workflow_run's branch
+  // filter matches the head branch -- so a fork's branch named main or prod
+  // that passed Tests triggered a deploy holding the AWS role, of the fork's
+  // commit. Only a test run from a push to this repository may deploy.
+  const text = readFileSync(path.join(DIR, 'deploy.yml'), 'utf8');
+  const condition = /^\s*if: >-\n((?:\s{6}.*\n)+)/m.exec(text)?.[1] ?? '';
+
+  it('deploys only what was pushed to this repository and passed', () => {
+    expect(condition).toContain("github.event.workflow_run.conclusion == 'success'");
+    expect(condition).toContain("github.event.workflow_run.event == 'push'");
+    expect(condition).toContain(
+      'github.event.workflow_run.head_repository.full_name == github.repository'
+    );
+  });
+});
