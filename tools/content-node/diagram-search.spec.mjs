@@ -107,6 +107,11 @@ describe("Java's identifier checks, after Spring's parameters", () => {
     expect(asked).toHaveLength(0);
   });
 
+  it("checks the diagram before the object, so the diagram's 500 is the one", async () => {
+    const response = await get('diagram/.../occurrences/99999999999999999999');
+    expect((await response.json()).messages).toEqual(['Index 0 out of bounds for length 0']);
+  });
+
   it("is Java's 500 for a pathway whose hasDiagram is null", async () => {
     const response = await get('diagram/R-HSA-2?query=MAD');
     expect([response.status, (await response.json()).messages]).toEqual([
@@ -217,7 +222,9 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
   });
 
   it("writes each list in a HashSet's order, not as it came, past a resize", async () => {
-    const letters = 'mlkjihgfedcba'.split('');
+    // 'q' and 'a' share a bucket of sixteen and arrive in that order; the
+    // thirteenth key doubles the table, which splits them -- 'a' first.
+    const letters = ['q', 'a', ...'bcdefghijkl'.split('')];
     answer = () => ({
       response: {
         numFound: 1,
@@ -231,7 +238,7 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
     expect(await response.json()).toEqual({
       diagramEntity: 'R-HSA-68886',
       inDiagram: true,
-      occurrences: [...letters].reverse(),
+      occurrences: [...'abcdefghijkl'.split(''), 'q'],
       interactsWith: ['a', 'b'],
     });
     expect(asked[0][1].find(([name]) => name === 'fl')).toEqual([
@@ -303,6 +310,15 @@ describe('/diagram/summary', () => {
         ],
       ],
     ]);
+  });
+
+  it('writes fireworks entries with their species, diagram entries without', async () => {
+    answer = () => ({
+      response: { numFound: 1, docs: [{ dbId: '1', fireworksSpecies: ['Homo sapiens'] }] },
+    });
+    const body = await (await get('diagram/summary?query=KIF&diagram=R-HSA-8848021')).json();
+    expect(body.diagramResult.entries[0].fireworksSpecies).toBe(undefined);
+    expect(body.fireworksResult.entries[0].fireworksSpecies).toEqual(['Homo sapiens']);
   });
 
   it('asks both again in every scope when fireworks finds nothing, for the species given', async () => {
