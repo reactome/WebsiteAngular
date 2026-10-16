@@ -11,6 +11,7 @@ const objects = {
   'R-HSA-68886': { labels: ['Pathway', 'Event', 'DatabaseObject'], hasDiagram: true },
   'R-HSA-1': { labels: ['Pathway', 'Event', 'DatabaseObject'], hasDiagram: false },
   'R-HSA-141433': { labels: ['EntityWithAccessionedSequence', 'DatabaseObject'], hasDiagram: null },
+  'R-HSA-2': { labels: ['Pathway', 'Event', 'DatabaseObject'], hasDiagram: null },
 };
 
 vi.mock('./graph.mjs', () => ({
@@ -82,6 +83,43 @@ describe("Java's identifier checks, after Spring's parameters", () => {
       ]);
     }
     expect(asked).toHaveLength(0);
+  });
+
+  it("is Java's 500 for an id of dots, which trimId cannot split, or a dbId past a long", async () => {
+    asked = [];
+    for (const [path, message] of [
+      ['diagram/...?query=MAD', 'Index 0 out of bounds for length 0'],
+      ['diagram/.%20?query=MAD', 'Index 0 out of bounds for length 0'],
+      ['diagram/R-HSA-68886/occurrences/...', 'Index 0 out of bounds for length 0'],
+      ['diagram/99999999999999999999?query=MAD', 'For input string: "99999999999999999999"'],
+      [
+        'diagram/R-HSA-68886/occurrences/99999999999999999999.1',
+        'For input string: "99999999999999999999"',
+      ],
+    ]) {
+      const response = await get(path);
+      expect([path, response.status, (await response.json()).messages]).toEqual([
+        path,
+        500,
+        [message],
+      ]);
+    }
+    expect(asked).toHaveLength(0);
+  });
+
+  it("is Java's 500 for a pathway whose hasDiagram is null", async () => {
+    const response = await get('diagram/R-HSA-2?query=MAD');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Something unexpected happened and the error has been reported.'],
+    ]);
+  });
+
+  it('checks the ids before a blank scope or includeInteractors fails', async () => {
+    for (const blank of ['scope=%20', 'includeInteractors=%20']) {
+      const response = await get(`diagram/xyz?query=MAD&${blank}`);
+      expect([blank, response.status]).toEqual([blank, 400]);
+    }
   });
 
   it("is Spring's 400 for a missing query before any identifier is read", async () => {
@@ -178,6 +216,42 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
     ]);
   });
 
+  it("writes each list in a HashSet's order, not as it came, past a resize", async () => {
+    const letters = 'mlkjihgfedcba'.split('');
+    answer = () => ({
+      response: {
+        numFound: 1,
+        docs: [{ occurrencesWithInteractor: [`R-HSA-68886:TRUE:${letters.join(',')}:b,a`] }],
+      },
+    });
+    asked = [];
+    const response = await get(
+      'diagram/R-HSA-68886/occurrences/R-HSA-141433?includeInteractors=true'
+    );
+    expect(await response.json()).toEqual({
+      diagramEntity: 'R-HSA-68886',
+      inDiagram: true,
+      occurrences: [...letters].reverse(),
+      interactsWith: ['a', 'b'],
+    });
+    expect(asked[0][1].find(([name]) => name === 'fl')).toEqual([
+      'fl',
+      'occurrencesWithInteractor',
+    ]);
+  });
+
+  it("leaves out a list of '#', and fails as Java does on fewer than four parts", async () => {
+    // A lone ',' splits, in Java, to nothing at all: no list either.
+    answer = () => ({
+      response: { numFound: 1, docs: [{ occurrences: ['R-HSA-68886:yes:#:,'] }] },
+    });
+    const none = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
+    expect(await none.text()).toBe('{"diagramEntity":"R-HSA-68886","inDiagram":false}');
+    answer = () => ({ response: { numFound: 1, docs: [{ occurrences: ['R-HSA-68886:true:x'] }] } });
+    const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
+    expect(short.status).toBe(500);
+  });
+
   it('asks again in every scope, then is the 404', async () => {
     asked = [];
     answer = () => ({ response: { numFound: 0, docs: [] } });
@@ -229,5 +303,64 @@ describe('/diagram/summary', () => {
         ],
       ],
     ]);
+  });
+
+  it('asks both again in every scope when fireworks finds nothing, for the species given', async () => {
+    asked = [];
+    answer = (url, sent) => ({
+      response: {
+        numFound:
+          url.endsWith('/fireworks') && fqs(sent).includes('hasReferenceEntity:false') ? 0 : 3,
+        docs: [],
+      },
+    });
+    const response = await get(
+      'diagram/summary?query=KIF&diagram=R-HSA-8848021&species=Mus%20musculus'
+    );
+    expect(await response.text()).toBe(
+      '{"diagramResult":{"found":3},"fireworksResult":{"found":3}}'
+    );
+    expect(asked.map(([handler, sent]) => [handler, fqs(sent)])).toEqual([
+      [
+        '/diagrams',
+        [
+          'hasReferenceEntity:false',
+          'fireworksSpecies:("Mus musculus" OR "Entries without species")',
+          'diagrams:R-HSA-8848021',
+        ],
+      ],
+      [
+        '/fireworks',
+        [
+          'hasReferenceEntity:false',
+          'fireworksSpecies:("Mus musculus" OR "Entries without species")',
+        ],
+      ],
+      [
+        '/diagrams',
+        [
+          'fireworksSpecies:("Mus musculus" OR "Entries without species")',
+          'diagrams:R-HSA-8848021',
+        ],
+      ],
+      ['/fireworks', ['fireworksSpecies:("Mus musculus" OR "Entries without species")']],
+    ]);
+  });
+});
+
+describe('searchEntry for fireworks', () => {
+  it("carries the document's fireworks species, where Entry declares them", async () => {
+    const { searchEntry } = await import('./service.mjs');
+    const entry = searchEntry(
+      { dbId: '1', fireworksSpecies: ['Homo sapiens'], iconName: 'x' },
+      null,
+      {
+        fireworks: true,
+      }
+    );
+    expect(Object.keys(entry)).toEqual(['dbId', 'id', 'fireworksSpecies', 'iconName', 'icon']);
+    expect(
+      searchEntry({ dbId: '1', fireworksSpecies: ['Homo sapiens'] }, null).fireworksSpecies
+    ).toBe(undefined);
   });
 });

@@ -1864,7 +1864,9 @@ export const endpoints = [
       return fromSolr(request, '/ContentService/search/diagram/summary', async (signal) => {
         const ask = async () => [
           entriesResult(await solr('/diagrams', diagramParams(query), { signal })),
-          entriesResult(await solr('/fireworks', fireworksParams(query), { signal })),
+          entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
+            fireworks: true,
+          }),
         ];
         let [diagramResult, fireworksResult] = await ask();
         if (!(fireworksResult.found > 0)) {
@@ -1889,6 +1891,8 @@ export const endpoints = [
       const problems = await identifierProblems(diagram, instance).catch((failure) => failure);
       if (problems instanceof Error) {
         if (problems.unexpected) return unexpectedFailure(request);
+        if (problems.javaMessage)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', problems.javaMessage);
         throw problems;
       }
       if (problems) return javaError(request, 400, 'BAD_REQUEST', problems);
@@ -1945,6 +1949,8 @@ export const endpoints = [
       const problems = await identifierProblems(diagram).catch((failure) => failure);
       if (problems instanceof Error) {
         if (problems.unexpected) return unexpectedFailure(request);
+        if (problems.javaMessage)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', problems.javaMessage);
         throw problems;
       }
       if (problems) return javaError(request, 400, 'BAD_REQUEST', problems);
@@ -5004,7 +5010,10 @@ function solrStrings(doc, field) {
 /** String.split on a literal, as Java's: trailing empty strings removed. */
 function javaSplit(text, separator) {
   const parts = text.split(separator);
-  while (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+  // No separator at all is the text itself, even empty; otherwise every
+  // trailing empty string goes, so "," is nothing at all.
+  if (parts.length === 1) return parts;
+  while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
   return parts;
 }
 
@@ -5109,7 +5118,7 @@ const ENTRY_FIELDS = [
  * with no snippet is none; otherwise the summation is the document's own,
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
  */
-export function searchEntry(doc, highlighting) {
+export function searchEntry(doc, highlighting, { fireworks = false } = {}) {
   const entry = {
     dbId: solrValue(doc, 'dbId'),
     stId: solrValue(doc, 'stId'),
@@ -5156,6 +5165,9 @@ export function searchEntry(doc, highlighting) {
     entry.regulatedEntity = solrValue(doc, 'regulatedEntity');
     entry.referenceIdentifier = referenceIdentifier(doc);
   }
+  // SolrConverter.getFireworksResult adds the document's fireworks species.
+  if (fireworks && 'fireworksSpecies' in doc)
+    entry.fireworksSpecies = solrStrings(doc, 'fireworksSpecies');
   for (const field of [
     'iconName',
     'iconCuratorName',
@@ -5248,6 +5260,16 @@ function unexpectedFailure(request) {
 async function identifierProblems(diagram, object) {
   const report = [];
   const found = async (id) => {
+    // graph-core's trimId splits an id without ':' at '.', and Java's split
+    // of dots alone is empty: indexing it is the 500 below. Then findById's
+    // Long.parseLong refuses a dbId past a long.
+    const trimmed = javaTrim(id);
+    if (!trimmed.includes(':') && trimmed !== '' && javaSplit(trimmed, '.').length === 0)
+      throw Object.assign(new Error('an id of dots'), {
+        javaMessage: 'Index 0 out of bounds for length 0',
+      });
+    const pastLong = longPastRange([id]);
+    if (pastLong) throw Object.assign(new Error(pastLong), { javaMessage: pastLong });
     const { where, params } = resolveId(id);
     if (where === 'false') return undefined;
     const [row] = await read(
@@ -5293,10 +5315,8 @@ function typeFacets(answer) {
  * highlighted), the type facets, and Solr's count -- NON_EMPTY leaving out
  * no entries or no facets.
  */
-function entriesResult(answer, decorate = (entry) => entry) {
-  const entries = (answer?.response?.docs ?? []).map((doc) =>
-    decorate(searchEntry(doc, null), doc)
-  );
+function entriesResult(answer, options = {}) {
+  const entries = (answer?.response?.docs ?? []).map((doc) => searchEntry(doc, null, options));
   const facets = typeFacets(answer);
   return {
     ...(entries.length ? { entries } : {}),
