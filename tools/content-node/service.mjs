@@ -1757,38 +1757,41 @@ export const endpoints = [
         );
       const query = given.join(',');
       if (query === '') return { status: 200 };
-      // A client that goes away -- the search box, a keystroke later --
-      // takes its waiting Solr calls with it.
-      const gone = new AbortController();
-      request.res?.on('close', () => {
-        if (!request.res.writableFinished) gone.abort();
-      });
-      try {
-        return {
-          status: 200,
-          type: 'application/json',
-          body: await suggestionsFrom(`/${handler}`, query, solr, gone.signal),
-        };
-      } catch (failure) {
-        if (gone.signal.aborted) return { status: 500 };
-        if (failure.busy)
-          return {
-            ...javaError(
-              request,
-              503,
-              'SERVICE_UNAVAILABLE',
-              'The service is busy; try again shortly'
-            ),
-            headers: { 'Retry-After': '5' },
-          };
-        // Java's GlobalExceptionHandler answers a SolrSearcherException
-        // with a 500 in its envelope. Its message repeats the parameters
-        // sent to Solr; this one says only what failed.
-        console.error(`/ContentService/search/${handler}: ${failure.message}`);
-        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Solr exception occurred');
-      }
+      return fromSolr(request, `/ContentService/search/${handler}`, async (signal) => ({
+        status: 200,
+        type: 'application/json',
+        body: await suggestionsFrom(`/${handler}`, query, solr, signal),
+      }));
     },
   })),
+  {
+    path: '/ContentService/search/facet',
+    // SearchService.getTotalFacetingInformation: every document's facets,
+    // counted by Solr's /facetall handler over the reference-entity scope.
+    // The search page asks for it before anything is searched.
+    handler: (request) =>
+      fromSolr(request, '/ContentService/search/facet', async (signal) =>
+        facetAnswer(
+          await solr(
+            '/facetall',
+            [
+              ['q', '*:*'],
+              ['fq', 'hasReferenceEntity:false'],
+            ],
+            { signal }
+          )
+        )
+      ),
+  },
+  {
+    path: '/ContentService/search/icon/facet',
+    // SearchService.getIconFacetingInformation: the icon library's
+    // categories, counted by Solr's /icon/facet handler over the icons.
+    handler: (request) =>
+      fromSolr(request, '/ContentService/search/icon/facet', async (signal) =>
+        facetAnswer(await solr('/icon/facet', [['q', '{!term f=type}icon']], { signal }))
+      ),
+  },
 ];
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
@@ -4484,6 +4487,83 @@ export function collations(answer) {
     found.push(typeof value === 'string' ? value : value?.collationQuery);
   }
   return found.filter((value) => typeof value === 'string');
+}
+
+/**
+ * The answer `work` makes from Solr, or the one Java makes when Solr cannot
+ * be asked. `work` is given a signal that aborts when the client goes away
+ * -- the search box, a keystroke later -- which takes its waiting Solr calls
+ * with it. A queue too long to join is a 503 to retry; any other failure is
+ * Java's GlobalExceptionHandler 500, whose message repeats the parameters
+ * sent to Solr -- this one says only what failed.
+ */
+async function fromSolr(request, path, work) {
+  const gone = new AbortController();
+  request.res?.on('close', () => {
+    if (!request.res.writableFinished) gone.abort();
+  });
+  try {
+    return await work(gone.signal);
+  } catch (failure) {
+    if (gone.signal.aborted) return { status: 500 };
+    if (failure.busy)
+      return {
+        ...javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The service is busy; try again shortly'),
+        headers: { 'Retry-After': '5' },
+      };
+    console.error(`${path}: ${failure.message}`);
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Solr exception occurred');
+  }
+}
+
+/**
+ * SolrConverter.getFacetMap's FacetMapping, from Solr's facet fields: the
+ * field each facet field fills, in the order Jackson writes them.
+ */
+const FACET_FIELDS = new Map([
+  ['species_facet', 'speciesFacet'],
+  ['type_facet', 'typeFacet'],
+  ['keywords_facet', 'keywordFacet'],
+  ['compartment_facet', 'compartmentFacet'],
+  ['iconCategories_facet', 'iconCategoriesFacet'],
+]);
+
+/**
+ * A FacetMapping as ContentService writes it: every count Solr gave, in its
+ * order, under the field its facet fills, and what the mapper's NON_EMPTY
+ * leaves out left out -- an empty list, a null or empty name. Java's null, no
+ * facet fields at all, is undefined. A facet field Java has no place for is
+ * its NullPointerException, so a failure here too: a 500, though in the
+ * envelope where Java's is Spring's own error page -- only a change to
+ * solrconfig.xml could reach it.
+ */
+export function facetMapping(answer) {
+  const fields = answer?.facet_counts?.facet_fields ?? {};
+  if (Object.keys(fields).length === 0) return undefined;
+  const lists = {};
+  for (const [field, flat] of Object.entries(fields)) {
+    const key = FACET_FIELDS.get(field);
+    if (!key) throw new Error(`a facet field search-core does not map: ${field}`);
+    const available = [];
+    for (let at = 0; at + 1 < (flat ?? []).length; at += 2)
+      available.push(
+        flat[at] === null || flat[at] === ''
+          ? { count: flat[at + 1] }
+          : { name: flat[at], count: flat[at + 1] }
+      );
+    lists[key] = available.length ? { available } : {};
+  }
+  const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
+  for (const key of FACET_FIELDS.values()) if (key in lists) mapping[key] = lists[key];
+  return mapping;
+}
+
+/** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
+function facetAnswer(answer) {
+  const mapping = facetMapping(answer);
+  return mapping === undefined
+    ? { status: 200 }
+    : { status: 200, type: 'application/json', body: mapping };
 }
 
 /**

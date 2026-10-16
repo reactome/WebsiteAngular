@@ -208,6 +208,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/suggest?query=apop',
     '/ContentService/search/spellcheck?query=apoptosys',
     '/ContentService/search/suggest',
+    '/ContentService/search/facet',
+    '/ContentService/search/icon/facet',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -234,6 +236,9 @@ describe('the dev server proxy', () => {
     '/ContentService/search/query?query=apoptosis',
     '/ContentService/search/suggestions?query=apop',
     '/ContentService/search/suggest/x',
+    '/ContentService/search/facet_query?query=TP53',
+    '/ContentService/search/icon/query?query=x',
+    '/ContentService/search/icon/R-ICO-013428',
     // The interactor endpoints node does not serve.
     '/ContentService/interactors/static/molecule/P04637/summary',
     '/ContentService/interactors/static/molecules/summary',

@@ -5,7 +5,7 @@
 // Java's answers measured on 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, collations, suggestionsFrom } from './service.mjs';
+import { app, collations, facetMapping, suggestionsFrom } from './service.mjs';
 import { solr, queued } from './solr.mjs';
 
 let base;
@@ -43,6 +43,50 @@ describe('collations, as SolrJ reads them', () => {
       })
     ).toEqual(['tp53']);
     expect(collations({})).toEqual([]);
+  });
+});
+
+describe('facetMapping, as SolrConverter.getFacetMap builds it', () => {
+  const answer = (fields, numFound = 7) => ({
+    response: { numFound },
+    facet_counts: { facet_queries: {}, facet_fields: fields },
+  });
+
+  it("writes Java's fields in Jackson's order, whatever order Solr gives", () => {
+    const mapping = facetMapping(
+      answer({
+        compartment_facet: ['cytosol', 3],
+        type_facet: ['Protein', 5, 'Complex', 2],
+        species_facet: ['Homo sapiens', 6],
+        keywords_facet: ['Transport', 1],
+      })
+    );
+    expect(JSON.stringify(mapping)).toBe(
+      '{"totalNumFount":7,' +
+        '"speciesFacet":{"available":[{"name":"Homo sapiens","count":6}]},' +
+        '"typeFacet":{"available":[{"name":"Protein","count":5},{"name":"Complex","count":2}]},' +
+        '"keywordFacet":{"available":[{"name":"Transport","count":1}]},' +
+        '"compartmentFacet":{"available":[{"name":"cytosol","count":3}]}}'
+    );
+  });
+
+  it('leaves out what NON_EMPTY leaves out: an empty list, a null or empty name', () => {
+    expect(
+      JSON.stringify(
+        facetMapping(answer({ iconCategories_facet: [], species_facet: [null, 4, '', 2] }))
+      )
+    ).toBe(
+      '{"totalNumFount":7,"speciesFacet":{"available":[{"count":4},{"count":2}]},"iconCategoriesFacet":{}}'
+    );
+  });
+
+  it("is Java's null when Solr gives no facet fields", () => {
+    expect(facetMapping(answer({}))).toBe(undefined);
+    expect(facetMapping({ response: { numFound: 0 } })).toBe(undefined);
+  });
+
+  it('fails, as Java does, on a facet field it has no place for', () => {
+    expect(() => facetMapping(answer({ unknown_facet: ['x', 1] }))).toThrow();
   });
 });
 
@@ -314,5 +358,66 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await after;
     expect(arrived).toBe(3);
+  });
+
+  for (const [route, handler, params] of [
+    [
+      'facet',
+      '/facetall',
+      [
+        ['q', '*:*'],
+        ['fq', 'hasReferenceEntity:false'],
+      ],
+    ],
+    ['icon/facet', '/icon/facet', [['q', '{!term f=type}icon']]],
+  ])
+    it(`/${route} asks ${handler} as search-core does, and writes its FacetMapping`, async () => {
+      useSolr();
+      const asked = [];
+      answer = (request, sent, response) => {
+        asked.push([request.url, [...sent]]);
+        response.setHeader('Content-Type', 'application/json');
+        response.end(
+          JSON.stringify({
+            response: { numFound: 9 },
+            facet_counts: { facet_fields: { type_facet: ['Protein', 9] } },
+          })
+        );
+      };
+      // Java's methods take no parameters: any given are not passed on.
+      const response = await fetch(`${base}/ContentService/search/${route}?query=x&species=y`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+      expect(await response.text()).toBe(
+        '{"totalNumFount":9,"typeFacet":{"available":[{"name":"Protein","count":9}]}}'
+      );
+      expect(asked).toEqual([
+        [`/solr/reactome${handler}`, [['wt', 'json'], ['json.nl', 'flat'], ...params]],
+      ]);
+    });
+
+  it("/facet with no facet fields from Solr is Java's empty 200", async () => {
+    useSolr();
+    answer = (_request, _sent, response) => {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(
+        JSON.stringify({ response: { numFound: 0 }, facet_counts: { facet_fields: {} } })
+      );
+    };
+    const response = await fetch(`${base}/ContentService/search/facet`);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('');
+    expect(response.headers.get('content-type')).toBe(null);
+  });
+
+  it("/icon/facet with Solr failing is Java's 500 envelope", async () => {
+    useSolr();
+    answer = (_request, _sent, response) => {
+      response.statusCode = 503;
+      response.end('{}');
+    };
+    const response = await fetch(`${base}/ContentService/search/icon/facet`);
+    expect(response.status).toBe(500);
+    expect((await response.json()).reason).toBe('INTERNAL_SERVER_ERROR');
   });
 });
