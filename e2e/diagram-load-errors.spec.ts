@@ -28,14 +28,18 @@ function collectThrown(page: Page) {
   return thrown;
 }
 
-function answer(page: Page, url: RegExp, status: number) {
-  return page.route(url, (route) =>
-    route.fulfill({
+/** Answers these requests with this status, counting them as it does. */
+async function answer(page: Page, url: RegExp, status: number) {
+  const answered = { count: 0 };
+  await page.route(url, (route) => {
+    answered.count += 1;
+    return route.fulfill({
       status,
       contentType: 'application/json',
       body: JSON.stringify({ code: status }),
-    })
-  );
+    });
+  });
+  return answered;
 }
 
 /** How many nodes carry an analysis value, "not hit" included. */
@@ -54,6 +58,34 @@ const drawn = (page: Page) =>
 
 const diagram = (page: Page) => page.locator('cr-diagram');
 
+/**
+ * Watches the analysis service's traffic; `quiet()` resolves once nothing has
+ * been asked of it, or is still being answered, for a second. What
+ * networkidle was being used for -- it resolves at once when the navigation
+ * reached it earlier, so it waited for nothing.
+ */
+function analysisTraffic(page: Page) {
+  let inFlight = 0;
+  let last = Date.now();
+  const mine = (url: string) => url.includes('/AnalysisService/');
+  page.on('request', (request) => {
+    if (!mine(request.url())) return;
+    inFlight += 1;
+    last = Date.now();
+  });
+  const done = (request: { url(): string }) => {
+    if (!mine(request.url())) return;
+    inFlight -= 1;
+    last = Date.now();
+  };
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
+  return {
+    quiet: () =>
+      expect.poll(() => inFlight === 0 && Date.now() - last > 1_000, { timeout: LOAD }).toBe(true),
+  };
+}
+
 test.describe('The analysis overlay', () => {
   test.describe.configure({ timeout: 3 * 60_000 });
 
@@ -61,30 +93,36 @@ test.describe('The analysis overlay', () => {
     page,
   }) => {
     const thrown = collectThrown(page);
-    await answer(page, /\/AnalysisService\/token\/[^/]+\/found\/all\//, 500);
+    const refused = await answer(page, /\/AnalysisService\/token\/[^/]+\/found\/all\//, 500);
     await page.goto(`/PathwayBrowser/${PATHWAY}?analysis=${encodeURIComponent(TOKEN)}`);
     await expect(diagram(page).getByRole('alert')).toContainText(
       "Couldn't load the analysis results for this diagram, so nothing is coloured.",
       { timeout: LOAD }
     );
     await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
-    // The drawn diagram loads the analysis again: count after that has failed too.
-    await page.waitForLoadState('networkidle');
+    // The drawn diagram loads the analysis again: count only once that load
+    // has been refused too. networkidle could not say so -- it had already
+    // been reached for this navigation, so it waited for nothing.
+    await expect.poll(() => refused.count, { timeout: LOAD }).toBeGreaterThanOrEqual(2);
+    await page.waitForTimeout(500);
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
 
   test('says so when its sub-pathways’ results cannot be loaded', async ({ page }) => {
     const thrown = collectThrown(page);
-    await answer(page, /\/AnalysisService\/token\/[^/]+\/filter\/pathways/, 500);
+    const traffic = analysisTraffic(page);
+    const refused = await answer(page, /\/AnalysisService\/token\/[^/]+\/filter\/pathways/, 500);
     await page.goto(`/PathwayBrowser/${PATHWAY}?analysis=${encodeURIComponent(TOKEN)}`);
     await expect(diagram(page).getByRole('alert')).toContainText(
       "Couldn't load the analysis results for this diagram, so nothing is coloured.",
       { timeout: LOAD }
     );
     await expect.poll(() => drawn(page), { timeout: LOAD }).toBeGreaterThan(0);
-    // The drawn diagram loads the analysis again: count after that has failed too.
-    await page.waitForLoadState('networkidle');
+    // Once the refusal has been answered and the analysis service has gone
+    // quiet: the overlay is drawn from what came back, or nothing is.
+    await expect.poll(() => refused.count, { timeout: LOAD }).toBeGreaterThanOrEqual(1);
+    await traffic.quiet();
     expect(await analysed(page)).toBe(0);
     expect(thrown).toEqual([]);
   });
@@ -138,10 +176,14 @@ test.describe('Flagging', () => {
   test('a term that is not in the diagram is no failure', async ({ page }) => {
     const thrown = collectThrown(page);
     // ContentService answers 404 for a term with no match in the diagram.
+    const flagged = page.waitForResponse(/\/search\/diagram\/[^/]+\/flag/, { timeout: LOAD });
     await page.goto(`/PathwayBrowser/${PATHWAY}?flag=ZZZNOTAGENE`);
     const banner = diagram(page).locator('cr-flag-banner');
     await expect(banner).toContainText('Flagged: ZZZNOTAGENE', { timeout: LOAD });
-    await page.waitForLoadState('networkidle');
+    // After the search's own answer, not networkidle, which may already have
+    // been reached; then long enough for an alert to have been drawn.
+    await flagged;
+    await page.waitForTimeout(500);
     await expect(banner.getByRole('alert')).toHaveCount(0);
     expect(thrown).toEqual([]);
   });

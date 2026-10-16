@@ -414,6 +414,9 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await page.goto('/PathwayBrowser?analysisTab=quantitative');
     await page.locator('gsa-method', { hasText: 'Camera' }).click({ timeout: BOOT_TIMEOUT });
     await page.locator('button.mat-mdc-fab').first().click();
+    // Timed when the failure arrives, not when the test next looks: an await
+    // in between would start the clock late and leave room to pass with the bug.
+    const failedAt = page.waitForResponse('**/GSAServer/upload').then(() => Date.now());
     await page
       .locator('gsa-local-data input.file-input')
       .first()
@@ -430,6 +433,13 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible({
       timeout: 20_000,
     });
+    // The stale close fires two seconds after the failure. Opened later than
+    // that, the next dialog would be safe with the bug present too, and this
+    // would pass for nothing -- so the run has to be quick enough to say.
+    expect(
+      Date.now() - (await failedAt),
+      'the next dialog opened after the stale close could have fired'
+    ).toBeLessThan(1_800);
     await page.waitForTimeout(3000);
     await expect(dialog.getByRole('heading', { name: 'Loading Dataset' })).toBeVisible();
   });

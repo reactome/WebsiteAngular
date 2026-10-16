@@ -124,8 +124,16 @@ test.describe('Search', () => {
     const pager = group.locator('nav.group-pagination');
     await expect(pager).toBeVisible({ timeout: LOAD });
     const first = await group.locator('.search-entry').allTextContents();
+    // What the title promises, asked for directly: paging the Pages group
+    // sends nothing to the search service.
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      if (/\/ContentService\/search\//.test(request.url())) asked.push(request.url());
+    });
     await pager.getByRole('button', { name: '2', exact: true }).click();
     await expect(pager.locator('.page-btn.active')).toHaveText('2');
+    await page.waitForTimeout(500);
+    expect(asked).toEqual([]);
     await expect(group.getByRole('alert')).toHaveCount(0);
     const second = await group.locator('.search-entry').allTextContents();
     expect(second.length).toBeGreaterThan(0);

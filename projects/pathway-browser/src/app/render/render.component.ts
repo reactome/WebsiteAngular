@@ -408,6 +408,26 @@ export class RenderComponent {
     return svg;
   }
 
+  /**
+   * An entity's group. A modification badge is a node of its own, pointing at
+   * its protein with nodeId: it goes with the protein, so dragging one takes
+   * both -- and it carries the protein's name, not its own text, or a group
+   * could be named "P" after a phosphorylation (a slide names a group by the
+   * first of its shapes that has a name).
+   */
+  private entityGroup(node: cytoscape.NodeSingular, label: string): RenderGrouping {
+    const ownerId = String(node.data('nodeId') ?? node.id());
+    const owner = ownerId === node.id() ? node : node.cy().getElementById(ownerId);
+    const ownerLabel = owner.nonempty() ? String(owner.data('displayName') ?? '').trim() : '';
+    return {
+      group: `entity-${ownerId}`,
+      groupName:
+        ownerLabel ||
+        label ||
+        String(owner.data('schemaClass') ?? node.data('schemaClass') ?? ownerId),
+    };
+  }
+
   /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
   private exportableInstances() {
     const diagram = this.diagram();
@@ -557,12 +577,7 @@ export class RenderComponent {
         ? {}
         : node.data('reactionId') !== undefined && node.data('reactionId') !== null
           ? reactionGroup(node)
-          : {
-              // A modification badge is a node of its own, pointing at its protein with
-              // nodeId: it goes with the protein, so dragging one takes both.
-              group: `entity-${String(node.data('nodeId') ?? node.id())}`,
-              groupName: label || String(node.data('schemaClass') ?? node.id()),
-            };
+          : this.entityGroup(node, label);
       const under = this.underlay(node);
       if (under) {
         nodeUnderlays.push({
