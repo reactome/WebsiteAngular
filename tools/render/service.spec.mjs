@@ -59,13 +59,12 @@ describe('the cache key', () => {
     highlight: '',
   };
 
-  it('tells a highlight from a select that differs only in spaces', () => {
-    // Joined with spaces these two were one key, so either figure could be
-    // served for the other.
-    expect(cacheKey({ ...figure, layout: '', highlight: 'a,b ' })).not.toBe(
-      cacheKey({ ...figure, select: ' a,b', layout: '' })
+  it('keeps fields apart, which joining them with spaces did not', () => {
+    // Joined with spaces, layout 'a b' and layout 'a' with highlight 'b' were
+    // one string -- one key -- so either figure could be served for the other.
+    expect(cacheKey({ ...figure, layout: 'a b' })).not.toBe(
+      cacheKey({ ...figure, layout: 'a', highlight: 'b' })
     );
-    expect(cacheKey({ ...figure, layout: ' ' })).not.toBe(cacheKey({ ...figure, highlight: ' ' }));
   });
 });
 

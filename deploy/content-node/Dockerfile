@@ -19,6 +19,9 @@ COPY tools/content-node/ ./tools/content-node/
 # the wrong trade for a convenience.
 ENV CONTENT_NODE_HOST=127.0.0.1
 ENV CONTENT_NODE_PORT=4400
+# Express's own error pages leave out the stack trace only in production. Every
+# failure is answered in Java's envelope anyway; this is the floor under that.
+ENV NODE_ENV=production
 
 USER node
 CMD ["node", "tools/content-node/service.mjs"]

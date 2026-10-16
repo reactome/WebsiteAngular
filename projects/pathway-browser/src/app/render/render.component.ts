@@ -427,6 +427,12 @@ export class RenderComponent {
       instances.forEach((cy) => {
         cy.elements(':selected').unselect();
         for (const token of this.highlighted) {
+          // A token that is not an identifier would be spliced into the
+          // diagram's selector ([graph.stId="..."]) and throw; one that names
+          // nothing here selects nothing. Both are passed over, as Java's
+          // exporter passes over a `sel` it does not find -- its answer is
+          // the figure with what it could select, and so is this one.
+          if (!/^[\w.:-]+$/.test(token)) continue;
           const marked = diagram.getElements([token], cy);
           if ('select' in marked) marked.select();
         }
