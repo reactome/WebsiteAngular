@@ -251,13 +251,16 @@ const seen = new Map();
 let globalCalls = [];
 
 function clientKey(req) {
-  // Behind Cloudflare and nginx, so the left-most forwarded address is the
-  // client. Falls back to the socket for a direct call.
-  const forwarded = (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || '')
-    .toString()
-    .split(',')[0]
-    .trim();
-  return forwarded || req.socket?.remoteAddress || 'unknown';
+  // nginx's X-Real-IP, and only when nginx is the one asking (loopback): it
+  // overwrites the header with $remote_addr, which its real-IP module takes
+  // from CF-Connecting-IP only for a request that came from Cloudflare.
+  // CF-Connecting-IP and X-Forwarded-For themselves are passed through as the
+  // caller sent them, so trusting them let a caller that reached the origin
+  // directly name a new address every time and never be limited.
+  const peer = req.socket?.remoteAddress || '';
+  const viaNginx = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1';
+  const real = viaNginx ? String(req.headers['x-real-ip'] || '').trim() : '';
+  return real || peer || 'unknown';
 }
 
 /** Returns the seconds to wait, or 0 when the call is allowed. */

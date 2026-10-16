@@ -283,18 +283,44 @@ describe('what stops a script spending money', () => {
     expect(retryAfter('198.51.100.10', now + LIMITS[0].windowMs + 1)).toBe(0);
   });
 
-  it('prefers the address Cloudflare sets over one the caller sent', () => {
+  // Only nginx's X-Real-IP is the client's address: nginx overwrites it with
+  // $remote_addr, which its real-IP module takes from CF-Connecting-IP only
+  // when the request came from Cloudflare. CF-Connecting-IP and the left of
+  // X-Forwarded-For pass through as the caller sent them, so a caller reaching
+  // the origin directly could rotate them and never be limited (review, 16 Oct
+  // 2026).
+  it("takes nginx's X-Real-IP when nginx is the one asking", () => {
     expect(
       clientKey({
-        headers: { 'cf-connecting-ip': '9.9.9.9', 'x-forwarded-for': '1.1.1.1' },
-        socket: {},
+        headers: {
+          'x-real-ip': '9.9.9.9',
+          'cf-connecting-ip': '6.6.6.6',
+          'x-forwarded-for': '5.5.5.5',
+        },
+        socket: { remoteAddress: '127.0.0.1' },
       })
     ).toBe('9.9.9.9');
   });
 
-  it('takes the left-most forwarded address, which is the client', () => {
+  it('believes no forwarding header from a caller that is not nginx', () => {
     expect(
-      clientKey({ headers: { 'x-forwarded-for': '1.1.1.1, 2.2.2.2, 3.3.3.3' }, socket: {} })
-    ).toBe('1.1.1.1');
+      clientKey({
+        headers: {
+          'x-real-ip': '9.9.9.9',
+          'cf-connecting-ip': '6.6.6.6',
+          'x-forwarded-for': '5.5.5.5',
+        },
+        socket: { remoteAddress: '203.0.113.7' },
+      })
+    ).toBe('203.0.113.7');
+  });
+
+  it('never takes a header the caller can set, even through nginx', () => {
+    expect(
+      clientKey({
+        headers: { 'cf-connecting-ip': '6.6.6.6', 'x-forwarded-for': '5.5.5.5, 4.4.4.4' },
+        socket: { remoteAddress: '::ffff:127.0.0.1' },
+      })
+    ).toBe('::ffff:127.0.0.1');
   });
 });

@@ -44,11 +44,14 @@ jobs:
 
       - name: Determine version
         id: version
+        # Through env, never pasted into the script (tools/workflows.spec.mjs).
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
           PROD_VERSION=$(curl -sf https://reactome.org/ContentService/data/database/version)
           echo "prod_version=$PROD_VERSION" >> "$GITHUB_OUTPUT"
 
-          if [ "${{ github.ref_name }}" = "prod" ]; then
+          if [ "$REF_NAME" = "prod" ]; then
             VERSION=$PROD_VERSION
           else
             VERSION=$((PROD_VERSION + 1))
