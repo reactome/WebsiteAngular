@@ -118,10 +118,10 @@ module.exports = {
   // with Java.
   '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)(\\?|$)':
     contentNode,
-  // The search box's completions and its "did you mean", and the facets of
-  // everything, of a query and of the icon library. The rest of /search is
-  // Java's for now.
-  '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/facet)(\\?|$)': contentNode,
+  // The search box's completions and its "did you mean", the facets of
+  // everything and of a query, and the icon library (its facets, pages and
+  // icons). The rest of /search is Java's for now.
+  '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/[^/?]+)(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,

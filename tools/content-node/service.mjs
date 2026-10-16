@@ -1844,6 +1844,83 @@ export const endpoints = [
         facetAnswer(await solr('/icon/facet', [['q', '{!term f=type}icon']], { signal }))
       ),
   },
+  {
+    path: '/ContentService/search/icon/query',
+    // SearchController.iconQuery: the icon library's page, by name, of the
+    // icons in a category and matching a text -- the query search-core is
+    // given is the category's facet, then the text, else everything. Before
+    // /icon/{identifier}, which would otherwise take "query" for an id.
+    handler: (request) => {
+      const text = queryValues(request, 'query');
+      const category = queryValues(request, 'category');
+      const page = springIntegerWithDefault(queryValues(request, 'page'), 1);
+      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      const size = springIntegerWithDefault(queryValues(request, 'pageSize'), 28);
+      if (size.error) return javaError(request, 400, 'BAD_REQUEST', size.error);
+      // rows * (page - 1) unboxes both: a null is Java's NullPointerException.
+      if (page.value === null || size.value === null)
+        return javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          'Something unexpected happened and the error has been reported.'
+        );
+      let q = '';
+      const inCategory = category.join(',');
+      if (inCategory !== '')
+        q = `iconCategories_facet:${inCategory.toLowerCase().replace(/[ \t\n\v\f\r]+/g, '_')}`;
+      const matching = text.join(',');
+      if (matching !== '') q = q === '' ? matching : `${q} ${matching}`;
+      if (q === '') q = '*';
+      // Java's int arithmetic, overflow and all: Solr refuses a negative start.
+      const start = Math.imul(size.value, page.value - 1);
+      return fromSolr(request, '/ContentService/search/icon/query', async (signal) => ({
+        status: 200,
+        type: 'application/json',
+        body: searchResult(
+          await solr(
+            '/search',
+            [
+              ['sort', 'iconName_sort asc'],
+              ['start', String(start)],
+              ['rows', String(size.value)],
+              ['q', q],
+              ['fq', '{!term f=type}icon'],
+            ],
+            { signal }
+          ),
+          true
+        ),
+      }));
+    },
+  },
+  {
+    path: '/ContentService/search/icon/{identifier}',
+    // SearchController.iconDetail: one icon by its stable id, the first of
+    // what Solr's /search finds for stId:{identifier} among icons; none is
+    // Java's 404, naming the id as given.
+    handler: (request) => {
+      const identifier = pathId(rawSegment(request, 4));
+      return fromSolr(request, '/ContentService/search/icon/{identifier}', async (signal) => {
+        const answer = await solr(
+          '/search',
+          [
+            ['q', `stId:${identifier}`],
+            ['fq', 'exactType:Icon'],
+            ['mm', '100%'],
+          ],
+          { signal }
+        );
+        if (!((answer?.response?.numFound ?? 0) > 0))
+          return notFound(request, `Icon not found: ${identifier}`);
+        return {
+          status: 200,
+          type: 'application/json',
+          body: searchResult(answer, false).entries[0],
+        };
+      });
+    },
+  },
 ];
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
@@ -4775,6 +4852,218 @@ async function facetsOf(query, forceFilters, signal) {
     }
   }
   return correct ? first.mapping : (await ask()).mapping;
+}
+
+/** SolrDocument.getFieldValue: a multi-valued field's first value. */
+function solrValue(doc, field) {
+  const value = doc[field];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** SolrConverter.getStringListField: every value as a string; none, the empty list. */
+function solrStrings(doc, field) {
+  const value = doc[field];
+  if (value === undefined || value === null) return [];
+  return (Array.isArray(value) ? value : [value]).map((item) => String(item));
+}
+
+/** String.split on a literal, as Java's: trailing empty strings removed. */
+function javaSplit(text, separator) {
+  const parts = text.split(separator);
+  while (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+  return parts;
+}
+
+/** String.isBlank: nothing but Character.isWhitespace. */
+function javaIsBlank(text) {
+  return javaTrimAll(text) === '';
+}
+
+/**
+ * An icon's physical entities, each packed "stId#type#name#compartments",
+ * unpacked as search-core's IconPhysicalEntity -- whose displayName getter
+ * Jackson writes too -- in a TreeSet: ordered by display name, ignoring case
+ * as compareToIgnoreCase does, and so one of each such name. Fewer than four
+ * parts is Java's ArrayIndexOutOfBoundsException, a failure here too.
+ */
+function iconPhysicalEntities(doc) {
+  const set = [];
+  for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
+    const [stId, type, name, compartments] = javaSplit(packed, '#');
+    if (compartments === undefined)
+      throw Object.assign(new Error('an icon physical entity with fewer than four parts'), {
+        unexpected: true,
+      });
+    const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
+    const at = set.findIndex((other) => caseInsensitive(displayName, other.displayName) <= 0);
+    if (at > -1 && caseInsensitive(displayName, set[at].displayName) === 0) continue;
+    set.splice(at === -1 ? set.length : at, 0, { stId, type, name, compartments, displayName });
+  }
+  return set;
+}
+
+/** selectRightReferenceIdentifier: the first identifier with no ':', else the first. */
+function referenceIdentifier(doc) {
+  if (doc.referenceIdentifiers === undefined || doc.referenceIdentifiers === null) return null;
+  const values = solrStrings(doc, 'referenceIdentifiers');
+  return values.find((value) => !value.includes(':')) ?? values[0] ?? null;
+}
+
+/** Entry's properties in Jackson's order: its fields as declared. */
+const ENTRY_FIELDS = [
+  'dbId',
+  'stId',
+  'id',
+  'name',
+  'type',
+  'instanceTypeExplanation',
+  'exactType',
+  'species',
+  'summation',
+  'referenceName',
+  'referenceIdentifier',
+  'compartmentNames',
+  'compartmentAccession',
+  'isDisease',
+  'hasReferenceEntity',
+  'hasEHLD',
+  'databaseName',
+  'referenceURL',
+  'regulator',
+  'regulatedEntity',
+  'regulatorId',
+  'regulatedEntityId',
+  'authoredPathways',
+  'authoredReactions',
+  'reviewedPathways',
+  'reviewedReactions',
+  'orcidId',
+  'fireworksSpecies',
+  'iconName',
+  'iconCategories',
+  'iconCuratorName',
+  'iconCuratorOrcidId',
+  'iconCuratorUrl',
+  'iconDesignerName',
+  'iconDesignerOrcidId',
+  'iconDesignerUrl',
+  'iconReferences',
+  'iconPhysicalEntities',
+  'iconEhlds',
+  'deleted',
+  'reason',
+  'explanation',
+  'date',
+  'replacementDbIds',
+  'replacementStIds',
+];
+
+/**
+ * SolrConverter.buildEntry: a Solr document as search-core's Entry, written
+ * as ContentService's mapper writes it -- the fields in declaration order,
+ * then the getter-only `icon` (true when there is an icon name) and
+ * `disease` (isDisease again); NON_EMPTY leaves out nulls, empty strings and
+ * empty lists, but not false. A document `highlighting` has an entry for
+ * takes its name, summation and the rest only from the snippets, so a name
+ * with no snippet is none; otherwise the summation is the document's own,
+ * replacing the inferred one even when absent. Dates are epoch milliseconds.
+ */
+export function searchEntry(doc, highlighting) {
+  const entry = {
+    dbId: solrValue(doc, 'dbId'),
+    stId: solrValue(doc, 'stId'),
+    id: 'stId' in doc ? solrValue(doc, 'stId') : solrValue(doc, 'dbId'),
+    type: solrValue(doc, 'type'),
+    exactType: solrValue(doc, 'exactType'),
+    isDisease: solrValue(doc, 'isDisease'),
+    hasReferenceEntity: solrValue(doc, 'hasReferenceEntity'),
+    hasEHLD: solrValue(doc, 'hasEHLD'),
+    databaseName: solrValue(doc, 'databaseName'),
+    referenceURL: solrValue(doc, 'referenceURL'),
+    regulatorId: solrValue(doc, 'regulatorId'),
+    regulatedEntityId: solrValue(doc, 'regulatedEntityId'),
+    summation: solrValue(doc, 'inferredSummation'),
+    authoredPathways: solrValue(doc, 'authoredPathways'),
+    authoredReactions: solrValue(doc, 'authoredReactions'),
+    reviewedPathways: solrValue(doc, 'reviewedPathways'),
+    reviewedReactions: solrValue(doc, 'reviewedReactions'),
+    orcidId: solrValue(doc, 'orcidId'),
+    species: solrStrings(doc, 'species'),
+    compartmentNames: solrStrings(doc, 'compartmentName'),
+    compartmentAccession: solrStrings(doc, 'compartmentAccession'),
+  };
+  const snippets = highlighting?.[entry.dbId];
+  if (snippets) {
+    const identifiers = snippets.referenceIdentifiers;
+    entry.referenceIdentifier = identifiers?.length
+      ? (identifiers.find((snippet) => snippet.includes('highlighting')) ?? identifiers[0])
+      : referenceIdentifier(doc);
+    for (const field of [
+      'stId',
+      'name',
+      'summation',
+      'referenceName',
+      'regulator',
+      'regulatedEntity',
+    ])
+      if (snippets[field]?.length) entry[field] = snippets[field][0];
+  } else {
+    entry.name = solrValue(doc, 'name');
+    entry.summation = solrValue(doc, 'summation');
+    entry.referenceName = solrValue(doc, 'referenceName');
+    entry.regulator = solrValue(doc, 'regulator');
+    entry.regulatedEntity = solrValue(doc, 'regulatedEntity');
+    entry.referenceIdentifier = referenceIdentifier(doc);
+  }
+  for (const field of [
+    'iconName',
+    'iconCuratorName',
+    'iconCuratorOrcidId',
+    'iconCuratorUrl',
+    'iconDesignerName',
+    'iconDesignerUrl',
+    'iconDesignerOrcidId',
+  ])
+    entry[field] = solrValue(doc, field);
+  entry.iconCategories = solrStrings(doc, 'iconCategories');
+  entry.iconReferences = solrStrings(doc, 'iconReferences');
+  entry.iconEhlds = solrStrings(doc, 'iconEhlds');
+  entry.iconPhysicalEntities = iconPhysicalEntities(doc);
+  entry.deleted = solrValue(doc, 'deleted');
+  entry.reason = solrValue(doc, 'deletedReason');
+  entry.explanation = solrValue(doc, 'explanation');
+  const date = solrValue(doc, 'date');
+  entry.date = date === undefined || date === null ? date : Date.parse(date);
+  entry.replacementDbIds = solrStrings(doc, 'replacementDbIds').map((id) => Number(id));
+  entry.replacementStIds = solrStrings(doc, 'replacementStIds');
+
+  const empty = (value) =>
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    (Array.isArray(value) && !value.length);
+  const out = {};
+  for (const field of ENTRY_FIELDS) if (!empty(entry[field])) out[field] = entry[field];
+  if (!empty(entry.iconName)) out.icon = true;
+  if (!empty(entry.isDisease)) out.disease = entry.isDisease;
+  return out;
+}
+
+/**
+ * SolrConverter.parseResponse's one Result: the documents as Entries, named
+ * "Results", with Solr's count and how many came -- NON_EMPTY leaving out no
+ * entries. `highlight` is false where Java ignores the highlighting.
+ */
+function searchResult(answer, highlight) {
+  const docs = answer?.response?.docs ?? [];
+  const highlighting = highlight ? (answer?.highlighting ?? {}) : {};
+  const entries = docs.map((doc) => searchEntry(doc, highlighting));
+  return {
+    ...(entries.length ? { entries } : {}),
+    typeName: 'Results',
+    entriesCount: answer?.response?.numFound ?? 0,
+    rowCount: entries.length,
+  };
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */

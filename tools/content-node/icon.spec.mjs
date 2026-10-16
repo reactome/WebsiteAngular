@@ -1,0 +1,292 @@
+// @vitest-environment node
+//
+// /search/icon/{identifier} and /search/icon/query, without a Solr: the
+// Entry search-core builds from a Solr document, what is asked of Solr, and
+// Spring's reading of the parameters. Java's answers measured 16 Oct 2026.
+import { URLSearchParams } from 'node:url';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { app, searchEntry } from './service.mjs';
+
+const icon = {
+  dbId: '013428',
+  stId: 'R-ICO-013428',
+  name: 'TCR',
+  type: 'Icon',
+  exactType: 'Icon',
+  species: ['Homo sapiens'],
+  summation: 'Simplified graphic representation of a T-cell receptor',
+  hasReferenceEntity: false,
+  hasEHLD: false,
+  iconName: 'TCR',
+  iconCategories: ['receptor'],
+  iconCuratorName: 'A curator',
+  iconReferences: ['0042101', 'GO:0042101'],
+  iconPhysicalEntities: [
+    'R-HSA-2#ReferenceGeneProduct#beta#plasma membrane',
+    'uniprot:Q1#ReferenceGeneProduct#ALCAM#null',
+    'R-HSA-1#ReferenceGeneProduct#ALCAM#plasma membrane',
+    'R-HSA-3#ReferenceGeneProduct#alcam#plasma membrane',
+  ],
+  iconEhlds: ['R-HSA-1280218'],
+};
+
+describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
+  it("writes Jackson's order -- fields as declared, then icon -- and NON_EMPTY", () => {
+    const entry = searchEntry(icon, {});
+    expect(Object.keys(entry)).toEqual([
+      'dbId',
+      'stId',
+      'id',
+      'name',
+      'type',
+      'exactType',
+      'species',
+      'summation',
+      'hasReferenceEntity',
+      'hasEHLD',
+      'iconName',
+      'iconCategories',
+      'iconCuratorName',
+      'iconReferences',
+      'iconPhysicalEntities',
+      'iconEhlds',
+      'icon',
+    ]);
+    expect(entry.icon).toBe(true);
+    expect(entry.hasEHLD).toBe(false);
+  });
+
+  it("orders the icon's entities as a TreeSet by display name, ignoring case, dropping equals", () => {
+    expect(searchEntry(icon, {}).iconPhysicalEntities).toEqual([
+      {
+        stId: 'uniprot:Q1',
+        type: 'ReferenceGeneProduct',
+        name: 'ALCAM',
+        compartments: 'null',
+        displayName: 'ALCAM [null]',
+      },
+      {
+        stId: 'R-HSA-1',
+        type: 'ReferenceGeneProduct',
+        name: 'ALCAM',
+        compartments: 'plasma membrane',
+        displayName: 'ALCAM [plasma membrane]',
+      },
+      {
+        stId: 'R-HSA-2',
+        type: 'ReferenceGeneProduct',
+        name: 'beta',
+        compartments: 'plasma membrane',
+        displayName: 'beta [plasma membrane]',
+      },
+    ]);
+  });
+
+  it('fails, as Java does, on an entity with fewer than four parts', () => {
+    expect(() => searchEntry({ ...icon, iconPhysicalEntities: ['a#b#c#'] }, {})).toThrow();
+  });
+
+  it('id is the stId when there is one, else the dbId', () => {
+    expect(searchEntry({ dbId: '5' }, {}).id).toBe('5');
+  });
+
+  it('without highlighting, the summation is the summation even when absent', () => {
+    const doc = { dbId: '1', name: 'n', inferredSummation: 'inferred' };
+    expect(searchEntry(doc, {}).summation).toBe(undefined);
+    expect(searchEntry({ ...doc, summation: 's' }, {}).summation).toBe('s');
+  });
+
+  it('highlighted, only snippets set the name; the inferred summation stays', () => {
+    const doc = {
+      dbId: '1',
+      name: 'plain',
+      inferredSummation: 'inferred',
+      referenceIdentifiers: ['A:1', 'B'],
+    };
+    expect(searchEntry(doc, { 1: {} })).toEqual({
+      dbId: '1',
+      id: '1',
+      summation: 'inferred',
+      referenceIdentifier: 'B',
+    });
+    const hit = searchEntry(doc, {
+      1: {
+        name: ['<span class="highlighting" >plain</span>'],
+        referenceIdentifiers: ['x', 'y highlighting'],
+      },
+    });
+    expect(hit.name).toBe('<span class="highlighting" >plain</span>');
+    expect(hit.referenceIdentifier).toBe('y highlighting');
+  });
+
+  it('writes isDisease where declared and disease after the fields; a deleted entry with its date', () => {
+    const entry = searchEntry(
+      {
+        dbId: '1',
+        isDisease: false,
+        deleted: true,
+        date: '2020-01-02T00:00:00Z',
+        replacementDbIds: ['7'],
+      },
+      {}
+    );
+    expect(Object.keys(entry)).toEqual([
+      'dbId',
+      'id',
+      'isDisease',
+      'deleted',
+      'date',
+      'replacementDbIds',
+      'disease',
+    ]);
+    expect(entry.date).toBe(Date.UTC(2020, 0, 2));
+    expect(entry.replacementDbIds).toEqual([7]);
+  });
+});
+
+describe('the icon endpoints, against a stand-in Solr', () => {
+  let base;
+  let server;
+  let solrServer;
+  let asked;
+  let answer;
+  const saved = {};
+  const names = ['SOLR_URL', 'SOLR_USER', 'SOLR_PASSWORD'];
+
+  beforeAll(async () => {
+    const { createServer } = await import('node:http');
+    solrServer = createServer((request, response) => {
+      let body = '';
+      request.on('data', (chunk) => (body += chunk));
+      request.on('end', () => {
+        const sent = [...new URLSearchParams(body)];
+        asked.push([request.url, sent]);
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(answer(sent)));
+      });
+    });
+    await new Promise((resolve) => solrServer.listen(0, '127.0.0.1', resolve));
+    for (const name of names) saved[name] = process.env[name];
+    process.env.SOLR_URL = `http://127.0.0.1:${solrServer.address().port}/solr/reactome`;
+    process.env.SOLR_USER = 'reader';
+    process.env.SOLR_PASSWORD = 'not-a-secret';
+    await new Promise((resolve) => {
+      server = app().listen(0, '127.0.0.1', resolve);
+    });
+    base = `http://127.0.0.1:${server.address().port}`;
+  });
+
+  afterAll(async () => {
+    for (const name of names)
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => solrServer.close(resolve));
+  });
+
+  const found =
+    (docs, numFound = docs.length) =>
+    () => ({ response: { numFound, docs } });
+
+  it('/icon/{id} asks /search for that stId among icons, and writes the first Entry', async () => {
+    asked = [];
+    answer = found([icon, { ...icon, dbId: '2' }]);
+    const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(searchEntry(icon, {}));
+    expect(asked).toEqual([
+      [
+        '/solr/reactome/search',
+        [
+          ['wt', 'json'],
+          ['json.nl', 'flat'],
+          ['q', 'stId:R-ICO-013428'],
+          ['fq', 'exactType:Icon'],
+          ['mm', '100%'],
+        ],
+      ],
+    ]);
+  });
+
+  it("/icon/{id} found nowhere is Java's 404, naming the id as given", async () => {
+    answer = found([]);
+    const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428.json`);
+    expect(response.status).toBe(404);
+    expect((await response.json()).messages).toEqual(['Icon not found: R-ICO-013428.json']);
+  });
+
+  it('/icon/query pages by name, among icons, with the category before the text', async () => {
+    asked = [];
+    answer = found([icon], 9);
+    const response = await fetch(
+      `${base}/ContentService/search/icon/query?query=TCR&query=x&category=Cell%20%09Type&page=3&pageSize=2`
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(
+      JSON.stringify({
+        entries: [searchEntry(icon, {})],
+        typeName: 'Results',
+        entriesCount: 9,
+        rowCount: 1,
+      })
+    );
+    expect(asked).toEqual([
+      [
+        '/solr/reactome/search',
+        [
+          ['wt', 'json'],
+          ['json.nl', 'flat'],
+          ['sort', 'iconName_sort asc'],
+          ['start', '4'],
+          ['rows', '2'],
+          ['q', 'iconCategories_facet:cell_type TCR,x'],
+          ['fq', '{!term f=type}icon'],
+        ],
+      ],
+    ]);
+  });
+
+  it('/icon/query with nothing asks for everything, from the first page of 28', async () => {
+    asked = [];
+    answer = found([], 0);
+    const response = await fetch(`${base}/ContentService/search/icon/query`);
+    expect(await response.text()).toBe('{"typeName":"Results","entriesCount":0,"rowCount":0}');
+    expect(asked[0][1].filter(([name]) => ['start', 'rows', 'q'].includes(name))).toEqual([
+      ['start', '0'],
+      ['rows', '28'],
+      ['q', '*'],
+    ]);
+  });
+
+  it("/icon/query uses the results' highlighting", async () => {
+    answer = () => ({
+      response: { numFound: 1, docs: [icon] },
+      highlighting: { '013428': { name: ['<b>TCR</b>'] } },
+    });
+    const response = await fetch(`${base}/ContentService/search/icon/query?query=TCR`);
+    expect((await response.json()).entries[0].name).toBe('<b>TCR</b>');
+  });
+
+  it("answers Spring's 400, Java's 500s for blank numbers, and pages in int arithmetic", async () => {
+    asked = [];
+    const bad = await fetch(`${base}/ContentService/search/icon/query?pageSize=abc`);
+    expect([bad.status, (await bad.json()).messages]).toEqual([
+      400,
+      [
+        `Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: "abc"`,
+      ],
+    ]);
+    for (const blank of ['pageSize=%20', 'page=%20']) {
+      const response = await fetch(`${base}/ContentService/search/icon/query?${blank}`);
+      expect([blank, response.status, (await response.json()).messages]).toEqual([
+        blank,
+        500,
+        ['Something unexpected happened and the error has been reported.'],
+      ]);
+    }
+    expect(asked).toHaveLength(0);
+    answer = found([], 0);
+    await fetch(`${base}/ContentService/search/icon/query?page=2147483647&pageSize=2`);
+    expect(asked[0][1].find(([name]) => name === 'start')).toEqual(['start', '-4']);
+  });
+});
