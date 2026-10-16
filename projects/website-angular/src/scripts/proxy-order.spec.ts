@@ -213,6 +213,9 @@ describe('the dev server proxy', () => {
     '/ContentService/search/facet_query?query=TP53&species=Homo%20sapiens',
     '/ContentService/search/icon/query?query=x',
     '/ContentService/search/icon/R-ICO-013428',
+    '/ContentService/search/diagram/R-HSA-8848021?query=MAD',
+    '/ContentService/search/diagram/R-HSA-68886/occurrences/R-HSA-141433',
+    '/ContentService/search/diagram/summary?query=KIF&diagram=R-HSA-8848021',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -241,6 +244,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/suggest/x',
     '/ContentService/search/facet_query/x?query=TP53',
     '/ContentService/search/icon/R-ICO-013428/x',
+    '/ContentService/search/diagram/R-HSA-446203/flag?query=CTSA',
+    '/ContentService/search/diagram/R-HSA-68886/occurrences',
     // The interactor endpoints node does not serve.
     '/ContentService/interactors/static/molecule/P04637/summary',
     '/ContentService/interactors/static/molecules/summary',
