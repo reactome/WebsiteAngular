@@ -11,9 +11,12 @@ import { solr, queued } from './solr.mjs';
 let base;
 let server;
 
-/** Until `ready()` holds, checking every 5ms for up to five seconds. */
+/**
+ * Until `ready()` holds, checking every 5ms for up to two seconds -- well
+ * inside the test's own five, so a condition never met fails here, saying so.
+ */
 async function until(ready) {
-  for (let tries = 0; !ready() && tries < 1000; tries += 1)
+  for (let tries = 0; !ready() && tries < 400; tries += 1)
     await new Promise((resolve) => setTimeout(resolve, 5));
   expect(ready()).toBe(true);
 }

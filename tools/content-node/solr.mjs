@@ -61,6 +61,8 @@ function turn(signal) {
       resolve();
     };
     const leave = () => {
+      // Always still queued -- enter() removes this listener as done()
+      // dequeues it -- but a splice at -1 would drop someone else.
       const at = waiting.indexOf(enter);
       if (at > -1) waiting.splice(at, 1);
       reject(signal.reason);
