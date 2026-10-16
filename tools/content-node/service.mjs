@@ -2071,6 +2071,69 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/search/pathways/of/{dbId}',
+    // SearchController.getContainingPathwaysOf, which the Pathway Browser
+    // asks for a search result's diagrams: the entity's occurrences from its
+    // document (Solr's /get by dbId), then those diagrams' documents by
+    // stable id, with only the fields asked for.
+    handler: async (request) => {
+      const dbId = springPathLong(pathId(rawSegment(request, 5)), 'dbId');
+      if (dbId.error)
+        return javaError(
+          request,
+          dbId.status,
+          dbId.status === 500 ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST',
+          dbId.error
+        );
+      const interactorValues = queryValues(request, 'includeInteractors');
+      const interactors = springBoolean(interactorValues);
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const directValues = queryValues(request, 'directlyInDiagram');
+      const direct = springBoolean(directValues);
+      if (direct.error) return javaError(request, 400, 'BAD_REQUEST', direct.error);
+      const speciesValues = queryValues(request, 'species');
+      const species = speciesValues.length ? speciesValues.join(',') : null;
+      const fields = springFields(queryValues(request, 'fields'));
+      if (fields.error) return javaError(request, 400, 'BAD_REQUEST', fields.error);
+      // includeInteractors is unboxed first, then the fields are named: a null
+      // in either is Java's NullPointerException.
+      if (blankBoolean(interactorValues, interactors)) return unexpectedFailure(request);
+      const field = interactors.value === true ? 'occurrencesWithInteractor' : 'occurrences';
+      return fromSolr(request, '/ContentService/search/pathways/of/{dbId}', async (signal) => {
+        const found = await solr(
+          '/get',
+          [
+            ['fl', field],
+            ['ids', String(dbId.value)],
+          ],
+          { signal }
+        );
+        const [doc] = found?.response?.docs ?? [];
+        const none = () => notFound(request, `No pathways found for dbId: ${dbId.value}`);
+        if (!doc || !(field in doc)) return none();
+        let occurrences = solrStrings(doc, field).map((raw) => rawOccurrence(raw));
+        if (blankBoolean(directValues, direct)) return unexpectedFailure(request);
+        if (direct.value === true)
+          occurrences = occurrences.filter((occurrence) => occurrence.inDiagram);
+        const stIds = occurrences.map((occurrence) => occurrence.diagramEntity ?? null);
+        if ((fields.value ?? []).includes(null)) return unexpectedFailure(request);
+        const answer = await solr(
+          '/select',
+          [
+            ['q', `{!terms f=stId}${stIds.join(',').toLowerCase()}`],
+            ['rows', String(stIds.length)],
+            ...(species === null ? [] : [['fq', `species:${species}`]]),
+            ...(fields.value?.length ? [['fl', fields.value.join(',')]] : []),
+          ],
+          { signal }
+        );
+        const entries = (answer?.response?.docs ?? []).map((pathway) => searchEntry(pathway, null));
+        if (!entries.length) return none();
+        return { status: 200, type: 'application/json', body: entries };
+      });
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
@@ -5611,6 +5674,105 @@ function fireworksFlags(answer, abbreviation) {
 /** A DatabaseObject's toString in graph-core, as Java's messages write a Species. */
 function speciesToString(row) {
   return `Species {dbId=${row.dbId}, displayName='${row.displayName}'}`;
+}
+
+/** search-core's SolrConverter.Field: each constant's name, and the Solr field it names. */
+const SOLR_FIELDS = {
+  DB_ID: 'dbId',
+  ST_ID: 'stId',
+  PHYSICAL_ENTITIES_DB_ID: 'physicalEntitiesDbId',
+  NAME: 'name',
+  SPECIES: 'species',
+  SPECIES_FACET: 'species_facet',
+  TYPES: 'type_facet',
+  KEYWORDS: 'keywords_facet',
+  COMPARTMENT_FACET: 'compartment_facet',
+  ICON_CATEGORIES_FACET: 'iconCategories_facet',
+  SUMMATION: 'summation',
+  INFERRED_SUMMATION: 'inferredSummation',
+  REFERENCE_URL: 'referenceURL',
+  REFERENCE_NAME: 'referenceName',
+  REFERENCE_IDENTIFIERS: 'referenceIdentifiers',
+  IS_DISEASE: 'isDisease',
+  TYPE: 'type',
+  IS_REFERENCE_SUMMARY: 'isReferenceSummary',
+  HAS_REFERENCE_ENTITY: 'hasReferenceEntity',
+  HAS_EHLD: 'hasEHLD',
+  EXACT_TYPE: 'exactType',
+  DATABASE_NAME: 'databaseName',
+  REGULATOR: 'regulator',
+  REGULATOR_ID: 'regulatorId',
+  REGULATED_ENTITY: 'regulatedEntity',
+  REGULATED_ENTITY_ID: 'regulatedEntityId',
+  COMPARTMENT_NAME: 'compartmentName',
+  COMPARTMENT_ACCESSION: 'compartmentAccession',
+  FIREWORKS_SPECIES: 'fireworksSpecies',
+  OCCURRENCES: 'occurrences',
+  OCCURRENCES_INTERACTOR: 'occurrencesWithInteractor',
+  DIAGRAMS: 'diagrams',
+  DIAGRAMS_INTERACTOR: 'diagramsWithInteractor',
+  LLPS: 'llps',
+  AUTHORED_PATHWAYS: 'authoredPathways',
+  AUTHORED_REACTIONS: 'authoredReactions',
+  REVIEWED_PATHWAYS: 'reviewedPathways',
+  REVIEWED_REACTIONS: 'reviewedReactions',
+  ORCIDID: 'orcidId',
+  TARGET_IDENTIFIER: 'identifier',
+  TARGET_ACCESSIONS: 'accessions',
+  TARGET_GENENAMES: 'geneNames',
+  TARGET_SYNONYMS: 'synonyms',
+  TARGET_RESOURCE: 'resource',
+  ICON_NAME: 'iconName',
+  ICON_CATEGORIES: 'iconCategories',
+  ICON_CURATOR_NAME: 'iconCuratorName',
+  ICON_CURATOR_ORCIDID: 'iconCuratorOrcidId',
+  ICON_CURATOR_URL: 'iconCuratorUrl',
+  ICON_DESIGNER_NAME: 'iconDesignerName',
+  ICON_DESIGNER_URL: 'iconDesignerUrl',
+  ICON_DESIGNER_ORCIDID: 'iconDesignerOrcidId',
+  ICON_REFERENCES: 'iconReferences',
+  ICON_PHYSICAL_ENTITIES: 'iconPhysicalEntities',
+  ICON_EHLDS: 'iconEhlds',
+  DELETED: 'deleted',
+  DELETED_REASON: 'deletedReason',
+  DELETED_EXPLANATION: 'explanation',
+  DELETED_DATE: 'date',
+  DELETED_REPLACEMENT_DB_IDS: 'replacementDbIds',
+  DELETED_REPLACEMENT_ST_IDS: 'replacementStIds',
+};
+
+/**
+ * `fields`, a List of SolrConverter.Field, as Spring binds it, measured:
+ * absent is null; one value is split at commas, several are taken as they
+ * are; StringToEnumConverterFactory trims each, an exactly empty one being
+ * null (Java fails on it later: `nullField`). A name that is no constant is
+ * the 400, quoting the element as sent and naming the constant trimmed.
+ */
+function springFields(values) {
+  if (values.length === 0) return { value: null };
+  if (values.length === 1 && values[0] === '') return { value: [] };
+  const elements = values.length === 1 ? values[0].split(',') : values;
+  const fields = [];
+  for (const element of elements) {
+    if (element === '') {
+      fields.push(null);
+      continue;
+    }
+    const name = javaTrim(element);
+    if (!Object.hasOwn(SOLR_FIELDS, name)) {
+      const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+      return {
+        error:
+          `Failed to convert value of type '${type}' to required type 'java.util.List'; nested exception is ` +
+          'org.springframework.core.convert.ConversionFailedException: Failed to convert from type [java.lang.String] ' +
+          'to type [@io.swagger.v3.oas.annotations.Parameter @org.springframework.web.bind.annotation.RequestParam ' +
+          `org.reactome.server.search.solr.SolrConverter$Field] for value '${element}'; nested exception is ` +
+          `java.lang.IllegalArgumentException: No enum constant org.reactome.server.search.solr.SolrConverter.Field.${name}`,
+      };
+    }
+    fields.push(SOLR_FIELDS[name]);
+  }
+  return { value: fields };
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
