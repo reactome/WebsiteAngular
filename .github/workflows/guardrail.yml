@@ -8,6 +8,10 @@ on:
   # same rules either way, and a dispatch cannot be used to skip them.
   workflow_dispatch:
 
+# Reads the checkout, nothing more.
+permissions:
+  contents: read
+
 jobs:
   restrict-cms-branches:
     runs-on: ubuntu-latest
@@ -19,9 +23,13 @@ jobs:
           fetch-depth: 0 # IMPORTANT for diff to work properly
 
       - name: Validate CMS branch changes
+        # Through env, never pasted into the script: a branch is named by
+        # whoever opens the pull request, and `x$(curl …|sh)` ran as code
+        # (tools/workflows.spec.mjs).
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          BASE_REF="${{ github.base_ref || 'main' }}"
 
           echo "Branch: $BRANCH_NAME"
           echo "Base: $BASE_REF"

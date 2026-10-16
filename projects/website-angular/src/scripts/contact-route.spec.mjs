@@ -143,11 +143,46 @@ describe('a deployment that can send', () => {
     expect(headers).toContain('Subject: Hello Bcc: x@example.org');
   });
 
+  it('cuts a long subject rather than refuse the message', async () => {
+    // The search page writes the subject itself, read-only, from the query:
+    // "No results found for " and a 180-character query was refused, and the
+    // reader -- who cannot edit it and never saw why -- could not report it.
+    const query = 'BRCA1 TP53 '.repeat(30);
+    const response = await post({ ...GOOD, subject: `No results found for ${query}` });
+    expect(response.status).toBe(200);
+    const header = sent[0].raw.slice(
+      sent[0].raw.indexOf('Subject: '),
+      sent[0].raw.indexOf('\nMIME')
+    );
+    expect(header.replace(/\n /g, '').length).toBeLessThanOrEqual('Subject: '.length + 200);
+    expect(header).toContain('No results found for BRCA1');
+  });
+
   it('encodes a subject that is not plain ASCII', async () => {
     await post({ ...GOOD, subject: 'Résumé' });
     expect(sent[0].raw).toContain(
       `Subject: =?UTF-8?B?${Buffer.from('Résumé').toString('base64')}?=\n`
     );
+  });
+
+  it('takes a message up to its length in any script, not only ASCII', async () => {
+    // 10,000 characters is the limit; in CJK that is ~30KB of UTF-8, and the
+    // 16KB body limit refused it first, with Express's 413 page.
+    const response = await post({ ...GOOD, message: '反应组'.repeat(3_333) });
+    expect(response.status).toBe(200);
+  });
+
+  it('answers a body it cannot read in JSON, without a stack trace', async () => {
+    // Express's default handler answered with an HTML page holding the stack,
+    // paths included (NODE_ENV unset).
+    const response = await fetch(base, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{bad',
+    });
+    expect(response.status).toBe(400);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(await response.text()).not.toMatch(/ at |node_modules/);
   });
 
   it('refuses an empty or oversized message', async () => {
@@ -156,8 +191,10 @@ describe('a deployment that can send', () => {
     expect(sent).toEqual([]);
   });
 
+  // Requests here come from loopback, as nginx's do, so X-Real-IP -- the
+  // header nginx sets -- stands for the reader's address (clientKey).
   it("passes the reader's address to Cloudflare with the token", async () => {
-    await post(GOOD, { 'X-Forwarded-For': '203.0.113.7' });
+    await post(GOOD, { 'X-Real-IP': '203.0.113.7' });
     expect(remoteips).toEqual(['203.0.113.7']);
   });
 
@@ -190,11 +227,11 @@ describe('a deployment that can send', () => {
   it('lets refused tokens spend only their own budget, not everyone else', async () => {
     verifyAnswer = false;
     for (let i = 0; i < 200; i++) {
-      await post(GOOD, { 'X-Forwarded-For': `198.51.100.${i % 250}, 10.0.0.${i}` });
+      await post(GOOD, { 'X-Real-IP': `198.51.100.${i % 250}` });
     }
     verifyAnswer = true;
     // Someone else still gets through: unverified calls did not close the form.
-    expect((await post(GOOD, { 'X-Forwarded-For': '203.0.113.9' })).status).toBe(200);
+    expect((await post(GOOD, { 'X-Real-IP': '203.0.113.9' })).status).toBe(200);
   });
 
   it('holds one address to its limit when it sends several at once', async () => {
@@ -209,7 +246,7 @@ describe('a deployment that can send', () => {
   });
 
   it('does not pass Cloudflare an address that is not one', async () => {
-    await post(GOOD, { 'X-Forwarded-For': 'not-an-address' });
+    await post(GOOD, { 'X-Real-IP': 'not-an-address' });
     expect(remoteips).toEqual(['']);
   });
 
