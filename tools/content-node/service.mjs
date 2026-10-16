@@ -5262,6 +5262,9 @@ function readBody(request, _response, next) {
   request.on('error', next);
 }
 
+/** The /data/query/{id}/{attribute} names node answers, by their lower case. */
+const QUERY_ATTRIBUTES = { stid: 'stId', normalpathway: 'normalPathway' };
+
 export function app() {
   const server = express();
   server.disable('x-powered-by');
@@ -5311,12 +5314,24 @@ export function app() {
       return writeResult(response, springNotFound(request));
     // Tomcat decodes the path before Spring matches it, so /icon/qu%65ry is
     // /icon/query to Java. Routing here sees letters, digits, '-', '_' and
-    // '~' decoded too -- never '.', '/' or ';', whose meaning would change --
-    // and handlers still read ids from the path as it came.
-    const routed = stripped.join('/').replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
-      const char = String.fromCharCode(parseInt(hex, 16));
-      return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
-    });
+    // '~' decoded too -- all a literal segment holds -- and handlers still
+    // read ids from the path as it came.
+    const routed = stripped
+      .join('/')
+      .replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
+        const char = String.fromCharCode(parseInt(hex, 16));
+        return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
+      })
+      // Java's /query/{id}/{attributeName} finds the attribute's getter
+      // ignoring case (ControllerUtils.getProperty); node's two are literal
+      // routes, so the attribute is put in their case. Not under Java's
+      // more specific /query/enhanced, /abridged and /ids mappings, where
+      // that segment is an id.
+      .replace(/^(\/data\/query\/([^/]+)\/)([^/]+)$/, (path, head, id, attribute) =>
+        ['enhanced', 'abridged', 'ids'].includes(id)
+          ? path
+          : head + (QUERY_ATTRIBUTES[attribute.toLowerCase()] ?? attribute)
+      );
     request.url = routed + (query === undefined ? '' : `?${query}`);
     next();
   });

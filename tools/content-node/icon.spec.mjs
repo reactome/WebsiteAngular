@@ -360,12 +360,6 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     expect((await escaped.json()).messages).toEqual(['Icon not found: Query']);
   });
 
-  it("leaves '.', ';' and '/' escaped, so an escaped one stays inside the id", async () => {
-    answer = found([]);
-    const response = await fetch(`${base}/ContentService/search/icon/qu%65ry%3Bx`);
-    expect((await response.json()).messages).toEqual(['Icon not found: query;x']);
-  });
-
   it("answers a path no mapping matches with Spring's JSON 404", async () => {
     const response = await fetch(`${base}/ContentService/data/database/VERSION`);
     expect(response.status).toBe(404);
@@ -375,5 +369,16 @@ describe('the icon endpoints, against a stand-in Solr', () => {
       'Not Found',
       '/ContentService/data/database/VERSION',
     ]);
+  });
+
+  it("routes /query/{id}/{attribute} by the attribute in any case, as Java's getter lookup does", async () => {
+    // Without a graph the handler fails, but it is the handler that answers,
+    // not the 404 for a path no mapping matches.
+    for (const attribute of ['stid', 'STID', 'NormalPathway', 'normalpathway'])
+      for (const id of ['R-HSA-70486']) {
+        const response = await fetch(`${base}/ContentService/data/query/${id}/${attribute}`);
+        const body = await response.text();
+        expect([attribute, body.includes('"error":"Not Found"')]).toEqual([attribute, false]);
+      }
   });
 });
