@@ -334,4 +334,19 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     await fetch(`${base}/ContentService/search/icon/query?page=2147483647&pageSize=2`);
     expect(asked[0][1].find(([name]) => name === 'start')).toEqual(['start', '-4']);
   });
+
+  it('routes a literal segment sent percent-encoded as Java does: decoded first', async () => {
+    asked = [];
+    answer = found([], 0);
+    const query = await fetch(`${base}/ContentService/search/icon/qu%65ry?pageSize=5`);
+    expect(query.status).toBe(200);
+    expect(asked[0][1].find(([name]) => name === 'rows')).toEqual(['rows', '5']);
+    asked = [];
+    answer = () => ({
+      response: { numFound: 0 },
+      facet_counts: { facet_fields: { iconCategories_facet: [] } },
+    });
+    await fetch(`${base}/ContentService/search/icon/f%61cet`);
+    expect(asked[0][0]).toBe('/solr/reactome/icon/facet');
+  });
 });

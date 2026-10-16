@@ -5305,7 +5305,15 @@ export function app() {
     const stripped = segments.map((segment) => segment.split(';')[0]);
     if (stripped.some((segment, at) => segment === '' && segments[at].includes(';')))
       return writeResult(response, springNotFound(request));
-    request.url = stripped.join('/') + (query === undefined ? '' : `?${query}`);
+    // Tomcat decodes the path before Spring matches it, so /icon/qu%65ry is
+    // /icon/query to Java. Routing here sees letters, digits, '-', '_' and
+    // '~' decoded too -- never '.', '/' or ';', whose meaning would change --
+    // and handlers still read ids from the path as it came.
+    const routed = stripped.join('/').replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
+      const char = String.fromCharCode(parseInt(hex, 16));
+      return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
+    });
+    request.url = routed + (query === undefined ? '' : `?${query}`);
     next();
   });
 
