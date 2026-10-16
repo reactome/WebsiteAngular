@@ -88,6 +88,29 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
 
   it('id is the stId when there is one, else the dbId', () => {
     expect(searchEntry({ dbId: '5' }, {}).id).toBe('5');
+    expect(searchEntry({ dbId: '5', stId: 'R-ICO-5' }, {}).id).toBe('R-ICO-5');
+  });
+
+  it('is an icon whenever it has an icon name, even an empty one NON_EMPTY leaves out', () => {
+    expect(searchEntry({ dbId: '1', iconName: '' }, {})).toEqual({
+      dbId: '1',
+      id: '1',
+      icon: true,
+    });
+  });
+
+  it("leaves out an icon entity's empty parts, as NON_EMPTY does in nested beans", () => {
+    expect(
+      searchEntry({ dbId: '1', iconPhysicalEntities: ['##n#c'] }, {}).iconPhysicalEntities
+    ).toEqual([{ name: 'n', compartments: 'c', displayName: 'n [c]' }]);
+  });
+
+  it('reads replacement dbIds as Long.parseLong does, failing on anything else', () => {
+    expect(searchEntry({ dbId: '1', replacementDbIds: ['+7', '-8'] }, {}).replacementDbIds).toEqual(
+      [7, -8]
+    );
+    for (const bad of ['', ' 5', '1e3', '0x10'])
+      expect(() => searchEntry({ dbId: '1', replacementDbIds: [bad] }, {}), bad).toThrow();
   });
 
   it('without highlighting, the summation is the summation even when absent', () => {
@@ -190,10 +213,16 @@ describe('the icon endpoints, against a stand-in Solr', () => {
 
   it('/icon/{id} asks /search for that stId among icons, and writes the first Entry', async () => {
     asked = [];
-    answer = found([icon, { ...icon, dbId: '2' }]);
+    // Java ignores the highlighting here: the plain name, not the snippet.
+    answer = () => ({
+      response: { numFound: 2, docs: [icon, { ...icon, dbId: '2' }] },
+      highlighting: { '013428': { name: ['<b>TCR</b>'] } },
+    });
     const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428`);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(searchEntry(icon, {}));
+    const entry = await response.json();
+    expect(entry).toEqual(searchEntry(icon, {}));
+    expect([entry.id, entry.name]).toEqual(['R-ICO-013428', 'TCR']);
     expect(asked).toEqual([
       [
         '/solr/reactome/search',

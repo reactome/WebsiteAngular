@@ -4897,7 +4897,13 @@ function iconPhysicalEntities(doc) {
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
     const at = set.findIndex((other) => caseInsensitive(displayName, other.displayName) <= 0);
     if (at > -1 && caseInsensitive(displayName, set[at].displayName) === 0) continue;
-    set.splice(at === -1 ? set.length : at, 0, { stId, type, name, compartments, displayName });
+    // NON_EMPTY reaches into the bean: an empty part is left out.
+    const parts = Object.entries({ stId, type, name, compartments, displayName });
+    set.splice(
+      at === -1 ? set.length : at,
+      0,
+      Object.fromEntries(parts.filter(([, value]) => value !== ''))
+    );
   }
   return set;
 }
@@ -5034,7 +5040,15 @@ export function searchEntry(doc, highlighting) {
   entry.explanation = solrValue(doc, 'explanation');
   const date = solrValue(doc, 'date');
   entry.date = date === undefined || date === null ? date : Date.parse(date);
-  entry.replacementDbIds = solrStrings(doc, 'replacementDbIds').map((id) => Number(id));
+  // getLongListField: Long.parseLong on each, which takes a sign and digits
+  // only; anything else is its NumberFormatException.
+  entry.replacementDbIds = solrStrings(doc, 'replacementDbIds').map((id) => {
+    if (!/^[+-]?\d+$/.test(id))
+      throw Object.assign(new Error(`a replacement dbId that is no long: ${id}`), {
+        unexpected: true,
+      });
+    return Number(id);
+  });
   entry.replacementStIds = solrStrings(doc, 'replacementStIds');
 
   const empty = (value) =>
@@ -5044,7 +5058,8 @@ export function searchEntry(doc, highlighting) {
     (Array.isArray(value) && !value.length);
   const out = {};
   for (const field of ENTRY_FIELDS) if (!empty(entry[field])) out[field] = entry[field];
-  if (!empty(entry.iconName)) out.icon = true;
+  // isIcon() is iconName != null: an empty name, left out, is still an icon.
+  if (entry.iconName !== undefined && entry.iconName !== null) out.icon = true;
   if (!empty(entry.isDisease)) out.disease = entry.isDisease;
   return out;
 }
