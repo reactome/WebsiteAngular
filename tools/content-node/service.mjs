@@ -23,7 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
-import { solr } from './solr.mjs';
+import { solr, solrConfigured } from './solr.mjs';
 import {
   enhancedQuery,
   findByIdParameters,
@@ -1757,11 +1757,29 @@ export const endpoints = [
         );
       const query = given.join(',');
       if (query === '') return { status: 200 };
-      return {
-        status: 200,
-        type: 'application/json',
-        body: await suggestionsFrom(`/${handler}`, query),
-      };
+      try {
+        return {
+          status: 200,
+          type: 'application/json',
+          body: await suggestionsFrom(`/${handler}`, query),
+        };
+      } catch (failure) {
+        if (failure.busy)
+          return {
+            ...javaError(
+              request,
+              503,
+              'SERVICE_UNAVAILABLE',
+              'The service is busy; try again shortly'
+            ),
+            headers: { 'Retry-After': '5' },
+          };
+        // Java's GlobalExceptionHandler answers a SolrSearcherException
+        // with a 500 in its envelope. Its message repeats the parameters
+        // sent to Solr; this one says only what failed.
+        console.error(`/ContentService/search/${handler}: ${failure.message}`);
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Solr exception occurred');
+      }
     },
   })),
 ];
@@ -4693,6 +4711,7 @@ export function app() {
       ok: true,
       ...buildId(),
       graph: configured(),
+      solr: solrConfigured(),
       release,
       endpoints: endpoints.map((e) => e.path),
     });
@@ -4847,6 +4866,9 @@ if (process.argv[1] && process.argv[1].endsWith('service.mjs')) {
     }
     console.log(
       `  graph credentials: ${configured() ? 'present' : 'MISSING (set NEO4J_USER/PASSWORD)'}`
+    );
+    console.log(
+      `  solr: ${solrConfigured() ? 'configured' : 'MISSING (set SOLR_URL/USER/PASSWORD)'}`
     );
     console.log(`  endpoints: ${endpoints.length}`);
   });
