@@ -240,14 +240,15 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
     expect(asked).toHaveLength(0);
   });
 
-  it('takes the default for one empty Force filters value, and asks Solr', async () => {
+  it('takes the default, false, for one empty Force filters value', async () => {
     asked = [];
     answer = counts;
+    // Unforced, a filter that selects nothing is dropped and Solr asked again.
     const response = await fetch(
-      `${base}/ContentService/search/facet_query?query=TP53&Force%20filters=`
+      `${base}/ContentService/search/facet_query?query=TP53&species=Nonexistent&Force%20filters=`
     );
     expect(response.status).toBe(200);
-    expect(asked).toHaveLength(1);
+    expect(asked).toHaveLength(2);
   });
 
   it("asks once when the only names dropped were empty: Java's lists lose them first", async () => {

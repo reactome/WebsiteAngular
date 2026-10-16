@@ -3970,7 +3970,8 @@ function booleanEditor(values) {
 /**
  * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
  * the first value decides, trimmed as String.trim trims; empty is absent; true,
- * on, yes and 1 or false, off, no and 0 in any case; anything else Java's 400.
+ * on, yes and 1 or false, off, no and 0 in any case; anything else gets
+ * Spring's second try (booleanEditor), and failing that Java's 400.
  *
  * The 400 names what Spring was given: one value is a String, named as sent;
  * several are a String[], and the message lists all of them joined by ','
@@ -4293,7 +4294,8 @@ export function inDepthAttributes(values, fallback = 'species,compartment') {
  * A primitive `boolean` request parameter with a default, as Spring reads it:
  * absent or empty takes the default; otherwise as springBoolean reads a
  * Boolean, except that blank is no longer "absent" but a value Spring cannot
- * put in a primitive -- its 400, naming `boolean`. Measured against Java's
+ * put in a primitive -- its 400, naming `boolean`, once booleanEditor has
+ * also refused it. Measured against Java's
  * /query/enhanced/v2.
  */
 export function springPrimitiveBoolean(values, fallback) {
