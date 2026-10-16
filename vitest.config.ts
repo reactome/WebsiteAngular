@@ -24,5 +24,14 @@ export default defineConfig({
     // sat in the repo without being run by anything at all.
     include: ['{src,projects,tools,deploy}/**/*.spec.{ts,mjs}'],
     css: false,
+    // No graph credentials for any spec. graph.mjs reads them from a file when
+    // the environment has none, so on a machine that has that file the specs
+    // would query a real graph -- and the specs for an unreachable graph would
+    // never run that path (tools/content-node/hermetic.spec.mjs).
+    env: {
+      CONTENT_NODE_ENV_FILE: '/nonexistent/content-node.env',
+      NEO4J_USER: '',
+      NEO4J_PASSWORD: '',
+    },
   },
 });

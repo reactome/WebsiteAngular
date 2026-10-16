@@ -320,6 +320,17 @@ app.get(/.*/, (_req, res) => {
   });
 });
 
+// Last: anything a route did not answer is answered here in JSON, never with
+// Express's default page, which carries the stack trace (NODE_ENV is unset).
+app.use((error, _req, res, next) => {
+  if (res.headersSent) return next(error);
+  const status = Number(error?.status || error?.statusCode) || 500;
+  console.error(`serve-prod: ${error?.message}`);
+  res.status(status >= 400 && status < 600 ? status : 500).json({
+    detail: status < 500 ? 'The request could not be read' : 'Something went wrong',
+  });
+});
+
 waitForBuild().then((ready) => {
   if (!ready) {
     console.error(`No production build appeared at ${DIST}. Giving up.`);

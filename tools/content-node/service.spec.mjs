@@ -58,6 +58,8 @@ import {
   writerFor,
   springBoolean,
   springInteger,
+  deepShare,
+  deepLimit,
 } from './service.mjs';
 
 let base;
@@ -237,6 +239,105 @@ describe('cross-origin reads', () => {
     );
     expect(origins.filter(([, origin]) => origin !== '*')).toEqual([]);
   }, 30_000);
+});
+
+describe('an id that is not valid UTF-8', () => {
+  it('decodes as Tomcat does: a malformed sequence is U+FFFD', () => {
+    expect(pathId('%FF')).toBe('\ufffd');
+    expect(pathId('%E2%82')).toBe('\ufffd');
+    expect(pathId('%C3%A9x')).toBe('éx');
+  });
+
+  it("reaches the handler, and gets Java's answer rather than Express's HTML 400", async () => {
+    // Express decodes route parameters before any handler runs and failed on
+    // these, answering with its own page -- a stack trace, NODE_ENV unset.
+    // Measured: Java's person/%FF is this 404.
+    const response = await fetch(`${base}/ContentService/data/person/%FF`);
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect((await response.json()).messages).toEqual(['No person found for id: \ufffd']);
+  });
+
+  it('decodes an encoded surrogate as one U+FFFD, as the JDK does', () => {
+    // Measured: Java's person/%ED%A0%80 names one; the WHATWG decoder makes three.
+    expect(pathId('%ED%A0%80')).toBe('\ufffd');
+  });
+
+  it("answers every method and path form as the template's own route would", async () => {
+    // HEAD is GET's; a method the template does not take is Java's 405; a
+    // matrix parameter elsewhere in the path, or a trailing slash, changes
+    // nothing. Each was a 500 from the decode-failure path (review of #480).
+    const at = (path, method = 'GET') => fetch(`${base}/ContentService/data${path}`, { method });
+    expect((await at('/person/%FF', 'HEAD')).status).toBe(404);
+    expect((await at('/person/%FF', 'POST')).status).toBe(405);
+    expect((await at('/orthologies/ids/species/%FF')).status).toBe(405);
+    expect((await at(';x/person/%FF')).status).toBe(404);
+    expect((await at('/person/%FF/')).status).toBe(404);
+  });
+
+  it('never answers with a stack trace', async () => {
+    const response = await fetch(`${base}/ContentService/data/query/%FF/normalPathway`);
+    expect(await response.text()).not.toContain('at ');
+  });
+});
+
+describe('/pathways/low/entity reads its species as the servlet does', () => {
+  it('takes no meaning from brackets in a parameter name, as Spring takes none', async () => {
+    // Express's default query parser made species[x]=1 an object -- "in
+    // [object Object]" -- and species[]=9606 a filter Java never applies.
+    // Measured: Java's message is "in null".
+    const response = await fetch(
+      `${base}/ContentService/data/pathways/low/entity/XYZ?species%5Bx%5D=1`
+    );
+    expect((await response.json()).messages).toEqual(['No result for XYZ in null']);
+  });
+});
+
+describe('the deep queries, held to their own share of the graph', () => {
+  // The pool grew from 8 to 32 so that a few slow requests cannot hold every
+  // connection; these routes -- a whole tree below an object, or every route
+  // up to a diagram -- are the ones that can run for the full read timeout,
+  // so they keep a smaller share of their own.
+  it('marks the in-depth and locationsInPWB routes as deep', () => {
+    const deep = endpoints.filter((endpoint) => endpoint.deep).map((endpoint) => endpoint.path);
+    expect(deep).toEqual([
+      '/ContentService/data/entity/{id}/in-depth',
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/detail/{id}/locationsInPWB',
+    ]);
+  });
+
+  it('takes DEEP_QUERY_LIMIT only as a whole number from 1 to 32, and 4 otherwise', () => {
+    // -1 refused every deep request for good; 2.5 let three run.
+    expect(deepLimit('8')).toBe(8);
+    for (const setting of [undefined, '', '-1', '0', '2.5', 'many', '100']) {
+      expect(deepLimit(setting), String(setting)).toBe(4);
+    }
+  });
+
+  it('lets four run at once and refuses the fifth', () => {
+    const share = deepShare(4);
+    expect([1, 2, 3, 4].map(() => share.enter())).toEqual([true, true, true, true]);
+    expect(share.enter()).toBe(false);
+    share.leave();
+    expect(share.enter()).toBe(true);
+  });
+});
+
+describe('a pool with no connection free', () => {
+  it('is a 503 in the envelope, not a bare 500', () => {
+    // neo4j-driver's newError gives this one no code, only its message: it
+    // reached the generic 500 'content service error' (review, 16 Oct 2026).
+    const failure = Object.assign(
+      new Error(
+        'Connection acquisition timed out in 10000 ms. Pool status: Active conn count = 32, Idle conn count = 0.'
+      ),
+      { code: 'N/A' }
+    );
+    const answer = timedOut({ originalUrl: '/ContentService/data/query/R-HSA-69620' }, failure);
+    expect(answer?.status).toBe(503);
+    expect(JSON.parse(answer.body).messages[0]).toContain('busy');
+  });
 });
 
 describe('a query past its time limit', () => {

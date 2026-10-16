@@ -251,13 +251,27 @@ const seen = new Map();
 let globalCalls = [];
 
 function clientKey(req) {
-  // Behind Cloudflare and nginx, so the left-most forwarded address is the
-  // client. Falls back to the socket for a direct call.
-  const forwarded = (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || '')
-    .toString()
-    .split(',')[0]
-    .trim();
-  return forwarded || req.socket?.remoteAddress || 'unknown';
+  // nginx's X-Real-IP, and only when nginx is the one asking (loopback): it
+  // overwrites the header with $remote_addr, which its real-IP module takes
+  // from CF-Connecting-IP only for a request that came from Cloudflare.
+  // CF-Connecting-IP and X-Forwarded-For themselves are passed through as the
+  // caller sent them, so trusting them let a caller that reached the origin
+  // directly name a new address every time and never be limited.
+  //
+  // nginx is loopback when both run on the host, as on beta. Where it is not
+  // -- serve-prod in the compose `app` container sees it at the Docker
+  // gateway -- name its address in TRUSTED_PROXIES (comma-separated), or every
+  // reader shares one key.
+  const peer = req.socket?.remoteAddress || '';
+  const trusted = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].concat(
+    String(process.env.TRUSTED_PROXIES || '')
+      .split(',')
+      .map((address) => address.trim())
+      .filter(Boolean)
+  );
+  const viaNginx = trusted.includes(peer);
+  const real = viaNginx ? String(req.headers['x-real-ip'] || '').trim() : '';
+  return real || peer || 'unknown';
 }
 
 /** Returns the seconds to wait, or 0 when the call is allowed. */

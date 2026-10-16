@@ -179,7 +179,13 @@ function readMessage(body) {
   const field = (name) => (typeof body?.[name] === 'string' ? body[name] : '');
   const contactName = oneLine(field('contactName'));
   const mailAddress = field('mailAddress').trim();
-  const subject = oneLine(field('subject'));
+  // Cut, not refused: the search page writes this subject itself, read-only,
+  // from the query, so a reader with a long query could otherwise never send.
+  // By code point, so a character outside the BMP is never split in two.
+  const subject = Array.from(oneLine(field('subject')))
+    .slice(0, MAX.subject)
+    .join('')
+    .trimEnd();
   const message = field('message');
   const token = field('token');
   if (!mailAddress || mailAddress.length > MAX.mailAddress || !EMAIL.test(mailAddress)) {
@@ -187,7 +193,6 @@ function readMessage(body) {
   }
   if (!message.trim()) return { error: 'A message is required' };
   if (message.length > MAX.message) return { error: 'The message is too long' };
-  if (subject.length > MAX.subject) return { error: 'The subject is too long' };
   if (contactName.length > MAX.contactName) return { error: 'The name is too long' };
   if (!token) return { error: 'Verification is required' };
   return {
@@ -216,7 +221,10 @@ function mountContactRoute(
     res.json({ sitekey: gate.TURNSTILE_SITEKEY });
   });
 
-  app.post(route, express.json({ limit: '16kb' }), async (req, res) => {
+  // Room for MAX.message in any script: 10,000 characters at up to 4 bytes of
+  // UTF-8 each, and the other fields. 16kb refused a long CJK message before
+  // its length was ever checked.
+  app.post(route, express.json({ limit: '64kb' }), async (req, res) => {
     if (!canSend(env)) {
       res.status(503).json({ detail: 'Messages cannot be sent from this deployment' });
       return;
@@ -250,6 +258,17 @@ function mountContactRoute(
       return;
     }
     res.json({ sent: true });
+  });
+
+  // A body that cannot be read -- not JSON, or past the limit -- answered in
+  // the route's own shape. Express's default handler sent an HTML page with
+  // the stack trace in it.
+  app.use(route, (error, _req, res, next) => {
+    if (res.headersSent || !error?.type?.startsWith?.('entity.')) return next(error);
+    const tooLarge = error.type === 'entity.too.large';
+    res
+      .status(tooLarge ? 413 : 400)
+      .json({ detail: tooLarge ? 'The message is too long' : 'The message could not be read' });
   });
 }
 
