@@ -155,4 +155,32 @@ describe('/pathways/of/{dbId}', () => {
       ['Something unexpected happened and the error has been reported.'],
     ]);
   });
+
+  it('fails each blank value where Java does: before Solr, after the document, or only with one', async () => {
+    const unexpected = ['Something unexpected happened and the error has been reported.'];
+    // includeInteractors is unboxed before Solr is asked.
+    asked = [];
+    answer = solr;
+    const interactors = await get('227785?includeInteractors=%20');
+    expect([interactors.status, (await interactors.json()).messages, asked.length]).toEqual([
+      500,
+      unexpected,
+      0,
+    ]);
+    // directlyInDiagram and a blank field only once the document is found.
+    for (const query of ['directlyInDiagram=%20', 'fields=%20,ST_ID', 'fields=%20&fields=ST_ID']) {
+      asked = [];
+      answer = solr;
+      const found = await get(`227785?${query}`);
+      expect([query, found.status, (await found.json()).messages, asked.length]).toEqual([
+        query,
+        500,
+        unexpected,
+        1,
+      ]);
+      answer = () => ({ response: { numFound: 0, docs: [] } });
+      const missing = await get(`227785?${query}`);
+      expect([query, missing.status]).toEqual([query, 404]);
+    }
+  });
 });

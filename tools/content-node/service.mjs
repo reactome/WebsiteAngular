@@ -5744,8 +5744,8 @@ const SOLR_FIELDS = {
 /**
  * `fields`, a List of SolrConverter.Field, as Spring binds it, measured:
  * absent is null; one value is split at commas, several are taken as they
- * are; StringToEnumConverterFactory trims each, an exactly empty one being
- * null (Java fails on it later: `nullField`). A name that is no constant is
+ * are; each is trimmed, and one empty once trimmed is null (Java fails on
+ * it later, once the entity's document is found). A name that is no constant is
  * the 400, quoting the element as sent and naming the constant trimmed.
  */
 function springFields(values) {
@@ -5754,11 +5754,12 @@ function springFields(values) {
   const elements = values.length === 1 ? values[0].split(',') : values;
   const fields = [];
   for (const element of elements) {
-    if (element === '') {
+    const name = javaTrim(element);
+    // Empty once trimmed converts to null, which Java fails on later.
+    if (name === '') {
       fields.push(null);
       continue;
     }
-    const name = javaTrim(element);
     if (!Object.hasOwn(SOLR_FIELDS, name)) {
       const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
       return {
