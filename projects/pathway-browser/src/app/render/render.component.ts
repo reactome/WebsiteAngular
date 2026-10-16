@@ -685,6 +685,13 @@ export class RenderComponent {
       // they go in front of the compartments and behind everything else.
       // Each thing's shapes together, where its first one is drawn: a reaction
       // with the lines (behind every entity), an entity with its highlight.
+      //
+      // A trade made on purpose: a PowerPoint group is one place in the
+      // stacking order, so grouping cannot keep the flat order above. A
+      // reaction's arrowheads and node come forward to its first line -- so a
+      // later reaction's line can cross over them -- and an entity's body to
+      // its underlay. The SVG and PNG keep the flat order; the slide gives it
+      // up so a reader can move a reaction or an entity as one thing (#299).
       shapes: gatherGroups(
         this.clipToExtent(framed ? extent : null, [
           ...compartments,
