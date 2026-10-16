@@ -32,6 +32,10 @@ export default defineConfig({
       CONTENT_NODE_ENV_FILE: '/nonexistent/content-node.env',
       NEO4J_USER: '',
       NEO4J_PASSWORD: '',
+      SOLR_URL: '',
+      SOLR_USER: '',
+      SOLR_PASSWORD: '',
+      SOLR_CONCURRENCY: '',
     },
   },
 });

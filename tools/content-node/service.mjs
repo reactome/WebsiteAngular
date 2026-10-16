@@ -1757,13 +1757,20 @@ export const endpoints = [
         );
       const query = given.join(',');
       if (query === '') return { status: 200 };
+      // A client that goes away -- the search box, a keystroke later --
+      // takes its waiting Solr calls with it.
+      const gone = new AbortController();
+      request.res?.on('close', () => {
+        if (!request.res.writableFinished) gone.abort();
+      });
       try {
         return {
           status: 200,
           type: 'application/json',
-          body: await suggestionsFrom(`/${handler}`, query),
+          body: await suggestionsFrom(`/${handler}`, query, solr, gone.signal),
         };
       } catch (failure) {
+        if (gone.signal.aborted) return { status: 500 };
         if (failure.busy)
           return {
             ...javaError(
@@ -4484,11 +4491,11 @@ export function collations(answer) {
  * in order, less those /exists finds nothing for. One at a time, as Java
  * asks: Solr's heap is small and the list is a handful.
  */
-export async function suggestionsFrom(handler, query, ask = solr) {
-  const offered = collations(await ask(handler, [['spellcheck.q', query]]));
+export async function suggestionsFrom(handler, query, ask = solr, signal = undefined) {
+  const offered = collations(await ask(handler, [['spellcheck.q', query]], { signal }));
   const kept = [];
   for (const collation of offered) {
-    const exists = await ask('/exists', [['q', collation]]);
+    const exists = await ask('/exists', [['q', collation]], { signal });
     if ((exists?.response?.numFound ?? 0) > 0) kept.push(collation);
   }
   return kept;

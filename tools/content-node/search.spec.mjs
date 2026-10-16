@@ -6,6 +6,7 @@
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app, collations, suggestionsFrom } from './service.mjs';
+import { solr } from './solr.mjs';
 
 let base;
 let server;
@@ -38,8 +39,8 @@ describe('collations, as SolrJ reads them', () => {
 describe('suggestionsFrom, the collations that find something', () => {
   it('asks the handler with spellcheck.q, then /exists for each, keeping order', async () => {
     const asked = [];
-    const ask = async (handler, params) => {
-      asked.push([handler, params]);
+    const ask = async (handler, params, options) => {
+      asked.push([handler, params, options]);
       if (handler === '/suggest')
         return {
           spellcheck: { collations: ['collation', 'a', 'collation', 'b', 'collation', 'c'] },
@@ -48,7 +49,7 @@ describe('suggestionsFrom, the collations that find something', () => {
       return { response: { numFound: q === 'b' ? 0 : 2 } };
     };
     expect(await suggestionsFrom('/suggest', 'x', ask)).toEqual(['a', 'c']);
-    expect(asked[0]).toEqual(['/suggest', [['spellcheck.q', 'x']]]);
+    expect(asked[0]).toEqual(['/suggest', [['spellcheck.q', 'x']], { signal: undefined }]);
     expect(asked.slice(1).map(([handler]) => handler)).toEqual(['/exists', '/exists', '/exists']);
   });
 });
@@ -126,6 +127,48 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     ]);
   });
 
+  it('authenticates when a user is set, and not otherwise, as Java does', async () => {
+    useSolr();
+    const sent = [];
+    answer = (request, _params, response) => {
+      sent.push(request.headers.authorization);
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify(collationsOf([])));
+    };
+    await fetch(`${base}/ContentService/search/suggest?query=x`);
+    process.env.SOLR_USER = '';
+    process.env.SOLR_PASSWORD = '';
+    try {
+      await fetch(`${base}/ContentService/search/suggest?query=x`);
+    } finally {
+      process.env.SOLR_USER = 'reader';
+      process.env.SOLR_PASSWORD = 'not-a-secret';
+    }
+    expect(sent).toEqual([
+      `Basic ${Buffer.from('reader:not-a-secret').toString('base64')}`,
+      undefined,
+    ]);
+  });
+
+  it('refuses a user without a password, before asking Solr', async () => {
+    useSolr();
+    let reached = false;
+    answer = (_request, _params, response) => {
+      reached = true;
+      response.end('{}');
+    };
+    process.env.SOLR_PASSWORD = '';
+    try {
+      const response = await fetch(`${base}/ContentService/search/suggest?query=x`);
+      expect(response.status).toBe(500);
+      const health = await (await fetch(`${base}/health`)).json();
+      expect(health.solr).toBe(false);
+    } finally {
+      process.env.SOLR_PASSWORD = 'not-a-secret';
+    }
+    expect(reached).toBe(false);
+  });
+
   it("answers a failing Solr with Java's 500 envelope, not text", async () => {
     useSolr();
     answer = (_request, _params, response) => {
@@ -179,5 +222,80 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     );
     expect(answers.map((response) => response.status)).toEqual(Array(8).fill(200));
     expect(most).toBe(2);
+  });
+
+  it('refuses past 64 waiting with a 503 to retry, and serves the rest', async () => {
+    useSolr();
+    const held = [];
+    answer = (_request, _params, response) => held.push(response);
+    const settled = [];
+    const pending = Array.from({ length: 70 }, () =>
+      fetch(`${base}/ContentService/search/suggest?query=x`).then(async (response) => {
+        const answered = [
+          response.status,
+          response.headers.get('retry-after'),
+          (await response.json()).reason,
+        ];
+        settled.push(answered);
+        return answered;
+      })
+    );
+    // Two at Solr, sixty-four waiting; the other four are refused at once.
+    for (let tries = 0; settled.length < 4 && tries < 200; tries += 1)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(held).toHaveLength(2);
+    expect(settled).toEqual(Array(4).fill([503, '5', 'SERVICE_UNAVAILABLE']));
+
+    const release = (response) => {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify(collationsOf([])));
+    };
+    answer = (_request, _params, response) => release(response);
+    held.splice(0).forEach(release);
+    const answers = await Promise.all(pending);
+    expect(answers.filter(([status]) => status === 200)).toHaveLength(66);
+  });
+
+  it('a waiter whose caller gives up leaves the queue and never reaches Solr', async () => {
+    useSolr();
+    const held = [];
+    let arrived = 0;
+    answer = (_request, _params, response) => {
+      arrived += 1;
+      held.push(response);
+    };
+    const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
+    while (held.length < 2) await new Promise((resolve) => setTimeout(resolve, 5));
+    const caller = new AbortController();
+    const waiter = solr('/exists', [['q', 'c']], { signal: caller.signal });
+    caller.abort();
+    await expect(waiter).rejects.toThrow();
+    held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
+    await Promise.all(busy);
+    expect(arrived).toBe(2);
+  });
+
+  it('a client that disconnects takes its queued call with it', async () => {
+    useSolr();
+    const held = [];
+    let arrived = 0;
+    answer = (_request, _params, response) => {
+      arrived += 1;
+      held.push(response);
+    };
+    const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
+    while (held.length < 2) await new Promise((resolve) => setTimeout(resolve, 5));
+    const client = new AbortController();
+    const asked = fetch(`${base}/ContentService/search/suggest?query=x`, {
+      signal: client.signal,
+    }).catch(() => 'gone');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    client.abort();
+    expect(await asked).toBe('gone');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
+    await Promise.all(busy);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(arrived).toBe(2);
   });
 });

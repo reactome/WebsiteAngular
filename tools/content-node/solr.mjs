@@ -14,19 +14,25 @@
 import { URLSearchParams } from 'node:url';
 import { envSetting } from './graph.mjs';
 
-/** A read that runs past this is abandoned, as a graph read is at graph.mjs's. */
+/**
+ * A call that has not been answered this long after it was made -- waiting
+ * its turn included -- is abandoned, as a graph read is at graph.mjs's.
+ */
 const SOLR_TIMEOUT_MS = 30_000;
 
 /**
- * How many requests Solr is sent at once; the rest wait their turn. Java's
- * client is HttpClient's default, two connections to one host, and Solr's
- * heap is sized for that. The search box asks on every keystroke, and each
- * ask is one request plus one per collation: without this, a burst of typing
- * -- or a script -- reached Solr all at once. SOLR_CONCURRENCY, 1-16.
+ * How many requests Solr is sent at once; the rest wait their turn, as they
+ * do behind Java's client, HttpClient's default of two connections to one
+ * host. The search box asks on every keystroke, and each ask is one request
+ * plus one per collation. SOLR_CONCURRENCY, 1-16, read once, at first use.
  */
+let limit;
 function solrConcurrency() {
-  const given = Number(envSetting('SOLR_CONCURRENCY', '2'));
-  return Number.isInteger(given) && given >= 1 && given <= 16 ? given : 2;
+  if (limit === undefined) {
+    const given = Number(envSetting('SOLR_CONCURRENCY', '2'));
+    limit = Number.isInteger(given) && given >= 1 && given <= 16 ? given : 2;
+  }
+  return limit;
 }
 
 /** Past this many waiting, a request is refused rather than queued. */
@@ -35,14 +41,32 @@ const MOST_WAITING = 64;
 let open = 0;
 const waiting = [];
 
-async function turn() {
-  if (open < solrConcurrency()) {
+/**
+ * A slot, now or when one is free. A waiter whose `signal` aborts -- its
+ * deadline passed, or its client went away -- leaves the queue, so Solr is
+ * never asked on behalf of nobody.
+ */
+function turn(signal) {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  if (open < solrConcurrency() && waiting.length === 0) {
     open += 1;
-    return;
+    return Promise.resolve();
   }
   if (waiting.length >= MOST_WAITING)
-    throw Object.assign(new Error('Solr is busy'), { busy: true });
-  await new Promise((resolve) => waiting.push(resolve));
+    return Promise.reject(Object.assign(new Error('Solr is busy'), { busy: true }));
+  return new Promise((resolve, reject) => {
+    // Handed a slot by done(), which has already taken it off the queue.
+    const enter = () => {
+      signal.removeEventListener('abort', leave);
+      resolve();
+    };
+    const leave = () => {
+      waiting.splice(waiting.indexOf(enter), 1);
+      reject(signal.reason);
+    };
+    signal.addEventListener('abort', leave, { once: true });
+    waiting.push(enter);
+  });
 }
 
 function done() {
@@ -51,11 +75,17 @@ function done() {
   else open -= 1;
 }
 
-/** Whether Solr can be asked: a URL, and with a user only with a password. */
+/**
+ * Whether Solr can be asked: a URL that is one and carries no credentials,
+ * and a user only with a password.
+ */
 export function solrConfigured() {
-  return (
-    Boolean(envSetting('SOLR_URL')) && !envSetting('SOLR_USER') === !envSetting('SOLR_PASSWORD')
-  );
+  try {
+    coreUrl();
+  } catch {
+    return false;
+  }
+  return !envSetting('SOLR_USER') === !envSetting('SOLR_PASSWORD');
 }
 
 /**
@@ -64,6 +94,7 @@ export function solrConfigured() {
  */
 function coreUrl() {
   const given = envSetting('SOLR_URL');
+  if (!given) throw new Error('SOLR_URL is not set');
   let url;
   try {
     url = new URL(given);
@@ -82,21 +113,24 @@ function coreUrl() {
  * `params` is a list of [name, value] pairs, since a name may repeat. Basic
  * authentication when a user is set, as Java sends it only then.
  */
-export async function solr(handler, params) {
-  if (!solrConfigured()) throw new Error('SOLR_URL is not set, or SOLR_USER without SOLR_PASSWORD');
+export async function solr(handler, params, { signal } = {}) {
   const url = `${coreUrl()}${handler}`;
+  if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
+    throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
   const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
   if (envSetting('SOLR_USER'))
     headers.Authorization = `Basic ${Buffer.from(
       `${envSetting('SOLR_USER')}:${envSetting('SOLR_PASSWORD')}`
     ).toString('base64')}`;
-  await turn();
+  const deadline = AbortSignal.timeout(SOLR_TIMEOUT_MS);
+  const until = signal ? AbortSignal.any([deadline, signal]) : deadline;
+  await turn(until);
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]),
-      signal: AbortSignal.timeout(SOLR_TIMEOUT_MS),
+      signal: until,
     });
     if (!response.ok)
       throw Object.assign(new Error(`Solr answered ${response.status}`), { solr: true });
