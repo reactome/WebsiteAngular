@@ -1760,6 +1760,7 @@ export const endpoints = [
       // A client that goes away -- the search box, a keystroke later --
       // takes its waiting Solr calls with it.
       const gone = new AbortController();
+      if (request.res?.closed || request.socket?.destroyed) gone.abort();
       request.res?.on('close', () => {
         if (!request.res.writableFinished) gone.abort();
       });

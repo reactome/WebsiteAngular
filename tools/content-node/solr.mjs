@@ -48,7 +48,7 @@ const waiting = [];
  */
 function turn(signal) {
   if (signal.aborted) return Promise.reject(signal.reason);
-  if (open < solrConcurrency() && waiting.length === 0) {
+  if (open < solrConcurrency()) {
     open += 1;
     return Promise.resolve();
   }
@@ -61,13 +61,17 @@ function turn(signal) {
       resolve();
     };
     const leave = () => {
-      waiting.splice(waiting.indexOf(enter), 1);
+      const at = waiting.indexOf(enter);
+      if (at > -1) waiting.splice(at, 1);
       reject(signal.reason);
     };
     signal.addEventListener('abort', leave, { once: true });
     waiting.push(enter);
   });
 }
+
+/** How many calls are waiting for a slot: for the specs. */
+export const queued = () => waiting.length;
 
 function done() {
   const next = waiting.shift();

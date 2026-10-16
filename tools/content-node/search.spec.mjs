@@ -6,10 +6,17 @@
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app, collations, suggestionsFrom } from './service.mjs';
-import { solr } from './solr.mjs';
+import { solr, queued } from './solr.mjs';
 
 let base;
 let server;
+
+/** Until `ready()` holds, checking every 5ms for up to five seconds. */
+async function until(ready) {
+  for (let tries = 0; !ready() && tries < 1000; tries += 1)
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(ready()).toBe(true);
+}
 
 beforeAll(async () => {
   await new Promise((resolve) => {
@@ -241,9 +248,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       })
     );
     // Two at Solr, sixty-four waiting; the other four are refused at once.
-    for (let tries = 0; settled.length < 4 && tries < 200; tries += 1)
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(held).toHaveLength(2);
+    await until(() => settled.length === 4 && held.length === 2);
     expect(settled).toEqual(Array(4).fill([503, '5', 'SERVICE_UNAVAILABLE']));
 
     const release = (response) => {
@@ -265,7 +270,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       held.push(response);
     };
     const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
-    while (held.length < 2) await new Promise((resolve) => setTimeout(resolve, 5));
+    await until(() => held.length === 2);
     const caller = new AbortController();
     const waiter = solr('/exists', [['q', 'c']], { signal: caller.signal });
     caller.abort();
@@ -273,6 +278,11 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await Promise.all(busy);
     expect(arrived).toBe(2);
+    // Both slots are free again: the one given up was not handed a slot.
+    const again = [solr('/exists', [['q', 'd']]), solr('/exists', [['q', 'e']])];
+    await until(() => held.length === 2);
+    held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
+    await Promise.all(again);
   });
 
   it('a client that disconnects takes its queued call with it', async () => {
@@ -284,18 +294,22 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       held.push(response);
     };
     const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
-    while (held.length < 2) await new Promise((resolve) => setTimeout(resolve, 5));
+    await until(() => held.length === 2);
     const client = new AbortController();
     const asked = fetch(`${base}/ContentService/search/suggest?query=x`, {
       signal: client.signal,
     }).catch(() => 'gone');
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await until(() => queued() === 1);
     client.abort();
     expect(await asked).toBe('gone');
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await until(() => queued() === 0);
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await Promise.all(busy);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(arrived).toBe(2);
+    // Anything still owed a slot would be asked now; give it the chance.
+    const after = solr('/exists', [['q', 'f']]);
+    await until(() => held.length === 1);
+    held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
+    await after;
+    expect(arrived).toBe(3);
   });
 });
