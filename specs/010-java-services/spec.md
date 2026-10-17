@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "The Java side of Reactome's services: what stays in Java, how it runs, and how Tomcat is retired." (full brief in the PR that adds this spec)
+**Input**: User description: "The Java side of Reactome's services: what stays in Java, how it runs, and how Tomcat is retired." The brief is summarised in Background below.
 
 ## Background
 
@@ -143,7 +143,7 @@ A developer changing the site's analysis views works against one definition of w
 
 - **FR-016**: Each Java service MUST report its health and its build version, and MUST log requests and failures where the other services' logs are.
 - **FR-017**: Memory for each Java service MUST be measured on the target host under a realistic load and set from that measurement.
-- **FR-018**: The licence position of every commercially licensed Java dependency (at least Aspose.Slides) MUST be confirmed for the new way of running it before that service goes live.
+- **FR-018**: The licence position of every commercially licensed Java dependency MUST be confirmed for the new way of running it before that service goes live — at least Aspose.Slides, which AnalysisService carries with the diagram exporter it uses for report figures; if no Java-homed operation needs it, it is left out of the build instead.
 
 **The analysis result contract**
 
