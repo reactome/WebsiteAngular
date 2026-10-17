@@ -155,16 +155,36 @@ describe('citationOfEvent', () => {
     ]);
   });
 
-  it("throws as Java's NullPointerException does: no release date, a short one, no initial", () => {
-    for (const fields of [
-      { releaseDate: null },
-      { releaseDate: '2019-0' },
-      { releaseDate: '2019-0x-01' },
-      { authored: [edit(null)] },
-    ])
+  it("throws as Java's NullPointerException does: no release date, a person with no initial", () => {
+    for (const fields of [{ releaseDate: null }, { authored: [edit(null)] }])
       expect(() => citationOfEvent(mapped(fields), 'x', '97', false)).toThrow(
         expect.objectContaining({ unexpected: true })
       );
+  });
+
+  it("throws Java's own message for a short or non-numeric date, or no name", () => {
+    const failure = (event) => {
+      try {
+        citationOfEvent(event, 'x', '97', false);
+      } catch (thrown) {
+        return [thrown.unexpected, thrown.javaMessage];
+      }
+    };
+    expect(failure(mapped({ releaseDate: '2019-0' }))).toEqual([
+      undefined,
+      'begin 6, end 7, length 6',
+    ]);
+    expect(failure(mapped({ releaseDate: '201' }))).toEqual([
+      undefined,
+      'begin 0, end 4, length 3',
+    ]);
+    expect(failure(mapped({ releaseDate: '2019-0x-01' }))).toEqual([
+      undefined,
+      'For input string: "x"',
+    ]);
+    const unnamed = mapped();
+    unnamed.properties.displayName = null;
+    expect(failure(unnamed)).toEqual([undefined, 'Title or id can not be null']);
   });
 });
 
@@ -201,6 +221,33 @@ describe('StaticCitation', () => {
       expect(() => one(changes)).toThrow();
     expect(one({ journalInfo: { monthOfPublication: 2147483647 } }).month).toBe(null);
   });
+
+  it("casts the authors as Java's formatters do, outside its try", () => {
+    const failure = (authors, ext) => {
+      try {
+        formatStaticCitation({ ...event(), authors }, ext, 'd');
+      } catch (thrown) {
+        return thrown.unexpected ? 'NPE' : thrown.javaMessage;
+      }
+    };
+    const cce = (from, to) =>
+      `class ${from} cannot be cast to class ${to} (${from} and ${to} are in module java.base of loader 'bootstrap')`;
+    expect(failure(['x'], 'txt')).toBe(cce('java.lang.String', 'java.util.Map'));
+    expect(failure([[1]], 'bib')).toBe(cce('java.util.ArrayList', 'java.util.Map'));
+    expect(failure([null], 'ris')).toBe('NPE');
+    expect(failure([{ lastName: 5 }], 'bib')).toBe(cce('java.lang.Integer', 'java.lang.String'));
+    expect(failure([{ lastName: 'a', firstName: true }], 'ris')).toBe(
+      cce('java.lang.Boolean', 'java.lang.String')
+    );
+    // By full name the cast is String.join's, after every author is read.
+    expect(failure([{ fullName: 2 ** 40 }, null], 'txt')).toBe('NPE');
+    expect(failure([{ fullName: 2 ** 40 }], 'txt')).toBe(
+      cce('java.lang.Long', 'java.lang.CharSequence')
+    );
+    // Only the names a format reads are cast.
+    expect(failure([{ fullName: 'A B', lastName: 5 }], 'txt')).toBe(undefined);
+    expect(failure([{ lastName: 'a', initials: 'b', fullName: 5 }], 'bib')).toBe(undefined);
+  });
 });
 
 vi.mock('./graph.mjs', async () => ({
@@ -218,7 +265,7 @@ describe('the citation endpoints', () => {
   let base;
   let server;
   let pmc;
-  let pmcAsked;
+  let pmcAsked = [];
 
   beforeAll(async () => {
     const { createServer } = await import('node:http');
@@ -284,13 +331,33 @@ describe('the citation endpoints', () => {
     }
   });
 
-  it('export writes the file name as Tomcat writes a header', async () => {
-    const response = await fetch(
-      `${base}/ContentService/citation/export?isPathway=false&id=12345.%E2%82%AC%0D%0Ax&ext=bib&dateAccessed=d`
-    );
-    expect(response.headers.get('content-disposition')).toBe(
-      'attachment; filename="reactome_citation_12345.?  x.bib"'
-    );
+  it('export writes the file name as Tomcat writes a header, é as its Latin-1 byte', async () => {
+    const url = `${base}/ContentService/citation/export?isPathway=false&id=12345.%E2%82%AC%0D%0Ax%09%7F%C3%A9&ext=bib&dateAccessed=d`;
+    // fetch reads a header's bytes as Latin-1, so é here is the byte 0xE9.
+    for (const method of ['GET', 'HEAD']) {
+      const response = await fetch(url, { method });
+      expect([method, response.headers.get('content-disposition')]).toEqual([
+        method,
+        'attachment; filename="reactome_citation_12345.?  x\t é.bib"',
+      ]);
+    }
+  });
+
+  it("/static/{id} is GlobalExceptionHandler's 500 for an author Java cannot cast", async () => {
+    globalThis.pmcAnswer = {
+      resultList: { result: [{ ...europePmc, authorList: { author: ['x'] } }] },
+    };
+    try {
+      const response = await fetch(`${base}/ContentService/citation/static/12345`);
+      expect([response.status, (await response.json()).messages]).toEqual([
+        500,
+        [
+          "class java.lang.String cannot be cast to class java.util.Map (java.lang.String and java.util.Map are in module java.base of loader 'bootstrap')",
+        ],
+      ]);
+    } finally {
+      delete globalThis.pmcAnswer;
+    }
   });
 
   it("/pathway/{id}'s two citations are in Java's HashMap order, image first", async () => {

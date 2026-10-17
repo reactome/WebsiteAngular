@@ -31,13 +31,74 @@ const SHORT_MONTHS = [
 function citationMonth(text) {
   const month = /^[+-]?\d+$/.test(String(text)) ? Number(text) : NaN;
   if (!(month >= -2147483648 && month <= 2147483647))
-    throw unexpected(`a month that is no int: ${text}`);
+    throw javaFailure(`For input string: "${text}"`);
   return month > 0 && month <= 12 ? SHORT_MONTHS[month - 1] : null;
 }
 
-/** What Java throws and its GlobalExceptionHandler answers with a 500. */
+/**
+ * What Java throws for its GlobalExceptionHandler to answer with a 500: a
+ * NullPointerException as "Something unexpected happened", anything else
+ * with its own message (javaFailure).
+ */
 function unexpected(message) {
   return Object.assign(new Error(message), { unexpected: true });
+}
+function javaFailure(message) {
+  return Object.assign(new Error(message), { javaMessage: message });
+}
+
+/** String.substring's StringIndexOutOfBoundsException, as JDK 11 words it. */
+function substring(text, begin, end) {
+  if (end > text.length) throw javaFailure(`begin ${begin}, end ${end}, length ${text.length}`);
+  return text.slice(begin, end);
+}
+
+/** The class Jackson reads a JSON value as, into a Map<String, Object>. */
+function javaClass(value) {
+  if (typeof value === 'string') return 'java.lang.String';
+  if (typeof value === 'boolean') return 'java.lang.Boolean';
+  if (Array.isArray(value)) return 'java.util.ArrayList';
+  if (typeof value === 'object') return 'java.util.LinkedHashMap';
+  if (!Number.isInteger(value)) return 'java.lang.Double';
+  if (value >= -2147483648 && value <= 2147483647) return 'java.lang.Integer';
+  return Number.isSafeInteger(value) ? 'java.lang.Long' : 'java.math.BigInteger';
+}
+
+/** A cast of a JSON value as Java's checkcast does it: null passes, a misfit is JDK 11's ClassCastException. */
+function javaCast(value, target, fits) {
+  if (value === null || value === undefined || fits(value)) return;
+  const from = javaClass(value);
+  throw javaFailure(
+    `class ${from} cannot be cast to class ${target} (${from} and ${target} are in module java.base of loader 'bootstrap')`
+  );
+}
+const isString = (value) => typeof value === 'string';
+const isMap = (value) => typeof value === 'object' && !Array.isArray(value);
+
+/**
+ * The casts StaticCitation's toBibtex/toRIS (by name) and toText (by full
+ * name) make of Europe PMC's authors -- outside Java's try, so a misfit is
+ * GlobalExceptionHandler's 500 rather than "unable to fetch": each author to
+ * a Map and, by name, its names to String; a null author is the
+ * NullPointerException of author.get. Full names reach String.join, which
+ * casts each to CharSequence once they are all gathered.
+ */
+function checkStaticAuthors(authors, ext) {
+  if (!authors?.length) return;
+  for (const author of authors) {
+    javaCast(author, 'java.util.Map', isMap);
+    if (author === null) throw unexpected('a null author');
+    if (ext === 'bib' || ext === 'ris') {
+      javaCast(author.lastName, 'java.lang.String', isString);
+      javaCast(
+        'firstName' in author ? author.firstName : author.initials,
+        'java.lang.String',
+        isString
+      );
+    }
+  }
+  if (ext !== 'bib' && ext !== 'ris')
+    for (const author of authors) javaCast(author.fullName, 'java.lang.CharSequence', isString);
 }
 
 /**
@@ -45,19 +106,21 @@ function unexpected(message) {
  * release year and -- from the wrong character of the date, as Java takes
  * it -- month, a pathway's DOI or else its page, the release, and the authors
  * of its authored edits, else its creator, else its reviewers, initials
- * dotted as String.join(".", initial.split("")) dots them. No release date,
- * too short a one, or a person with no initial throws as Java does.
+ * dotted as String.join(".", initial.split("")) dots them. What Java
+ * throws on -- no name or release date, a short or non-numeric one, a
+ * person with no initial -- throws the same.
  */
 export function citationOfEvent(event, raw, release, isPathway) {
   const props = event.properties;
+  // The Citation constructor's own check.
+  if (props.displayName == null) throw javaFailure('Title or id can not be null');
   if (props.releaseDate == null) throw unexpected('an event with no release date');
   const date = String(props.releaseDate);
-  if (date.length < 7) throw unexpected(`a release date too short: ${date}`);
   const citation = {
     id: raw,
     title: props.displayName,
-    year: date.slice(0, 4),
-    month: citationMonth(date.slice(6, 7)),
+    year: substring(date, 0, 4),
+    month: citationMonth(substring(date, 6, 7)),
     doi: null,
     urls: [],
     authors: null,
@@ -159,6 +222,7 @@ function commonText(citation, date) {
 
 /** StaticCitation.toText, toBibtex or toRIS. `date` null is no "Provided by" line. */
 export function formatStaticCitation(citation, ext, date) {
+  checkStaticAuthors(citation.authors, ext);
   if (ext === 'bib')
     return bibtex(citation, 'article', date, [
       [

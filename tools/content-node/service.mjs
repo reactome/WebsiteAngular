@@ -2354,11 +2354,13 @@ export const endpoints = [
           type: 'text/plain;charset=UTF-8',
           body: 'Unable to fetch static citation',
         };
-      return {
-        status: 200,
-        type: 'text/plain;charset=UTF-8',
-        body: formatStaticCitation(citation, 'txt', null),
-      };
+      let body;
+      try {
+        body = formatStaticCitation(citation, 'txt', null);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
+      return { status: 200, type: 'text/plain;charset=UTF-8', body };
     },
   },
   {
@@ -2397,6 +2399,12 @@ export const endpoints = [
       } else citation = await staticCitationFor(values.id);
       if (!citation) return { status: 200 };
       const format = isPathway.value ? formatEventCitation : formatStaticCitation;
+      let body;
+      try {
+        body = format(citation, values.ext, values.dateAccessed);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
       const [extension, type] =
         values.ext === 'bib'
           ? ['bib', 'application/x-bibtex']
@@ -2411,7 +2419,7 @@ export const endpoints = [
             `attachment; filename="reactome_citation_${values.id}.${extension}"`
           ),
         },
-        body: format(citation, values.ext, values.dateAccessed),
+        body,
       };
     },
   },
@@ -6460,9 +6468,16 @@ async function eventCitationOrFailure(request, raw) {
   try {
     return { citation: await eventCitationFor(raw) };
   } catch (failure) {
-    if (failure.unexpected) return { failure: unexpectedFailure(request) };
-    throw failure;
+    return { failure: citationFailure(request, failure) };
   }
+}
+
+/** GlobalExceptionHandler's 500 for what citation.mjs throws as Java does; anything else is ours. */
+function citationFailure(request, failure) {
+  if (failure.unexpected) return unexpectedFailure(request);
+  if (failure.javaMessage)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);
+  throw failure;
 }
 
 /** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
@@ -6647,8 +6662,21 @@ function buildId() {
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
-  for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
   const body = result.body !== undefined || Boolean(result.serialised);
+  // Node reads a Content-Disposition value back as UTF-8 whenever the
+  // response ends with a body (nodejs/node#46528), so the Latin-1 byte Tomcat
+  // writes for é became U+FFFD. Given as its UTF-8 bytes, it comes out as é.
+  const reread =
+    response.req?.method !== 'HEAD' &&
+    (result.serialised ||
+      (result.body !== undefined && result.body !== '' && result.body.length !== 0));
+  for (const [name, value] of Object.entries(result.headers ?? {}))
+    response.setHeader(
+      name,
+      reread && name.toLowerCase() === 'content-disposition'
+        ? Buffer.from(value, 'utf8').toString('latin1')
+        : value
+    );
   const redirect = result.status >= 300 && result.status < 400;
   if (body && !redirect && response.req && downloadGuard(response.req))
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');
