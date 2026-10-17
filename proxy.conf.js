@@ -120,12 +120,13 @@ module.exports = {
     contentNode,
   // The search box's completions and its "did you mean", the facets of
   // everything and of a query, and the icon library (its facets, pages and
-  // icons). The rest of /search is Java's for now.
+  // icons); every other /search endpoint is the pattern below.
   '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/[^/?]+)(\\?|$)': contentNode,
   // Search within a diagram, where an object occurs in it, the summary of
   // both, flagging a term in a diagram or across the species overview, the
-  // diagrams an entity is in, and the species-wide search (/fireworks).
-  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+)(\\?|$)':
+  // diagrams an entity is in, the species-wide search (/fireworks), and the
+  // website's search (/query).
+  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?)(\\?|$)':
     contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
