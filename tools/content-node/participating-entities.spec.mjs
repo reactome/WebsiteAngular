@@ -51,6 +51,7 @@ describe('/data/participants/{id}/participatingPhysicalEntities', () => {
     expect(oneLine(last()[0])).toBe(
       'MATCH (n:DatabaseObject{stId: $id})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(m:PhysicalEntity) RETURN Distinct(m)'
     );
+    expect(last()[1]).toEqual({ id: 'R-HSA-5' });
   });
 
   it('matches a dbId as a number', async () => {
