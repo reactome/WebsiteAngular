@@ -1021,6 +1021,47 @@ describe('physicalEntityJson, an other form as graph-core serialises it', () => 
     expect(keys[keys.indexOf('speciesName') + 1]).toBe('systematicName');
   });
 
+  // Java's answers under /complex/{id}/subunits, 17 Oct 2026: the keys after
+  // name, by class.
+  it.each([
+    [
+      'Complex',
+      { speciesName: 'H', isChimeric: false, stoichiometryKnown: true },
+      'Complex',
+      'last',
+    ],
+    ['Complex', { speciesName: 'H', systematicName: 's', isChimeric: true }, 'Complex', 'last'],
+    ['DefinedSet', { speciesName: 'H', systematicName: 's' }, 'Set', 'before'],
+    ['CandidateSet', { speciesName: 'H', isOrdered: true }, 'Set', 'before'],
+    ['OpenSet', { speciesName: 'H' }, 'Set', 'before'],
+    ['GenomeEncodedEntity', { speciesName: 'H' }, 'Genes and Transcripts', 'before'],
+    ['Polymer', { speciesName: 'H', maxUnitCount: 2, minUnitCount: 1 }, 'Polymer', 'last'],
+    ['OtherEntity', { definition: 'd' }, 'OtherEntity', 'last'],
+    ['ProteinDrug', {}, 'ProteinDrug', 'last'],
+    ['Cell', { speciesName: 'H' }, 'Cell', 'last'],
+  ])('writes a %s as Java does', (schemaClass, own, className, where) => {
+    const json = physicalEntityJson({
+      dbId: 1,
+      name: ['n'],
+      ...own,
+      isInDisease: false,
+      schemaClass,
+    });
+    const ownKeys = Object.keys(own).filter((key) => key !== 'definition');
+    const end =
+      where === 'last'
+        ? ['inDisease', 'schemaClass', 'className']
+        : ['className', 'inDisease', 'schemaClass'];
+    expect(Object.keys(json)).toEqual([
+      'dbId',
+      ...('definition' in own ? ['definition'] : []),
+      'name',
+      ...ownKeys,
+      ...end,
+    ]);
+    expect(json.className).toBe(className);
+  });
+
   it('calls a simple entity a Chemical Compound', () => {
     const se = {
       dbId: 1,

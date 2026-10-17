@@ -18,8 +18,8 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | Method | Path                                                      | Home                   | Reason                                                                                        |
 | ------ | --------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
 | POST   | `/contact`                                                | node — to port         | site logic; its human check belongs with the site                                             |
-| GET    | `/data/complex/{id}/subunits`                             | node — to port         | graph or search index                                                                         |
-| GET    | `/data/complexes/{resource}/{identifier}`                 | node — to port         | graph or search index                                                                         |
+| GET    | `/data/complex/{id}/subunits`                             | node — ported          | graph or search index                                                                         |
+| GET    | `/data/complexes/{resource}/{identifier}`                 | node — ported          | graph or search index                                                                         |
 | GET    | `/data/content/contributors`                              | node — ported          | graph or search index                                                                         |
 | GET    | `/data/content/doi`                                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/content/toc`                                       | node — ported          | graph or search index                                                                         |

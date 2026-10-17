@@ -1294,17 +1294,9 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return missing();
-      if (where.startsWith('n.oldStId')) {
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+      const id = await graphCoreId(raw);
+      if (!id) return missing();
+      const { object, params } = id;
       const rows = await read(
         `MATCH (n:PhysicalEntity${object})-[:referenceEntity]->(m:ReferenceEntity)<-[:referenceEntity]-(k)
          WHERE NOT n=k RETURN k`,
@@ -1314,6 +1306,99 @@ export const endpoints = [
       return {
         status: 200,
         body: rows.map((row) => physicalEntityJson(row.k)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/complex/{id}/subunits',
+    // A set: 354 entities under it -- complexes, sets, proteins and small molecules.
+    sample: 'R-HSA-5672601',
+    differs: [/^\/ContentService\/data\/complex\/[^/]+\/subunits(\?\S*)?: \.url: /],
+    /**
+     * Everything a complex or set is made of, all the way down; with
+     * excludeStructures, only what is neither a complex nor a set.
+     *
+     * graph-core's PhysicalEntityRepository.getPhysicalEntitySubunits and
+     * getPhysicalEntitySubunitsNoStructures, kept as written; the id is read
+     * as graph-core reads it (graphCoreId), and none found, or nothing under
+     * it, is Java's 404. excludeStructures is a primitive boolean that
+     * defaults to false, bound before anything is looked up.
+     *
+     * graph-core's stable-id NoStructures query fails in Java: its parameter
+     * reaches Neo4j without the name the query reads. So excludeStructures
+     * with a stable id (a REACT_ one too) is Java's 500, said here without
+     * asking the graph; with a dbId it works.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const exclude = springPrimitiveBoolean(queryValues(request, 'excludeStructures'), false);
+      if (exclude.error) return javaError(request, 400, 'BAD_REQUEST', exclude.error);
+      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+      const id = await graphCoreId(raw);
+      if (!id) return missing();
+      if (exclude.value && !id.byDbId) {
+        const failure = {
+          code: 'Neo.ClientError.Statement.ParameterMissing',
+          message: 'Expected parameter(s): stId',
+        };
+        return javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          neo4jFailureMessage(failure, [failure.code])
+        );
+      }
+      const noStructures = exclude.value ? ' WHERE NOT (pe:Complex) AND NOT(pe:EntitySet)' : '';
+      const rows = await read(
+        `MATCH (:PhysicalEntity${id.object})-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity)${noStructures} RETURN DISTINCT pe`,
+        id.params
+      );
+      if (rows.length === 0) return missing();
+      return {
+        status: 200,
+        body: rows.map((row) => physicalEntityJson(row.pe)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/complexes/{resource}/{identifier}',
+    // EGFR: 181 complexes.
+    samplePath: { resource: 'UniProt', identifier: 'P00533' },
+    differs: [/^\/ContentService\/data\/complexes\/[^/]+\/[^/]+: \.url: /],
+    /**
+     * The complexes an identifier in an outside resource is part of: the
+     * reference entities with that identifier in that resource, the
+     * entities made from them, and every complex above those.
+     *
+     * graph-core's PhysicalEntityRepository.getComplexesFor, kept as written.
+     * The resource reaches Neo4j as Java passes it, a regular expression
+     * matched against the database's name: `UniProt` matches, `uniprot` does
+     * not, `(?i)uniprot` does, and one Neo4j cannot read is Java's 500 with
+     * Neo4j's message. None found is Java's 404, naming the identifier first.
+     */
+    handler: async (request) => {
+      const resource = pathId(rawSegment(request, 4));
+      const identifier = pathId(rawSegment(request, 5));
+      let rows;
+      try {
+        rows = await read(
+          'MATCH (rd:ReferenceDatabase)<-[:referenceDatabase]-(n{identifier:$identifier}) WHERE rd.displayName =~ $resource WITH DISTINCT n MATCH (n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity) WITH DISTINCT pe MATCH (c:Complex)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe) RETURN DISTINCT c',
+          { identifier, resource }
+        );
+      } catch (failure) {
+        const message = /^Invalid Regex/.test(failure?.message ?? '')
+          ? neo4jFailureMessage(failure, ['Neo.ClientError.Statement.SemanticError'])
+          : undefined;
+        if (message) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+        throw failure;
+      }
+      if (rows.length === 0)
+        return notFound(request, `No complexes found for (${identifier}, ${resource})`);
+      return {
+        status: 200,
+        body: rows.map((row) => physicalEntityJson(row.c)),
         type: 'application/json',
       };
     },
@@ -3974,19 +4059,19 @@ export function javaJson(value) {
 }
 
 /**
- * A Neo4j argument error as Spring's exception translation reports it, which
- * is what Java answers a negative SKIP or LIMIT with. Undefined for any other
- * failure: those are not part of Java's contract to mirror.
+ * A Neo4j client error as Spring's exception translation reports it, for the
+ * codes a caller names: an ArgumentError by default, which is what Java
+ * answers a negative SKIP or LIMIT with. Undefined for any other failure:
+ * those are not part of Java's contract to mirror.
  */
-export function neo4jFailureMessage(failure) {
-  if (failure?.code !== 'Neo.ClientError.Statement.ArgumentError') return undefined;
+export function neo4jFailureMessage(failure, codes = ['Neo.ClientError.Statement.ArgumentError']) {
+  if (!codes.includes(failure?.code)) return undefined;
   return (
     `${failure.message}; Error code '${failure.code}'; ` +
     `nested exception is org.neo4j.driver.exceptions.ClientException: ${failure.message}`
   );
 }
 
-/** Java's error envelope, written as Jackson writes it. */
 /** The ContentService's answer to a ClassNotFoundException. */
 function classNotFound(request) {
   return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Specified class was not found');
@@ -4715,22 +4800,43 @@ const PHYSICAL_ENTITY_FIELDS = [
   'name',
   'speciesName',
   'systematicName',
+  // Each class's own, after PhysicalEntity's; no node has two classes' worth.
+  'isChimeric',
+  'stoichiometryKnown',
+  'isOrdered',
+  'maxUnitCount',
+  'minUnitCount',
   'endCoordinate',
   'referenceType',
   'startCoordinate',
 ];
 
 /**
- * A physical entity -- of the classes that have a reference entity -- as
- * graph-core serialises a bare node. Measured from Java over every class that
- * appears as an other form, and the class names from graph-core's getters:
+ * The classes whose getClassName graph-core overrides, and what it says. Jackson
+ * writes an overridden className before inDisease; DatabaseObject's own -- the
+ * simple class name -- comes last.
+ */
+const PHYSICAL_ENTITY_CLASS_NAMES = {
+  GenomeEncodedEntity: 'Genes and Transcripts',
+  SimpleEntity: 'Chemical Compound',
+  CandidateSet: 'Set',
+  DefinedSet: 'Set',
+  OpenSet: 'Set',
+};
+
+/**
+ * A physical entity as graph-core serialises a bare node. Measured from Java
+ * over every class (17 Oct 2026; Cell, which nothing contains, from
+ * graph-core's getters), and the class names from graph-core's getters:
  *
  * - an EWAS is named by its reference type (Protein, DNA Sequence, RNA
  *   Sequence), and anything else -- an isoform's -- falls back to
  *   GenomeEncodedEntity's "Genes and Transcripts";
- * - a SimpleEntity is a "Chemical Compound";
- * - a drug has no override, so DatabaseObject's simple class name, and
- *   Jackson writes it last rather than before inDisease.
+ * - a GenomeEncodedEntity is "Genes and Transcripts", a SimpleEntity a
+ *   "Chemical Compound", and every set a "Set";
+ * - a complex, polymer, drug, cell or other entity has no override, so
+ *   DatabaseObject's simple class name, and Jackson writes it last rather
+ *   than before inDisease.
  *
  * `isInDisease` is written as `inDisease`; `oldStId` never (@JsonIgnore).
  */
@@ -4744,9 +4850,8 @@ export function physicalEntityJson(node) {
     const className = EWAS_CLASS_NAMES[node.referenceType] ?? 'Genes and Transcripts';
     return { ...head, className, ...tail };
   }
-  if (node.schemaClass === 'SimpleEntity') {
-    return { ...head, className: 'Chemical Compound', ...tail };
-  }
+  const className = PHYSICAL_ENTITY_CLASS_NAMES[node.schemaClass];
+  if (className) return { ...head, className, ...tail };
   return { ...head, ...tail, ...(node.schemaClass && { className: node.schemaClass }) };
 }
 
@@ -6939,6 +7044,32 @@ export function javaError(request, code, reason, message) {
   };
 }
 
+/**
+ * An id as graph-core's services read it before choosing a repository query:
+ * DatabaseObjectUtils.getIdentifier, then isStId or isDbId. Read as everywhere
+ * else (resolveId); a pre-2016 REACT_ id is swapped for its stable id, and one
+ * that is not found stays as given and is looked for as a stable id, which
+ * finds nothing -- as in Java. Undefined for an id that is neither, for which
+ * the service returns null.
+ *
+ * `object` is the pattern the query matches the object by, `params` its
+ * parameters, `byDbId` whether it is the dbId query.
+ */
+async function graphCoreId(raw) {
+  let { where, params } = resolveId(raw);
+  if (where === 'false') return undefined;
+  if (where.startsWith('n.oldStId')) {
+    const [found] = await read(
+      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+      params
+    );
+    params = { id: found?.stId ?? params.id };
+    where = 'n.stId = $id';
+  }
+  const byDbId = where.startsWith('n.dbId');
+  return { object: byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}', params, byDbId };
+}
+
 /** Every relationship from an event down to its participants, as graph-core lists them. */
 const PARTICIPANT_OF =
   'regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*';
@@ -7008,9 +7139,7 @@ const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS = {
  * One of the /pathways/low family, optionally in one species: PathwaysService
  * dispatches each the same way, to one of the queries above.
  *
- * The id is the path's `segment`th, read as everywhere else (resolveId,
- * pathId). A pre-2016 REACT_ id is first swapped for its stable id, as
- * graph-core's getIdentifier does, so the query is the stable-id one Java runs.
+ * The id is the path's `segment`th, read as graph-core reads it (graphCoreId).
  *
  * `species` is read as graph-core's SpeciesService reads it (speciesFilter).
  * A species that is not found filters nothing, as in Java; the 404 message
@@ -7025,19 +7154,9 @@ async function lowerLevelPathways(request, segment, { column, query }) {
   const missing = () =>
     notFound(request, `No result for ${raw} in ${species === undefined ? 'null' : species}`);
 
-  let { where, params } = resolveId(raw);
-  if (where === 'false') return missing();
-  if (where.startsWith('n.oldStId')) {
-    const [found] = await read(
-      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-      params
-    );
-    // Not found: Java keeps the REACT_ id and looks for it as a stable id,
-    // which finds nothing.
-    params = { id: found?.stId ?? params.id };
-    where = 'n.stId = $id';
-  }
-  const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+  const id = await graphCoreId(raw);
+  if (!id) return missing();
+  const { object, params } = id;
 
   const taxId = await speciesTaxId(speciesFilter(species));
   const inSpecies = (pattern) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
