@@ -317,6 +317,36 @@ describe('/query', () => {
     await until(() => reports.length === 1);
   });
 
+  it('leaves out an empty term in a 200, as NON_EMPTY does', async () => {
+    answer = (handler) => {
+      if (handler.endsWith('/facet')) return facets(8);
+      if (handler.startsWith('/target'))
+        return {
+          response: {
+            numFound: 1,
+            docs: [{ identifier: 'TP53_HUMAN', accessions: ['P04637'], resource: 'UNIPROT' }],
+          },
+        };
+      return { response: { numFound: 8, docs: [] } };
+    };
+    const body = await (
+      await get('query?query=%20P04637&cluster=false&Start%20row=900&scope=BOTH')
+    ).json();
+    expect(body.targetResults).toEqual(
+      expect.arrayContaining([
+        { resource: 'UNIPROT', target: false },
+        { term: 'P04637', resource: 'UNIPROT', target: true },
+      ])
+    );
+  });
+
+  it("is Java's 500 when Solr's grouped answer has no grouping", async () => {
+    answer = (handler) =>
+      handler.endsWith('/facet') ? facets(8) : { response: { numFound: 0, docs: [] } };
+    const response = await get('query?query=TP53');
+    expect(response.status).toBe(500);
+  });
+
   it('leaves out the type of a group with none', async () => {
     answer = (handler) =>
       handler.endsWith('/facet') ? facets(8) : grouped([[null, [doc('1', 'TP53')]]]);
@@ -352,6 +382,31 @@ describe('/query/paginated', () => {
       '10',
       '5',
     ]);
+  });
+
+  it("is Java's 404 for an empty query with a blank scope, as /query is", async () => {
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    const response = await get('query/paginated?query=&page=1&rowCount=10&scope=%20');
+    expect(response.status).toBe(404);
+  });
+
+  it("with no types to page by and an empty page, reports first, then is Java's 500", async () => {
+    reports = [];
+    answer = (handler) => {
+      if (handler.endsWith('/facet'))
+        return {
+          ...facets(8),
+          facet_counts: {
+            facet_fields: { ...facets(8).facet_counts.facet_fields, type_facet: [] },
+          },
+        };
+      if (handler.startsWith('/target')) return { response: { numFound: 0, docs: [] } };
+      return grouped([]);
+    };
+    const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
+    expect(response.status).toBe(500);
+    // This search's own report, not a late one from the test before.
+    await until(() => reports.some((report) => report.body === '{"term":"TP53","resource":""}'));
   });
 
   it("is Java's 500 when there are no types to page by", async () => {

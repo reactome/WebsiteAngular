@@ -6305,10 +6305,14 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
 function searchAnswer(request, query, result) {
   if (result && result.results?.length) {
     const { targetResults, ...written } = result;
-    // NON_EMPTY, in a 200: a target's null resource is left out.
-    const targets = targetResults?.map(({ term, resource, target }) =>
-      resource === null ? { term, target } : { term, resource, target }
-    );
+    // NON_EMPTY, in a 200: a target's null or empty term or resource is
+    // left out (a query with a leading space has an empty first term).
+    const kept = (text) => text !== null && text !== undefined && text !== '';
+    const targets = targetResults?.map(({ term, resource, target }) => ({
+      ...(kept(term) ? { term } : {}),
+      ...(kept(resource) ? { resource } : {}),
+      target,
+    }));
     return {
       status: 200,
       type: 'application/json',
