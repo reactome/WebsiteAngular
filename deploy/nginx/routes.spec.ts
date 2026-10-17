@@ -68,6 +68,15 @@ const named = [
 const urls = [...new Set(named.flatMap((url) => [url, slashed(url)]))];
 
 describe('nginx and the dev proxy agree', () => {
+  it('reading every location the file has', () => {
+    // A block the parser cannot read (an indented one, a brace in a comment)
+    // would otherwise count as Java without a word.
+    expect(locations).toHaveLength(conf.match(/^\s*location\s/gm)?.length ?? 0);
+    expect(locations.filter((l) => l.node)).toHaveLength(
+      conf.match(/content-node-proxy\.conf/g)?.length ?? 0
+    );
+  });
+
   it('on a list long enough to mean something', () => {
     expect(urls.length).toBeGreaterThan(150);
   });
