@@ -27,7 +27,7 @@ type DiagramFlagResult = {
   interactsWith?: string[];
 };
 
-type FireworksFlagResult = {
+type SpeciesOverviewFlagResult = {
   llps?: string[];
   interactsWith?: string[];
 };
@@ -181,13 +181,13 @@ export class DataStateService {
 
   getReacfoamFlagging(query: string, species: string): Observable<FlaggingResult> {
     return this.http
-      .get<FireworksFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
+      .get<SpeciesOverviewFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
         params: { query, species, scope: 'REFERENCE_ENTITY', includeInteractors: false },
       })
       .pipe(
         // 404 is ContentService's "no match"; anything else is a failure.
         catchError((error: unknown) =>
-          isNotFound(error) ? of({} as FireworksFlagResult) : throwError(() => error)
+          isNotFound(error) ? of({} as SpeciesOverviewFlagResult) : throwError(() => error)
         ),
         map((r) => ({
           matches: r.llps ?? [],
