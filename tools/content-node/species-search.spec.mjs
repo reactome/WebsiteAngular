@@ -10,6 +10,7 @@ import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 vi.mock('./graph.mjs', () => ({
   // The release, for the report -- or the graph down, when a test says so.
   read: async () => {
+    globalThis.graphReads = (globalThis.graphReads ?? 0) + 1;
     if (globalThis.graphDown) throw new Error('graph down');
     return [{ version: 97 }];
   },
@@ -267,6 +268,11 @@ describe('/fireworks, the species-wide search', () => {
     await until(() => reports.length === 1);
     expect(reports[0].url).toMatch(/&agent=x\*y%7Ez$/);
     expect(reports[0].body).toBe('{"term":"a\\u001Fb","resource":""}');
+    // A backslash of the term's own, before "u001f", is no escape to change.
+    reports = [];
+    await get('?query=c%5Cu001fd');
+    await until(() => reports.length === 1);
+    expect(reports[0].body).toBe('{"term":"c\\\\u001fd","resource":""}');
   });
 
   it("authenticates with Java's default credentials when none are set", async () => {
@@ -289,9 +295,12 @@ describe('/fireworks, the species-wide search', () => {
   it('finds results without the graph: the release is read only to report', async () => {
     answer = () => ({ response: { numFound: 1, docs: [{ dbId: '1' }] } });
     globalThis.graphDown = true;
+    const reads = globalThis.graphReads ?? 0;
     try {
       const response = await get('?query=KNTC1');
       expect(response.status).toBe(200);
+      // Not even the cached release is asked for.
+      expect(globalThis.graphReads ?? 0).toBe(reads);
     } finally {
       globalThis.graphDown = false;
     }
@@ -335,5 +344,20 @@ describe('/fireworks, the species-wide search', () => {
     const blank = await get('?query=x&includeInteractors=%20');
     expect(blank.status).toBe(500);
     expect(asked).toHaveLength(0);
+  });
+
+  it('writes a lone surrogate as Java ends up with it, a ?, and never throws', async () => {
+    const { sendReport } = await import('./report.mjs');
+    reports = [];
+    expect(() =>
+      sendReport(
+        'notfound',
+        { release: '97', ip: '\ud800', agent: 'a' },
+        { term: 'x\udc00', resource: '' }
+      )
+    ).not.toThrow();
+    await until(() => reports.length === 1);
+    expect(reports[0].url).toMatch(/&ip=%3F&/);
+    expect(reports[0].body).toBe('{"term":"x?","resource":""}');
   });
 });

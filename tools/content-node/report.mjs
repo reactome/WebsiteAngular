@@ -44,7 +44,25 @@ function latin1(text) {
   return Buffer.from(bytes);
 }
 
+/**
+ * A lone surrogate as Java's ends up: URIBuilder writes it %3F, and the body,
+ * where Jackson writes it raw, '?' once StringEntity encodes it.
+ */
+const wellFormed = (text) =>
+  typeof text === 'string'
+    ? text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '?')
+    : text;
+
 export function sendReport(mapping, info, body) {
+  // Never the search's failure, whatever goes wrong here.
+  try {
+    send(mapping, info, body);
+  } catch {
+    console.error('[REP003] An unexpected error has occurred when saving a report');
+  }
+}
+
+function send(mapping, info, body) {
   const base = envSetting('REPORT_URL');
   if (!base) return;
   // A null value is a name alone, as BasicNameValuePair writes it.
@@ -54,10 +72,11 @@ export function sendReport(mapping, info, body) {
     ['agent', info.agent],
   ]
     .map(([name, value]) =>
-      value === null || value === undefined ? name : `${name}=${form(value)}`
+      value === null || value === undefined ? name : `${name}=${form(wellFormed(value))}`
     )
     .join('&');
-  // Java's report.user and report.password default to "default".
+  // Java's report.user and report.password default to "default". Java sends
+  // them only when the service challenges; it does, so they go at once here.
   const user = envSetting('REPORT_USER', 'default');
   const password = envSetting('REPORT_PASSWORD', 'default');
   fetch(`${base.replace(/\/$/, '')}/report/search/${mapping}?${query}`, {
@@ -67,7 +86,16 @@ export function sendReport(mapping, info, body) {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`,
     },
-    body: latin1(jacksonJson(body)),
+    body: latin1(
+      jacksonJson(
+        Array.isArray(body)
+          ? body.map((entity) => ({
+              term: wellFormed(entity.term),
+              resource: wellFormed(entity.resource),
+            }))
+          : { term: wellFormed(body.term), resource: wellFormed(body.resource) }
+      )
+    ),
     signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
   })
     .then((response) => {
