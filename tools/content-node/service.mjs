@@ -3501,14 +3501,16 @@ function knownCharset(value) {
 
 /**
  * A text/plain body as StringHttpMessageConverter reads it: in the header's
- * charset, else ISO-8859-1, a malformed sequence read as U+FFFD.
+ * charset, else UTF-8 -- Spring Boot gives the converter UTF-8 as its default,
+ * not the class's own ISO-8859-1 (measured: Java reads C3 A9 as "é") -- a
+ * malformed sequence read as U+FFFD.
  */
 export function plainText(body, header) {
   const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i
     .exec(header ?? '')?.[1]
     ?.trim()
     .toLowerCase();
-  return (decoderFor(charset ?? 'iso-8859-1') ?? decoderFor('iso-8859-1'))(body);
+  return (decoderFor(charset ?? 'utf-8') ?? decoderFor('utf-8'))(body);
 }
 
 /** Java's names for the charsets decoded here as Java decodes them. */

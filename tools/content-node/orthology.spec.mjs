@@ -202,7 +202,14 @@ describe('plainText, the POST body in its charset as the JDK decodes it', () => 
   it("reads Java's ASCII and Latin-1, not TextDecoder's windows-1252", () => {
     expect(read('us-ascii', '52e9')).toBe('R�');
     expect(read('l1', '52e9')).toBe('Ré');
-    expect(plainText(Buffer.from('52e9', 'hex'), 'text/plain')).toBe('Ré');
+  });
+
+  it('reads a body with no charset as UTF-8, as Java does', () => {
+    // Measured 17 Oct 2026 on /data/query/ids and both static interactor
+    // POSTs: Java answers C3 A9 as "é" and a lone E9 as U+FFFD.
+    expect(plainText(Buffer.from('52e9', 'hex'), 'text/plain')).toBe('R\ufffd');
+    expect(plainText(Buffer.from('52c3a9', 'hex'), 'text/plain')).toBe('Ré');
+    expect(plainText(Buffer.from('52c3a9', 'hex'), undefined)).toBe('Ré');
   });
 
   it('takes UTF-32, which Java takes and TextDecoder does not', () => {
