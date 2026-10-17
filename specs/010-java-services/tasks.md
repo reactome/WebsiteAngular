@@ -60,7 +60,7 @@
 **Goal**: every published operation has one home and a reason.
 **Independent test**: [quickstart](quickstart.md#story-1-the-split-is-recorded).
 
-- [x] T009 [US1] Record all 137 published operations with home and reason in `specs/010-java-services/contracts/operation-homes.md` — this PR
+- [x] T009 [US1] Record all 137 published operations with home and reason in `specs/010-java-services/contracts/operation-homes.md` — #504
 - [ ] T010 [US1] Add `specs/010-java-services/check-operation-homes.mjs`, which compares `contracts/operation-homes.md` against a freshly fetched API description of both services and fails on a missing, extra or duplicated operation. Show it failing by deleting one row.
 
 ---
