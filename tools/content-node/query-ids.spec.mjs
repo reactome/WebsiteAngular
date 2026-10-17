@@ -112,6 +112,25 @@ describe("Java's errors", () => {
     }
   });
 
+  it("is Java's 500 for an id of dots, whatever else the body holds", async () => {
+    // graph-core's trimId splits on '.', and "." splits to nothing.
+    for (const body of ['R-HSA-109581,.', '..', 'x;.']) {
+      const response = await post('ids', body);
+      expect([body, response.status, (await response.json()).messages]).toEqual([
+        body,
+        500,
+        ['Index 0 out of bounds for length 0'],
+      ]);
+    }
+  });
+
+  it('fails on the first bad id, in order, as Java looks them up one at a time', async () => {
+    const dots = await post('ids', '.,99999999999999999999');
+    expect((await dots.json()).messages).toEqual(['Index 0 out of bounds for length 0']);
+    const long = await post('ids', '99999999999999999999,.');
+    expect((await long.json()).messages).toEqual(['For input string: "99999999999999999999"']);
+  });
+
   it("is Java's 500 for a dbId past a long", async () => {
     const response = await post('ids', '99999999999999999999');
     expect([response.status, (await response.json()).messages]).toEqual([

@@ -74,7 +74,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 ## Phase 7: Remaining graph and index operations → node
 
 - [ ] T070 `GET /data/query/{id}/{attributeName}` for the attributes not yet ported (only `stId` and `normalPathway` are)
-- [ ] T071 `POST /data/query/ids`, `POST /data/query/ids/map`
+- [x] T071 `POST /data/query/ids`, `POST /data/query/ids/map` — #509
 - [ ] T072 `GET /data/person/{id}/{attributeName}`
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
 - [ ] T074 `GET /data/schema/{className}`, `GET /data/schema/{className}/reference`

@@ -904,7 +904,7 @@ export const endpoints = [
           `Required request body is missing: ${signature}`
         );
       const ids = orthologyIds(plainText(request.body, contentType));
-      const refused = longPastRange(ids);
+      const refused = findByIdFailure(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       const found = [];
       for (const id of ids) {
@@ -3157,6 +3157,23 @@ function longPastRange(ids) {
     const id = inDepthId(raw);
     if (id?.idType === 'dbId' && BigInt(id.id) > 9223372036854775807n)
       return `For input string: "${javaTrim(raw).split('.')[0]}"`;
+  }
+  return undefined;
+}
+
+/**
+ * What graph-core's findById throws on, for ids looked up one at a time, in
+ * order -- so the first bad id decides: an id of dots (trimId splits it on
+ * '.' to nothing, an ArrayIndexOutOfBounds) or a dbId past a long.
+ * Undefined when Java would throw on none.
+ */
+function findByIdFailure(ids) {
+  for (const raw of ids) {
+    const trimmed = javaTrim(raw);
+    if (!trimmed.includes(':') && /^\.+$/.test(trimmed))
+      return 'Index 0 out of bounds for length 0';
+    const refused = longPastRange([raw]);
+    if (refused) return refused;
   }
   return undefined;
 }
