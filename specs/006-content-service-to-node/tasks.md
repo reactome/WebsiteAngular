@@ -19,6 +19,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T005 Percent-encoded literal segments routed as Java routes them; Spring's JSON 404 for an unmatched path — #490
 - [x] T006 Every node route takes a trailing slash, as Spring's do; nginx and the dev proxy tested to agree — #498
 - [x] T007 `nginx -t` on every deployment's image in CI — #499
+- [ ] T008 Every node route takes a matrix parameter on its literal segments (`/data/diseases;jsessionid=x`), as Spring does: nginx's literal locations do not match it, so it reaches Tomcat today and nothing once Tomcat is off (found reviewing #510)
 
 ## Phase 2: Content and species (done)
 
@@ -77,7 +78,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T071 `POST /data/query/ids`, `POST /data/query/ids/map` — #509
 - [ ] T072 `GET /data/person/{id}/{attributeName}`
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
-- [x] T074 `GET /data/schema/{className}` — #PR
+- [x] T074 `GET /data/schema/{className}` — #511
 - [ ] T074b `GET /data/schema/{className}/reference`
 - [ ] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}`
 - [ ] T076 `GET /data/entity/{id}/componentOf`
