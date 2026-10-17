@@ -1950,7 +1950,7 @@ describe('endpointFor, which endpoint a concrete path belongs to', () => {
   });
 
   it('matches nothing for a path no endpoint serves', () => {
-    expect(endpointFor('/ContentService/data/schema/Pathway')).toBeUndefined();
+    expect(endpointFor('/ContentService/data/schema/Pathway/reference')).toBeUndefined();
     expect(endpointFor('/ContentService/data/query/70486/stId/extra')).toBeUndefined();
   });
 });

@@ -1496,40 +1496,38 @@ export const endpoints = [
      * 500. A class Java does not have is its 500; a species for a class
      * without one, or no rows, its 404.
      */
-    handler: async (request) => {
-      const className = pathId(rawSegment(request, 4));
-      // In the controller's parameter order: species is a String and cannot fail.
-      const given = queryValues(request, 'species');
-      const page = springInteger(queryValues(request, 'page'), 'page');
-      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
-      const offset = springInteger(queryValues(request, 'offset'), 'offset');
-      if (offset.error) return javaError(request, 400, 'BAD_REQUEST', offset.error);
-
-      if (!isSchemaClass(className)) return classNotFound(request);
-      const none = () =>
-        javaError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
-      const species = given.length ? given.join(',') : undefined;
-      let by;
-      if (species !== undefined) {
-        if (!isSpeciesClass(className)) return none();
-        by = javaNumeric(species) ? 'taxId' : 'speciesName';
-      }
-      const { skip, limit } = schemaWindow(page.value, offset.value);
-      let rows;
-      try {
-        rows = await read(schemaMinQuery(className, by), {
-          ...(by && { [by]: species }),
-          skip: neo4j.int(skip),
-          limit: neo4j.int(limit),
-        });
-      } catch (failure) {
-        const message = neo4jFailureMessage(failure);
-        if (message === undefined) throw failure;
-        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
-      }
-      if (rows.length === 0) return none();
-      return { status: 200, body: javaJson(rows.map(simpleObjectJson)), type: 'application/json' };
-    },
+    handler: schemaPage({
+      cap: 20000,
+      query: schemaMinQuery,
+      answer: (rows) => ({
+        status: 200,
+        body: javaJson(rows.map(simpleObjectJson)),
+        type: 'application/json',
+      }),
+    }),
+  },
+  {
+    path: '/ContentService/data/schema/{id}',
+    sample: 'Pathway?page=1&offset=25',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+: \.url: /],
+    /**
+     * SchemaController.getDatabaseObjectsForClassName: one page of a class's
+     * objects, whole -- graph-core's SchemaRepository.getByClass(Class, skip,
+     * limit), the nodes alone (no relationship), written as the domain
+     * objects. /min's rules (schemaPage), at most 25 to a page.
+     */
+    handler: schemaPage({
+      cap: 25,
+      query: schemaObjectsQuery,
+      answer: (rows, request) => ({
+        status: 200,
+        serialised: writeDomain(
+          mapNodes(rows.map((row) => ({ id: row.id, labels: row.labels, props: row.n }))),
+          ...writerFor(request)
+        ),
+        type: 'application/json',
+      }),
+    }),
   },
   {
     path: '/ContentService/data/schema/model',
@@ -3808,6 +3806,65 @@ export const schemaModelQuery =
  * species taxId, species name or neither. `className` is spliced in, as Java
  * splices it, and is only ever a name isSchemaClass accepted.
  */
+/**
+ * One page of a schema class, as SchemaController reads it for /min and for
+ * the whole objects: `page` and `offset` are required Integers, read as
+ * Spring reads them (springInteger), page first -- a missing or unreadable one
+ * is Java's 400 before the class is looked at. Then offset capped at `cap`,
+ * skip (page - 1) * offset in int arithmetic, and a negative skip or limit
+ * passed to Neo4j, whose refusal is Java's 500. A class Java does not have is
+ * its 500; a species for a class without one, or no rows, its 404.
+ */
+function schemaPage({ cap, query, answer }) {
+  return async (request) => {
+    const className = pathId(rawSegment(request, 4));
+    // In the controller's parameter order: species is a String and cannot fail.
+    const given = queryValues(request, 'species');
+    const page = springInteger(queryValues(request, 'page'), 'page');
+    if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+    const offset = springInteger(queryValues(request, 'offset'), 'offset');
+    if (offset.error) return javaError(request, 400, 'BAD_REQUEST', offset.error);
+
+    if (!isSchemaClass(className)) return classNotFound(request);
+    const none = () =>
+      javaError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
+    const species = given.length ? given.join(',') : undefined;
+    let by;
+    if (species !== undefined) {
+      if (!isSpeciesClass(className)) return none();
+      by = javaNumeric(species) ? 'taxId' : 'speciesName';
+    }
+    const { skip, limit } = schemaWindow(page.value, offset.value, cap);
+    let rows;
+    try {
+      rows = await read(query(className, by), {
+        ...(by && { [by]: species }),
+        skip: neo4j.int(skip),
+        limit: neo4j.int(limit),
+      });
+    } catch (failure) {
+      const message = neo4jFailureMessage(failure);
+      if (message === undefined) throw failure;
+      return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+    }
+    if (rows.length === 0) return none();
+    return answer(rows, request);
+  };
+}
+
+/**
+ * graph-core's SchemaRepository.getByClass(Class, skip, limit) as written --
+ * the order of rows sharing a name is the plan's, so the text is what keeps
+ * every page Java's -- with the node's labels and id beside it, which the
+ * domain objects need and read() does not keep.
+ */
+export function schemaObjectsQuery(className, by) {
+  return (
+    `${schemaMatch(className, by)} RETURN n, labels(n) AS labels, id(n) AS id ` +
+    'ORDER BY n.displayName SKIP $skip LIMIT $limit'
+  );
+}
+
 export function schemaMinQuery(className, by) {
   return (
     `${schemaMatch(className, by)} ` +
@@ -3840,8 +3897,8 @@ function schemaMatch(className, by) {
  * at 20000, skip `(page - 1) * offset` in Java's int arithmetic, overflow and
  * all. Negative values are left for Neo4j to refuse, as Java leaves them.
  */
-export function schemaWindow(page, offset) {
-  const limit = offset > 20000 ? 20000 : offset;
+export function schemaWindow(page, offset, cap = 20000) {
+  const limit = offset > cap ? cap : offset;
   return { skip: Math.imul((page - 1) | 0, limit), limit };
 }
 

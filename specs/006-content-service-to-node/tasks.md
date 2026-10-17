@@ -77,7 +77,8 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T071 `POST /data/query/ids`, `POST /data/query/ids/map` — #509
 - [ ] T072 `GET /data/person/{id}/{attributeName}`
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
-- [ ] T074 `GET /data/schema/{className}`, `GET /data/schema/{className}/reference`
+- [x] T074 `GET /data/schema/{className}` — #PR
+- [ ] T074b `GET /data/schema/{className}/reference`
 - [ ] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}`
 - [ ] T076 `GET /data/entity/{id}/componentOf`
 - [ ] T077 `GET /data/participants/{id}/participatingPhysicalEntities`
