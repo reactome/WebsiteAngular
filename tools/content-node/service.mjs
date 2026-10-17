@@ -2166,14 +2166,13 @@ export const endpoints = [
         scope: scope.value,
       };
       if (query.scope === null) return unexpectedFailure(request);
-      const info = await reportInformation(request);
       return fromSolr(request, '/ContentService/search/fireworks', async (signal) => {
         const result = entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
           fireworks: true,
         });
         if (result.found > 0) return { status: 200, type: 'application/json', body: result };
         const targets = await targetsOf(query.query, query.scope, signal);
-        reportNotFound(info, query.query, targets);
+        reportNotFound(await reportInformation(request), query.query, targets);
         const missing = javaError(
           request,
           404,
@@ -5860,14 +5859,25 @@ function springFields(values) {
 async function reportInformation(request) {
   const forwarded = request.get?.('x-forwarded-for');
   const address = String(request.socket?.remoteAddress ?? '').replace(/^::ffff:/, '');
-  const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-  const release = (await version?.handler({ params: {}, query: {} }))?.body;
+  // The release from the cached version, which a report can do without:
+  // asked only when a search found nothing, and never its failure.
+  let release = null;
+  try {
+    const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+    const answer = await version?.handler({ params: {}, query: {} });
+    if (answer?.status === 200) release = String(answer.body);
+  } catch {
+    release = null;
+  }
   return {
     agent: request.get?.('user-agent') ?? null,
     ip: forwarded === undefined || forwarded === '' ? address : forwarded,
-    release: release === undefined ? null : String(release),
+    release,
   };
 }
+
+/** A TargetResult's hashCode: Objects.hash(term), 31 more than its term's. */
+const targetHash = (term) => 31 + JavaHashMap.stringHash(term);
 
 /** Java's String.split(regex) on runs of its whitespace, \s: leading runs leave an empty term. */
 function javaWords(text) {
@@ -5893,7 +5903,7 @@ async function targetsOf(query, scope, signal) {
     answer = await solr(
       '/search',
       [...(SCOPE_FILTER[scope] ? [['fq', SCOPE_FILTER[scope]]] : []), ['q', query]],
-      { signal, core: 'target' }
+      { signal, core: 'target', method: 'GET' }
     );
   } catch (failure) {
     if (failure.busy || signal?.aborted) throw failure;
@@ -5902,12 +5912,22 @@ async function targetsOf(query, scope, signal) {
   const docs = answer?.response?.docs ?? [];
   if (docs.length === 0) return [];
   const same = (a, b) => caseInsensitive(a, b) === 0 && a.length === b.length;
-  const targets = new JavaHashMap({ hash: (term) => 31 + JavaHashMap.stringHash(term) });
+  const targets = new JavaHashMap({ hash: targetHash });
   for (const term of javaWords(query)) {
     let target = false;
     let resource = null;
     for (const doc of docs) {
       resource = solrValue(doc, 'resource') ?? null;
+      // getFieldValues(accessions).stream() and identifier.equalsIgnoreCase:
+      // a document without either is Java's NullPointerException.
+      if (
+        doc.accessions === undefined ||
+        doc.accessions === null ||
+        typeof solrValue(doc, 'identifier') !== 'string'
+      )
+        throw Object.assign(new Error('a target without an identifier or accessions'), {
+          unexpected: true,
+        });
       const names = [
         solrValue(doc, 'identifier'),
         ...solrStrings(doc, 'accessions'),
@@ -5934,7 +5954,10 @@ function reportNotFound(info, originalQuery, targets) {
     sendReport('notfound', info, { term: originalQuery, resource: '' });
     return;
   }
-  const hits = targets.filter((result) => result.target);
+  // Collectors.toSet(): the targets again, in a new HashSet of their own.
+  const again = new JavaHashMap({ hash: targetHash });
+  for (const result of targets) if (result.target) again.set(result.term, result);
+  const hits = [...again.entries()].map(([, result]) => result);
   sendReport(
     'targets',
     info,

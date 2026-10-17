@@ -24,6 +24,7 @@ let reportServer;
 let asked;
 let answer;
 let reports;
+let hanging = false;
 
 const listen = async (handler) => {
   const { createServer } = await import('node:http');
@@ -37,23 +38,27 @@ beforeAll(async () => {
     let body = '';
     request.on('data', (chunk) => (body += chunk));
     request.on('end', () => {
-      const sent = [...new URLSearchParams(body)];
-      asked.push([request.url.replace('/solr', ''), sent]);
+      // A GET carries its parameters in the URL, a POST in its body.
+      const [path, query = ''] = request.url.split('?');
+      const sent = [...new URLSearchParams(request.method === 'GET' ? query : body)];
+      asked.push([`${request.method} ${path.replace('/solr', '')}`, sent]);
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify(answer(request.url, sent)));
     });
   });
   reportServer = await listen((request, response) => {
-    let body = '';
-    request.on('data', (chunk) => (body += chunk));
+    const chunks = [];
+    request.on('data', (chunk) => chunks.push(chunk));
     request.on('end', () => {
       reports.push({
         url: request.url,
         authorization: request.headers.authorization,
         type: request.headers['content-type'],
-        body,
+        bytes: Buffer.concat(chunks),
+        body: Buffer.concat(chunks).toString('latin1'),
       });
-      response.end();
+      // A report service that never answers, for the test that says so.
+      if (!hanging) response.end();
     });
   });
   process.env.SOLR_URL = `http://127.0.0.1:${solrServer.address().port}/solr/reactome`;
@@ -103,7 +108,7 @@ describe('/fireworks, the species-wide search', () => {
     );
     expect(asked).toEqual([
       [
-        '/reactome/fireworks',
+        'POST /reactome/fireworks',
         [
           ['wt', 'json'],
           ['json.nl', 'flat'],
@@ -139,7 +144,7 @@ describe('/fireworks, the species-wide search', () => {
     ]);
     // The target core, with the scope's filter, which it has no field for.
     expect(asked[1]).toEqual([
-      '/target/search',
+      'GET /target/search',
       [
         ['wt', 'json'],
         ['json.nl', 'flat'],
@@ -159,44 +164,97 @@ describe('/fireworks, the species-wide search', () => {
     expect(report.body).toBe('{"term":"zzz qqq","resource":""}');
   });
 
-  it('names the terms the target core knows, and reports them as targets', async () => {
+  it('names the terms the target core knows, in their HashSet order, and reports the targets', async () => {
     asked = [];
     reports = [];
+    // BRAF and VHL fall in buckets 10 and 11 by String.hashCode, 11 and 8 by
+    // Objects.hash, a TargetResult's: so VHL first, then BRAF.
     answer = (url) =>
       url.includes('/target/')
         ? {
             response: {
-              numFound: 1,
+              numFound: 2,
               docs: [
                 {
-                  identifier: 'KCJ13_HUMAN',
-                  accessions: ['O60928'],
-                  geneNames: ['KCNJ13'],
+                  identifier: 'MD2L1_HUMAN',
+                  accessions: ['Q13257'],
+                  geneNames: ['MAD2L1'],
+                  resource: 'UNIPROT',
+                },
+                {
+                  identifier: 'BRAF_HUMAN',
+                  accessions: ['P15056'],
+                  geneNames: ['braf'],
                   resource: 'UNIPROT',
                 },
               ],
             },
           }
         : { response: { numFound: 0, docs: [] } };
-    const response = await get('?query=kcnj13%20zzz&scope=BOTH');
-    const body = await response.json();
-    expect(body.targets).toEqual(
-      expect.arrayContaining([
-        { term: 'kcnj13', resource: 'UNIPROT', target: true },
-        { term: 'zzz', resource: 'UNIPROT', target: false },
-      ])
+    const response = await get('?query=BRAF%20VHL&scope=BOTH');
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe(
+      `{"code":404,"reason":"NOT_FOUND","url":"${base}/ContentService/search/fireworks",` +
+        '"messages":["No entries found for query: BRAF VHL"],' +
+        '"targets":[{"term":"VHL","resource":"UNIPROT","target":false},{"term":"BRAF","resource":"UNIPROT","target":true}]}'
     );
-    expect(body.targets).toHaveLength(2);
     expect(fqs(asked[1][1])).toEqual([]);
     await until(() => reports.length === 2);
     const byPath = Object.fromEntries(
       reports.map((report) => [report.url.split('?')[0], report.body])
     );
     expect(byPath).toEqual({
-      '/report/search/targets': '[{"term":"kcnj13","resource":"UNIPROT"}]',
+      '/report/search/targets': '[{"term":"BRAF","resource":"UNIPROT"}]',
       // The non-target terms, though the body is the original query, as Java's is.
-      '/report/search/notfound': '{"term":"kcnj13 zzz","resource":""}',
+      '/report/search/notfound': '{"term":"BRAF VHL","resource":""}',
     });
+  });
+
+  it("sends the report as Java's StringEntity does: Latin-1, '?' past it, and a bare name for no agent", async () => {
+    reports = [];
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    // No User-Agent at all -- fetch always sends one -- is Java's null agent.
+    const { request: send } = await import('node:http');
+    await new Promise((resolve) =>
+      send(`${base}/ContentService/search/fireworks?query=caf%C3%A9%20%E2%98%95`, (response) => {
+        response.resume();
+        response.on('end', resolve);
+      }).end()
+    );
+    await until(() => reports.length === 1);
+    expect([...reports[0].bytes]).toEqual([
+      ...Buffer.from('{"term":"café ?","resource":""}', 'latin1'),
+    ]);
+    expect(reports[0].url).toMatch(/&agent$/);
+  });
+
+  it('answers without waiting on a report service that never answers', async () => {
+    reports = [];
+    hanging = true;
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    try {
+      const started = Date.now();
+      const response = await get('?query=zzz');
+      expect(response.status).toBe(404);
+      expect(Date.now() - started).toBeLessThan(1000);
+    } finally {
+      hanging = false;
+    }
+  });
+
+  it("is Java's NullPointerException, and no report, for a target without an identifier", async () => {
+    reports = [];
+    answer = (url) =>
+      url.includes('/target/')
+        ? { response: { numFound: 1, docs: [{ accessions: ['P1'], resource: 'UNIPROT' }] } }
+        : { response: { numFound: 0, docs: [] } };
+    const response = await get('?query=x&scope=BOTH');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Something unexpected happened and the error has been reported.'],
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(reports.filter((report) => report.body.includes('"term":"x"'))).toHaveLength(0);
   });
 
   it("is Spring's 400 for a missing query, and Java's 500 for a blank includeInteractors", async () => {

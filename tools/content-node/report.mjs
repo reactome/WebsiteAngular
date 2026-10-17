@@ -11,27 +11,53 @@
  * which carries the address -- and nothing more. Without REPORT_URL nothing
  * is sent.
  */
-import { URLSearchParams } from 'node:url';
 import { envSetting } from './graph.mjs';
 
 const REPORT_TIMEOUT_MS = 30_000;
 
+/** application/x-www-form-urlencoded, as Apache's URIBuilder writes a parameter. */
+const form = (text) =>
+  encodeURIComponent(text)
+    .replace(/%20/g, '+')
+    .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+
+/**
+ * The body as Java's `new StringEntity(json)` sends it: ISO-8859-1, every
+ * character beyond it a '?' -- whatever the Content-type header says.
+ */
+function latin1(text) {
+  const bytes = [];
+  for (const char of text) {
+    const code = char.codePointAt(0);
+    bytes.push(code < 256 ? code : 0x3f);
+  }
+  return Buffer.from(bytes);
+}
+
 export function sendReport(mapping, info, body) {
   const base = envSetting('REPORT_URL');
   if (!base) return;
-  const query = new URLSearchParams();
-  query.set('releaseNumber', info.release ?? '');
-  query.set('ip', info.ip ?? '');
-  query.set('agent', info.agent ?? '');
-  const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
-  if (envSetting('REPORT_USER'))
-    headers.Authorization = `Basic ${Buffer.from(
-      `${envSetting('REPORT_USER')}:${envSetting('REPORT_PASSWORD')}`
-    ).toString('base64')}`;
+  // A null value is a name alone, as BasicNameValuePair writes it.
+  const query = [
+    ['releaseNumber', info.release],
+    ['ip', info.ip],
+    ['agent', info.agent],
+  ]
+    .map(([name, value]) =>
+      value === null || value === undefined ? name : `${name}=${form(value)}`
+    )
+    .join('&');
+  // Java's report.user and report.password default to "default".
+  const user = envSetting('REPORT_USER', 'default');
+  const password = envSetting('REPORT_PASSWORD', 'default');
   fetch(`${base.replace(/\/$/, '')}/report/search/${mapping}?${query}`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(body),
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`,
+    },
+    body: latin1(JSON.stringify(body)),
     signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
   })
     .then((response) => {
