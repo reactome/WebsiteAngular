@@ -1,0 +1,163 @@
+// @vitest-environment node
+//
+// POST /data/query/ids and /data/query/ids/map -- a batch of objects by id --
+// with a stand-in graph that finds nothing, for Java's errors, and the two
+// orders Java writes in: a HashSet of DatabaseObjects and a HashMap of ids.
+// The expected orders are the JDK's own (11, the version the service runs),
+// computed with graph-core's DatabaseObject.hashCode -- dbId, then stId,
+// then displayName, 31 apart. Java's answers measured 17 Oct 2026.
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+vi.mock('./graph.mjs', () => ({
+  read: async () => [],
+  configured: () => true,
+  close: async () => {},
+  envSetting: () => '',
+}));
+
+const { app, databaseObjectSet, idKeyedMap } = await import('./service.mjs');
+
+const object = (dbId, stId, displayName) => ({ properties: { dbId, stId, displayName } });
+
+describe('the orders Java writes', () => {
+  it("a HashSet of DatabaseObjects, by graph-core's hashCode", () => {
+    const objects = [
+      object(109581, 'R-HSA-109581', 'Apoptosis'),
+      object(1640170, 'R-HSA-1640170', 'Cell Cycle'),
+      object(199420, 'R-HSA-199420', 'PTEN [cytosol]'),
+      object(69620, 'R-HSA-69620', 'Cell Cycle Checkpoints'),
+      object(29358, 'R-ALL-29358', 'ATP [cytosol]'),
+      object(5672965, 'R-HSA-5672965', 'RAS GEFs'),
+      // Past an int, and with a field missing: Long.hashCode, and 0 for null.
+      object(9999999999, 'R-HSA-9', null),
+      object(1, null, 'x'),
+    ];
+    expect(databaseObjectSet(objects).map((o) => o.properties.dbId)).toEqual([
+      1640170, 1, 109581, 29358, 5672965, 9999999999, 199420, 69620,
+    ]);
+  });
+
+  it('keeps one of two equal objects, as a set does', () => {
+    const a = object(109581, 'R-HSA-109581', 'Apoptosis');
+    expect(databaseObjectSet([a, object(109581, 'R-HSA-109581', 'Apoptosis')])).toHaveLength(1);
+  });
+
+  it('a HashMap of the ids as sent', () => {
+    const entries = ['R-HSA-109581', '199420', 'REACT_578', 'R-HSA-1640170', '69620', 'xyz'].map(
+      (id) => [id, id]
+    );
+    expect(idKeyedMap(entries).map(([id]) => id)).toEqual([
+      '69620',
+      'REACT_578',
+      'R-HSA-1640170',
+      'R-HSA-109581',
+      'xyz',
+      '199420',
+    ]);
+  });
+});
+
+let base;
+let server;
+beforeAll(async () => {
+  await new Promise((resolve) => {
+    server = app().listen(0, '127.0.0.1', resolve);
+  });
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+afterAll(() => new Promise((resolve) => server.close(resolve)));
+
+const post = (path, body, type = 'text/plain') =>
+  fetch(`${base}/ContentService/data/query/${path}`, {
+    method: 'POST',
+    headers: type ? { 'content-type': type } : {},
+    body,
+  });
+
+describe("Java's errors", () => {
+  it('refuses a body that is not text/plain, before anything else', async () => {
+    const response = await post('ids', 'x', 'application/json');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      415,
+      ["Content type 'application/json' not supported"],
+    ]);
+  });
+
+  for (const [path, signature] of [
+    [
+      'ids',
+      'public java.util.Collection<org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIds(java.lang.String)',
+    ],
+    [
+      'ids/map',
+      'public java.util.Map<java.lang.String, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIdsMap(java.lang.String)',
+    ],
+  ])
+    it(`answers a missing body at ${path} with Spring's 422`, async () => {
+      const response = await post(path, undefined);
+      expect([response.status, (await response.json()).messages]).toEqual([
+        422,
+        [`Required request body is missing: ${signature}`],
+      ]);
+    });
+
+  it('names the ids it did not find, as a Java list', async () => {
+    for (const path of ['ids', 'ids/map']) {
+      const response = await post(path, 'xyz,abc');
+      expect([path, response.status, (await response.json()).messages]).toEqual([
+        path,
+        404,
+        ['Ids: [xyz, abc] have not been found in the System'],
+      ]);
+    }
+  });
+
+  it("is Java's 500 for an id of dots, whatever else the body holds", async () => {
+    // graph-core's trimId splits on '.', and "." splits to nothing.
+    for (const body of ['R-HSA-109581,.', '..', 'x;.']) {
+      const response = await post('ids', body);
+      expect([body, response.status, (await response.json()).messages]).toEqual([
+        body,
+        500,
+        ['Index 0 out of bounds for length 0'],
+      ]);
+    }
+  });
+
+  it('fails on the first bad id, in order, as Java looks them up one at a time', async () => {
+    const dots = await post('ids', '.,99999999999999999999');
+    expect((await dots.json()).messages).toEqual(['Index 0 out of bounds for length 0']);
+    const long = await post('ids', '99999999999999999999,.');
+    expect((await long.json()).messages).toEqual(['For input string: "99999999999999999999"']);
+  });
+
+  it("is Java's 500 for a dbId past a long", async () => {
+    const response = await post('ids', '99999999999999999999');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['For input string: "99999999999999999999"'],
+    ]);
+  });
+
+  it('answers a GET as the attribute route of Java does: no object called "ids"', async () => {
+    for (const path of ['ids/map', 'ids/']) {
+      const response = await fetch(`${base}/ContentService/data/query/${path}`);
+      expect([path, response.status, (await response.json()).messages]).toEqual([
+        path,
+        404,
+        ['Id: ids has not been found in the System'],
+      ]);
+    }
+  });
+
+  it('takes the trailing slash and a matrix parameter, as Spring does', async () => {
+    for (const path of ['ids/', 'ids;x=1', 'ids/map/']) {
+      const response = await post(path, 'xyz');
+      expect([path, response.status, (await response.json()).messages]).toEqual([
+        path,
+        404,
+        ['Ids: [xyz] have not been found in the System'],
+      ]);
+    }
+  });
+});
