@@ -160,16 +160,23 @@ const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
 };
-const nodeEndpoints = [
-  ...readFileSync(join(root, 'tools/content-node/service.mjs'), 'utf8').matchAll(
-    /^ {4}path: '(\/ContentService\/[^']+)'/gm
-  ),
-].map((m) => m[1]);
-const sample = (path: string) =>
-  path
+// node's own list, as the service builds it -- some paths are template
+// literals, which a reading of the source text missed (four person lists,
+// the species lists, in-depth, suggest and spellcheck).
+const { endpoints } = (await import('../../tools/content-node/service.mjs')) as {
+  endpoints: { path: string; sample?: string }[];
+};
+const nodeEndpoints = endpoints.map((e) => e.path);
+/** An endpoint as a URL: its own sample id where it has one. */
+const sample = (path: string) => {
+  // A sample may carry a query; it goes on the end, not into the path.
+  const [id, query] = (endpoints.find((e) => e.path === path)?.sample ?? '').split('?');
+  const filled = id ? path.replace(/\{[^}]+\}/, id) : path;
+  return `${filled
     .replace(/\/schema\/\{id\}/, '/schema/Pathway')
     .replace(/\{(id|diagram|pathwayId)\}/g, 'R-HSA-109581')
-    .replace(/\{[^}]+\}/g, 'X1');
+    .replace(/\{[^}]+\}/g, 'X1')}${query ? `?${query}` : ''}`;
+};
 
 describe('where nginx sends things', () => {
   it('knows what is behind every upstream it names', () => {
@@ -181,7 +188,7 @@ describe('where nginx sends things', () => {
   });
 
   it('reads the endpoints node answers', () => {
-    expect(nodeEndpoints.length).toBeGreaterThan(40);
+    expect(nodeEndpoints.length).toBeGreaterThan(55);
   });
 
   for (const path of nodeEndpoints.filter((p) => !(p in NOT_YET_ROUTED)))
@@ -198,9 +205,13 @@ describe('where nginx sends things', () => {
   // The exporters share the render budget whichever side draws them
   // (routes.conf); a location that won the match without it would drop it.
   for (const kind of ['diagram', 'fireworks', 'document/event', 'event'])
-    it(`keeps the render budget on /ContentService/exporter/${kind}/`, () => {
-      const url = `/ContentService/exporter/${kind}/R-HSA-109581.png`;
-      const location = nginxLocation(url);
-      expect([url, /limit_req\s+zone=render_rate/.test(location?.body ?? '')]).toEqual([url, true]);
-    });
+    for (const ext of ['png', 'svg', 'pdf'])
+      it(`keeps the render budget on /ContentService/exporter/${kind}/….${ext}`, () => {
+        const url = `/ContentService/exporter/${kind}/R-HSA-109581.${ext}`;
+        const location = nginxLocation(url);
+        expect([url, /limit_req\s+zone=render_rate/.test(location?.body ?? '')]).toEqual([
+          url,
+          true,
+        ]);
+      });
 });
