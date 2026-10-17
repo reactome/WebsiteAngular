@@ -102,7 +102,12 @@ function answer(base, req, { host, timeout }) {
             body: Buffer.concat(chunks),
           });
         });
-        response.on('error', reject);
+        // A reset part way through: the run goes on at once, and no timer
+        // is left armed to keep the process alive until it fires.
+        response.on('error', (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
       }
     );
     // The whole request, not a silence: a body trickled a byte at a time
@@ -155,7 +160,15 @@ function differences(a, b, normalise, ignored = new Set()) {
   // Different statuses are a difference whatever the bodies are: an error
   // page the normaliser cannot take must not turn that into an error.
   if (found.includes('status')) {
-    if (digest(decoded(a)) !== digest(decoded(b))) found.push('body');
+    const raw = (answer) => {
+      try {
+        return decoded(answer);
+      } catch {
+        // An error page that claims an encoding it lacks: compare it as sent.
+        return answer.body;
+      }
+    };
+    if (digest(raw(a)) !== digest(raw(b))) found.push('body');
     return found;
   }
   if (digest(normalised(normalise, a)) !== digest(normalised(normalise, b))) found.push('body');
@@ -241,6 +254,23 @@ if (process.argv[1] && process.argv[1].endsWith('parity.mjs')) {
     );
     process.exit(3);
   }
+  // Usage errors exit 3, never 1 ("differences"): an unusable base, a
+  // dangling --ignore-header.
+  const usage = (message) => {
+    console.error(`parity.mjs: ${message}`);
+    process.exit(3);
+  };
+  for (const base of [option('reference'), option('candidate')]) {
+    try {
+      baseOf(base);
+    } catch {
+      usage('each base must be an http or https URL without a query');
+    }
+  }
+  args.forEach((arg, at) => {
+    if (arg === '--ignore-header' && (!args[at + 1] || args[at + 1].startsWith('--')))
+      usage('--ignore-header needs a header name');
+  });
   const report = await compareAll(JSON.parse(readFileSync(option('requests'), 'utf8')), {
     reference: option('reference'),
     candidate: option('candidate'),

@@ -5,6 +5,10 @@
 // candidate (what replaces it).
 import { createServer } from 'node:http';
 import { setInterval, clearInterval } from 'node:timers';
+import { spawnSync } from 'node:child_process';
+import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { compareAll, verdict } from './parity.mjs';
@@ -32,6 +36,15 @@ function stub(table) {
       response.setHeader('content-type', ['text/plain', 'text/html']);
       return response.end('x');
     }
+    // A body cut off by a reset, part way.
+    if (request.url === '/reset') {
+      response.writeHead(200, { 'content-length': '100' });
+      response.write('partial');
+      return setTimeout(() => request.socket.destroy(), 20);
+    }
+    // A status difference whose error page claims gzip and is not.
+    if (request.url === '/badgz' && table.name)
+      return response.writeHead(500, { 'content-encoding': 'gzip' }).end('not gzip');
     // Context-path aware: only /ctx/x exists.
     if (request.url === '/ctx/x') return response.end(`ctx ${table.name ?? ''}`);
     const answer = table[request.url] ?? { status: 404, body: 'none' };
@@ -65,6 +78,7 @@ const reference = {
     body: gzipSync('{"summary":{"token":"T1"},"n":1}'),
   },
   '/text404': { status: 404, body: 'secret-body-text' },
+  '/badgz': { headers: { 'content-type': 'text/plain' }, body: 'ok' },
   '/secret/ABC123': { body: 'x' },
 };
 const candidate = {
@@ -235,5 +249,52 @@ describe('the parity harness', () => {
     const report = await run(['/header'], { ignoreHeaders: ['content-disposition'] });
     expect(report.counts.identical).toBe(1);
     expect(report.ignoredHeaders).toEqual(['content-disposition']);
+  });
+
+  it('lets a reset part way through end at once, leaving no timer behind', async () => {
+    // Timers of the run's own: the process may hold others (the test runner's).
+    const timers = () =>
+      process.getActiveResourcesInfo().filter((kind) => kind === 'Timeout').length;
+    const before = timers();
+    const started = Date.now();
+    const report = await run(['/reset'], { timeout: 60_000 });
+    expect(report.results[0].error).toMatch(/^network/);
+    expect(Date.now() - started).toBeLessThan(2000);
+    // A timer left armed would keep the process alive for the full minute.
+    expect(timers() - before).toBe(0);
+  });
+
+  it('reports a status difference even when the error page cannot be decoded', async () => {
+    const report = await run(['/badgz']);
+    expect(report.results[0].differs).toEqual(expect.arrayContaining(['status', 'body']));
+    expect(verdict(report)).toBe(1);
+  });
+
+  it('exits 3, not 1, on a usage error', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'parity-'));
+    try {
+      const requests = join(dir, 'requests.json');
+      writeFileSync(requests, JSON.stringify([{ path: '/x' }]));
+      const cli = join(import.meta.dirname, 'parity.mjs');
+      for (const args of [
+        ['--reference', 'ftp://x', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
+        ['--reference', 'not a url', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
+        [
+          '--reference',
+          'http://127.0.0.1:1',
+          '--candidate',
+          'http://127.0.0.1:1',
+          '--requests',
+          requests,
+          '--ignore-header',
+        ],
+      ])
+        expect([args.join(' '), spawnSync(process.execPath, [cli, ...args]).status]).toEqual([
+          args.join(' '),
+          3,
+        ]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });
