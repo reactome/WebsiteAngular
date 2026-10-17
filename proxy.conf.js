@@ -128,6 +128,8 @@ module.exports = {
   // website's search (/query).
   '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?/?)(\\?|$)':
     contentNode,
+  // What points at an object, for the website's detail pages.
+  '^/ContentService/data/instance/[^/?]+/referrers/?(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,
