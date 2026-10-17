@@ -6,7 +6,7 @@
 import { createServer } from 'node:http';
 import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { compareAll } from './parity.mjs';
+import { compareAll, verdict } from './parity.mjs';
 import { normalisers } from './normalisers.mjs';
 
 /** A server answering from a table of path -> { status, headers, body }. */
@@ -16,6 +16,10 @@ function stub(table) {
     calls += 1;
     // Live third-party data: a different answer every time.
     if (request.url === '/live') return response.end(`live ${calls}`);
+    // An answer built from the Host it was asked with.
+    if (request.url === '/host') return response.end(`host ${request.headers.host}`);
+    // A server that never answers.
+    if (request.url === '/hang') return;
     const answer = table[request.url] ?? { status: 404, body: 'none' };
     response.writeHead(answer.status ?? 200, answer.headers ?? { 'content-type': 'text/plain' });
     response.end(answer.body);
@@ -36,11 +40,17 @@ const reference = {
     headers: { 'content-type': 'text/plain', 'content-disposition': 'a.txt' },
     body: 'x',
   },
-  '/token': { headers: json, body: '{"summary":{"token":"T1","type":"X"},"n":1}' },
+  '/redirect': { status: 302, headers: { location: '/a' }, body: '' },
+  '/vary': { headers: { 'content-type': 'text/plain', vary: 'Accept' }, body: 'x' },
+  '/token': {
+    headers: json,
+    body: '{"summary":{"token":"T1","type":"X"},"n":9007199254740993}',
+  },
   '/gz': {
     headers: { 'content-type': 'application/gzip' },
     body: gzipSync('{"summary":{"token":"T1"},"n":1}'),
   },
+  '/text404': { status: 404, body: 'secret-body-text' },
   '/secret/ABC123': { body: 'x' },
 };
 const candidate = {
@@ -51,7 +61,12 @@ const candidate = {
     headers: { 'content-type': 'text/plain', 'content-disposition': 'b.txt' },
     body: 'x',
   },
-  '/token': { headers: json, body: '{"summary":{"token":"T2","type":"X"},"n":1}' },
+  '/redirect': { status: 302, headers: { location: '/b' }, body: '' },
+  '/vary': { headers: { 'content-type': 'text/plain' }, body: 'x' },
+  '/token': {
+    headers: json,
+    body: '{"summary":{"token":"T2","type":"X"},"n":9007199254740993}',
+  },
   '/gz': {
     headers: { 'content-type': 'application/gzip' },
     body: gzipSync('{"summary":{"token":"T9"},"n":1}'),
@@ -65,13 +80,15 @@ beforeAll(async () => {
   cand = await stub(candidate);
 });
 afterAll(async () => {
+  ref.server.closeAllConnections();
+  cand.server.closeAllConnections();
   await new Promise((resolve) => ref.server.close(resolve));
   await new Promise((resolve) => cand.server.close(resolve));
 });
 
 const run = (paths, options = {}) =>
   compareAll(
-    paths.map((path) => ({ method: 'GET', path })),
+    paths.map((path) => (typeof path === 'string' ? { method: 'GET', path } : path)),
     { reference: ref.url, candidate: cand.url, ...options }
   );
 
@@ -79,6 +96,7 @@ describe('the parity harness', () => {
   it('finds identical answers identical', async () => {
     const report = await run(['/same']);
     expect(report.counts).toEqual({ identical: 1, different: 0 });
+    expect(verdict(report)).toBe(0);
   });
 
   it('finds a one-byte, a status and a header difference', async () => {
@@ -89,9 +107,20 @@ describe('the parity harness', () => {
       ['status'],
       ['content-disposition'],
     ]);
+    expect(verdict(report)).toBe(1);
   });
 
-  it('removes the analysis token only through a declared normaliser', async () => {
+  it('compares every header but named noise: a redirect target, a Vary', async () => {
+    const report = await run(['/redirect', '/vary']);
+    expect(report.results.map((r) => r.differs)).toEqual([['location'], ['vary']]);
+  });
+
+  it('asks both sides with the same Host', async () => {
+    const report = await run([{ method: 'GET', path: '/host' }], { host: 'reactome.example' });
+    expect(report.counts.identical).toBe(1);
+  });
+
+  it('removes the analysis token only through a declared normaliser, leaving every other byte', async () => {
     expect((await run(['/token'])).counts.different).toBe(1);
     expect(
       (await run(['/token'], { normalise: normalisers.analysisResult })).counts.identical
@@ -99,23 +128,51 @@ describe('the parity harness', () => {
     expect((await run(['/gz'], { normalise: normalisers.analysisResultGz })).counts.identical).toBe(
       1
     );
+    // Byte for byte apart from the token: no JSON round trip to lose a digit.
+    const strip = (text) => normalisers.analysisResult(Buffer.from(text)).toString();
+    expect(strip('{"summary":{"token":"T1"},"n":9007199254740993}')).toBe(
+      '{"summary":{"token":""},"n":9007199254740993}'
+    );
+    expect(strip('{"summary":{"token":"T1"},"n":-0}')).not.toBe(
+      strip('{"summary":{"token":"T1"},"n":0}')
+    );
+  });
+
+  it('records a failure as an error, with no body or secret in it, and does not stop', async () => {
+    const report = await run(['/text404', '/same', '/hang'], {
+      normalise: normalisers.analysisResultGz,
+      redact: true,
+      timeout: 300,
+    });
+    expect(report.results.map((r) => r.error !== undefined)).toEqual([true, true, true]);
+    expect(report.counts.errors).toBe(3);
+    expect(JSON.stringify(report)).not.toContain('secret-body-text');
+    expect(verdict(report)).toBe(2);
+    const plain = await run(['/same', '/hang'], { timeout: 300 });
+    expect(plain.counts).toEqual({ identical: 1, different: 0, errors: 1 });
   });
 
   it('never puts a body, and with redaction no path, in its report', async () => {
     const report = await run(['/secret/ABC123'], { redact: true });
-    const text = JSON.stringify(report);
-    expect(text).not.toContain('ABC123');
-    expect(text).not.toContain('"x"');
+    expect(JSON.stringify(report)).not.toContain('ABC123');
     expect(report.results[0].request).toBe('#0');
+    expect(Object.keys(report.results[0]).sort()).toEqual(['differs', 'request', 'status']);
   });
 
   it('calibrates against the reference itself: a difference counts only where the reference agreed with itself', async () => {
     const report = await run(['/same', '/byte'], { calibrate: true });
     expect(report.results.map((r) => r.calibrated)).toEqual([true, true]);
     expect(report.counts).toEqual({ identical: 1, different: 1 });
-    // A reference that disagrees with itself is unstable, counted neither way.
+    // A reference that disagrees with itself is unstable, counted neither way,
+    // and a run that compared nothing is not a pass.
     const live = await run(['/live'], { calibrate: true });
     expect(live.counts).toEqual({ identical: 0, different: 0, unstable: 1 });
     expect(live.results[0].calibrated).toBe(false);
+    expect(verdict(live)).toBe(2);
+  });
+
+  it('asks both at once with --simultaneous, with the same result', async () => {
+    const report = await run(['/same', '/byte'], { simultaneous: true });
+    expect(report.counts).toEqual({ identical: 1, different: 1 });
   });
 });

@@ -2,68 +2,122 @@
 /**
  * Java-against-Java parity (spec 010, research R7): the same requests to a
  * reference -- what answers today -- and a candidate -- what replaces it --
- * compared on status, the headers clients read, and the bytes of the body
- * after a declared normaliser.
+ * compared on status, every response header but named noise, and the bytes
+ * of the body after a declared normaliser.
  *
- * Reports carry digests and verdicts, never bodies: some answers hold
- * people's records, and with --redact not even the request, because some
+ * Over node:http, not fetch: fetch drops a Host set by the caller, so each
+ * side saw its own address and every answer built from Host differed for a
+ * reason that was not a difference; and fetch hides Transfer-Encoding.
+ *
+ * Reports carry digests and verdicts, never bodies -- some answers hold
+ * people's records -- and errors carry only their kind, never a message,
+ * which can quote a body. With --redact not even the request, because some
  * paths are tokens anyone holding them can read.
  *
  * Usage:
  *   node tools/java-parity/parity.mjs --reference URL --candidate URL \
- *     --requests requests.json [--normalise NAME] [--calibrate] [--redact] [--simultaneous]
- * requests.json: [{ "method": "GET", "path": "/ContentService/...", "headers": {}, "body": "..." }]
+ *     --requests requests.json [--normalise NAME] [--host HOST] [--timeout MS]
+ *     [--calibrate] [--redact] [--simultaneous]
+ * requests.json: [{ "method": "GET", "path": "/...", "headers": {},
+ *                   "body": "text" | "bodyBase64": "..." | "bodyFile": "path" }]
+ * Exit: 0 all identical; 1 differences; 2 errors, unstable requests, or
+ * nothing compared -- a run that compared nothing is not a pass; 3 usage.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { request as httpRequest } from 'node:http';
+import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
 import { normalisers } from './normalisers.mjs';
 
-/** The headers a client reads; the rest (Date, Server, Connection) differ by nature. */
-// fetch decodes a Content-Encoding alike on both sides; the header itself is
-// still compared. A gzip *file* (a download) arrives as its bytes.
-const COMPARED_HEADERS = [
-  'content-type',
-  'content-disposition',
-  'content-length',
-  'content-encoding',
-  'access-control-allow-origin',
-  'cache-control',
-];
+/** Headers that differ between any two servers by nature, and only these. */
+const NOISE = new Set(['date', 'connection', 'keep-alive', 'server']);
 
-async function answer(base, { method = 'GET', path, headers = {}, body }) {
-  const response = await fetch(`${base}${path}`, {
-    method,
-    headers,
-    body,
-    // A redirect is an answer to compare, not one to follow.
-    redirect: 'manual',
+function requestBody({ body, bodyBase64, bodyFile }) {
+  if (bodyFile) return readFileSync(bodyFile);
+  if (bodyBase64) return Buffer.from(bodyBase64, 'base64');
+  return body === undefined ? undefined : Buffer.from(body);
+}
+
+/** One answer: status, headers (lower-cased, joined), and the body as sent. */
+function answer(base, req, { host, timeout }) {
+  const url = new URL(base);
+  const body = requestBody(req);
+  return new Promise((resolve, reject) => {
+    const outgoing = httpRequest(
+      {
+        host: url.hostname,
+        port: url.port,
+        method: req.method ?? 'GET',
+        path: req.path,
+        headers: {
+          ...(req.headers ?? {}),
+          ...(host ? { host } : {}),
+          ...(body ? { 'content-length': body.length } : {}),
+        },
+      },
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () =>
+          resolve({
+            status: response.statusCode,
+            headers: Object.fromEntries(
+              Object.entries(response.headers).map(([name, value]) => [
+                name,
+                Array.isArray(value) ? value.join(', ') : value,
+              ])
+            ),
+            body: Buffer.concat(chunks),
+          })
+        );
+        response.on('error', reject);
+      }
+    );
+    outgoing.setTimeout(timeout, () =>
+      outgoing.destroy(Object.assign(new Error(), { kind: 'timeout' }))
+    );
+    outgoing.on('error', reject);
+    outgoing.end(body);
   });
-  return {
-    status: response.status,
-    headers: Object.fromEntries(COMPARED_HEADERS.map((name) => [name, response.headers.get(name)])),
-    body: Buffer.from(await response.arrayBuffer()),
-  };
+}
+
+/** The body a client reads: Content-Encoding undone (the header itself is still compared). */
+function decoded({ headers, body }) {
+  const encoding = (headers['content-encoding'] ?? '').trim().toLowerCase();
+  if (encoding === 'gzip') return gunzipSync(body);
+  if (encoding === 'br') return brotliDecompressSync(body);
+  if (encoding === 'deflate') return inflateSync(body);
+  return body;
 }
 
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-/** What differs between two answers, after normalising both bodies the same way. */
+/** What differs between two answers, bodies normalised the same way. */
 function differences(a, b, normalise) {
   const found = [];
   if (a.status !== b.status) found.push('status');
-  for (const name of COMPARED_HEADERS) {
-    // Content-Length follows the body; a normalised body is compared instead.
+  const names = new Set([...Object.keys(a.headers), ...Object.keys(b.headers)]);
+  for (const name of [...names].sort()) {
+    if (NOISE.has(name)) continue;
+    // Content-Length follows the body; under a normaliser the body is compared instead.
     if (name === 'content-length' && normalise !== normalisers.identity) continue;
     if (a.headers[name] !== b.headers[name]) found.push(name);
   }
-  if (digest(normalise(a.body)) !== digest(normalise(b.body))) found.push('body');
+  if (digest(normalise(decoded(a))) !== digest(normalise(decoded(b)))) found.push('body');
   return found;
 }
 
+/** Only the kind of a failure: a message can quote the body or the URL. */
+const kindOf = (error) =>
+  error?.kind ??
+  (error?.code
+    ? `network ${error.code}`
+    : 'failed (body unreadable or not as the normaliser expects)');
+
 /**
- * Compare every request. With `calibrate`, the reference is first asked
- * twice: where it disagrees with itself (live third-party data), the request
- * is "unstable" and not counted either way.
+ * Compare every request. With `calibrate`, the reference is asked again:
+ * where it disagrees with itself (live third-party data), the request is
+ * "unstable" and counted neither way.
  */
 export async function compareAll(
   requests,
@@ -71,6 +125,8 @@ export async function compareAll(
     reference,
     candidate,
     normalise = normalisers.identity,
+    host,
+    timeout = 120_000,
     calibrate = false,
     redact = false,
     simultaneous = false,
@@ -78,26 +134,38 @@ export async function compareAll(
 ) {
   const results = [];
   const counts = { identical: 0, different: 0 };
-  for (const [index, request] of requests.entries()) {
-    const label = redact ? `#${index}` : `${request.method ?? 'GET'} ${request.path}`;
-    const [ref, cand] = simultaneous
-      ? await Promise.all([answer(reference, request), answer(candidate, request)])
-      : [await answer(reference, request), await answer(candidate, request)];
-    const result = { request: label, status: [ref.status, cand.status] };
-    if (calibrate) {
-      const again = await answer(reference, request);
-      result.calibrated = differences(ref, again, normalise).length === 0;
-      if (!result.calibrated) {
-        counts.unstable = (counts.unstable ?? 0) + 1;
-        results.push(result);
-        continue;
+  const count = (key) => (counts[key] = (counts[key] ?? 0) + 1);
+  const ask = (base, req) => answer(base, req, { host, timeout });
+  for (const [index, req] of requests.entries()) {
+    const label = redact ? `#${index}` : `${req.method ?? 'GET'} ${req.path}`;
+    try {
+      const [ref, cand] = simultaneous
+        ? await Promise.all([ask(reference, req), ask(candidate, req)])
+        : [await ask(reference, req), await ask(candidate, req)];
+      const result = { request: label, status: [ref.status, cand.status] };
+      if (calibrate) {
+        result.calibrated = differences(ref, await ask(reference, req), normalise).length === 0;
+        if (!result.calibrated) {
+          count('unstable');
+          results.push(result);
+          continue;
+        }
       }
+      result.differs = differences(ref, cand, normalise);
+      count(result.differs.length ? 'different' : 'identical');
+      results.push(result);
+    } catch (error) {
+      count('errors');
+      results.push({ request: label, error: kindOf(error) });
     }
-    result.differs = differences(ref, cand, normalise);
-    counts[result.differs.length ? 'different' : 'identical'] += 1;
-    results.push(result);
   }
   return { counts, results };
+}
+
+/** The exit code a report earns: 0 only when something was compared and all of it was identical. */
+export function verdict({ counts }) {
+  if (counts.errors || counts.unstable || counts.identical + counts.different === 0) return 2;
+  return counts.different ? 1 : 0;
 }
 
 // Started directly rather than imported by a test.
@@ -111,18 +179,20 @@ if (process.argv[1] && process.argv[1].endsWith('parity.mjs')) {
   const normalise = normalisers[option('normalise') ?? 'identity'];
   if (!option('reference') || !option('candidate') || !option('requests') || !normalise) {
     console.error(
-      'usage: parity.mjs --reference URL --candidate URL --requests FILE [--normalise NAME] [--calibrate] [--redact] [--simultaneous]'
+      'usage: parity.mjs --reference URL --candidate URL --requests FILE [--normalise NAME] [--host HOST] [--timeout MS] [--calibrate] [--redact] [--simultaneous]'
     );
-    process.exit(2);
+    process.exit(3);
   }
   const report = await compareAll(JSON.parse(readFileSync(option('requests'), 'utf8')), {
     reference: option('reference'),
     candidate: option('candidate'),
     normalise,
+    host: option('host'),
+    timeout: option('timeout') ? Number(option('timeout')) : undefined,
     calibrate: flag('calibrate'),
     redact: flag('redact'),
     simultaneous: flag('simultaneous'),
   });
   console.log(JSON.stringify(report, null, 2));
-  process.exit(report.counts.different ? 1 : 0);
+  process.exit(verdict(report));
 }
