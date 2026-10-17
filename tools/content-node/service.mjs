@@ -2084,6 +2084,91 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/interactors/static/molecule/{id}/summary',
+    // TP53: 249 interactors.
+    sample: 'P04637',
+    differs: [/: \.url: /],
+    /**
+     * How many IntAct interactors an accession has: the Pathway Browser's
+     * interactor counts. See staticSummary. None is Java's 404 naming the
+     * accession as given.
+     */
+    handler: async (request) => {
+      const acc = pathId(rawSegment(request, 5));
+      const summary = await staticSummary([acc]);
+      if (!summary.entities.length)
+        return notFound(request, `No interactors found for accession: ${acc}`);
+      return { status: 200, body: summary, type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/interactors/static/molecules/summary',
+    method: 'post',
+    sampleBody: 'P04637, Q00987;xyz',
+    differs: [/: \.url: /],
+    /**
+     * How many interactors each of a batch of accessions has: the body split
+     * on , ; newline and tab and each piece trimmed, then staticSummary. None
+     * is Java's 404 naming the body as sent.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsSummaryByAccs(java.lang.String)'
+        );
+      const body = plainText(request.body, contentType);
+      const summary = await staticSummary(javaSplit(body, /,|;|\n|\t/).map(javaTrim));
+      if (!summary.entities.length)
+        return notFound(request, `No interactors found for accession: ${body}`);
+      return { status: 200, body: summary, type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/interactors/static/molecule/{id}/pathways',
+    // TP53's interactors, in human pathways.
+    sample: 'P04637?species=Homo%20sapiens',
+    differs: [/: \.url: /],
+    /**
+     * The lower-level pathways an accession's interactors take part in, in
+     * one species: graph-core's PathwayRepository.getLowerLevelPathways, or
+     * getDiagrammedLowerLevelPathways with onlyDiagrammed (a Boolean, false
+     * by default), kept as written. The species is compared with the
+     * pathways' speciesName as given -- "Homo sapiens", not a taxId -- and
+     * none at all is null, which matches nothing: Java's 404.
+     */
+    handler: async (request) => {
+      const acc = pathId(rawSegment(request, 5));
+      const given = queryValues(request, 'species');
+      const speciesName = given.length ? given.join(',') : null;
+      const diagrammed = springBoolean(queryValues(request, 'onlyDiagrammed'));
+      if (diagrammed.error) return javaError(request, 400, 'BAD_REQUEST', diagrammed.error);
+      const rows = await read(
+        diagrammed.value
+          ? `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
+             WHERE a.identifier = $acc OR a.variantIdentifier = $acc
+             MATCH path=(p:Pathway{hasDiagram:True})-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b)
+             WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway) AND e.hasDiagram)
+             RETURN DISTINCT p`
+          : `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
+             WHERE a.identifier = $acc OR a.variantIdentifier = $acc
+             MATCH path=(p:Pathway)-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b)
+             WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway))
+             RETURN DISTINCT p`,
+        { acc, speciesName }
+      );
+      if (rows.length === 0) return notFound(request, `No pathways found for molecule: ${acc}`);
+      return { status: 200, body: rows.map((row) => pathwayJson(row.p)), type: 'application/json' };
+    },
+  },
+  {
     path: '/ContentService/interactors/psicquic/resources',
     // PsicquicInteractionsController.getResources: the PSICQUIC services the
     // Pathway Browser can draw interactors from, from the last reading of the
@@ -7717,6 +7802,29 @@ async function inOrderPool(items, width, work) {
   };
   await Promise.all(Array.from({ length: Math.min(width, items.length) }, worker));
   return answers;
+}
+
+/**
+ * InteractionManager.getStaticProteinsSummary: graph-core's
+ * InteractorCountRepository.countByAccessions, kept as written, gathered by
+ * InteractionsService into a HashMap keyed by the reference entity's
+ * identifier -- an isoform's accession counts under its protein's -- and
+ * written in that map's order as Interactors of InteractorEntity (acc,
+ * count), each with a count above nothing.
+ */
+async function staticSummary(accs) {
+  const rows = await read(
+    `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)
+     WHERE t.variantIdentifier IN $accs OR (t.variantIdentifier IS NULL AND t.identifier IN $accs)
+     RETURN DISTINCT t.identifier AS s, COUNT(DISTINCT in) as t`,
+    { accs }
+  );
+  const counts = new JavaHashMap();
+  for (const row of rows) counts.set(row.s, Number(row.t));
+  const entities = [...counts.entries()]
+    .filter(([, count]) => count > 0)
+    .map(([acc, count]) => ({ acc: javaTrim(acc), count }));
+  return { resource: 'static', entities };
 }
 
 /** Every relationship from an event down to its participants, as graph-core lists them. */

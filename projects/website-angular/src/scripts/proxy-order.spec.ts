@@ -238,6 +238,9 @@ describe('the dev server proxy', () => {
     '/ContentService/interactors/static/molecule/P04637/withEntities',
     // The diagram's POST, for every protein in it.
     '/ContentService/interactors/static/molecules/details',
+    '/ContentService/interactors/static/molecule/P04637/summary',
+    '/ContentService/interactors/static/molecules/summary',
+    '/ContentService/interactors/static/molecule/P04637/pathways?species=Homo%20sapiens',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -316,9 +319,8 @@ describe('the dev server proxy', () => {
     '/ContentService/data/instance/R-HSA-141433/referrers/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',
     // The interactor endpoints node does not serve.
-    '/ContentService/interactors/static/molecule/P04637/summary',
-    '/ContentService/interactors/static/molecules/summary',
-    '/ContentService/interactors/static/molecule/P04637/pathways',
+    '/ContentService/interactors/static/molecule/P04637/summary/x',
+    '/ContentService/interactors/static/molecules/pathways',
     '/ContentService/interactors/psicquic/molecules/IntAct/details',
     '/ContentService/interactors/psicquic/resources/x',
     '/ContentService/interactors/psicquic/molecule/MINT/P04637/details',
