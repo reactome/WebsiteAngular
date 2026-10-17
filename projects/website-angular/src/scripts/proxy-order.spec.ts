@@ -172,6 +172,15 @@ describe('the dev server proxy', () => {
     await expectContentNode('/ContentService/data/participants/R-HSA-5672965/referenceEntities');
   });
 
+  it('sends the physical entities of an event to the content service', async () => {
+    await expectContentNode(
+      '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities'
+    );
+    await expectContentNode(
+      '/ContentService/data/participants/5672965/participatingPhysicalEntities/'
+    );
+  });
+
   for (const url of [
     '/ContentService/data/detail/R-HSA-199420/locationsInPWB',
     '/ContentService/data/detail/199420/locationsInPWB?directParticipants=true',
@@ -325,8 +334,8 @@ describe('the dev server proxy', () => {
     '/ContentService/data/complex/R-HSA-5672601',
     '/ContentService/data/complexes/UniProt',
     '/ContentService/data/complexes/UniProt/P00533/x',
-    // Only the participants and their reference entities are ported.
-    '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
+    // Only the participants' own paths: Java has none below them.
+    '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities/x',
     // Only these of an entity are ported: not a path below them.
     '/ContentService/data/entity/R-HSA-199420/componentOf/x',
     // Only the locations are ported, not their neighbours under /detail.

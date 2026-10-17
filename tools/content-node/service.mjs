@@ -1219,6 +1219,34 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/data/participants/{id}/participatingPhysicalEntities',
+    // A reaction's participants, sets and small molecules among them.
+    sample: 'R-HSA-5672965',
+    /**
+     * Every physical entity taking part in an event, all the way down through
+     * its sub-events, catalysts and regulators, written whole.
+     *
+     * graph-core's PhysicalEntityRepository.getParticipatingPhysicalEntities,
+     * kept as written so the rows come in Java's order; the id is read as
+     * graph-core reads it (graphCoreId). Java's contract, as for
+     * /referenceEntities: nothing found is `[]`, and an id that is neither a
+     * stable id nor a dbId is a 200 with no body (the service returns null).
+     */
+    handler: async (request) => {
+      const id = await graphCoreId(pathId(rawSegment(request, 4)));
+      if (!id) return { status: 200, body: undefined };
+      const rows = await read(
+        `MATCH (n:DatabaseObject${id.object})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(m:PhysicalEntity) RETURN Distinct(m)`,
+        id.params
+      );
+      return {
+        status: 200,
+        body: rows.map((row) => physicalEntityJson(row.m)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/participants/{id}',
     // A reaction with five participants of four classes.
     sample: 'R-HSA-5672965',

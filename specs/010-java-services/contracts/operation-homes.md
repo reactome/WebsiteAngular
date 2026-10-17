@@ -40,7 +40,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | POST   | `/data/orthologies/ids/species/{speciesId}`               | node — ported          | graph or search index                                                                         |
 | GET    | `/data/orthology/{id}/species/{speciesId}`                | node — ported          | graph or search index                                                                         |
 | GET    | `/data/participants/{id}`                                 | node — ported          | graph or search index                                                                         |
-| GET    | `/data/participants/{id}/participatingPhysicalEntities`   | node — to port         | graph or search index                                                                         |
+| GET    | `/data/participants/{id}/participatingPhysicalEntities`   | node — ported          | graph or search index                                                                         |
 | GET    | `/data/participants/{id}/referenceEntities`               | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathway/{id}/containedEvents`                      | node — to port         | graph or search index                                                                         |
 | GET    | `/data/pathway/{id}/containedEvents/{attributeName}`      | node — to port         | graph or search index                                                                         |
