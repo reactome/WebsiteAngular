@@ -10,13 +10,15 @@ const asked = [];
 vi.mock('./graph.mjs', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
+    // findNewStId: REACT_1 became R-HSA-9; REACT_2 became nothing.
+    if (cypher.includes('oldStId')) return params.id === 'REACT_1' ? [{ stId: 'R-HSA-9' }] : [];
     if (params.id === 'R-HSA-0' || params.id === 0) return [];
     return [
       {
         referral: 'hasComponent',
         objects: [
           {
-            labels: ['Complex', 'PhysicalEntity', 'DatabaseObject'],
+            schemaClass: 'Complex',
             dbId: 7,
             stId: 'R-HSA-7',
             displayName: 'A complex',
@@ -27,7 +29,7 @@ vi.mock('./graph.mjs', () => ({
         referral: 'updatedInstance',
         objects: [
           {
-            labels: ['UpdateTracker', 'DatabaseObject'],
+            schemaClass: 'UpdateTracker',
             dbId: 8,
             stId: null,
             displayName: 'An update',
@@ -66,6 +68,11 @@ describe('/data/instance/{id}/referrers', () => {
         '{"referral":"updatedInstance","objects":[{"dbId":8,"displayName":"An update","schemaClass":"UpdateTracker"}]}]'
     );
     expect(asked[0][0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)<-\[rel\]-\(ref\)/);
+    // graph-core's exclusions, all seven, and no edit history.
+    expect(asked[0][0]).toContain('NOT ref:InstanceEdit');
+    expect(asked[0][0]).toContain(
+      'NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)'
+    );
     expect(asked[0][1]).toEqual({ id: 'R-HSA-141433' });
   });
 
@@ -86,5 +93,14 @@ describe('/data/instance/{id}/referrers', () => {
       ['No referrers found for id: xyz'],
     ]);
     expect(asked).toHaveLength(0);
+  });
+
+  it('finds an old REACT_ id by its new stable id, and keeps it when there is none', async () => {
+    asked.length = 0;
+    await get('REACT_1.3');
+    expect(asked.map(([, params]) => params.id)).toEqual(['REACT_1', 'R-HSA-9']);
+    asked.length = 0;
+    await get('REACT_2');
+    expect(asked.map(([, params]) => params.id)).toEqual(['REACT_2', 'REACT_2']);
   });
 });

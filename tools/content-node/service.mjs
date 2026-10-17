@@ -2318,11 +2318,12 @@ export const endpoints = [
   {
     path: '/ContentService/data/instance/{id}/referrers',
     // SchemaController.getInstanceReferrers, for the website's detail pages:
-    // everything that points at the object -- not its edit history, nor
-    // the species, compartments and the like that point *from* it -- grouped
-    // by relationship, each a simple object (graph-core's
-    // ReferralsLinkageRepository.getReferralsTo, at most 1000 groups). An id
-    // that is no identifier is Java's 404; one nothing points at, [].
+    // everything that points at the object -- not edit history, and, asked
+    // about a species, compartment, database, evidence type or review
+    // status, not everything that carries it -- grouped by relationship,
+    // each a simple object (graph-core's ReferralsLinkageRepository
+    // .getReferralsTo, at most 1000 groups). An id that is no identifier is
+    // Java's 404; one nothing points at, [].
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       let { where, params } = resolveId(raw);
@@ -2340,9 +2341,9 @@ export const endpoints = [
       const rows = await read(
         `MATCH (d:DatabaseObject${object})<-[rel]-(ref)
          WHERE NOT ref:InstanceEdit
-           AND NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType]-(ref)
+           AND NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)
          RETURN DISTINCT TYPE(rel) AS referral,
-                COLLECT({dbId: ref.dbId, stId: ref.stId, displayName: ref.displayName, labels: labels(ref)}) AS objects
+                COLLECT({dbId: ref.dbId, stId: ref.stId, displayName: ref.displayName, schemaClass: ref.schemaClass}) AS objects
          LIMIT 1000`,
         params
       );
@@ -2351,7 +2352,16 @@ export const endpoints = [
         type: 'application/json',
         body: rows.map((row) => ({
           referral: row.referral,
-          objects: row.objects.map((ref) => simpleObjectJson(ref)),
+          // SimpleDatabaseObject.build(Value): on a collected node, its
+          // schemaClass property, not its labels as from a Record.
+          objects: row.objects.map((ref) => {
+            const out = { dbId: ref.dbId };
+            if (ref.stId !== null && ref.stId !== undefined && ref.stId !== '') out.stId = ref.stId;
+            const displayName = ref.displayName ?? 'null';
+            if (displayName !== '') out.displayName = displayName;
+            out.schemaClass = ref.schemaClass ?? 'null';
+            return out;
+          }),
         })),
       };
     },
