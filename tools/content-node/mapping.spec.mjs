@@ -157,6 +157,11 @@ describe('/data/mapping/{resource}/{identifier}/pathways', () => {
     expect(oneLine(last()[0])).toBe(
       'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier WITH DISTINCT p MATCH (p)-[:species]->(:Species{taxId: $taxId}) RETURN p ORDER BY p.stId'
     );
+    expect(last()[1]).toEqual({ identifier: '0006915', taxId: '9606' });
+    // Only an identifier starting "go" is cut to its digits.
+    asked.length = 0;
+    await get('GO/0006915x/pathways');
+    expect(last()[1]).toEqual({ identifier: '0006915x' });
   });
 
   it('is a 404 naming the resource and identifier as given', async () => {
@@ -165,6 +170,9 @@ describe('/data/mapping/{resource}/{identifier}/pathways', () => {
       404,
       ['No reactions found for GO:GO:0006915'],
     ]);
+    // Not GO's question: only /pathways asks it.
+    expect(oneLine(last()[0])).toMatch(/RETURN DISTINCT rle ORDER BY rle\.stId$/);
+    expect(last()[1]).toEqual({ databaseName: 'GO', identifier: 'GO:0006915' });
     asked.length = 0;
     // A GO identifier with no digits is nothing to look for.
     expect(await messages(await get('GO/GO:/pathways'))).toEqual([
@@ -172,5 +180,11 @@ describe('/data/mapping/{resource}/{identifier}/pathways', () => {
       ['No pathways found for GO:GO:'],
     ]);
     expect(mapped()).toEqual([]);
+  });
+
+  it('looks the species up first, as MappingService does, even for a GO identifier with no digits', async () => {
+    asked.length = 0;
+    await get('GO/GO:/pathways?species=9606');
+    expect(asked.map(([cypher]) => /^MATCH \(s:Species/.test(cypher))).toEqual([true]);
   });
 });

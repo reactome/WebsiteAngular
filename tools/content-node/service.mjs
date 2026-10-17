@@ -7385,7 +7385,8 @@ const MAPPED_REACTION_ROLES =
  *   the pathways annotated with the biological process. An identifier that
  *   starts "go" in any case is first cut to its ASCII digits, as
  *   replaceAll("[^0-9]", "") does -- GO:0006915 is 0006915.
- * - An empty identifier, as the GO cut can leave, is nothing looked for.
+ * - An empty identifier, as the GO cut can leave, is nothing looked for --
+ *   once the species has been looked up, as MappingService does.
  * - Nothing found is Java's 404, naming the resource and identifier as given.
  */
 async function mappingAnswer(request, kind) {
@@ -7402,13 +7403,14 @@ async function mappingAnswer(request, kind) {
     go && identifier.toLowerCase().startsWith('go')
       ? identifier.replace(/[^0-9]/g, '')
       : identifier;
-  if (asked === '') return missing();
-
+  // MappingService looks the species up before it looks at the identifier,
+  // so a species Java cannot read fails first even with nothing to look for.
   let taxId;
   if (species !== undefined && species !== '') {
     taxId = await speciesTaxId(speciesFilter(species));
     if (taxId === undefined) return missing();
   }
+  if (asked === '') return missing();
 
   let cypher;
   let params;
