@@ -239,10 +239,13 @@ describe('StaticCitation', () => {
     expect(failure([{ lastName: 'a', firstName: true }], 'ris')).toBe(
       cce('java.lang.Boolean', 'java.lang.String')
     );
-    // By full name the cast is String.join's, after every author is read.
-    expect(failure([{ fullName: 2 ** 40 }, null], 'txt')).toBe('NPE');
-    expect(failure([{ fullName: 2 ** 40 }], 'txt')).toBe(
-      cce('java.lang.Long', 'java.lang.CharSequence')
+    // By full name too, to String, one author at a time: the first misfit wins.
+    expect(failure([{ fullName: 2 ** 40 }, null], 'txt')).toBe(
+      cce('java.lang.Long', 'java.lang.String')
+    );
+    expect(failure([null, { fullName: 5 }], 'txt')).toBe('NPE');
+    expect(failure([{ fullName: 5 }, 'x'], 'txt')).toBe(
+      cce('java.lang.Integer', 'java.lang.String')
     );
     // Only the names a format reads are cast.
     expect(failure([{ fullName: 'A B', lastName: 5 }], 'txt')).toBe(undefined);
@@ -340,6 +343,58 @@ describe('the citation endpoints', () => {
         method,
         'attachment; filename="reactome_citation_12345.?  x\t é.bib"',
       ]);
+    }
+    // A 304 -- Express's, for a matching ETag -- ends with no bytes, so Node
+    // does not re-read the header. By node:http: fetch adds Cache-Control:
+    // no-cache to a conditional request, which Express then never answers 304.
+    const etag = (await fetch(url)).headers.get('etag');
+    const { get } = await import('node:http');
+    const notModified = await new Promise((resolve, reject) =>
+      get(url, { headers: { 'If-None-Match': etag } }, (response) => {
+        response.resume();
+        resolve(response);
+      }).on('error', reject)
+    );
+    expect([
+      notModified.statusCode,
+      notModified.rawHeaders.includes(
+        'attachment; filename="reactome_citation_12345.?  x\t é.bib"'
+      ),
+    ]).toEqual([304, true]);
+  });
+
+  it("writes a Latin-1 file name whatever bytes end the response: a HEAD's Buffer, an empty one", async () => {
+    const { writeResult } = await import('./service.mjs');
+    const { default: express } = await import('express');
+    const site = express();
+    site.all('/:kind', (request, response) =>
+      writeResult(response, {
+        status: 200,
+        type: 'application/octet-stream',
+        headers: { 'Content-Disposition': 'attachment; filename="é"' },
+        body: request.params.kind === 'empty' ? Buffer.alloc(0) : Buffer.from('x'),
+      })
+    );
+    const listening = await new Promise((resolve) => {
+      const started = site.listen(0, '127.0.0.1', () => resolve(started));
+    });
+    try {
+      for (const [method, kind] of [
+        ['HEAD', 'bytes'],
+        ['GET', 'bytes'],
+        ['GET', 'empty'],
+      ]) {
+        const response = await fetch(`http://127.0.0.1:${listening.address().port}/${kind}`, {
+          method,
+        });
+        expect([method, kind, response.headers.get('content-disposition')]).toEqual([
+          method,
+          kind,
+          'attachment; filename="é"',
+        ]);
+      }
+    } finally {
+      await new Promise((resolve) => listening.close(resolve));
     }
   });
 

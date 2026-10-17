@@ -79,9 +79,9 @@ const isMap = (value) => typeof value === 'object' && !Array.isArray(value);
  * The casts StaticCitation's toBibtex/toRIS (by name) and toText (by full
  * name) make of Europe PMC's authors -- outside Java's try, so a misfit is
  * GlobalExceptionHandler's 500 rather than "unable to fetch": each author to
- * a Map and, by name, its names to String; a null author is the
- * NullPointerException of author.get. Full names reach String.join, which
- * casts each to CharSequence once they are all gathered.
+ * a Map and its names to String -- by name for BibTeX and RIS, the full
+ * name for text -- one author at a time; a null author is the
+ * NullPointerException of author.get.
  */
 function checkStaticAuthors(authors, ext) {
   if (!authors?.length) return;
@@ -95,10 +95,8 @@ function checkStaticAuthors(authors, ext) {
         'java.lang.String',
         isString
       );
-    }
+    } else javaCast(author.fullName, 'java.lang.String', isString);
   }
-  if (ext !== 'bib' && ext !== 'ris')
-    for (const author of authors) javaCast(author.fullName, 'java.lang.CharSequence', isString);
 }
 
 /**

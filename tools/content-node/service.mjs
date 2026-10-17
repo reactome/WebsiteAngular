@@ -6659,24 +6659,36 @@ function buildId() {
  * controller returns null, where send('') would add a text/html content type
  * Java does not.
  */
+/**
+ * Node reads a Content-Disposition value back as UTF-8 when the head goes
+ * out with a body's bytes counted (nodejs/node#46528) -- so the Latin-1 byte
+ * Tomcat writes for é became U+FFFD. Decided at end(), on the bytes Node is
+ * given (a 304's '' and Express's bodiless HEAD are not converted, a HEAD's
+ * Buffer is): then the value goes in as its UTF-8 bytes, and comes out é.
+ */
+function latin1Disposition(response) {
+  const end = response.end.bind(response);
+  response.end = (chunk, ...rest) => {
+    const encoding = typeof rest[0] === 'string' ? rest[0] : 'utf8';
+    const bytes =
+      typeof chunk === 'string'
+        ? Buffer.byteLength(chunk, encoding)
+        : chunk && typeof chunk !== 'function'
+          ? chunk.length
+          : 0;
+    const value = bytes > 0 && !response.headersSent && response.getHeader('Content-Disposition');
+    if (typeof value === 'string')
+      response.setHeader('Content-Disposition', Buffer.from(value, 'utf8').toString('latin1'));
+    return end(chunk, ...rest);
+  };
+}
+
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
   const body = result.body !== undefined || Boolean(result.serialised);
-  // Node reads a Content-Disposition value back as UTF-8 whenever the
-  // response ends with a body (nodejs/node#46528), so the Latin-1 byte Tomcat
-  // writes for é became U+FFFD. Given as its UTF-8 bytes, it comes out as é.
-  const reread =
-    response.req?.method !== 'HEAD' &&
-    (result.serialised ||
-      (result.body !== undefined && result.body !== '' && result.body.length !== 0));
-  for (const [name, value] of Object.entries(result.headers ?? {}))
-    response.setHeader(
-      name,
-      reread && name.toLowerCase() === 'content-disposition'
-        ? Buffer.from(value, 'utf8').toString('latin1')
-        : value
-    );
+  for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
+  latin1Disposition(response);
   const redirect = result.status >= 300 && result.status < 400;
   if (body && !redirect && response.req && downloadGuard(response.req))
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');
