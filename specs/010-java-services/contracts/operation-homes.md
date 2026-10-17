@@ -25,7 +25,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/content/toc`                                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/database/name`                                     | node — ported          | graph or search index                                                                         |
 | GET    | `/data/database/version`                                  | node — ported          | graph or search index                                                                         |
-| GET    | `/data/discover/{identifier}`                             | node — to port         | graph or search index                                                                         |
+| GET    | `/data/discover/{identifier}`                             | node — ported          | graph or search index                                                                         |
 | GET    | `/data/diseases`                                          | node — to port         | graph or search index                                                                         |
 | GET    | `/data/diseases/doid`                                     | node — to port         | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/componentOf`                           | node — ported          | graph or search index                                                                         |

@@ -1369,6 +1369,75 @@ export const endpoints = [
     },
   },
   {
+    // Java's path variable is {identifier}; named {id} here so a dbId past a
+    // long's range is Java's 500 naming it (failureAnswer).
+    path: '/ContentService/data/discover/{id}',
+    // Apoptosis: five creators, seven citations.
+    sample: 'R-HSA-109581',
+    // No `differs`: the Dataset's own `url` is content, and an error body's
+    // is the only difference the sample never meets.
+    /**
+     * An event as a schema.org Dataset, for search engines: DiscoverController
+     * over graph-core's DatabaseObjectService.findById and SchemaDataSet
+     * (schemaDataSet).
+     *
+     * That findById is DatabaseObjectRepository's findByStId / findByDbId,
+     * not the ordered findById(id, OUTGOING) of /query/{id}: every
+     * relationship, both ways, unsorted, mapped as SDN maps any result
+     * (mapResult). Its lists -- summations, references, the edits that
+     * authored the event -- are in the order the store gives them; r.order,
+     * relationship ids and a one-type expand each disagree with Java on some
+     * event.
+     *
+     * Not found -- an object with no relationship included -- is Java's 404,
+     * "{id} not found"; an object that is not an event is the 422 its
+     * ClassCastException becomes, with a null message.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const missing = () => notFound(request, `${raw} not found`);
+      const { where, params } = resolveId(raw);
+      if (where === 'false') return missing();
+      // graph-core's findByStId / findByDbId, as written but for the id's
+      // test: every relationship, both ways, in the order the store gives.
+      const [row] = await read(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         WITH n LIMIT 1
+         MATCH (n)-[r]-(m)
+         RETURN {id: id(n), labels: labels(n), props: properties(n)} AS root,
+                COLLECT({id: id(r), type: type(r), start: id(startNode(r)),
+                         end: id(endNode(r)), props: properties(r)}) AS relationships,
+                COLLECT({id: id(m), labels: labels(m), props: properties(m)}) AS nodes`,
+        params
+      );
+      // MATCH, not OPTIONAL MATCH: an object with no relationship at all is
+      // not found, as in Java -- whatever its class.
+      if (!row) return missing();
+      if (!isA(schemaClassOf(row.root.labels), 'Event'))
+        return javaError(request, 422, 'UNPROCESSABLE_ENTITY', null);
+      const event = mapResult(row);
+      const [info] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
+      return {
+        status: 200,
+        body: await schemaDataSet(
+          {
+            schemaClass: event.schemaClass,
+            properties: event.properties,
+            summations: (event.fields.summation ?? []).map((summation) => summation.fields.text),
+            references: (event.fields.literatureReference ?? []).map((reference) => ({
+              schemaClass: reference.schemaClass,
+              ...reference.fields,
+            })),
+            authored: (event.fields.authored ?? []).map((edit) => edit.properties.dbId),
+          },
+          info?.version ?? null,
+          lazyCollection
+        ),
+        type: 'application/json',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/complex/{id}/subunits',
     // A set: 354 entities under it -- complexes, sets, proteins and small molecules.
     sample: 'R-HSA-5672601',
@@ -7109,6 +7178,133 @@ async function graphCoreId(raw) {
   }
   const byDbId = where.startsWith('n.dbId');
   return { object: byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}', params, byDbId };
+}
+
+/**
+ * graph-core's AdvancedDatabaseObjectRepository.queryRelationshipTypesByDbId,
+ * the query its LazyFetchAspect runs when a collection getter finds nothing
+ * loaded: the objects of one relationship, in the relationship's order.
+ */
+export function lazyCollectionQuery(type, direction, schemaClass) {
+  const [left, right] = direction === 'INCOMING' ? ['<-', '-'] : ['-', '->'];
+  return `MATCH (a:DatabaseObject{dbId:$dbId})${left}[r:${type}]${right}(m:${schemaClass}) RETURN m, r.stoichiometry as n ORDER BY r.order`;
+}
+
+/** The fields schemaDataSet reads lazily, as graph-core's domain declares them. */
+const LAZY_FIELDS = {
+  author: ['INCOMING', 'Person'],
+  affiliation: ['OUTGOING', 'Affiliation'],
+};
+
+/**
+ * What LazyFetchAspect loads for one field of the object with this dbId: each
+ * object with its relationship's stoichiometry, as [properties, n].
+ * findCollectionByRelationship adds an object that many times.
+ */
+async function lazyCollection(dbId, field) {
+  const [direction, schemaClass] = LAZY_FIELDS[field];
+  const rows = await read(lazyCollectionQuery(field, direction, schemaClass), {
+    dbId: neo4j.int(dbId),
+  });
+  return rows.map((row) => [row.m, row.n ?? 1]);
+}
+
+/** graph-core's SchemaDataDownloadType, in declaration order: format, address. */
+const SCHEMA_DOWNLOADS = [
+  ['SBML', 'https://reactome.org/ContentService/exporter/sbml/__ID__.xml'],
+  ['SBGN', 'https://reactome.org/ReactomeRESTfulAPI/RESTfulWS/sbgnExporter/__ID__'],
+  ['BIOPAX2', 'https://reactome.org/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level2/__ID__'],
+  ['BIOPAX3', 'https://reactome.org/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/__ID__'],
+  ['PDF', 'https://reactome.org/cgi-bin/pdfexporter?DB=gk_current&ID=__ID__'],
+  ['DOCX', 'https://reactome.org/cgi-bin/rtfexporter?DB=gk_current&ID=__ID__'],
+  ['OWL', 'https://reactome.org/cgi-bin/protegeexporter?DB=gk_current&ID=__ID__'],
+];
+
+/**
+ * graph-core's SchemaDataSet(event, version), written as Jackson writes it:
+ * fields in declaration order, then the getters license, @context and @type;
+ * a null or empty value omitted. `lazy(dbId, field)` stands for
+ * LazyFetchAspect (lazyCollection).
+ *
+ * - description: the first summation's text, "" when there is none --
+ *   which NON_EMPTY then leaves out.
+ * - version: String.valueOf of the release number -- "null" without one.
+ * - creator: for each edit that authored the event, each of its authors, as
+ *   often as the relationship's stoichiometry says (SchemaPerson). The edits
+ *   come with the event, in the derived query's order; their authors, and
+ *   each author's affiliations, are not loaded and come lazily, in
+ *   relationship order. Measured on twelve events: any other mix of the two
+ *   orders disagrees with Java on one.
+ * - citation: each reference's address -- a LiteratureReference's PubMed URL
+ *   (its computed getUrl), a Book's ISBN, anything else its displayName --
+ *   skipping one that has none.
+ *
+ * `event` is the object as the handler reads it: its schemaClass and
+ * properties, its summations' texts, its references and the dbIds of the
+ * edits that authored it, each list in the order findById's derived query
+ * gives.
+ */
+export async function schemaDataSet(event, version, lazy) {
+  // Jackson's NON_EMPTY, ContentService's setting: no null, "" or [].
+  const kept = (name, value) =>
+    value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)
+      ? {}
+      : { [name]: value };
+  const expand = (pairs) => pairs.flatMap(([object, n]) => Array(n).fill(object));
+  const creator = [];
+  for (const edit of event.authored ?? []) {
+    for (const person of expand(await lazy(edit, 'author'))) {
+      const affiliation = expand(await lazy(person.dbId, 'affiliation')).map((org) => ({
+        ...kept('name', org.displayName),
+        '@type': 'Organization',
+      }));
+      creator.push({
+        ...kept('givenName', person.firstname),
+        ...kept('familyName', person.surname),
+        ...kept('affiliation', affiliation),
+        url: `http://europepmc.org/authors/${person.orcidId ?? 'null'}`,
+        '@type': 'Person',
+      });
+    }
+  }
+  const citation = [];
+  for (const reference of event.references ?? []) {
+    const cited =
+      reference.schemaClass === 'LiteratureReference'
+        ? reference.pubMedIdentifier == null
+          ? null
+          : `http://www.ncbi.nlm.nih.gov/pubmed/${reference.pubMedIdentifier}`
+        : reference.schemaClass === 'Book'
+          ? reference.ISBN
+          : reference.displayName;
+    if (cited != null) citation.push(cited);
+  }
+  const summations = event.summations ?? [];
+  const description = summations.length ? summations[0] : '';
+  const dbId = event.properties.dbId;
+  return {
+    ...kept('name', event.properties.displayName),
+    ...kept('description', description),
+    url: `https://reactome.org/PathwayBrowser/#/${event.properties.stId ?? 'null'}`,
+    version: String(version ?? 'null'),
+    keywords: [event.schemaClass],
+    ...kept('creator', creator),
+    includedInDataCatalog: {
+      name: 'Reactome',
+      url: 'https://reactome.org',
+      '@type': 'DataCatalog',
+    },
+    distribution: SCHEMA_DOWNLOADS.map(([fileFormat, address]) => ({
+      contentUrl: address.replace('__ID__', String(dbId)),
+      fileFormat,
+      encodingFormat: 'UTF-8',
+      '@type': 'DataDownload',
+    })),
+    ...kept('citation', citation),
+    license: 'https://creativecommons.org/licenses/by/4.0/',
+    '@context': 'http://schema.org/',
+    '@type': 'DataSet',
+  };
 }
 
 /** Every relationship from an event down to its participants, as graph-core lists them. */
