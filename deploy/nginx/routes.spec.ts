@@ -21,28 +21,65 @@ import { describe, expect, it } from 'vitest';
  * Java is switched off it would get none.
  */
 const root = process.cwd();
-const conf = readFileSync(join(__dirname, 'common/routes-core.conf'), 'utf8');
+// In nginx's order: routes.conf includes routes-core.conf before any location
+// of its own, so routes-core's regexes are tried first. routes.conf was once
+// left out, and with it the rate-limited exporter location -- a route added
+// to routes-core for an exporter path would have silently dropped that limit.
+const core = readFileSync(join(__dirname, 'common/routes-core.conf'), 'utf8');
+const deployed = readFileSync(join(__dirname, 'common/routes.conf'), 'utf8');
+const conf = `${core}\n${deployed}`;
 
-type Location = { kind: string; path: string; node: boolean };
+/**
+ * What answers behind each upstream name. An upstream nobody has classified
+ * fails the test below, so a new Java service cannot be added without saying
+ * which side it is: node, Tomcat (the Java being retired), or a Java service
+ * of spec 010.
+ */
+const UPSTREAMS: Record<string, string> = {
+  content_node: 'node',
+  content: 'tomcat',
+  analysis: 'tomcat',
+  site: 'site',
+  render: 'render',
+  mcp: 'other',
+  chatbot: 'other',
+  deltasignal: 'other',
+};
+
+type Location = { kind: string; path: string; target: string; body: string };
 const locations: Location[] = [
   ...conf.matchAll(/^location\s+(=|~\*?|\^~)?\s*("[^"]*"|\S+)\s*\{([^}]*)\}/gm),
 ].map((m) => ({
   kind: m[1] ?? '',
   // A quoted path is nginx's way to write one holding ';' or '{'.
   path: m[2].replace(/^"(.*)"$/, '$1'),
-  node: m[3].includes('content-node-proxy.conf'),
+  target: m[3].includes('content-node-proxy.conf')
+    ? 'node'
+    : (UPSTREAMS[m[3].match(/proxy_pass\s+https?:\/\/([\w-]+)/)?.[1] ?? ''] ??
+      (/proxy_pass/.test(m[3]) ? 'unclassified' : 'none')),
+  body: m[3],
 }));
 
-/** nginx: an exact location, else the first regex in file order, else the prefix (Java). */
-function nginxSendsToNode(url: string): boolean {
+/**
+ * The location nginx chooses: an exact match; else the first regex, in file
+ * order; else the longest prefix. (No `^~` locations exist; a test below
+ * says so.)
+ */
+function nginxLocation(url: string): Location | undefined {
   const path = url.split('?')[0];
   const exact = locations.find((l) => l.kind === '=' && l.path === path);
-  if (exact) return exact.node;
+  if (exact) return exact;
   const regex = locations.find(
     (l) => l.kind.startsWith('~') && new RegExp(l.path, l.kind === '~*' ? 'i' : '').test(path)
   );
-  return regex?.node ?? false;
+  if (regex) return regex;
+  return locations
+    .filter((l) => l.kind === '' && path.startsWith(l.path))
+    .sort((a, b) => b.path.length - a.path.length)[0];
 }
+
+const nginxTarget = (url: string) => nginxLocation(url)?.target ?? 'none';
+const nginxSendsToNode = (url: string) => nginxTarget(url) === 'node';
 
 // The dev proxy, read as `ng serve` reads it (see proxy-order.spec.ts).
 const load = createRequire(join(root, 'package.json'))(
@@ -77,7 +114,7 @@ describe('nginx and the dev proxy agree', () => {
     // A block the parser cannot read (an indented one, a brace in a comment)
     // would otherwise count as Java without a word.
     expect(locations).toHaveLength(conf.match(/^\s*location\s/gm)?.length ?? 0);
-    expect(locations.filter((l) => l.node)).toHaveLength(
+    expect(locations.filter((l) => l.target === 'node')).toHaveLength(
       conf.match(/content-node-proxy\.conf/g)?.length ?? 0
     );
   });
@@ -94,7 +131,7 @@ describe('nginx and the dev proxy agree', () => {
   // And every node location is written to take one -- the URLs above do
   // not reach all of them (some of the proxy test's are built at run time).
   const exact = new Set(locations.filter((l) => l.kind === '=').map((l) => l.path));
-  for (const { kind, path } of locations.filter((l) => l.node)) {
+  for (const { kind, path } of locations.filter((l) => l.target === 'node')) {
     if (kind === '=') {
       if (!path.endsWith('/'))
         it(`has ${path} with its slashed twin`, () => {
@@ -111,5 +148,59 @@ describe('nginx and the dev proxy agree', () => {
   for (const url of named.filter(nginxSendsToNode))
     it(`takes ${url} with a trailing slash`, () => {
       expect([slashed(url), nginxSendsToNode(slashed(url))]).toEqual([slashed(url), true]);
+    });
+});
+
+/**
+ * Every endpoint node answers, as written in tools/content-node/service.mjs,
+ * filled with sample ids. A node route answered by Java -- Tomcat or a Java
+ * service -- is the one thing the routing must never do.
+ */
+const NOT_YET_ROUTED: Record<string, string> = {
+  // Implemented, held back until the exporter log scan (#273).
+  '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
+};
+const nodeEndpoints = [
+  ...readFileSync(join(root, 'tools/content-node/service.mjs'), 'utf8').matchAll(
+    /^ {4}path: '(\/ContentService\/[^']+)'/gm
+  ),
+].map((m) => m[1]);
+const sample = (path: string) =>
+  path
+    .replace(/\/schema\/\{id\}/, '/schema/Pathway')
+    .replace(/\{(id|diagram|pathwayId)\}/g, 'R-HSA-109581')
+    .replace(/\{[^}]+\}/g, 'X1');
+
+describe('where nginx sends things', () => {
+  it('knows what is behind every upstream it names', () => {
+    expect(locations.filter((l) => l.target === 'unclassified').map((l) => l.path)).toEqual([]);
+  });
+
+  it('has no ^~ location, which its order above leaves out', () => {
+    expect(locations.filter((l) => l.kind === '^~').map((l) => l.path)).toEqual([]);
+  });
+
+  it('reads the endpoints node answers', () => {
+    expect(nodeEndpoints.length).toBeGreaterThan(40);
+  });
+
+  for (const path of nodeEndpoints.filter((p) => !(p in NOT_YET_ROUTED)))
+    it(`sends what node answers to node: ${path}`, () => {
+      expect([sample(path), nginxTarget(sample(path))]).toEqual([sample(path), 'node']);
+    });
+
+  for (const [path, why] of Object.entries(NOT_YET_ROUTED))
+    it(`still lists ${path} as unrouted (${why}) only while it is`, () => {
+      expect(nodeEndpoints).toContain(path);
+      expect(nginxTarget(sample(path))).not.toBe('node');
+    });
+
+  // The exporters share the render budget whichever side draws them
+  // (routes.conf); a location that won the match without it would drop it.
+  for (const kind of ['diagram', 'fireworks', 'document/event', 'event'])
+    it(`keeps the render budget on /ContentService/exporter/${kind}/`, () => {
+      const url = `/ContentService/exporter/${kind}/R-HSA-109581.png`;
+      const location = nginxLocation(url);
+      expect([url, /limit_req\s+zone=render_rate/.test(location?.body ?? '')]).toEqual([url, true]);
     });
 });

@@ -21,7 +21,7 @@
 
 - [ ] T001 [EXT] Ask the Reactome organisation's owners to create the library-service repository, licensed AGPL-3.0 (research R2), and record its name in this file and in `plan.md`
 - [ ] T002 [EXT] Ask the owners of `reactome/content-service` and `reactome/analysis-service` to merge the deployed branches (`7b9eceb` on `add-content-page-endpoints`; `9b147e1`, PR #25). The pins stay on these commits either way (research R1).
-- [ ] T003 [P] Record the pinned commits of research R1 in one place, `deploy/java/PINS.md`, each with the reason it is pinned and how it was verified (byte comparison of classes)
+- [x] T003 [P] Record the pinned commits of research R1 in one place, `deploy/java/PINS.md`, each with the reason it is pinned and how it was verified (byte comparison of classes)
 
 ---
 
@@ -31,12 +31,12 @@
 
 ### Tests first
 
-- [ ] T004 Extend `deploy/nginx/routes.spec.ts`:
+- [x] T004 Extend `deploy/nginx/routes.spec.ts`:
   - parse `deploy/nginx/common/routes.conf` as well as `routes-core.conf`, in nginx's order;
   - classify each `proxy_pass` as node, Java service or Tomcat;
   - assert that no URL in node's endpoint samples or the proxy-order node list reaches a Java service or Tomcat.
   - Show it failing by adding a location that sends a node URL to Tomcat.
-- [ ] T005 Add a test in `deploy/nginx/routes.spec.ts` that an exporter address routed away from Tomcat keeps the exporter location's rate limit. Show it failing with a `routes-core.conf` location for `/ContentService/exporter/event/` (research R6 trap).
+- [x] T005 Add a test in `deploy/nginx/routes.spec.ts` that an exporter address routed away from Tomcat keeps the exporter location's rate limit. Show it failing with a `routes-core.conf` location for `/ContentService/exporter/event/` (research R6 trap).
 
 ### Implementation
 
