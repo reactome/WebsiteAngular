@@ -28,11 +28,67 @@ const SHORT_MONTHS = [
  * Citation.setMonth: Integer.parseInt of the text, a month only for 1 to 12;
  * text that is no int is Java's NumberFormatException.
  */
-export function citationMonth(text) {
-  if (!/^[+-]?\d+$/.test(String(text)))
-    throw Object.assign(new Error(`a month that is no int: ${text}`), { unexpected: true });
-  const month = Number(text);
+function citationMonth(text) {
+  const month = /^[+-]?\d+$/.test(String(text)) ? Number(text) : NaN;
+  if (!(month >= -2147483648 && month <= 2147483647))
+    throw unexpected(`a month that is no int: ${text}`);
   return month > 0 && month <= 12 ? SHORT_MONTHS[month - 1] : null;
+}
+
+/** What Java throws and its GlobalExceptionHandler answers with a 500. */
+function unexpected(message) {
+  return Object.assign(new Error(message), { unexpected: true });
+}
+
+/**
+ * CitationController.getEventCitationObject, given the event: its name, the
+ * release year and -- from the wrong character of the date, as Java takes
+ * it -- month, a pathway's DOI or else its page, the release, and the authors
+ * of its authored edits, else its creator, else its reviewers, initials
+ * dotted as String.join(".", initial.split("")) dots them. No release date,
+ * too short a one, or a person with no initial throws as Java does.
+ */
+export function citationOfEvent(event, raw, release, isPathway) {
+  const props = event.properties;
+  if (props.releaseDate == null) throw unexpected('an event with no release date');
+  const date = String(props.releaseDate);
+  if (date.length < 7) throw unexpected(`a release date too short: ${date}`);
+  const citation = {
+    id: raw,
+    title: props.displayName,
+    year: date.slice(0, 4),
+    month: citationMonth(date.slice(6, 7)),
+    doi: null,
+    urls: [],
+    authors: null,
+  };
+  if (isPathway && props.doi) {
+    citation.doi = props.doi;
+    citation.urls.push(`https://doi.org/${props.doi}`);
+  } else citation.urls.push(`https://reactome.org/content/detail/${raw}`);
+  citation.release = release;
+  const fields = event.fields;
+  const edits = fields.authored?.length
+    ? fields.authored
+    : fields.created
+      ? [fields.created]
+      : fields.reviewed?.length
+        ? fields.reviewed
+        : null;
+  if (edits) {
+    citation.authors = [];
+    for (const edit of edits)
+      for (const person of edit.fields?.author ?? []) {
+        const { surname, initial, firstname } = person.properties;
+        if (initial == null) throw unexpected('a person with no initial');
+        citation.authors.push({
+          lastName: surname,
+          initials: `${[...String(initial)].join('.')}.`,
+          firstName: firstname,
+        });
+      }
+  }
+  return citation;
 }
 
 /** A value joined into text as Java joins it: a missing one is "null". */
@@ -150,8 +206,28 @@ export function formatStaticCitation(citation, ext, date) {
   return text;
 }
 
-/** Object.toString of a JSON value, as Java's on Jackson's map writes it. */
-const javaString = (value) => (value === null || value === undefined ? value : String(value));
+/**
+ * Object.toString of a value Jackson read: a map {a=1, b=2}, a list [x, y],
+ * anything else as itself. A null is the NullPointerException Java's
+ * toString() on it is.
+ */
+function javaString(value) {
+  if (value === null || value === undefined) throw new Error('toString of null');
+  const inner = (item) => (item === null ? 'null' : javaString(item));
+  if (Array.isArray(value)) return `[${value.map(inner).join(', ')}]`;
+  if (typeof value === 'object')
+    return `{${Object.entries(value)
+      .map(([key, item]) => `${key}=${inner(item)}`)
+      .join(', ')}}`;
+  return String(value);
+}
+
+/** Java's cast to Map: null passes, anything but an object is its ClassCastException. */
+function asMap(value) {
+  if (value !== null && (typeof value !== 'object' || Array.isArray(value)))
+    throw new Error('not a map');
+  return value;
+}
 
 /**
  * CitationController.getStaticCitationObject: Europe PMC's first result,
@@ -163,8 +239,8 @@ export function staticCitationFrom(answer) {
   const map = answer?.resultList?.result?.[0];
   if (!map || map.id == null || map.title == null)
     throw new Error('no citation in Europe PMC answer');
-  const journalInfo = map.journalInfo ?? null;
-  const journal = journalInfo?.journal ?? null;
+  const journalInfo = 'journalInfo' in map ? asMap(map.journalInfo) : null;
+  const journal = journalInfo && 'journal' in journalInfo ? asMap(journalInfo.journal) : null;
   const citation = { id: javaString(map.id), title: javaString(map.title) };
   if ('pageInfo' in map) citation.pages = javaString(map.pageInfo);
   if ('pmid' in map) citation.pmid = javaString(map.pmid);
@@ -181,6 +257,14 @@ export function staticCitationFrom(answer) {
     citation.doi = javaString(map.doi);
     citation.urls = [`https://doi.org/${citation.doi}`];
   }
-  if (map.authorList && 'author' in map.authorList) citation.authors = map.authorList.author;
+  if ('authorList' in map) {
+    const authorList = asMap(map.authorList);
+    if (authorList === null) throw new Error('authorList is null');
+    if ('author' in authorList) {
+      const authors = authorList.author;
+      if (authors !== null && !Array.isArray(authors)) throw new Error('author is not a list');
+      citation.authors = authors;
+    }
+  }
   return citation;
 }

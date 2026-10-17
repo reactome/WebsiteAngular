@@ -26,7 +26,7 @@ import { read, configured, close, envSetting } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { sendReport } from './report.mjs';
 import {
-  citationMonth,
+  citationOfEvent,
   eventText,
   formatEventCitation,
   formatStaticCitation,
@@ -2333,17 +2333,13 @@ export const endpoints = [
       const date = queryValues(request, 'dateAccessed');
       if (date.length === 0)
         return javaError(request, 400, 'BAD_REQUEST', requiredString('dateAccessed'));
-      const citation = await eventCitationFor(raw);
-      const body = {};
-      if (citation) {
-        const texts = {
-          pathwayCitation: eventText(citation, date.join(',')),
-          imageCitation: imageText(citation, date.join(',')),
-        };
-        for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys())
-          body[key] = texts[key];
-      }
-      return { status: 200, type: 'application/json', body };
+      const { citation, failure } = await eventCitationOrFailure(request, raw);
+      if (failure) return failure;
+      return {
+        status: 200,
+        type: 'application/json',
+        body: citation ? pathwayCitations(citation, date.join(',')) : {},
+      };
     },
   },
   {
@@ -2393,9 +2389,12 @@ export const endpoints = [
         if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
         values[name] = given.join(',');
       }
-      const citation = isPathway.value
-        ? await eventCitationFor(values.id)
-        : await staticCitationFor(values.id);
+      let citation;
+      if (isPathway.value) {
+        const found = await eventCitationOrFailure(request, values.id);
+        if (found.failure) return found.failure;
+        citation = found.citation;
+      } else citation = await staticCitationFor(values.id);
       if (!citation) return { status: 200 };
       const format = isPathway.value ? formatEventCitation : formatStaticCitation;
       const [extension, type] =
@@ -2408,7 +2407,9 @@ export const endpoints = [
         status: 200,
         type: `${type};charset=UTF-8`,
         headers: {
-          'Content-Disposition': `attachment; filename="reactome_citation_${values.id}.${extension}"`,
+          'Content-Disposition': tomcatHeader(
+            `attachment; filename="reactome_citation_${values.id}.${extension}"`
+          ),
         },
         body: format(citation, values.ext, values.dateAccessed),
       };
@@ -6427,11 +6428,8 @@ function searchAnswer(request, query, result) {
 
 /**
  * CitationController.getEventCitationObject: an event's citation from its
- * enhanced object (graph-core's findEnhancedObjectById) -- its name, the
- * release year and (from the wrong character of the date, as Java takes it)
- * month, a pathway's DOI or else its page, the release, and the authors of
- * its authored edits, else its creator, else its reviewers. Undefined for an
- * id that is no event.
+ * enhanced object (graph-core's findEnhancedObjectById); undefined for an id
+ * that is no event. What goes into it is citationOfEvent's.
  */
 async function eventCitationFor(raw) {
   const id = inDepthId(raw);
@@ -6448,44 +6446,45 @@ async function eventCitationFor(raw) {
   if (!row) return undefined;
   const event = mapResult(row);
   if (!isA(event.schemaClass, 'Event')) return undefined;
-  const props = event.properties;
-  const release = String(props.releaseDate);
-  const citation = {
-    id: raw,
-    title: props.displayName,
-    year: release.slice(0, 4),
-    month: citationMonth(release.slice(6, 7)),
-    doi: null,
-    urls: [],
-    authors: null,
-  };
-  if (isA(event.schemaClass, 'Pathway') && props.doi) {
-    citation.doi = props.doi;
-    citation.urls.push(`https://doi.org/${props.doi}`);
-  } else citation.urls.push(`https://reactome.org/content/detail/${raw}`);
   const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-  citation.release = String((await version.handler({ params: {}, query: {} })).body);
-  const fields = event.fields;
-  const edits = fields.authored?.length
-    ? fields.authored
-    : fields.created
-      ? [fields.created]
-      : fields.reviewed?.length
-        ? fields.reviewed
-        : null;
-  if (edits) {
-    citation.authors = [];
-    for (const edit of edits)
-      for (const person of edit.fields?.author ?? []) {
-        const { surname, initial, firstname } = person.properties;
-        citation.authors.push({
-          lastName: surname,
-          initials: `${[...String(initial)].join('.')}.`,
-          firstName: firstname,
-        });
-      }
+  const release = String((await version.handler({ params: {}, query: {} })).body);
+  return citationOfEvent(event, raw, release, isA(event.schemaClass, 'Pathway'));
+}
+
+/**
+ * An event's citation, or Java's GlobalExceptionHandler 500 when Java's
+ * getEventCitationObject throws -- no release date, or a person with no
+ * initial.
+ */
+async function eventCitationOrFailure(request, raw) {
+  try {
+    return { citation: await eventCitationFor(raw) };
+  } catch (failure) {
+    if (failure.unexpected) return { failure: unexpectedFailure(request) };
+    throw failure;
   }
-  return citation;
+}
+
+/** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
+function tomcatHeader(text) {
+  return [...text]
+    .map((char) => {
+      const code = char.codePointAt(0);
+      if (code > 0xff) return '?';
+      return (code < 0x20 && char !== '\t') || code === 0x7f ? ' ' : char;
+    })
+    .join('');
+}
+
+/** The two citations of /citation/pathway/{id}, in the order Java's HashMap writes them. */
+export function pathwayCitations(citation, date) {
+  const texts = {
+    pathwayCitation: eventText(citation, date),
+    imageCitation: imageText(citation, date),
+  };
+  const body = {};
+  for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys()) body[key] = texts[key];
+  return body;
 }
 
 /** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
@@ -6498,20 +6497,18 @@ async function staticCitationFor(id) {
     'EUROPE_PMC_URL',
     'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
   );
-  // Only what Europe PMC sends -- or fails to -- is Java's "unable to
-  // fetch"; a mistake of ours is not.
-  let answer;
+  // Java's try covers the request and every read of the answer, so anything
+  // Europe PMC sends that Java cannot read is "unable to fetch". Only a name
+  // we got wrong is a mistake of ours.
   try {
     const response = await fetch(`${base}?${query}`, { signal: AbortSignal.timeout(30_000) });
-    if (response.status !== 200) return undefined;
-    answer = await response.json();
-  } catch {
-    return undefined;
-  }
-  try {
-    return staticCitationFrom(answer);
+    if (response.status !== 200) {
+      await response.body?.cancel();
+      return undefined;
+    }
+    return staticCitationFrom(await response.json());
   } catch (failure) {
-    if (failure instanceof TypeError || failure instanceof ReferenceError) throw failure;
+    if (failure instanceof ReferenceError) throw failure;
     return undefined;
   }
 }
