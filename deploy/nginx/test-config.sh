@@ -13,7 +13,9 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+images=()
+# The images too: on a shared host they are a few hundred megabytes each.
+trap 'rm -rf "$work"; [ ${#images[@]} -eq 0 ] || docker rmi -f "${images[@]}" >/dev/null 2>&1' EXIT
 openssl req -x509 -nodes -newkey rsa:2048 -days 1 -subj /CN=localhost \
   -keyout "$work/key.pem" -out "$work/cert.pem" 2>/dev/null
 
@@ -21,7 +23,8 @@ status=0
 for env in dev release production; do
   # Every certificate and key the configuration names, made under $work.
   mkdir -p "$work/$env"
-  grep -hoE 'ssl_certificate(_key)?\s+\S+;' "deploy/nginx/$env.conf" |
+  # (A configuration with no certificates is fine: nothing to stand in.)
+  { grep -hoE 'ssl_certificate(_key)?\s+\S+;' "deploy/nginx/$env.conf" || true; } |
     awk '{print $2}' | tr -d ';' | sort -u |
     while read -r file; do
       mkdir -p "$work/$env$(dirname "$file")"
@@ -31,6 +34,7 @@ for env in dev release production; do
       esac
     done
   image="reactome-nginx-test:$env"
+  images+=("$image")
   docker build -q -f deploy/nginx/Dockerfile --build-arg "NGINX_ENV=$env" -t "$image" . >/dev/null
   mounts=()
   for dir in "$work/$env"/etc/*/; do
