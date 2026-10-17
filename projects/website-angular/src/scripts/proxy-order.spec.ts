@@ -142,9 +142,15 @@ describe('the dev server proxy', () => {
     });
   }
 
-  it('sends the other forms of an entity to the content service', async () => {
-    await expectContentNode('/ContentService/data/entity/R-HSA-199420/otherForms');
-  });
+  for (const url of [
+    '/ContentService/data/entity/R-HSA-199420/otherForms',
+    '/ContentService/data/entity/R-HSA-199420/componentOf',
+    '/ContentService/data/entity/199420/componentOf/',
+  ]) {
+    it(`sends ${url} to the content service`, async () => {
+      await expectContentNode(url);
+    });
+  }
 
   for (const url of [
     '/ContentService/data/database/version',
@@ -321,8 +327,8 @@ describe('the dev server proxy', () => {
     '/ContentService/data/complexes/UniProt/P00533/x',
     // Only the participants and their reference entities are ported.
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
-    // Only the other forms and in-depth of an entity are ported.
-    '/ContentService/data/entity/R-HSA-199420/componentOf',
+    // Only these of an entity are ported: not a path below them.
+    '/ContentService/data/entity/R-HSA-199420/componentOf/x',
     // Only the locations are ported, not their neighbours under /detail.
     '/ContentService/data/detail/R-HSA-199420/getReverseGraph',
     '/ContentService/data/detail/R-HSA-109581/getSubGraph',

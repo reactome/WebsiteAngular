@@ -186,7 +186,8 @@ module.exports = {
   '^/ContentService/data/database/(version|name)/?(\\?|$)': contentNode,
   '^/ContentService/data/pathways/top/[^/?]+/?(\\?|$)': contentNode,
   // The other forms of a physical entity: the details panel and the popup.
-  '^/ContentService/data/entity/[^/?]+/otherForms/?(\\?|$)': contentNode,
+  // What an entity or event is part of: the details page's table.
+  '^/ContentService/data/entity/[^/?]+/(otherForms|componentOf)/?(\\?|$)': contentNode,
   // Every place an object appears in the Pathway Browser: the details page's
   // locations tree. Only this one of Java's /data/detail/{id}/... paths.
   '^/ContentService/data/detail/[^/?]+/locationsInPWB/?(\\?|$)': contentNode,

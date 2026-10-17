@@ -1311,6 +1311,54 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/data/entity/{id}/componentOf',
+    // PTEN: the reactions it comes out of, goes into and catalyses, and the
+    // complexes and sets it is part of.
+    sample: 'R-HSA-199420',
+    differs: [/^\/ContentService\/data\/entity\/[^/]+\/componentOf: \.url: /],
+    /**
+     * What an entity or event is directly part of -- the reactions, complexes,
+     * sets and pathways above it -- one group per relationship, each with the
+     * names, stable ids, classes and species of its members, '' for what one
+     * lacks. The details page's "Component of" table.
+     *
+     * graph-core's ComponentOfLinkageRepository.getComponentsOf, kept as
+     * written: the groups and their members come in the order Neo4j gives
+     * them, unsorted (ComponentOf.sortByName is never called), and a member
+     * reached by two relationships of one type -- a complex with two of
+     * something -- is listed twice. The id is read as graph-core reads it
+     * (graphCoreId); none found, or part of nothing, is Java's 404.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+      const id = await graphCoreId(raw);
+      if (!id) return missing();
+      const rows = await read(
+        `MATCH (n:DatabaseObject${id.object})<-[r:hasEvent|input|output|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker]-(m)
+         RETURN DISTINCT(TYPE(r)) AS type,
+                COLLECT(COALESCE(m.schemaClass, '')) AS schemaClasses,
+                COLLECT(COALESCE(m.displayName, '')) AS names,
+                COLLECT(COALESCE(m.stId, '')) AS stIds,
+                COLLECT(COALESCE(m.speciesName, '')) as species`,
+        id.params
+      );
+      if (rows.length === 0) return missing();
+      return {
+        status: 200,
+        // ComponentOf's fields in declaration order; none is ever empty.
+        body: rows.map(({ type, names, stIds, schemaClasses, species }) => ({
+          type,
+          names,
+          stIds,
+          schemaClasses,
+          species,
+        })),
+        type: 'application/json',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/complex/{id}/subunits',
     // A set: 354 entities under it -- complexes, sets, proteins and small molecules.
     sample: 'R-HSA-5672601',
