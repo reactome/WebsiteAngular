@@ -79,6 +79,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
     '/ContentService/data/pathways/low/diagram/entity/199420?species=9606',
     '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420/allForms',
+    '/ContentService/data/complex/R-HSA-5672601/subunits',
+    '/ContentService/data/complex/5672601/subunits?excludeStructures=true',
+    '/ContentService/data/complexes/UniProt/P00533',
+    '/ContentService/data/complexes/(%3Fi)uniprot/P00533',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -311,6 +315,10 @@ describe('the dev server proxy', () => {
     // The curated top-level pathways and the database's other info are not.
     '/ContentService/data/pathways/top/9606/curated',
     '/ContentService/data/database/info',
+    // Only a complex's subunits, and the complexes of an identifier.
+    '/ContentService/data/complex/R-HSA-5672601',
+    '/ContentService/data/complexes/UniProt',
+    '/ContentService/data/complexes/UniProt/P00533/x',
     // Only the participants and their reference entities are ported.
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities',
     // Only the other forms and in-depth of an entity are ported.

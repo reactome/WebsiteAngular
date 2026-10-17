@@ -173,6 +173,8 @@ module.exports = {
   // species: the entity popup and the participating-pathways list. Of every
   // form of it too, and the diagrams either is drawn in.
   '^/ContentService/data/pathways/low/(diagram/)?entity/[^/?]+(/allForms)?/?(\\?|$)': contentNode,
+  // What a complex is made of, and the complexes an identifier is part of.
+  '^/ContentService/data/(complex/[^/?]+/subunits|complexes/[^/?]+/[^/?]+)/?(\\?|$)': contentNode,
   // The reference entities behind an event's participants: the molecule list
   // and the IDG page.
   '^/ContentService/data/participants/[^/?]+/referenceEntities/?(\\?|$)': contentNode,

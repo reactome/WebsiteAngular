@@ -80,10 +80,10 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
 - [x] T074 `GET /data/schema/{className}` — #511
 - [x] T074b `GET /data/schema/{className}/reference` — #512
-- [ ] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}`
+- [x] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}` — #514
 - [ ] T076 `GET /data/entity/{id}/componentOf`
 - [ ] T077 `GET /data/participants/{id}/participatingPhysicalEntities`
-- [ ] T078 `GET /data/pathway/{id}/containedEvents`, `GET /data/pathway/{id}/containedEvents/{attributeName}`
+- [ ] T078 `GET /data/pathway/{id}/containedEvents`, `GET /data/pathway/{id}/containedEvents/{attributeName}` — Java maps the whole hasEvent subgraph into Events (Neo4jTemplate.findAll over `RETURN e, COLLECT(r), COLLECT(p)`), and `{attributeName}` reads a getter by reflection: do with T070/T072's getter table
 - [x] T079 `GET /data/pathways/low/entity/{id}/allForms`, `GET /data/pathways/low/diagram/entity/{id}`, `GET /data/pathways/low/diagram/entity/{id}/allForms` — #513
 - [ ] T080 `GET /data/mapping/{resource}/{identifier}/pathways`, `GET /data/mapping/{resource}/{identifier}/reactions`
 - [x] T081 `GET /data/diseases`, `GET /data/diseases/doid` — #510
