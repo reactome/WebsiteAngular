@@ -1438,6 +1438,28 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+    // TP53: 201 reactions, of three classes.
+    samplePath: { resource: 'UniProt', identifier: 'P04637' },
+    differs: [/^\/ContentService\/data\/mapping\/[^/]+\/[^/]+\/reactions(\?\S*)?: \.url: /],
+    /**
+     * The reactions an identifier in an outside resource takes part in, by
+     * any role, optionally in one species. See mappingAnswer.
+     */
+    handler: (request) => mappingAnswer(request, 'reactions'),
+  },
+  {
+    path: '/ContentService/data/mapping/{resource}/{identifier}/pathways',
+    // TP53: the lower-level pathways of those reactions.
+    samplePath: { resource: 'UniProt', identifier: 'P04637' },
+    differs: [/^\/ContentService\/data\/mapping\/[^/]+\/[^/]+\/pathways(\?\S*)?: \.url: /],
+    /**
+     * The pathways those reactions are in; for GO, the pathways annotated
+     * with a biological process. See mappingAnswer.
+     */
+    handler: (request) => mappingAnswer(request, 'pathways'),
+  },
+  {
     path: '/ContentService/data/complex/{id}/subunits',
     // A set: 354 entities under it -- complexes, sets, proteins and small molecules.
     sample: 'R-HSA-5672601',
@@ -4778,6 +4800,37 @@ export function pathwayJson(node) {
 }
 
 /**
+ * A ReactionLikeEvent, of any class, as graph-core serialises the bare node:
+ * Event's fields, then ReactionLikeEvent's, absent values omitted. Its
+ * getClassName says "Reaction" whatever the class -- a BlackBoxEvent too --
+ * and, overridden, Jackson writes it before schemaClass. Measured from Java's
+ * /mapping answers over Reaction, BlackBoxEvent and FailedReaction.
+ */
+export function reactionLikeEventJson(node) {
+  return {
+    ...only(node, [
+      'dbId',
+      'displayName',
+      'stId',
+      'stIdVersion',
+      'definition',
+      'isInDisease',
+      'isInferred',
+      'maxDepth',
+      'name',
+      'releaseDate',
+      'releaseStatus',
+      'speciesName',
+      'isChimeric',
+      'systematicName',
+      'category',
+    ]),
+    className: 'Reaction',
+    ...only(node, ['schemaClass']),
+  };
+}
+
+/**
  * The ReferenceEntity classes, most specific first: a node carries the labels
  * of its class and every superclass, in no reliable order (an isoform lists
  * ReferenceGeneProduct after ReferenceIsoform), and graph-core maps it to the
@@ -7304,6 +7357,89 @@ export async function schemaDataSet(event, version, lazy) {
     license: 'https://creativecommons.org/licenses/by/4.0/',
     '@context': 'http://schema.org/',
     '@type': 'DataSet',
+  };
+}
+
+/** graph-core's MappingRepository: from an identifier in a resource to the entities made from it. */
+const MAPPED_ENTITIES = `MATCH (n)-[:referenceDatabase]->(rd:ReferenceDatabase)
+  WHERE toLower(rd.displayName) = toLower($databaseName)
+    AND (n.identifier = $identifier OR n.variantIdentifier = $identifier OR $identifier IN n.geneName OR $identifier IN n.name)
+  WITH DISTINCT n
+  MATCH (pe:PhysicalEntity)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n)
+  WITH DISTINCT pe`;
+/** ...and up to every reaction any of them takes part in. */
+const MAPPED_REACTION_ROLES =
+  '[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe)';
+
+/**
+ * /mapping/{resource}/{identifier}/{reactions|pathways}, as MappingController
+ * and graph-core's MappingService answer it; the queries are
+ * MappingRepository's, kept as written (each orders by stId).
+ *
+ * - The species is read as SpeciesService reads it (speciesFilter). One it
+ *   does not find is no filter dropped but nothing found: Java's 404.
+ * - With no species parameter at all, a resource whose name contains
+ *   "chebi", "compound" or "pubchem" is looked up in human (taxId 9606), as
+ *   the controller's getSpecies decides; an empty one is no filter.
+ * - For pathways, a resource that is "GO" in any case asks GO's own question:
+ *   the pathways annotated with the biological process. An identifier that
+ *   starts "go" in any case is first cut to its ASCII digits, as
+ *   replaceAll("[^0-9]", "") does -- GO:0006915 is 0006915.
+ * - An empty identifier, as the GO cut can leave, is nothing looked for.
+ * - Nothing found is Java's 404, naming the resource and identifier as given.
+ */
+async function mappingAnswer(request, kind) {
+  const resource = pathId(rawSegment(request, 4));
+  const identifier = pathId(rawSegment(request, 5));
+  const given = queryValues(request, 'species');
+  let species = given.length ? given.join(',') : undefined;
+  if (species === undefined && /chebi|compound|pubchem/.test(resource.toLowerCase()))
+    species = '9606';
+  const missing = () => notFound(request, `No ${kind} found for ${resource}:${identifier}`);
+
+  const go = kind === 'pathways' && resource.toLowerCase() === 'go';
+  const asked =
+    go && identifier.toLowerCase().startsWith('go')
+      ? identifier.replace(/[^0-9]/g, '')
+      : identifier;
+  if (asked === '') return missing();
+
+  let taxId;
+  if (species !== undefined && species !== '') {
+    taxId = await speciesTaxId(speciesFilter(species));
+    if (taxId === undefined) return missing();
+  }
+
+  let cypher;
+  let params;
+  if (go) {
+    cypher =
+      taxId === undefined
+        ? 'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier RETURN DISTINCT p ORDER BY p.stId'
+        : 'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier WITH DISTINCT p MATCH (p)-[:species]->(:Species{taxId: $taxId}) RETURN p ORDER BY p.stId';
+    params = { identifier: asked };
+  } else {
+    const inSpecies = taxId === undefined ? '' : '(:Species{taxId:$taxId})<-[:species]-';
+    cypher =
+      kind === 'reactions'
+        ? `${MAPPED_ENTITIES}
+           MATCH ${inSpecies}(rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES}
+           RETURN DISTINCT rle ORDER BY rle.stId`
+        : `${MAPPED_ENTITIES}
+           MATCH (rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES}
+           WITH DISTINCT rle
+           MATCH ${inSpecies}(p:Pathway)-[:hasEvent]->(rle)
+           RETURN DISTINCT p ORDER BY p.stId`;
+    params = { databaseName: resource, identifier: asked };
+  }
+  const rows = await read(cypher, { ...params, ...(taxId === undefined ? {} : { taxId }) });
+  if (rows.length === 0) return missing();
+  return {
+    status: 200,
+    body: rows.map((row) =>
+      kind === 'reactions' ? reactionLikeEventJson(row.rle) : pathwayJson(row.p)
+    ),
+    type: 'application/json',
   };
 }
 

@@ -175,6 +175,8 @@ module.exports = {
   '^/ContentService/data/pathways/low/(diagram/)?entity/[^/?]+(/allForms)?/?(\\?|$)': contentNode,
   // An event as a schema.org Dataset, for search engines; the site never asks.
   '^/ContentService/data/discover/[^/?]+/?(\\?|$)': contentNode,
+  // The reactions and pathways an identifier in an outside resource is in.
+  '^/ContentService/data/mapping/[^/?]+/[^/?]+/(reactions|pathways)/?(\\?|$)': contentNode,
   // What a complex is made of, and the complexes an identifier is part of.
   '^/ContentService/data/(complex/[^/?]+/subunits|complexes/[^/?]+/[^/?]+)/?(\\?|$)': contentNode,
   // The reference entities behind an event's participants (the molecule list
