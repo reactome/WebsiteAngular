@@ -13,6 +13,16 @@ vi.mock('./graph.mjs', () => ({
     // findNewStId: REACT_1 became R-HSA-9; REACT_2 became nothing.
     if (cypher.includes('oldStId')) return params.id === 'REACT_1' ? [{ stId: 'R-HSA-9' }] : [];
     if (params.id === 'R-HSA-0' || params.id === 0) return [];
+    if (params.id === 'R-HSA-5')
+      return [
+        {
+          referral: 'input',
+          objects: [
+            { dbId: 1, stId: null, displayName: null, schemaClass: null },
+            { dbId: 2, stId: '', displayName: '', schemaClass: '' },
+          ],
+        },
+      ];
     return [
       {
         referral: 'hasComponent',
@@ -70,6 +80,8 @@ describe('/data/instance/{id}/referrers', () => {
     expect(asked[0][0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)<-\[rel\]-\(ref\)/);
     // graph-core's exclusions, all seven, and no edit history.
     expect(asked[0][0]).toContain('NOT ref:InstanceEdit');
+    // The class from the node's own property, as SimpleDatabaseObject.build(Value) reads it.
+    expect(asked[0][0]).toContain('schemaClass: ref.schemaClass');
     expect(asked[0][0]).toContain(
       'NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)'
     );
@@ -102,5 +114,12 @@ describe('/data/instance/{id}/referrers', () => {
     asked.length = 0;
     await get('REACT_2');
     expect(asked.map(([, params]) => params.id)).toEqual(['REACT_2', 'REACT_2']);
+  });
+
+  it('writes what a node lacks as Java does: "null" for no name or class, nothing for an empty one', async () => {
+    const response = await get('R-HSA-5');
+    expect(await response.text()).toBe(
+      '[{"referral":"input","objects":[{"dbId":1,"displayName":"null","schemaClass":"null"},{"dbId":2}]}]'
+    );
   });
 });

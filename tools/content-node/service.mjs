@@ -2359,7 +2359,8 @@ export const endpoints = [
             if (ref.stId !== null && ref.stId !== undefined && ref.stId !== '') out.stId = ref.stId;
             const displayName = ref.displayName ?? 'null';
             if (displayName !== '') out.displayName = displayName;
-            out.schemaClass = ref.schemaClass ?? 'null';
+            const schemaClass = ref.schemaClass ?? 'null';
+            if (schemaClass !== '') out.schemaClass = schemaClass;
             return out;
           }),
         })),
