@@ -45,7 +45,7 @@ A visitor drawing interactors from a PSICQUIC service, uploading a custom intera
 **Acceptance Scenarios**:
 
 1. **Given** a request that today returns PSICQUIC interactors, a custom upload's token, an existing overlay token's interactors, an event's SBML/SBGN/PDF, or the events hierarchy, **When** it is sent to the new service, **Then** status, headers that matter to clients and body are identical to the old server's.
-2. **Given** every overlay token issued since uploads began (over 300, the oldest from 2019), **When** each is read through the new service, **Then** it returns the same interactors as before; no token is lost or changed.
+2. **Given** every overlay token issued since uploads began (328 on 17 Oct 2026, the oldest from 2019), **When** each is read through the new service, **Then** it returns the same interactors as before; no token is lost or changed.
 3. **Given** a new upload made through the new service, **When** the same token is read later, **Then** it is still readable after a restart, a redeploy and a release.
 4. **Given** an address node already answers, **When** the Java service is unavailable, **Then** that address is unaffected; **Given** an address the Java service answers, **When** it is unavailable, **Then** the reader gets a clear error, never a silent answer from anywhere else.
 5. **Given** the library service's dependencies, **When** an upstream library publishes a fix, **Then** taking it is a version change and a rebuild, with no code translated by hand.
@@ -121,7 +121,7 @@ A developer changing the site's analysis views works against one definition of w
 **Running the Java**
 
 - **FR-004**: Each Java service MUST be built from Reactome's own source repositories at a recorded version, by this repository's deployment, with no Java source copied into this repository.
-- **FR-005**: Java services MUST be reachable only from the same host, behind node. Node MUST own every public ContentService and AnalysisService address and pass requests for Java-homed operations through unchanged.
+- **FR-005**: Java services MUST be reachable only from the same host. Node MUST own every public ContentService address and pass requests for Java-homed operations through unchanged. AnalysisService addresses are owned by nginx and answered only by AnalysisService: node answers none of them, and passing them through would cut long analyses short whenever node restarts (amended after research R5).
 - **FR-006**: An operation whose home is node MUST never be answered by Java, including when node fails; an operation whose home is Java MUST fail visibly when its service is down.
 - **FR-007**: The library service and AnalysisService MUST run separately unless measurement on the target host shows one process serves both within the memory available; the decision and its numbers MUST be recorded.
 - **FR-008**: Taking an upstream fix in any Java library MUST be a version change and rebuild, verified by the parity check.
@@ -129,7 +129,7 @@ A developer changing the site's analysis views works against one definition of w
 **Behaviour**
 
 - **FR-009**: Every Java-homed operation MUST answer byte-identically to the current server for the same request, verified per operation before its address is switched.
-- **FR-010**: Every existing overlay token and analysis token MUST remain readable with unchanged content and unchanged lifetime; upload retention MUST stay as it is today (no expiry) unless Reactome decides otherwise separately.
+- **FR-010**: Every existing overlay token and analysis token MUST remain readable with unchanged content and unchanged lifetime. Retention of both stores MUST stay as it is today: an LRU bound, never reached, that deletes files unread for a week only once a store passes about 2 GB. Any change is a separate Reactome decision.
 - **FR-011**: Each Reactome release MUST be able to install new analysis data and new interactor data into the Java services by a documented step.
 - **FR-012**: Parity testing of analysis MUST NOT submit to external analysis services; it replays requests against this deployment.
 
@@ -143,18 +143,19 @@ A developer changing the site's analysis views works against one definition of w
 
 - **FR-016**: Each Java service MUST report its health and its build version, and MUST log requests and failures where the other services' logs are.
 - **FR-017**: Memory for each Java service MUST be measured on the target host under a realistic load and set from that measurement.
-- **FR-018**: The licence position of every commercially licensed Java dependency MUST be confirmed for the new way of running it before that service goes live — at least Aspose.Slides, which AnalysisService carries with the diagram exporter it uses for report figures; if no Java-homed operation needs it, it is left out of the build instead.
+- **FR-018**: The licence position of every commercially licensed Java dependency MUST be settled before the service that carries it goes live. Aspose.Slides is used only by the diagram exporter's PPTX path, which no Java-homed operation needs, and it runs unlicensed today; it is left out of both builds (research R8).
 
 **The analysis result contract**
 
 - **FR-019**: The shape of an analysis result, as the site reads it, MUST be defined once in this repository and checked against real results by tests.
+- **FR-020**: Before the shared application server is switched off, each of its other webapps MUST have a recorded home or retirement, decided on measured use. Besides ContentService and AnalysisService it hosts nine: the experiment digester, the search no-result report service, the old diagram and fireworks widgets, the old Pathway Browser, popular pathways, overlays, the old RESTful API and the root application (research R10).
 
 ### Key Entities
 
 - **Operation**: one published endpoint (method and path) of ContentService or AnalysisService; has exactly one home and a reason.
 - **Home**: where an operation is answered — node, the Java library service, or AnalysisService.
 - **Java service**: a deployable unit built from named Reactome repositories at recorded versions; has a health check, a version, a memory budget, and the operations homed in it.
-- **Overlay token**: identifies one custom interactor upload; readable by anyone holding it; never expires.
+- **Overlay token**: identifies one custom interactor upload; readable by anyone holding it; kept under the store's LRU bound, which in practice keeps every token.
 - **Analysis token**: identifies one analysis result; cited by curators; has the lifetime the current service gives it.
 - **Release data**: the analysis data and interactor data a Reactome release provides to the Java services.
 
@@ -162,9 +163,9 @@ A developer changing the site's analysis views works against one definition of w
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of the 137 published operations (98 ContentService, 39 AnalysisService) have a recorded home and reason.
+- **SC-001**: 100% of the 137 published operations (98 ContentService, 39 AnalysisService) have a recorded home and reason ([contracts/operation-homes.md](contracts/operation-homes.md)).
 - **SC-002**: Every Java-homed operation returns byte-identical answers to the current server across its parity corpus before it is switched — zero unexplained differences.
-- **SC-003**: All existing overlay tokens (over 300) and a sample of at least 100 existing analysis tokens read back identically after the switch.
+- **SC-003**: All existing overlay tokens (328 on 17 Oct 2026) and a sample of at least 100 existing analysis tokens read back identically after the switch.
 - **SC-004**: With the old server stopped, the end-to-end suite, the release checks and a call to every published operation all pass.
 - **SC-005**: Reversing any single address takes one configuration change and under five minutes, without affecting any other address.
 - **SC-006**: Taking a new version of an upstream Java library is a change to a version number plus the parity run — no hand-translated code.
@@ -172,7 +173,9 @@ A developer changing the site's analysis views works against one definition of w
 
 ## Assumptions
 
-- The source repositories (analysis-service, analysis-core, analysis-report, diagram-exporter, fireworks-exporter, event-pdf, interactors-core, content-service) can build the versions now deployed; where a deployed version is a snapshot with no tag, the matching commit is identified from the deployed build before it is pinned.
+- The source repositories can build the versions now deployed. **Confirmed by research R1:** every deployed artifact was traced to a commit and rebuilt to matching classes, with no private repository or credential needed.
+- Both deployed webapps run from unmerged branches. The pins are those commits; asking their owners to merge them is a separate request.
+- The Java library service lives in a new Reactome repository, which its owners create (research R2).
 - The host has room for the Java services alongside the current ones once the old server stops; FR-017 measures this rather than assuming the amounts.
 - Analysis token storage and lifetimes are kept exactly as the current service has them; changing them is a separate decision.
 - BioPAX files are produced by the release pipeline, not by these services, and are out of scope; a BioPAX endpoint, if ever wanted, would belong to the Java side by the rule in FR-002.
