@@ -367,14 +367,22 @@ describe('the citation endpoints', () => {
     const { writeResult } = await import('./service.mjs');
     const { default: express } = await import('express');
     const site = express();
-    site.all('/:kind', (request, response) =>
-      writeResult(response, {
+    site.all('/:kind', (request, response) => {
+      const answer = {
         status: 200,
         type: 'application/octet-stream',
         headers: { 'Content-Disposition': 'attachment; filename="é"' },
         body: request.params.kind === 'empty' ? Buffer.alloc(0) : Buffer.from('x'),
-      })
-    );
+      };
+      if (request.params.kind !== 'twice') return writeResult(response, answer);
+      // A first answer that fails to serialise, then the error answer, as
+      // the service's catch gives it: the header is converted once.
+      try {
+        writeResult(response, { ...answer, body: { a: 1n } });
+      } catch {
+        writeResult(response, { status: 500, body: 'failed' });
+      }
+    });
     const listening = await new Promise((resolve) => {
       const started = site.listen(0, '127.0.0.1', () => resolve(started));
     });
@@ -383,6 +391,7 @@ describe('the citation endpoints', () => {
         ['HEAD', 'bytes'],
         ['GET', 'bytes'],
         ['GET', 'empty'],
+        ['GET', 'twice'],
       ]) {
         const response = await fetch(`http://127.0.0.1:${listening.address().port}/${kind}`, {
           method,

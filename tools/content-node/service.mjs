@@ -6651,22 +6651,22 @@ function buildId() {
   }
 }
 
-/**
- * A handler's answer on the wire. Objects go out as JSON written as Jackson
- * writes it (javaJson, not res.json's JSON.stringify); strings as they are, so
- * a text/plain endpoint is not quoted into JSON; a cached endpoint's body as it
- * was serialised once; and no body at all as nothing -- as Java sends when a
- * controller returns null, where send('') would add a text/html content type
- * Java does not.
- */
+const LATIN1_DISPOSITION = Symbol('latin1Disposition');
+
 /**
  * Node reads a Content-Disposition value back as UTF-8 when the head goes
  * out with a body's bytes counted (nodejs/node#46528) -- so the Latin-1 byte
  * Tomcat writes for é became U+FFFD. Decided at end(), on the bytes Node is
  * given (a 304's '' and Express's bodiless HEAD are not converted, a HEAD's
- * Buffer is): then the value goes in as its UTF-8 bytes, and comes out é.
+ * Buffer is): then the value goes in as its UTF-8 bytes, and comes out é as
+ * long as the head is written on its own, as Latin-1 -- which it is, because
+ * Express hands end() a Buffer whenever it computes an ETag. Installed once
+ * per response, so a second writeResult (an error after a first) does not
+ * convert twice.
  */
 function latin1Disposition(response) {
+  if (response[LATIN1_DISPOSITION]) return;
+  response[LATIN1_DISPOSITION] = true;
   const end = response.end.bind(response);
   response.end = (chunk, ...rest) => {
     const encoding = typeof rest[0] === 'string' ? rest[0] : 'utf8';
@@ -6683,6 +6683,14 @@ function latin1Disposition(response) {
   };
 }
 
+/**
+ * A handler's answer on the wire. Objects go out as JSON written as Jackson
+ * writes it (javaJson, not res.json's JSON.stringify); strings as they are, so
+ * a text/plain endpoint is not quoted into JSON; a cached endpoint's body as it
+ * was serialised once; and no body at all as nothing -- as Java sends when a
+ * controller returns null, where send('') would add a text/html content type
+ * Java does not.
+ */
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
