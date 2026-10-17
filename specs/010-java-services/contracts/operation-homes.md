@@ -87,11 +87,11 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/interactors/psicquic/resources`                         | node — ported          | graph or search index                                                                         |
 | GET    | `/interactors/static/molecule/enhanced/{acc}/details`     | node — ported          | graph or search index                                                                         |
 | GET    | `/interactors/static/molecule/{acc}/details`              | node — ported          | graph or search index                                                                         |
-| GET    | `/interactors/static/molecule/{acc}/pathways`             | node — to port         | graph or search index                                                                         |
-| GET    | `/interactors/static/molecule/{acc}/summary`              | node — to port         | graph or search index                                                                         |
+| GET    | `/interactors/static/molecule/{acc}/pathways`             | node — ported          | graph or search index                                                                         |
+| GET    | `/interactors/static/molecule/{acc}/summary`              | node — ported          | graph or search index                                                                         |
 | GET    | `/interactors/static/molecule/{acc}/withEntities`         | node — ported          | graph or search index                                                                         |
 | POST   | `/interactors/static/molecules/details`                   | node — ported          | graph or search index                                                                         |
-| POST   | `/interactors/static/molecules/summary`                   | node — to port         | graph or search index                                                                         |
+| POST   | `/interactors/static/molecules/summary`                   | node — ported          | graph or search index                                                                         |
 | POST   | `/interactors/token/{token}`                              | java-library           | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                    |
 | POST   | `/interactors/upload/psicquic/url`                        | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
 | POST   | `/interactors/upload/tuple/content`                       | java-library           | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                    |
