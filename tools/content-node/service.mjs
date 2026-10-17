@@ -22,9 +22,17 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
-import { read, configured, close } from './graph.mjs';
+import { read, configured, close, envSetting } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { sendReport } from './report.mjs';
+import {
+  citationMonth,
+  eventText,
+  formatEventCitation,
+  formatStaticCitation,
+  imageText,
+  staticCitationFrom,
+} from './citation.mjs';
 import {
   enhancedQuery,
   findByIdParameters,
@@ -2313,6 +2321,97 @@ export const endpoints = [
           })
         )
       );
+    },
+  },
+  {
+    path: '/ContentService/citation/pathway/{id}',
+    // CitationController.pathwayCitation: the Pathway Browser's "cite this"
+    // -- the pathway's citation and its image's, as a HashMap writes them;
+    // {} for an id that is no event.
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const date = queryValues(request, 'dateAccessed');
+      if (date.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('dateAccessed'));
+      const citation = await eventCitationFor(raw);
+      const body = {};
+      if (citation) {
+        const texts = {
+          pathwayCitation: eventText(citation, date.join(',')),
+          imageCitation: imageText(citation, date.join(',')),
+        };
+        for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys())
+          body[key] = texts[key];
+      }
+      return { status: 200, type: 'application/json', body };
+    },
+  },
+  {
+    path: '/ContentService/citation/static/{id}',
+    // CitationController.staticCitation: a paper's citation, by PubMed id,
+    // from Europe PMC; Java's 500 text when it cannot be had.
+    handler: async (request) => {
+      const citation = await staticCitationFor(pathId(rawSegment(request, 4)));
+      if (!citation)
+        return {
+          status: 500,
+          type: 'text/plain;charset=UTF-8',
+          body: 'Unable to fetch static citation',
+        };
+      return {
+        status: 200,
+        type: 'text/plain;charset=UTF-8',
+        body: formatStaticCitation(citation, 'txt', null),
+      };
+    },
+  },
+  {
+    path: '/ContentService/citation/export',
+    // CitationController.export: a citation to download as BibTeX, RIS or
+    // text, a pathway's or a paper's. Nothing to cite is an empty 200.
+    handler: async (request) => {
+      const flag = queryValues(request, 'isPathway');
+      if (flag.length === 0)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is not present"
+        );
+      const isPathway = springBoolean(flag);
+      if (isPathway.error) return javaError(request, 400, 'BAD_REQUEST', isPathway.error);
+      if (isPathway.value === undefined)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is present but converted to null"
+        );
+      const values = {};
+      for (const name of ['id', 'ext', 'dateAccessed']) {
+        const given = queryValues(request, name);
+        if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
+        values[name] = given.join(',');
+      }
+      const citation = isPathway.value
+        ? await eventCitationFor(values.id)
+        : await staticCitationFor(values.id);
+      if (!citation) return { status: 200 };
+      const format = isPathway.value ? formatEventCitation : formatStaticCitation;
+      const [extension, type] =
+        values.ext === 'bib'
+          ? ['bib', 'application/x-bibtex']
+          : values.ext === 'ris'
+            ? ['ris', 'application/x-research-info-systems']
+            : ['txt', 'text/plain'];
+      return {
+        status: 200,
+        type: `${type};charset=UTF-8`,
+        headers: {
+          'Content-Disposition': `attachment; filename="reactome_citation_${values.id}.${extension}"`,
+        },
+        body: format(citation, values.ext, values.dateAccessed),
+      };
     },
   },
   {
@@ -6324,6 +6423,97 @@ function searchAnswer(request, query, result) {
   const envelope = JSON.parse(missing.body);
   envelope.targets = result.targetResults;
   return { ...missing, body: javaJson(envelope) };
+}
+
+/**
+ * CitationController.getEventCitationObject: an event's citation from its
+ * enhanced object (graph-core's findEnhancedObjectById) -- its name, the
+ * release year and (from the wrong character of the date, as Java takes it)
+ * month, a pathway's DOI or else its page, the release, and the authors of
+ * its authored edits, else its creator, else its reviewers. Undefined for an
+ * id that is no event.
+ */
+async function eventCitationFor(raw) {
+  const id = inDepthId(raw);
+  if (!id) return undefined;
+  const [row] = await read(
+    enhancedQuery({
+      idType: id.idType,
+      summarise: false,
+      includeDisease: true,
+      outgoingOnly: false,
+    }),
+    { id: id.id }
+  );
+  if (!row) return undefined;
+  const event = mapResult(row);
+  if (!isA(event.schemaClass, 'Event')) return undefined;
+  const props = event.properties;
+  const release = String(props.releaseDate);
+  const citation = {
+    id: raw,
+    title: props.displayName,
+    year: release.slice(0, 4),
+    month: citationMonth(release.slice(6, 7)),
+    doi: null,
+    urls: [],
+    authors: null,
+  };
+  if (isA(event.schemaClass, 'Pathway') && props.doi) {
+    citation.doi = props.doi;
+    citation.urls.push(`https://doi.org/${props.doi}`);
+  } else citation.urls.push(`https://reactome.org/content/detail/${raw}`);
+  const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+  citation.release = String((await version.handler({ params: {}, query: {} })).body);
+  const fields = event.fields;
+  const edits = fields.authored?.length
+    ? fields.authored
+    : fields.created
+      ? [fields.created]
+      : fields.reviewed?.length
+        ? fields.reviewed
+        : null;
+  if (edits) {
+    citation.authors = [];
+    for (const edit of edits)
+      for (const person of edit.fields?.author ?? []) {
+        const { surname, initial, firstname } = person.properties;
+        citation.authors.push({
+          lastName: surname,
+          initials: `${[...String(initial)].join('.')}.`,
+          firstName: firstname,
+        });
+      }
+  }
+  return citation;
+}
+
+/** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
+async function staticCitationFor(id) {
+  const query = new URLSearchParams();
+  query.set('query', `src:med ext_id:${id}`);
+  query.set('format', 'json');
+  query.set('resultType', 'core');
+  const base = envSetting(
+    'EUROPE_PMC_URL',
+    'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
+  );
+  // Only what Europe PMC sends -- or fails to -- is Java's "unable to
+  // fetch"; a mistake of ours is not.
+  let answer;
+  try {
+    const response = await fetch(`${base}?${query}`, { signal: AbortSignal.timeout(30_000) });
+    if (response.status !== 200) return undefined;
+    answer = await response.json();
+  } catch {
+    return undefined;
+  }
+  try {
+    return staticCitationFrom(answer);
+  } catch (failure) {
+    if (failure instanceof TypeError || failure instanceof ReferenceError) throw failure;
+    return undefined;
+  }
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */

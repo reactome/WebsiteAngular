@@ -128,6 +128,10 @@ module.exports = {
   // website's search (/query).
   '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?/?)(\\?|$)':
     contentNode,
+  // The Pathway Browser's "cite this": a pathway's citation, a paper's by
+  // PubMed id, and either to download. /citation/export/{id} and /download
+  // stay with Java.
+  '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
   '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,
