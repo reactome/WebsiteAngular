@@ -1927,6 +1927,25 @@ describe("/schema/model's query", () => {
   });
 });
 
+describe('the order endpoints are registered in', () => {
+  // app() registers them in array order, and Express takes the first match:
+  // a /x/{id} listed before /x/model answered /x/model as if "model" were an
+  // id -- the schema browser's class tree, as a 400 about a missing page.
+  // Spring ranks a literal segment above a variable; this keeps node doing so.
+  const pattern = (path) =>
+    new RegExp(
+      `^${path.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\\\{[^}]+\\\}|\{[^}]+\}/g, '[^/]+')}$`
+    );
+  for (const endpoint of endpoints.filter((e) => !e.path.includes('{')))
+    it(`lets ${endpoint.method ?? 'get'} ${endpoint.path} reach its own handler`, () => {
+      const first = endpoints.find(
+        (e) =>
+          (e.method ?? 'get') === (endpoint.method ?? 'get') && pattern(e.path).test(endpoint.path)
+      );
+      expect(first?.path).toBe(endpoint.path);
+    });
+});
+
 describe('endpointFor, which endpoint a concrete path belongs to', () => {
   // The diff harness judges a path by its endpoint's declared differences.
   // Matching on the text before the first `{` gave every /schema/{id}/... path
@@ -1950,7 +1969,7 @@ describe('endpointFor, which endpoint a concrete path belongs to', () => {
   });
 
   it('matches nothing for a path no endpoint serves', () => {
-    expect(endpointFor('/ContentService/data/schema/Pathway')).toBeUndefined();
+    expect(endpointFor('/ContentService/data/schema/Pathway/reference')).toBeUndefined();
     expect(endpointFor('/ContentService/data/query/70486/stId/extra')).toBeUndefined();
   });
 });

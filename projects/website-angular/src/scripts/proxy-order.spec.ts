@@ -241,6 +241,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/ids',
     '/ContentService/data/query/ids;x=1',
     '/ContentService/data/query/ids/map',
+    // One page of a schema class's objects, whole -- "models" is a class name there too.
+    '/ContentService/data/schema/Pathway?page=1&offset=25',
+    '/ContentService/data/schema/models',
     // Every disease, whole and as a DOID list.
     '/ContentService/data/diseases',
     '/ContentService/data/diseases/doid',
@@ -312,11 +315,7 @@ describe('the dev server proxy', () => {
     // The event hierarchy needs the analysis service's pathway sizes.
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true',
     '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true&token=x',
-    // Under /schema, the full objects and references are not ported; only the
-    // model, the count, the simplified list, attributes and referrals are.
-    '/ContentService/data/schema/Pathway',
-    '/ContentService/data/schema/Pathway?page=1&offset=25',
-    '/ContentService/data/schema/models',
+    // Under /schema, /reference is not ported.
     '/ContentService/data/schema/Pathway/attributesAll',
     '/ContentService/data/schema/Pathway/referrals/x',
     '/ContentService/data/schema/ReferenceMolecule/reference?page=1&offset=10',
