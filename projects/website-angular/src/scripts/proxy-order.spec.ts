@@ -226,6 +226,9 @@ describe('the dev server proxy', () => {
     '/ContentService/citation/pathway/R-HSA-109581?dateAccessed=x',
     '/ContentService/citation/static/25348405',
     '/ContentService/citation/export?id=R-HSA-109581&ext=bib&isPathway=true&dateAccessed=x',
+    '/ContentService/data/instance/R-HSA-141433/referrers',
+    // Spring matches a trailing slash, and so must the route once Java is gone.
+    '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -259,6 +262,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/pathways/of/227785/x',
     '/ContentService/citation/export/R-HSA-109581?ext=bib',
     '/ContentService/citation/download',
+    '/ContentService/data/instance/R-HSA-141433',
+    '/ContentService/data/instance/R-HSA-141433/referrers/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',
     // The interactor endpoints node does not serve.
     '/ContentService/interactors/static/molecule/P04637/summary',

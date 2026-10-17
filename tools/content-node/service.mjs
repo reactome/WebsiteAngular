@@ -2424,6 +2424,65 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/data/instance/{id}/referrers',
+    // SchemaController.getInstanceReferrers, for the website's detail pages:
+    // everything that points at the object -- not edit history, and, asked
+    // about a species, compartment, database, evidence type or review
+    // status, not everything that carries it -- grouped by relationship,
+    // each a simple object (graph-core's ReferralsLinkageRepository
+    // .getReferralsTo, at most 1000 groups). An id that is no identifier is
+    // Java's 404; one nothing points at, [].
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      let { where, params } = resolveId(raw);
+      if (where === 'false') return notFound(request, `No referrers found for id: ${raw}`);
+      if (where.startsWith('n.oldStId')) {
+        // findNewStId: the node whose old id it is, by its stable id.
+        const [found] = await read(
+          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+          params
+        );
+        params = { id: found?.stId ?? params.id };
+        where = 'n.stId = $id';
+      }
+      const byDbId = where.startsWith('n.dbId');
+      // Long.parseLong past a long's range is Java's 500, naming the digits as
+      // given.
+      if (byDbId && BigInt(params.id) > 9223372036854775807n) {
+        const digits = javaTrim(raw).split('.')[0];
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
+      }
+      const object = byDbId ? '{dbId:toInteger($id)}' : '{stId:$id}';
+      const rows = await read(
+        `MATCH (d:DatabaseObject${object})<-[rel]-(ref)
+         WHERE NOT ref:InstanceEdit
+           AND NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)
+         RETURN DISTINCT TYPE(rel) AS referral,
+                COLLECT({dbId: ref.dbId, stId: ref.stId, displayName: ref.displayName, schemaClass: ref.schemaClass}) AS objects
+         LIMIT 1000`,
+        params
+      );
+      return {
+        status: 200,
+        type: 'application/json',
+        body: rows.map((row) => ({
+          referral: row.referral,
+          // SimpleDatabaseObject.build(Value): on a collected node, its
+          // schemaClass property, not its labels as from a Record.
+          objects: row.objects.map((ref) => {
+            const out = { dbId: ref.dbId };
+            if (ref.stId !== null && ref.stId !== undefined && ref.stId !== '') out.stId = ref.stId;
+            const displayName = ref.displayName ?? 'null';
+            if (displayName !== '') out.displayName = displayName;
+            const schemaClass = ref.schemaClass ?? 'null';
+            if (schemaClass !== '') out.schemaClass = schemaClass;
+            return out;
+          }),
+        })),
+      };
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
