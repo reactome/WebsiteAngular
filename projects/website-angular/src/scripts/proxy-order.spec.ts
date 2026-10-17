@@ -241,6 +241,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/ids',
     '/ContentService/data/query/ids;x=1',
     '/ContentService/data/query/ids/map',
+    // Every disease, whole and as a DOID list.
+    '/ContentService/data/diseases',
+    '/ContentService/data/diseases/doid',
     // Spring matches a trailing slash, and so must the route once Java is gone.
     '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {

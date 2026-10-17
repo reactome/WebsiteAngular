@@ -921,6 +921,35 @@ export const endpoints = [
     },
   })),
   {
+    path: '/ContentService/data/diseases',
+    /**
+     * DiseasesController.getDiseases: every Disease, as graph-core's
+     * SchemaRepository.getByClass reads a class -- the nodes alone, no
+     * relationship, ordered by displayName -- written as the domain objects.
+     */
+    handler: async (request) => ({
+      status: 200,
+      serialised: writeDomain(mapNodes(await diseases()), ...writerFor(request)),
+      type: 'application/json',
+    }),
+  },
+  {
+    path: '/ContentService/data/diseases/doid',
+    // DiseasesController.getDiseasesSummary: one line a disease, its dbId,
+    // then database:identifier -- Java's string concatenation, so a missing
+    // one is "null".
+    handler: async () => ({
+      status: 200,
+      type: 'text/plain;charset=UTF-8',
+      body: (await diseases())
+        .map(
+          ({ props }) =>
+            `${props.dbId}\t${props.databaseName ?? 'null'}:${props.identifier ?? 'null'}`
+        )
+        .join('\n'),
+    }),
+  },
+  {
     path: '/ContentService/data/query/ids/map',
     // A GET here is Java's /query/{id}/{attributeName}, for an object called
     // "ids" -- which nothing is.
@@ -3354,6 +3383,14 @@ function utf32(body, order) {
         : String.fromCodePoint(point);
   }
   return at < body.length ? `${text}\ufffd` : text;
+}
+
+/** graph-core's SchemaRepository.getByClass(Disease): the nodes alone, by displayName. */
+async function diseases() {
+  const rows = await read(
+    'MATCH (n:Disease) WITH n ORDER BY n.displayName RETURN {id: id(n), labels: labels(n), props: properties(n)} AS n'
+  );
+  return rows.map((row) => row.n);
 }
 
 /**
