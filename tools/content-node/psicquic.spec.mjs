@@ -43,13 +43,22 @@ describe('the registry', () => {
       `<service id="1"><name >A\r\nB</name><soapUrl/><restUrl>r</restUrl><active>true</active></service>`,
       `<!-- <service><name>Gone</name></service> -->`,
       `<service><name><!-- note -->C</name><active> 1 </active></service>`,
-      `<service><name/><active>false</active></service>`
+      `<service><name/><active>false</active></service>`,
+      `<service><name><![CDATA[D\r\nE]]></name></service>`
     );
     expect(registryServices(xml)).toEqual([
       { name: 'A\nB', soapUrl: '', restUrl: 'r', active: true },
       { name: 'C', soapUrl: null, restUrl: null, active: true },
       { name: '', soapUrl: null, restUrl: null, active: false },
+      { name: 'D\nE', soapUrl: null, restUrl: null, active: false },
     ]);
+    // An empty service, attributes or none, is one with no name -- not the
+    // start of the next.
+    expect(
+      registryServices(registry(`<service a="1"/>`, `<service><name>B</name></service>`)).map(
+        (s) => s.name
+      )
+    ).toEqual([null, 'B']);
   });
 });
 

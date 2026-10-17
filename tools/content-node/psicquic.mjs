@@ -34,23 +34,21 @@ function xmlText(raw) {
  */
 function child(service, name) {
   const found = service.match(
-    new RegExp(`<${name}(?:\\s[^>]*)?(?:/>|>([\\s\\S]*?)</${name}\\s*>)`)
+    new RegExp(`<${name}(?:\\s[^>]*?)?(?:/>|>([\\s\\S]*?)</${name}\\s*>)`)
   );
   return found ? xmlText(found[1] ?? '') : null;
 }
 
 /**
- * The document as an XML parser hands it on: line ends normalised to \n,
- * comments gone -- both outside CDATA sections, which are kept as they are.
+ * The document as an XML parser hands it on: line ends normalised to \n
+ * everywhere (before parsing, CDATA included), and comments gone outside
+ * CDATA sections.
  */
 function xmlDocument(xml) {
   return xml
+    .replace(/\r\n?/g, '\n')
     .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
-    .map((part) =>
-      part.startsWith('<![CDATA[')
-        ? part
-        : part.replace(/\r\n?/g, '\n').replace(/<!--[\s\S]*?-->/g, '')
-    )
+    .map((part) => (part.startsWith('<![CDATA[') ? part : part.replace(/<!--[\s\S]*?-->/g, '')))
     .join('');
 }
 
@@ -64,15 +62,18 @@ export function registryServices(text) {
   // All of one: a reading cut short is JAXB's failure to unmarshal.
   if (!/<registry[\s>][\s\S]*<\/registry\s*>\s*$/.test(xml))
     throw new Error('not a PSICQUIC registry, or not all of one');
-  return [...xml.matchAll(/<service(?:\s[^>]*)?>([\s\S]*?)<\/service\s*>/g)].map(([, service]) => {
-    const active = child(service, 'active')?.trim();
-    return {
-      name: child(service, 'name'),
-      soapUrl: child(service, 'soapUrl'),
-      restUrl: child(service, 'restUrl'),
-      active: active === 'true' || active === '1',
-    };
-  });
+  // An empty <service/> too: a service with no name, a failed reading.
+  return [...xml.matchAll(/<service(?:\s[^>]*?)?(?:\/>|>([\s\S]*?)<\/service\s*>)/g)].map(
+    ([, service = '']) => {
+      const active = child(service, 'active')?.trim();
+      return {
+        name: child(service, 'name'),
+        soapUrl: child(service, 'soapUrl'),
+        restUrl: child(service, 'restUrl'),
+        active: active === 'true' || active === '1',
+      };
+    }
+  );
 }
 
 /**
