@@ -59,7 +59,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T051 `GET /search/facet`, `GET /search/icon/facet` — #487
 - [x] T052 `GET /search/facet_query` — #488
 - [x] T053 `GET /search/icon/query`, `GET /search/icon/{identifier}` — #489
-- [x] T054 `GET /search/diagram/{diagram}`, `GET /search/diagram/{diagram}/occurrences/{instance}`, `GET /search/diagram/summary` — #491
+- [x] T054 `GET /search/diagram/{diagram}`, `GET /search/diagram/{diagram}/occurrences/{instance}`, and `GET /search/diagram/summary` (Java serves it, though it is not in the published description) — #491
 - [x] T055 `GET /search/diagram/{pathwayId}/flag`, `GET /search/fireworks/flag` — #492
 - [x] T056 `GET /search/pathways/of/{dbId}` — #493
 - [x] T057 `GET /search/fireworks` — #494
@@ -92,7 +92,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 
 ## Phase 8: Exporters → node fronts, render service draws (issue #273)
 
-- [x] T090 `GET /exporter/diagram/{identifier}.{ext}`, for the formats the render page draws — #479
+- [ ] T090 `GET /exporter/diagram/{identifier}.{ext}`, for the formats the render page draws — implemented in #479, not yet routed: Java still answers it until the log scan (#273)
 - [ ] T091 `GET /exporter/diagram/{identifier}.{ext}`, the remaining formats and options (#273, after the log scan)
 - [ ] T092 `GET /exporter/reaction/{identifier}.{ext}`, `GET /exporter/reaction/{identifier}/diagram`
 - [ ] T093 `GET /exporter/fireworks/{species}.{ext}`
@@ -112,5 +112,5 @@ These stay in Java because their substance is a Java library or Java numerical w
 
 ## Notes
 
-- The published description lists 98 operations. Node answers 52 of them in full (Phases 2–6). It answers one more in part: `/data/query/{id}/{attributeName}` for `stId` and `normalPathway` (T020, T029; the rest is T070). Operations the site calls that are outside the description are T026 and T060. Everything else is in Phases 7–9.
+- The published description lists 98 operations. Node answers 52 of them in full (Phases 2–6). It answers one more in part: `/data/query/{id}/{attributeName}` for `stId` and `normalPathway` (T020, T029; the rest is T070). Operations outside the description are T026 and T060, which the site calls, and the summary in T054. Everything else is in Phases 7–9.
 - An operation in Phase 7 that turns out to be library-bound moves to Phase 9, by the rule in spec 010.
