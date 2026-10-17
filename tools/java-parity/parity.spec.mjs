@@ -4,6 +4,7 @@
 // stub servers standing in for the reference (what runs today) and the
 // candidate (what replaces it).
 import { createServer } from 'node:http';
+import { setInterval, clearInterval } from 'node:timers';
 import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { compareAll, verdict } from './parity.mjs';
@@ -20,6 +21,19 @@ function stub(table) {
     if (request.url === '/host') return response.end(`host ${request.headers.host}`);
     // A server that never answers.
     if (request.url === '/hang') return;
+    // One that never stops answering, a byte at a time.
+    if (request.url === '/trickle') {
+      const timer = setInterval(() => response.write('.'), 50);
+      response.on('close', () => clearInterval(timer));
+      return;
+    }
+    // Two Content-Types, which a parsed header map shows as one.
+    if (request.url === '/twice' && !table.name) {
+      response.setHeader('content-type', ['text/plain', 'text/html']);
+      return response.end('x');
+    }
+    // Context-path aware: only /ctx/x exists.
+    if (request.url === '/ctx/x') return response.end(`ctx ${table.name ?? ''}`);
     const answer = table[request.url] ?? { status: 404, body: 'none' };
     response.writeHead(answer.status ?? 200, answer.headers ?? { 'content-type': 'text/plain' });
     response.end(answer.body);
@@ -55,6 +69,8 @@ const reference = {
 };
 const candidate = {
   ...reference,
+  name: 'candidate',
+  '/twice': { headers: { 'content-type': 'text/plain' }, body: 'x' },
   '/byte': { body: 'abd' },
   '/status': { status: 500, body: 'x' },
   '/header': {
@@ -174,5 +190,50 @@ describe('the parity harness', () => {
   it('asks both at once with --simultaneous, with the same result', async () => {
     const report = await run(['/same', '/byte'], { simultaneous: true });
     expect(report.counts).toEqual({ identical: 1, different: 1 });
+  });
+
+  it("keeps a base URL's path, and refuses a scheme or query it cannot honour", async () => {
+    // Without the prefix both sides would answer the same 404 -- a false pass.
+    const report = await compareAll([{ method: 'GET', path: '/x' }], {
+      reference: `${ref.url}/ctx`,
+      candidate: `${cand.url}/ctx`,
+    });
+    expect(report.counts).toEqual({ identical: 0, different: 1 });
+    for (const bad of ['ftp://127.0.0.1:1', `${ref.url}/?q=1`])
+      await expect(
+        compareAll([{ path: '/x' }], { reference: bad, candidate: cand.url })
+      ).rejects.toThrow(/base/);
+  });
+
+  it('times out the whole request, not just a silence', async () => {
+    const started = Date.now();
+    const report = await run(['/trickle'], { timeout: 300 });
+    expect(report.results[0].error).toBe('timeout');
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('sees a header sent twice', async () => {
+    const report = await run(['/twice']);
+    expect(report.results[0].differs).toContain('content-type');
+    // And how the body was framed: Content-Length on one side, chunked on the other.
+    expect(report.results[0].differs).toContain('transfer-encoding');
+  });
+
+  it('names what failed: the normaliser, not the network', async () => {
+    const report = await run(['/same'], { normalise: normalisers.analysisResultGz });
+    expect(report.results[0].error).toBe('normaliser');
+    // A token normaliser that finds no token is an error, not a silent pass.
+    expect(() => normalisers.analysisResult(Buffer.from('{"n":1}'))).toThrow();
+  });
+
+  it('reports a status difference even when the body cannot be normalised', async () => {
+    const report = await run(['/status'], { normalise: normalisers.analysisResult });
+    expect(report.results[0].differs).toContain('status');
+  });
+
+  it('ignores a header only when the run declares it, and says so', async () => {
+    const report = await run(['/header'], { ignoreHeaders: ['content-disposition'] });
+    expect(report.counts.identical).toBe(1);
+    expect(report.ignoredHeaders).toEqual(['content-disposition']);
   });
 });

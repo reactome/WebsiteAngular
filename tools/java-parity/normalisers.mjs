@@ -19,10 +19,10 @@ import { gunzipSync } from 'node:zlib';
 function withoutToken(bytes) {
   // latin1 maps bytes to code units one to one, so nothing else is re-encoded.
   const text = bytes.toString('latin1');
-  return Buffer.from(
-    text.replace(/("summary"\s*:\s*\{[^{}]*?"token"\s*:\s*)"(?:[^"\\]|\\.)*"/, '$1""'),
-    'latin1'
-  );
+  const token = /("summary"\s*:\s*\{[^{}]*?"token"\s*:\s*)"(?:[^"\\]|\\.)*"/;
+  // No token to blank is not an answer this normaliser is for: an error, not a silent pass-through.
+  if (!token.test(text)) throw new Error('no summary.token');
+  return Buffer.from(text.replace(token, '$1""'), 'latin1');
 }
 
 export const normalisers = {
