@@ -1195,17 +1195,9 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return { status: 200, body: undefined };
-      if (where.startsWith('n.oldStId')) {
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+      const id = await graphCoreId(raw);
+      if (!id) return { status: 200, body: undefined };
+      const { object, params } = id;
       const rows = await read(
         `MATCH (n:DatabaseObject${object})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|referenceEntity|proteinMarker|RNAMarker*]->(m:ReferenceEntity)
          RETURN DISTINCT m, labels(m) AS labels`,
@@ -1265,17 +1257,9 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return { status: 200, body: undefined };
-      if (where.startsWith('n.oldStId')) {
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const byDbId = where.startsWith('n.dbId');
+      const id = await graphCoreId(raw);
+      if (!id) return { status: 200, body: undefined };
+      const { params, byDbId } = id;
       const object = byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}';
       const from = participantsFrom(byDbId);
       const rows = await read(
@@ -1522,17 +1506,9 @@ export const endpoints = [
 
       const missing = () =>
         javaError(request, 404, 'NOT_FOUND', `Reverse sub graph found for id: ${raw}`);
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return missing();
-      if (where.startsWith('n.oldStId')) {
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const byDbId = where.startsWith('n.dbId');
+      const id = await graphCoreId(raw);
+      if (!id) return missing();
+      const { params, byDbId } = id;
       // Long.parseLong past a long's range is Java's 500, naming the digits as
       // given; neo4j.int would wrap round instead and find some other object.
       if (byDbId && BigInt(params.id) > 9223372036854775807n) {
@@ -2719,18 +2695,9 @@ export const endpoints = [
     // Java's 404; one nothing points at, [].
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return notFound(request, `No referrers found for id: ${raw}`);
-      if (where.startsWith('n.oldStId')) {
-        // findNewStId: the node whose old id it is, by its stable id.
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const byDbId = where.startsWith('n.dbId');
+      const id = await graphCoreId(raw);
+      if (!id) return notFound(request, `No referrers found for id: ${raw}`);
+      const { params, byDbId } = id;
       // Long.parseLong past a long's range is Java's 500, naming the digits as
       // given.
       if (byDbId && BigInt(params.id) > 9223372036854775807n) {
@@ -7121,7 +7088,7 @@ export function javaError(request, code, reason, message) {
 /**
  * An id as graph-core's services read it before choosing a repository query:
  * DatabaseObjectUtils.getIdentifier, then isStId or isDbId. Read as everywhere
- * else (resolveId); a pre-2016 REACT_ id is swapped for its stable id, and one
+ * else (resolveId); a pre-2016 REACT_ id is swapped for its stable id (findNewStId), and one
  * that is not found stays as given and is looked for as a stable id, which
  * finds nothing -- as in Java. Undefined for an id that is neither, for which
  * the service returns null.
