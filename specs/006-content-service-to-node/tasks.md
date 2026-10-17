@@ -84,7 +84,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T076 `GET /data/entity/{id}/componentOf`
 - [ ] T077 `GET /data/participants/{id}/participatingPhysicalEntities`
 - [ ] T078 `GET /data/pathway/{id}/containedEvents`, `GET /data/pathway/{id}/containedEvents/{attributeName}`
-- [ ] T079 `GET /data/pathways/low/entity/{id}/allForms`, `GET /data/pathways/low/diagram/entity/{id}`, `GET /data/pathways/low/diagram/entity/{id}/allForms`
+- [x] T079 `GET /data/pathways/low/entity/{id}/allForms`, `GET /data/pathways/low/diagram/entity/{id}`, `GET /data/pathways/low/diagram/entity/{id}/allForms` — #513
 - [ ] T080 `GET /data/mapping/{resource}/{identifier}/pathways`, `GET /data/mapping/{resource}/{identifier}/reactions`
 - [x] T081 `GET /data/diseases`, `GET /data/diseases/doid` — #510
 - [ ] T082 `GET /data/discover/{identifier}`

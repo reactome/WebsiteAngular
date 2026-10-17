@@ -170,8 +170,9 @@ module.exports = {
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors/?(\\?|$)': contentNode,
   // The lower-level pathways an entity takes part in, with or without a
-  // species: the entity popup and the participating-pathways list.
-  '^/ContentService/data/pathways/low/entity/[^/?]+/?(\\?|$)': contentNode,
+  // species: the entity popup and the participating-pathways list. Of every
+  // form of it too, and the diagrams either is drawn in.
+  '^/ContentService/data/pathways/low/(diagram/)?entity/[^/?]+(/allForms)?/?(\\?|$)': contentNode,
   // The reference entities behind an event's participants: the molecule list
   // and the IDG page.
   '^/ContentService/data/participants/[^/?]+/referenceEntities/?(\\?|$)': contentNode,
