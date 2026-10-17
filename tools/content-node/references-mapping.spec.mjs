@@ -21,7 +21,7 @@ vi.mock('./graph.mjs', () => ({
   envSetting: () => '',
 }));
 
-const { app, crossReferenceQuery, pageJson } = await import('./service.mjs');
+const { app, crossReferenceQuery, pageJson, pageText } = await import('./service.mjs');
 
 let base;
 let server;
@@ -56,7 +56,7 @@ describe('crossReferenceQuery', () => {
 
 describe('pageJson', () => {
   it("is Spring's PageImpl as Jackson writes it, the content left out when empty", () => {
-    expect(JSON.stringify(pageJson([{ a: 1 }], 0, 2, 3))).toBe(
+    expect(pageText(pageJson([{ a: 1 }], 0, 2, 3))).toBe(
       '{"content":[{"a":1}],"pageable":{"sort":{"empty":true,"sorted":false,"unsorted":true},"offset":0,"pageNumber":0,"pageSize":2,"paged":true,"unpaged":false},"last":false,"totalPages":2,"totalElements":3,"size":2,"number":0,"sort":{"empty":true,"sorted":false,"unsorted":true},"first":true,"numberOfElements":1,"empty":false}'
     );
     // hasNext in int arithmetic: the last possible page is never the last.
@@ -68,7 +68,7 @@ describe('pageJson', () => {
       empty.totalPages,
       empty.last,
       empty.first,
-    ]).toEqual([false, 500, 1, true, false]);
+    ]).toEqual([false, 500n, 1, true, false]);
   });
 });
 
@@ -115,6 +115,47 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     expect(last()[0]).toBe(crossReferenceQuery('P1', 'D'));
   });
 
+  it('leaves out what NON_EMPTY leaves out: no entities, an empty text', async () => {
+    answer = () => [
+      {
+        reference: 'P1',
+        physicalEntities: [],
+        crossReferences: [{ identifier: 'X', databaseName: '', url: null }],
+      },
+    ];
+    expect(await (await get('P1/xrefs')).text()).toBe(
+      '[{"reference":"P1","crossReferences":[{"identifier":"X","url":"null"}]}]'
+    );
+  });
+
+  it("is Java's 500 for any Neo4j client error, and the driver's for a value that is not text", async () => {
+    answer = () => {
+      throw Object.assign(new Error('/ by zero'), {
+        code: 'Neo.ClientError.Statement.ArithmeticError',
+      });
+    };
+    expect(await messages(await get('P1/xrefs'))).toEqual([
+      500,
+      [
+        "/ by zero; Error code 'Neo.ClientError.Statement.ArithmeticError'; nested exception is org.neo4j.driver.exceptions.ClientException: / by zero",
+      ],
+    ]);
+    answer = () => [{ reference: 65969, physicalEntities: [], crossReferences: [] }];
+    expect(await messages(await get('P1/xrefs'))).toEqual([
+      500,
+      [
+        "Cannot coerce INTEGER to Java String; Error code 'N/A'; nested exception is org.neo4j.driver.exceptions.value.Uncoercible: Cannot coerce INTEGER to Java String",
+      ],
+    ]);
+  });
+
+  it('joins a repeated dbFilter as Spring does', async () => {
+    answer = () => [];
+    asked.length = 0;
+    await get('P1/xrefs?dbFilter=A&dbFilter=B');
+    expect(last()[0]).toBe(crossReferenceQuery('P1', 'A,B'));
+  });
+
   it('is a 404 when nothing matches', async () => {
     answer = () => [];
     expect(await messages(await get('xyz/xrefs'))).toEqual([
@@ -152,6 +193,47 @@ describe('POST /references/mapping/xrefs', () => {
       { xyz: [{ reference: 'NO MATCH' }] },
     ]);
     expect([json.totalElements, json.totalPages, json.numberOfElements]).toEqual([3, 2, 2]);
+  });
+
+  it('joins a repeated dbFilter as Spring does', async () => {
+    answer = () => [];
+    asked.length = 0;
+    await post('?dbFilter=A&dbFilter=B', 'P1');
+    expect(last()[0]).toBe(crossReferenceQuery('P1', 'A,B'));
+  });
+
+  it('splits on newline and tab too, and trims as String.trim does', async () => {
+    answer = () => [];
+    const json = await (await post('', 'A\nB\tC\u0001 ')).json();
+    expect(json.content.map((entry) => Object.keys(entry)[0])).toEqual(['A', 'B', 'C']);
+  });
+
+  it('corrects the total as PageImpl does when the slice runs past it', () => {
+    // Offset 4 + size 10 is past 5 identifiers: the total is 4 + what the page holds.
+    expect(pageJson([{ a: 1 }], 2, 2, 5).totalElements).toBe(5);
+    expect(pageJson([{ a: 1 }], 1, 4, 5).totalElements).toBe(5);
+    expect(pageJson([{ a: 1 }], 1, 4, 3).totalElements).toBe(5);
+  });
+
+  it('writes a page past 2^53 exactly, as a long', async () => {
+    answer = () => [];
+    const text = await (await post('?page=2147483647&pageSize=2147483647', 'P1')).text();
+    expect(text).toContain('"offset":4611686014132420609,');
+    expect(await messages(await post('?page=-2147483647&pageSize=2147483647', 'P1'))).toEqual([
+      500,
+      ['-4611686014132420609'],
+    ]);
+    expect(await messages(await post('?pageSize=-5', 'P1'))).toEqual([500, ['-5']]);
+  });
+
+  it("is the first failure's answer when one identifier breaks the query", async () => {
+    answer = (cypher) => {
+      if (cypher.includes('"B"'))
+        throw Object.assign(new Error('bad'), { code: 'Neo.ClientError.Statement.SyntaxError' });
+      return [];
+    };
+    const [status, [message]] = await messages(await post('', 'A,B,C'));
+    expect([status, message.startsWith('bad; Error code')]).toEqual([500, true]);
   });
 
   it("answers Java's errors: 415, 422, 400 and the paging 500s", async () => {
