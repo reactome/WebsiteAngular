@@ -78,6 +78,9 @@ describe('POST /interactors/static/molecules/summary', () => {
       '{"resource":"static","entities":[{"acc":"Q00987","count":78},{"acc":"P04637","count":249}]}'
     );
     expect([...last()[1].accs].sort()).toEqual(['P04637', 'Q00987', 'xyz']);
+    // Newline and tab separate too.
+    await post('P1\nP2\tP3');
+    expect([...last()[1].accs].sort()).toEqual(['P1', 'P2', 'P3']);
   });
 
   it("answers Java's errors: 415, 422, and a 404 naming the body as sent", async () => {
@@ -114,11 +117,17 @@ describe('/interactors/static/molecule/{acc}/pathways', () => {
   it('asks the diagrammed query when onlyDiagrammed, a Boolean as Spring reads one', async () => {
     answer = () => [{ p: { dbId: 3, schemaClass: 'Pathway' } }];
     await get('molecule/P1/pathways?species=Homo%20sapiens&onlyDiagrammed=yes');
-    expect(oneLine(last()[0])).toMatch(
-      /^MATCH .* MATCH path=\(p:Pathway\{hasDiagram:True\}\)-.* SINGLE\(e IN NODES\(path\) WHERE \(e:Pathway\) AND e\.hasDiagram\) RETURN DISTINCT p$/
+    expect(oneLine(last()[0])).toBe(
+      'MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity) WHERE a.identifier = $acc OR a.variantIdentifier = $acc MATCH path=(p:Pathway{hasDiagram:True})-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b) WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway) AND e.hasDiagram) RETURN DISTINCT p'
     );
     const bad = await get('molecule/P1/pathways?onlyDiagrammed=x');
     expect((await messages(bad))[0]).toBe(400);
+  });
+
+  it('joins a repeated species as Spring does', async () => {
+    answer = () => [{ p: { dbId: 3, schemaClass: 'Pathway' } }];
+    await get('molecule/P1/pathways?species=A&species=B');
+    expect(last()[1].speciesName).toBe('A,B');
   });
 
   it('is a 404 with no species, which matches nothing', async () => {
