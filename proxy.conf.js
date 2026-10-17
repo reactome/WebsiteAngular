@@ -157,6 +157,8 @@ module.exports = {
   // Including POST /query/ids, a batch of objects by id, and its map form.
   '^/ContentService/data/query/[^/?]+/?(\\?|$)': contentNode,
   '^/ContentService/data/query/ids(;[^/?]*)?/map/?(\\?|$)': contentNode,
+  // Every disease, whole and as a DOID list.
+  '^/ContentService/data/diseases(/doid)?/?(\\?|$)': contentNode,
   // An object's stable id by any id Java accepts (13 bytes against 12KB for
   // the whole object), and a disease pathway's normal pathway. Only these two
   // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
