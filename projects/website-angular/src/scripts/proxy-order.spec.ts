@@ -237,6 +237,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/instance/R-HSA-141433/referrers',
     // The PSICQUIC services the Pathway Browser can draw interactors from.
     '/ContentService/interactors/psicquic/resources',
+    // A batch of objects by id (POST), with a matrix parameter too, and as a map.
+    '/ContentService/data/query/ids',
+    '/ContentService/data/query/ids;x=1',
+    '/ContentService/data/query/ids/map',
     // Spring matches a trailing slash, and so must the route once Java is gone.
     '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {
@@ -256,11 +260,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/abridged/stId',
     // Java matches attribute names in any case; only the site's spelling is routed.
     '/ContentService/data/query/70486/NORMALPATHWAY',
-    // Java's POST /query/ids (a batch of objects), which node does not serve.
-    '/ContentService/data/query/ids',
-    '/ContentService/data/query/ids/',
-    // With a matrix parameter, which Spring drops before matching.
-    '/ContentService/data/query/ids;x=1',
     '/ContentService/data/query/abridged/70486',
     // The search endpoints node does not serve yet.
     '/ContentService/search/query/x?query=apoptosis',

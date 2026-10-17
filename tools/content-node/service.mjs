@@ -844,20 +844,87 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
-      const { where, params } = resolveId(raw);
-      const [found] = await read(rootLabelsQuery(where), params);
-      if (!found) return notFound(request, `Id: ${raw} has not been found in the System`);
-      const [row] = await read(findByIdQuery(where), {
-        ...params,
-        ...findByIdParameters(found.labels),
-      });
-      if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
+      const object = await findObject(raw);
+      if (!object) return notFound(request, `Id: ${raw} has not been found in the System`);
       return {
         status: 200,
-        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        serialised: writeDomain(object, ...writerFor(request)),
         type: 'application/json',
       };
     },
+  },
+  ...[
+    {
+      path: '/ContentService/data/query/ids',
+      signature:
+        'public java.util.Collection<org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIds(java.lang.String)',
+      // QueryObjectController.findByIds: graph-core's findByIds, each id's
+      // findById gathered in a HashSet -- written in that set's order.
+      answer: (found) => databaseObjectSet(found.map(([, object]) => object)),
+    },
+    {
+      path: '/ContentService/data/query/ids/map',
+      signature:
+        'public java.util.Map<java.lang.String, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIdsMap(java.lang.String)',
+      // QueryObjectController.findByIdsMap: each id as sent to its object, in
+      // a HashMap -- written in that map's order. Each object is its own
+      // lookup, so one reached by two ids is written in full twice, as
+      // Jackson's identity is per instance.
+      answer: (found) => new JsonMap(idKeyedMap(found)),
+    },
+  ].map(({ path, signature, answer }) => ({
+    path,
+    method: 'post',
+    sampleBody: 'R-HSA-1640170, R-HSA-109581, 199420\nREACT_578;xyz',
+    differs: [
+      new RegExp(`^${path}: \\.url: `),
+      // The nested views' key order, which Java does not keep from one start to
+      // the next: see /query/{id}.
+      /^[^:]*(?=[^:]*includeRef=true)(?=[^:]*view=nested)[^:]*: \S*\.@(id|ref): /,
+    ],
+    /**
+     * A batch of objects, by the ids in a text/plain body: split on , ;
+     * newline and tab, trimmed; past twenty, the first twenty in a HashSet
+     * (orthologyIds, which reads them as Java does). Each is findById, as
+     * /query/{id} finds one, one at a time on the database the site shares.
+     * None found is a 404 naming the ids as a Java list; a dbId past a long
+     * anywhere is Java's 500 for the whole request.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          `Required request body is missing: ${signature}`
+        );
+      const ids = orthologyIds(plainText(request.body, contentType));
+      const refused = longPastRange(ids);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const found = [];
+      for (const id of ids) {
+        const object = await findObject(id);
+        if (object) found.push([id, object]);
+      }
+      if (found.length === 0)
+        return notFound(request, `Ids: [${ids.join(', ')}] have not been found in the System`);
+      return {
+        status: 200,
+        serialised: writeDomain(answer(found), ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  })),
+  {
+    path: '/ContentService/data/query/ids/map',
+    // A GET here is Java's /query/{id}/{attributeName}, for an object called
+    // "ids" -- which nothing is.
+    handler: async (request) => notFound(request, 'Id: ids has not been found in the System'),
   },
   ...[
     {
@@ -3270,6 +3337,68 @@ function utf32(body, order) {
         : String.fromCodePoint(point);
   }
   return at < body.length ? `${text}\ufffd` : text;
+}
+
+/**
+ * One object with everything it points to, as graph-core's
+ * findById(id, OUTGOING) gives it; undefined when there is none.
+ */
+async function findObject(raw) {
+  const { where, params } = resolveId(raw);
+  if (where === 'false') return undefined;
+  const [found] = await read(rootLabelsQuery(where), params);
+  if (!found) return undefined;
+  const [row] = await read(findByIdQuery(where), {
+    ...params,
+    ...findByIdParameters(found.labels),
+  });
+  return row ? mapResult(row) : undefined;
+}
+
+/** Long.hashCode, as an int: the value's two halves XORed. */
+function longHash(value) {
+  const big = BigInt.asUintN(64, BigInt(value));
+  return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
+}
+
+/**
+ * graph-core's DatabaseObject.hashCode: dbId, then stId, then displayName,
+ * 31 apart, 0 for a missing one. Equal objects (the same three) are one.
+ */
+function databaseObjectHash({ dbId, stId, displayName }) {
+  let result = dbId == null ? 0 : longHash(dbId);
+  result = (Math.imul(31, result) + (stId == null ? 0 : JavaHashMap.stringHash(stId))) | 0;
+  return (
+    (Math.imul(31, result) + (displayName == null ? 0 : JavaHashMap.stringHash(displayName))) | 0
+  );
+}
+
+/** A java.util.HashSet of DatabaseObjects, in its iteration order. */
+export function databaseObjectSet(objects) {
+  const byKey = new Map();
+  const keyOf = (object) => {
+    const { dbId, stId, displayName } = object.properties;
+    return JSON.stringify([dbId ?? null, stId ?? null, displayName ?? null]);
+  };
+  const set = new JavaHashMap({
+    hash: (key) => {
+      const [dbId, stId, displayName] = JSON.parse(key);
+      return databaseObjectHash({ dbId, stId, displayName });
+    },
+  });
+  for (const object of objects) {
+    const key = keyOf(object);
+    if (!byKey.has(key)) byKey.set(key, object);
+    set.set(key, true);
+  }
+  return [...set.keys()].map((key) => byKey.get(key));
+}
+
+/** A java.util.HashMap<String, V> of these entries, put in this order, as its iteration order. */
+export function idKeyedMap(entries) {
+  const map = new JavaHashMap();
+  for (const [key, value] of entries) map.set(key, value);
+  return [...map.entries()];
 }
 
 /**

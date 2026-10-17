@@ -317,7 +317,9 @@ describe('serve-prod and the API roots', () => {
     ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],
     ['/ContentService/data/query/enhanced/R-HSA-70486', 'content-node'],
     ['/ContentService/data/query/enhanced/v2/R-HSA-70486', 'content-node'],
-    ['/ContentService/data/query/ids', 'backend'],
+    // The batch lookup is node's too (spec 006 T071).
+    ['/ContentService/data/query/ids', 'content-node'],
+    ['/ContentService/data/query/ids/map', 'content-node'],
   ]) {
     it(`sends ${url} to ${to}`, async () => {
       expect(await (await fetch(base + url)).text()).toBe(`${to} ${url}`);
