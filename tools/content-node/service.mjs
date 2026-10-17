@@ -1390,7 +1390,8 @@ export const endpoints = [
     path: '/ContentService/data/discover/{id}',
     // Apoptosis: five creators, seven citations.
     sample: 'R-HSA-109581',
-    differs: [/^\/ContentService\/data\/discover\/[^/]+: \.url: /],
+    // No `differs`: the Dataset's own `url` is content, and an error body's
+    // is the only difference the sample never meets.
     /**
      * An event as a schema.org Dataset, for search engines: DiscoverController
      * over graph-core's DatabaseObjectService.findById and SchemaDataSet
@@ -1402,21 +1403,17 @@ export const endpoints = [
      * (mapResult). Its lists -- summations, references, the edits that
      * authored the event -- are in the order the store gives them; r.order,
      * relationship ids and a one-type expand each disagree with Java on some
-     * event. The class is known from the labels before the object is loaded,
-     * so it is checked first: the answer is the same.
+     * event.
      *
-     * Not found is Java's 404, "{id} not found"; an object that is not an
-     * event is the 422 its ClassCastException becomes, with a null message.
+     * Not found -- an object with no relationship included -- is Java's 404,
+     * "{id} not found"; an object that is not an event is the 422 its
+     * ClassCastException becomes, with a null message.
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const missing = () => notFound(request, `${raw} not found`);
       const { where, params } = resolveId(raw);
       if (where === 'false') return missing();
-      const [found] = await read(rootLabelsQuery(where), params);
-      if (!found) return missing();
-      if (!isA(schemaClassOf(found.labels), 'Event'))
-        return javaError(request, 422, 'UNPROCESSABLE_ENTITY', null);
       // graph-core's findByStId / findByDbId, as written but for the id's
       // test: every relationship, both ways, in the order the store gives.
       const [row] = await read(
@@ -1430,8 +1427,10 @@ export const endpoints = [
         params
       );
       // MATCH, not OPTIONAL MATCH: an object with no relationship at all is
-      // not found, as in Java.
+      // not found, as in Java -- whatever its class.
       if (!row) return missing();
+      if (!isA(schemaClassOf(row.root.labels), 'Event'))
+        return javaError(request, 422, 'UNPROCESSABLE_ENTITY', null);
       const event = mapResult(row);
       const [info] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
       return {
@@ -7260,7 +7259,8 @@ const SCHEMA_DOWNLOADS = [
  * a null or empty value omitted. `lazy(dbId, field)` stands for
  * LazyFetchAspect (lazyCollection).
  *
- * - description: the first summation's text, "" when there is none.
+ * - description: the first summation's text, "" when there is none --
+ *   which NON_EMPTY then leaves out.
  * - version: String.valueOf of the release number -- "null" without one.
  * - creator: for each edit that authored the event, each of its authors, as
  *   often as the relationship's stoichiometry says (SchemaPerson). The edits
@@ -7278,18 +7278,23 @@ const SCHEMA_DOWNLOADS = [
  * gives.
  */
 export async function schemaDataSet(event, version, lazy) {
+  // Jackson's NON_EMPTY, ContentService's setting: no null, "" or [].
+  const kept = (name, value) =>
+    value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)
+      ? {}
+      : { [name]: value };
   const expand = (pairs) => pairs.flatMap(([object, n]) => Array(n).fill(object));
   const creator = [];
   for (const edit of event.authored ?? []) {
     for (const person of expand(await lazy(edit, 'author'))) {
       const affiliation = expand(await lazy(person.dbId, 'affiliation')).map((org) => ({
-        ...(org.displayName != null && { name: org.displayName }),
+        ...kept('name', org.displayName),
         '@type': 'Organization',
       }));
       creator.push({
-        ...(person.firstname != null && { givenName: person.firstname }),
-        ...(person.surname != null && { familyName: person.surname }),
-        ...(affiliation.length && { affiliation }),
+        ...kept('givenName', person.firstname),
+        ...kept('familyName', person.surname),
+        ...kept('affiliation', affiliation),
         url: `http://europepmc.org/authors/${person.orcidId ?? 'null'}`,
         '@type': 'Person',
       });
@@ -7311,12 +7316,12 @@ export async function schemaDataSet(event, version, lazy) {
   const description = summations.length ? summations[0] : '';
   const dbId = event.properties.dbId;
   return {
-    ...(event.properties.displayName != null && { name: event.properties.displayName }),
-    ...(description != null && { description }),
+    ...kept('name', event.properties.displayName),
+    ...kept('description', description),
     url: `https://reactome.org/PathwayBrowser/#/${event.properties.stId ?? 'null'}`,
     version: String(version ?? 'null'),
     keywords: [event.schemaClass],
-    ...(creator.length && { creator }),
+    ...kept('creator', creator),
     includedInDataCatalog: {
       name: 'Reactome',
       url: 'https://reactome.org',
@@ -7328,7 +7333,7 @@ export async function schemaDataSet(event, version, lazy) {
       encodingFormat: 'UTF-8',
       '@type': 'DataDownload',
     })),
-    ...(citation.length && { citation }),
+    ...kept('citation', citation),
     license: 'https://creativecommons.org/licenses/by/4.0/',
     '@context': 'http://schema.org/',
     '@type': 'DataSet',

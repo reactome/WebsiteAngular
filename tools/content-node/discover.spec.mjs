@@ -7,12 +7,13 @@
 // errors. Java's answers were measured 17 Oct 2026.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-let rows = [];
+// The stand-in graph answers each query by what it asks for.
+let answer = () => [];
 const asked = [];
 vi.mock('./graph.mjs', () => ({
-  read: async (cypher) => {
+  read: async (cypher, params) => {
     asked.push(cypher);
-    return rows;
+    return answer(cypher, params);
   },
   configured: () => true,
   close: async () => {},
@@ -116,17 +117,34 @@ describe('schemaDataSet', () => {
     expect(citation).toEqual(['http://www.ncbi.nlm.nih.gov/pubmed/123', '978-0', 'A page']);
   });
 
-  it('describes an event with no summation as the empty string, and omits what it lacks', async () => {
+  it('leaves out what NON_EMPTY leaves out: no summation, no creator, no citation', async () => {
     const bare = {
       schemaClass: 'Reaction',
       properties: { dbId: 1, stId: 'R-HSA-1', displayName: 'r' },
     };
     const json = await schemaDataSet(bare, null, async () => []);
-    expect([json.description, json.version, 'creator' in json, 'citation' in json]).toEqual([
-      '',
+    expect(['description' in json, json.version, 'creator' in json, 'citation' in json]).toEqual([
+      false,
       'null',
       false,
       false,
+    ]);
+    // And an empty text or name, as Jackson's NON_EMPTY drops "".
+    const blank = await schemaDataSet(
+      {
+        ...bare,
+        properties: { ...bare.properties, displayName: '' },
+        summations: [''],
+        authored: [1],
+      },
+      1,
+      async (dbId, field) =>
+        field === 'author' ? [[{ dbId: 2, firstname: '', surname: 'S' }, 1]] : []
+    );
+    expect(['name' in blank, 'description' in blank, Object.keys(blank.creator[0])]).toEqual([
+      false,
+      false,
+      ['familyName', 'url', '@type'],
     ]);
   });
 });
@@ -152,29 +170,96 @@ beforeAll(async () => {
 });
 afterAll(() => new Promise((resolve) => server.close(resolve)));
 
+// A pathway with a summation, a book and one authoring edit, as graph-core's
+// findByStId returns it, and the lazy loads behind the edit.
+const ROOT = {
+  id: 1,
+  labels: ['DatabaseObject', 'Event', 'Pathway'],
+  props: { dbId: 5, stId: 'R-HSA-5', displayName: 'P', schemaClass: 'Pathway' },
+};
+const LOADED = {
+  root: ROOT,
+  nodes: [
+    {
+      id: 2,
+      labels: ['DatabaseObject', 'Summation'],
+      props: { dbId: 6, text: 'T', schemaClass: 'Summation' },
+    },
+    {
+      id: 3,
+      labels: ['DatabaseObject', 'Publication', 'Book'],
+      props: { dbId: 7, ISBN: '978', displayName: 'B', schemaClass: 'Book' },
+    },
+    {
+      id: 4,
+      labels: ['DatabaseObject', 'InstanceEdit'],
+      props: { dbId: 8, displayName: 'E', schemaClass: 'InstanceEdit' },
+    },
+  ],
+  relationships: [
+    { id: 10, type: 'summation', start: 1, end: 2, props: {} },
+    { id: 11, type: 'literatureReference', start: 1, end: 3, props: {} },
+    { id: 12, type: 'authored', start: 4, end: 1, props: {} },
+  ],
+};
+const graph =
+  ({ load = [LOADED] } = {}) =>
+  (cypher, params) => {
+    if (/MATCH \(n\)-\[r\]-\(m\)/.test(cypher)) return load;
+    if (/DBInfo/.test(cypher)) return [{ version: 97 }];
+    // The edit's author, with no stoichiometry on the relationship: once.
+    if (/<-\[r:author\]-/.test(cypher) && Number(params.dbId) === 8)
+      return [{ m: { dbId: 20, surname: 'Roe' }, n: null }];
+    return [];
+  };
+
+describe('/data/discover/{identifier}', () => {
+  it('writes the Dataset of the event graph-core loads, with its lazy loads', async () => {
+    answer = graph();
+    const response = await fetch(`${base}/ContentService/data/discover/R-HSA-5`);
+    expect(await response.json()).toMatchObject({
+      name: 'P',
+      description: 'T',
+      url: 'https://reactome.org/PathwayBrowser/#/R-HSA-5',
+      version: '97',
+      keywords: ['Pathway'],
+      creator: [{ familyName: 'Roe', url: 'http://europepmc.org/authors/null', '@type': 'Person' }],
+      citation: ['978'],
+    });
+  });
+
+  it('is not found when graph-core loads nothing: an object with no relationship, whatever its class', async () => {
+    answer = graph({ load: [] });
+    const response = await fetch(`${base}/ContentService/data/discover/12345`);
+    expect([response.status, (await response.json()).messages]).toEqual([404, ['12345 not found']]);
+  });
+});
+
 describe("/data/discover/{identifier}: Java's errors", () => {
   it('is a 404 naming the id as given, for one not found', async () => {
-    rows = [];
+    answer = () => [];
     const response = await fetch(`${base}/ContentService/data/discover/xyz`);
     expect([response.status, (await response.json()).messages]).toEqual([404, ['xyz not found']]);
   });
 
   it('is a 422 with a null message for an object that is not an event', async () => {
-    rows = [
-      {
-        labels: ['DatabaseObject', 'PhysicalEntity', 'EntityWithAccessionedSequence'],
-        props: { dbId: 1 },
-        summations: [],
-        references: [],
-        authored: [],
-      },
-    ];
+    answer = graph({
+      load: [
+        {
+          ...LOADED,
+          root: {
+            ...ROOT,
+            labels: ['DatabaseObject', 'PhysicalEntity', 'EntityWithAccessionedSequence'],
+          },
+        },
+      ],
+    });
     const response = await fetch(`${base}/ContentService/data/discover/R-HSA-199420`);
     expect([response.status, (await response.json()).messages]).toEqual([422, [null]]);
   });
 
   it("loads an event with graph-core's findByStId: every relationship, both ways, unsorted", async () => {
-    rows = [{ labels: ['DatabaseObject', 'Event', 'Pathway'] }];
+    answer = graph();
     asked.length = 0;
     await fetch(`${base}/ContentService/data/discover/R-HSA-1`);
     const load = asked.find((cypher) => /MATCH \(n\)-\[r\]-\(m\)/.test(cypher));
