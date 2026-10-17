@@ -1507,29 +1507,6 @@ export const endpoints = [
     }),
   },
   {
-    path: '/ContentService/data/schema/{id}',
-    sample: 'Pathway?page=1&offset=25',
-    differs: [/^\/ContentService\/data\/schema\/[^/]+: \.url: /],
-    /**
-     * SchemaController.getDatabaseObjectsForClassName: one page of a class's
-     * objects, whole -- graph-core's SchemaRepository.getByClass(Class, skip,
-     * limit), the nodes alone (no relationship), written as the domain
-     * objects. /min's rules (schemaPage), at most 25 to a page.
-     */
-    handler: schemaPage({
-      cap: 25,
-      query: schemaObjectsQuery,
-      answer: (rows, request) => ({
-        status: 200,
-        serialised: writeDomain(
-          mapNodes(rows.map((row) => ({ id: row.id, labels: row.labels, props: row.n }))),
-          ...writerFor(request)
-        ),
-        type: 'application/json',
-      }),
-    }),
-  },
-  {
     path: '/ContentService/data/schema/model',
     /**
      * Every class with nodes in the graph, as a tree from DatabaseObject down,
@@ -1555,6 +1532,29 @@ export const endpoints = [
       // a graph without a DatabaseObject is not one this serves.
       if (tree === undefined) throw new Error('schema model: the graph has no DatabaseObject');
       return { status: 200, body: tree, type: 'application/json' };
+    }),
+  },
+  {
+    path: '/ContentService/data/schema/{id}',
+    sample: 'Pathway?page=1&offset=25',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+: \.url: /],
+    /**
+     * SchemaController.getDatabaseObjectsForClassName: one page of a class's
+     * objects, whole -- graph-core's SchemaRepository.getByClass(Class, skip,
+     * limit), the nodes alone (no relationship), written as the domain
+     * objects. /min's rules (schemaPage), at most 25 to a page.
+     */
+    handler: schemaPage({
+      cap: 25,
+      query: schemaObjectsQuery,
+      answer: (rows, request) => ({
+        status: 200,
+        serialised: writeDomain(
+          mapNodes(rows.map((row) => ({ id: row.id, labels: row.labels, props: row.n }))),
+          ...writerFor(request)
+        ),
+        type: 'application/json',
+      }),
     }),
   },
   {
@@ -3802,11 +3802,6 @@ export const schemaModelQuery =
   'MATCH (n:DatabaseObject) RETURN DISTINCT LABELS(n) AS labels, Count(n) AS count';
 
 /**
- * graph-core SchemaRepository's queries for /schema/{className}/min, by
- * species taxId, species name or neither. `className` is spliced in, as Java
- * splices it, and is only ever a name isSchemaClass accepted.
- */
-/**
  * One page of a schema class, as SchemaController reads it for /min and for
  * the whole objects: `page` and `offset` are required Integers, read as
  * Spring reads them (springInteger), page first -- a missing or unreadable one
@@ -3865,6 +3860,11 @@ export function schemaObjectsQuery(className, by) {
   );
 }
 
+/**
+ * graph-core SchemaRepository's queries for /schema/{className}/min, by
+ * species taxId, species name or neither. `className` is spliced in, as Java
+ * splices it, and is only ever a name isSchemaClass accepted.
+ */
 export function schemaMinQuery(className, by) {
   return (
     `${schemaMatch(className, by)} ` +
