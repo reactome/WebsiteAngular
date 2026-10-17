@@ -221,6 +221,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/pathways/of/227785?fields=ST_ID&directlyInDiagram=true',
     '/ContentService/search/fireworks?query=KNTC1',
     '/ContentService/search/fireworks/?query=MAD2&species=Homo%20sapiens',
+    '/ContentService/search/query?query=TP53&cluster=true&Start%20row=0&rows=30',
+    '/ContentService/search/query/paginated?query=TP53&page=1&rowCount=20',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -244,7 +246,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/ids',
     '/ContentService/data/query/abridged/70486',
     // The search endpoints node does not serve yet.
-    '/ContentService/search/query?query=apoptosis',
+    '/ContentService/search/query/x?query=apoptosis',
     '/ContentService/search/suggestions?query=apop',
     '/ContentService/search/suggest/x',
     '/ContentService/search/facet_query/x?query=TP53',

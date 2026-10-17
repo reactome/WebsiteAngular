@@ -2187,6 +2187,135 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/search/query/paginated',
+    // SearchController.getResult: the search by page and rows per page, each
+    // type given its share of the rows when clustered. Before /search/query.
+    handler: async (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const page = springInteger(queryValues(request, 'page'), 'page');
+      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      const rowCount = springInteger(queryValues(request, 'rowCount'), 'rowCount');
+      if (rowCount.error) return javaError(request, 400, 'BAD_REQUEST', rowCount.error);
+      const lists = {
+        species: springList(queryValues(request, 'species')),
+        types: springList(queryValues(request, 'types')),
+        compartments: springList(queryValues(request, 'compartments')),
+        keywords: springList(queryValues(request, 'keywords')),
+      };
+      const clusterValues = queryValues(request, 'cluster');
+      const cluster = springBoolean(clusterValues);
+      if (cluster.error) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
+      const scope = springScope(queryValues(request, 'scope'));
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const parser = springEnum(
+        queryValues(request, 'parserType'),
+        'STD',
+        'org.reactome.server.search.domain.ParserType',
+        Object.keys(PARSER_TYPES)
+      );
+      if (parser.error) return javaError(request, 400, 'BAD_REQUEST', parser.error);
+      if (page.value <= 0)
+        return javaError(request, 400, 'BAD_REQUEST', 'page should be greater than 0');
+      if (rowCount.value <= 0)
+        return javaError(request, 400, 'BAD_REQUEST', 'rowCount should be greater than 0');
+      if (blankBoolean(clusterValues, cluster)) return unexpectedFailure(request);
+      // A null scope or parser fails once facets are asked for -- which an
+      // empty query never is: Java falls back to the Builder's defaults.
+      if (given.join(',') !== '' && (scope.value === null || parser.value === null))
+        return unexpectedFailure(request);
+      const query = {
+        query: given.join(','),
+        originalQuery: given.join(','),
+        ...lists,
+        scope: scope.value,
+        parserType: parser.value,
+        start: null,
+        rows: null,
+      };
+      return fromSolr(request, '/ContentService/search/query/paginated', async (signal) =>
+        searchAnswer(
+          request,
+          query.query,
+          await searchFor(query, {
+            rowCount: rowCount.value,
+            page: page.value,
+            grouped: cluster.value !== false,
+            force: false,
+            request,
+            signal,
+          })
+        )
+      );
+    },
+  },
+  {
+    path: '/ContentService/search/query',
+    // SearchController.getSearchResult: the website's search, grouped by
+    // type unless asked not to, from "Start row" for "rows".
+    handler: async (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const lists = {
+        species: springList(queryValues(request, 'species')),
+        types: springList(queryValues(request, 'types')),
+        compartments: springList(queryValues(request, 'compartments')),
+        keywords: springList(queryValues(request, 'keywords')),
+      };
+      const clusterValues = queryValues(request, 'cluster');
+      const cluster = springBoolean(clusterValues);
+      if (cluster.error) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
+      const parser = springEnum(
+        queryValues(request, 'parserType'),
+        'STD',
+        'org.reactome.server.search.domain.ParserType',
+        Object.keys(PARSER_TYPES)
+      );
+      if (parser.error) return javaError(request, 400, 'BAD_REQUEST', parser.error);
+      const start = springIntegerWithDefault(queryValues(request, 'Start row'), 0);
+      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      const rows = springIntegerWithDefault(queryValues(request, 'rows'), 10);
+      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      const scope = springScope(queryValues(request, 'scope'));
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const forceValues = queryValues(request, 'Force filters');
+      const force = springBoolean(forceValues);
+      if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
+      // cluster and forceFilters are unboxed when the search is called.
+      if (blankBoolean(clusterValues, cluster) || blankBoolean(forceValues, force))
+        return unexpectedFailure(request);
+      // The scope and parser fail once facets are asked for -- which an empty
+      // query never is: Java falls back to the Builder's defaults.
+      if (given.join(',') !== '' && (scope.value === null || parser.value === null))
+        return unexpectedFailure(request);
+      const query = {
+        query: given.join(','),
+        originalQuery: given.join(','),
+        ...lists,
+        scope: scope.value,
+        parserType: parser.value,
+        start: start.value,
+        rows: rows.value,
+      };
+      return fromSolr(request, '/ContentService/search/query', async (signal) =>
+        searchAnswer(
+          request,
+          query.query,
+          await searchFor(query, {
+            rowCount: 0,
+            page: 0,
+            grouped: cluster.value !== false,
+            force: force.value === true,
+            request,
+            signal,
+          })
+        )
+      );
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
@@ -5182,9 +5311,14 @@ export function facetQueryParams(query) {
     given.splice(0, given.length, ...kept);
     params.push(['fq', kept.length ? `${tag}${field}:("${kept.join('" OR "')}")` : tag]);
   }
-  params.push(['fq', '-deleted'], ['q', query.query]);
+  params.push(['fq', query.deleted ? 'deleted:true' : '-deleted']);
+  if (PARSER_TYPES[query.parserType]) params.push(['defType', PARSER_TYPES[query.parserType]]);
+  params.push(['q', query.query]);
   return params;
 }
+
+/** search-core's ParserType: the defType each sends, STD none. */
+const PARSER_TYPES = { DISMAX: 'dismax', EDISMAX: 'edismax', STD: '' };
 
 /** One FacetContainer, NON_EMPTY: a null or empty name is left out. */
 function facetContainer(name, count) {
@@ -5967,6 +6101,229 @@ function reportNotFound(info, originalQuery, targets) {
   );
   if (targets.some((result) => !result.target))
     sendReport('notfound', info, { term: originalQuery, resource: '' });
+}
+
+/**
+ * An enum request parameter with a default, as Spring converts it -- the
+ * same rules as springScope, for any enum: one blank value is null (Java's
+ * code then fails on it), several take the first, and a name that is no
+ * constant is the 400 naming it.
+ */
+function springEnum(values, fallback, javaType, constants) {
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
+  const [sent] = values;
+  const name = javaTrim(sent);
+  if (values.length === 1 ? name === '' : sent === '') return { value: null };
+  if (constants.includes(name)) return { value: name };
+  const type = values.length > 1 ? 'java.lang.String[]' : 'java.lang.String';
+  return {
+    error:
+      `Failed to convert value of type '${type}' to required type '${javaType}'; ` +
+      'nested exception is org.springframework.core.convert.ConversionFailedException: Failed to convert from type ' +
+      '[java.lang.String] to type [@io.swagger.v3.oas.annotations.Parameter @org.springframework.web.bind.annotation.RequestParam ' +
+      `${javaType}] for value '${sent}'; nested exception is ` +
+      `java.lang.IllegalArgumentException: No enum constant ${javaType.replace('$', '.')}.${name}`,
+  };
+}
+
+/** SolrCore.getFilterString without a tag: "" for no list, as Java sends it. */
+function plainFilter(list, field) {
+  if (!list) return '';
+  const kept = list.filter((name) => name !== '' && name !== null);
+  list.splice(0, list.length, ...kept);
+  return kept.length ? `${field}:("${kept.join('" OR "')}")` : '';
+}
+
+/**
+ * SolrCore.initQuery for /search and /search/grouped: a filter for each list
+ * (empty when there is none -- Java sends those too), deleted or not, the
+ * scope, the parser.
+ */
+function searchParams(query) {
+  return [
+    ['fq', plainFilter(query.species, 'species_facet')],
+    ['fq', plainFilter(query.types, 'type_facet')],
+    ['fq', plainFilter(query.compartments, 'compartment_facet')],
+    ['fq', plainFilter(query.keywords, 'keywords_facet')],
+    ['fq', query.deleted ? 'deleted:true' : '-deleted'],
+    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
+    ...(PARSER_TYPES[query.parserType] ? [['defType', PARSER_TYPES[query.parserType]]] : []),
+  ];
+}
+
+/**
+ * SolrConverter.parseClusteredResponse: the first grouping's groups, each
+ * with entries a Result named by its group, the rows written, the groups and
+ * matches -- a missing group count is Java's unboxing failure.
+ */
+function groupedEntries(answer) {
+  const grouping = Object.values(answer?.grouped ?? {})[0];
+  if (!grouping) return null;
+  if (grouping.ngroups === undefined || grouping.ngroups === null)
+    throw Object.assign(new Error('a grouping without ngroups'), { unexpected: true });
+  const highlighting = answer?.highlighting ?? {};
+  const results = [];
+  let rows = 0;
+  for (const group of grouping.groups ?? []) {
+    const entries = (group.doclist?.docs ?? []).map((doc) => searchEntry(doc, highlighting));
+    if (!entries.length) continue;
+    results.push({
+      entries,
+      ...(group.groupValue === null || group.groupValue === ''
+        ? {}
+        : { typeName: group.groupValue }),
+      entriesCount: group.doclist?.numFound ?? 0,
+      rowCount: entries.length,
+    });
+    rows += entries.length;
+  }
+  return {
+    results,
+    rowCount: rows,
+    numberOfGroups: grouping.ngroups,
+    numberOfMatches: grouping.matches,
+  };
+}
+
+/** SolrConverter.parseResponse with highlighting: one Result of everything. */
+function plainEntries(answer) {
+  const result = searchResult(answer, true);
+  return {
+    results: [result],
+    rowCount: result.rowCount,
+    numberOfGroups: 1,
+    numberOfMatches: Number(answer?.response?.numFound ?? 0) | 0,
+  };
+}
+
+/**
+ * SearchService.getSearchResult: the facets of the query; finding none,
+ * asked again without the filters (the Builder's defaults, its scope
+ * REFERENCE_ENTITY, no paging), then among the deleted, then by dismax, then
+ * in every scope. Found: the page (setPagingParameters when none was given),
+ * grouped or not; an empty page names the targets and reports. Found
+ * nowhere: the targets, the report, and Java's null.
+ */
+async function searchFor(query, { rowCount, page, grouped, force, request, signal }) {
+  const facetsFor = async () => (query.query === '' ? null : facetsOf(query, force, signal));
+  query.deleted = false;
+  let mapping = await facetsFor();
+  if (mapping === null || mapping.totalNumFount < 1) {
+    query = {
+      query: query.query,
+      originalQuery: query.originalQuery,
+      scope: 'REFERENCE_ENTITY',
+      deleted: false,
+      parserType: 'STD',
+      species: null,
+      types: null,
+      keywords: null,
+      compartments: null,
+      start: null,
+      rows: null,
+    };
+    mapping = await facetsFor();
+  }
+  if (mapping !== null && mapping.totalNumFount === 0) {
+    query.deleted = true;
+    mapping = await facetsFor();
+  }
+  if (mapping !== null && mapping.totalNumFount === 0) {
+    query.deleted = false;
+    query.parserType = 'DISMAX';
+    mapping = await facetsFor();
+  }
+  if (mapping !== null && mapping.totalNumFount === 0) {
+    query.scope = 'BOTH';
+    mapping = await facetsFor();
+  }
+  if (mapping !== null && mapping.totalNumFount > 0) {
+    if (query.start === null || query.rows === null) {
+      if (!mapping.typeFacet)
+        throw Object.assign(new Error('no type facet to page by'), { unexpected: true });
+      const typeCount = query.types?.length
+        ? query.types.length
+        : (mapping.typeFacet.available?.length ?? 0);
+      if (typeCount !== 0) {
+        const rows = grouped ? Math.trunc(rowCount / typeCount) : rowCount;
+        query.start = Math.imul(rows, page - 1);
+        query.rows = rows;
+      }
+    }
+    const paging = query.start !== null && query.rows !== null;
+    const result = grouped
+      ? groupedEntries(
+          await solr(
+            '/search/grouped',
+            [
+              ...searchParams(query),
+              ...(paging
+                ? [
+                    ['group.offset', String(query.start)],
+                    ['group.limit', String(query.rows)],
+                  ]
+                : []),
+              ['q', query.query],
+            ],
+            { signal }
+          )
+        )
+      : plainEntries(
+          await solr(
+            '/search',
+            [
+              ...searchParams(query),
+              ...(paging
+                ? [
+                    ['start', String(query.start)],
+                    ['rows', String(query.rows)],
+                  ]
+                : []),
+              ['q', query.query],
+            ],
+            { signal }
+          )
+        );
+    if (result && result.rowCount === 0) {
+      const targets = await targetsOf(query.query, query.scope, signal);
+      if (targets.length) result.targetResults = targets;
+      reportNotFound(await reportInformation(request), query.originalQuery, targets);
+    }
+    // new SearchResult(..., getHighestResultCount(result), query.getRows()):
+    // no result, or no rows (no types to page by), is Java's
+    // NullPointerException -- after any report.
+    if (result === null || query.rows === null)
+      throw Object.assign(new Error('a search result Java cannot build'), { unexpected: true });
+    return result;
+  }
+  const targets = await targetsOf(query.query, query.scope, signal);
+  reportNotFound(await reportInformation(request), query.originalQuery, targets);
+  return null;
+}
+
+/** The controller's answer to a search: the GroupedResult, or the 404 with any targets. */
+function searchAnswer(request, query, result) {
+  if (result && result.results?.length) {
+    const { targetResults, ...written } = result;
+    // NON_EMPTY, in a 200: a target's null or empty term or resource is
+    // left out (a query with a leading space has an empty first term).
+    const kept = (text) => text !== null && text !== undefined && text !== '';
+    const targets = targetResults?.map(({ term, resource, target }) => ({
+      ...(kept(term) ? { term } : {}),
+      ...(kept(resource) ? { resource } : {}),
+      target,
+    }));
+    return {
+      status: 200,
+      type: 'application/json',
+      body: targets?.length ? { ...written, targetResults: targets } : written,
+    };
+  }
+  const missing = javaError(request, 404, 'NOT_FOUND', `No entries found for query: ${query}`);
+  if (!result?.targetResults?.length) return missing;
+  const envelope = JSON.parse(missing.body);
+  envelope.targets = result.targetResults;
+  return { ...missing, body: javaJson(envelope) };
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
