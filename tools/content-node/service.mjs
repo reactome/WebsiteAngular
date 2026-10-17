@@ -24,6 +24,7 @@ import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
+import { sendReport } from './report.mjs';
 import {
   enhancedQuery,
   findByIdParameters,
@@ -2134,6 +2135,58 @@ export const endpoints = [
     },
   },
   {
+    path: '/ContentService/search/fireworks',
+    // SearchController.getFireworksResult: the species-wide search behind the
+    // Pathway Browser's "All pathways" results and its FoamTree, whatever
+    // the old widget's name in the path. Finding nothing, it names the terms
+    // Reactome could annotate and reports the search.
+    handler: async (request) => {
+      const given = queryValues(request, 'query');
+      if (given.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
+      const species = singleString(queryValues(request, 'species'), 'Homo sapiens');
+      const types = springList(queryValues(request, 'types'));
+      const start = springIntegerWithDefault(queryValues(request, 'start'), null);
+      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      const scope = springScope(queryValues(request, 'scope'));
+      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      const interactorValues = queryValues(request, 'includeInteractors');
+      const interactors = springBoolean(interactorValues);
+      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const rows = springIntegerWithDefault(queryValues(request, 'rows'), null);
+      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      // The Builder unboxes includeInteractors: Java's NullPointerException.
+      if (blankBoolean(interactorValues, interactors)) return unexpectedFailure(request);
+      const query = {
+        query: given.join(','),
+        species: [species, 'Entries without species'],
+        types,
+        start: start.value,
+        rows: rows.value,
+        scope: scope.value,
+      };
+      if (query.scope === null) return unexpectedFailure(request);
+      return fromSolr(request, '/ContentService/search/fireworks', async (signal) => {
+        const result = entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
+          fireworks: true,
+        });
+        if (result.found > 0) return { status: 200, type: 'application/json', body: result };
+        const targets = await targetsOf(query.query, query.scope, signal);
+        reportNotFound(await reportInformation(request), query.query, targets);
+        const missing = javaError(
+          request,
+          404,
+          'NOT_FOUND',
+          `No entries found for query: ${query.query}`
+        );
+        if (targets.length === 0) return missing;
+        const envelope = JSON.parse(missing.body);
+        envelope.targets = targets;
+        return { ...missing, body: javaJson(envelope) };
+      });
+    },
+  },
+  {
     path: '/ContentService/search/icon/facet',
     // SearchService.getIconFacetingInformation: the icon library's
     // categories, counted by Solr's /icon/facet handler over the icons.
@@ -2922,7 +2975,29 @@ function utf32(body, order) {
  */
 export class JavaHashMap {
   #table = new Array(16).fill(null);
+  #keyHash;
   size = 0;
+
+  /**
+   * `hash` is the key's hashCode, String.hashCode unless given -- a
+   * TargetResult's is Objects.hash(term), 31 more than its term's.
+   */
+  constructor({ hash } = {}) {
+    this.#keyHash = hash;
+  }
+
+  #hashOf(key) {
+    if (!this.#keyHash) return JavaHashMap.#hash(key);
+    const h = this.#keyHash(key) | 0;
+    return h ^ (h >>> 16);
+  }
+
+  /** String.hashCode, as an int. */
+  static stringHash(key) {
+    let h = 0;
+    for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
+    return h;
+  }
 
   static #hash(key) {
     let h = 0;
@@ -2931,7 +3006,7 @@ export class JavaHashMap {
   }
 
   set(key, value) {
-    const hash = JavaHashMap.#hash(key);
+    const hash = this.#hashOf(key);
     const table = this.#table;
     const index = (table.length - 1) & hash;
     let p = table[index];
@@ -2971,7 +3046,7 @@ export class JavaHashMap {
    * would leave the tree to give wrong answers later.
    */
   delete(key) {
-    const hash = JavaHashMap.#hash(key);
+    const hash = this.#hashOf(key);
     const index = (this.#table.length - 1) & hash;
     if (this.#table[index]?.tree)
       throw new Error('JavaHashMap.delete from a tree bin is not ported');
@@ -5774,6 +5849,124 @@ function springFields(values) {
     fields.push(SOLR_FIELDS[name]);
   }
   return { value: fields };
+}
+
+/**
+ * SearchController.getReportInformation: the visitor's agent, address --
+ * X-Forwarded-For as nginx sends it to Tomcat and here alike, else the
+ * connection's -- and the release, for the report service.
+ */
+async function reportInformation(request) {
+  const forwarded = request.get?.('x-forwarded-for');
+  const address = String(request.socket?.remoteAddress ?? '').replace(/^::ffff:/, '');
+  // The release from the cached version, which a report can do without:
+  // asked only when a search found nothing, and never its failure.
+  let release = null;
+  try {
+    const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+    const answer = await version?.handler({ params: {}, query: {} });
+    if (answer?.status === 200) release = String(answer.body);
+  } catch {
+    release = null;
+  }
+  return {
+    agent: request.get?.('user-agent') ?? null,
+    ip: forwarded === undefined || forwarded === '' ? address : forwarded,
+    release,
+  };
+}
+
+/** A TargetResult's hashCode: Objects.hash(term), 31 more than its term's. */
+const targetHash = (term) => 31 + JavaHashMap.stringHash(term);
+
+/** Java's String.split(regex) on runs of its whitespace, \s: leading runs leave an empty term. */
+function javaWords(text) {
+  const parts = text.split(/[ \t\n\v\f\r]+/);
+  if (parts.length === 1) return parts;
+  while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
+  return parts;
+}
+
+/**
+ * SolrConverter.getTargets: each term of the query, and whether Solr's
+ * target core -- proteins in Reactome's scope of annotation -- knows it by
+ * identifier, accession, gene name or synonym, ignoring case; the resource
+ * is the last document's, as Java's loop leaves it. A TargetResult is equal
+ * by its term and hashed as Objects.hash(term), so each term once, in that
+ * HashSet's order. The query carries the scope's filter, which the target
+ * core has no field for: Solr refuses it, Java swallows the error, and only
+ * the BOTH scope finds any.
+ */
+async function targetsOf(query, scope, signal) {
+  let answer;
+  try {
+    answer = await solr(
+      '/search',
+      [...(SCOPE_FILTER[scope] ? [['fq', SCOPE_FILTER[scope]]] : []), ['q', query]],
+      { signal, core: 'target', method: 'GET' }
+    );
+  } catch (failure) {
+    if (failure.busy || signal?.aborted) throw failure;
+    return [];
+  }
+  const docs = answer?.response?.docs ?? [];
+  if (docs.length === 0) return [];
+  const same = (a, b) => caseInsensitive(a, b) === 0 && a.length === b.length;
+  const targets = new JavaHashMap({ hash: targetHash });
+  for (const term of javaWords(query)) {
+    let target = false;
+    let resource = null;
+    for (const doc of docs) {
+      resource = solrValue(doc, 'resource') ?? null;
+      // getFieldValues(accessions).stream() and identifier.equalsIgnoreCase:
+      // a document without either is Java's NullPointerException.
+      if (
+        doc.accessions === undefined ||
+        doc.accessions === null ||
+        typeof solrValue(doc, 'identifier') !== 'string'
+      )
+        throw Object.assign(new Error('a target without an identifier or accessions'), {
+          unexpected: true,
+        });
+      const names = [
+        solrValue(doc, 'identifier'),
+        ...solrStrings(doc, 'accessions'),
+        ...solrStrings(doc, 'geneNames'),
+        ...solrStrings(doc, 'synonyms'),
+      ];
+      if (names.some((name) => typeof name === 'string' && same(name, term))) target = true;
+    }
+    if ([...targets.keys()].includes(term)) continue;
+    targets.set(term, { term, resource, target });
+  }
+  return [...targets.entries()].map(([, result]) => result);
+}
+
+/**
+ * SearchService's doAsyncReport, after a search found nothing: with
+ * targets, those that are (or, none being, the original query) to
+ * "targets", and the terms that are not to "notfound" -- whose body is
+ * still the original query, as Java's is; with none, the query to
+ * "notfound". Never awaited.
+ */
+function reportNotFound(info, originalQuery, targets) {
+  if (targets.length === 0) {
+    sendReport('notfound', info, { term: originalQuery, resource: '' });
+    return;
+  }
+  // Collectors.toSet(): the targets again, in a new HashSet of their own.
+  const again = new JavaHashMap({ hash: targetHash });
+  for (const result of targets) if (result.target) again.set(result.term, result);
+  const hits = [...again.entries()].map(([, result]) => result);
+  sendReport(
+    'targets',
+    info,
+    hits.length
+      ? hits.map((result) => ({ term: result.term, resource: result.resource }))
+      : { term: originalQuery, resource: '' }
+  );
+  if (targets.some((result) => !result.target))
+    sendReport('notfound', info, { term: originalQuery, resource: '' });
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */

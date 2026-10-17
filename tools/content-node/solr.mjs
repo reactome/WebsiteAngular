@@ -119,8 +119,12 @@ function coreUrl() {
  * `params` is a list of [name, value] pairs, since a name may repeat. Basic
  * authentication when a user is set, as Java sends it only then.
  */
-export async function solr(handler, params, { signal } = {}) {
-  const url = `${coreUrl()}${handler}`;
+export async function solr(handler, params, { signal, core, method = 'POST' } = {}) {
+  // Another core on the same Solr: search-core asks "target" for terms
+  // Reactome could annotate.
+  const base = core ? coreUrl().replace(/[^/]+$/, core) : coreUrl();
+  const url = `${base}${handler}`;
+  const form = new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]);
   if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
     throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
   const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
@@ -132,10 +136,11 @@ export async function solr(handler, params, { signal } = {}) {
   const until = signal ? AbortSignal.any([deadline, signal]) : deadline;
   await turn(until);
   try {
-    const response = await fetch(url, {
-      method: 'POST',
+    // SolrJ's query() is a GET where search-core does not ask for a POST.
+    const response = await fetch(method === 'GET' ? `${url}?${form}` : url, {
+      method,
       headers,
-      body: new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]),
+      ...(method === 'GET' ? {} : { body: form }),
       signal: until,
     });
     if (!response.ok)
