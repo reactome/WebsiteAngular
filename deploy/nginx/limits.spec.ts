@@ -28,3 +28,23 @@ describe('per-client request limits', () => {
     });
   }
 });
+
+/**
+ * Uploads must reach the services: Java's own cap is 50 MiB, and a result for
+ * many samples is several megabytes. local.conf once set nothing, so nginx's
+ * 1 MB default refused local uploads that every deployment accepted.
+ */
+const JAVA_UPLOAD_CAP_MB = 50;
+
+describe('request body limits', () => {
+  for (const file of ['dev.conf', 'release.conf', 'production.conf', 'local.conf']) {
+    it(`${file} lets an upload of Java's size through`, () => {
+      const conf = readFileSync(join(__dirname, file), 'utf8');
+      const sizes = [...conf.matchAll(/^\s*client_max_body_size\s+(\d+)m;/gm)].map((m) =>
+        Number(m[1])
+      );
+      expect(sizes.length, 'no client_max_body_size').toBeGreaterThan(0);
+      for (const size of sizes) expect(size).toBeGreaterThanOrEqual(JAVA_UPLOAD_CAP_MB);
+    });
+  }
+});
