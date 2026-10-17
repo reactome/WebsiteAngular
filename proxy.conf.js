@@ -126,7 +126,7 @@ module.exports = {
   // both, flagging a term in a diagram or across the species overview, the
   // diagrams an entity is in, the species-wide search (/fireworks), and the
   // website's search (/query).
-  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?)(\\?|$)':
+  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?/?)(\\?|$)':
     contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.

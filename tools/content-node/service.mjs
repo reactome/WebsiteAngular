@@ -2220,7 +2220,10 @@ export const endpoints = [
         return javaError(request, 400, 'BAD_REQUEST', 'page should be greater than 0');
       if (rowCount.value <= 0)
         return javaError(request, 400, 'BAD_REQUEST', 'rowCount should be greater than 0');
-      if (blankBoolean(clusterValues, cluster) || scope.value === null || parser.value === null)
+      if (blankBoolean(clusterValues, cluster)) return unexpectedFailure(request);
+      // A null scope or parser fails once facets are asked for -- which an
+      // empty query never is: Java falls back to the Builder's defaults.
+      if (given.join(',') !== '' && (scope.value === null || parser.value === null))
         return unexpectedFailure(request);
       const query = {
         query: given.join(','),
@@ -2283,8 +2286,10 @@ export const endpoints = [
       // cluster and forceFilters are unboxed when the search is called.
       if (blankBoolean(clusterValues, cluster) || blankBoolean(forceValues, force))
         return unexpectedFailure(request);
-      // The scope and parser fail once the facets are asked for.
-      if (scope.value === null || parser.value === null) return unexpectedFailure(request);
+      // The scope and parser fail once facets are asked for -- which an empty
+      // query never is: Java falls back to the Builder's defaults.
+      if (given.join(',') !== '' && (scope.value === null || parser.value === null))
+        return unexpectedFailure(request);
       const query = {
         query: given.join(','),
         originalQuery: given.join(','),
@@ -6284,6 +6289,11 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
       if (targets.length) result.targetResults = targets;
       reportNotFound(await reportInformation(request), query.originalQuery, targets);
     }
+    // new SearchResult(..., getHighestResultCount(result), query.getRows()):
+    // no result, or no rows (no types to page by), is Java's
+    // NullPointerException -- after any report.
+    if (result === null || query.rows === null)
+      throw Object.assign(new Error('a search result Java cannot build'), { unexpected: true });
     return result;
   }
   const targets = await targetsOf(query.query, query.scope, signal);
@@ -6295,10 +6305,14 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
 function searchAnswer(request, query, result) {
   if (result && result.results?.length) {
     const { targetResults, ...written } = result;
+    // NON_EMPTY, in a 200: a target's null resource is left out.
+    const targets = targetResults?.map(({ term, resource, target }) =>
+      resource === null ? { term, target } : { term, resource, target }
+    );
     return {
       status: 200,
       type: 'application/json',
-      body: targetResults?.length ? { ...written, targetResults } : written,
+      body: targets?.length ? { ...written, targetResults: targets } : written,
     };
   }
   const missing = javaError(request, 404, 'NOT_FOUND', `No entries found for query: ${query}`);

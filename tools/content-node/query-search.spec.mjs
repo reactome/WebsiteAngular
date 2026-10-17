@@ -132,7 +132,7 @@ describe('/query', () => {
             ['Protein', [doc('1', 'TP53')]],
             ['Reaction', []],
           ]);
-    const response = await get('query?query=TP53&cluster=true&Start%20row=0&rows=30');
+    const response = await get('query?query=TP53&cluster=true&Start%20row=5&rows=30');
     expect(await response.text()).toBe(
       '{"results":[{"entries":[{"dbId":"1","stId":"R-HSA-1","id":"R-HSA-1","name":"<span class=\\"highlighting\\" >TP53</span>","type":"Protein","exactType":"Protein"}],' +
         '"typeName":"Protein","entriesCount":2,"rowCount":1}],"rowCount":1,"numberOfGroups":2,"numberOfMatches":8}'
@@ -150,7 +150,7 @@ describe('/query', () => {
       ['fq', ''],
       ['fq', '-deleted'],
       ['fq', '-isReferenceSummary:true'],
-      ['group.offset', '0'],
+      ['group.offset', '5'],
       ['group.limit', '30'],
       ['q', 'TP53'],
     ]);
@@ -259,6 +259,71 @@ describe('/query', () => {
     expect(reports[0].url.split('?')[0]).toBe('/report/search/targets');
   });
 
+  it('drops a filter the facets did not select from the search too, unless filters are forced', async () => {
+    for (const [forced, calls, type] of [
+      ['', 2, ''],
+      ['&Force%20filters=true', 1, 'type_facet:("Nope")'],
+    ]) {
+      asked = [];
+      answer = (handler) =>
+        handler.endsWith('/facet') ? facets(8) : grouped([['Protein', [doc('1', 'TP53')]]]);
+      await get(`query?query=TP53&types=Nope${forced}`);
+      expect(asked.filter(([handler]) => handler.endsWith('/facet'))).toHaveLength(calls);
+      expect(fqs(asked.at(-1)[1])[1]).toBe(type);
+    }
+  });
+
+  it("is Java's 500 for a blank scope with a query, and its 404 without one", async () => {
+    answer = (handler) => (handler.endsWith('/facet') ? facets(8) : grouped([]));
+    const blank = await get('query?query=TP53&scope=%20');
+    expect(blank.status).toBe(500);
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    const empty = await get('query?query=&scope=%20');
+    expect(empty.status).toBe(404);
+  });
+
+  it('found only by the fallback, pages with no rows -- the 404 and a report, as Java', async () => {
+    asked = [];
+    reports = [];
+    let facetCalls = 0;
+    answer = (handler) => {
+      // As given and as corrected: nothing; rebuilt without filters: found.
+      if (handler.endsWith('/facet')) return facets((facetCalls += 1) <= 2 ? 0 : 8);
+      if (handler.startsWith('/target')) return { response: { numFound: 0, docs: [] } };
+      return grouped([]);
+    };
+    const response = await get('query?query=TP53&species=Nowhere');
+    expect(response.status).toBe(404);
+    const search = asked.find(([handler]) => handler.endsWith('/search/grouped'));
+    expect([value(search[1], 'group.offset'), value(search[1], 'group.limit')]).toEqual(['0', '0']);
+    await until(() => reports.length === 1);
+  });
+
+  it('a plain search with an empty page is a 200 naming the targets, a null resource left out', async () => {
+    reports = [];
+    answer = (handler) => {
+      if (handler.endsWith('/facet')) return facets(8);
+      if (handler.startsWith('/target'))
+        return {
+          response: { numFound: 1, docs: [{ identifier: 'TP53_HUMAN', accessions: ['P04637'] }] },
+        };
+      return { response: { numFound: 8, docs: [] } };
+    };
+    const response = await get('query?query=P04637&cluster=false&Start%20row=900&scope=BOTH');
+    expect(await response.text()).toBe(
+      '{"results":[{"typeName":"Results","entriesCount":8,"rowCount":0}],"rowCount":0,"numberOfGroups":1,"numberOfMatches":8,' +
+        '"targetResults":[{"term":"P04637","target":true}]}'
+    );
+    await until(() => reports.length === 1);
+  });
+
+  it('leaves out the type of a group with none', async () => {
+    answer = (handler) =>
+      handler.endsWith('/facet') ? facets(8) : grouped([[null, [doc('1', 'TP53')]]]);
+    const body = await (await get('query?query=TP53')).json();
+    expect(Object.keys(body.results[0])).toEqual(['entries', 'entriesCount', 'rowCount']);
+  });
+
   it("is Spring's 400s, and Java's 500 for a blank cluster before Solr is asked", async () => {
     asked = [];
     const missing = await get('query');
@@ -287,6 +352,20 @@ describe('/query/paginated', () => {
       '10',
       '5',
     ]);
+  });
+
+  it("is Java's 500 when there are no types to page by", async () => {
+    answer = (handler) =>
+      handler.endsWith('/facet')
+        ? {
+            ...facets(8),
+            facet_counts: {
+              facet_fields: { ...facets(8).facet_counts.facet_fields, type_facet: [] },
+            },
+          }
+        : grouped([['Protein', [doc('1', 'TP53')]]]);
+    const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
+    expect(response.status).toBe(500);
   });
 
   it("is Java's 400 for a page or row count that is not positive, and Spring's when absent", async () => {
