@@ -83,6 +83,8 @@ describe('the dev server proxy', () => {
     '/ContentService/data/complex/5672601/subunits?excludeStructures=true',
     '/ContentService/data/complexes/UniProt/P00533',
     '/ContentService/data/complexes/(%3Fi)uniprot/P00533',
+    '/ContentService/data/discover/R-HSA-109581',
+    '/ContentService/data/discover/109581/',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -330,6 +332,8 @@ describe('the dev server proxy', () => {
     // The curated top-level pathways and the database's other info are not.
     '/ContentService/data/pathways/top/9606/curated',
     '/ContentService/data/database/info',
+    // Only an event's Dataset, not a path below it.
+    '/ContentService/data/discover/R-HSA-109581/x',
     // Only a complex's subunits, and the complexes of an identifier.
     '/ContentService/data/complex/R-HSA-5672601',
     '/ContentService/data/complexes/UniProt',
