@@ -101,6 +101,16 @@ describe('/data/instance/{id}/referrers', () => {
         ['For input string: "99999999999999999999"'],
       ]);
     }
+    // Java echoes the id as given, trimmed and its version cut: here
+    // Arabic-Indic digits, which StringUtils.isNumeric takes as digits.
+    const arabic = '\u0669'.repeat(20);
+    const echoed = await fetch(
+      `${base}/ContentService/data/instance/%20${encodeURIComponent(arabic)}.1%20/referrers`
+    );
+    expect((await echoed.json()).messages).toEqual([`For input string: "${arabic}"`]);
+    // One past the largest long.
+    const past = await get('9223372036854775808');
+    expect((await past.json()).messages).toEqual(['For input string: "9223372036854775808"']);
     expect(asked).toHaveLength(0);
     const largest = await get('9223372036854775807');
     expect(largest.status).toBe(200);
