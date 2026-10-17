@@ -40,11 +40,16 @@ describe('request body limits', () => {
   for (const file of ['dev.conf', 'release.conf', 'production.conf', 'local.conf']) {
     it(`${file} lets an upload of Java's size through`, () => {
       const conf = readFileSync(join(__dirname, file), 'utf8');
-      const sizes = [...conf.matchAll(/^\s*client_max_body_size\s+(\d+)m;/gm)].map((m) =>
-        Number(m[1])
-      );
-      expect(sizes.length, 'no client_max_body_size').toBeGreaterThan(0);
-      for (const size of sizes) expect(size).toBeGreaterThanOrEqual(JAVA_UPLOAD_CAP_MB);
+      // Every value, in any unit nginx takes: matching only "64m" let a smaller
+      // limit written as "512k" pass unseen. A value it cannot read fails.
+      const values = [...conf.matchAll(/^\s*client_max_body_size\s+(\S+);/gm)].map((m) => m[1]);
+      expect(values.length, 'no client_max_body_size').toBeGreaterThan(0);
+      const unit: Record<string, number> = { '': 1, k: 1024, m: 1024 ** 2, g: 1024 ** 3 };
+      for (const value of values) {
+        const parsed = /^(\d+)([kKmMgG]?)$/.exec(value);
+        const bytes = parsed ? Number(parsed[1]) * unit[parsed[2].toLowerCase()] : NaN;
+        expect([value, bytes >= JAVA_UPLOAD_CAP_MB * 1024 ** 2]).toEqual([value, true]);
+      }
     });
   }
 });
