@@ -85,7 +85,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T077 `GET /data/participants/{id}/participatingPhysicalEntities` — #517
 - [ ] T078 `GET /data/pathway/{id}/containedEvents`, `GET /data/pathway/{id}/containedEvents/{attributeName}` — Java maps the whole hasEvent subgraph into Events (Neo4jTemplate.findAll over `RETURN e, COLLECT(r), COLLECT(p)`), and `{attributeName}` reads a getter by reflection: do with T070/T072's getter table
 - [x] T079 `GET /data/pathways/low/entity/{id}/allForms`, `GET /data/pathways/low/diagram/entity/{id}`, `GET /data/pathways/low/diagram/entity/{id}/allForms` — #513
-- [ ] T080 `GET /data/mapping/{resource}/{identifier}/pathways`, `GET /data/mapping/{resource}/{identifier}/reactions`
+- [x] T080 `GET /data/mapping/{resource}/{identifier}/pathways`, `GET /data/mapping/{resource}/{identifier}/reactions` — #516
 - [x] T081 `GET /data/diseases`, `GET /data/diseases/doid` — #510
 - [x] T082 `GET /data/discover/{identifier}` — #519
 - [ ] T083 `GET /references/mapping/{identifier}`, `GET /references/mapping/{identifier}/xrefs`, `POST /references/mapping/xrefs`
