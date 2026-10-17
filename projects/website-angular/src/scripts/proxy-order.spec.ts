@@ -257,6 +257,8 @@ describe('the dev server proxy', () => {
     // Java's POST /query/ids (a batch of objects), which node does not serve.
     '/ContentService/data/query/ids',
     '/ContentService/data/query/ids/',
+    // With a matrix parameter, which Spring drops before matching.
+    '/ContentService/data/query/ids;x=1',
     '/ContentService/data/query/abridged/70486',
     // The search endpoints node does not serve yet.
     '/ContentService/search/query/x?query=apoptosis',

@@ -153,7 +153,7 @@ module.exports = {
   // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
   // /query/enhanced|abridged/{id} are other endpoints.
   // `ids` is Java's POST /query/ids, a batch, which node does not serve.
-  '^/ContentService/data/query/(?!ids/?(\\?|$))[^/?]+/?(\\?|$)': contentNode,
+  '^/ContentService/data/query/(?!ids(;[^/?]*)?/?(\\?|$))[^/?]+/?(\\?|$)': contentNode,
   // An object's stable id by any id Java accepts (13 bytes against 12KB for
   // the whole object), and a disease pathway's normal pathway. Only these two
   // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
