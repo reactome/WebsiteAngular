@@ -8,8 +8,11 @@ import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
 vi.mock('./graph.mjs', () => ({
-  // The release, for the report.
-  read: async () => [{ version: 97 }],
+  // The release, for the report -- or the graph down, when a test says so.
+  read: async () => {
+    if (globalThis.graphDown) throw new Error('graph down');
+    return [{ version: 97 }];
+  },
   configured: () => true,
   close: async () => {},
   envSetting: (key, fallback = '') => process.env[key] || fallback,
@@ -216,7 +219,7 @@ describe('/fireworks, the species-wide search', () => {
     // No User-Agent at all -- fetch always sends one -- is Java's null agent.
     const { request: send } = await import('node:http');
     await new Promise((resolve) =>
-      send(`${base}/ContentService/search/fireworks?query=caf%C3%A9%20%E2%98%95`, (response) => {
+      send(`${base}/ContentService/search/fireworks?query=caf%C3%A9%20%F0%9F%98%80`, (response) => {
         response.resume();
         response.on('end', resolve);
       }).end()
@@ -255,6 +258,74 @@ describe('/fireworks, the species-wide search', () => {
     ]);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(reports.filter((report) => report.body.includes('"term":"x"'))).toHaveLength(0);
+  });
+
+  it('writes the agent and address as URIBuilder does, and control escapes as Jackson does', async () => {
+    reports = [];
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    await get('?query=a%1Fb', { 'User-Agent': 'x*y~z' });
+    await until(() => reports.length === 1);
+    expect(reports[0].url).toMatch(/&agent=x\*y%7Ez$/);
+    expect(reports[0].body).toBe('{"term":"a\\u001Fb","resource":""}');
+  });
+
+  it("authenticates with Java's default credentials when none are set", async () => {
+    reports = [];
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    delete process.env.REPORT_USER;
+    delete process.env.REPORT_PASSWORD;
+    try {
+      await get('?query=zzz');
+      await until(() => reports.length === 1);
+    } finally {
+      process.env.REPORT_USER = 'reporter';
+      process.env.REPORT_PASSWORD = 'not-a-secret';
+    }
+    expect(reports[0].authorization).toBe(
+      `Basic ${Buffer.from('default:default').toString('base64')}`
+    );
+  });
+
+  it('finds results without the graph: the release is read only to report', async () => {
+    answer = () => ({ response: { numFound: 1, docs: [{ dbId: '1' }] } });
+    globalThis.graphDown = true;
+    try {
+      const response = await get('?query=KNTC1');
+      expect(response.status).toBe(200);
+    } finally {
+      globalThis.graphDown = false;
+    }
+  });
+
+  it("is Java's NullPointerException for a target without accessions", async () => {
+    answer = (url) =>
+      url.includes('/target/')
+        ? { response: { numFound: 1, docs: [{ identifier: 'X_HUMAN', resource: 'UNIPROT' }] } }
+        : { response: { numFound: 0, docs: [] } };
+    const response = await get('?query=x&scope=BOTH');
+    expect(response.status).toBe(500);
+  });
+
+  it('reports the targets in the fresh HashSet Collectors.toSet() makes', async () => {
+    reports = [];
+    // Thirteen terms grow the set past sixteen buckets, where AC comes before
+    // AR (buckets 1, 16); a fresh set of sixteen puts AR first (0, 1).
+    const fillers = Array.from({ length: 11 }, (_, at) => `F${at}`);
+    answer = (url) =>
+      url.includes('/target/')
+        ? {
+            response: {
+              numFound: 1,
+              docs: [{ identifier: 'Q_HUMAN', accessions: ['AC', 'AR'], resource: 'UNIPROT' }],
+            },
+          }
+        : { response: { numFound: 0, docs: [] } };
+    await get(`?query=${['AC', 'AR', ...fillers].join('%20')}&scope=BOTH`);
+    await until(() => reports.length === 2);
+    const targets = reports.find((report) => report.url.startsWith('/report/search/targets'));
+    expect(targets.body).toBe(
+      '[{"term":"AR","resource":"UNIPROT"},{"term":"AC","resource":"UNIPROT"}]'
+    );
   });
 
   it("is Spring's 400 for a missing query, and Java's 500 for a blank includeInteractors", async () => {

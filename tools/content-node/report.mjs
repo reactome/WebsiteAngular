@@ -15,11 +15,21 @@ import { envSetting } from './graph.mjs';
 
 const REPORT_TIMEOUT_MS = 30_000;
 
-/** application/x-www-form-urlencoded, as Apache's URIBuilder writes a parameter. */
+/**
+ * A parameter value as Apache's URIBuilder writes it (URLEncodedUtils'
+ * form set): letters, digits and _ - . * as they are, space as '+', every
+ * other byte of its UTF-8 escaped.
+ */
 const form = (text) =>
   encodeURIComponent(text)
     .replace(/%20/g, '+')
-    .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    .replace(/[!'()~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+
+/** JSON as Jackson writes it: a control character's escape in upper case (\u001F). */
+const jacksonJson = (value) =>
+  JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
+    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+  );
 
 /**
  * The body as Java's `new StringEntity(json)` sends it: ISO-8859-1, every
@@ -57,7 +67,7 @@ export function sendReport(mapping, info, body) {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`,
     },
-    body: latin1(JSON.stringify(body)),
+    body: latin1(jacksonJson(body)),
     signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
   })
     .then((response) => {
