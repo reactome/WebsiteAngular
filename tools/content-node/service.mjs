@@ -1558,6 +1558,30 @@ export const endpoints = [
     }),
   },
   {
+    path: '/ContentService/data/schema/{id}/reference',
+    sample: 'ReferenceMolecule?page=1&offset=25',
+    differs: [/^\/ContentService\/data\/schema\/[^/]+\/reference: \.url: /],
+    /**
+     * SchemaController.getSimpleReferencesObjectsByClassName: one page of a
+     * reference class's objects -- dbId, identifier, database -- by
+     * identifier. /min's rules (schemaPage), with no species parameter, at
+     * most 20000 to a page, and a class that is neither a ReferenceEntity nor
+     * an ExternalOntology (SchemaService.isValidReferenceClass) its 404.
+     */
+    handler: schemaPage({
+      cap: 20000,
+      species: false,
+      accepts: (className) =>
+        isA(className, 'ReferenceEntity') || isA(className, 'ExternalOntology'),
+      query: schemaReferenceQuery,
+      answer: (rows) => ({
+        status: 200,
+        body: `[${rows.map(simpleReferenceJson).join(',')}]`,
+        type: 'application/json',
+      }),
+    }),
+  },
+  {
     path: '/ContentService/data/schema/{id}/attributes',
     sample: 'Pathway',
     differs: [/^\/ContentService\/data\/schema\/[^/]+\/attributes: \.url: /],
@@ -3810,11 +3834,12 @@ export const schemaModelQuery =
  * passed to Neo4j, whose refusal is Java's 500. A class Java does not have is
  * its 500; a species for a class without one, or no rows, its 404.
  */
-function schemaPage({ cap, query, answer }) {
+function schemaPage({ cap, query, answer, species: speciesFilter = true, accepts = () => true }) {
   return async (request) => {
     const className = pathId(rawSegment(request, 4));
-    // In the controller's parameter order: species is a String and cannot fail.
-    const given = queryValues(request, 'species');
+    // In the controller's parameter order: species is a String and cannot
+    // fail. /reference has no species parameter: one given is not read.
+    const given = speciesFilter ? queryValues(request, 'species') : [];
     const page = springInteger(queryValues(request, 'page'), 'page');
     if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
     const offset = springInteger(queryValues(request, 'offset'), 'offset');
@@ -3823,6 +3848,7 @@ function schemaPage({ cap, query, answer }) {
     if (!isSchemaClass(className)) return classNotFound(request);
     const none = () =>
       javaError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
+    if (!accepts(className)) return none();
     const species = given.length ? given.join(',') : undefined;
     let by;
     if (species !== undefined) {
@@ -3845,6 +3871,31 @@ function schemaPage({ cap, query, answer }) {
     if (rows.length === 0) return none();
     return answer(rows, request);
   };
+}
+
+/**
+ * graph-core's SchemaRepository.getSimpleReferencesObjectsByClass(Class, skip,
+ * limit), as written: a reference class's objects by identifier.
+ */
+export function schemaReferenceQuery(className) {
+  return (
+    `MATCH (n:${className}) ` +
+    'RETURN n.dbId AS dbId, n.databaseName AS databaseName, n.identifier AS identifier ' +
+    'ORDER BY n.identifier SKIP $skip LIMIT $limit'
+  );
+}
+
+/**
+ * graph-core's SimpleReferenceObject as Jackson writes it: identifier and
+ * databaseName read with asString(), so a missing one is the text "null";
+ * NON_EMPTY leaves out an empty one.
+ */
+function simpleReferenceJson(row) {
+  return nonEmptyJson([
+    ['dbId', row.dbId],
+    ['identifier', row.identifier ?? 'null'],
+    ['databaseName', row.databaseName ?? 'null'],
+  ]);
 }
 
 /**
