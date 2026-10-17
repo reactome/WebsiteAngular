@@ -65,6 +65,21 @@ describe('/data/entity/{id}/componentOf', () => {
     expect(last()[1]).toEqual({ id: 'R-HSA-1' });
   });
 
+  it('reads the id as Spring reads a path variable: decoded, a matrix parameter cut', async () => {
+    rows = [
+      {
+        type: 'input',
+        schemaClasses: ['Reaction'],
+        names: ['A'],
+        stIds: ['R-HSA-2'],
+        species: ['H'],
+      },
+    ];
+    asked.length = 0;
+    await get('R-HSA-69620;x=1');
+    expect(last()[1]).toEqual({ id: 'R-HSA-69620' });
+  });
+
   it('matches a dbId as a number', async () => {
     rows = [
       {
@@ -84,10 +99,17 @@ describe('/data/entity/{id}/componentOf', () => {
     rows = [];
     for (const id of ['xyz', 'R-HSA-162582']) {
       const response = await get(id);
-      expect([id, response.status, (await response.json()).messages]).toEqual([
+      const body = await response.json();
+      expect([id, response.status, body]).toEqual([
         id,
         404,
-        [`Id: ${id} has not been found in the System`],
+        {
+          code: 404,
+          reason: 'NOT_FOUND',
+          url: expect.stringMatching(/\/componentOf$/),
+          messages: [`Id: ${id} has not been found in the System`],
+          targets: null,
+        },
       ]);
     }
   });

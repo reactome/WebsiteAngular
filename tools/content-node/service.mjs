@@ -1312,8 +1312,8 @@ export const endpoints = [
   },
   {
     path: '/ContentService/data/entity/{id}/componentOf',
-    // PTEN: the reactions it comes out of, goes into and catalyses, and the
-    // complexes and sets it is part of.
+    // PTEN: the reactions it comes out of and goes into, and the complexes and
+    // sets it is part of.
     sample: 'R-HSA-199420',
     differs: [/^\/ContentService\/data\/entity\/[^/]+\/componentOf: \.url: /],
     /**
@@ -1324,9 +1324,7 @@ export const endpoints = [
      *
      * graph-core's ComponentOfLinkageRepository.getComponentsOf, kept as
      * written: the groups and their members come in the order Neo4j gives
-     * them, unsorted (ComponentOf.sortByName is never called), and a member
-     * reached by two relationships of one type -- a complex with two of
-     * something -- is listed twice. The id is read as graph-core reads it
+     * them, unsorted (ComponentOf.sortByName is never called). The id is read as graph-core reads it
      * (graphCoreId); none found, or part of nothing, is Java's 404.
      */
     handler: async (request) => {
