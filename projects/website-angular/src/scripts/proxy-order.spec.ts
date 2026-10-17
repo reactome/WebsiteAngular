@@ -31,6 +31,18 @@ async function targetOf(url: string) {
 }
 
 const contentNode = process.env['CONTENT_NODE_TARGET'] || 'http://127.0.0.1:4400';
+
+/**
+ * That a URL goes to the content service -- and with a trailing slash too,
+ * which Spring matches on every endpoint, so it must reach node once Java is
+ * switched off.
+ */
+async function expectContentNode(url: string) {
+  const [path, query] = url.split(/(?=\?)/);
+  const slashed = path.endsWith('/') ? url : `${path}/${query ?? ''}`;
+  expect([url, await targetOf(url)]).toEqual([url, contentNode]);
+  expect([slashed, await targetOf(slashed)]).toEqual([slashed, contentNode]);
+}
 const backend = process.env['REACTOME_BACKEND'] || 'http://localhost:8080';
 
 describe('the dev server proxy', () => {
@@ -41,22 +53,20 @@ describe('the dev server proxy', () => {
     'reviewedReactions',
   ]) {
     it(`sends a person's ${list} to the content service`, async () => {
-      expect(await targetOf(`/ContentService/data/person/0000-0002-1825-0097/${list}`)).toBe(
-        contentNode
-      );
-      expect(await targetOf(`/ContentService/data/person/68285/${list}?page=1`)).toBe(contentNode);
+      await expectContentNode(`/ContentService/data/person/0000-0002-1825-0097/${list}`);
+      await expectContentNode(`/ContentService/data/person/68285/${list}?page=1`);
     });
   }
 
   for (const id of ['70486', 'R-HSA-70486.4', 'REACT_1081', 'UniProt:P04637']) {
     it(`sends the stable id of ${id} to the content service`, async () => {
-      expect(await targetOf(`/ContentService/data/query/${id}/stId`)).toBe(contentNode);
+      await expectContentNode(`/ContentService/data/query/${id}/stId`);
     });
   }
 
   for (const id of ['R-HSA-5672965', '5672965', 'REACT_111102.2', 'R-HSA-70486;x']) {
     it(`sends the ancestors of ${id} to the content service`, async () => {
-      expect(await targetOf(`/ContentService/data/event/${id}/ancestors`)).toBe(contentNode);
+      await expectContentNode(`/ContentService/data/event/${id}/ancestors`);
     });
   }
 
@@ -66,7 +76,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/pathways/low/entity/R-ALL-113592?species=Homo%20sapiens',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -80,7 +90,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/enhanced/normalPathway',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -90,7 +100,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/event/R-HSA-69620/in-depth?maxDepth=2',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -100,7 +110,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/person/68285/publications',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -110,7 +120,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/R-HSA-70486?includeRef=true',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -119,12 +129,12 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/6802957/normalPathway?x=1',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
   it('sends the other forms of an entity to the content service', async () => {
-    expect(await targetOf('/ContentService/data/entity/R-HSA-199420/otherForms')).toBe(contentNode);
+    await expectContentNode('/ContentService/data/entity/R-HSA-199420/otherForms');
   });
 
   for (const url of [
@@ -134,19 +144,17 @@ describe('the dev server proxy', () => {
     '/ContentService/data/pathways/top/Homo+sapiens',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
   it('sends the participants of an event to the content service', async () => {
-    expect(await targetOf('/ContentService/data/participants/R-HSA-5672965')).toBe(contentNode);
-    expect(await targetOf('/ContentService/data/participants/5672965?x=1')).toBe(contentNode);
+    await expectContentNode('/ContentService/data/participants/R-HSA-5672965');
+    await expectContentNode('/ContentService/data/participants/5672965?x=1');
   });
 
   it('sends the reference entities of an event to the content service', async () => {
-    expect(
-      await targetOf('/ContentService/data/participants/R-HSA-5672965/referenceEntities')
-    ).toBe(contentNode);
+    await expectContentNode('/ContentService/data/participants/R-HSA-5672965/referenceEntities');
   });
 
   for (const url of [
@@ -155,7 +163,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/detail/REACT_13069/locationsInPWB?omitNonDisplayableItems=false',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -176,7 +184,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/schema/model/attributes',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -187,7 +195,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/orthologies/ids/species/48892',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -200,7 +208,7 @@ describe('the dev server proxy', () => {
     '/ContentService/interactors/static/molecules/details',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -231,7 +239,7 @@ describe('the dev server proxy', () => {
     '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {
     it(`sends ${url} to the content service`, async () => {
-      expect(await targetOf(url)).toBe(contentNode);
+      await expectContentNode(url);
     });
   }
 
@@ -246,10 +254,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/abridged/stId',
     // Java matches attribute names in any case; only the site's spelling is routed.
     '/ContentService/data/query/70486/NORMALPATHWAY',
-    // Spring also matches a trailing slash; only the plain object is routed.
-    '/ContentService/data/query/70486/',
     // Java's POST /query/ids (a batch of objects), which node does not serve.
     '/ContentService/data/query/ids',
+    '/ContentService/data/query/ids/',
     '/ContentService/data/query/abridged/70486',
     // The search endpoints node does not serve yet.
     '/ContentService/search/query/x?query=apoptosis',
@@ -302,7 +309,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/schema/Pathway',
     '/ContentService/data/schema/Pathway?page=1&offset=25',
     '/ContentService/data/schema/models',
-    '/ContentService/data/schema/model/',
     '/ContentService/data/schema/Pathway/attributesAll',
     '/ContentService/data/schema/Pathway/referrals/x',
     '/ContentService/data/schema/ReferenceMolecule/reference?page=1&offset=10',
