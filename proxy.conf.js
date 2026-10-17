@@ -175,9 +175,10 @@ module.exports = {
   '^/ContentService/data/pathways/low/(diagram/)?entity/[^/?]+(/allForms)?/?(\\?|$)': contentNode,
   // What a complex is made of, and the complexes an identifier is part of.
   '^/ContentService/data/(complex/[^/?]+/subunits|complexes/[^/?]+/[^/?]+)/?(\\?|$)': contentNode,
-  // The reference entities behind an event's participants: the molecule list
-  // and the IDG page.
-  '^/ContentService/data/participants/[^/?]+/referenceEntities/?(\\?|$)': contentNode,
+  // The reference entities behind an event's participants (the molecule list
+  // and the IDG page), and the physical entities themselves.
+  '^/ContentService/data/participants/[^/?]+/(referenceEntities|participatingPhysicalEntities)/?(\\?|$)':
+    contentNode,
   // An event's participants with their reference entities: the molecule list.
   '^/ContentService/data/participants/[^/?]+/?(\\?|$)': contentNode,
   // The release number (asked on every page load) and the database name, and
