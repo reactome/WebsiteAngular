@@ -219,6 +219,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/diagram/R-HSA-446203/flag?query=CTSA',
     '/ContentService/search/fireworks/flag?query=KNTC1&species=Mus%20musculus',
     '/ContentService/search/pathways/of/227785?fields=ST_ID&directlyInDiagram=true',
+    '/ContentService/search/fireworks?query=KNTC1',
+    '/ContentService/search/fireworks/?query=MAD2&species=Homo%20sapiens',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -248,7 +250,7 @@ describe('the dev server proxy', () => {
     '/ContentService/search/facet_query/x?query=TP53',
     '/ContentService/search/icon/R-ICO-013428/x',
     '/ContentService/search/fireworks/flag/x?query=KNTC1',
-    '/ContentService/search/fireworks?query=KNTC1',
+    '/ContentService/search/fireworks/x?query=KNTC1',
     '/ContentService/search/pathways/of/227785/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',
     // The interactor endpoints node does not serve.

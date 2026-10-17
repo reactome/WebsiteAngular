@@ -119,8 +119,11 @@ function coreUrl() {
  * `params` is a list of [name, value] pairs, since a name may repeat. Basic
  * authentication when a user is set, as Java sends it only then.
  */
-export async function solr(handler, params, { signal } = {}) {
-  const url = `${coreUrl()}${handler}`;
+export async function solr(handler, params, { signal, core } = {}) {
+  // Another core on the same Solr: search-core asks "target" for terms
+  // Reactome could annotate.
+  const base = core ? coreUrl().replace(/[^/]+$/, core) : coreUrl();
+  const url = `${base}${handler}`;
   if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
     throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
   const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
