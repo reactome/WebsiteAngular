@@ -365,13 +365,13 @@ describe('/diagram/summary', () => {
 });
 
 describe('searchEntry for fireworks', () => {
-  it("carries the document's fireworks species, where Entry declares them", async () => {
+  it("carries the document's species-overview species, where Entry declares them", async () => {
     const { searchEntry } = await import('./service.mjs');
     const entry = searchEntry(
       { dbId: '1', fireworksSpecies: ['Homo sapiens'], iconName: 'x' },
       null,
       {
-        fireworks: true,
+        speciesWide: true,
       }
     );
     expect(Object.keys(entry)).toEqual(['dbId', 'id', 'fireworksSpecies', 'iconName', 'icon']);

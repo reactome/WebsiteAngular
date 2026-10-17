@@ -42,30 +42,6 @@ export namespace EventsHierarchy {
   }
 }
 
-export namespace Fireworks {
-  export interface Node {
-    dbId: number;
-    stId: string;
-    disease: boolean;
-    name: string;
-    ratio: number;
-    x: number;
-    y: number;
-  }
-
-  export interface Edge {
-    from: number;
-    to: number;
-  }
-
-  export interface Data {
-    speciesId: number;
-    speciesName: string;
-    edges: Edge[];
-    nodes: Node[];
-  }
-}
-
 export namespace Layout {
   export interface Data {
     stId: string;
