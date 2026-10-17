@@ -1,5 +1,5 @@
 {
-  "warnings": 1398,
+  "warnings": 1397,
   "rules": {
     "@angular-eslint/no-input-rename": 7,
     "@angular-eslint/no-output-native": 6,
@@ -7,7 +7,7 @@
     "@typescript-eslint/ban-ts-comment": 1,
     "@typescript-eslint/no-empty-object-type": 48,
     "@typescript-eslint/no-explicit-any": 114,
-    "@typescript-eslint/no-namespace": 15,
+    "@typescript-eslint/no-namespace": 14,
     "@typescript-eslint/no-non-null-assertion": 209,
     "@typescript-eslint/no-unsafe-argument": 85,
     "@typescript-eslint/no-unsafe-assignment": 188,

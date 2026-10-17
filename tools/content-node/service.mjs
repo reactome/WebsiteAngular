@@ -1854,7 +1854,7 @@ export const endpoints = [
   {
     path: '/ContentService/search/diagram/summary',
     // SearchService.getDiagramSearchSummary, for the Pathway Browser's
-    // search: how many match in the diagram and in the whole fireworks, for
+    // search: how many match in the diagram and in the whole species overview, for
     // a species and the entries without one -- counts only. Not checked as
     // an identifier: Java does not. Before /diagram/{diagram}, which would
     // otherwise take "summary" for a diagram.
@@ -1885,8 +1885,8 @@ export const endpoints = [
       return fromSolr(request, '/ContentService/search/diagram/summary', async (signal) => {
         const ask = async () => [
           entriesResult(await solr('/diagrams', diagramParams(query), { signal })),
-          entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
-            fireworks: true,
+          entriesResult(await solr('/fireworks', speciesWideParams(query), { signal }), {
+            speciesWide: true,
           }),
         ];
         let [diagramResult, fireworksResult] = await ask();
@@ -2069,7 +2069,7 @@ export const endpoints = [
       if (!species) return javaError(request, 400, 'BAD_REQUEST', `No species found for '${name}'`);
       const query = given.join(',');
       return fromSolr(request, '/ContentService/search/fireworks/flag', async (signal) => {
-        const flags = fireworksFlags(
+        const flags = speciesWideFlags(
           await solr(
             '/fireworks/flagging',
             [
@@ -2187,9 +2187,12 @@ export const endpoints = [
       };
       if (query.scope === null) return unexpectedFailure(request);
       return fromSolr(request, '/ContentService/search/fireworks', async (signal) => {
-        const result = entriesResult(await solr('/fireworks', fireworksParams(query), { signal }), {
-          fireworks: true,
-        });
+        const result = entriesResult(
+          await solr('/fireworks', speciesWideParams(query), { signal }),
+          {
+            speciesWide: true,
+          }
+        );
         if (result.found > 0) return { status: 200, type: 'application/json', body: result };
         const targets = await targetsOf(query.query, query.scope, signal);
         reportNotFound(await reportInformation(request), query.query, targets);
@@ -5682,7 +5685,7 @@ const ENTRY_FIELDS = [
  * with no snippet is none; otherwise the summation is the document's own,
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
  */
-export function searchEntry(doc, highlighting, { fireworks = false } = {}) {
+export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
   const entry = {
     dbId: solrValue(doc, 'dbId'),
     stId: solrValue(doc, 'stId'),
@@ -5730,7 +5733,7 @@ export function searchEntry(doc, highlighting, { fireworks = false } = {}) {
     entry.referenceIdentifier = referenceIdentifier(doc);
   }
   // SolrConverter.getFireworksResult adds the document's fireworks species.
-  if (fireworks && 'fireworksSpecies' in doc)
+  if (speciesWide && 'fireworksSpecies' in doc)
     entry.fireworksSpecies = solrStrings(doc, 'fireworksSpecies');
   for (const field of [
     'iconName',
@@ -5865,7 +5868,7 @@ function compareJavaStrings(a, b) {
   return a.length - b.length;
 }
 
-/** The FacetContainers of Solr's type facet, as search-core's diagram and fireworks results keep them. */
+/** The FacetContainers of Solr's type facet, as search-core's diagram and species-wide results keep them. */
 function typeFacets(answer) {
   const flat = answer?.facet_counts?.facet_fields?.type_facet ?? [];
   const facets = [];
@@ -5921,8 +5924,15 @@ function diagramParams(query) {
   ];
 }
 
-/** SolrCore.getFireworksResult: the species filter is always sent, empty or not. */
-function fireworksParams(query) {
+/**
+ * SolrCore.getFireworksResult: the species filter is always sent, empty or
+ * not. "Fireworks" is the old name of the species overview, which is now the
+ * Reacfoam (Voronoi) plot; it survives only in names fixed outside this
+ * service -- Solr's /fireworks handler and fireworksSpecies field, Java's JSON
+ * keys and the public /search/fireworks URLs -- and is kept there so answers
+ * stay byte-identical and old links work.
+ */
+function speciesWideParams(query) {
   const species = query.species ?? [];
   const kept = species.filter((name) => name !== '' && name !== null);
   const types = query.types?.length ? speciesAndTypes({ types: query.types }) : [];
@@ -6034,7 +6044,7 @@ function diagramFlags(answer, pathway, field) {
  * interactors less those pathways, kept to the species' own ids
  * ("R-" + its abbreviation) -- each a HashSet, refilled after the filter.
  */
-function fireworksFlags(answer, abbreviation) {
+function speciesWideFlags(answer, abbreviation) {
   const llps = new JavaHashMap();
   const interactsWith = new JavaHashMap();
   for (const doc of answer?.response?.docs ?? []) {
