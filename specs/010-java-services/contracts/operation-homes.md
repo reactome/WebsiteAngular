@@ -35,8 +35,8 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/event/{id}/in-depth`                               | node — ported          | graph or search index                                                                         |
 | GET    | `/data/eventsHierarchy/{species}`                         | java-library           | pathway sizes from analysis-core data; a graph count disagrees on 776 of 2,883 human pathways |
 | GET    | `/data/instance/{id}/referrers`                           | node — ported          | graph or search index                                                                         |
-| GET    | `/data/mapping/{resource}/{identifier}/pathways`          | node — to port         | graph or search index                                                                         |
-| GET    | `/data/mapping/{resource}/{identifier}/reactions`         | node — to port         | graph or search index                                                                         |
+| GET    | `/data/mapping/{resource}/{identifier}/pathways`          | node — ported          | graph or search index                                                                         |
+| GET    | `/data/mapping/{resource}/{identifier}/reactions`         | node — ported          | graph or search index                                                                         |
 | POST   | `/data/orthologies/ids/species/{speciesId}`               | node — ported          | graph or search index                                                                         |
 | GET    | `/data/orthology/{id}/species/{speciesId}`                | node — ported          | graph or search index                                                                         |
 | GET    | `/data/participants/{id}`                                 | node — ported          | graph or search index                                                                         |

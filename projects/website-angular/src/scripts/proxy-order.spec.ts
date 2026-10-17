@@ -85,6 +85,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/complexes/(%3Fi)uniprot/P00533',
     '/ContentService/data/discover/R-HSA-109581',
     '/ContentService/data/discover/109581/',
+    '/ContentService/data/mapping/UniProt/P04637/reactions',
+    '/ContentService/data/mapping/UniProt/P04637/pathways?species=9606',
+    '/ContentService/data/mapping/GO/GO:0006915/pathways/',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -334,6 +337,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/database/info',
     // Only an event's Dataset, not a path below it.
     '/ContentService/data/discover/R-HSA-109581/x',
+    // Only an identifier's reactions and pathways.
+    '/ContentService/data/mapping/UniProt/P04637',
+    '/ContentService/data/mapping/UniProt/P04637/pathways/x',
     // Only a complex's subunits, and the complexes of an identifier.
     '/ContentService/data/complex/R-HSA-5672601',
     '/ContentService/data/complexes/UniProt',
