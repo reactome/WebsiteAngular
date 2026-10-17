@@ -221,6 +221,13 @@ The reference is the deployed artifact (R1) run in a throwaway container. Parity
 - **Each gets a home or a retirement before Tomcat is switched off** (Story 4). That inventory is a task in this plan, with a decision per webapp. Some are certainly in use: the widget is embedded by partners, and the report service receives the search no-result reports.
 - **Spec change:** this adds a requirement (FR-020) and an assumption to the spec. Without it, Story 4 could not be met.
 
+## R11. The species overview is the Reacfoam (Voronoi) map, not Fireworks
+
+The site's species overview is the Reacfoam map, a Voronoi treemap drawn with FoamTree. The GWT and JavaScript Fireworks widgets are retired. "Fireworks" survives only in names fixed outside this repository: the public URLs `/search/fireworks` and `/exporter/fireworks/…`, Solr's handler and field, and the JSON keys in Java's answers. Those are kept, so answers stay byte-identical and old links work. Everything else should say what it is now.
+
+- **The `/exporter/fireworks/{species}.{ext}` image is node's** (spec 006 T093). It is drawn as the Reacfoam map.
+- **The AnalysisService PDF report still embeds a Fireworks figure,** made by Java's fireworks-exporter. AnalysisService runs unchanged under this spec, so the report keeps that figure until analysis-report is changed upstream, or the figure is supplied to it (task T058).
+
 ## Side findings, recorded for follow-up
 
 - **Shutdown:** content-node's shutdown does not drain requests in flight (fixed under R5).
