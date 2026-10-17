@@ -74,6 +74,11 @@ describe('the dev server proxy', () => {
     '/ContentService/data/pathways/low/entity/R-HSA-199420',
     '/ContentService/data/pathways/low/entity/R-HSA-199420?species=9606',
     '/ContentService/data/pathways/low/entity/R-ALL-113592?species=Homo%20sapiens',
+    '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms',
+    '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms?species=9606',
+    '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
+    '/ContentService/data/pathways/low/diagram/entity/199420?species=9606',
+    '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420/allForms',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -300,9 +305,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
     '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
     '/ContentService/data/eventsHierarchy/9606',
-    // Only the plain lower-level pathways are ported, not every form's.
-    '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms',
-    '/ContentService/data/pathways/low/diagram/entity/R-HSA-199420',
+    // Only the lower-level pathways' own paths; no other is Java's either.
+    '/ContentService/data/pathways/low/diagram/identifier/P04637',
+    '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms/x',
     // The curated top-level pathways and the database's other info are not.
     '/ContentService/data/pathways/top/9606/curated',
     '/ContentService/data/database/info',

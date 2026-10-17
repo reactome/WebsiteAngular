@@ -1132,55 +1132,48 @@ export const endpoints = [
      * through any participant relationship, pathways that contain it as a
      * reaction, and the object itself if it is a pathway, joined by UNION.
      * Kept as written rather than tidied, because the row order of the answer
-     * is the order those queries produce.
-     *
-     * The id is read as everywhere else (resolveId, pathId). A pre-2016 REACT_
-     * id is first swapped for its stable id, as graph-core's getIdentifier does,
-     * so the query is the stable-id one Java runs.
-     *
-     * `species` is read as graph-core's SpeciesService reads it (speciesFilter).
-     * A species that is not found filters nothing, as in Java; the 404 message
-     * repeats the parameter as given, and says "null" when there is none.
+     * is the order those queries produce. The id and species are read by
+     * lowerLevelPathways.
      */
-    handler: async (request) => {
-      const raw = pathId(rawSegment(request, 6));
-      // By the servlet's rules (queryValues), not Express's query parser, which
-      // reads brackets in a name as structure; repeated, Spring joins them.
-      const given = queryValues(request, 'species');
-      const species = given.length ? given.join(',') : undefined;
-      const missing = () =>
-        notFound(request, `No result for ${raw} in ${species === undefined ? 'null' : species}`);
-
-      let { where, params } = resolveId(raw);
-      if (where === 'false') return missing();
-      if (where.startsWith('n.oldStId')) {
-        const [found] = await read(
-          'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
-          params
-        );
-        // Not found: Java keeps the REACT_ id and looks for it as a stable id,
-        // which finds nothing.
-        params = { id: found?.stId ?? params.id };
-        where = 'n.stId = $id';
-      }
-      const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
-
-      const taxId = await speciesTaxId(speciesFilter(species));
-      const inSpecies = taxId === undefined ? '' : '-[:species]->(:Species{taxId:$taxId})';
-      const rows = await read(
-        `MATCH (:DatabaseObject${object})<-[:regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*]-()<-[:hasEvent]-(p:Pathway)${inSpecies}
-         RETURN DISTINCT p
-         UNION
-         MATCH (:ReactionLikeEvent${object})<-[:hasEvent]-(p:Pathway)${inSpecies}
-         RETURN DISTINCT p
-         UNION
-         MATCH (p:Pathway${object})${inSpecies}
-         RETURN DISTINCT p`,
-        { ...params, ...(taxId === undefined ? {} : { taxId }) }
-      );
-      if (rows.length === 0) return missing();
-      return { status: 200, body: rows.map((row) => pathwayJson(row.p)), type: 'application/json' };
-    },
+    handler: (request) => lowerLevelPathways(request, 6, PATHWAYS_FOR),
+  },
+  {
+    path: '/ContentService/data/pathways/low/entity/{id}/allForms',
+    // A protein's every form: 12 pathways; ATP's run to 2.3MB.
+    sample: 'R-HSA-199420',
+    differs: [/^\/ContentService\/data\/pathways\/low\/entity\/[^/]+\/allForms: \.url: /],
+    /**
+     * The lower-level pathways any form of an entity takes part in: every
+     * reference entity under it, then every entity with that reference
+     * entity, up to its reactions' pathways. As /low/entity/{id} reads its id
+     * and species (lowerLevelPathways); the query is graph-core's
+     * getPathwaysForAllFormsOf*.
+     */
+    handler: (request) => lowerLevelPathways(request, 6, PATHWAYS_FOR_ALL_FORMS),
+  },
+  {
+    path: '/ContentService/data/pathways/low/diagram/entity/{id}',
+    // A protein drawn in seven diagrams.
+    sample: 'R-HSA-199420',
+    differs: [/^\/ContentService\/data\/pathways\/low\/diagram\/entity\/[^/]+: \.url: /],
+    /**
+     * The diagrams an entity, a reaction or a pathway is drawn in: for each
+     * reaction it reaches, the first pathway above it with a diagram. As
+     * /low/entity/{id} reads its id and species; the query is graph-core's
+     * getPathwaysWithDiagramFor*.
+     */
+    handler: (request) => lowerLevelPathways(request, 7, PATHWAYS_WITH_DIAGRAM_FOR),
+  },
+  {
+    path: '/ContentService/data/pathways/low/diagram/entity/{id}/allForms',
+    sample: 'R-HSA-199420',
+    differs: [/^\/ContentService\/data\/pathways\/low\/diagram\/entity\/[^/]+\/allForms: \.url: /],
+    /**
+     * The diagrams any form of an entity is drawn in: /allForms's reference
+     * entities, then /diagram/entity's first diagram above each reaction.
+     * graph-core's getPathwaysWithDiagramForAllFormsOf*.
+     */
+    handler: (request) => lowerLevelPathways(request, 7, PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS),
   },
   {
     path: '/ContentService/data/participants/{id}/referenceEntities',
@@ -6943,6 +6936,120 @@ export function javaError(request, code, reason, message) {
       messages: [message],
       targets: null,
     }),
+  };
+}
+
+/** Every relationship from an event down to its participants, as graph-core lists them. */
+const PARTICIPANT_OF =
+  'regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*';
+/** From an entity down to the reference entities of its every form. */
+const FORMS_OF =
+  'regulator|hasComponent|repeatedUnit|hasMember|hasCandidate|referenceEntity|proteinMarker|RNAMarker*';
+
+/*
+ * graph-core's PathwayRepository queries for the /pathways/low family, kept as
+ * written: the order of the rows is the order these queries produce, and
+ * HEAD(COLLECT(p)) -- each reaction's first diagram -- is whichever pathway the
+ * plan meets first. Each takes the object's pattern ({stId: $id} or
+ * {dbId: toInteger($id)}) and a species pattern for each place graph-core puts
+ * one; empty without a species. graph-core writes the species three ways, the
+ * first diagram arm's without a label -- `(Species{...})` binds a variable
+ * named Species -- and they are kept, not tidied, since tidying a query is
+ * what reordered rows before.
+ */
+const PATHWAYS_FOR = {
+  column: 'p',
+  query: (object, species) => {
+    const sp = species('(:Species{taxId:$taxId})');
+    return `MATCH (:DatabaseObject${object})<-[:${PARTICIPANT_OF}]-()<-[:hasEvent]-(p:Pathway)${sp}
+         RETURN DISTINCT p
+         UNION
+         MATCH (:ReactionLikeEvent${object})<-[:hasEvent]-(p:Pathway)${sp}
+         RETURN DISTINCT p
+         UNION
+         MATCH (p:Pathway${object})${sp}
+         RETURN DISTINCT p`;
+  },
+};
+const PATHWAYS_FOR_ALL_FORMS = {
+  column: 'p',
+  query: (object, species) =>
+    `MATCH (:DatabaseObject${object})-[:${FORMS_OF}]->(re:ReferenceEntity)
+     WITH re
+     MATCH (re)<-[:referenceEntity]-(:PhysicalEntity)<-[:${PARTICIPANT_OF}]-(:ReactionLikeEvent)<-[:hasEvent]-(p:Pathway)${species('(:Species{taxId:$taxId})')}
+     RETURN DISTINCT p`,
+};
+const PATHWAYS_WITH_DIAGRAM_FOR = {
+  column: 'm',
+  query: (object, species) =>
+    `MATCH (:PhysicalEntity${object})<-[:${PARTICIPANT_OF}]-(r:ReactionLikeEvent)<-[:hasEvent*]-(p:Pathway{hasDiagram:True})${species('(Species{taxId:$taxId})')}
+     WITH r, HEAD(COLLECT(p)) AS m
+     RETURN DISTINCT m
+     UNION
+     MATCH (r:ReactionLikeEvent${object})<-[:hasEvent]-(p:Pathway{hasDiagram:True})${species('(s:Species{taxId:$taxId})')}
+     WITH r, HEAD(COLLECT(p)) AS m
+     RETURN DISTINCT m
+     UNION
+     MATCH (o:Pathway${object})-[:hasEvent*]->(p:Pathway{hasDiagram:True})${species('(s:Species{taxId:$taxId})')}
+     WITH o, HEAD(COLLECT(p)) AS m
+     RETURN DISTINCT m`,
+};
+const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS = {
+  column: 'm',
+  query: (object, species) =>
+    `MATCH (:PhysicalEntity${object})-[:${FORMS_OF}]->(re:ReferenceEntity)
+     WITH re
+     MATCH (re)<-[:referenceEntity]-(:PhysicalEntity)<-[:${PARTICIPANT_OF}]-(r:ReactionLikeEvent)<-[:hasEvent*]-(p:Pathway{hasDiagram:True})${species('(Species{taxId:$taxId})')}
+     WITH r, HEAD(COLLECT(p)) AS m
+     RETURN DISTINCT m`,
+};
+
+/**
+ * One of the /pathways/low family, optionally in one species: PathwaysService
+ * dispatches each the same way, to one of the queries above.
+ *
+ * The id is the path's `segment`th, read as everywhere else (resolveId,
+ * pathId). A pre-2016 REACT_ id is first swapped for its stable id, as
+ * graph-core's getIdentifier does, so the query is the stable-id one Java runs.
+ *
+ * `species` is read as graph-core's SpeciesService reads it (speciesFilter).
+ * A species that is not found filters nothing, as in Java; the 404 message
+ * repeats the parameter as given, and says "null" when there is none.
+ */
+async function lowerLevelPathways(request, segment, { column, query }) {
+  const raw = pathId(rawSegment(request, segment));
+  // By the servlet's rules (queryValues), not Express's query parser, which
+  // reads brackets in a name as structure; repeated, Spring joins them.
+  const given = queryValues(request, 'species');
+  const species = given.length ? given.join(',') : undefined;
+  const missing = () =>
+    notFound(request, `No result for ${raw} in ${species === undefined ? 'null' : species}`);
+
+  let { where, params } = resolveId(raw);
+  if (where === 'false') return missing();
+  if (where.startsWith('n.oldStId')) {
+    const [found] = await read(
+      'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
+      params
+    );
+    // Not found: Java keeps the REACT_ id and looks for it as a stable id,
+    // which finds nothing.
+    params = { id: found?.stId ?? params.id };
+    where = 'n.stId = $id';
+  }
+  const object = where.startsWith('n.dbId') ? '{dbId: toInteger($id)}' : '{stId: $id}';
+
+  const taxId = await speciesTaxId(speciesFilter(species));
+  const inSpecies = (pattern) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
+  const rows = await read(query(object, inSpecies), {
+    ...params,
+    ...(taxId === undefined ? {} : { taxId }),
+  });
+  if (rows.length === 0) return missing();
+  return {
+    status: 200,
+    body: rows.map((row) => pathwayJson(row[column])),
+    type: 'application/json',
   };
 }
 
