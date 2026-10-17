@@ -81,3 +81,44 @@ describe('/data/schema/{className}', () => {
     ]);
   });
 });
+
+describe('/data/schema/{className}/reference', () => {
+  it('lists a reference class\'s dbId, identifier and database by identifier, a missing text as Java\'s "null"', async () => {
+    rows = [
+      { dbId: 2, identifier: '10036', databaseName: 'ChEBI' },
+      { dbId: 1, identifier: null, databaseName: '' },
+    ];
+    asked.length = 0;
+    const response = await get('ReferenceMolecule/reference?page=2&offset=3');
+    expect(await response.text()).toBe(
+      '[{"dbId":2,"identifier":"10036","databaseName":"ChEBI"},{"dbId":1,"identifier":"null"}]'
+    );
+    const [cypher, params] = asked[0];
+    expect(cypher).toBe(
+      'MATCH (n:ReferenceMolecule) RETURN n.dbId AS dbId, n.databaseName AS databaseName, n.identifier AS identifier ORDER BY n.identifier SKIP $skip LIMIT $limit'
+    );
+    expect([Number(params.skip), Number(params.limit)]).toEqual([3, 3]);
+  });
+
+  it('takes a species as nothing, and caps a page at 20000', async () => {
+    rows = [{ dbId: 1, identifier: 'x', databaseName: 'y' }];
+    asked.length = 0;
+    await get('ExternalOntology/reference?page=1&offset=50000&species=9606');
+    expect(asked[0][0]).not.toMatch(/Species/);
+    expect(Number(asked[0][1].limit)).toBe(20000);
+  });
+
+  it('is a 404 for a class that is no reference, a 500 for one Java lacks', async () => {
+    rows = [{ dbId: 1, identifier: 'x', databaseName: 'y' }];
+    const pathway = await get('Pathway/reference?page=1&offset=3');
+    expect([pathway.status, (await pathway.json()).messages]).toEqual([
+      404,
+      ['No entries found for class: Pathway'],
+    ]);
+    const unknown = await get('Nonsense/reference?page=1&offset=3');
+    expect([unknown.status, (await unknown.json()).messages]).toEqual([
+      500,
+      ['Specified class was not found'],
+    ]);
+  });
+});

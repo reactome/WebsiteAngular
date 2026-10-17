@@ -188,10 +188,11 @@ module.exports = {
   // locations tree. Only this one of Java's /data/detail/{id}/... paths.
   '^/ContentService/data/detail/[^/?]+/locationsInPWB/?(\\?|$)': contentNode,
   // The schema browser: the class tree, and a class's count, one page of its
-  // objects (simplified or whole), its attributes and its referrals.
-  // /reference stays with Java.
+  // objects (simplified, whole, or a reference class's by identifier), its
+  // attributes and its referrals.
   '^/ContentService/data/schema/model/?(\\?|$)': contentNode,
-  '^/ContentService/data/schema/[^/?]+(/(count|min|attributes|referrals))?/?(\\?|$)': contentNode,
+  '^/ContentService/data/schema/[^/?]+(/(count|min|attributes|referrals|reference))?/?(\\?|$)':
+    contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
