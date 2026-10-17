@@ -3,7 +3,8 @@
 // /data/instance/{id}/referrers -- what points at an object, for the
 // website's detail pages -- with a stand-in graph: graph-core's
 // ReferralsLinkageRepository.getReferralsTo, by stable id or dbId, and
-// Java's 404s. Java's answers measured 17 Oct 2026.
+// Java's 404 and 500. The answers' shapes are Java's, compared live on 17 Oct
+// 2026; the graph here is invented.
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
 const asked = [];
@@ -12,7 +13,7 @@ vi.mock('./graph.mjs', () => ({
     asked.push([cypher, params]);
     // findNewStId: REACT_1 became R-HSA-9; REACT_2 became nothing.
     if (cypher.includes('oldStId')) return params.id === 'REACT_1' ? [{ stId: 'R-HSA-9' }] : [];
-    if (params.id === 'R-HSA-0' || params.id === 0) return [];
+    if (params.id === 'R-HSA-0') return [];
     if (params.id === 'R-HSA-5')
       return [
         {
@@ -85,7 +86,29 @@ describe('/data/instance/{id}/referrers', () => {
     expect(asked[0][0]).toContain(
       'NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)'
     );
+    // Groups by relationship, each once, at most 1000.
+    expect(asked[0][0]).toMatch(/RETURN DISTINCT TYPE\(rel\) AS referral,/);
+    expect(asked[0][0]).toMatch(/LIMIT 1000$/);
     expect(asked[0][1]).toEqual({ id: 'R-HSA-141433' });
+  });
+
+  it("is Java's 500 for a dbId past a long's range, as Long.parseLong refuses it", async () => {
+    asked.length = 0;
+    for (const id of ['99999999999999999999', '99999999999999999999.1']) {
+      const response = await get(id);
+      expect([response.status, (await response.json()).messages]).toEqual([
+        500,
+        ['For input string: "99999999999999999999"'],
+      ]);
+    }
+    expect(asked).toHaveLength(0);
+    const largest = await get('9223372036854775807');
+    expect(largest.status).toBe(200);
+  });
+
+  it('answers with a trailing slash, as Spring matches one', async () => {
+    const response = await fetch(`${base}/ContentService/data/instance/R-HSA-0/referrers/`);
+    expect([response.status, await response.text()]).toEqual([200, '[]']);
   });
 
   it('reads a dbId as a dbId, version cut, as graph-core does', async () => {
@@ -100,9 +123,9 @@ describe('/data/instance/{id}/referrers', () => {
     expect([none.status, await none.text()]).toEqual([200, '[]']);
     asked.length = 0;
     const bad = await get('xyz');
-    expect([bad.status, (await bad.json()).messages]).toEqual([
+    expect([bad.status, await bad.text()]).toEqual([
       404,
-      ['No referrers found for id: xyz'],
+      `{"code":404,"reason":"NOT_FOUND","url":"${base}/ContentService/data/instance/xyz/referrers","messages":["No referrers found for id: xyz"],"targets":null}`,
     ]);
     expect(asked).toHaveLength(0);
   });
@@ -111,6 +134,8 @@ describe('/data/instance/{id}/referrers', () => {
     asked.length = 0;
     await get('REACT_1.3');
     expect(asked.map(([, params]) => params.id)).toEqual(['REACT_1', 'R-HSA-9']);
+    // Then by the new id as a stable id.
+    expect(asked[1][0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)/);
     asked.length = 0;
     await get('REACT_2');
     expect(asked.map(([, params]) => params.id)).toEqual(['REACT_2', 'REACT_2']);

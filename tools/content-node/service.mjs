@@ -2337,7 +2337,14 @@ export const endpoints = [
         params = { id: found?.stId ?? params.id };
         where = 'n.stId = $id';
       }
-      const object = where.startsWith('n.dbId') ? '{dbId:toInteger($id)}' : '{stId:$id}';
+      const byDbId = where.startsWith('n.dbId');
+      // Long.parseLong past a long's range is Java's 500, naming the digits as
+      // given.
+      if (byDbId && BigInt(params.id) > 9223372036854775807n) {
+        const digits = javaTrim(raw).split('.')[0];
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
+      }
+      const object = byDbId ? '{dbId:toInteger($id)}' : '{stId:$id}';
       const rows = await read(
         `MATCH (d:DatabaseObject${object})<-[rel]-(ref)
          WHERE NOT ref:InstanceEdit

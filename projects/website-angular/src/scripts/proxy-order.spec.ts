@@ -224,6 +224,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/query?query=TP53&cluster=true&Start%20row=0&rows=30',
     '/ContentService/search/query/paginated?query=TP53&page=1&rowCount=20',
     '/ContentService/data/instance/R-HSA-141433/referrers',
+    // Spring matches a trailing slash, and so must the route once Java is gone.
+    '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
