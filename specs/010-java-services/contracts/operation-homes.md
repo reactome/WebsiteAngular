@@ -28,7 +28,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/discover/{identifier}`                             | node — to port         | graph or search index                                                                         |
 | GET    | `/data/diseases`                                          | node — to port         | graph or search index                                                                         |
 | GET    | `/data/diseases/doid`                                     | node — to port         | graph or search index                                                                         |
-| GET    | `/data/entity/{id}/componentOf`                           | node — to port         | graph or search index                                                                         |
+| GET    | `/data/entity/{id}/componentOf`                           | node — ported          | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/in-depth`                              | node — ported          | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/otherForms`                            | node — ported          | graph or search index                                                                         |
 | GET    | `/data/event/{id}/ancestors`                              | node — ported          | graph or search index                                                                         |
