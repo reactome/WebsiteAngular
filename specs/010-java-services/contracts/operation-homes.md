@@ -97,9 +97,9 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | POST   | `/interactors/upload/tuple/content`                       | java-library           | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                    |
 | POST   | `/interactors/upload/tuple/form`                          | java-library           | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                    |
 | POST   | `/interactors/upload/tuple/url`                           | java-library           | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                    |
-| POST   | `/references/mapping/xrefs`                               | node — to port         | graph or search index                                                                         |
-| GET    | `/references/mapping/{identifier}`                        | node — to port         | graph or search index                                                                         |
-| GET    | `/references/mapping/{identifier}/xrefs`                  | node — to port         | graph or search index                                                                         |
+| POST   | `/references/mapping/xrefs`                               | node — ported          | graph or search index                                                                         |
+| GET    | `/references/mapping/{identifier}`                        | node — ported          | graph or search index                                                                         |
+| GET    | `/references/mapping/{identifier}/xrefs`                  | node — ported          | graph or search index                                                                         |
 | GET    | `/search/diagram/{diagram}`                               | node — ported          | graph or search index                                                                         |
 | GET    | `/search/diagram/{diagram}/occurrences/{instance}`        | node — ported          | graph or search index                                                                         |
 | GET    | `/search/diagram/{pathwayId}/flag`                        | node — ported          | graph or search index                                                                         |

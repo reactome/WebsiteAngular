@@ -88,7 +88,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T080 `GET /data/mapping/{resource}/{identifier}/pathways`, `GET /data/mapping/{resource}/{identifier}/reactions` — #516
 - [x] T081 `GET /data/diseases`, `GET /data/diseases/doid` — #510
 - [x] T082 `GET /data/discover/{identifier}` — #519
-- [ ] T083 `GET /references/mapping/{identifier}`, `GET /references/mapping/{identifier}/xrefs`, `POST /references/mapping/xrefs`
+- [x] T083 `GET /references/mapping/{identifier}`, `GET /references/mapping/{identifier}/xrefs`, `POST /references/mapping/xrefs` — #520
 - [ ] T084 `GET /interactors/static/molecule/{acc}/pathways`, `GET /interactors/static/molecule/{acc}/summary`, `POST /interactors/static/molecules/summary`
 - [ ] T085 `POST /contact` — its human check then runs where the site's secrets are (research D2)
 

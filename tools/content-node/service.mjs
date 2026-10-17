@@ -1460,6 +1460,142 @@ export const endpoints = [
     handler: (request) => mappingAnswer(request, 'pathways'),
   },
   {
+    path: '/ContentService/references/mapping/xrefs',
+    method: 'post',
+    sampleBody: 'P36897, Q5S007',
+    differs: [/^\/ContentService\/references\/mapping\/xrefs: \.url: /],
+    /**
+     * The cross references of a batch of identifiers, a page at a time:
+     * ReferenceEntityController.getCrossReferencesForList. The text/plain
+     * body is split on , ; newline and tab (String.split, so trailing empty
+     * pieces go), and `page` and `pageSize` (ints, 0 and 100 by default)
+     * choose the slice -- skip(page * pageSize) in long arithmetic (BigInt), then
+     * limit(pageSize), each Java's 500 naming the number if negative. Each
+     * identifier of the slice, trimmed, is one crossReferenceResults lookup,
+     * written as {identifier: results}; the whole as Spring's PageImpl
+     * (pageJson), counting every identifier sent. PageRequest's own checks
+     * come last, after the lookups, as its arguments are evaluated last.
+     */
+    handler: async (request) => {
+      const contentType = request.get?.('content-type');
+      const problem = plainTextProblem(contentType);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      const page = springIntWithDefault(queryValues(request, 'page'), 0);
+      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      const pageSize = springIntWithDefault(queryValues(request, 'pageSize'), 100);
+      if (pageSize.error) return javaError(request, 400, 'BAD_REQUEST', pageSize.error);
+      if (request.tooLarge)
+        return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0)
+        return javaError(
+          request,
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Required request body is missing: public org.springframework.data.domain.Page<java.util.Map<java.lang.String, java.util.Collection<org.reactome.server.service.controller.graph.util.CrossReferenceResult>>> org.reactome.server.service.controller.graph.ReferenceEntityController.getCrossReferencesForList(java.lang.String,int,int,java.lang.String)'
+        );
+      const given = queryValues(request, 'dbFilter');
+      const dbFilter = given.length ? given.join(',') : undefined;
+      const identifiers = javaSplit(plainText(request.body, contentType), /,|;|\n|\t/);
+      // Stream.skip's long: page * pageSize past 2^53 is still exact.
+      const skip = BigInt(page.value) * BigInt(pageSize.value);
+      if (skip < 0n) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', String(skip));
+      if (pageSize.value < 0)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', String(pageSize.value));
+      const slice =
+        skip >= BigInt(identifiers.length)
+          ? []
+          : identifiers.slice(Number(skip), Number(skip) + pageSize.value);
+      // Java's parallel stream asks for several at once; each is a scan of
+      // every node (the query names no label), so one at a time a full page
+      // outlasts the proxy. Four at once, answers kept in order.
+      const trimmed = slice.map(javaTrim);
+      const answers = await inOrderPool(trimmed, 4, (identifier) =>
+        crossReferenceResults(request, identifier, dbFilter)
+      );
+      const failed = answers.find((results) => results?.status);
+      if (failed) return failed;
+      const content = trimmed.map((identifier, at) => ({ [identifier]: answers[at] }));
+      if (page.value < 0)
+        return javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          'Page index must not be less than zero'
+        );
+      if (pageSize.value < 1)
+        return javaError(
+          request,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          'Page size must not be less than one'
+        );
+      return {
+        status: 200,
+        serialised: pageText(pageJson(content, page.value, pageSize.value, identifiers.length)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/references/mapping/{identifier}/xrefs',
+    // TGFBR1: its cross references in a dozen resources, and its entities.
+    samplePath: { identifier: 'P36897' },
+    differs: [/^\/ContentService\/references\/mapping\/[^/]+\/xrefs(\?\S*)?: \.url: /],
+    /**
+     * The cross references and physical entities of the reference entities
+     * an identifier names, optionally only those in one database (dbFilter):
+     * ReferenceEntityController.getCrossReferencesFor. Nothing matching is
+     * Java's 404. See crossReferenceResults.
+     */
+    handler: async (request) => {
+      const identifier = pathId(rawSegment(request, 4));
+      const given = queryValues(request, 'dbFilter');
+      const results = await crossReferenceResults(
+        request,
+        identifier,
+        given.length ? given.join(',') : undefined
+      );
+      if (results.status) return results;
+      if (results.every((result) => result === NO_CROSS_REFERENCES))
+        return notFound(
+          request,
+          `Identifier: ${identifier} has not been found as a cross reference in any of the annotated entities`
+        );
+      return { status: 200, body: results, type: 'application/json' };
+    },
+  },
+  {
+    path: '/ContentService/references/mapping/{identifier}',
+    samplePath: { identifier: 'P36897' },
+    differs: [/^\/ContentService\/references\/mapping\/[^/]+: \.url: /],
+    /**
+     * The reference entities behind every entity an identifier in any
+     * resource names: graph-core's
+     * ReferenceEntityRepository.getReferenceEntitiesFor, kept as written,
+     * each written as graph-core serialises the node. None is Java's 404.
+     */
+    handler: async (request) => {
+      const identifier = pathId(rawSegment(request, 4));
+      const rows = await read(
+        `MATCH (rd:ReferenceDatabase)<--(n{identifier:$identifier})<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity)
+         WITH DISTINCT pe
+         MATCH (pe)-[:referenceEntity]->(n:ReferenceEntity)
+         RETURN DISTINCT n, labels(n) AS labels`,
+        { identifier }
+      );
+      if (rows.length === 0)
+        return notFound(
+          request,
+          `Identifier: ${identifier} has not been found as a cross reference in any of the annotated entities`
+        );
+      return {
+        status: 200,
+        body: rows.map((row) => referenceEntityJson(row.n, row.labels)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/complex/{id}/subunits',
     // A set: 354 entities under it -- complexes, sets, proteins and small molecules.
     sample: 'R-HSA-5672601',
@@ -6128,7 +6264,7 @@ function solrStrings(doc, field) {
   return (Array.isArray(value) ? value : [value]).map((item) => String(item));
 }
 
-/** String.split on a literal, as Java's: trailing empty strings removed. */
+/** String.split on a literal or a pattern, as Java's: trailing empty strings removed. */
 function javaSplit(text, separator) {
   const parts = text.split(separator);
   // No separator at all is the text itself, even empty; otherwise every
@@ -7445,6 +7581,142 @@ async function mappingAnswer(request, kind) {
     ),
     type: 'application/json',
   };
+}
+
+/**
+ * ReferenceEntityController's cross-reference query. The identifier and the
+ * database filter are written into the text between double quotes, not
+ * passed as parameters -- so one with a quote in it breaks or rewrites the
+ * query, and Java's 500 is the answer (crossReferenceResults). Node reads with
+ * read-only sessions, so text written in can only ever read. Kept character
+ * for character, since Neo4j's message quotes it.
+ */
+export function crossReferenceQuery(identifier, dbFilter) {
+  const filter = dbFilter === undefined ? '' : `WHERE xf.databaseName="${dbFilter}" `;
+  return `MATCH (n{identifier:"${identifier}"})<-[:crossReference]-(re:ReferenceEntity)-[:crossReference]->(xf) ${filter}OPTIONAL MATCH (re)<-[:referenceEntity]-(pe:PhysicalEntity) RETURN re.identifier as reference, [ x in collect(distinct xf) | {identifier:x.identifier, databaseName:x.databaseName, url:x.url}] as crossReferences, collect(distinct pe.stId) as physicalEntities`;
+}
+
+/** CrossReferenceResult.EMPTY: what an identifier that matches nothing is given. */
+const NO_CROSS_REFERENCES = { reference: 'NO MATCH' };
+
+/** The driver's Uncoercible: a value Value.asString cannot read as text. */
+class Uncoercible extends Error {}
+
+/**
+ * Value.asString: a null is the text "null", text is itself, and anything
+ * else -- a number, a boolean -- is the driver's Uncoercible, which only a
+ * query the identifier or filter has rewritten can return.
+ */
+function javaAsString(value) {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'string') return value;
+  const type =
+    typeof value === 'boolean' ? 'BOOLEAN' : Number.isInteger(value) ? 'INTEGER' : 'FLOAT';
+  throw new Uncoercible(`Cannot coerce ${type} to Java String`);
+}
+
+/**
+ * ReferenceEntityController.getCrossReferenceResults: the rows of
+ * crossReferenceQuery as CrossReferenceResult and ShortCrossReference build
+ * them (every text through Value.asString), written with NON_EMPTY -- no
+ * empty list or "" -- or [NO_CROSS_REFERENCES] when there are none.
+ *
+ * A query the identifier or filter has broken or rewritten is Java's 500,
+ * returned here as the answer to give: a Neo4j client error as Spring
+ * translates it, or the driver's Uncoercible for a value that is not text.
+ */
+async function crossReferenceResults(request, identifier, dbFilter) {
+  try {
+    const rows = await read(crossReferenceQuery(identifier, dbFilter));
+    if (rows.length === 0) return [NO_CROSS_REFERENCES];
+    return rows.map((row) =>
+      compact({
+        reference: javaAsString(row.reference),
+        physicalEntities: row.physicalEntities.map(javaAsString),
+        crossReferences: row.crossReferences.map((reference) =>
+          compact({
+            identifier: javaAsString(reference.identifier),
+            databaseName: javaAsString(reference.databaseName),
+            url: javaAsString(reference.url),
+          })
+        ),
+      })
+    );
+  } catch (failure) {
+    if (failure instanceof Uncoercible)
+      return javaError(
+        request,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        `${failure.message}; Error code 'N/A'; nested exception is org.neo4j.driver.exceptions.value.Uncoercible: ${failure.message}`
+      );
+    const message = String(failure?.code ?? '').startsWith('Neo.ClientError.')
+      ? neo4jFailureMessage(failure, [failure.code])
+      : undefined;
+    if (message) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+    throw failure;
+  }
+}
+
+/**
+ * Spring Data's PageImpl, as Jackson writes it with ContentService's
+ * NON_EMPTY: the content (left out when empty), the PageRequest, then the
+ * derived properties. The offset is a long -- page * size past 2^53 too, so
+ * it is a BigInt and the answer is written by pageText. PageImpl corrects the
+ * total when the slice runs past it: offset plus what the page holds.
+ */
+export function pageJson(content, page, size, total) {
+  const offset = BigInt(page) * BigInt(size);
+  const counted =
+    content.length && offset + BigInt(size) > BigInt(total)
+      ? Number(offset) + content.length
+      : total;
+  const totalPages = size === 0 ? 1 : Math.ceil(counted / size);
+  const sort = { empty: true, sorted: false, unsorted: true };
+  return {
+    ...(content.length ? { content } : {}),
+    pageable: { sort, offset, pageNumber: page, pageSize: size, paged: true, unpaged: false },
+    // hasNext, in int arithmetic: the last possible page wraps round.
+    last: !(((page + 1) | 0) < totalPages),
+    totalPages,
+    totalElements: counted,
+    size,
+    number: page,
+    sort,
+    first: page === 0,
+    numberOfElements: content.length,
+    empty: content.length === 0,
+  };
+}
+
+/** pageJson's answer as Jackson writes it, its long offset as digits. */
+export function pageText(page) {
+  const marker = '\u0000long:';
+  const text = javaJson({
+    ...page,
+    pageable: { ...page.pageable, offset: `${marker}${page.pageable.offset}` },
+  });
+  return text.replace(/"\\u0000long:(-?\d+)"/, '$1');
+}
+
+/**
+ * Each of `items` through `work`, at most `width` at a time, the answers in
+ * the items' order -- or the first failure in that order, as a sequential
+ * walk would meet it, the rest abandoned.
+ */
+async function inOrderPool(items, width, work) {
+  const answers = new Array(items.length);
+  let next = 0;
+  let stopped = false;
+  const worker = async () => {
+    while (!stopped && next < items.length) {
+      const at = next++;
+      answers[at] = await work(items[at]);
+      if (answers[at]?.status) stopped = true;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(width, items.length) }, worker));
+  return answers;
 }
 
 /** Every relationship from an event down to its participants, as graph-core lists them. */

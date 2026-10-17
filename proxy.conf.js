@@ -177,6 +177,8 @@ module.exports = {
   '^/ContentService/data/discover/[^/?]+/?(\\?|$)': contentNode,
   // The reactions and pathways an identifier in an outside resource is in.
   '^/ContentService/data/mapping/[^/?]+/[^/?]+/(reactions|pathways)/?(\\?|$)': contentNode,
+  // The reference entities and cross references an identifier names.
+  '^/ContentService/references/mapping/[^/?]+(/xrefs)?/?(\\?|$)': contentNode,
   // What a complex is made of, and the complexes an identifier is part of.
   '^/ContentService/data/(complex/[^/?]+/subunits|complexes/[^/?]+/[^/?]+)/?(\\?|$)': contentNode,
   // The reference entities behind an event's participants (the molecule list
