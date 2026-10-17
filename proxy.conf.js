@@ -104,39 +104,40 @@ module.exports = {
   ),
   // An object with everything around it, for the details panel and the
   // website's detail pages; a reference entity as a summary of its entities.
-  '^/ContentService/data/query/enhanced/v2/[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/query/enhanced/v2/[^/?]+/?(\\?|$)': contentNode,
   // An object with its neighbours and some of theirs (the older enhanced query).
-  '^/ContentService/data/query/enhanced/[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/query/enhanced/[^/?]+/?(\\?|$)': contentNode,
   // An entity or an event and everything below it, for the object tree.
-  '^/ContentService/data/(entity|event)/[^/?]+/in-depth(\\?|$)': contentNode,
+  '^/ContentService/data/(entity|event)/[^/?]+/in-depth/?(\\?|$)': contentNode,
   // An event's or entity's counterpart in another species: one id (GET), or
   // up to twenty (POST), for the species selector.
-  '^/ContentService/data/(orthology/[^/?]+/species|orthologies/ids/species)/[^/?]+(\\?|$)':
+  '^/ContentService/data/(orthology/[^/?]+/species|orthologies/ids/species)/[^/?]+/?(\\?|$)':
     contentNode,
   // An accession's interactors (details, enhanced details, with entities), and
   // the diagram's POST for many. PSICQUIC, uploads, tokens and summaries stay
   // with Java.
-  '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)(\\?|$)':
+  '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)/?(\\?|$)':
     contentNode,
   // The search box's completions and its "did you mean", the facets of
   // everything and of a query, and the icon library (its facets, pages and
   // icons); every other /search endpoint is the pattern below.
-  '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/[^/?]+)(\\?|$)': contentNode,
+  '^/ContentService/search/(suggest|spellcheck|facet|facet_query|icon/[^/?]+)/?(\\?|$)':
+    contentNode,
   // Search within a diagram, where an object occurs in it, the summary of
   // both, flagging a term in a diagram or across the species overview, the
   // diagrams an entity is in, the species-wide search (/fireworks), and the
   // website's search (/query).
-  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag|/)?|pathways/of/[^/?]+|query(/paginated)?/?)(\\?|$)':
+  '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag)?|pathways/of/[^/?]+|query(/paginated)?)/?(\\?|$)':
     contentNode,
   // The Pathway Browser's "cite this": a pathway's citation, a paper's by
   // PubMed id, and either to download. /citation/export/{id} and /download
   // stay with Java.
-  '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)(\\?|$)': contentNode,
+  '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)/?(\\?|$)': contentNode,
   // What points at an object, for the website's detail pages.
   '^/ContentService/data/instance/[^/?]+/referrers/?(\\?|$)': contentNode,
   // A person, and the publications they authored. Not the other attributes
   // under /person/{id}/, which Java serves.
-  '^/ContentService/data/person/[^/?]+(/publications)?(\\?|$)': contentNode,
+  '^/ContentService/data/person/[^/?]+(/publications)?/?(\\?|$)': contentNode,
   // The person page's four lists. A pattern rather than a prefix: these take an
   // id in the middle, and `/ContentService/data/person` would also claim the
   // other attributes under /person/{id}/, which node does not serve.
@@ -146,45 +147,46 @@ module.exports = {
   // wins -- so under `ng serve` these went to Java (#318). A `^` key stays
   // where it is written. It is matched against the path and query, as Vite
   // does; serve-prod.js reads it the same way. Same pattern as nginx's.
-  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)(\\?|$)': contentNode,
+  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)/?(\\?|$)':
+    contentNode,
   // One object with everything it points to, in any of Java's views
   // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
   // /query/enhanced|abridged/{id} are other endpoints.
   // `ids` is Java's POST /query/ids, a batch, which node does not serve.
-  '^/ContentService/data/query/(?!ids(\\?|$))[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/query/(?!ids(;[^/?]*)?/?(\\?|$))[^/?]+/?(\\?|$)': contentNode,
   // An object's stable id by any id Java accepts (13 bytes against 12KB for
   // the whole object), and a disease pathway's normal pathway. Only these two
   // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
   // pattern names them. `abridged` and `enhanced` are not ids: Java's more
   // specific /query/abridged/{id} and /query/enhanced/{id} take those paths.
-  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(stId|normalPathway)(\\?|$)':
+  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(stId|normalPathway)/?(\\?|$)':
     contentNode,
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
-  '^/ContentService/data/event/[^/?]+/ancestors(\\?|$)': contentNode,
+  '^/ContentService/data/event/[^/?]+/ancestors/?(\\?|$)': contentNode,
   // The lower-level pathways an entity takes part in, with or without a
   // species: the entity popup and the participating-pathways list.
-  '^/ContentService/data/pathways/low/entity/[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/pathways/low/entity/[^/?]+/?(\\?|$)': contentNode,
   // The reference entities behind an event's participants: the molecule list
   // and the IDG page.
-  '^/ContentService/data/participants/[^/?]+/referenceEntities(\\?|$)': contentNode,
+  '^/ContentService/data/participants/[^/?]+/referenceEntities/?(\\?|$)': contentNode,
   // An event's participants with their reference entities: the molecule list.
-  '^/ContentService/data/participants/[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/participants/[^/?]+/?(\\?|$)': contentNode,
   // The release number (asked on every page load) and the database name, and
   // a species' top-level pathways -- ported first and long byte-identical,
   // but never switched over.
-  '^/ContentService/data/database/(version|name)(\\?|$)': contentNode,
-  '^/ContentService/data/pathways/top/[^/?]+(\\?|$)': contentNode,
+  '^/ContentService/data/database/(version|name)/?(\\?|$)': contentNode,
+  '^/ContentService/data/pathways/top/[^/?]+/?(\\?|$)': contentNode,
   // The other forms of a physical entity: the details panel and the popup.
-  '^/ContentService/data/entity/[^/?]+/otherForms(\\?|$)': contentNode,
+  '^/ContentService/data/entity/[^/?]+/otherForms/?(\\?|$)': contentNode,
   // Every place an object appears in the Pathway Browser: the details page's
   // locations tree. Only this one of Java's /data/detail/{id}/... paths.
-  '^/ContentService/data/detail/[^/?]+/locationsInPWB(\\?|$)': contentNode,
+  '^/ContentService/data/detail/[^/?]+/locationsInPWB/?(\\?|$)': contentNode,
   // The schema browser: the class tree, and a class's count, one page of its
   // objects, its attributes and its referrals. The full objects and
   // /reference stay with Java.
-  '^/ContentService/data/schema/model(\\?|$)': contentNode,
-  '^/ContentService/data/schema/[^/?]+/(count|min|attributes|referrals)(\\?|$)': contentNode,
+  '^/ContentService/data/schema/model/?(\\?|$)': contentNode,
+  '^/ContentService/data/schema/[^/?]+/(count|min|attributes|referrals)/?(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
