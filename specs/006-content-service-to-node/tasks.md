@@ -79,7 +79,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T072 `GET /data/person/{id}/{attributeName}`
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
 - [x] T074 `GET /data/schema/{className}` — #511
-- [x] T074b `GET /data/schema/{className}/reference` — #PR
+- [x] T074b `GET /data/schema/{className}/reference` — #512
 - [ ] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}`
 - [ ] T076 `GET /data/entity/{id}/componentOf`
 - [ ] T077 `GET /data/participants/{id}/participatingPhysicalEntities`
