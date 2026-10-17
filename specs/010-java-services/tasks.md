@@ -205,8 +205,8 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
 
 ## Phase 8: Polish and side findings
 
-- [ ] T054 [P] Set `client_max_body_size` in `deploy/nginx/local.conf` to match the other deployments (64 MB), so local uploads over 1 MB are not refused. Test it with `deploy/nginx/test-config.sh`.
-- [ ] T055 [P] Declare the proxy package that `projects/website-angular/src/scripts/serve-prod.js` uses in `package.json` (it is only present as a dev-only transitive dependency), and check the lockfile changes only that entry
+- [x] T054 [P] Set `client_max_body_size` in `deploy/nginx/local.conf` to match the other deployments (64 MB), so local uploads over 1 MB are not refused. Test it with `deploy/nginx/test-config.sh`. — #508
+- [x] T055 [P] Declare the proxy package that `projects/website-angular/src/scripts/serve-prod.js` uses in `package.json` (it is only present as a dev-only transitive dependency), and check the lockfile changes only that entry — #508
 - [ ] T056 Update `specs/006-content-service-to-node/tasks.md` Phase 9 rows with the PR that moved each Java-homed operation, as each moves
 - [ ] T057 Update the curator-facing documents if any reader-visible behaviour is touched by a cutover (constitution: Development Workflow)
 - [ ] T058 [EXT] Decide the analysis report's species overview figure. The PDF report embeds the retired Fireworks image, drawn by Java's fireworks-exporter; the site's overview is now the Reacfoam (Voronoi) map. Showing that in the report needs analysis-report changed upstream (its owners) or the figure supplied to it.
