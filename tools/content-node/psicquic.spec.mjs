@@ -32,8 +32,24 @@ describe('the registry', () => {
     ]);
   });
 
-  it('is a failure when it is not a registry', () => {
+  it('is a failure when it is not a registry, or not all of one', () => {
     expect(() => registryServices('<html>busy</html>')).toThrow();
+    const whole = registry(service('A', 'true'), service('B', 'true'));
+    expect(() => registryServices(whole.slice(0, whole.indexOf('<service>', 100)))).toThrow();
+  });
+
+  it('reads it as an XML parser does: attributes, empty elements, comments, line ends', () => {
+    const xml = registry(
+      `<service id="1"><name >A\r\nB</name><soapUrl/><restUrl>r</restUrl><active>true</active></service>`,
+      `<!-- <service><name>Gone</name></service> -->`,
+      `<service><name><!-- note -->C</name><active> 1 </active></service>`,
+      `<service><name/><active>false</active></service>`
+    );
+    expect(registryServices(xml)).toEqual([
+      { name: 'A\nB', soapUrl: '', restUrl: 'r', active: true },
+      { name: 'C', soapUrl: null, restUrl: null, active: true },
+      { name: '', soapUrl: null, restUrl: null, active: false },
+    ]);
   });
 });
 
@@ -71,6 +87,7 @@ describe('/interactors/psicquic/resources', () => {
   let registryServer;
   let answer = registry(service('Zed', 'true'), service('alpha', 'false'));
   let status = 200;
+  let hang = false;
   let asked = 0;
   let askedFor;
 
@@ -79,6 +96,7 @@ describe('/interactors/psicquic/resources', () => {
     registryServer = createServer((request, response) => {
       asked += 1;
       askedFor = request.url;
+      if (hang) return;
       if (answer === null) {
         response.statusCode = 503;
         return response.end('down');
@@ -88,7 +106,8 @@ describe('/interactors/psicquic/resources', () => {
       response.end(answer);
     });
     await new Promise((resolve) => registryServer.listen(0, '127.0.0.1', resolve));
-    process.env.PSICQUIC_REGISTRY_URL = `http://127.0.0.1:${registryServer.address().port}/registry/`;
+    // Without its slash, which the registry client adds.
+    process.env.PSICQUIC_REGISTRY_URL = `http://127.0.0.1:${registryServer.address().port}/registry`;
     const { app } = await import('./service.mjs');
     await new Promise((resolve) => {
       server = app().listen(0, '127.0.0.1', resolve);
@@ -125,13 +144,19 @@ describe('/interactors/psicquic/resources', () => {
     // Asked at the registry's STATUS view, as the HUPO client asks.
     expect([asked, askedFor]).toEqual([1, '/registry/registry?action=STATUS&format=xml']);
     // A registry in trouble, though it sends a list: Java's URL.openStream
-    // refuses anything but a 2xx.
+    // refuses a status of 400 or more.
     status = 503;
     await refreshPsicquicResources();
     expect((await get()).status).toBe(500);
     status = 200;
     await refreshPsicquicResources();
     expect((await get()).status).toBe(200);
+    // A registry that does not answer leaves the list in place, as Java's
+    // reading, which has no timeout, does.
+    hang = true;
+    await refreshPsicquicResources({ timeout: 100 });
+    expect((await get()).status).toBe(200);
+    hang = false;
     answer = null;
     await refreshPsicquicResources();
     expect((await get()).status).toBe(500);

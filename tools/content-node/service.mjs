@@ -6778,22 +6778,31 @@ export function resourcesJson(resources) {
  * minutes from start-up; so does this service when started (not when a test
  * imports it).
  */
-export async function refreshPsicquicResources() {
-  const registry = envSetting(
+export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
+  let registry = envSetting(
     'PSICQUIC_REGISTRY_URL',
     'http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/'
   );
+  // The registry client adds the slash a base URL lacks.
+  if (!registry.endsWith('/')) registry += '/';
   try {
     const response = await fetch(`${registry}registry?action=STATUS&format=xml`, {
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(timeout),
     });
-    if (response.status !== 200) {
+    // HttpURLConnection's openStream refuses 400 and above.
+    if (response.status >= 400) {
       await response.body?.cancel();
       throw new Error(`registry answered ${response.status}`);
     }
     psicquicCache = resourcesJson(psicquicResources(registryServices(await response.text())));
   } catch (failure) {
     if (failure instanceof ReferenceError) throw failure;
+    // Java's reading has no timeout: a registry that does not answer leaves
+    // it waiting, and the list it had in place. So does this, until the next.
+    if (failure.name === 'TimeoutError') {
+      console.error('PSICQUIC resources: the registry did not answer; the last list stands');
+      return;
+    }
     psicquicCache = null;
     console.error(`PSICQUIC resources: ${failure.message}`);
   }
@@ -7100,8 +7109,13 @@ if (process.argv[1] && process.argv[1].endsWith('service.mjs')) {
     // whether the service can answer.
     // The PSICQUIC services, read now and every five minutes, as Java's
     // scheduler does.
-    refreshPsicquicResources();
-    setInterval(refreshPsicquicResources, 5 * 60 * 1000).unref();
+    // A mistake of ours is logged, not left to end the process.
+    const refresh = () =>
+      refreshPsicquicResources().catch((error) =>
+        console.error(`PSICQUIC resources: ${error.stack}`)
+      );
+    refresh();
+    setInterval(refresh, 5 * 60 * 1000).unref();
     for (const endpoint of endpoints) {
       if (!endpoint.handler.warms) continue;
       endpoint

@@ -28,10 +28,30 @@ function xmlText(raw) {
     .join('');
 }
 
-/** A child element's text, or null when the service has none. */
+/**
+ * A child element's text, or null when the service has none: an empty
+ * element is "", as JAXB reads it.
+ */
 function child(service, name) {
-  const found = service.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`));
-  return found ? xmlText(found[1]) : null;
+  const found = service.match(
+    new RegExp(`<${name}(?:\\s[^>]*)?(?:/>|>([\\s\\S]*?)</${name}\\s*>)`)
+  );
+  return found ? xmlText(found[1] ?? '') : null;
+}
+
+/**
+ * The document as an XML parser hands it on: line ends normalised to \n,
+ * comments gone -- both outside CDATA sections, which are kept as they are.
+ */
+function xmlDocument(xml) {
+  return xml
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((part) =>
+      part.startsWith('<![CDATA[')
+        ? part
+        : part.replace(/\r\n?/g, '\n').replace(/<!--[\s\S]*?-->/g, '')
+    )
+    .join('');
 }
 
 /**
@@ -39,9 +59,12 @@ function child(service, name) {
  * whether it is up (xs:boolean -- "true" or "1"; anything else, or none, is
  * the primitive's false). Throws on anything that is not a registry.
  */
-export function registryServices(xml) {
-  if (!/<registry[\s>]/.test(xml)) throw new Error('not a PSICQUIC registry');
-  return [...xml.matchAll(/<service>([\s\S]*?)<\/service>/g)].map(([, service]) => {
+export function registryServices(text) {
+  const xml = xmlDocument(text);
+  // All of one: a reading cut short is JAXB's failure to unmarshal.
+  if (!/<registry[\s>][\s\S]*<\/registry\s*>\s*$/.test(xml))
+    throw new Error('not a PSICQUIC registry, or not all of one');
+  return [...xml.matchAll(/<service(?:\s[^>]*)?>([\s\S]*?)<\/service\s*>/g)].map(([, service]) => {
     const active = child(service, 'active')?.trim();
     return {
       name: child(service, 'name'),
