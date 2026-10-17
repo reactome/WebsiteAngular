@@ -19,12 +19,14 @@
 import express from 'express';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { setInterval } from 'node:timers';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { sendReport } from './report.mjs';
+import { registryServices, psicquicResources } from './psicquic.mjs';
 import {
   citationOfEvent,
   eventText,
@@ -1607,6 +1609,16 @@ export const endpoints = [
       if (rows.length === 0) return notFound(request, `No interactors found for accession: ${acc}`);
       return { status: 200, body: interactorsJson([[acc, rows]]), type: 'application/json' };
     },
+  },
+  {
+    path: '/ContentService/interactors/psicquic/resources',
+    // PsicquicInteractionsController.getResources: the PSICQUIC services the
+    // Pathway Browser can draw interactors from, from the last reading of the
+    // registry (refreshPsicquicResources); Java's 500 when there is none.
+    handler: async (request) =>
+      psicquicCache === null
+        ? javaError(request, 500, 'INTERNAL_SERVER_ERROR', "Couldn't load PSICQUIC Resources")
+        : { status: 200, type: 'application/json', body: psicquicCache },
   },
   {
     path: '/ContentService/interactors/static/molecules/details',
@@ -6742,6 +6754,60 @@ function latin1Disposition(response) {
   };
 }
 
+/** The PSICQUIC resources as last read, written; null before a reading, or after one failed. */
+let psicquicCache = null;
+
+/** A PsicquicResource as content-service's NON_EMPTY mapper writes it. */
+export function resourcesJson(resources) {
+  return `[${resources
+    .map((r) =>
+      nonEmptyJson([
+        ['name', r.name],
+        ['soapURL', r.soapUrl],
+        ['restURL', r.restUrl],
+        ['active', r.active],
+      ])
+    )
+    .join(',')}]`;
+}
+
+/**
+ * PsicquicResourceCachingScheduler's one pass: read the registry and keep the
+ * list, or keep nothing when the reading fails -- so the endpoint answers
+ * Java's 500 until a reading succeeds. content-service runs it every five
+ * minutes from start-up; so does this service when started (not when a test
+ * imports it).
+ */
+export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
+  let registry = envSetting(
+    'PSICQUIC_REGISTRY_URL',
+    'http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/'
+  );
+  // The registry client adds the slash a base URL lacks.
+  if (!registry.endsWith('/')) registry += '/';
+  try {
+    const response = await fetch(`${registry}registry?action=STATUS&format=xml`, {
+      signal: AbortSignal.timeout(timeout),
+    });
+    // HttpURLConnection's openStream refuses 400 and above.
+    if (response.status >= 400) {
+      await response.body?.cancel();
+      throw new Error(`registry answered ${response.status}`);
+    }
+    psicquicCache = resourcesJson(psicquicResources(registryServices(await response.text())));
+  } catch (failure) {
+    if (failure instanceof ReferenceError) throw failure;
+    // Java's reading has no timeout: a registry that does not answer leaves
+    // it waiting, and the list it had in place. So does this, until the next.
+    if (failure.name === 'TimeoutError') {
+      console.error('PSICQUIC resources: the registry did not answer; the last list stands');
+      return;
+    }
+    psicquicCache = null;
+    console.error(`PSICQUIC resources: ${failure.message}`);
+  }
+}
+
 /**
  * A handler's answer on the wire. Objects go out as JSON written as Jackson
  * writes it (javaJson, not res.json's JSON.stringify); strings as they are, so
@@ -7041,6 +7107,15 @@ if (process.argv[1] && process.argv[1].endsWith('service.mjs')) {
     // first reader does not pay the four seconds. Failures are left to the
     // request path, which retries: warming must not be the thing that decides
     // whether the service can answer.
+    // The PSICQUIC services, read now and every five minutes, as Java's
+    // scheduler does.
+    // A mistake of ours is logged, not left to end the process.
+    const refresh = () =>
+      refreshPsicquicResources().catch((error) =>
+        console.error(`PSICQUIC resources: ${error.stack}`)
+      );
+    refresh();
+    setInterval(refresh, 5 * 60 * 1000).unref();
     for (const endpoint of endpoints) {
       if (!endpoint.handler.warms) continue;
       endpoint

@@ -235,6 +235,8 @@ describe('the dev server proxy', () => {
     '/ContentService/citation/static/25348405',
     '/ContentService/citation/export?id=R-HSA-109581&ext=bib&isPathway=true&dateAccessed=x',
     '/ContentService/data/instance/R-HSA-141433/referrers',
+    // The PSICQUIC services the Pathway Browser can draw interactors from.
+    '/ContentService/interactors/psicquic/resources',
     // Spring matches a trailing slash, and so must the route once Java is gone.
     '/ContentService/data/instance/R-HSA-141433/referrers/',
   ]) {
@@ -279,6 +281,8 @@ describe('the dev server proxy', () => {
     '/ContentService/interactors/static/molecules/summary',
     '/ContentService/interactors/static/molecule/P04637/pathways',
     '/ContentService/interactors/psicquic/molecules/IntAct/details',
+    '/ContentService/interactors/psicquic/resources/x',
+    '/ContentService/interactors/psicquic/molecule/MINT/P04637/details',
     '/ContentService/interactors/upload/tuple/content',
     '/ContentService/interactors/static/molecule/P04637/details.pdf',
     // Spring's own 404s: no species, or more after it.

@@ -114,10 +114,12 @@ module.exports = {
   '^/ContentService/data/(orthology/[^/?]+/species|orthologies/ids/species)/[^/?]+/?(\\?|$)':
     contentNode,
   // An accession's interactors (details, enhanced details, with entities), and
-  // the diagram's POST for many. PSICQUIC, uploads, tokens and summaries stay
+  // the diagram's POST for many. PSICQUIC queries, uploads, tokens and summaries stay
   // with Java.
   '^/ContentService/interactors/static/(molecule/((enhanced/)?[^/?]+/details|[^/?]+/withEntities)|molecules/details)/?(\\?|$)':
     contentNode,
+  // The PSICQUIC services interactors can be drawn from.
+  '^/ContentService/interactors/psicquic/resources/?(\\?|$)': contentNode,
   // The search box's completions and its "did you mean", the facets of
   // everything and of a query, and the icon library (its facets, pages and
   // icons); every other /search endpoint is the pattern below.
