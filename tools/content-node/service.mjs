@@ -1328,7 +1328,7 @@ export const endpoints = [
      * graph-core's stable-id NoStructures query fails in Java: its parameter
      * reaches Neo4j without the name the query reads. So excludeStructures
      * with a stable id (a REACT_ one too) is Java's 500, said here without
-     * asking the graph; with a dbId it works.
+     * running the subunits query; with a dbId it works.
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));

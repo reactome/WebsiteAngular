@@ -118,6 +118,28 @@ describe('/data/complexes/{resource}/{identifier}', () => {
     expect(last()[1]).toEqual({ identifier: 'P00533', resource: '(?i)uniprot' });
   });
 
+  it('reads both as Spring reads path variables: decoded, matrix parameters cut', async () => {
+    rows = [{ c: entity(3, 'Complex') }];
+    failure = undefined;
+    asked.length = 0;
+    await get('complexes/Uni%20Prot;a=b/P00533;x=1/');
+    expect(last()[1]).toEqual({ identifier: 'P00533', resource: 'Uni Prot' });
+  });
+
+  it("turns only a regular expression Neo4j cannot read into Java's 500", async () => {
+    // Anything else is not Java's to mirror: it is not dressed in Java's words.
+    for (const other of [
+      { code: 'Neo.TransientError.General.DatabaseUnavailable', message: 'Invalid Regex: x' },
+      { code: 'Neo.ClientError.Statement.SemanticError', message: 'Something else' },
+    ]) {
+      failure = Object.assign(new Error(other.message), { code: other.code });
+      const response = await get('complexes/UniProt/P00533');
+      failure = undefined;
+      const body = await response.text();
+      expect([other.code, body.includes("Error code '")]).toEqual([other.code, false]);
+    }
+  });
+
   it('is a 404 naming both, identifier first', async () => {
     rows = [];
     expect(await messages(await get('complexes/uniprot/P00533'))).toEqual([
