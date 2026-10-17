@@ -27,10 +27,11 @@ person's notes, not anywhere the team could read in one place.
 
 ## Before pushing
 
-`scripts/preflight.sh` runs every gate CI runs (types, lint and dead-code
-ratchets, formatting, unit and end-to-end tests, builds), and the pre-push hook
-runs it. Never skip it with `--no-verify`: a skipped hook is how a formatting
-failure reached CI.
+`scripts/preflight.sh` runs the gates CI runs (types, lint and dead-code
+ratchets, formatting, unit tests, builds) and an end-to-end smoke run, and the
+pre-push hook runs it. CI goes further: the whole end-to-end suite, and `nginx
+-t` on every deployment. Never skip the hook with `--no-verify`: a skipped hook
+is how a formatting failure reached CI.
 
 - **Prove a test fails** before trusting it passes: undo the fix and watch it
   fail, or mutate the code and watch the test catch it (constitution III).
@@ -47,7 +48,9 @@ failure reached CI.
   (`proxy.conf.js`). `deploy/nginx/routes.spec.ts` checks they agree, and every
   node route takes a trailing slash, as Spring's routes do.
 - **No fallback:** a route node answers is never answered by Java as a fallback.
-  Endpoints that stay in Java are listed in `specs/010-java-services`.
+  Which operations stay in Java, and the rule that decides it, are in
+  `specs/010-java-services`; the operation-by-operation list is Phase 9 of
+  `specs/006-content-service-to-node/tasks.md`.
 
 ## nginx
 
