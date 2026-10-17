@@ -22,9 +22,17 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
-import { read, configured, close } from './graph.mjs';
+import { read, configured, close, envSetting } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { sendReport } from './report.mjs';
+import {
+  citationOfEvent,
+  eventText,
+  formatEventCitation,
+  formatStaticCitation,
+  imageText,
+  staticCitationFrom,
+} from './citation.mjs';
 import {
   enhancedQuery,
   findByIdParameters,
@@ -2313,6 +2321,106 @@ export const endpoints = [
           })
         )
       );
+    },
+  },
+  {
+    path: '/ContentService/citation/pathway/{id}',
+    // CitationController.pathwayCitation: the Pathway Browser's "cite this"
+    // -- the pathway's citation and its image's, as a HashMap writes them;
+    // {} for an id that is no event.
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const date = queryValues(request, 'dateAccessed');
+      if (date.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('dateAccessed'));
+      const { citation, failure } = await eventCitationOrFailure(request, raw);
+      if (failure) return failure;
+      return {
+        status: 200,
+        type: 'application/json',
+        body: citation ? pathwayCitations(citation, date.join(',')) : {},
+      };
+    },
+  },
+  {
+    path: '/ContentService/citation/static/{id}',
+    // CitationController.staticCitation: a paper's citation, by PubMed id,
+    // from Europe PMC; Java's 500 text when it cannot be had.
+    handler: async (request) => {
+      const citation = await staticCitationFor(pathId(rawSegment(request, 4)));
+      if (!citation)
+        return {
+          status: 500,
+          type: 'text/plain;charset=UTF-8',
+          body: 'Unable to fetch static citation',
+        };
+      let body;
+      try {
+        body = formatStaticCitation(citation, 'txt', null);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
+      return { status: 200, type: 'text/plain;charset=UTF-8', body };
+    },
+  },
+  {
+    path: '/ContentService/citation/export',
+    // CitationController.export: a citation to download as BibTeX, RIS or
+    // text, a pathway's or a paper's. Nothing to cite is an empty 200.
+    handler: async (request) => {
+      const flag = queryValues(request, 'isPathway');
+      if (flag.length === 0)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is not present"
+        );
+      const isPathway = springBoolean(flag);
+      if (isPathway.error) return javaError(request, 400, 'BAD_REQUEST', isPathway.error);
+      if (isPathway.value === undefined)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is present but converted to null"
+        );
+      const values = {};
+      for (const name of ['id', 'ext', 'dateAccessed']) {
+        const given = queryValues(request, name);
+        if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
+        values[name] = given.join(',');
+      }
+      let citation;
+      if (isPathway.value) {
+        const found = await eventCitationOrFailure(request, values.id);
+        if (found.failure) return found.failure;
+        citation = found.citation;
+      } else citation = await staticCitationFor(values.id);
+      if (!citation) return { status: 200 };
+      const format = isPathway.value ? formatEventCitation : formatStaticCitation;
+      let body;
+      try {
+        body = format(citation, values.ext, values.dateAccessed);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
+      const [extension, type] =
+        values.ext === 'bib'
+          ? ['bib', 'application/x-bibtex']
+          : values.ext === 'ris'
+            ? ['ris', 'application/x-research-info-systems']
+            : ['txt', 'text/plain'];
+      return {
+        status: 200,
+        type: `${type};charset=UTF-8`,
+        headers: {
+          'Content-Disposition': tomcatHeader(
+            `attachment; filename="reactome_citation_${values.id}.${extension}"`
+          ),
+        },
+        body,
+      };
     },
   },
   {
@@ -6385,6 +6493,100 @@ function searchAnswer(request, query, result) {
   return { ...missing, body: javaJson(envelope) };
 }
 
+/**
+ * CitationController.getEventCitationObject: an event's citation from its
+ * enhanced object (graph-core's findEnhancedObjectById); undefined for an id
+ * that is no event. What goes into it is citationOfEvent's.
+ */
+async function eventCitationFor(raw) {
+  const id = inDepthId(raw);
+  if (!id) return undefined;
+  const [row] = await read(
+    enhancedQuery({
+      idType: id.idType,
+      summarise: false,
+      includeDisease: true,
+      outgoingOnly: false,
+    }),
+    { id: id.id }
+  );
+  if (!row) return undefined;
+  const event = mapResult(row);
+  if (!isA(event.schemaClass, 'Event')) return undefined;
+  const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+  const release = String((await version.handler({ params: {}, query: {} })).body);
+  return citationOfEvent(event, raw, release, isA(event.schemaClass, 'Pathway'));
+}
+
+/**
+ * An event's citation, or Java's GlobalExceptionHandler 500 when Java's
+ * getEventCitationObject throws -- no release date, or a person with no
+ * initial.
+ */
+async function eventCitationOrFailure(request, raw) {
+  try {
+    return { citation: await eventCitationFor(raw) };
+  } catch (failure) {
+    return { failure: citationFailure(request, failure) };
+  }
+}
+
+/** GlobalExceptionHandler's 500 for what citation.mjs throws as Java does; anything else is ours. */
+function citationFailure(request, failure) {
+  if (failure.unexpected) return unexpectedFailure(request);
+  if (failure.javaMessage)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);
+  throw failure;
+}
+
+/** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
+function tomcatHeader(text) {
+  return [...text]
+    .map((char) => {
+      const code = char.codePointAt(0);
+      if (code > 0xff) return '?';
+      return (code < 0x20 && char !== '\t') || code === 0x7f ? ' ' : char;
+    })
+    .join('');
+}
+
+/** The two citations of /citation/pathway/{id}, in the order Java's HashMap writes them. */
+export function pathwayCitations(citation, date) {
+  const texts = {
+    pathwayCitation: eventText(citation, date),
+    imageCitation: imageText(citation, date),
+  };
+  const body = {};
+  for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys()) body[key] = texts[key];
+  return body;
+}
+
+/** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
+async function staticCitationFor(id) {
+  const query = new URLSearchParams();
+  query.set('query', `src:med ext_id:${id}`);
+  query.set('format', 'json');
+  query.set('resultType', 'core');
+  const base = envSetting(
+    'EUROPE_PMC_URL',
+    'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
+  );
+  // Java's try covers the request and every read of the answer, so anything
+  // Europe PMC sends that Java cannot read is "unable to fetch". Only a name
+  // we got wrong is a mistake of ours.
+  try {
+    const response = await fetch(`${base}?${query}`, { signal: AbortSignal.timeout(30_000) });
+    if (response.status !== 200) {
+      await response.body?.cancel();
+      return undefined;
+    }
+    return staticCitationFrom(await response.json());
+  } catch (failure) {
+    if (failure instanceof ReferenceError) throw failure;
+    return undefined;
+  }
+}
+
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
 function facetAnswer(answer) {
   const mapping = facetMapping(answer);
@@ -6508,6 +6710,38 @@ function buildId() {
   }
 }
 
+const LATIN1_DISPOSITION = Symbol('latin1Disposition');
+
+/**
+ * Node reads a Content-Disposition value back as UTF-8 when the head goes
+ * out with a body's bytes counted (nodejs/node#46528) -- so the Latin-1 byte
+ * Tomcat writes for é became U+FFFD. Decided at end(), on the bytes Node is
+ * given (a 304's '' and Express's bodiless HEAD are not converted, a HEAD's
+ * Buffer is): then the value goes in as its UTF-8 bytes, and comes out é as
+ * long as the head is written on its own, as Latin-1 -- which it is, because
+ * Express hands end() a Buffer whenever it computes an ETag. Installed once
+ * per response, so a second writeResult (an error after a first) does not
+ * convert twice.
+ */
+function latin1Disposition(response) {
+  if (response[LATIN1_DISPOSITION]) return;
+  response[LATIN1_DISPOSITION] = true;
+  const end = response.end.bind(response);
+  response.end = (chunk, ...rest) => {
+    const encoding = typeof rest[0] === 'string' ? rest[0] : 'utf8';
+    const bytes =
+      typeof chunk === 'string'
+        ? Buffer.byteLength(chunk, encoding)
+        : chunk && typeof chunk !== 'function'
+          ? chunk.length
+          : 0;
+    const value = bytes > 0 && !response.headersSent && response.getHeader('Content-Disposition');
+    if (typeof value === 'string')
+      response.setHeader('Content-Disposition', Buffer.from(value, 'utf8').toString('latin1'));
+    return end(chunk, ...rest);
+  };
+}
+
 /**
  * A handler's answer on the wire. Objects go out as JSON written as Jackson
  * writes it (javaJson, not res.json's JSON.stringify); strings as they are, so
@@ -6519,8 +6753,9 @@ function buildId() {
 export function writeResult(response, result) {
   response.status(result.status);
   if (result.type) response.type(result.type);
-  for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
   const body = result.body !== undefined || Boolean(result.serialised);
+  for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
+  latin1Disposition(response);
   const redirect = result.status >= 300 && result.status < 400;
   if (body && !redirect && response.req && downloadGuard(response.req))
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');

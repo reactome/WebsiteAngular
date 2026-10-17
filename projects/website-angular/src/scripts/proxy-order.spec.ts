@@ -223,6 +223,9 @@ describe('the dev server proxy', () => {
     '/ContentService/search/fireworks/?query=MAD2&species=Homo%20sapiens',
     '/ContentService/search/query?query=TP53&cluster=true&Start%20row=0&rows=30',
     '/ContentService/search/query/paginated?query=TP53&page=1&rowCount=20',
+    '/ContentService/citation/pathway/R-HSA-109581?dateAccessed=x',
+    '/ContentService/citation/static/25348405',
+    '/ContentService/citation/export?id=R-HSA-109581&ext=bib&isPathway=true&dateAccessed=x',
     '/ContentService/data/instance/R-HSA-141433/referrers',
     // Spring matches a trailing slash, and so must the route once Java is gone.
     '/ContentService/data/instance/R-HSA-141433/referrers/',
@@ -257,6 +260,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/fireworks/flag/x?query=KNTC1',
     '/ContentService/search/fireworks/x?query=KNTC1',
     '/ContentService/search/pathways/of/227785/x',
+    '/ContentService/citation/export/R-HSA-109581?ext=bib',
+    '/ContentService/citation/download',
     '/ContentService/data/instance/R-HSA-141433',
     '/ContentService/data/instance/R-HSA-141433/referrers/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',
