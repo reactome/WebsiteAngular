@@ -62,6 +62,19 @@ describe('the three variants', () => {
     });
 });
 
+describe('/entity/{id}', () => {
+  it("is graph-core's three arms as written, in a species", async () => {
+    rows = [{ p: node(1, 'A') }];
+    asked.length = 0;
+    await get('entity/R-HSA-1?species=9606');
+    expect(oneLine(last()[0])).toBe(
+      'MATCH (:DatabaseObject{stId: $id})<-[:regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*]-()<-[:hasEvent]-(p:Pathway)-[:species]->(:Species{taxId:$taxId}) RETURN DISTINCT p' +
+        ' UNION MATCH (:ReactionLikeEvent{stId: $id})<-[:hasEvent]-(p:Pathway)-[:species]->(:Species{taxId:$taxId}) RETURN DISTINCT p' +
+        ' UNION MATCH (p:Pathway{stId: $id})-[:species]->(:Species{taxId:$taxId}) RETURN DISTINCT p'
+    );
+  });
+});
+
 describe('/diagram/entity/{id}', () => {
   it('keeps the species patterns as graph-core writes them, the first without a label', async () => {
     rows = [{ m: node(1, 'A') }];
