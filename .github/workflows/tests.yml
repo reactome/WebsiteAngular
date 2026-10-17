@@ -100,6 +100,17 @@ jobs:
       - name: E2E recordings
         run: npm run check:har
 
+  nginx:
+    # nginx -t on the image each deployment builds. The unit tests read the
+    # routes as text; only nginx says whether they parse -- an unquoted ';' in
+    # a location regex passed them all and was refused at deploy time.
+    name: nginx configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: nginx -t, dev, release and production
+        run: deploy/nginx/test-config.sh
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news

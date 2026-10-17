@@ -34,3 +34,6 @@ COPY deploy/nginx/${NGINX_ENV}.conf /etc/nginx/conf.d/default.conf
 #     docker compose build nginx
 #     docker compose run --rm nginx nginx -t
 #     docker compose up -d nginx
+#
+# CI does the same for every deployment, with stand-in certificates:
+# deploy/nginx/test-config.sh.

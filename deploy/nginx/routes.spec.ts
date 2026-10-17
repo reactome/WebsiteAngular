@@ -25,8 +25,13 @@ const conf = readFileSync(join(__dirname, 'common/routes-core.conf'), 'utf8');
 
 type Location = { kind: string; path: string; node: boolean };
 const locations: Location[] = [
-  ...conf.matchAll(/^location\s+(=|~\*?|\^~)?\s*(\S+)\s*\{([^}]*)\}/gm),
-].map((m) => ({ kind: m[1] ?? '', path: m[2], node: m[3].includes('content-node-proxy.conf') }));
+  ...conf.matchAll(/^location\s+(=|~\*?|\^~)?\s*("[^"]*"|\S+)\s*\{([^}]*)\}/gm),
+].map((m) => ({
+  kind: m[1] ?? '',
+  // A quoted path is nginx's way to write one holding ';' or '{'.
+  path: m[2].replace(/^"(.*)"$/, '$1'),
+  node: m[3].includes('content-node-proxy.conf'),
+}));
 
 /** nginx: an exact location, else the first regex in file order, else the prefix (Java). */
 function nginxSendsToNode(url: string): boolean {
