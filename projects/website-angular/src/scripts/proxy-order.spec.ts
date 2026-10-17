@@ -223,6 +223,7 @@ describe('the dev server proxy', () => {
     '/ContentService/search/fireworks/?query=MAD2&species=Homo%20sapiens',
     '/ContentService/search/query?query=TP53&cluster=true&Start%20row=0&rows=30',
     '/ContentService/search/query/paginated?query=TP53&page=1&rowCount=20',
+    '/ContentService/data/instance/R-HSA-141433/referrers',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       expect(await targetOf(url)).toBe(contentNode);
@@ -254,6 +255,8 @@ describe('the dev server proxy', () => {
     '/ContentService/search/fireworks/flag/x?query=KNTC1',
     '/ContentService/search/fireworks/x?query=KNTC1',
     '/ContentService/search/pathways/of/227785/x',
+    '/ContentService/data/instance/R-HSA-141433',
+    '/ContentService/data/instance/R-HSA-141433/referrers/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',
     // The interactor endpoints node does not serve.
     '/ContentService/interactors/static/molecule/P04637/summary',
