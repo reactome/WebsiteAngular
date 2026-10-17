@@ -88,6 +88,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/mapping/UniProt/P04637/reactions',
     '/ContentService/data/mapping/UniProt/P04637/pathways?species=9606',
     '/ContentService/data/mapping/GO/GO:0006915/pathways/',
+    '/ContentService/references/mapping/P36897',
+    '/ContentService/references/mapping/P36897/xrefs?dbFilter=ENSEMBL',
+    '/ContentService/references/mapping/xrefs?page=1&pageSize=10',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -340,6 +343,9 @@ describe('the dev server proxy', () => {
     // Only an identifier's reactions and pathways.
     '/ContentService/data/mapping/UniProt/P04637',
     '/ContentService/data/mapping/UniProt/P04637/pathways/x',
+    // Only an identifier's reference entities and cross references.
+    '/ContentService/references/mapping/P36897/xrefs/x',
+    '/ContentService/references/other',
     // Only a complex's subunits, and the complexes of an identifier.
     '/ContentService/data/complex/R-HSA-5672601',
     '/ContentService/data/complexes/UniProt',
