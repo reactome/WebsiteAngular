@@ -13,6 +13,8 @@ test-results
 tools/render/fixtures
 
 # Generated, not authored
+# Written by tools/content-node/snapshot-jsoup/JsoupTables.java from Jsoup's jar.
+tools/content-node/jsoup-tables.json
 projects/website-angular/content-dist
 projects/website-angular/tina/__generated__
 projects/website-angular/tina/tina-lock.json

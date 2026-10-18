@@ -20,7 +20,7 @@
  *    <br> and after a block followed by text, the whole trimmed.
  *
  * The tables (named entities, which tags are blocks) are Jsoup's own, read
- * from its jar into jsoup-tables.json.
+ * from its jar into jsoup-tables.json by snapshot-jsoup/JsoupTables.java.
  *
  * Checked against Jsoup itself over every summation in the graph (21,634
  * texts), not against a reading of the HTML specification: where this
