@@ -13,6 +13,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { schemaClassOf, supertypes } from './schema.mjs';
+import { JavaHashMap } from './java-hashmap.mjs';
 
 let snapshot;
 /** domain-snapshot.json, read on first use: snapshot-domain.mjs imports this file to write it. */
@@ -52,8 +53,9 @@ class Entity {
 
 /** A relationship with properties (graph-core's Has subclasses): Input, HasComponent... */
 class Relation {
-  constructor(relationClass, element, properties, type) {
+  constructor(relationClass, element, properties, type, relationshipId) {
     this.schemaClass = relationClass;
+    this.relationshipId = relationshipId;
     this.element = element;
     this.stoichiometry = properties.stoichiometry ?? 1;
     this.order = properties.order ?? 0;
@@ -119,6 +121,44 @@ export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
 export function mapResult({ root, nodes, relationships: returned, order }) {
+  const state = newState();
+  readRecord(state, { root, nodes, relationships: returned, order });
+  return map(state, root, undefined);
+}
+
+/**
+ * What SDN's mapping makes of a query result of many records -- one object
+ * per record, as Neo4jTemplate.findAll returns them -- read with one
+ * converter, so with one KnownObjects: a node is one object across every
+ * record, and an object met again in a later record has its relationships
+ * filled again from that record (DefaultNeo4jEntityConverter.map, the
+ * alreadyMappedInPreviousRecord branch; see refill in map). The relationships
+ * a record names are counted across records as SDN counts them.
+ */
+export function mapResults(records) {
+  const state = newState();
+  return records.map((record) => {
+    // KnownObjects.nextRecord: what is known so far is from a previous record.
+    for (const id of state.current) state.previous.add(id);
+    state.current.clear();
+    readRecord(state, record);
+    return map(state, record.root, undefined);
+  });
+}
+
+/** One KnownObjects, for the records a mapping reads. */
+function newState() {
+  return {
+    known: new Map(),
+    relations: new Map(),
+    processed: new Map(),
+    previous: new Set(),
+    current: new Set(),
+  };
+}
+
+/** A record's nodes and relationships, as the mapping of it reads them. */
+function readRecord(state, { root, nodes, relationships: returned, order }) {
   // extractRelationships / extractNodes: each relationship and node once, in
   // the order of first appearance -- the nodes of list columns first, then
   // single-node columns, so the root sits where it first appears in a list
@@ -139,15 +179,7 @@ export function mapResult({ root, nodes, relationships: returned, order }) {
   const position = new Map();
   for (const id of [...(order ?? listed.map((node) => node.id)), root.id])
     if (!position.has(id)) position.set(id, position.size);
-  const state = {
-    byId,
-    position,
-    relationships,
-    removed: new Set(),
-    processed: new Map(),
-    known: new Map(),
-    byEnd: new Map(),
-  };
+  Object.assign(state, { byId, position, relationships, removed: new Set(), byEnd: new Map() });
   for (const relationship of relationships) {
     for (const key of [
       `OUTGOING ${relationship.type} ${relationship.start}`,
@@ -157,7 +189,6 @@ export function mapResult({ root, nodes, relationships: returned, order }) {
       state.byEnd.get(key).push(relationship);
     }
   }
-  return map(state, root, undefined);
 }
 
 /**
@@ -194,6 +225,7 @@ function map(state, node, target) {
     const entity = new Entity(from.id, schemaClass, from.props);
     // Known before its fields are filled, so a field leading back finds it.
     state.known.set(from.id, entity);
+    state.current.add(from.id);
     const graph = SNAPSHOT().graph[schemaClass];
     if (graph) {
       for (const field of graph.fields)
@@ -203,7 +235,27 @@ function map(state, node, target) {
     }
     return entity;
   };
-  const root = make(node, target);
+  // An object mapped in a previous record: its relationships filled again
+  // from this one (populateProperties with objectAlreadyMapped).
+  const refill = (entity) => {
+    const graph = SNAPSHOT().graph[entity.schemaClass];
+    if (graph)
+      frames.push({
+        entity,
+        fields: graph.fields.filter((field) => field.length > 2),
+        at: 0,
+        refill: true,
+      });
+    return entity;
+  };
+  // DefaultNeo4jEntityConverter.map: a known object as it is, unless it is
+  // from a previous record; a new one made.
+  const reach = (from, to) => {
+    const known = state.known.get(from.id);
+    if (!known) return make(from, to);
+    return state.previous.has(from.id) ? refill(known) : known;
+  };
+  const root = reach(node, target);
   while (frames.length) {
     const frame = frames[frames.length - 1];
     if (!frame.matching) {
@@ -211,13 +263,28 @@ function map(state, node, target) {
         frames.pop();
         continue;
       }
+      const [name, , , , collection] = frame.fields[frame.at];
+      const existing = frame.entity.fields[name];
+      // A refilled object keeps a scalar it has; a collection it has is
+      // merged with this record's (createInstanceOfRelationships without
+      // fetching more); an empty one is filled as usual.
+      frame.merging = false;
+      if (frame.refill && existing !== undefined && existing !== null) {
+        if (collection === '' || !Array.isArray(existing)) {
+          frame.at += 1;
+          continue;
+        }
+        if (existing.length) frame.merging = true;
+      }
       frame.matching = matchingFor(state, frame.entity, frame.fields[frame.at]);
       frame.next = 0;
       frame.found = [];
     }
     const [name, , direction, target, collection, relationClass] = frame.fields[frame.at];
     if (frame.next === frame.matching.length) {
-      frame.entity.fields[name] = collect(frame.found, collection, relationClass);
+      frame.entity.fields[name] = frame.merging
+        ? merged(frame.entity.fields[name], frame.found, collection, relationClass)
+        : collect(frame.found, collection, relationClass);
       frame.matching = undefined;
       frame.at += 1;
       continue;
@@ -230,15 +297,50 @@ function map(state, node, target) {
     else state.processed.set(key, used + 1);
     const otherId = direction === 'OUTGOING' ? relationship.end : relationship.start;
     // A new entity pushes its frame: its fields are filled before this one goes on.
-    const other =
-      otherId === frame.entity.id
-        ? frame.entity
-        : (state.known.get(otherId) ?? make(state.byId.get(otherId), target));
-    frame.found.push(
-      relationClass ? new Relation(relationClass, other, relationship.props) : other
-    );
+    let other;
+    if (otherId === frame.entity.id) other = frame.entity;
+    else if (frame.merging)
+      other = state.known.get(otherId) ?? make(state.byId.get(otherId), target);
+    else other = reach(state.byId.get(otherId), target);
+    if (!relationClass) {
+      frame.found.push(other);
+      continue;
+    }
+    // A relationship's properties are one object too, across records.
+    const relationKey = `${direction} ${relationship.id}`;
+    let relation = state.relations.get(relationKey);
+    if (!relation) {
+      relation = new Relation(relationClass, other, relationship.props, undefined, relationship.id);
+      state.relations.set(relationKey, relation);
+    }
+    frame.found.push(relation);
   }
   return root;
+}
+
+/**
+ * A refilled object's collection: what it held and what this record adds,
+ * gathered in a HashMap by id -- a relationship's own id, or the object's
+ * dbId -- and put in a new collection of the same kind in that map's order
+ * (DefaultNeo4jEntityConverter.mergeCollections).
+ */
+function merged(existing, provided, collection, relationClass) {
+  const longHash = (id) => {
+    const big = BigInt.asUintN(64, BigInt(id));
+    return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
+  };
+  const map = new JavaHashMap({ hash: longHash });
+  const values = new Map();
+  for (const item of [...existing, ...provided]) {
+    const id = relationClass ? item.relationshipId : Number(item.properties.dbId);
+    map.set(id, true);
+    values.set(id, item);
+  }
+  return collect(
+    [...map.keys()].map((id) => values.get(id)),
+    collection,
+    relationClass
+  );
 }
 
 /** One field's relationships, in candidate order (see map). */
@@ -936,15 +1038,16 @@ function aggregate(relationClass, entities) {
  * again too -- its `isLoaded && OUTGOING` guard compares the annotation with
  * the Direction enum, which is never equal -- but findById already loaded
  * every outgoing relationship, unfiltered, so that fetch finds nothing more
- * and is skipped here; only incoming ones are fetched.
+ * and is skipped here; only incoming ones are fetched -- unless the object
+ * came from a query that did not load them (`outgoingLoaded` false).
  * aroundReactomeProjectedRelationship: a getter whose value is empty first
  * calls the getter it names, then is called again.
  */
-export async function attributeValue(entity, getter, lazyLoad) {
+export async function attributeValue(entity, getter, lazyLoad, { outgoingLoaded = true } = {}) {
   let value = getterResult(entity, getter);
   if (getter.projected && isEmptyResult(value)) {
     const named = attributeGetter(entity.schemaClass, getter.projected.slice(3));
-    if (named) await attributeValue(entity, named, lazyLoad);
+    if (named) await attributeValue(entity, named, lazyLoad, { outgoingLoaded });
     value = getterResult(entity, getter);
   }
   if (!isEmptyResult(value)) return value;
@@ -957,7 +1060,7 @@ export async function attributeValue(entity, getter, lazyLoad) {
   const returnsObjects = COLLECTIONS.has(getter.returns)
     ? getter.element !== '' && isDomainObject(getter.element)
     : isDomainObject(getter.returns);
-  if (!returnsObjects || direction !== 'INCOMING') return value;
+  if (!returnsObjects || (direction !== 'INCOMING' && outgoingLoaded)) return value;
   const loaded = await lazyLoad(entity.properties.dbId, type, direction, getter, collection);
   if (relationClass) entity.fields[fieldName] = aggregate(relationClass, loaded);
   else if (collection === '') entity.fields[fieldName] = loaded[0];

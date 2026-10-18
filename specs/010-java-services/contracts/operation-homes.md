@@ -42,8 +42,8 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/participants/{id}`                                 | node — ported          | graph or search index                                                                         |
 | GET    | `/data/participants/{id}/participatingPhysicalEntities`   | node — ported          | graph or search index                                                                         |
 | GET    | `/data/participants/{id}/referenceEntities`               | node — ported          | graph or search index                                                                         |
-| GET    | `/data/pathway/{id}/containedEvents`                      | node — to port         | graph or search index                                                                         |
-| GET    | `/data/pathway/{id}/containedEvents/{attributeName}`      | node — to port         | graph or search index                                                                         |
+| GET    | `/data/pathway/{id}/containedEvents`                      | node — ported          | graph or search index                                                                         |
+| GET    | `/data/pathway/{id}/containedEvents/{attributeName}`      | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathways/low/diagram/entity/{id}`                  | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathways/low/diagram/entity/{id}/allForms`         | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathways/low/entity/{id}`                          | node — ported          | graph or search index                                                                         |
