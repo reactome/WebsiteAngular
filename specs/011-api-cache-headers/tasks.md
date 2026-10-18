@@ -25,8 +25,8 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`.
-- [ ] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted.
+- [x] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`.
+- [x] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted.
 
 ---
 

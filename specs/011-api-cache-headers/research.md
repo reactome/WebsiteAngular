@@ -1,6 +1,6 @@
 # Research: Cache headers for the content API
 
-Measured 18 Oct 2026 from the code (`tools/content-node/service.mjs`, line numbers as of `main` at c897ffb6), from Java's published API description, from the recorded e2e traffic (`e2e/har/`), from 4 requests to beta, and from Cloudflare's documentation. Each Cloudflare claim cites its page; the quotes came through a summariser, so they are checked again before anything relies on them (T001).
+Measured 18 Oct 2026 from the code (`tools/content-node/service.mjs`, line numbers as of `main` at c897ffb6), from Java's published API description, from the recorded e2e traffic (`e2e/har/`), from 4 requests to beta, and from Cloudflare's documentation. Each Cloudflare claim cites its page, and each was checked against it on 18 Oct 2026 (T001).
 
 ## R1. Where one labelling step sees every answer
 
@@ -51,17 +51,17 @@ The API page roots also get `no-store` (R7). The rule that decided the label goe
 - **`private`** "must not be stored by a shared cache like Cloudflare".
 - **`no-store`:** "Will not cache".
 - **`no-cache` is avoided.** Cloudflare's pages disagree on whether it is stored: [cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/) says "caches and always revalidates", while [default cache behavior](https://developers.cloudflare.com/cache/concepts/default-cache-behavior/) says it is not cached.
-- **A one-year `s-maxage`:** no maximum is documented. If Cloudflare caps it, the cost is a re-fetch, nothing worse.
+- **A one-year `s-maxage`:** no maximum is documented for either TTL. If Cloudflare caps it, the cost is a re-fetch, nothing worse. (Free's _minimum_ Edge Cache TTL, 2 hours, applies to a TTL set in a rule, not to ours.)
 - **Today's headers:**
   - Node sends no `Cache-Control`, only Express's weak ETag. That stays, and Cloudflare revalidates with it.
   - nginx adds and strips nothing: no `add_header`, `proxy_hide_header`, `expires` or `proxy_cache` in `deploy/nginx`. `gzip` is on without `gzip_vary`.
   - Measured on beta: `/data/diseases` gives 200 with a weak ETag, and the same ETag in `If-None-Match` gives 304.
 - **Settings in the Cache Rule itself,** which is not ours to make (added to #527):
-  - **Edge TTL:** "use cache-control header if present". An Edge TTL override would override `s-maxage`.
-  - **Browser TTL:** "respect origin". Cloudflare otherwise "respects whichever value is higher" of its own Browser TTL, 4 hours by default, and our `max-age` ([edge and browser TTL](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)).
+  - **Edge TTL:** "use cache-control header if present". "Edge Cache TTL Cache Rules override `s-maxage` and disable revalidation directives if present" ([cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/)).
+  - **Browser TTL:** "respect origin". Cloudflare otherwise replaces an origin `max-age` that "is less than the Browser Cache TTL Cloudflare setting", 4 hours by default, so our 1 hour would become 4 ([edge and browser TTL](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)). "Browsers ignore `s-maxage`."
   - **No "status code TTL"**, which would override the origin.
   - **"Sort query string" on.** On Free it is a cache-key option, so parameter order stops mattering.
-- **Vary is ignored by Cloudflare** "by default" ([vary](https://developers.cloudflare.com/cache/concepts/vary/)), so none is sent.
+- **No Vary is sent.** Cloudflare's key is the URL and "a handful of specific headers", and "a response containing `Vary: *` always bypasses cache" ([vary](https://developers.cloudflare.com/cache/concepts/vary/)), so none is added.
 - **HEAD shares the GET's cache entry:** Cloudflare "converts `HEAD` requests to `GET` requests for cacheable requests".
 
 **Alternatives considered**:
