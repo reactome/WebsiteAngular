@@ -243,3 +243,15 @@ The record takes a documented endpoint's query parameters from Java's descriptio
 | `parameter:diagram` | 4     | `diagram=…` on `/search/diagram/{diagram}`, which does not declare it (the spread parameters in the search component) |
 | `parameter:scope`   | 4     | `scope=…` on `/search/diagram/{pathwayId}/flag`, which does not declare it                                            |
 | `parameter:fields`  | 2     | `fields=%20DB_ID`, with a leading space                                                                               |
+
+## R12. Invalid inputs against Java (run 18 Oct 2026)
+
+The corpus (`tools/content-node/invalid-inputs.mjs`) had 292 requests: every declared parameter of every GET endpoint that is not marked never stored, each given values Java would not take as written. It used real objects only. It ran against node on its own port and against Java, sequentially, in three batches of 100 with 30 seconds between.
+
+| Verdict                              | Count |                                                                                                                                                                                                                                  |
+| ------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Byte-identical                       | 279   |                                                                                                                                                                                                                                  |
+| `query/enhanced/v2` in a nested view | 9     | The declared difference (routes-core.conf): identical as data, with getter-only keys in the JVM's order of the day. Jackson's `@id` numbers follow that order. The valid sample differs the same way, so no bad value causes it. |
+| A Solr failure's 500                 | 4     | Declared in `fromSolr`. Java's message repeats Solr's internals: its server address, and the parameters it was sent. Node's says only "Solr exception occurred". Same status, and never stored.                                  |
+
+No fix was needed (T007).

@@ -55,14 +55,14 @@ The pull request that completes a task ticks it here, with its number.
 
   Add a test to `parameters.spec.mjs` that names each one.
 
-- [ ] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint:
+- [x] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint:
   - a non-number for a number, `-1` and `0` for a page, an offset past the end;
   - an unknown enum value, an empty value, an unknown species;
   - `on` for a boolean.
 
   Each endpoint uses a sample id from its `sample`.
 
-- [ ] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6.
+- [x] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6.
 - [ ] T008 Review, CI, merge and tick T001–T007. No beta check is needed: nothing is served differently yet.
 
 **Checkpoint**: the record exists and agrees with Java's description. Node answers bad input as Java does.
