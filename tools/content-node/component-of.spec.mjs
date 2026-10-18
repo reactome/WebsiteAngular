@@ -65,7 +65,7 @@ describe('/data/entity/{id}/componentOf', () => {
     expect(last()[1]).toEqual({ id: 'R-HSA-1' });
   });
 
-  it('reads the id as Spring reads a path variable: decoded, a matrix parameter cut', async () => {
+  it('reads the id as Spring reads a path variable: decoded', async () => {
     rows = [
       {
         type: 'input',
@@ -76,7 +76,7 @@ describe('/data/entity/{id}/componentOf', () => {
       },
     ];
     asked.length = 0;
-    await get('R-HSA-69620;x=1');
+    await get('R-HSA-%36%39620');
     expect(last()[1]).toEqual({ id: 'R-HSA-69620' });
   });
 

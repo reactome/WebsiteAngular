@@ -140,6 +140,16 @@ Also worth using on Free, in descending value: Bot Fight Mode, and 3 legacy Page
 Rules (`Cache Everything` + `Ignore Query String`) spent on the busiest
 parameter-free prefixes.
 
+### A path has one form
+
+The query string is tolerated, because real links carry `?utm_source=` and the
+like. The path is not: a matrix parameter (`/data;jsessionid=x/diseases`) is
+Spring's 404, though Java would drop it and answer. Nothing sends one on
+purpose -- `jsessionid` was how old Java servers tracked a session without
+cookies, and this API has no sessions -- and every way of writing a path is
+one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
+(spec 006 T008). An encoded `;` (`%3B`) is part of an id, as it is to Java.
+
 ### Rejected, and why
 
 - **Rejecting unknown parameters with a 400.** Breaks consumers we cannot

@@ -14,7 +14,7 @@ How content-node forwards a ContentService operation homed in `java-library` ([o
 | Part                                                                                          | Rule                                                                                                         |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Method                                                                                        | any, unchanged                                                                                               |
-| Path and query                                                                                | as received (`originalUrl`), undecoded, matrix parameters kept                                               |
+| Path and query                                                                                | as received (`originalUrl`), undecoded (a raw `;` is refused before)                                         |
 | Body                                                                                          | streamed, not buffered, with no size cap in node. nginx's 64 MB cap and Java's own 50 MiB cap and 413 apply. |
 | Host                                                                                          | unchanged. Java builds error `url`s and PDF server names from it.                                            |
 | X-Forwarded-For                                                                               | the client address appended                                                                                  |

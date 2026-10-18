@@ -118,11 +118,11 @@ describe('/data/complexes/{resource}/{identifier}', () => {
     expect(last()[1]).toEqual({ identifier: 'P00533', resource: '(?i)uniprot' });
   });
 
-  it('reads both as Spring reads path variables: decoded, matrix parameters cut', async () => {
+  it('reads both as Spring reads path variables: decoded', async () => {
     rows = [{ c: entity(3, 'Complex') }];
     failure = undefined;
     asked.length = 0;
-    await get('complexes/Uni%20Prot;a=b/P00533;x=1/');
+    await get('complexes/Uni%20Prot/P00533/');
     expect(last()[1]).toEqual({ identifier: 'P00533', resource: 'Uni Prot' });
   });
 

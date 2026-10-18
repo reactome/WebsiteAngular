@@ -94,7 +94,7 @@
 ### Node's pass-through: tests first
 
 - [ ] T020 [P] [US2] Write `tools/content-node/java-pass-through.spec.mjs` from [contracts/pass-through.md](contracts/pass-through.md), against a stub Java server. The cases:
-  - method, path and query unchanged, including matrix parameters;
+  - method, path and query unchanged (a matrix parameter never reaches it: spec 006 T008);
   - a streamed body over 10 MB arrives whole;
   - Host unchanged and X-Forwarded-For appended;
   - hop-by-hop headers dropped;

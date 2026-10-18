@@ -379,8 +379,7 @@ describe('a method a mapping does not take', () => {
 
 describe("Spring's guard against a download named by the URL", () => {
   // AbstractMessageConverterMethodProcessor.addContentDispositionHeader: a body
-  // written for a path whose last segment -- or a matrix parameter on it --
-  // ends in an extension Spring does not trust is sent as an attachment-proof
+  // written for a path whose last segment ends in an extension Spring does not trust is sent as an attachment-proof
   // inline f.txt. Each case measured against Java on 15 Oct 2026, on the
   // species segment, which fails before any query.
   const disposition = async (last) => {
@@ -395,7 +394,6 @@ describe("Spring's guard against a download named by the URL", () => {
     '48892.exe',
     '48892.html',
     '48892.sub',
-    '48892;a.exe',
     '48892%2Epdf',
     '48892.wasm',
     '48892.jsonp',
@@ -411,9 +409,7 @@ describe("Spring's guard against a download named by the URL", () => {
     '48892.xhtml',
     '48892.mp4',
     '48892.SVG',
-    '48892;a.svg',
     '48892.',
-    '48892.svg;x',
     '48892.json',
   ])
     it(`leaves ${last} alone`, async () => {

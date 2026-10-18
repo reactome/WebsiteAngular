@@ -60,6 +60,10 @@ const locations: Location[] = [
   body: m[3],
 }));
 
+// routes-core.conf's `if ($request_uri ~ "…") { return 418; }`, which hands
+// a matrix parameter to node to refuse whatever location would match.
+const refusing = conf.match(/^if \(\$request_uri ~ "([^"]+)"\) \{ return 418; \}$/m)?.[1];
+
 /**
  * The location nginx chooses: an exact match; else the first regex, in file
  * order; else the longest prefix. (No `^~` locations exist; a test below
@@ -67,6 +71,9 @@ const locations: Location[] = [
  */
 function nginxLocation(url: string): Location | undefined {
   const path = url.split('?')[0];
+  // The server-level refusal, before any location: on the path as sent.
+  if (refusing && new RegExp(refusing).test(url))
+    return locations.find((l) => l.path === '@content_node_refuses');
   const exact = locations.find((l) => l.kind === '=' && l.path === path);
   if (exact) return exact;
   const regex = locations.find(
@@ -131,7 +138,10 @@ describe('nginx and the dev proxy agree', () => {
   // And every node location is written to take one -- the URLs above do
   // not reach all of them (some of the proxy test's are built at run time).
   const exact = new Set(locations.filter((l) => l.kind === '=').map((l) => l.path));
-  for (const { kind, path } of locations.filter((l) => l.target === 'node')) {
+  // Not the named location a refusal is handed to: it matches no path.
+  for (const { kind, path } of locations.filter(
+    (l) => l.target === 'node' && !l.path.startsWith('@')
+  )) {
     if (kind === '=') {
       if (!path.endsWith('/'))
         it(`has ${path} with its slashed twin`, () => {
@@ -217,31 +227,9 @@ describe('where nginx sends things', () => {
 });
 
 /**
- * A matrix parameter on any segment, as Spring takes one: `;jsessionid=x`
- * is cut from each segment before Java matches the path, so
- * `/data;x/diseases` is `/data/diseases` to Java. nginx's locations read the
- * path with it, so each literal segment of a node route allows one; a URL
- * that went to node without it would otherwise reach Tomcat today and
- * nothing once Tomcat is off. Spec 006 T008.
- */
-const withMatrix = (url: string) => {
-  const at = url.indexOf('?');
-  const [path, query] = at === -1 ? [url, ''] : [url.slice(0, at), url.slice(at)];
-  const segments = path.split('/');
-  // From the segment after /ContentService: Tomcat cuts one from the context
-  // path too, but nginx's /ContentService/ prefix never matched that.
-  return segments
-    .slice(2)
-    .flatMap((segment, i) =>
-      segment
-        ? [segments.map((s, j) => (j === i + 2 ? `${s};jsessionid=x` : s)).join('/') + query]
-        : []
-    );
-};
-
-/**
  * Java's own neighbours of node routes, which a route matching too much
- * would take: the matrix test above compares a URL only with itself.
+ * would take: the agreement test above compares the two tables only with
+ * each other.
  */
 const JAVAS = [
   '/ContentService/data/species/9606',
@@ -251,32 +239,58 @@ const JAVAS = [
   '/ContentService/data/diseases/X1',
   '/ContentService/data/schema/model/X1',
   '/ContentService/data/query/abridged/R-HSA-109581',
-  '/ContentService/data/query/enhanced;x/R-HSA-109581/X1',
   '/ContentService/data/query/R-HSA-109581/more',
   '/ContentService/interactors/psicquic/resourcesx',
   '/ContentService/search/facet_queryx',
 ];
 
-describe('a matrix parameter on a segment', () => {
+describe("Java's neighbours of node routes", () => {
   for (const url of JAVAS)
     it(`leaves ${url} to Java`, async () => {
-      for (const variant of [url, slashed(url), ...withMatrix(url)])
+      for (const variant of [url, slashed(url)])
         expect([variant, nginxTarget(variant), await proxySendsToNode(variant)]).toEqual([
           variant,
           'tomcat',
           false,
         ]);
     });
+});
 
-  for (const url of [...urls, ...nodeEndpoints.map(sample)])
-    it(`goes where ${url} goes`, async () => {
-      const target = nginxTarget(url);
-      const proxied = await proxySendsToNode(url);
-      for (const variant of withMatrix(url))
+/**
+ * A matrix parameter -- a raw ';' in the path -- is node's to refuse with
+ * Spring's 404, on any segment and whichever endpoint it would be (spec 006
+ * T008): a literal location does not match one, so without the refusal it
+ * reached Java, which answers it. An encoded ';' and a ';' in the query
+ * string are not one.
+ */
+describe('a matrix parameter', () => {
+  const variants = (url: string) => {
+    const at = url.indexOf('?');
+    const [path, query] = at === -1 ? [url, ''] : [url.slice(0, at), url.slice(at)];
+    const segments = path.split('/');
+    return segments
+      .slice(2)
+      .flatMap((segment, i) =>
+        segment
+          ? [segments.map((s, j) => (j === i + 2 ? `${s};jsessionid=x` : s)).join('/') + query]
+          : []
+      );
+  };
+  for (const url of [...urls, ...JAVAS])
+    it(`on any segment of ${url} goes to node to be refused`, async () => {
+      for (const variant of variants(url))
         expect([variant, nginxTarget(variant), await proxySendsToNode(variant)]).toEqual([
           variant,
-          target,
-          proxied,
+          'node',
+          true,
         ]);
     });
+
+  it('is not an encoded one, nor one in the query string', async () => {
+    for (const url of [
+      '/ContentService/data/query/abridged/R-HSA-109581%3Bx',
+      '/ContentService/data/species/9606?a=1;b=2',
+    ])
+      expect([url, nginxTarget(url), await proxySendsToNode(url)]).toEqual([url, 'tomcat', false]);
+  });
 });
