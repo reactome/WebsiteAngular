@@ -25,14 +25,14 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`.
-- [ ] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted.
+- [x] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`.
+- [x] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted.
 
 ---
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks:
+- [x] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks:
   - the record's keys equal node's GET endpoint paths (`endpoints` from `service.mjs`);
   - each entry with `java` has exactly that operation's query parameter names, types and defaults from `openapi-snapshot.json`;
   - each `java: null` entry has `why`;
@@ -41,7 +41,7 @@ The pull request that completes a task ticks it here, with its number.
 
   The aliases come from contracts/parameter-record.md: padded and encoded ids, Unicode digits, leading zeros, `+`, hex, `on`/`yes`/`1`, a version past 3 digits, a regex resource, and a repeated non-list parameter. Run it and see it fail.
 
-- [ ] T004 Write `tools/content-node/parameters.mjs`:
+- [x] T004 Write `tools/content-node/parameters.mjs`:
   - the record for all 81 GET endpoints, following research R3–R5 and the decisions in plan.md;
   - the shared `VIEW`, `VIEW_IGNORED`, `INCLUDE_REF` and `INCLUDE_REF_IGNORED`;
   - one validator per kind and type;
@@ -49,20 +49,20 @@ The pull request that completes a task ticks it here, with its number.
 
   It is done when T003 passes. Mutate three validators, one at a time, and see T003 catch each.
 
-- [ ] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5):
+- [x] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5):
   - `cache: 'never'` on `interactors/psicquic/resources`, `citation/static/{id}`, `citation/export` and `citation/pathway/{id}`;
   - `cache: 'private'` on `exporter/diagram/{id}`.
 
   Add a test to `parameters.spec.mjs` that names each one.
 
-- [ ] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint:
+- [x] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint:
   - a non-number for a number, `-1` and `0` for a page, an offset past the end;
   - an unknown enum value, an empty value, an unknown species;
   - `on` for a boolean.
 
   Each endpoint uses a sample id from its `sample`.
 
-- [ ] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6.
+- [x] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6.
 - [ ] T008 Review, CI, merge and tick T001–T007. No beta check is needed: nothing is served differently yet.
 
 **Checkpoint**: the record exists and agrees with Java's description. Node answers bad input as Java does.

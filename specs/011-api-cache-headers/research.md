@@ -1,6 +1,6 @@
 # Research: Cache headers for the content API
 
-Measured 18 Oct 2026 from the code (`tools/content-node/service.mjs`, line numbers as of `main` at c897ffb6), from Java's published API description, from the recorded e2e traffic (`e2e/har/`), from 4 requests to beta, and from Cloudflare's documentation. Each Cloudflare claim cites its page; the quotes came through a summariser, so they are checked again before anything relies on them (T001).
+Measured 18 Oct 2026 from the code (`tools/content-node/service.mjs`, line numbers as of `main` at c897ffb6), from Java's published API description, from the recorded e2e traffic (`e2e/har/`), from 4 requests to beta, and from Cloudflare's documentation. Each Cloudflare claim cites its page, and each was checked against it on 18 Oct 2026 (T001).
 
 ## R1. Where one labelling step sees every answer
 
@@ -51,17 +51,17 @@ The API page roots also get `no-store` (R7). The rule that decided the label goe
 - **`private`** "must not be stored by a shared cache like Cloudflare".
 - **`no-store`:** "Will not cache".
 - **`no-cache` is avoided.** Cloudflare's pages disagree on whether it is stored: [cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/) says "caches and always revalidates", while [default cache behavior](https://developers.cloudflare.com/cache/concepts/default-cache-behavior/) says it is not cached.
-- **A one-year `s-maxage`:** no maximum is documented. If Cloudflare caps it, the cost is a re-fetch, nothing worse.
+- **A one-year `s-maxage`:** no maximum is documented for either TTL. If Cloudflare caps it, the cost is a re-fetch, nothing worse. (Free's _minimum_ Edge Cache TTL, 2 hours, applies to a TTL set in a rule, not to ours.)
 - **Today's headers:**
   - Node sends no `Cache-Control`, only Express's weak ETag. That stays, and Cloudflare revalidates with it.
   - nginx adds and strips nothing: no `add_header`, `proxy_hide_header`, `expires` or `proxy_cache` in `deploy/nginx`. `gzip` is on without `gzip_vary`.
   - Measured on beta: `/data/diseases` gives 200 with a weak ETag, and the same ETag in `If-None-Match` gives 304.
 - **Settings in the Cache Rule itself,** which is not ours to make (added to #527):
-  - **Edge TTL:** "use cache-control header if present". An Edge TTL override would override `s-maxage`.
-  - **Browser TTL:** "respect origin". Cloudflare otherwise "respects whichever value is higher" of its own Browser TTL, 4 hours by default, and our `max-age` ([edge and browser TTL](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)).
+  - **Edge TTL:** "use cache-control header if present". "Edge Cache TTL Cache Rules override `s-maxage` and disable revalidation directives if present" ([cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/)).
+  - **Browser TTL:** "respect origin". Cloudflare otherwise replaces an origin `max-age` that "is less than the Browser Cache TTL Cloudflare setting", 4 hours by default, so our 1 hour would become 4 ([edge and browser TTL](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)). "Browsers ignore `s-maxage`."
   - **No "status code TTL"**, which would override the origin.
   - **"Sort query string" on.** On Free it is a cache-key option, so parameter order stops mattering.
-- **Vary is ignored by Cloudflare** "by default" ([vary](https://developers.cloudflare.com/cache/concepts/vary/)), so none is sent.
+- **No Vary is sent.** Cloudflare's key is the URL and "a handful of specific headers", and "a response containing `Vary: *` always bypasses cache" ([vary](https://developers.cloudflare.com/cache/concepts/vary/)), so none is added.
 - **HEAD shares the GET's cache entry:** Cloudflare "converts `HEAD` requests to `GET` requests for cacheable requests".
 
 **Alternatives considered**:
@@ -231,3 +231,56 @@ The corpus is run sequentially and spaced, a few hundred requests at most per ru
 - Caching both forms: two entries per answer.
 - Redirecting `/x` to `/x/`: Java's API description and the site use the unslashed form almost everywhere.
 - Refusing the slash with a 404: it would break clients that add one, where a redirect costs a round trip.
+
+## R11. The record on the site's own traffic (measured 18 Oct 2026)
+
+The record takes a documented endpoint's query parameters from Java's description rather than restating them, so the two cannot drift. Run over every distinct ContentService GET that node answered 200 in the recorded e2e traffic, 388 of 412 are standard form. The other 24 are the site's, all for US5:
+
+| Rule                | Count | What the site sends                                                                                                   |
+| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
+| `form`              | 6     | `/search/fireworks/` and `/interactors/psicquic/resources/`, with a trailing slash                                    |
+| `parameter:cluster` | 8     | `cluster=true` on `/search/facet_query`, which does not declare it                                                    |
+| `parameter:diagram` | 4     | `diagram=…` on `/search/diagram/{diagram}`, which does not declare it (the spread parameters in the search component) |
+| `parameter:scope`   | 4     | `scope=…` on `/search/diagram/{pathwayId}/flag`, which does not declare it                                            |
+| `parameter:fields`  | 2     | `fields=%20DB_ID`, with a leading space                                                                               |
+
+## R12. Invalid inputs against Java (run 18 Oct 2026)
+
+**The corpus** (`tools/content-node/invalid-inputs.mjs`) had 328 requests: every declared parameter of every GET endpoint not marked never stored.
+
+- **Values tried:** values Java would not take as written, plus an unknown species and integers past Java's `int` range.
+- **Required parameters:** every request carries the endpoint's other required parameters, so the parameter being tried is reached. A first run left them out, and 138 of its requests stopped at the missing `query` or `page` (review of #530).
+- **Objects:** real ones only.
+- **Run:** against node on its own port and against Java, sequentially, in three batches with 30 seconds between.
+
+| Verdict                              | Count |                                                                                                                                                                                                                                  |
+| ------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Byte-identical                       | 309   |                                                                                                                                                                                                                                  |
+| `query/enhanced/v2` in a nested view | 9     | The declared difference (routes-core.conf): identical as data, with getter-only keys in the JVM's order of the day. Jackson's `@id` numbers follow that order. The valid sample differs the same way, so no bad value causes it. |
+| A Solr failure's 500                 | 10    | Declared in `fromSolr`. Java's message repeats Solr's internals: its server address, and the parameters it was sent. Node's says only "Solr exception occurred". Same status, and never stored.                                  |
+
+No fix was needed (T007).
+
+## R13. Where Java gives one answer to many spellings (reviews of #530)
+
+Standard form narrows these past their declared type, because each would otherwise be a stored copy of one answer. The graph names it relies on are snapshotted in `graph-names.json` by `snapshot-graph-names.mjs`; a release adds names only when it is run again, and until then their URLs are answered but not stored.
+
+- **`species`:** the taxId of a known species, on `/data/pathways/low/**`, `/data/mapping/**` and `/data/schema/{id}[/count|/min]`.
+  - Java reads it leniently: a name in any case, `_` for a space, digits of any script, and a Species dbId as well as a taxId.
+  - On `/pathways/low`, one it cannot find filters nothing. Measured on Java, `?species=1` and `?species=nosuchspecies` are byte-identical to no species, and `?species=48887` (the human Species dbId) to `?species=9606`.
+- **The mapping resource:** a reference-database name exactly as the graph has it, encoded as `encodeURIComponent` writes it, e.g. `COSMIC%20(genes)`. Java finds it ignoring case.
+  - `/data/complexes` uses its resource as a case-sensitive pattern, so another case is another answer; it keeps the plain pattern-free form.
+- **GO ids:** `GO:\d{7}` for the GO resource on `/mapping/.../pathways`. Java cuts any identifier starting `go` to its digits.
+- **`maxDepth`:** `-1` (no limit) or 1 to 10.
+  - Every negative means no limit, and 0 means 1.
+  - A depth past an object's own tree gives `-1`'s answer again, so larger depths are answered but not stored.
+- **`attributes`:** one of the lists the site asks for, `species,compartment` (the default) or `species,compartment,referenceEntity`. Java joins the names into a relationship pattern, where an unknown name, another case or another order matches what the list without it matches.
+- **`types` on `/search/diagram/{d}/occurrences/{i}`:** refused. Java binds it and never reads it.
+- **Value encoding:** a value must be one encoding of what it decodes to, either strict or Angular's HttpParams, which leaves `@ : $ , ; = ? /` bare, exactly as Angular's `STANDARD_ENCODING_REPLACEMENTS` does. `%31` for `1`, `+` for a space, or `%21` for `!`, is not standard.
+- **List items:** a list's item may not be given twice.
+
+**Still bounded aliases, accepted:**
+
+- `view` and `includeRef` where Java ignores them: the site sends them there (e.g. `ancestors`), and there are 3 × 2 spellings.
+- A default given explicitly (`includeRef=false`).
+- A list given as one value or repeated (`types=A,B`, `types=A&types=B`), and its order.
