@@ -19,7 +19,7 @@ The work runs in this order:
 1. the parameter record and parity on invalid inputs;
 2. the labelling;
 3. the API page roots;
-4. the audit of the site's own requests;
+4. the trailing-slash redirect, and the audit of the site's own requests;
 5. the release-day warm-up.
 
 ## Technical Context
@@ -99,17 +99,17 @@ RELEASE-TESTING.md                                    # post-release row: purge,
 
 **Structure decision**: new modules beside `service.mjs` in `tools/content-node`, as the `domain.mjs`, `jsoup-text.mjs` and snapshot modules already sit. `service.mjs` gains two call sites only.
 
-## Decisions taken as defaults (for awright to confirm or change)
+## Decisions (awright, 18 Oct 2026)
 
-1. **Versioned stable ids** (`R-HSA-69620.5`) are standard with a version of up to 3 digits, so at most 1,000 spellings per object. Old `REACT_` ids are standard without a version.
-2. **Trailing slash:** both forms are standard. The site sends both, and it adds at most one spelling.
+1. **Versioned stable ids** (`R-HSA-69620.5`) are standard with a version of up to 3 digits. Old `REACT_` ids are standard too.
+2. **Trailing slash:** a GET or HEAD with one is a `301` to the URL without it (research R10). The site's two slashed URLs are changed. POST is left alone.
 3. **Repeated parameters:** only list parameters may repeat.
-4. **Caps:** `rows`, `pageSize` and `rowCount` are standard up to 100. Larger values are still answered, but not stored.
-5. **Search answers** with any search term are cacheable. They are real requests, Solr only changes at a release, and Cloudflare evicts entries nobody asks for again.
+4. **Page sizes:** no cap. Any value Java accepts is standard.
+5. **Search answers** are cacheable for any search term.
 6. **Never cached:**
    - `interactors/psicquic/resources` and `citation/static|export`, which use outside services;
    - `citation/pathway`, because of the daily `dateAccessed`;
-   - the diagram exporter (`private`, since it takes a token; not routed to node today).
+   - the diagram exporter, `private` because it takes a token (not routed to node today).
 
 ## Complexity Tracking
 

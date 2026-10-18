@@ -114,6 +114,7 @@ The Reactome website is the content API's most important client. Every request i
 - **A raw `;` in the path** is already a 404 (#526), and a 404 is "do not store".
 - **Endpoints still answered by Java:** out of scope. Java sends no caching instruction, so Cloudflare doesn't store them, which is today's behaviour.
 - **HEAD requests** carry the same label as the GET they mirror.
+- **A trailing slash** (`/data/diseases/`): a GET or HEAD is redirected permanently to the URL without it, so one answer has one URL (awright, 18 Oct 2026). Java answers both forms, so this is a declared difference. A POST is not redirected.
 - **Answers that depend on something besides the URL:** if any are found, they are "do not store" until shown otherwise. Examples would be a request header that changes the body, or a body that names the host it was served from (a 404 body's `url`).
 
 ## Requirements _(mandatory)_
@@ -137,6 +138,7 @@ The Reactome website is the content API's most important client. Every request i
 - **FR-010a**: There SHOULD be a warm-up that requests a list of standard-form URLs once, run right after the cache is cleared.
 - **FR-011**: The site's own content-API requests MUST be audited against standard form. Each one that isn't MUST either be changed to standard form or be listed with the reason.
 - **FR-012**: There MUST be no cache of answers on our own server. Caching is Cloudflare's alone.
+- **FR-013**: A GET or HEAD to a node endpoint with a trailing slash MUST be answered with a permanent redirect to the same URL without the slash, query string kept. The redirect may itself be cached.
 
 ### Key Entities
 

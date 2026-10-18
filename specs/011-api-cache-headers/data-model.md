@@ -35,6 +35,7 @@ The label is computed per request, and only from the request as sent and the ans
 | Rule               | Meaning                                                            |
 | ------------------ | ------------------------------------------------------------------ |
 | `standard`         | Cacheable: every check passed                                      |
+| `redirect`         | A `301` from a trailing-slash URL to the one without it            |
 | `method`           | The method is not GET or HEAD                                      |
 | `status`           | The status is not 200                                              |
 | `token`            | The request has a `token` query parameter                          |

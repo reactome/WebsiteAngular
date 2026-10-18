@@ -116,11 +116,11 @@ It is checked against a snapshot of Java's published API description, taken the 
 | Icon id                          | `R-ICO-\d+`                                                                                                                                                       |
 | PubMed id                        | `[1-9]\d*`                                                                                                                                                        |
 | Query value: boolean             | `true` or `false`                                                                                                                                                 |
-| Query value: integer             | `0` or `-?[1-9]\d*`, within the endpoint's range                                                                                                                  |
+| Query value: integer             | `0` or `-?[1-9]\d*`, within the range Java accepts (e.g. `page` ≥ 1); no upper cap                                                                                |
 | Query value: enum                | one of its values, exactly                                                                                                                                        |
 | Query value: text                | anything (search terms)                                                                                                                                           |
 
-- **Trailing slash:** both forms are standard. The site sends both, and it adds at most one more spelling per answer.
+- **Trailing slash:** never standard. A GET or HEAD for a node endpoint with a trailing slash is a `301` to the same URL without it, query string kept (R10).
 - **Repeats:** a parameter may appear once, except a list parameter (`types`, `species` on search, `fields`, `compartments`, `keywords`), which may repeat.
 - **Parameter order:** free. Bounded, and "Sort query string" removes it entirely.
 - **Not standard** (answered, not stored):
@@ -136,12 +136,12 @@ It is checked against a snapshot of Java's published API description, taken the 
 - The species in `pathways/top/{id}` is decoded twice.
 - Padded ids can change the answer, not only repeat it: `needsIncoming` (5589) reads the raw id, so a padded id on the `enhanced` endpoints changes what it fetches.
 
-**Defaults to confirm with awright** (listed in the plan):
+**Decided by awright, 18 Oct 2026**:
 
-- the versioned-stId bound;
-- `REACT_` ids;
-- the caps on `rows` and `pageSize`;
-- that free-text search answers are cacheable.
+- Versioned stable ids, with up to 3 version digits, are standard. So are `REACT_` ids.
+- Page sizes (`rows`, `pageSize`, `rowCount`) have no cap: any value valid to Java is standard. Search terms are already unbounded (next point), so a cap would not keep the set finite.
+- Search answers are cacheable for any search term.
+- Only list parameters may repeat.
 
 ## R5. Endpoints never cached, whatever the URL
 
@@ -214,3 +214,20 @@ The corpus is run sequentially and spaced, a few hundred requests at most per ru
 **Rationale**: there is no record of popularity in the repo, so the list is built from the site's own request shapes and the release's top-level pathways.
 
 **Alternatives considered**: purging only what changed. Set aside, because a release changes the graph broadly (spec, Assumptions).
+
+## R10. Trailing slash: one URL per answer
+
+**Decision** (awright, 18 Oct 2026): a GET or HEAD for a node endpoint whose path ends in `/` is answered `301 Moved Permanently`, to the same path without the slash and with the query string kept as sent.
+
+- **The redirect itself is cacheable.** It is labelled `public, max-age=3600, s-maxage=31536000` with rule `redirect`, so Cloudflare keeps it like an answer.
+- **POST is never redirected,** because some clients turn a redirected POST into a GET and lose its body. A POST is answered as today and never stored.
+- **Where:** in node, before routing, and only for paths that match a node endpoint. nginx still sends the slashed form to node (spec 006 T006), and its routing test is unchanged. Paths Java still answers keep Java's behaviour until they are ported.
+- **The site:** it sends two slashed URLs, `/search/fireworks/` (`search.component.ts:276`) and `/interactors/psicquic/resources/`. Both are changed to the unslashed form, so the site never pays the extra round trip.
+
+**Rationale**: Java answers `/x` and `/x/` identically, so caching both would give one answer two entries. A redirect leaves one. This is a declared difference from Java, as the raw-`;` 404 is (#526): the slash means nothing.
+
+**Alternatives considered**:
+
+- Caching both forms: two entries per answer.
+- Redirecting `/x` to `/x/`: Java's API description and the site use the unslashed form almost everywhere.
+- Refusing the slash with a 404: it would break clients that add one, where a redirect costs a round trip.
