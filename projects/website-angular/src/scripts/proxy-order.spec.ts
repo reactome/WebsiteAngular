@@ -83,6 +83,9 @@ describe('the dev server proxy', () => {
     '/ContentService/data/complex/5672601/subunits?excludeStructures=true',
     '/ContentService/data/complexes/UniProt/P00533',
     '/ContentService/data/complexes/(%3Fi)uniprot/P00533',
+    '/ContentService/data/pathway/R-HSA-109606/containedEvents',
+    '/ContentService/data/pathway/109606/containedEvents/stId',
+    '/ContentService/data/pathway/R-HSA-109606/containedEvents/',
     '/ContentService/data/discover/R-HSA-109581',
     '/ContentService/data/discover/109581/',
     '/ContentService/data/mapping/UniProt/P04637/reactions',
@@ -354,6 +357,9 @@ describe('the dev server proxy', () => {
     // Only an identifier's reference entities and cross references.
     '/ContentService/references/mapping/P36897/xrefs/x',
     '/ContentService/references/other',
+    // Only a pathway's contained events, not another path below it.
+    '/ContentService/data/pathway/R-HSA-109606/containedEvents/stId/x',
+    '/ContentService/data/pathway/R-HSA-109606',
     // Only a complex's subunits, and the complexes of an identifier.
     '/ContentService/data/complex/R-HSA-5672601',
     '/ContentService/data/complexes/UniProt',

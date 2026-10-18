@@ -164,17 +164,46 @@ function connection() {
  */
 export const READ_TIMEOUT_MS = 30_000;
 
-export async function read(cypher, parameters = {}) {
+/**
+ * Run a read; each record as a plain object. With `graph`, nodes and
+ * relationships keep what an object mapper needs -- {id, labels, props} and
+ * {id, type, start, end, props} -- so a Java query can be sent as written
+ * and its result mapped as Spring Data maps it (domain.mjs, mapResults).
+ */
+export async function read(cypher, parameters = {}, { graph = false } = {}) {
   const session = connection().session({
     database: DATABASE,
     defaultAccessMode: neo4j.session.READ,
   });
   try {
     const result = await session.run(cypher, parameters, { timeout: READ_TIMEOUT_MS });
-    return result.records.map((record) => plain(record.toObject()));
+    return result.records.map((record) =>
+      graph ? withGraph(record.toObject()) : plain(record.toObject())
+    );
   } finally {
     await session.close();
   }
+}
+
+/** As plain, but nodes and relationships with their ids, labels and ends. */
+function withGraph(value) {
+  if (value instanceof neo4j.types.Node)
+    return { id: plain(value.identity), labels: value.labels, props: plain(value.properties) };
+  if (value instanceof neo4j.types.Relationship)
+    return {
+      id: plain(value.identity),
+      type: value.type,
+      start: plain(value.start),
+      end: plain(value.end),
+      props: plain(value.properties),
+    };
+  if (Array.isArray(value)) return value.map(withGraph);
+  if (value && typeof value === 'object' && !neo4j.isInt(value)) {
+    const out = {};
+    for (const [key, entry] of Object.entries(value)) out[key] = withGraph(entry);
+    return out;
+  }
+  return plain(value);
 }
 
 /** Neo4j's own types, flattened to what JSON would carry. */
