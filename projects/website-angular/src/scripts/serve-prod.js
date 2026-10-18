@@ -307,9 +307,16 @@ const REBUILDING = `<!doctype html><meta charset="utf-8"><title>Rebuilding…</t
   <p>A new build is being written. This page will refresh itself.</p>
 </div>`;
 
+/**
+ * The API's own addresses that serve the site's API page: never stored.
+ * The API under them is cached at the edge until a release's purge, and a
+ * page kept there would outlive the next deploy's scripts (spec 011).
+ */
+const API_PAGE_ROOT = /^\/(ContentService|AnalysisService)\/?$/;
+
 // Client-side routing: anything not matched above is an Angular route.
-app.get(/.*/, (_req, res) => {
-  res.setHeader('Cache-Control', 'no-cache');
+app.get(/.*/, (req, res) => {
+  res.setHeader('Cache-Control', API_PAGE_ROOT.test(req.path) ? 'no-store' : 'no-cache');
   res.sendFile(path.join(DIST, 'index.html'), (error) => {
     if (!error || res.headersSent) return;
     if (error.code === 'ENOENT') {

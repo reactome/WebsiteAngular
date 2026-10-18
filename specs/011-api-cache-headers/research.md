@@ -57,7 +57,7 @@ The API page roots also get `no-store` (R7). The rule that decided the label goe
   - nginx adds and strips nothing: no `add_header`, `proxy_hide_header`, `expires` or `proxy_cache` in `deploy/nginx`. `gzip` is on without `gzip_vary`.
   - Measured on beta: `/data/diseases` gives 200 with a weak ETag, and the same ETag in `If-None-Match` gives 304.
 - **Settings in the Cache Rule itself,** which is not ours to make (added to #527):
-  - **Edge TTL:** "use cache-control header if present". "Edge Cache TTL Cache Rules override `s-maxage` and disable revalidation directives if present" ([cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/)).
+  - **Edge TTL:** "Use cache-control header if present, bypass cache if not". The other option, "…use default Cloudflare caching behavior if not", would cache every Java answer, which carries no header, on Cloudflare's default TTLs. "Edge Cache TTL Cache Rules override `s-maxage` and disable revalidation directives if present" ([cache-control](https://developers.cloudflare.com/cache/concepts/cache-control/)).
   - **Browser TTL:** "respect origin". Cloudflare otherwise replaces an origin `max-age` that "is less than the Browser Cache TTL Cloudflare setting", 4 hours by default, so our 1 hour would become 4 ([edge and browser TTL](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)). "Browsers ignore `s-maxage`."
   - **No "status code TTL"**, which would override the origin.
   - **"Sort query string" on.** On Free it is a cache-key option, so parameter order stops mattering.
