@@ -11,7 +11,7 @@
  * only: they are read by one shared writer, and the graph this runs against
  * is shared, so each run is kept to a few hundred requests.
  */
-import { fileURLToPath } from 'node:url';
+import { URLSearchParams, fileURLToPath } from 'node:url';
 import { RECORD, declaredQuery } from './parameters.mjs';
 
 const VALUES = {

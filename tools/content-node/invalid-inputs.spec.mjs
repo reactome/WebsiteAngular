@@ -4,6 +4,7 @@
 // bad parameter as Java does before any answer is labelled cacheable. A
 // corpus that repeated the parameter instead of replacing the sample's, or
 // skipped an endpoint, would show nothing about the value it meant to try.
+import { URLSearchParams } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { invalidInputs } from './invalid-inputs.mjs';
 import { RECORD, declaredQuery } from './parameters.mjs';
