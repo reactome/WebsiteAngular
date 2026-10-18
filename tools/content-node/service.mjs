@@ -1660,6 +1660,8 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
+      const refused = containedEventsFailure(request, raw);
+      if (refused) return refused;
       const events = await containedEvents(raw);
       if (!events.length)
         return notFound(request, `No contained events found in the given event: ${raw}`);
@@ -1685,31 +1687,18 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const attribute = pathId(rawSegment(request, 6));
+      const refused = containedEventsFailure(request, raw);
+      if (refused) return refused;
       const events = await containedEvents(raw);
       if (!events.length)
         return notFound(request, `No contained events found in the given event: ${raw}`);
       const texts = [];
       for (const event of events) {
-        const getter = attributeGetter(event.schemaClass, attribute);
-        let value;
-        if (getter) {
-          try {
-            // findAll's events carry only their hasEvent relationships: any
-            // other is loaded when asked, outgoing ones too.
-            value = await attributeValue(event, getter, lazyRelationship, {
-              outgoingLoaded: false,
-            });
-          } catch (failure) {
-            if (failure instanceof AttributeFailure) return unexpected(request);
-            throw failure;
-          }
-        }
-        if (value === undefined || value === null)
-          return notFound(
-            request,
-            `Attribute: '${attribute}' has not been found for object: ${event.schemaClass}`
-          );
-        texts.push(attributeText(value, jsoupText, getter));
+        // findAll's events carry only their hasEvent relationships: any
+        // other is loaded when asked, outgoing ones too.
+        const answer = await attributeOf(request, event, attribute, { outgoingLoaded: false });
+        if (answer.status) return answer;
+        texts.push(answer.text);
       }
       return { status: 200, body: `[${texts.join(', ')}]`, type: 'text/plain;charset=UTF-8' };
     },
@@ -7627,6 +7616,18 @@ async function staticSummary(accs) {
  * returns nothing.
  */
 async function attributeAnswer(request, object, attribute) {
+  const answer = await attributeOf(request, object, attribute);
+  if (answer.status) return answer;
+  return { status: 200, body: answer.text, type: 'text/plain;charset=UTF-8' };
+}
+
+/**
+ * ControllerUtils.getProperty's text for one object: {text}, or the answer
+ * to give instead -- Java's 404 naming the attribute and the object's class
+ * when there is no getter or it returns nothing, its 500 when the getter
+ * fails. `outgoingLoaded` as attributeValue takes it.
+ */
+async function attributeOf(request, object, attribute, { outgoingLoaded = true } = {}) {
   const missing = () =>
     notFound(
       request,
@@ -7636,18 +7637,14 @@ async function attributeAnswer(request, object, attribute) {
   if (!getter) return missing();
   let value;
   try {
-    value = await attributeValue(object, getter, lazyRelationship);
+    value = await attributeValue(object, getter, lazyRelationship, { outgoingLoaded });
   } catch (failure) {
     // A NullPointerException inside a getter: Java's generic 500.
     if (failure instanceof AttributeFailure) return unexpected(request);
     throw failure;
   }
   if (value === undefined || value === null) return missing();
-  return {
-    status: 200,
-    body: attributeText(value, jsoupText, getter),
-    type: 'text/plain;charset=UTF-8',
-  };
+  return { text: attributeText(value, jsoupText, getter) };
 }
 
 /**
@@ -7666,6 +7663,19 @@ async function findPerson(id) {
     ...findByIdParameters(found.labels),
   });
   return row ? mapResult(row) : undefined;
+}
+
+/**
+ * What graph-core's getContainedEvents throws on before it asks anything:
+ * an id of dots, which trimId splits to nothing (Java's 500 with no
+ * message), and a dbId past a long (Long.parseLong's). Undefined otherwise.
+ */
+function containedEventsFailure(request, raw) {
+  const trimmed = javaTrim(raw);
+  if (!trimmed.includes(':') && /^\.+$/.test(trimmed))
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
+  const tooLong = longPastRange([raw]);
+  return tooLong ? javaError(request, 500, 'INTERNAL_SERVER_ERROR', tooLong) : undefined;
 }
 
 /**
