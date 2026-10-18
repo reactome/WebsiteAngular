@@ -33,13 +33,16 @@
  */
 import { readFileSync } from 'node:fs';
 
-const TABLES = JSON.parse(readFileSync(new URL('./jsoup-tables.json', import.meta.url), 'utf8'));
-const ENTITIES = TABLES.entities;
-const TAGS = TABLES.tags;
+let tables;
+/** jsoup-tables.json, read on first use, as domain.mjs reads its snapshot. */
+function TABLES() {
+  tables ??= JSON.parse(readFileSync(new URL('./jsoup-tables.json', import.meta.url), 'utf8'));
+  return tables;
+}
 
-const isBlock = (name) => TAGS[name]?.[0] === 1;
-const preservesWhitespace = (name) => TAGS[name]?.[1] === 1;
-const isEmptyTag = (name) => TAGS[name]?.[2] === 1;
+const isBlock = (name) => TABLES().tags[name]?.[0] === 1;
+const preservesWhitespace = (name) => TABLES().tags[name]?.[1] === 1;
+const isEmptyTag = (name) => TABLES().tags[name]?.[2] === 1;
 
 /** Windows-1252's characters for 0x80-0x9F, which Jsoup gives numeric references in that range. */
 const WIN1252 = [
@@ -83,7 +86,8 @@ function characterReference(text, at) {
   while (next < text.length && isAnyLetter(text[next])) next += 1;
   while (next < text.length && isAnyDigit(text[next])) next += 1;
   const name = text.slice(at, next);
-  const entity = Object.hasOwn(ENTITIES, name) ? ENTITIES[name] : undefined;
+  const entities = TABLES().entities;
+  const entity = Object.hasOwn(entities, name) ? entities[name] : undefined;
   const legit = text[next] === ';';
   if (!entity || (entity[0] !== 1 && !legit)) return undefined;
   if (legit) next += 1;
