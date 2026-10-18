@@ -265,13 +265,11 @@ describe('an id that is not valid UTF-8', () => {
 
   it("answers every method and path form as the template's own route would", async () => {
     // HEAD is GET's; a method the template does not take is Java's 405; a
-    // matrix parameter elsewhere in the path, or a trailing slash, changes
-    // nothing. Each was a 500 from the decode-failure path (review of #480).
+    // trailing slash changes nothing. Each was a 500 from the decode-failure path (review of #480).
     const at = (path, method = 'GET') => fetch(`${base}/ContentService/data${path}`, { method });
     expect((await at('/person/%FF', 'HEAD')).status).toBe(404);
     expect((await at('/person/%FF', 'POST')).status).toBe(405);
     expect((await at('/orthologies/ids/species/%FF')).status).toBe(405);
-    expect((await at(';x/person/%FF')).status).toBe(404);
     expect((await at('/person/%FF/')).status).toBe(404);
   });
 
@@ -394,21 +392,17 @@ describe('the edges of a path, answered as Tomcat and Spring answer them', () =>
     expect(Number.isInteger(body.timestamp)).toBe(true);
   };
 
-  it("answers an id that is only a matrix parameter with Spring's own 404", async () => {
+  it("answers a matrix parameter, on an id or any other segment, with Spring's own 404", async () => {
+    // Java would drop it and answer; we do not take one (spec 006 T008).
     await springNotFound('/ContentService/data/query/;x');
     await springNotFound('/ContentService/data/person/;x/publications');
+    await springNotFound('/ContentService/data/;x/query/R-HSA-70486/stId');
+    await springNotFound('/ContentService/data/query;x/R-HSA-70486/stId');
   });
 
   it("answers a doubled slash with Spring's own 404", async () => {
     await springNotFound('/ContentService/data/query//R-HSA-109606');
     await springNotFound('/ContentService/data/event//R-HSA-69620/ancestors');
-  });
-
-  it('reads matrix parameters out of every segment, as Spring does, not only the id', async () => {
-    // Java answers these 200; an empty segment left behind is Spring's 404.
-    await springNotFound('/ContentService/data/;x/query/R-HSA-70486/stId');
-    const response = await fetch(base + '/ContentService/data/query;x/R-HSA-70486/stId');
-    expect(response.headers.get('content-type') ?? '').not.toMatch(/html/);
   });
 
   it("answers a raw backslash with Tomcat's 400, as an encoded one", async () => {
@@ -674,11 +668,6 @@ describe('resolveId, as graph-core reads an id', () => {
 });
 
 describe('pathId, the id as Spring hands it to a controller', () => {
-  it('drops what follows a semicolon, as Spring does before matching', () => {
-    expect(pathId('70486;x')).toBe('70486');
-    expect(pathId('R-HSA-70486;jsessionid=1;a=b')).toBe('R-HSA-70486');
-  });
-
   it('keeps an encoded semicolon, which Spring decodes only after', () => {
     expect(pathId('R-HSA-70486%3Bx')).toBe('R-HSA-70486;x');
   });
@@ -1729,7 +1718,6 @@ describe('/schema/{className}/count and /min without a database', () => {
     for (const [path, url] of [
       ['Foo/count', 'Foo/count'],
       ['pathway/count', 'pathway/count'],
-      ['Foo;x=1/count?species=9606', 'Foo;x=1/count'],
       ['Pathway%3Bx/count', 'Pathway%3Bx/count'],
       ['Foo/min?page=1&offset=1&species=9606', 'Foo/min'],
     ]) {
@@ -1931,9 +1919,8 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
     expect([referrals.status, referrals.body]).toEqual([200, '[]']);
   });
 
-  it('reads the class as Spring hands it over: a matrix parameter dropped, %3B kept', async () => {
+  it('reads the class as Spring hands it over, a query ignored', async () => {
     const plain = await text('Pathway/attributes');
-    expect((await text('Pathway;x/attributes')).body).toBe(plain.body);
     expect((await text('Pathway/attributes?x=1')).body).toBe(plain.body);
   });
 
@@ -1944,7 +1931,6 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
       ['Foo/referrals', 'Foo/referrals'],
       ['pathway/attributes', 'pathway/attributes'],
       ['Pathway%3Bx/attributes', 'Pathway%3Bx/attributes'],
-      ['Foo;x/attributes', 'Foo;x/attributes'],
       ['Pathway.json/attributes', 'Pathway.json/attributes'],
       ['Pathway$AjcClosure1/referrals', 'Pathway$AjcClosure1/referrals'],
       ['Object/attributes', 'Object/attributes'],
@@ -2155,14 +2141,27 @@ describe('javaUrlDecode, java.net.URLDecoder.decode(s, "UTF-8")', () => {
   });
 });
 
-describe('/pathways/top drops a matrix parameter before reading the species', () => {
-  // Spring strips ';...' from a path segment before binding it, so Java reads
-  // /pathways/top/9606;x as 9606. Proved without a database through the one
-  // answer that needs none: '%25;x' is '%' once the parameter is dropped --
-  // URLDecoder's incomplete-escape 500 -- and ';x' would be the other one.
-  it("reads '%25;x' as '%', as Java does", async () => {
-    const response = await fetch(`${base}/ContentService/data/pathways/top/%25;x`);
-    expect(response.status).toBe(500);
-    expect(await response.text()).toContain('URLDecoder: Incomplete trailing escape (%) pattern');
+describe('a matrix parameter', () => {
+  // Java drops ';...' from each segment; nothing sends one on purpose, and
+  // every way of writing a URL is one more to cache, so here it is Spring's
+  // 404 for a path nothing maps (decided 18 Oct 2026, spec 006 T008). An
+  // encoded ';' is part of the id, as it is to Java.
+  it("is Spring's 404, on any segment, before any endpoint runs", async () => {
+    for (const path of [
+      'data;jsessionid=x/diseases',
+      'data/pathways/top/9606;x',
+      'data/query/R-HSA-70486;x/displayName',
+      'data/schema/Pathway;x/attributes',
+      'data/query/ids;x=1',
+    ]) {
+      const response = await fetch(`${base}/ContentService/${path}`);
+      const body = await response.json();
+      expect([path, response.status, body.error, body.path]).toEqual([
+        path,
+        404,
+        'Not Found',
+        `/ContentService/${path}`,
+      ]);
+    }
   });
 });

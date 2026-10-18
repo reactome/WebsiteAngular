@@ -150,7 +150,7 @@ module.exports = {
   // /query/enhanced|abridged/{id} are other endpoints.
   // Including POST /query/ids, a batch of objects by id, and its map form.
   '^/ContentService/data/query/[^/?]+/?(\\?|$)': contentNode,
-  '^/ContentService/data/query/ids(;[^/?]*)?/map/?(\\?|$)': contentNode,
+  '^/ContentService/data/query/ids/map/?(\\?|$)': contentNode,
   // Every disease, whole and as a DOID list.
   '^/ContentService/data/diseases(/doid)?/?(\\?|$)': contentNode,
   // Any attribute of an object, as Java's /data/query/{id}/{attributeName}

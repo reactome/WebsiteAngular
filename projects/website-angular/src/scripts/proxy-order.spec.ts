@@ -64,7 +64,7 @@ describe('the dev server proxy', () => {
     });
   }
 
-  for (const id of ['R-HSA-5672965', '5672965', 'REACT_111102.2', 'R-HSA-70486;x']) {
+  for (const id of ['R-HSA-5672965', '5672965', 'REACT_111102.2']) {
     it(`sends the ancestors of ${id} to the content service`, async () => {
       await expectContentNode(`/ContentService/data/event/${id}/ancestors`);
     });
@@ -282,9 +282,8 @@ describe('the dev server proxy', () => {
     '/ContentService/data/instance/R-HSA-141433/referrers',
     // The PSICQUIC services the Pathway Browser can draw interactors from.
     '/ContentService/interactors/psicquic/resources',
-    // A batch of objects by id (POST), with a matrix parameter too, and as a map.
+    // A batch of objects by id (POST), and as a map.
     '/ContentService/data/query/ids',
-    '/ContentService/data/query/ids;x=1',
     '/ContentService/data/query/ids/map',
     // One page of a schema class's objects, whole -- "models" is a class name there too.
     '/ContentService/data/schema/Pathway?page=1&offset=25',

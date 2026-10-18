@@ -15,11 +15,11 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T001 The node service's first routed endpoints, with its graph access and the parity harness — #267
 - [x] T002 Java's CORS headers on node's answers — #359
 - [x] T003 One copy of the node routes for every environment; a node route is never answered by Java — #390
-- [x] T004 Java's path rules: matrix parameters, `//`, encoded slashes and backslashes, ids past `long` — #474
+- [x] T004 Java's path rules: matrix parameters (since refused, T008), `//`, encoded slashes and backslashes, ids past `long` — #474
 - [x] T005 Percent-encoded literal segments routed as Java routes them; Spring's JSON 404 for an unmatched path — #490
 - [x] T006 Every node route takes a trailing slash, as Spring's do; nginx and the dev proxy tested to agree — #498
 - [x] T007 `nginx -t` on every deployment's image in CI — #499
-- [ ] T008 Every node route takes a matrix parameter on its literal segments (`/data/diseases;jsessionid=x`), as Spring does: nginx's literal locations do not match it, so it reaches Tomcat today and nothing once Tomcat is off (found reviewing #510)
+- [x] T008 A matrix parameter (`/data/diseases;jsessionid=x`) on any segment is Spring's 404, not Java's answer: nothing sends one on purpose, and each form of a path is one more URL to cache (decided 18 Oct 2026; tools/content-node/CACHING.md). Taking them on every literal segment (#525) was reverted
 
 ## Phase 2: Content and species (done)
 

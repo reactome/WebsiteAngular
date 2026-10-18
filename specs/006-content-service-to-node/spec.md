@@ -50,7 +50,7 @@ Anyone can see, for every published operation, whether node answers it, which pu
 
 ### Edge Cases
 
-- Ids in every form Java reads: stable ids, dbIds with versions, old `REACT_` ids, Unicode digits, matrix parameters, percent-encoded segments, ids past Java's `long` range.
+- Ids in every form Java reads: stable ids, dbIds with versions, old `REACT_` ids, Unicode digits, percent-encoded segments, ids past Java's `long` range.
 - Errors are Java's: the same status, envelope and message, for missing parameters, bad ids, unknown routes and wrong methods.
 - Answers Java caches are cached by node the same way (research D9, D10).
 - An unordered answer is declared by sorting, not by a wildcard (D15).

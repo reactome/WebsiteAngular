@@ -148,8 +148,7 @@ export const endpoints = [
      *    set from the pathway: no stId, no dates.
      */
     handler: async (request) => {
-      // As Spring binds it: a ';' matrix parameter dropped from the segment as
-      // sent, then decoded (pathId) -- so 9606;x is 9606.
+      // As Spring binds it: decoded from the segment as sent (pathId).
       const taxId = pathId(rawSegment(request, 5));
       // content-service decodes the species once more (URLDecoder), so
       // 'Homo+sapiens' finds human; a malformed escape is Java's 500. The 404
@@ -507,8 +506,7 @@ export const endpoints = [
        * page renders.
        */
       handler: async (request) => {
-        // The raw segment, as every handler reads its id: Express's decoded
-        // params lose the matrix-parameter difference (see pathId).
+        // The raw segment, as every handler reads its id (see pathId).
         const id = pathId(rawSegment(request, 4));
         // Matched on one property, chosen before the query runs, and **under the
         // label the index is on**.
@@ -4467,15 +4465,12 @@ function asciiDigits(digits) {
 
 /**
  * The id as Spring hands it to a controller, from the path segment as it was
- * sent. Whatever follows a ';' is a matrix parameter, removed before the path
- * is decoded and matched, so Java reads `70486;x` as `70486` -- in its answer
- * and its 404 message alike -- but `70486%3Bx` as `70486;x`. Express decodes
- * `request.params` first, which loses that difference, so the raw segment is
- * read instead (nginx passes the request's own URI through).
+ * sent, decoded as Tomcat decodes it (javaPathDecode): Express decodes
+ * `request.params` its own way, so the raw segment is read instead (nginx
+ * passes the request's own URI through). A raw ';' never gets this far.
  */
 export function pathId(segment) {
-  const kept = String(segment).split(';')[0] ?? '';
-  return javaPathDecode(kept);
+  return javaPathDecode(String(segment));
 }
 
 /**
@@ -5685,8 +5680,7 @@ let safeExtensions;
  * inline;filename=f.txt` -- Spring's guard against a reflected download
  * (AbstractMessageConverterMethodProcessor.addContentDispositionHeader), on
  * every body it writes but a redirect's. The request path's last segment is
- * read up to any ';', percent-decoded, and its extension -- after the last
- * '.' -- checked; so is the extension of the matrix parameters after it. An
+ * percent-decoded and its extension -- after the last '.' -- checked. An
  * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.mjs says
  * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
  * much as `.exe`.
@@ -5694,9 +5688,6 @@ let safeExtensions;
 export function downloadGuard(request) {
   const uri = String(request.originalUrl ?? '').split('?')[0];
   const last = uri.slice(uri.lastIndexOf('/') + 1);
-  const at = last.indexOf(';');
-  const name = at === -1 ? last : last.slice(0, at);
-  const parameters = at === -1 ? '' : last.slice(at);
   safeExtensions ??= new Set(
     JSON.parse(readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')).safe
   );
@@ -5712,7 +5703,7 @@ export function downloadGuard(request) {
     const extension = decoded.slice(dot + 1);
     return javaTrimAll(extension) === '' || safeExtensions.has(extension.toLowerCase());
   };
-  return !trusted(name) || !trusted(parameters);
+  return !trusted(last);
 }
 
 /**
@@ -5831,7 +5822,7 @@ function queryValues(request, name) {
 /**
  * Spring's own 404, for a path no mapping matches: not Java's envelope but
  * BasicErrorController's, with the time it was answered and the path as it
- * came, matrix parameters included.
+ * came.
  */
 function springNotFound(request) {
   const path = String(request.originalUrl ?? '').split('?')[0];
@@ -8082,22 +8073,18 @@ export function app() {
           '<!doctype html><html lang="en"><head><title>HTTP Status 400 – Bad Request</title></head><body><h1>HTTP Status 400 – Bad Request</h1></body></html>'
         );
     if (path.includes('//')) return writeResult(response, springNotFound(request));
-    // Spring reads matrix parameters out of every segment, not only an id's:
-    // /data/query;x/R-HSA-70486/stId is /data/query/R-HSA-70486/stId to Java.
-    // Routing here sees the path without them; handlers still read the id
-    // from the path as it came (rawSegment). A segment that was only one is
-    // no segment, which matches no mapping: Spring's 404.
+    // A matrix parameter (`/data;jsessionid=x/diseases`) is no URL of ours:
+    // Java ignores one, but nothing sends one on purpose, and every way of
+    // writing a URL is one more to cache. Spring's 404, as for any path no
+    // mapping matches (decided 18 Oct 2026, spec 006 T008). An encoded ';'
+    // (%3B) is part of an id, as it is to Java.
+    if (path.includes(';')) return writeResult(response, springNotFound(request));
     const [relative, query] = String(request.url).split(/\?(.*)/s);
-    const segments = relative.split('/');
-    const stripped = segments.map((segment) => segment.split(';')[0]);
-    if (stripped.some((segment, at) => segment === '' && segments[at].includes(';')))
-      return writeResult(response, springNotFound(request));
     // Tomcat decodes the path before Spring matches it, so /icon/qu%65ry is
     // /icon/query to Java. Routing here sees letters, digits, '-', '_' and
     // '~' decoded too -- all a literal segment holds -- and handlers still
     // read ids from the path as it came.
-    const routed = stripped
-      .join('/')
+    const routed = relative
       .replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
         const char = String.fromCharCode(parseInt(hex, 16));
         return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
@@ -8190,8 +8177,8 @@ export function app() {
   // regardless.
   server.use((failure, request, response, next) => {
     if (!(failure instanceof URIError) || response.headersSent) return next(failure);
-    // The path as routing saw it -- matrix parameters already stripped from
-    // every segment -- less a trailing slash, which Express ignores too.
+    // The path as routing saw it, less a trailing slash, which Express
+    // ignores too.
     const path = String(request.url)
       .split('?')[0]
       .replace(/(.)\/$/, '$1');
@@ -8270,11 +8257,6 @@ async function answerWith(endpoint, request, response) {
 }
 
 async function answer(endpoint, request, response) {
-  // An id that is only a matrix parameter is no id to Spring: no mapping
-  // matches, and it answers its own 404.
-  const idAt = endpoint.path.split('/').indexOf('{id}');
-  if (idAt > -1 && pathId(rawSegment(request, idAt)) === '')
-    return writeResult(response, springNotFound(request));
   try {
     writeResult(response, await endpoint.handler(request));
   } catch (failure) {

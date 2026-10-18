@@ -125,14 +125,14 @@ describe("Java's other answers", () => {
 });
 
 describe('/data/person/{id}/{attributeName}', () => {
-  it('reads the id as a path variable, matrix parameter cut, and names a person not found', async () => {
+  it('reads the id as a path variable, and names a person not found', async () => {
     root = {
       id: 4,
       labels: ['DatabaseObject', 'Person'],
       props: { dbId: 68285, displayName: 'D', schemaClass: 'Person' },
     };
     asked.length = 0;
-    const response = await get('person/68285;x=1/displayName');
+    const response = await get('person/68285/displayName');
     expect([response.status, await response.text()]).toEqual([200, 'D']);
     root = undefined;
     expect(await messages(await get('person/68286/displayName'))).toEqual([

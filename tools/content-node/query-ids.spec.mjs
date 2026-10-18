@@ -150,8 +150,8 @@ describe("Java's errors", () => {
     }
   });
 
-  it('takes the trailing slash and a matrix parameter, as Spring does', async () => {
-    for (const path of ['ids/', 'ids;x=1', 'ids/map/']) {
+  it('takes the trailing slash, as Spring does', async () => {
+    for (const path of ['ids/', 'ids/map/']) {
       const response = await post(path, 'xyz');
       expect([path, response.status, (await response.json()).messages]).toEqual([
         path,
