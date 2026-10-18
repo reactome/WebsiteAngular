@@ -239,7 +239,35 @@ const withMatrix = (url: string) => {
     );
 };
 
+/**
+ * Java's own neighbours of node routes, which a route matching too much
+ * would take: the matrix test above compares a URL only with itself.
+ */
+const JAVAS = [
+  '/ContentService/data/species/9606',
+  '/ContentService/data/species/mainx',
+  '/ContentService/data/content/tocx',
+  '/ContentService/data/content/toc/X1',
+  '/ContentService/data/diseases/X1',
+  '/ContentService/data/schema/model/X1',
+  '/ContentService/data/query/abridged/R-HSA-109581',
+  '/ContentService/data/query/enhanced;x/R-HSA-109581/X1',
+  '/ContentService/data/query/R-HSA-109581/more',
+  '/ContentService/interactors/psicquic/resourcesx',
+  '/ContentService/search/facet_queryx',
+];
+
 describe('a matrix parameter on a segment', () => {
+  for (const url of JAVAS)
+    it(`leaves ${url} to Java`, async () => {
+      for (const variant of [url, slashed(url), ...withMatrix(url)])
+        expect([variant, nginxTarget(variant), await proxySendsToNode(variant)]).toEqual([
+          variant,
+          'tomcat',
+          false,
+        ]);
+    });
+
   for (const url of [...urls, ...nodeEndpoints.map(sample)])
     it(`goes where ${url} goes`, async () => {
       const target = nginxTarget(url);
