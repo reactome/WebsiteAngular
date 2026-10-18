@@ -24,7 +24,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.mjs';
-import { defaultLabel, label, setLabel } from './cache-label.mjs';
+import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { jsoupText } from './jsoup-text.mjs';
 import { JavaHashMap } from './java-hashmap.mjs';
@@ -4023,15 +4023,25 @@ export function idKeyedMap(entries) {
  * failed on a difference it declares itself.
  */
 export function endpointFor(path) {
+  return endpoints.find((e) => endpointPattern(e.path, '(\\?|$)').test(path));
+}
+
+/** An endpoint's template as a pattern over a path, `tail` after it. */
+function endpointPattern(template, tail) {
   const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return endpoints.find((e) =>
-    new RegExp(
-      `^${e.path
-        .split(/\{\w+\}/)
-        .map(escape)
-        .join('[^/?]+')}(\\?|$)`
-    ).test(path)
+  return new RegExp(
+    `^${template
+      .split(/\{\w+\}/)
+      .map(escape)
+      .join('[^/?]+')}${tail}`
   );
+}
+
+/** The GET endpoint Express would route `path` (no query) to, if any. */
+function getEndpointFor(path) {
+  return endpoints
+    .filter((e) => !e.method || e.method === 'GET')
+    .find((e) => endpointPattern(e.path, '$').test(path));
 }
 
 /** graph-core SchemaRepository.getSchemaClassCounts, as written. */
@@ -8105,6 +8115,27 @@ export function app() {
           return path;
         return head + QUERY_ATTRIBUTES[lower] + slash;
       });
+    // One URL per answer (spec 011): Java answers /x/ as /x, and the edge
+    // would keep both. A GET or HEAD for an endpoint, slashed, is sent to
+    // the URL without the slash -- the path and query as they came. Not
+    // when that would not be the same request: a raw `#` would become a
+    // fragment, a malformed escape would be re-encoded; those are answered
+    // as before, and never stored.
+    const sentUrl = String(request.originalUrl);
+    if (
+      (request.method === 'GET' || request.method === 'HEAD') &&
+      /.\/$/.test(routed) &&
+      !sentUrl.includes('#') &&
+      !/%(?![0-9A-Fa-f]{2})/.test(sentUrl)
+    ) {
+      const endpoint = getEndpointFor(`/ContentService${routed.slice(0, -1)}`);
+      if (endpoint) {
+        const [sent, sentQuery] = sentUrl.split(/\?(.*)/s);
+        const location = sent.slice(0, -1) + (sentQuery === undefined ? '' : `?${sentQuery}`);
+        setLabel(response, redirectLabel(location));
+        return response.status(301).location(location).end();
+      }
+    }
     request.url = routed + (query === undefined ? '' : `?${query}`);
     next();
   });

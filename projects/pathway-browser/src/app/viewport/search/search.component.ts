@@ -274,7 +274,7 @@ export class SearchComponent {
         return of(Search.EMPTY_RESULTS);
       }
       return this.http
-        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks/`, {
+        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks`, {
           params: {
             ...params,
             start: page * pageSize,

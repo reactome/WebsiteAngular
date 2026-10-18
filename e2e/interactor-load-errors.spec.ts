@@ -157,7 +157,7 @@ test('a choice still being looked up cannot displace the one made after it', asy
   let lists = 0;
   let release = () => {};
   const held = new Promise<void>((resolve) => (release = resolve));
-  await page.route('**/interactors/psicquic/resources/', async (route) => {
+  await page.route('**/interactors/psicquic/resources', async (route) => {
     lists += 1;
     // The panel's own list goes through; a lookup's waits.
     if (lists > 1) await held;
