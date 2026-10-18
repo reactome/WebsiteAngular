@@ -25,14 +25,14 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 1: Setup
 
-- [x] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`.
-- [x] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted.
+- [x] T001 [P] Check each Cloudflare claim in research.md R2 and R9 against its page; correct research.md where a quote differs. The claims: `s-maxage` overrides `max-age`; `private` and `no-store` are not stored; Browser TTL takes the higher value; Vary is ignored; HEAD becomes GET; Free has purge by prefix and Smart Tiered Cache. Record anything the documentation leaves open, such as a maximum edge TTL, in `specs/011-api-cache-headers/research.md`. — #530
+- [x] T002 [P] Write `tools/content-node/snapshot-openapi.mjs`. Like `snapshot-schema.mjs`, it fetches Java's published API description from `/ContentService/v3/api-docs` once and writes `tools/content-node/openapi-snapshot.json`, sorted and stable, with the server URL dropped. Add the JSON to `.prettierignore` if it is generated unformatted. — #530
 
 ---
 
 ## Phase 2: Foundational (blocks every story)
 
-- [x] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks:
+- [x] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks: — #530
   - the record's keys equal node's GET endpoint paths (`endpoints` from `service.mjs`);
   - each entry with `java` has exactly that operation's query parameter names, types and defaults from `openapi-snapshot.json`;
   - each `java: null` entry has `why`;
@@ -41,7 +41,7 @@ The pull request that completes a task ticks it here, with its number.
 
   The aliases come from contracts/parameter-record.md: padded and encoded ids, Unicode digits, leading zeros, `+`, hex, `on`/`yes`/`1`, a version past 3 digits, a regex resource, and a repeated non-list parameter. Run it and see it fail.
 
-- [x] T004 Write `tools/content-node/parameters.mjs`:
+- [x] T004 Write `tools/content-node/parameters.mjs`: — #530
   - the record for all 81 GET endpoints, following research R3–R5 and the decisions in plan.md;
   - the shared `VIEW`, `VIEW_IGNORED`, `INCLUDE_REF` and `INCLUDE_REF_IGNORED`;
   - one validator per kind and type;
@@ -49,21 +49,21 @@ The pull request that completes a task ticks it here, with its number.
 
   It is done when T003 passes. Mutate three validators, one at a time, and see T003 catch each.
 
-- [x] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5):
+- [x] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5): — #530
   - `cache: 'never'` on `interactors/psicquic/resources`, `citation/static/{id}`, `citation/export` and `citation/pathway/{id}`;
   - `cache: 'private'` on `exporter/diagram/{id}`.
 
   Add a test to `parameters.spec.mjs` that names each one.
 
-- [x] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint:
+- [x] T006 Build an invalid-input corpus from the record, in `tools/content-node/invalid-inputs.mjs`. For every declared parameter of every GET endpoint: — #530
   - a non-number for a number, `-1` and `0` for a page, an offset past the end;
   - an unknown enum value, an empty value, an unknown species;
   - `on` for a boolean.
 
   Each endpoint uses a sample id from its `sample`.
 
-- [x] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6.
-- [ ] T008 Review, CI, merge and tick T001–T007. No beta check is needed: nothing is served differently yet.
+- [x] T007 Run the corpus against node (its own port, checked free first) and Java: sequentially, spaced, and at most 300 requests per run. Record the verdicts. Fix every difference in `tools/content-node/service.mjs` so node matches Java byte for byte, apart from an error body's `url`, with a handler-level test for each fix, shown failing first. Note the run in research.md R6. — #530
+- [x] T008 Review, CI, merge and tick T001–T007. No beta check is needed: nothing is served differently yet. — #530
 
 **Checkpoint**: the record exists and agrees with Java's description. Node answers bad input as Java does.
 
@@ -77,8 +77,8 @@ The pull request that completes a task ticks it here, with its number.
 
 ### Tests first
 
-- [ ] T009 [P] [US1] Write `tools/content-node/cache-label.spec.mjs` from every row of contracts/cache-labels.md, as a pure function test of `label({ method, endpoint, originalUrl, status })`. Run it and see it fail.
-- [ ] T010 [P] [US2] Add handler-level tests in `tools/content-node/cache-headers.spec.mjs`, with a stand-in graph as in `contained-events.spec.mjs`. They cover:
+- [x] T009 [P] [US1] Write `tools/content-node/cache-label.spec.mjs` from every row of contracts/cache-labels.md, as a pure function test of `label({ method, endpoint, originalUrl, status })`. Run it and see it fail.
+- [x] T010 [P] [US2] Add handler-level tests in `tools/content-node/cache-headers.spec.mjs`, with a stand-in graph as in `contained-events.spec.mjs`. They cover:
   - a standard GET → `public, max-age=3600, s-maxage=31536000` and `standard`;
   - HEAD → the same;
   - `?utm_source=x` → `no-store` and `parameter:utm_source`;
@@ -93,9 +93,9 @@ The pull request that completes a task ticks it here, with its number.
 
 ### Implementation
 
-- [ ] T011 [US1] Write `tools/content-node/cache-label.mjs`. `label()` returns `{ cacheControl, rule }` per data-model.md, using `standardForm` from `parameters.mjs`. T009 passes.
-- [ ] T012 [US2] In `tools/content-node/service.mjs`, set the default `Cache-Control: no-store` and `X-Cache-Rule: default` in the first `/ContentService` middleware (the CORS one), before OPTIONS is answered. Set `private, no-store` and `token` when the raw query has a `token` parameter.
-- [ ] T013 [US1] In `answer()` in `tools/content-node/service.mjs`, after the handler's result and before `writeResult`, set `result.headers` from `label()`. It reads `request.originalUrl`, never `request.url`, and takes the endpoint from `answer()`'s own argument. T010 passes.
+- [x] T011 [US1] Write `tools/content-node/cache-label.mjs`. `label()` returns `{ cacheControl, rule }` per data-model.md, using `standardForm` from `parameters.mjs`. T009 passes.
+- [x] T012 [US2] In `tools/content-node/service.mjs`, set the default `Cache-Control: no-store` and `X-Cache-Rule: default` in the first `/ContentService` middleware (the CORS one), before OPTIONS is answered. Set `private, no-store` and `token` when the raw query has a `token` parameter.
+- [x] T013 [US1] In `answer()` in `tools/content-node/service.mjs`, after the handler's result and before `writeResult`, set `result.headers` from `label()`. It reads `request.originalUrl`, never `request.url`, and takes the endpoint from `answer()`'s own argument. T010 passes.
 
   Then prove it with these mutations, each shown to fail:
   - reading `request.url`;
@@ -103,8 +103,8 @@ The pull request that completes a task ticks it here, with its number.
   - ignoring the method;
   - dropping the default middleware.
 
-- [ ] T014 [P] [US3] In `projects/website-angular/src/scripts/serve-prod.js`, send `Cache-Control: no-store` for the `API_PAGE` paths (`/ContentService`, `/ContentService/`, `/AnalysisService`, `/AnalysisService/`) only. Add a test to `serve-prod.spec.ts`, shown failing first.
-- [ ] T015 [US2] Run the parity harness over its full corpus with the labels on. Zero status or body differences against the run before (SC-003), checked by verdicts and sizes.
+- [x] T014 [P] [US3] In `projects/website-angular/src/scripts/serve-prod.js`, send `Cache-Control: no-store` for the `API_PAGE` paths (`/ContentService`, `/ContentService/`, `/AnalysisService`, `/AnalysisService/`) only. Add a test to `serve-prod.spec.ts`, shown failing first.
+- [x] T015 [US2] Run the parity harness over its full corpus with the labels on. Zero status or body differences against the run before (SC-003), checked by verdicts and sizes.
 - [ ] T016 Review, CI and merge. Then deploy node, nginx and the site to beta. Check with `curl --resolve beta.reactome.org:443:127.0.0.1 -D -`:
   - `/ContentService/data/diseases` → public and `standard`;
   - `?utm_source=x` → `no-store`;

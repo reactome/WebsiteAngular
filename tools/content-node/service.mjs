@@ -24,6 +24,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.mjs';
+import { defaultLabel, label, setLabel } from './cache-label.mjs';
 import { solr, solrConfigured } from './solr.mjs';
 import { jsoupText } from './jsoup-text.mjs';
 import { JavaHashMap } from './java-hashmap.mjs';
@@ -8052,6 +8053,10 @@ export function app() {
   // preflight is answered the way Java answers it.
   server.use('/ContentService', (request, response, next) => {
     response.setHeader('Access-Control-Allow-Origin', '*');
+    // Not stored at the edge unless an endpoint's answer says otherwise
+    // (answer()): an error, a preflight or a path no endpoint answers is
+    // never kept (spec 011).
+    setLabel(response, defaultLabel(String(request.originalUrl ?? '')));
     if (request.method !== 'OPTIONS') return next();
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8257,15 +8262,29 @@ async function answerWith(endpoint, request, response) {
 }
 
 async function answer(endpoint, request, response) {
+  // The answer's caching label, from the request exactly as it was sent:
+  // request.url has been rewritten for routing by now (spec 011).
+  const write = (result) => {
+    setLabel(
+      response,
+      label({
+        method: request.method,
+        endpoint: endpoint.path,
+        originalUrl: String(request.originalUrl ?? ''),
+        status: result.status,
+      })
+    );
+    writeResult(response, result);
+  };
   try {
-    writeResult(response, await endpoint.handler(request));
+    write(await endpoint.handler(request));
   } catch (failure) {
     const answer = failureAnswer(request, endpoint.path, failure);
-    if (answer) return writeResult(response, answer);
+    if (answer) return write(answer);
     // The message, not a stack: this stands in for a service whose errors
     // reach real clients.
     console.error(`${endpoint.path}: ${failure.message}`);
-    writeResult(response, { status: 500, type: 'text/plain', body: 'content service error' });
+    write({ status: 500, type: 'text/plain', body: 'content service error' });
   }
 }
 

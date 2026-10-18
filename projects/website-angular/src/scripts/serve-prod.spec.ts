@@ -338,9 +338,13 @@ describe('serve-prod and the API roots', () => {
   ]) {
     it(`answers ${root} with this site's API page`, async () => {
       const before = reached.length;
-      const body = await (await fetch(base + root)).text();
+      const response = await fetch(base + root);
+      const body = await response.text();
       expect(body).toContain(INDEX_MARKER);
       expect(reached.length, 'the service was not asked').toBe(before);
+      // Never kept at the edge: the API's addresses are cached there, and a
+      // stored page would outlive the next deploy's scripts (spec 011).
+      expect(response.headers.get('cache-control')).toBe('no-store');
     });
   }
 
