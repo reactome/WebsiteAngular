@@ -215,3 +215,40 @@ describe('where nginx sends things', () => {
         ]);
       });
 });
+
+/**
+ * A matrix parameter on any segment, as Spring takes one: `;jsessionid=x`
+ * is cut from each segment before Java matches the path, so
+ * `/data;x/diseases` is `/data/diseases` to Java. nginx's locations read the
+ * path with it, so each literal segment of a node route allows one; a URL
+ * that went to node without it would otherwise reach Tomcat today and
+ * nothing once Tomcat is off. Spec 006 T008.
+ */
+const withMatrix = (url: string) => {
+  const at = url.indexOf('?');
+  const [path, query] = at === -1 ? [url, ''] : [url.slice(0, at), url.slice(at)];
+  const segments = path.split('/');
+  // From the segment after /ContentService: Tomcat cuts one from the context
+  // path too, but nginx's /ContentService/ prefix never matched that.
+  return segments
+    .slice(2)
+    .flatMap((segment, i) =>
+      segment
+        ? [segments.map((s, j) => (j === i + 2 ? `${s};jsessionid=x` : s)).join('/') + query]
+        : []
+    );
+};
+
+describe('a matrix parameter on a segment', () => {
+  for (const url of [...urls, ...nodeEndpoints.map(sample)])
+    it(`goes where ${url} goes`, async () => {
+      const target = nginxTarget(url);
+      const proxied = await proxySendsToNode(url);
+      for (const variant of withMatrix(url))
+        expect([variant, nginxTarget(variant), await proxySendsToNode(variant)]).toEqual([
+          variant,
+          target,
+          proxied,
+        ]);
+    });
+});
