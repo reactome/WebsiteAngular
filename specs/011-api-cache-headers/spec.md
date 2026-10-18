@@ -103,8 +103,8 @@ The Reactome website is the content API's most important client. Every request i
 
 ### Edge Cases
 
-- **Parameter order and defaults:** a declared parameter repeated, or given its default value explicitly (`?page=1`), is still standard form. The cache key then has a few more entries, but a bounded number, since each endpoint declares only a handful of parameters.
-- **A parameter declared but ignored by Java on that path** (`species` on `/data/pathways/top/{id}`, measured in CACHING.md): it counts as declared. The answer is the same either way, so caching it is safe.
+- **Parameter order and defaults:** any order, and a default value given explicitly (`?page=1`), is still standard form. The cache key then has a few more entries, but a bounded number. A parameter may be repeated only if it takes a list (research R4).
+- **A parameter declared but ignored by Java on that path** (`view` and `includeRef` on most endpoints; `types` on one search endpoint): it counts as declared. The answer is the same either way, so caching it is safe. `species` on `/data/pathways/top/{id}`, CACHING.md's example, is not declared there, so it is "do not store" (research R3).
 - **An empty value** (`?species=`) is not a valid value, so the answer is "do not store".
 - **Identifier forms:**
   - Standard: a stable id, a stable id with its version, and a database id written without padding.
