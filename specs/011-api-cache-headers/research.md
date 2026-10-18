@@ -231,3 +231,15 @@ The corpus is run sequentially and spaced, a few hundred requests at most per ru
 - Caching both forms: two entries per answer.
 - Redirecting `/x` to `/x/`: Java's API description and the site use the unslashed form almost everywhere.
 - Refusing the slash with a 404: it would break clients that add one, where a redirect costs a round trip.
+
+## R11. The record on the site's own traffic (measured 18 Oct 2026)
+
+The record takes a documented endpoint's query parameters from Java's description rather than restating them, so the two cannot drift. Run over every distinct ContentService GET that node answered 200 in the recorded e2e traffic, 388 of 412 are standard form. The other 24 are the site's, all for US5:
+
+| Rule                | Count | What the site sends                                                                                                   |
+| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
+| `form`              | 6     | `/search/fireworks/` and `/interactors/psicquic/resources/`, with a trailing slash                                    |
+| `parameter:cluster` | 8     | `cluster=true` on `/search/facet_query`, which does not declare it                                                    |
+| `parameter:diagram` | 4     | `diagram=…` on `/search/diagram/{diagram}`, which does not declare it (the spread parameters in the search component) |
+| `parameter:scope`   | 4     | `scope=…` on `/search/diagram/{pathwayId}/flag`, which does not declare it                                            |
+| `parameter:fields`  | 2     | `fields=%20DB_ID`, with a leading space                                                                               |

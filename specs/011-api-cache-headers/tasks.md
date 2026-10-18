@@ -32,7 +32,7 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks:
+- [x] T003 Write `tools/content-node/parameters.spec.mjs` before the record exists. It checks:
   - the record's keys equal node's GET endpoint paths (`endpoints` from `service.mjs`);
   - each entry with `java` has exactly that operation's query parameter names, types and defaults from `openapi-snapshot.json`;
   - each `java: null` entry has `why`;
@@ -41,7 +41,7 @@ The pull request that completes a task ticks it here, with its number.
 
   The aliases come from contracts/parameter-record.md: padded and encoded ids, Unicode digits, leading zeros, `+`, hex, `on`/`yes`/`1`, a version past 3 digits, a regex resource, and a repeated non-list parameter. Run it and see it fail.
 
-- [ ] T004 Write `tools/content-node/parameters.mjs`:
+- [x] T004 Write `tools/content-node/parameters.mjs`:
   - the record for all 81 GET endpoints, following research R3–R5 and the decisions in plan.md;
   - the shared `VIEW`, `VIEW_IGNORED`, `INCLUDE_REF` and `INCLUDE_REF_IGNORED`;
   - one validator per kind and type;
@@ -49,7 +49,7 @@ The pull request that completes a task ticks it here, with its number.
 
   It is done when T003 passes. Mutate three validators, one at a time, and see T003 catch each.
 
-- [ ] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5):
+- [x] T005 Mark the never-cached endpoints in `tools/content-node/parameters.mjs` (research R5):
   - `cache: 'never'` on `interactors/psicquic/resources`, `citation/static/{id}`, `citation/export` and `citation/pathway/{id}`;
   - `cache: 'private'` on `exporter/diagram/{id}`.
 
