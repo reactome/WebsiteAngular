@@ -32,18 +32,18 @@ The label is computed per request, and only from the request as sent and the ans
 
 **The rule that applied** goes out as `X-Cache-Rule`:
 
-| Rule               | Meaning                                                            |
-| ------------------ | ------------------------------------------------------------------ |
-| `standard`         | Cacheable: every check passed                                      |
-| `redirect`         | A `301` from a trailing-slash URL to the one without it            |
-| `method`           | The method is not GET or HEAD                                      |
-| `status`           | The status is not 200                                              |
-| `token`            | The request has a `token` query parameter                          |
-| `endpoint`         | The endpoint is marked never cached                                |
-| `parameter:<name>` | The named query parameter is undeclared, repeated or invalid       |
-| `path:<variable>`  | The named path variable is not in a standard form                  |
-| `form`             | The rest of the path is not in standard form, e.g. encoded letters |
-| `default`          | The answer never reached an endpoint                               |
+| Rule               | Meaning                                                               |
+| ------------------ | --------------------------------------------------------------------- |
+| `standard`         | Cacheable: every check passed                                         |
+| `redirect`         | A `301` from a trailing-slash URL to the one without it; never stored |
+| `method`           | The method is not GET or HEAD                                         |
+| `status`           | The status is not 200                                                 |
+| `token`            | The request has a `token` query parameter                             |
+| `endpoint`         | The endpoint is marked never cached                                   |
+| `parameter:<name>` | The named query parameter is undeclared, repeated or invalid          |
+| `path:<variable>`  | The named path variable is not in a standard form                     |
+| `form`             | The rest of the path is not in standard form, e.g. encoded letters    |
+| `default`          | The answer never reached an endpoint                                  |
 
 **Transitions**: none. The label is a pure function of the request and its status.
 

@@ -219,7 +219,7 @@ The corpus is run sequentially and spaced, a few hundred requests at most per ru
 
 **Decision** (awright, 18 Oct 2026): a GET or HEAD for a node endpoint whose path ends in `/` is answered `301 Moved Permanently`, to the same path without the slash and with the query string kept as sent.
 
-- **The redirect itself is cacheable.** It is labelled `public, max-age=3600, s-maxage=31536000` with rule `redirect`, so Cloudflare keeps it like an answer.
+- **The redirect is never stored** (`no-store`, rule `redirect`; private with a token). Standard form cannot tell whether the URL a redirect points to exists, since any id of the right shape passes, so a stored redirect would be one cache entry per id anyone asks for (review of #532). A redirect costs node no query to answer again. Nor is a URL redirected whose `Location` would be another request: one with a raw `#`, which would become a fragment, or a malformed escape, which would be re-encoded. Those are answered as before, never stored.
 - **POST is never redirected,** because some clients turn a redirected POST into a GET and lose its body. A POST is answered as today and never stored.
 - **Where:** in node, before routing, and only for paths that match a node endpoint. nginx still sends the slashed form to node (spec 006 T006), and its routing test is unchanged. Paths Java still answers keep Java's behaviour until they are ported.
 - **The site:** it sends two slashed URLs, `/search/fireworks/` (`search.component.ts:276`) and `/interactors/psicquic/resources/`. Both are changed to the unslashed form, so the site never pays the extra round trip.

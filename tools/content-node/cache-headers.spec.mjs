@@ -144,34 +144,50 @@ describe('an answer that fails as it is written', () => {
 
 // One URL per answer (spec 011 FR-013): a trailing slash is the same answer
 // under a second URL, so a GET or HEAD for it is sent to the URL without.
+// The redirect is never stored: standard form cannot tell whether the URL it
+// points to exists, so a stored redirect would be one entry per id asked.
 describe('a trailing slash', () => {
-  it('is a 301 to the URL without it, query kept as sent, kept at the edge like an answer', async () => {
+  it('is a 301 to the URL without it, query kept as sent, and never stored', async () => {
     expect(await redirect('/ContentService/data/schema/Pathway/attributes/?view=nested')).toEqual([
       301,
       '/ContentService/data/schema/Pathway/attributes?view=nested',
-      CACHEABLE,
+      'no-store',
       'redirect',
     ]);
     expect(await redirect('/ContentService/data/schema/Pathway/attributes/', 'HEAD')).toEqual([
       301,
       '/ContentService/data/schema/Pathway/attributes',
-      CACHEABLE,
+      'no-store',
+      'redirect',
+    ]);
+    // An id of the right shape that nothing has: still not a stored entry.
+    expect(await redirect('/ContentService/data/query/R-HSA-98765432123456/')).toEqual([
+      301,
+      '/ContentService/data/query/R-HSA-98765432123456',
+      'no-store',
       'redirect',
     ]);
   });
 
-  it('keeps an encoded id as it came, and is not stored when the URL is not standard', async () => {
+  it('keeps the path and query exactly as sent, and a token private', async () => {
     expect(await redirect('/ContentService/data/query/R-HSA-1%2Dx/')).toEqual([
       301,
       '/ContentService/data/query/R-HSA-1%2Dx',
       'no-store',
-      'path:id',
+      'redirect',
     ]);
-    expect(await redirect('/ContentService/data/schema/Pathway/attributes/?utm_source=x')).toEqual([
+    // Routed as /data/query/...: redirected, the letter left as it came.
+    expect(await redirect('/ContentService/data/qu%65ry/R-HSA-1/')).toEqual([
       301,
-      '/ContentService/data/schema/Pathway/attributes?utm_source=x',
+      '/ContentService/data/qu%65ry/R-HSA-1',
       'no-store',
-      'parameter:utm_source',
+      'redirect',
+    ]);
+    expect(await redirect('/ContentService/data/schema/Pathway/attributes/?a=1?b=2')).toEqual([
+      301,
+      '/ContentService/data/schema/Pathway/attributes?a=1?b=2',
+      'no-store',
+      'redirect',
     ]);
     expect(await redirect('/ContentService/data/schema/Pathway/attributes/?token=x')).toEqual([
       301,
@@ -181,15 +197,19 @@ describe('a trailing slash', () => {
     ]);
   });
 
-  it('is not a redirect for a POST, or for a path no endpoint answers', async () => {
+  it('is not a redirect for a POST, a POST-only path, a path no endpoint answers, or a malformed escape', async () => {
     const post = await at('/data/query/ids/', { method: 'POST', body: 'R-HSA-1' });
     expect([post.status === 301, ...headers(post)]).toEqual([false, 'no-store', 'method']);
+    const postOnly = await redirect('/ContentService/data/orthologies/ids/species/9606/');
+    expect(postOnly.slice(0, 2)).toEqual([405, undefined]);
     expect(await redirect('/ContentService/data/nothing/')).toEqual([
       404,
       undefined,
       'no-store',
       'default',
     ]);
+    const malformed = await redirect('/ContentService/data/query/%zz/');
+    expect([malformed[0] === 301, malformed[2]]).toEqual([false, 'no-store']);
   });
 });
 
