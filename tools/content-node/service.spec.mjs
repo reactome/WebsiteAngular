@@ -2164,4 +2164,15 @@ describe('a matrix parameter', () => {
       ]);
     }
   });
+
+  it("is not a ';' in the query string, nor an encoded one", async () => {
+    // /pathways/top reads its species with URLDecoder: '%' alone is Java's
+    // 500 before any query, so neither form reaches the graph.
+    for (const path of ['data/pathways/top/%25?a=1;b=2', 'data/pathways/top/%25%3Bx']) {
+      const response = await fetch(`${base}/ContentService/${path}`);
+      expect([path, response.status]).toEqual([path, 500]);
+      // Java's own 500 for each: the escape, not a missing mapping.
+      expect(await response.text()).toContain('URLDecoder: ');
+    }
+  });
 });

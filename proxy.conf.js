@@ -68,6 +68,9 @@ module.exports = {
     changeOrigin: true,
     pathRewrite: { '^/reactome': '' },
   },
+  // A raw ';' anywhere in the path is node's 404, as in nginx
+  // (deploy/nginx/common/routes-core.conf; spec 006 T008).
+  '^/ContentService/[^?]*;': contentNode,
   // The content endpoints served by the node port (tools/content-node), listed
   // **before** the general /ContentService rule because the first match wins and
   // the general one would swallow them. These are all three of Java's
@@ -83,25 +86,13 @@ module.exports = {
   //
   // Reversible by deleting these entries. The node service holds the lists in
   // memory and answers in ~4ms, the same as Java; see specs/006 D9.
-  ...Object.fromEntries(
-    [
-      '/ContentService/data/content/toc',
-      '/ContentService/data/content/doi',
-      '/ContentService/data/content/contributors',
-      // The species lists. Exact contexts, not a `/data/species` prefix: Java
-      // also serves `/data/species/{taxId}` shapes that node does not, and a
-      // prefix would claim them and 404 what currently works.
-      '/ContentService/data/species/main',
-      '/ContentService/data/species/all',
-    ].map((context) => [
-      context,
-      {
-        target: process.env.CONTENT_NODE_TARGET || 'http://127.0.0.1:4400',
-        secure: false,
-        changeOrigin: true,
-      },
-    ])
-  ),
+  // Anchored, not prefixes: a prefix context also took /data/content/tocx
+  // and /data/content/toc/X1, which nginx leaves to Java.
+  '^/ContentService/data/content/(toc|doi|contributors)/?(\\?|$)': contentNode,
+  // The species lists, not a `/data/species` prefix: Java also serves
+  // `/data/species/{taxId}` shapes that node does not, and a prefix would
+  // claim them and 404 what currently works.
+  '^/ContentService/data/species/(main|all)/?(\\?|$)': contentNode,
   // An object with everything around it, for the details panel and the
   // website's detail pages; a reference entity as a summary of its entities.
   '^/ContentService/data/query/enhanced/v2/[^/?]+/?(\\?|$)': contentNode,
