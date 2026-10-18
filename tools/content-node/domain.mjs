@@ -28,7 +28,10 @@ function SNAPSHOT() {
   const graph = {};
   for (const [name, entry] of Object.entries(stored.graph))
     graph[name] = { ...entry, fields: entry.fields.map((position) => stored.fields[position]) };
-  snapshot = { json, graph, interfaces: new Set(stored.interfaces), store: stored.store };
+  const getters = {};
+  for (const [name, positions] of Object.entries(stored.getters ?? {}))
+    getters[name] = positions.map((position) => stored.getterEntries[position]);
+  snapshot = { json, graph, getters, interfaces: new Set(stored.interfaces), store: stored.store };
   return snapshot;
 }
 
@@ -333,6 +336,16 @@ const COMPUTED = {
   'Event.getCompartment': expanding('compartment'),
   'Event.getEventOf': expanding('eventOf'),
   'Pathway.getHasEvent': expanding('hasEvent'),
+  'Pathway.getHasEncapsulatedEvent': expanding('hasEncapsulatedEvent'),
+  // super.getCreated() / getModified(): DatabaseObject's field.
+  'Person.getCreated': (entity) => entity.fields.created,
+  'Person.getModified': (entity) => entity.fields.modified,
+  // databaseName.replace(" ", "-"); no database name is Java's NullPointerException.
+  'ReferenceEntity.getSimplifiedDatabaseName': (entity) => {
+    if (entity.fields.databaseName === undefined || entity.fields.databaseName === null)
+      throw new AttributeFailure('null', 'ReferenceEntity.getSimplifiedDatabaseName');
+    return entity.fields.databaseName.replaceAll(' ', '-');
+  },
   'PhysicalEntity.getCandidateOf': expanding('candidateOf'),
   'PhysicalEntity.getCompartment': expanding('compartment'),
   'PhysicalEntity.getComponentOf': expanding('componentOf'),
@@ -848,4 +861,151 @@ export function findByIdParameters(labels) {
     if (!keep[type].includes(target)) keep[type].push(target);
   }
   return { keep };
+}
+
+/*
+ * /data/query/{id}/{attributeName}: an object's getter called by name, as
+ * ControllerUtils.getProperty calls it, and its value written as toTSV
+ * writes it. The getters are graph-core's own, each class's read from the
+ * deployed jar into the snapshot (`getters`) with what each returns: a field,
+ * a getter COMPUTED here, a constant, Object.getClass.
+ */
+
+/**
+ * The getter getProperty finds for an attribute: the first public method
+ * whose name is "get" + the attribute, ignoring case. No two of a class's
+ * getters differ only in case, so that is at most one, whatever order the
+ * JVM lists them in. Undefined when there is none.
+ */
+export function attributeGetter(schemaClass, attribute) {
+  const wanted = `get${attribute}`.toLowerCase();
+  const entry = SNAPSHOT().getters[schemaClass]?.find(([lower]) => lower === wanted);
+  if (!entry) return undefined;
+  const [, name, source, returns, element, projected] = entry;
+  return { name, source, returns, element, projected };
+}
+
+/** A getter that cannot be answered: one taking arguments, or one not ported. */
+export class AttributeFailure extends Error {
+  constructor(kind, detail) {
+    super(`${kind}: ${detail}`);
+    this.kind = kind;
+    this.detail = detail;
+  }
+}
+
+/** What a getter returns, from the fields as they now stand. */
+function getterResult(entity, getter) {
+  const { source } = getter;
+  if (typeof source === 'string') {
+    if (source === 'Object.getClass')
+      return { javaClass: `class org.reactome.server.graph.domain.model.${entity.schemaClass}` };
+    if (COMPUTED[source]) return COMPUTED[source](entity);
+    return entity.fields[source];
+  }
+  if (Object.hasOwn(source, 'constant')) return source.constant;
+  if (Object.hasOwn(source, 'arguments')) throw new AttributeFailure('arguments', source.arguments);
+  throw new AttributeFailure('unported', source.unported);
+}
+
+const COLLECTIONS = new Set(['List', 'Set', 'SortedSet', 'Collection']);
+const isEmptyResult = (value) =>
+  value === undefined || value === null || (Array.isArray(value) && value.length === 0);
+
+/**
+ * Has.Util.aggregateStoichiometry, as a relationship field's setter applies
+ * it to what the aspect loaded: one relationship per object, in the order
+ * first met (its `order` counting from 0), its stoichiometry the times met.
+ */
+function aggregate(relationClass, entities) {
+  const byId = new Map();
+  for (const entity of entities) {
+    const key = entity.properties.dbId;
+    const relation = byId.get(key);
+    if (relation) relation.stoichiometry += 1;
+    else byId.set(key, new Relation(relationClass, entity, { order: byId.size, stoichiometry: 1 }));
+  }
+  return [...byId.values()];
+}
+
+/**
+ * The getter's value, as LazyFetchAspect leaves it. autoFetch: a getter that
+ * returns DatabaseObjects, named after a relationship field, whose value is
+ * empty, loads the relationship (lazyLoad) and sets it through the field's
+ * setter, then is called again. An outgoing relationship of an object
+ * findById loaded is never fetched again -- the load has it already -- so
+ * only incoming ones are. aroundReactomeProjectedRelationship: a getter
+ * whose value is empty first calls the getter it names, then is called again.
+ */
+export async function attributeValue(entity, getter, lazyLoad) {
+  let value = getterResult(entity, getter);
+  if (getter.projected && isEmptyResult(value)) {
+    const named = attributeGetter(entity.schemaClass, getter.projected.slice(3));
+    if (named) await attributeValue(entity, named, lazyLoad);
+    value = getterResult(entity, getter);
+  }
+  if (!isEmptyResult(value)) return value;
+  const fieldName = getter.name.charAt(3).toLowerCase() + getter.name.slice(4);
+  const field = SNAPSHOT().graph[entity.schemaClass]?.fields.find(
+    (spec) => spec[0] === fieldName && spec.length > 2
+  );
+  if (!field) return value;
+  const [, type, direction, , collection, relationClass] = field;
+  const returnsObjects = COLLECTIONS.has(getter.returns)
+    ? getter.element !== '' && isDomainObject(getter.element)
+    : isDomainObject(getter.returns);
+  if (!returnsObjects || direction !== 'INCOMING') return value;
+  const loaded = await lazyLoad(entity.properties.dbId, type, direction, getter, collection);
+  if (relationClass) entity.fields[fieldName] = aggregate(relationClass, loaded);
+  else if (collection === '') entity.fields[fieldName] = loaded[0];
+  else entity.fields[fieldName] = loaded;
+  return getterResult(entity, getter);
+}
+
+/** Whether a class is a DatabaseObject, as the aspect's pointcut asks. */
+function isDomainObject(name) {
+  try {
+    return isA(name, 'DatabaseObject');
+  } catch {
+    return false;
+  }
+}
+
+/** DatabaseObject.toString: "Class {dbId=…, stId='…', displayName='…'}", no stId when there is none. */
+function objectText(entity) {
+  const { dbId, stId, displayName } = entity.properties;
+  const id = stId === null || stId === undefined ? `dbId=${dbId}` : `dbId=${dbId}, stId='${stId}'`;
+  return `${entity.schemaClass} {${id}, displayName='${displayName ?? null}'}`;
+}
+
+/** Has.toString. */
+function relationText(relation) {
+  const type = relation.type ?? SNAPSHOT().graph[relation.schemaClass]?.type;
+  return `Has{type=${type}, stoichiometry=${relation.stoichiometry}, order=${relation.order}, element=${objectText(relation.element)}}`;
+}
+
+/**
+ * ControllerUtils.toTSV: a DatabaseObject as its id (stable id, else dbId),
+ * its text -- a getText's, through Jsoup, else its displayName -- and its
+ * class, tab-separated; a collection as each of its items so written, one a
+ * line; anything else as Java's toString writes it. `jsoupText` is passed in
+ * (jsoup-text.mjs).
+ */
+export function attributeText(value, jsoupText, getter) {
+  // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.
+  if (typeof value === 'number' && getter && /^(Double|Float|double|float)$/.test(getter.returns))
+    return javaDouble(value);
+  if (value instanceof Entity) {
+    const { stId, dbId, displayName } = value.properties;
+    const textGetter = attributeGetter(value.schemaClass, 'text');
+    const text = textGetter ? jsoupText(getterResult(value, textGetter)) : displayName;
+    const id = stId !== null && stId !== undefined && stId !== '' ? stId : String(dbId);
+    return `${id}\t${text ?? null}\t${value.schemaClass}`;
+  }
+  if (Array.isArray(value))
+    return value.map((item) => `${attributeText(item, jsoupText)}\n`).join('');
+  if (value instanceof Relation) return relationText(value);
+  if (value && typeof value === 'object' && value.javaClass) return value.javaClass;
+  if (typeof value === 'number' && !Number.isInteger(value)) return javaDouble(value);
+  return String(value);
 }

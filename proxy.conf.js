@@ -137,9 +137,8 @@ module.exports = {
   '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)/?(\\?|$)': contentNode,
   // What points at an object, for the website's detail pages.
   '^/ContentService/data/instance/[^/?]+/referrers/?(\\?|$)': contentNode,
-  // A person, and the publications they authored. Not the other attributes
-  // under /person/{id}/, which Java serves.
-  '^/ContentService/data/person/[^/?]+(/publications)?/?(\\?|$)': contentNode,
+  // A person, the publications they authored, and any other attribute of them.
+  '^/ContentService/data/person/[^/?]+(/[^/?]+)?/?(\\?|$)': contentNode,
   // The person page's four lists. A pattern rather than a prefix: these take an
   // id in the middle, and `/ContentService/data/person` would also claim the
   // other attributes under /person/{id}/, which node does not serve.
@@ -159,13 +158,10 @@ module.exports = {
   '^/ContentService/data/query/ids(;[^/?]*)?/map/?(\\?|$)': contentNode,
   // Every disease, whole and as a DOID list.
   '^/ContentService/data/diseases(/doid)?/?(\\?|$)': contentNode,
-  // An object's stable id by any id Java accepts (13 bytes against 12KB for
-  // the whole object), and a disease pathway's normal pathway. Only these two
-  // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
-  // pattern names them. `abridged` and `enhanced` are not ids: Java's more
-  // specific /query/abridged/{id} and /query/enhanced/{id} take those paths.
-  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(stId|normalPathway)/?(\\?|$)':
-    contentNode,
+  // Any attribute of an object, as Java's /data/query/{id}/{attributeName}
+  // writes it. `abridged` and `enhanced` are not ids: Java's more specific
+  // /query/abridged/{id} and /query/enhanced/{id} take those paths.
+  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/[^/?]+/?(\\?|$)': contentNode,
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors/?(\\?|$)': contentNode,

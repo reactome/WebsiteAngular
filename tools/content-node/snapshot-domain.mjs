@@ -150,6 +150,41 @@ try {
       throw new Error(`domain.mjs implements ${key}, which graph-core does not have`);
   }
 
+  // Every getter /data/query/{id}/{attributeName} can reach, by the lower
+  // case of its name: what it reads (a field), a getter domain.mjs computes,
+  // a constant it returns, Object.getClass, or -- for one that takes
+  // arguments -- what invoking it with none does. Any other is left as
+  // `unported`, named below; service.mjs answers no attribute that reaches one.
+  const getters = {};
+  const unported = new Set();
+  // Only a model class can be the object a request names; a relationship
+  // class (HasEvent, ComponentOf...) is reached only through one.
+  const modelClasses = new Set(
+    classes.filter((name) => name.includes('.model.')).map((name) => name.split('.').pop())
+  );
+  for (const [schemaClass, methods] of Object.entries(dump.getters)) {
+    if (!modelClasses.has(schemaClass)) continue;
+    getters[schemaClass] = methods
+      .map(([name, declaredBy, parameters, returns, element, projected, fresh]) => {
+        const key = `${declaredBy}.${name}`;
+        let source;
+        if (parameters > 0) source = { arguments: parameters };
+        else if (key === 'Object.getClass') source = key;
+        else if (computed.has(key)) source = key;
+        else if (fieldRead(bodies, declaredBy, name)) source = fieldRead(bodies, declaredBy, name);
+        // The constant as Java returns it (DomainSnapshot calls the getter):
+        // javap's listing of it escapes quotes and trims trailing spaces.
+        else if (constantRead(bodies, declaredBy, name) !== undefined && fresh !== null)
+          source = { constant: fresh };
+        else {
+          source = { unported: key };
+          unported.add(key);
+        }
+        return [name.toLowerCase(), name, source, returns, element, projected];
+      })
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
   const graph = {};
   for (const [schemaClass, entry] of Object.entries(dump.graph)) {
     const defaults = Object.fromEntries(
@@ -190,6 +225,11 @@ try {
       { ...entry, fields: entry.fields.map(field) },
     ])
   );
+  const getterEntries = [];
+  const getterEntry = intern(getterEntries, new Map());
+  const gettersByIndex = Object.fromEntries(
+    Object.entries(getters).map(([name, entries]) => [name, entries.map(getterEntry)])
+  );
   // One entry per line, so a change to the model is a readable diff.
   const list = (items) => items.map((item) => `    ${JSON.stringify(item)}`).join(',\n');
   const map = (object) =>
@@ -201,11 +241,17 @@ try {
     `{\n` +
       `  "properties": [\n${list(properties)}\n  ],\n  "json": {\n${map(jsonByIndex)}\n  },\n` +
       `  "fields": [\n${list(fields)}\n  ],\n  "graph": {\n${map(graphByIndex)}\n  },\n` +
+      `  "getterEntries": [\n${list(getterEntries)}\n  ],\n` +
+      `  "getters": {\n${map(gettersByIndex)}\n  },\n` +
       `  "interfaces": ${JSON.stringify(interfaces)},\n  "store": [\n${list(store)}\n  ]\n}\n`
   );
   console.log(
     `${OUT}: ${Object.keys(json).length} classes written, ${Object.keys(graph).length} mapped`
   );
+  if (unported.size)
+    console.log(
+      `getters not yet answered under /data/query/{id}/{attributeName}: ${[...unported].sort().join(', ')}`
+    );
   if (unsettled.length)
     console.log(
       `property order taken from this JVM, not yet checked against Java: ${unsettled.join(', ')}`
@@ -264,8 +310,8 @@ function methodBodies(text) {
     const method = /^ {2}[^\n(]*?([\w$]+)\(([^)]*)\)[^\n]*;\n {4}Code:\n((?: {6}[^\n]*\n)*)/gm;
     for (const [, name, parameters, code] of section.matchAll(method)) {
       const instructions = [
-        ...code.matchAll(/^\s+\d+: (\w+)(?:[^\n]*\/\/ Field ([\w$]+):)?/gm),
-      ].map(([, op, field]) => ({ op, field }));
+        ...code.matchAll(/^\s+\d+: (\w+)(?:[^\n]*\/\/ (?:Field ([\w$]+):|String ([^\n]*)))?/gm),
+      ].map(([, op, field, text]) => ({ op, field, text }));
       const key = `${owner}.${name}`;
       // Overloads: keep the one without parameters (a getter), or the first.
       if (!bodies.has(key) || parameters === '') bodies.set(key, instructions);
@@ -273,6 +319,24 @@ function methodBodies(text) {
     }
   }
   return bodies;
+}
+
+/**
+ * Whether a getter only returns one constant (getExplanation's sentences):
+ * its text as javap lists it, or undefined. Only the shape is used; the text
+ * itself is taken from Java (see `fresh`).
+ */
+function constantRead(bodies, declaredBy, member) {
+  const originals = [...bodies.keys()]
+    .filter((key) => key.startsWith(`${declaredBy}.${member}_aroundBody`) && key.endsWith('#woven'))
+    .map((key) => bodies.get(key))
+    .filter((code) => !code.some(({ op }) => op === 'invokestatic'));
+  const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
+  if (!code || code.length !== 2) return undefined;
+  const [load, give] = code;
+  return /^ldc(_w)?$/.test(load.op) && give.op === 'areturn' && load.text !== undefined
+    ? load.text
+    : undefined;
 }
 
 /**

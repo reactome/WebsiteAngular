@@ -304,15 +304,17 @@ describe('serve-prod and the API roots', () => {
   });
 
   // The same routes the dev server's are checked against (proxy-order.spec.ts):
-  // the person, their publications and the four lists go to node, and nothing
-  // else under a person does.
+  // the person, their publications, the four lists and every other attribute
+  // go to node; nothing below an attribute does.
   for (const [url, to] of [
     ['/ContentService/data/person/68285/authoredPathways', 'content-node'],
     ['/ContentService/data/person/68285/reviewedReactions?page=1', 'content-node'],
     ['/ContentService/data/person/68285', 'content-node'],
     ['/ContentService/data/person/68285/publications', 'content-node'],
-    ['/ContentService/data/person/68285/displayName', 'backend'],
-    ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'backend'],
+    ['/ContentService/data/person/68285/displayName', 'content-node'],
+    ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'content-node'],
+    ['/ContentService/data/person/68285/displayName/x', 'backend'],
+    ['/ContentService/data/query/70486/displayName', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],
     ['/ContentService/data/query/enhanced/R-HSA-70486', 'content-node'],
@@ -346,9 +348,10 @@ describe('serve-prod and the API roots', () => {
   });
 
   for (const api of [
-    // A path still answered by Java. /database/version was the example until it
-    // moved to the node content service; it is checked below.
-    '/ContentService/data/query/70486/displayName',
+    // A path still answered by Java. /database/version, then
+    // /query/{id}/displayName, were the example until each moved to the node
+    // content service.
+    '/ContentService/data/query/abridged/70486',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',

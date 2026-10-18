@@ -25,6 +25,7 @@ import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.mjs';
 import { solr, solrConfigured } from './solr.mjs';
+import { jsoupText } from './jsoup-text.mjs';
 import { sendReport } from './report.mjs';
 import { registryServices, psicquicResources } from './psicquic.mjs';
 import {
@@ -36,6 +37,10 @@ import {
   staticCitationFrom,
 } from './citation.mjs';
 import {
+  AttributeFailure,
+  attributeGetter,
+  attributeText,
+  attributeValue,
   enhancedQuery,
   findByIdParameters,
   findByIdQuery,
@@ -424,18 +429,11 @@ export const endpoints = [
      */
     handler: async (request) => {
       const id = pathId(rawSegment(request, 4));
-      const person = personWhere(id);
+      const person = await findPerson(id);
       if (!person) return notFound(request, `No person found for id: ${id}`);
-      const options = { anchor: person.anchor, ordered: false, without: 'InstanceEdit' };
-      const [found] = await read(rootLabelsQuery(person.where, options), person.params);
-      if (!found) return notFound(request, `No person found for id: ${id}`);
-      const [row] = await read(findByIdQuery(person.where, options), {
-        ...person.params,
-        ...findByIdParameters(found.labels),
-      });
       return {
         status: 200,
-        serialised: writeDomain(mapResult(row), ...writerFor(request)),
+        serialised: writeDomain(person, ...writerFor(request)),
         type: 'application/json',
       };
     },
@@ -638,6 +636,27 @@ export const endpoints = [
       ],
     }))
   ),
+  {
+    // After /person/{id}/publications and the four lists: Express takes them in order.
+    path: '/ContentService/data/person/{id}/{attribute}',
+    sample: '1169272',
+    samplePath: { attribute: 'publications' },
+    differs: [/^\/ContentService\/data\/person\/[^/]+\/[^/]+: \.url: /],
+    /**
+     * One attribute of a person, as text: PersonController.findPerson(id,
+     * attributeName) -- the person as PersonService.findPerson loads them
+     * (findPerson), then the getter and its text as for
+     * /data/query/{id}/{attributeName}. No person is Java's 404 naming the
+     * id; no getter, or one returning nothing, its 404 naming the attribute.
+     */
+    handler: async (request) => {
+      const id = pathId(rawSegment(request, 4));
+      const attribute = pathId(rawSegment(request, 5));
+      const person = await findPerson(id);
+      if (!person) return notFound(request, `No person found for id: ${id}`);
+      return attributeAnswer(request, person, attribute);
+    },
+  },
   ...[
     {
       suffix: 'main',
@@ -1067,6 +1086,35 @@ export const endpoints = [
         }),
         type: 'text/plain;charset=UTF-8',
       };
+    },
+  },
+  {
+    // After every other /data/query/... route: Express takes them in order.
+    path: '/ContentService/data/query/{id}/{attribute}',
+    sample: 'R-HSA-109581',
+    samplePath: { attribute: 'hasEvent' },
+    differs: [/^\/ContentService\/data\/query\/[^/]+\/[^/]+: \.url: /],
+    /**
+     * One attribute of an object, as text: QueryObjectController.findById
+     * (id, attributeName) -- the object as findById(id, OUTGOING) loads it
+     * (findObject), its getter called by name ignoring case, and the value
+     * written by ControllerUtils.toTSV (domain.mjs: attributeGetter,
+     * attributeValue, attributeText). A getter may load what the object did
+     * not bring, as graph-core's LazyFetchAspect does (lazyRelationship).
+     *
+     * No object is Java's 404 naming the id; no getter, or one returning
+     * nothing, its 404 naming the attribute and the object's class. Not
+     * /query/abridged/{id} or /query/enhanced/{id}, Java's more specific
+     * mappings, which are no attribute: nginx and the dev proxy never send
+     * those here.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const attribute = pathId(rawSegment(request, 5));
+      if (raw === 'abridged' || raw === 'enhanced') return springNotFound(request);
+      const object = await findObject(raw);
+      if (!object) return notFound(request, `Id: ${raw} has not been found in the System`);
+      return attributeAnswer(request, object, attribute);
     },
   },
   {
@@ -7825,6 +7873,77 @@ async function staticSummary(accs) {
     .filter(([, count]) => count > 0)
     .map(([acc, count]) => ({ acc: javaTrim(acc), count }));
   return { resource: 'static', entities };
+}
+
+/**
+ * ControllerUtils.getProperty on a loaded object, as an answer: the getter
+ * found by name, its value, and toTSV's text of it (domain.mjs); Java's 404
+ * naming the attribute and the object's class when there is no getter or it
+ * returns nothing.
+ */
+async function attributeAnswer(request, object, attribute) {
+  const missing = () =>
+    notFound(
+      request,
+      `Attribute: '${attribute}' has not been found for object: ${object.schemaClass}`
+    );
+  const getter = attributeGetter(object.schemaClass, attribute);
+  if (!getter) return missing();
+  let value;
+  try {
+    value = await attributeValue(object, getter, lazyRelationship);
+  } catch (failure) {
+    // A NullPointerException inside a getter: Java's generic 500.
+    if (failure instanceof AttributeFailure) return unexpected(request);
+    throw failure;
+  }
+  if (value === undefined || value === null) return missing();
+  return {
+    status: 200,
+    body: attributeText(value, jsoupText, getter),
+    type: 'text/plain;charset=UTF-8',
+  };
+}
+
+/**
+ * A person as PersonService.findPerson loads them, by dbId or ORCID: the
+ * node and what it points to but InstanceEdits (see /person/{id}).
+ * Undefined when there is none.
+ */
+async function findPerson(id) {
+  const person = personWhere(id);
+  if (!person) return undefined;
+  const options = { anchor: person.anchor, ordered: false, without: 'InstanceEdit' };
+  const [found] = await read(rootLabelsQuery(person.where, options), person.params);
+  if (!found) return undefined;
+  const [row] = await read(findByIdQuery(person.where, options), {
+    ...person.params,
+    ...findByIdParameters(found.labels),
+  });
+  return row ? mapResult(row) : undefined;
+}
+
+/**
+ * What LazyFetchAspect loads for a getter whose relationship is empty:
+ * AdvancedDatabaseObjectService.findCollectionByRelationship (or, for a
+ * single object, findByRelationship: the one, if there is exactly one) --
+ * lazyCollectionQuery's
+ * nodes of the getter's class, in the relationship's order, each as many
+ * times as its stoichiometry -- as entities, one per node.
+ */
+async function lazyRelationship(dbId, type, direction, getter, collection) {
+  const label = collection === '' ? getter.returns : getter.element;
+  const rows = await read(
+    lazyCollectionQuery(type, direction, label).replace(
+      'RETURN m,',
+      'RETURN {id: id(m), labels: labels(m), props: properties(m)} AS m,'
+    ),
+    { dbId: neo4j.int(dbId) }
+  );
+  // findByRelationship gives its object only when there is exactly one: two
+  // `modified` edits make a pathway's getModified null, and Java's 404.
+  if (collection === '') return rows.length === 1 ? mapNodes([rows[0].m]) : [];
+  return mapNodes(rows.flatMap((row) => Array(row.n ?? 1).fill(row.m)));
 }
 
 /** Every relationship from an event down to its participants, as graph-core lists them. */

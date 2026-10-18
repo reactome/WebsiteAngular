@@ -1,63 +1,128 @@
 // @vitest-environment node
 //
-// /data/query/{id}/stId and /normalPathway matched in any case, as Java's
-// /query/{id}/{attributeName} finds its getter, with a graph stand-in so the
-// handler that answers, and its message, can be seen. Java's messages
-// measured 16 Oct 2026.
-import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
+// /data/query/{id}/{attributeName}'s pieces in domain.mjs: the getter found by
+// name, its value as graph-core's LazyFetchAspect leaves it, and the text
+// ControllerUtils.toTSV writes. The objects here are invented; the formats
+// were measured against Java on 18 Oct 2026.
+import { describe, expect, it } from 'vitest';
+import { attributeGetter, attributeText, attributeValue, mapNodes } from './domain.mjs';
 
-vi.mock('./graph.mjs', () => ({
-  // 48887 has no stable id; R-HSA-70486 has one. Neither has a normal
-  // pathway, so only the stId handler can answer 200.
-  read: async (cypher, params) => [
-    {
-      stId: JSON.stringify(params).includes('48887') ? null : 'R-HSA-70486',
-      schemaClass: 'Reaction',
-      labels: ['Reaction'],
-      dbId: cypher.includes('normalPathway') ? null : 70486,
-    },
-  ],
-  configured: () => true,
-  close: async () => {},
-  envSetting: () => '',
-}));
+const node = (id, labels, props) => ({ id, labels: ['DatabaseObject', ...labels], props });
+const [pathway] = mapNodes([
+  node(1, ['Event', 'Pathway'], {
+    dbId: 109581,
+    stId: 'R-HSA-109581',
+    displayName: 'Apoptosis',
+    schemaClass: 'Pathway',
+    name: ['Apoptosis', 'Cell death'],
+    hasDiagram: true,
+    diagramWidth: 770,
+  }),
+]);
+const noLoads = async () => {
+  throw new Error('nothing should be loaded');
+};
+const text = (value, getter) => attributeText(value, (html) => `jsoup(${html})`, getter);
 
-const { app } = await import('./service.mjs');
-
-let base;
-let server;
-
-beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+describe('attributeGetter', () => {
+  it('finds the getter by name, ignoring case, as getProperty does', () => {
+    expect(attributeGetter('Pathway', 'DISPLAYNAME').name).toBe('getDisplayName');
+    expect(attributeGetter('Pathway', 'hasdiagram').name).toBe('getHasDiagram');
+    expect(attributeGetter('Pathway', 'class').name).toBe('getClass');
+    expect(attributeGetter('Pathway', 'getClass')).toBe(undefined);
+    expect(attributeGetter('Pathway', 'xyz')).toBe(undefined);
   });
-  base = `http://127.0.0.1:${server.address().port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
-
-describe('stId in any case is the stable id', () => {
-  for (const path of ['R-HSA-70486/STID', 'R-HSA-70486/ST%49D;x', 'R-HSA-70486/stid/'])
-    it(path, async () => {
-      const response = await fetch(`${base}/ContentService/data/query/${path}`);
-      expect([response.status, await response.text()]).toEqual([200, 'R-HSA-70486']);
-    });
-});
-
-describe('the attribute, in any case, reaches its own handler and is echoed as sent', () => {
-  for (const [path, attribute] of [
-    ['48887/STID', 'STID'],
-    ['48887/ST%49D;x', 'STID'],
-    ['48887/stid/', 'stid'],
-    ['R-HSA-70486/nORMALP%41THWAY;a=b/', 'nORMALPATHWAY'],
-    ['R-HSA-70486/normalPathway', 'normalPathway'],
-  ])
-    it(path, async () => {
-      const response = await fetch(`${base}/ContentService/data/query/${path}`);
-      const body = await response.json();
-      expect(response.status).toBe(404);
-      expect(body.messages[0]).toMatch(
-        new RegExp(`^Attribute: '${attribute}' has not been found for object: `)
+describe('attributeValue and attributeText', () => {
+  it("writes values as Java's toString does, a list one item a line", async () => {
+    const value = async (attribute) =>
+      text(
+        await attributeValue(pathway, attributeGetter('Pathway', attribute), noLoads),
+        attributeGetter('Pathway', attribute)
       );
-    });
+    expect(await value('displayName')).toBe('Apoptosis');
+    expect(await value('dbId')).toBe('109581');
+    expect(await value('hasDiagram')).toBe('true');
+    expect(await value('name')).toBe('Apoptosis\nCell death\n');
+    expect(await value('class')).toBe('class org.reactome.server.graph.domain.model.Pathway');
+    expect(await value('schemaClass')).toBe('Pathway');
+    expect(await value('explanation')).toBe(
+      'A collection of related Events. These events can be ReactionLikeEvents or Pathways'
+    );
+  });
+
+  it('writes an object as its id, text and class; a summation through Jsoup', () => {
+    const [species, summation] = mapNodes([
+      node(2, ['Taxon', 'Species'], {
+        dbId: 48887,
+        displayName: 'Homo sapiens',
+        schemaClass: 'Species',
+      }),
+      node(3, ['Summation'], {
+        dbId: 7,
+        displayName: 'short',
+        text: '<b>long</b>',
+        schemaClass: 'Summation',
+      }),
+    ]);
+    expect(text([species, summation])).toBe(
+      '48887\tHomo sapiens\tSpecies\n7\tjsoup(<b>long</b>)\tSummation\n'
+    );
+  });
+
+  it('loads an empty incoming relationship, as the aspect does, through its setter', async () => {
+    const [entity] = mapNodes([
+      node(4, ['PhysicalEntity', 'Complex'], {
+        dbId: 5,
+        stId: 'R-HSA-5',
+        displayName: 'C',
+        schemaClass: 'Complex',
+      }),
+    ]);
+    const [a, b] = mapNodes([
+      node(5, ['PhysicalEntity', 'Complex'], {
+        dbId: 6,
+        stId: 'R-HSA-6',
+        displayName: 'A',
+        schemaClass: 'Complex',
+      }),
+      node(6, ['PhysicalEntity', 'Complex'], {
+        dbId: 7,
+        stId: 'R-HSA-7',
+        displayName: 'B',
+        schemaClass: 'Complex',
+      }),
+    ]);
+    const asked = [];
+    const load = async (dbId, type, direction, getter) => {
+      asked.push([dbId, type, direction, getter.element]);
+      // A twice: a relationship of stoichiometry 2.
+      return [a, a, b];
+    };
+    // The projected getter calls getComponentOf, which loads; its relations
+    // then carry the order met and the times met.
+    const value = await attributeValue(
+      entity,
+      attributeGetter('Complex', 'componentOfComplexes'),
+      load
+    );
+    expect(asked).toEqual([[5, 'hasComponent', 'INCOMING', 'Complex']]);
+    expect(text(value)).toBe(
+      "Has{type=componentOf, stoichiometry=2, order=0, element=Complex {dbId=6, stId='R-HSA-6', displayName='A'}}\n" +
+        "Has{type=componentOf, stoichiometry=1, order=1, element=Complex {dbId=7, stId='R-HSA-7', displayName='B'}}\n"
+    );
+    // The plain getter expands them again, and loads nothing more.
+    const expanded = await attributeValue(
+      entity,
+      attributeGetter('Complex', 'componentOf'),
+      noLoads
+    );
+    expect(expanded.map((complex) => complex.properties.dbId)).toEqual([6, 6, 7]);
+  });
+
+  it('never fetches an outgoing relationship again: findById brought it, even empty', async () => {
+    const value = await attributeValue(pathway, attributeGetter('Pathway', 'hasEvent'), noLoads);
+    expect(text(value ?? [])).toBe('');
+  });
 });
