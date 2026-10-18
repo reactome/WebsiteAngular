@@ -120,14 +120,14 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 4: One URL per answer (FR-013)
 
-- [x] T017 [US1] Add tests to `tools/content-node/cache-headers.spec.mjs`, each shown failing first:
+- [x] T017 [US1] Add tests to `tools/content-node/cache-headers.spec.mjs`, each shown failing first: — #532
   - a GET to `/ContentService/data/diseases/?a=1` → `301`, `Location: /ContentService/data/diseases?a=1`, `no-store` and `redirect` (never stored; see research R10);
   - HEAD → the same;
   - a POST to `/ContentService/data/query/ids/` → answered as today, not redirected;
   - a path that matches no node endpoint, with a slash → Spring's 404, not a redirect;
   - `/ContentService/data/query/R-HSA-1%2Fx/` → not decoded in `Location`.
 - [x] T018 [US1] Implement the redirect in `tools/content-node/service.mjs`. It goes in the `/ContentService` middleware, after the path checks and before routing; only for GET and HEAD, and only when the path without its slash matches a node endpoint. The `Location` is built from the raw path and query as sent. T017 passes. The redirect is never stored (`no-store`, or private with a token): standard form cannot tell whether its target exists, so a stored redirect would be one entry per id asked (review of #532).
-- [x] T019 [P] [US5] Change the site's two slashed URLs to the unslashed form: `/search/fireworks/` in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~276), and `/interactors/psicquic/resources/` (find where it is built). Update the e2e HARs that hold them by re-recording only those specs; follow the e2e port rule.
+- [x] T019 [P] [US5] Change the site's two slashed URLs to the unslashed form: `/search/fireworks/` in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~276), and `/interactors/psicquic/resources/` (find where it is built). Update the e2e HARs that hold them by re-recording only those specs; follow the e2e port rule. — #532
 - [ ] T020 Update `deploy/nginx/routes.spec.ts` and the dev proxy test, if any test asserts that node answers the slashed form with a 200. nginx still routes it to node (spec 006 T006), and node now redirects. Review, CI, merge, deploy. On beta, check that `/ContentService/data/diseases/` → `301` to `/ContentService/data/diseases`. Tick T017–T020.
 
 ---
