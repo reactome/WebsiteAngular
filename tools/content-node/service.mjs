@@ -8261,7 +8261,7 @@ async function answerWith(endpoint, request, response) {
   return answer(endpoint, request, response);
 }
 
-async function answer(endpoint, request, response) {
+export async function answer(endpoint, request, response) {
   // The answer's caching label, from the request exactly as it was sent:
   // request.url has been rewritten for routing by now (spec 011).
   const write = (result) => {

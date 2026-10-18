@@ -77,8 +77,8 @@ The pull request that completes a task ticks it here, with its number.
 
 ### Tests first
 
-- [x] T009 [P] [US1] Write `tools/content-node/cache-label.spec.mjs` from every row of contracts/cache-labels.md, as a pure function test of `label({ method, endpoint, originalUrl, status })`. Run it and see it fail.
-- [x] T010 [P] [US2] Add handler-level tests in `tools/content-node/cache-headers.spec.mjs`, with a stand-in graph as in `contained-events.spec.mjs`. They cover:
+- [x] T009 [P] [US1] Write `tools/content-node/cache-label.spec.mjs` from every row of contracts/cache-labels.md, as a pure function test of `label({ method, endpoint, originalUrl, status })`. Run it and see it fail. — #531
+- [x] T010 [P] [US2] Add handler-level tests in `tools/content-node/cache-headers.spec.mjs`, with a stand-in graph as in `contained-events.spec.mjs`. They cover: — #531
   - a standard GET → `public, max-age=3600, s-maxage=31536000` and `standard`;
   - HEAD → the same;
   - `?utm_source=x` → `no-store` and `parameter:utm_source`;
@@ -93,9 +93,9 @@ The pull request that completes a task ticks it here, with its number.
 
 ### Implementation
 
-- [x] T011 [US1] Write `tools/content-node/cache-label.mjs`. `label()` returns `{ cacheControl, rule }` per data-model.md, using `standardForm` from `parameters.mjs`. T009 passes.
-- [x] T012 [US2] In `tools/content-node/service.mjs`, set the default `Cache-Control: no-store` and `X-Cache-Rule: default` in the first `/ContentService` middleware (the CORS one), before OPTIONS is answered. Set `private, no-store` and `token` when the raw query has a `token` parameter.
-- [x] T013 [US1] In `answer()` in `tools/content-node/service.mjs`, after the handler's result and before `writeResult`, set `result.headers` from `label()`. It reads `request.originalUrl`, never `request.url`, and takes the endpoint from `answer()`'s own argument. T010 passes.
+- [x] T011 [US1] Write `tools/content-node/cache-label.mjs`. `label()` returns `{ cacheControl, rule }` per data-model.md, using `standardForm` from `parameters.mjs`. T009 passes. — #531
+- [x] T012 [US2] In `tools/content-node/service.mjs`, set the default `Cache-Control: no-store` and `X-Cache-Rule: default` in the first `/ContentService` middleware (the CORS one), before OPTIONS is answered. Set `private, no-store` and `token` when the raw query has a `token` parameter. — #531
+- [x] T013 [US1] In `answer()` in `tools/content-node/service.mjs`, after the handler's result and before `writeResult`, set `result.headers` from `label()`. It reads `request.originalUrl`, never `request.url`, and takes the endpoint from `answer()`'s own argument. T010 passes. — #531
 
   Then prove it with these mutations, each shown to fail:
   - reading `request.url`;
@@ -103,8 +103,8 @@ The pull request that completes a task ticks it here, with its number.
   - ignoring the method;
   - dropping the default middleware.
 
-- [x] T014 [P] [US3] In `projects/website-angular/src/scripts/serve-prod.js`, send `Cache-Control: no-store` for the `API_PAGE` paths (`/ContentService`, `/ContentService/`, `/AnalysisService`, `/AnalysisService/`) only. Add a test to `serve-prod.spec.ts`, shown failing first.
-- [x] T015 [US2] Run the parity harness over its full corpus with the labels on. Zero status or body differences against the run before (SC-003), checked by verdicts and sizes.
+- [x] T014 [P] [US3] In `projects/website-angular/src/scripts/serve-prod.js`, send `Cache-Control: no-store` for the `API_PAGE` paths (`/ContentService`, `/ContentService/`, `/AnalysisService`, `/AnalysisService/`) only. Add a test to `serve-prod.spec.ts`, shown failing first. — #531
+- [x] T015 [US2] Run the parity harness over its full corpus with the labels on. Zero status or body differences against the run before (SC-003), checked by verdicts and sizes. — #531
 - [ ] T016 Review, CI and merge. Then deploy node, nginx and the site to beta. Check with `curl --resolve beta.reactome.org:443:127.0.0.1 -D -`:
   - `/ContentService/data/diseases` → public and `standard`;
   - `?utm_source=x` → `no-store`;
@@ -126,7 +126,7 @@ The pull request that completes a task ticks it here, with its number.
   - a POST to `/ContentService/data/query/ids/` → answered as today, not redirected;
   - a path that matches no node endpoint, with a slash → Spring's 404, not a redirect;
   - `/ContentService/data/query/R-HSA-1%2Fx/` → not decoded in `Location`.
-- [ ] T018 [US1] Implement the redirect in `tools/content-node/service.mjs`. It goes in the `/ContentService` middleware, after the path checks and before routing; only for GET and HEAD, and only when the path without its slash matches a node endpoint. The `Location` is built from the raw path and query as sent. T017 passes.
+- [ ] T018 [US1] Implement the redirect in `tools/content-node/service.mjs`. It goes in the `/ContentService` middleware, after the path checks and before routing; only for GET and HEAD, and only when the path without its slash matches a node endpoint. The `Location` is built from the raw path and query as sent. T017 passes. The redirect is labelled like an answer: a `token` keeps it private, and the slashed URL must otherwise be in standard form for the redirect to be `public`; a `/x/?utm_source=…` redirect is `no-store`, or every junk query would be a stored redirect.
 - [ ] T019 [P] [US5] Change the site's two slashed URLs to the unslashed form: `/search/fireworks/` in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~276), and `/interactors/psicquic/resources/` (find where it is built). Update the e2e HARs that hold them by re-recording only those specs; follow the e2e port rule.
 - [ ] T020 Update `deploy/nginx/routes.spec.ts` and the dev proxy test, if any test asserts that node answers the slashed form with a 200. nginx still routes it to node (spec 006 T006), and node now redirects. Review, CI, merge, deploy. On beta, check that `/ContentService/data/diseases/` → `301` to `/ContentService/data/diseases`. Tick T017–T020.
 
@@ -166,7 +166,7 @@ The pull request that completes a task ticks it here, with its number.
 - [ ] T030 **[dashboard]** People with Cloudflare dashboard access, issue #527:
   - URL normalization, incoming and to origin;
   - Smart Tiered Cache;
-  - then the Cache Rule on `/ContentService/*`, leaving out the four roots: eligible for cache, Edge TTL from the header, Browser TTL "respect origin", no status-code TTL, query string sorted;
+  - then the Cache Rule on `/ContentService/*`, leaving out the four roots: eligible for cache, Edge TTL "Use cache-control header if present, bypass cache if not" (not "…use default Cloudflare caching behavior if not", which would cache Java's unlabelled answers), Browser TTL "respect origin", no status-code TTL, query string sorted;
   - then the rate-limiting rule.
 - [ ] T031 After T030: request a standard URL twice through the public site and expect `cf-cache-status: HIT` the second time. Request one with `?utm_source=x` twice and expect it never to be a HIT. Then run a purge and the warm-up once, and check the second pass is HIT (SC-005). Tick T027–T031.
 

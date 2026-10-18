@@ -113,3 +113,31 @@ describe('the labels the service writes', () => {
     ]);
   });
 });
+
+describe('an answer that fails as it is written', () => {
+  it('is relabelled with the 500 it becomes, not left public', async () => {
+    // A body JSON cannot write (a BigInt), after the label is on: the 500
+    // that follows must not go out as the 200's public answer would have.
+    const express = (await import('express')).default;
+    const { answer } = await import('./service.mjs');
+    const endpoint = {
+      path: '/ContentService/data/schema/{id}/attributes',
+      handler: async () => ({ status: 200, body: { size: 1n } }),
+    };
+    const lone = express();
+    lone.get('/ContentService/data/schema/Pathway/attributes', (request, response) =>
+      answer(endpoint, request, response)
+    );
+    const server = await new Promise((resolve) => {
+      const listening = lone.listen(0, '127.0.0.1', () => resolve(listening));
+    });
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${server.address().port}/ContentService/data/schema/Pathway/attributes`
+      );
+      expect([response.status, ...headers(response)]).toEqual([500, 'no-store', 'status']);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+});

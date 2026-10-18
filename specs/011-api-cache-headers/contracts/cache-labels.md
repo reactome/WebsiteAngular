@@ -4,19 +4,19 @@ This applies to every answer node gives under `/ContentService/`. Java's answers
 
 ## Headers
 
-| Situation                                                                                                                                                         | `Cache-Control`                           | `X-Cache-Rule`     |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------ |
-| A GET or HEAD in standard form, answered 200                                                                                                                      | `public, max-age=3600, s-maxage=31536000` | `standard`         |
-| A GET or HEAD with a trailing slash: `301` to the URL without it                                                                                                  | `public, max-age=3600, s-maxage=31536000` | `redirect`         |
-| A `token` query parameter, whatever else holds                                                                                                                    | `private, no-store`                       | `token`            |
-| An endpoint marked private                                                                                                                                        | `private, no-store`                       | `endpoint`         |
-| An endpoint marked never cached                                                                                                                                   | `no-store`                                | `endpoint`         |
-| Any status other than 200 (304 excepted)                                                                                                                          | `no-store`                                | `status`           |
-| POST, OPTIONS, or any other method                                                                                                                                | `no-store`                                | `method`           |
-| A query parameter that is undeclared, repeated (not a list) or has an invalid value                                                                               | `no-store`                                | `parameter:<name>` |
-| A path variable not in a standard form                                                                                                                            | `no-store`                                | `path:<variable>`  |
-| A fixed part of the path not in standard form (encoded letters)                                                                                                   | `no-store`                                | `form`             |
-| Answered before reaching an endpoint: the Tomcat-style 400, Spring's 404 for `//` or a raw `;`, the catch-all 404, a 405, a deep-query 503, an unexpected failure | `no-store`                                | `default`          |
+| Situation                                                                                                                                                                                | `Cache-Control`                           | `X-Cache-Rule`     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------ |
+| A GET or HEAD in standard form, answered 200                                                                                                                                             | `public, max-age=3600, s-maxage=31536000` | `standard`         |
+| A GET or HEAD with a trailing slash: `301` to the URL without it                                                                                                                         | `public, max-age=3600, s-maxage=31536000` | `redirect`         |
+| A `token` query parameter, whatever else holds                                                                                                                                           | `private, no-store`                       | `token`            |
+| An endpoint marked private                                                                                                                                                               | `private, no-store`                       | `endpoint`         |
+| An endpoint marked never cached                                                                                                                                                          | `no-store`                                | `endpoint`         |
+| Any status other than 200 (304 excepted)                                                                                                                                                 | `no-store`                                | `status`           |
+| POST, or any other method an endpoint answers                                                                                                                                            | `no-store`                                | `method`           |
+| A query parameter that is undeclared, repeated (not a list) or has an invalid value                                                                                                      | `no-store`                                | `parameter:<name>` |
+| A path variable not in a standard form                                                                                                                                                   | `no-store`                                | `path:<variable>`  |
+| A fixed part of the path not in standard form (encoded letters)                                                                                                                          | `no-store`                                | `form`             |
+| Answered before reaching an endpoint: a preflight (OPTIONS), the Tomcat-style 400, Spring's 404 for `//` or a raw `;`, the catch-all 404, a 405, a deep-query 503, an unexpected failure | `no-store`                                | `default`          |
 
 A 304 from Express keeps the label of the 200 it stands for.
 
@@ -31,7 +31,7 @@ The API page roots (`/ContentService`, `/ContentService/`, `/AnalysisService`, `
 ## What the Cloudflare Cache Rule must be (outside this repo; issue #527)
 
 - **Eligible for cache:** `/ContentService/*`, leaving out the four root paths.
-- **Edge TTL:** use the `Cache-Control` header if present. **Browser TTL:** respect origin.
+- **Edge TTL:** "Use cache-control header if present, bypass cache if not" -- exactly that option. The other option, "…use default Cloudflare caching behavior if not", would cache every Java answer, which carries no header, on Cloudflare's default TTLs. **Browser TTL:** respect origin.
 - **No status-code TTL.**
 - **Cache key:** sort the query string.
 - **Smart Tiered Cache:** on.
