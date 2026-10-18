@@ -3760,8 +3760,7 @@ function longPastRange(ids) {
 function findByIdFailure(ids) {
   for (const raw of ids) {
     const trimmed = javaTrim(raw);
-    if (!trimmed.includes(':') && /^\.+$/.test(trimmed))
-      return 'Index 0 out of bounds for length 0';
+    if (/^\.+$/.test(trimmed)) return 'Index 0 out of bounds for length 0';
     const refused = longPastRange([raw]);
     if (refused) return refused;
   }
@@ -7672,8 +7671,7 @@ async function findPerson(id) {
  */
 function containedEventsFailure(request, raw) {
   const trimmed = javaTrim(raw);
-  if (!trimmed.includes(':') && /^\.+$/.test(trimmed))
-    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
+  if (/^\.+$/.test(trimmed)) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
   const tooLong = longPastRange([raw]);
   return tooLong ? javaError(request, 500, 'INTERNAL_SERVER_ERROR', tooLong) : undefined;
 }

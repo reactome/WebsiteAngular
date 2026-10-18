@@ -34,6 +34,7 @@ const hasEvent = (id, start, end, order) => ({
   end,
   props: { order, stoichiometry: 1 },
 });
+let records;
 const RECORDS = [
   { e: A, 'COLLECT(r)': [[hasEvent(10, 1, 2, 1)]], 'COLLECT(p)': [P] },
   { e: B, 'COLLECT(r)': [[hasEvent(11, 1, 3, 0)]], 'COLLECT(p)': [P] },
@@ -42,7 +43,7 @@ vi.mock('./graph.mjs', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
     if (cypher.includes('[r:hasEvent*1..100]'))
-      return params.stId === 'R-HSA-100' || params.dbId ? RECORDS : [];
+      return params.stId === 'R-HSA-100' || params.dbId ? (records ?? RECORDS) : [];
     for (const [type, rows] of Object.entries(lazy))
       if (cypher.includes(`[r:${type}]`)) return rows;
     return [];
@@ -94,6 +95,8 @@ describe('/data/pathway/{id}/containedEvents', () => {
   it("is Java's 500 for an id of dots and a dbId past a long, before asking anything", async () => {
     asked.length = 0;
     expect(await messages(await get('.../containedEvents'))).toEqual([500, [null]]);
+    // Spring trims a path variable: dots inside spaces are dots.
+    expect(await messages(await get('%20.%20/containedEvents/stId'))).toEqual([500, [null]]);
     expect(await messages(await get('99999999999999999999/containedEvents'))).toEqual([
       500,
       ['For input string: "99999999999999999999"'],
@@ -130,10 +133,22 @@ describe('/data/pathway/{id}/containedEvents/{attributeName}', () => {
     lazy = {};
   });
 
-  it("is Java's 404 naming the first event without the attribute", async () => {
+  it("is Java's 404 naming the first event without the attribute, not the first event", async () => {
+    // A subpathway has hasEvent; the reaction after it does not.
+    const sub = node(4, ['Pathway'], {
+      dbId: 400,
+      stId: 'R-HSA-400',
+      displayName: 'S',
+      schemaClass: 'Pathway',
+    });
+    records = [
+      { e: sub, 'COLLECT(r)': [[hasEvent(12, 1, 4, 0)]], 'COLLECT(p)': [P] },
+      { e: A, 'COLLECT(r)': [[hasEvent(10, 1, 2, 1)]], 'COLLECT(p)': [P] },
+    ];
     expect(await messages(await get('R-HSA-100/containedEvents/hasEvent'))).toEqual([
       404,
       ["Attribute: 'hasEvent' has not been found for object: Reaction"],
     ]);
+    records = undefined;
   });
 });
