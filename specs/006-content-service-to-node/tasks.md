@@ -19,7 +19,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T005 Percent-encoded literal segments routed as Java routes them; Spring's JSON 404 for an unmatched path — #490
 - [x] T006 Every node route takes a trailing slash, as Spring's do; nginx and the dev proxy tested to agree — #498
 - [x] T007 `nginx -t` on every deployment's image in CI — #499
-- [x] T008 A matrix parameter (`/data/diseases;jsessionid=x`) on any segment is Spring's 404, not Java's answer: nothing sends one on purpose, and each form of a path is one more URL to cache (decided 18 Oct 2026; tools/content-node/CACHING.md). Taking them on every literal segment (#525) was reverted
+- [x] T008 A matrix parameter (`/data/diseases;jsessionid=x`) on any segment is Spring's 404, not Java's answer: nothing sends one on purpose, and each form of a path is one more URL to cache (decided 18 Oct 2026; tools/content-node/CACHING.md). Taking them on every literal segment (#525) was reverted — #526
 
 ## Phase 2: Content and species (done)
 
