@@ -71,9 +71,8 @@ Rejecting _unknown_ parameters would be a contract change, because they return
 global rule about which parameters belong in a cache key; it is per endpoint.
 
 **One defect found in passing:** `/data/schema/NotAClass/count` returns **500**,
-not a 4xx. The port should fix this rather than reproduce it — a 500 on user
-input pollutes error monitoring and hands anyone a cheap exception generator.
-This is a deliberate, documented divergence from "Java is the reference".
+not a 4xx. The port kept it: every ported endpoint answers byte-identically
+to Java, errors included, and a 500 is `no-store` like any other error.
 
 ## The decision
 
@@ -109,14 +108,14 @@ without breaking anyone into compliance.
 1. **`token` is never cacheable**, however well-formed the URL. Analysis results
    are per-user; a shared-cache HIT serves one person's submission to another.
    Those get `private, no-store` unconditionally.
-2. **Keep an origin-side cache anyway.** A bot appending `?x=<random>` bypasses
-   the edge _by design_ here, so the policy alone does not shield Neo4j from
-   deliberate busting. If node normalises internally and answers from its own
-   cache while still telling Cloudflare not to store, the slow path costs one
-   hop rather than one database query. Edge cache for conforming, origin cache
-   for everything, Neo4j for neither. Stamp entries with the release number
-   (`/data/database/version`, already ported) so they self-invalidate and no
-   purge step is needed on release day.
+2. **No cache on our server.** Cloudflare does the caching; node only says,
+   per response, whether it may be stored (decided by awright, 18 Oct 2026).
+   An origin-side cache was considered, so a bot appending `?x=<random>`
+   would cost a hop instead of a query; it is not worth the moving part.
+   Deliberate busting is the rate-limiting rule's job (below). What an edge
+   cache needs instead is a way to drop the previous release's answers: a
+   `max-age` no longer than the time between releases allows, or a purge on
+   release day -- to be settled when the headers are built.
 3. **Our own client must emit canonical URLs** — stable parameter order, nothing
    extraneous — or the app itself lands on the slow path. The Angular services
    have not been audited for this yet.
@@ -157,14 +156,15 @@ one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
   `?utm_source=` or `?fbclid=`, and whatever FIViz, ReactomeGSA or a curator's
   script appends. The failure would be silent for months. Strip-and-serve gets
   the same benefit with none of the risk.
+- **A cache on our server** -- constraint 2 above.
 - **A Cloudflare plan upgrade.** If edge caching with per-path allowlists turns
-  out to matter after the origin cache is in place, paid **Workers** ($5/month,
+  out to matter, paid **Workers** ($5/month,
   10M requests) buys custom cache keys — a rounding error against the EC2 bill,
   and a smaller step than an Enterprise plan.
 - **Neo4j being the bottleneck because it "only does one query at a time".**
   It does not; Community Edition is multi-threaded. What it lacks is clustering
   and read replicas. The constraint is horizontal read scaling, which is what
-  makes an origin cache and precomputed files the high-leverage moves.
+  makes the edge cache and precomputed files the high-leverage moves.
 
 ### Still open
 
@@ -187,14 +187,9 @@ one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
    the OpenAPI spec.
 2. **Extend `diff.mjs` to invalid inputs** (`page=abc`, `page=-1`,
    `offset=99999999`, `species=abc`). Parity on the error paths has to be proven
-   before the conformance decision can be trusted; today the harness only walks
-   happy paths.
-3. **`Cache-Control` layer** driven by the schema, with the `token` exclusion.
-4. **Origin response cache**, keyed on the normalised parameters and stamped
-   with the release number.
-5. **Cloudflare**: the rate-limiting rule first (no origin change needed), then
-   the Cache Rule once the origin emits headers.
-6. Fix the `schema/{className}` 500.
-
-Nothing here touches beta. Endpoints go live only when listed in
-`CONTENT_NODE_PATHS` in `proxy.conf.js`, which is empty.
+   before the conformance decision can be trusted.
+3. **`Cache-Control` headers** driven by the schema, with the `token`
+   exclusion, and the release question in constraint 2 settled.
+4. **Cloudflare**: the rate-limiting rule first (no origin change needed), then
+   URL normalization, incoming and to origin (#527), then the Cache Rule once
+   the origin emits headers.
