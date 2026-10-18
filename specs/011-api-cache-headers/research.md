@@ -261,20 +261,26 @@ The record takes a documented endpoint's query parameters from Java's descriptio
 
 No fix was needed (T007).
 
-## R13. Where Java gives one answer to many spellings (review of #530)
+## R13. Where Java gives one answer to many spellings (reviews of #530)
 
-Standard form narrows these past their declared type, because each would otherwise be a stored copy of one answer:
+Standard form narrows these past their declared type, because each would otherwise be a stored copy of one answer. The graph names it relies on are snapshotted in `graph-names.json` by `snapshot-graph-names.mjs`; a release adds names only when it is run again, and until then their URLs are answered but not stored.
 
-- **`species` taxId only:** on `/data/pathways/low/**`, `/data/mapping/**` and `/data/schema/{id}[/count|/min]`.
-  - Java reads `species` there through a lenient lookup: any case, `_` for a space, digits of any script.
-  - On `/pathways/low` an unknown species filters nothing, so measured on Java, `?species=nosuchspecies` is byte-identical to no species.
-- **The mapping resource:** an exact reference-database name, as the graph has it (`reference-databases.json`, from `snapshot-reference-databases.mjs`). Java finds it ignoring case.
+- **`species`:** the taxId of a known species, on `/data/pathways/low/**`, `/data/mapping/**` and `/data/schema/{id}[/count|/min]`.
+  - Java reads it leniently: a name in any case, `_` for a space, digits of any script, and a Species dbId as well as a taxId.
+  - On `/pathways/low`, one it cannot find filters nothing. Measured on Java, `?species=1` and `?species=nosuchspecies` are byte-identical to no species, and `?species=48887` (the human Species dbId) to `?species=9606`.
+- **The mapping resource:** a reference-database name exactly as the graph has it, encoded as `encodeURIComponent` writes it, e.g. `COSMIC%20(genes)`. Java finds it ignoring case.
   - `/data/complexes` uses its resource as a case-sensitive pattern, so another case is another answer; it keeps the plain pattern-free form.
 - **GO ids:** `GO:\d{7}` for the GO resource on `/mapping/.../pathways`. Java cuts any identifier starting `go` to its digits.
-- **`maxDepth`:** `-1` or a positive number. Every negative means no limit, and 0 means 1.
-- **`attributes`:** letters only, no empty or repeated item. Java drops empty items.
+- **`maxDepth`:** `-1` (no limit) or 1 to 10.
+  - Every negative means no limit, and 0 means 1.
+  - A depth past an object's own tree gives `-1`'s answer again, so larger depths are answered but not stored.
+- **`attributes`:** one of the lists the site asks for, `species,compartment` (the default) or `species,compartment,referenceEntity`. Java joins the names into a relationship pattern, where an unknown name, another case or another order matches what the list without it matches.
 - **`types` on `/search/diagram/{d}/occurrences/{i}`:** refused. Java binds it and never reads it.
-- **Value encoding:** a value must be one encoding of what it decodes to, either strict or Angular's (which leaves `@ : $ , ; = ? /` bare). `%31` for `1`, or `+` for a space, is not standard.
+- **Value encoding:** a value must be one encoding of what it decodes to, either strict or Angular's HttpParams, which leaves `@ : $ , ; = ? /` bare, exactly as Angular's `STANDARD_ENCODING_REPLACEMENTS` does. `%31` for `1`, `+` for a space, or `%21` for `!`, is not standard.
 - **List items:** a list's item may not be given twice.
 
-`view` and `includeRef` stay standard where Java ignores them. The site sends them there (e.g. `ancestors`), and the set is bounded: 3 views × 2 values.
+**Still bounded aliases, accepted:**
+
+- `view` and `includeRef` where Java ignores them: the site sends them there (e.g. `ancestors`), and there are 3 × 2 spellings.
+- A default given explicitly (`includeRef=false`).
+- A list given as one value or repeated (`types=A,B`, `types=A&types=B`), and its order.

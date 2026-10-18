@@ -25,12 +25,11 @@ const OPENAPI = () =>
     readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
   ));
 
-let databases;
-/** The graph's reference databases, as written (snapshot-reference-databases.mjs). */
-const DATABASES = () =>
-  (databases ??= new Set(
-    JSON.parse(readFileSync(new URL('./reference-databases.json', import.meta.url), 'utf8'))
-  ));
+let names;
+/** Names from the graph, as written (snapshot-graph-names.mjs). */
+const GRAPH_NAMES = () =>
+  (names ??= JSON.parse(readFileSync(new URL('./graph-names.json', import.meta.url), 'utf8')));
+const DATABASES = () => GRAPH_NAMES().referenceDatabases;
 
 let attributes;
 /** Every getter's attribute name, as Java's getProperty is meant to be asked. */
@@ -73,7 +72,7 @@ export const PATH_KINDS = {
   // another (empty) answer, not this one again. No pattern characters.
   resource: (text) => /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(text),
   // /data/mapping finds it ignoring case: only the name as the graph has it.
-  database: (text) => [...DATABASES()].some((name) => encodeURIComponent(name) === text),
+  database: (text) => DATABASES().some((name) => encodeURIComponent(name) === text),
   identifier: (text) => /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(text),
   icon: (text) => /^R-ICO-[1-9]\d*$/.test(text),
   // Never stored whatever it is (`cache` below).
@@ -82,21 +81,26 @@ export const PATH_KINDS = {
 
 /**
  * Values that standard form narrows past their declared type, where Java
- * gives one answer to many: `species` read through a lenient lookup (a name
- * in any case, `_` for a space, digits of any script; on /pathways/low an
- * unknown one filters nothing), every negative `maxDepth` meaning no limit
- * and 0 meaning 1, and `attributes` dropping empty items.
+ * gives one answer to many:
+ *
+ *  - `species`, a known species' taxId. Java reads a name in any case, `_`
+ *    for a space, digits of any script, and a Species dbId as well as a
+ *    taxId; on /pathways/low one it cannot find filters nothing, so
+ *    `species=1` is the unfiltered answer again.
+ *  - `maxDepth`, -1 (no limit) or 1 to 10. Every negative is -1 and 0 is 1,
+ *    and a depth past an object's own tree is -1's answer again.
+ *  - `attributes`, a list the site asks for. Java joins the names into a
+ *    relationship pattern, where an unknown name, a name in another case or
+ *    another order matches what the list without it matches.
  */
 const VALUE_KINDS = {
-  taxId: dbId,
-  depth: (text) => text === '-1' || (/^[1-9]\d*$/.test(text) && Number(text) < 2 ** 31),
-  names: (text) => {
-    const items = text.split(',');
-    return items.every((item) => /^[A-Za-z]+$/.test(item)) && new Set(items).size === items.length;
-  },
+  species: (text) => GRAPH_NAMES().speciesTaxIds.includes(text),
+  depth: (text) => text === '-1' || /^([1-9]|10)$/.test(text),
+  attributes: (text) =>
+    ['species,compartment', 'species,compartment,referenceEntity'].includes(text),
 };
-const TAX_ID = { species: 'taxId' };
-const IN_DEPTH = { maxDepth: 'depth', attributes: 'names' };
+const TAX_ID = { species: 'species' };
+const IN_DEPTH = { maxDepth: 'depth', attributes: 'attributes' };
 
 const bool = (name, extra = {}) => ({
   name,

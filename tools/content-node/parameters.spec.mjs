@@ -393,6 +393,62 @@ describe('standardForm: one spelling, where Java answers many', () => {
       no('parameter:query'),
     ],
   ];
+  // Second review of #530.
+  const lowSpecies = (value) =>
+    `/ContentService/data/pathways/low/entity/R-HSA-199420?species=${value}`;
+  const low = '/ContentService/data/pathways/low/entity/{id}';
+  const depth = (value) => `/ContentService/data/event/R-HSA-1/in-depth?${value}`;
+  const event = '/ContentService/data/event/{id}/in-depth';
+  cases.push(
+    // a taxId no species has filters nothing; a Species dbId is a taxId's alias
+    [low, lowSpecies('1'), no('parameter:species')],
+    [low, lowSpecies('48887'), no('parameter:species')],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/pathways',
+      '/ContentService/data/mapping/GO/GO:0006915/pathways?species=48887',
+      no('parameter:species'),
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/pathways',
+      '/ContentService/data/mapping/GO/GO:0006915/pathways?species=9606',
+      ok,
+    ],
+    // a relationship pattern: unknown names, case and order match the same
+    [event, depth('attributes=species,compartment,referenceEntity'), ok],
+    [event, depth('attributes=species,zzz'), no('parameter:attributes')],
+    [event, depth('attributes=SPECIES'), no('parameter:attributes')],
+    [event, depth('attributes=compartment,species'), no('parameter:attributes')],
+    // a depth past an object's tree is no limit's answer
+    [event, depth('maxDepth=10'), ok],
+    [event, depth('maxDepth=11'), no('parameter:maxDepth')],
+    [event, depth('maxDepth=2147483647'), no('parameter:maxDepth')],
+    // the database name with characters a path may carry bare
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+      '/ContentService/data/mapping/COSMIC%20(genes)/TP53/reactions',
+      ok,
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+      '/ContentService/data/mapping/COSMIC%20%28genes%29/TP53/reactions',
+      no('path:resource'),
+    ],
+    // `!` is left bare by the strict encoding itself; `%21` is its second spelling
+    ['/ContentService/search/query', '/ContentService/search/query?query=a!', ok],
+    [
+      '/ContentService/search/query',
+      '/ContentService/search/query?query=a%21',
+      no('parameter:query'),
+    ]
+  );
+  // Each character Angular's HttpParams leaves bare, both ways.
+  for (const char of ['@', ':', '$', ',', ';', '=', '?', '/']) {
+    const strict = encodeURIComponent(`a${char}b`);
+    cases.push(
+      ['/ContentService/search/query', `/ContentService/search/query?query=${strict}`, ok],
+      ['/ContentService/search/query', `/ContentService/search/query?query=a${char}b`, ok]
+    );
+  }
   for (const [endpoint, url, expected] of cases)
     it(url, () => {
       expect(standardForm(endpoint, url)).toEqual(expected);
