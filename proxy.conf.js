@@ -137,20 +137,14 @@ module.exports = {
   '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)/?(\\?|$)': contentNode,
   // What points at an object, for the website's detail pages.
   '^/ContentService/data/instance/[^/?]+/referrers/?(\\?|$)': contentNode,
-  // A person, and the publications they authored. Not the other attributes
-  // under /person/{id}/, which Java serves.
-  '^/ContentService/data/person/[^/?]+(/publications)?/?(\\?|$)': contentNode,
-  // The person page's four lists. A pattern rather than a prefix: these take an
-  // id in the middle, and `/ContentService/data/person` would also claim the
-  // other attributes under /person/{id}/, which node does not serve.
-  //
-  // A `^` regex, not a glob. The dev server moves every glob key to the end of
-  // the table, after the general /ContentService rule, and the first match
-  // wins -- so under `ng serve` these went to Java (#318). A `^` key stays
-  // where it is written. It is matched against the path and query, as Vite
-  // does; serve-prod.js reads it the same way. Same pattern as nginx's.
-  '^/ContentService/data/person/[^/?]+/(authored|reviewed)(Pathways|Reactions)/?(\\?|$)':
-    contentNode,
+  // A person, the publications they authored, the person page's four lists,
+  // and any other attribute of them. A `^` regex, not a glob: the dev server
+  // moves every glob key to the end of the table, after the general
+  // /ContentService rule, and the first match wins -- so under `ng serve` the
+  // four lists once went to Java (#318). A `^` key stays where it is written.
+  // It is matched against the path and query, as Vite does; serve-prod.js
+  // reads it the same way. Same pattern as nginx's.
+  '^/ContentService/data/person/[^/?]+(/[^/?]+)?/?(\\?|$)': contentNode,
   // One object with everything it points to, in any of Java's views
   // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
   // /query/enhanced|abridged/{id} are other endpoints.
@@ -159,12 +153,11 @@ module.exports = {
   '^/ContentService/data/query/ids(;[^/?]*)?/map/?(\\?|$)': contentNode,
   // Every disease, whole and as a DOID list.
   '^/ContentService/data/diseases(/doid)?/?(\\?|$)': contentNode,
-  // An object's stable id by any id Java accepts (13 bytes against 12KB for
-  // the whole object), and a disease pathway's normal pathway. Only these two
-  // attributes of Java's /data/query/{id}/{attributeName} are ported, so the
-  // pattern names them. `abridged` and `enhanced` are not ids: Java's more
-  // specific /query/abridged/{id} and /query/enhanced/{id} take those paths.
-  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(stId|normalPathway)/?(\\?|$)':
+  // Any attribute of an object, as Java's /data/query/{id}/{attributeName}
+  // writes it. `abridged` and `enhanced` are not ids, nor `more` an attribute:
+  // Java's more specific /query/abridged/{id}, /query/enhanced/{id} and
+  // /query/{id}/more take those paths.
+  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(?!more/?(\\?|$))[^/?]+/?(\\?|$)':
     contentNode,
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.

@@ -74,9 +74,9 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 
 ## Phase 7: Remaining graph and index operations → node
 
-- [ ] T070 `GET /data/query/{id}/{attributeName}` for the attributes not yet ported (only `stId` and `normalPathway` are)
+- [x] T070 `GET /data/query/{id}/{attributeName}` for the attributes not yet ported (only `stId` and `normalPathway` are) — #523
 - [x] T071 `POST /data/query/ids`, `POST /data/query/ids/map` — #509
-- [ ] T072 `GET /data/person/{id}/{attributeName}`
+- [x] T072 `GET /data/person/{id}/{attributeName}` — #523
 - [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
 - [x] T074 `GET /data/schema/{className}` — #511
 - [x] T074b `GET /data/schema/{className}/reference` — #512
@@ -114,5 +114,5 @@ These stay in Java because their substance is a Java library or Java numerical w
 
 ## Notes
 
-- The published description lists 98 operations. Node answers 52 of them in full (Phases 2–6). It answers one more in part: `/data/query/{id}/{attributeName}` for `stId` and `normalPathway` (T020, T029; the rest is T070). Operations outside the description are T026 and T060, which the site calls, and the summary in T054. Everything else is in Phases 7–9.
+- The published description lists 98 operations. Node answers 52 of them in full (Phases 2–6). It answered one more in part: `/data/query/{id}/{attributeName}` for `stId` and `normalPathway` (T020, T029); T070 completes it. Operations outside the description are T026 and T060, which the site calls, and the summary in T054. Everything else is in Phases 7–9.
 - An operation in Phase 7 that turns out to be library-bound moves to Phase 9, by the rule in spec 010.

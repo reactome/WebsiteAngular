@@ -185,7 +185,56 @@ public class DomainSnapshot {
             out.append("]]");
             separator = ",";
         }
-        out.append("],\n\"interfaces\":[");
+        out.append("],\n\"getters\":{");
+        // Every public method whose name starts "get", for each concrete class,
+        // as [name, declaring class, parameter count, return class, element
+        // class, projected getter]: what ControllerUtils.getProperty can find by name for
+        // /data/query/{id}/{attributeName}. Its order is the JVM's, which
+        // changes between runs; no two of a class's names are equal ignoring
+        // case, so a name finds at most one, and the order never matters.
+        separator = "";
+        for (Class<?> type : classes) {
+            if (Modifier.isAbstract(type.getModifiers()) || type.isInterface() || serialisedOnly.contains(type)) continue;
+            out.append(separator).append("\n").append(quote(type.getSimpleName())).append(":[");
+            separator = ",";
+            String comma = "";
+            for (java.lang.reflect.Method method : type.getMethods()) {
+                if (!method.getName().startsWith("get")) continue;
+                java.lang.reflect.Type generic = method.getGenericReturnType();
+                String element = "";
+                if (generic instanceof java.lang.reflect.ParameterizedType) {
+                    java.lang.reflect.Type[] arguments = ((java.lang.reflect.ParameterizedType) generic).getActualTypeArguments();
+                    if (arguments.length == 1 && arguments[0] instanceof Class) element = ((Class<?>) arguments[0]).getSimpleName();
+                }
+                // @ReactomeProjectedRelationship("getX"): the getter the aspect
+                // calls first when this one finds its relationships empty.
+                String projected = "";
+                for (java.lang.annotation.Annotation annotation : method.getAnnotations())
+                    if (annotation.annotationType().getSimpleName().equals("ReactomeProjectedRelationship"))
+                        projected = (String) annotation.annotationType().getMethod("value").invoke(annotation);
+                // A String getter's value on a fresh instance: the text a
+                // getter returns when it returns a constant (getExplanation),
+                // exactly -- javap's listing escapes and trims it.
+                String fresh = null;
+                if (method.getParameterCount() == 0 && method.getReturnType() == String.class) {
+                    try {
+                        fresh = (String) method.invoke(type.getDeclaredConstructor().newInstance());
+                    } catch (Exception ignored) {
+                        fresh = null;
+                    }
+                }
+                out.append(comma).append("[").append(quote(method.getName())).append(",")
+                        .append(quote(method.getDeclaringClass().getSimpleName())).append(",")
+                        .append(method.getParameterCount()).append(",")
+                        .append(quote(method.getReturnType().getSimpleName())).append(",")
+                        .append(quote(element)).append(",")
+                        .append(quote(projected)).append(",")
+                        .append(fresh == null ? "null" : quote(fresh)).append("]");
+                comma = ",";
+            }
+            out.append("]");
+        }
+        out.append("},\n\"interfaces\":[");
         // The interfaces SDN maps as entities, which a relationship may target.
         separator = "";
         for (Class<?> type : mapped) {
@@ -205,6 +254,12 @@ public class DomainSnapshot {
     }
 
     private static String quote(String text) {
-        return "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        StringBuilder out = new StringBuilder("\"");
+        for (char c : text.toCharArray()) {
+            if (c == '"' || c == '\\') out.append('\\').append(c);
+            else if (c < 0x20) out.append(String.format("\\u%04x", (int) c));
+            else out.append(c);
+        }
+        return out.append('"').toString();
     }
 }

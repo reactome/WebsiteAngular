@@ -144,6 +144,13 @@ describe('the dev server proxy', () => {
   for (const url of [
     '/ContentService/data/query/R-HSA-6802957/normalPathway',
     '/ContentService/data/query/6802957/normalPathway?x=1',
+    // Every attribute, in any case, as Java's getter lookup ignores case.
+    '/ContentService/data/query/70486/displayName',
+    '/ContentService/data/query/70486/NORMALPATHWAY',
+    '/ContentService/data/query/70486/normalPathways',
+    '/ContentService/data/query/R-HSA-109581/hasEvent/',
+    '/ContentService/data/person/68285/firstname',
+    '/ContentService/data/person/68285/authoredPathwaysAndMore',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -293,17 +300,17 @@ describe('the dev server proxy', () => {
   }
 
   for (const other of [
-    // Other attributes of the same Java endpoint are not ported.
-    '/ContentService/data/query/70486/displayName',
-    '/ContentService/data/query/70486/stIdVersion',
-    '/ContentService/data/query/70486/normalPathways',
     // Java's more specific /query/abridged/{id} takes this, reading the
     // attribute's name as the id. (/query/enhanced/{id} does the same, and
     // is node's now: see above.)
     '/ContentService/data/query/abridged/stId',
-    // Java matches attribute names in any case; only the site's spelling is routed.
-    '/ContentService/data/query/70486/NORMALPATHWAY',
     '/ContentService/data/query/abridged/70486',
+    // Java's own /query/{id}/more, not an attribute called more.
+    '/ContentService/data/query/70486/more',
+    '/ContentService/data/query/70486/more/',
+    // Below an attribute: no mapping.
+    '/ContentService/data/query/70486/displayName/x',
+    '/ContentService/data/person/68285/firstname/x',
     // The search endpoints node does not serve yet.
     '/ContentService/search/query/x?query=apoptosis',
     '/ContentService/search/suggestions?query=apop',
@@ -329,7 +336,6 @@ describe('the dev server proxy', () => {
     // Spring's own 404s: no species, or more after it.
     '/ContentService/data/orthology/R-HSA-69620/species/',
     '/ContentService/data/orthologies/ids/species/48892/x',
-    '/ContentService/data/person/68285/authoredPathwaysAndMore',
     // Only the ancestors of an event are ported.
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
     '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
