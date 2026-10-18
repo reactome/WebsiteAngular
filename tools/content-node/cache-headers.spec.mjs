@@ -141,3 +141,72 @@ describe('an answer that fails as it is written', () => {
     }
   });
 });
+
+// One URL per answer (spec 011 FR-013): a trailing slash is the same answer
+// under a second URL, so a GET or HEAD for it is sent to the URL without.
+describe('a trailing slash', () => {
+  it('is a 301 to the URL without it, query kept as sent, kept at the edge like an answer', async () => {
+    expect(await redirect('/ContentService/data/schema/Pathway/attributes/?view=nested')).toEqual([
+      301,
+      '/ContentService/data/schema/Pathway/attributes?view=nested',
+      CACHEABLE,
+      'redirect',
+    ]);
+    expect(await redirect('/ContentService/data/schema/Pathway/attributes/', 'HEAD')).toEqual([
+      301,
+      '/ContentService/data/schema/Pathway/attributes',
+      CACHEABLE,
+      'redirect',
+    ]);
+  });
+
+  it('keeps an encoded id as it came, and is not stored when the URL is not standard', async () => {
+    expect(await redirect('/ContentService/data/query/R-HSA-1%2Dx/')).toEqual([
+      301,
+      '/ContentService/data/query/R-HSA-1%2Dx',
+      'no-store',
+      'path:id',
+    ]);
+    expect(await redirect('/ContentService/data/schema/Pathway/attributes/?utm_source=x')).toEqual([
+      301,
+      '/ContentService/data/schema/Pathway/attributes?utm_source=x',
+      'no-store',
+      'parameter:utm_source',
+    ]);
+    expect(await redirect('/ContentService/data/schema/Pathway/attributes/?token=x')).toEqual([
+      301,
+      '/ContentService/data/schema/Pathway/attributes?token=x',
+      'private, no-store',
+      'token',
+    ]);
+  });
+
+  it('is not a redirect for a POST, or for a path no endpoint answers', async () => {
+    const post = await at('/data/query/ids/', { method: 'POST', body: 'R-HSA-1' });
+    expect([post.status === 301, ...headers(post)]).toEqual([false, 'no-store', 'method']);
+    expect(await redirect('/ContentService/data/nothing/')).toEqual([
+      404,
+      undefined,
+      'no-store',
+      'default',
+    ]);
+  });
+});
+
+async function redirect(path, method = 'GET') {
+  const { request } = await import('node:http');
+  const url = new URL(base);
+  return new Promise((resolve, reject) => {
+    const call = request({ host: url.hostname, port: url.port, path, method }, (response) => {
+      response.resume();
+      resolve([
+        response.statusCode,
+        response.headers.location,
+        response.headers['cache-control'],
+        response.headers['x-cache-rule'],
+      ]);
+    });
+    call.on('error', reject);
+    call.end();
+  });
+}

@@ -105,7 +105,7 @@ The pull request that completes a task ticks it here, with its number.
 
 - [x] T014 [P] [US3] In `projects/website-angular/src/scripts/serve-prod.js`, send `Cache-Control: no-store` for the `API_PAGE` paths (`/ContentService`, `/ContentService/`, `/AnalysisService`, `/AnalysisService/`) only. Add a test to `serve-prod.spec.ts`, shown failing first. — #531
 - [x] T015 [US2] Run the parity harness over its full corpus with the labels on. Zero status or body differences against the run before (SC-003), checked by verdicts and sizes. — #531
-- [ ] T016 Review, CI and merge. Then deploy node, nginx and the site to beta. Check with `curl --resolve beta.reactome.org:443:127.0.0.1 -D -`:
+- [x] T016 Review, CI and merge. Then deploy node, nginx and the site to beta. Check with `curl --resolve beta.reactome.org:443:127.0.0.1 -D -`: — #531
   - `/ContentService/data/diseases` → public and `standard`;
   - `?utm_source=x` → `no-store`;
   - `/ContentService/data/query/R-HSA-0000001` → `no-store`;
@@ -120,14 +120,14 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 4: One URL per answer (FR-013)
 
-- [ ] T017 [US1] Add tests to `tools/content-node/cache-headers.spec.mjs`, each shown failing first:
+- [x] T017 [US1] Add tests to `tools/content-node/cache-headers.spec.mjs`, each shown failing first:
   - a GET to `/ContentService/data/diseases/?a=1` → `301`, `Location: /ContentService/data/diseases?a=1`, `public, max-age=3600, s-maxage=31536000` and `redirect`;
   - HEAD → the same;
   - a POST to `/ContentService/data/query/ids/` → answered as today, not redirected;
   - a path that matches no node endpoint, with a slash → Spring's 404, not a redirect;
   - `/ContentService/data/query/R-HSA-1%2Fx/` → not decoded in `Location`.
-- [ ] T018 [US1] Implement the redirect in `tools/content-node/service.mjs`. It goes in the `/ContentService` middleware, after the path checks and before routing; only for GET and HEAD, and only when the path without its slash matches a node endpoint. The `Location` is built from the raw path and query as sent. T017 passes. The redirect is labelled like an answer: a `token` keeps it private, and the slashed URL must otherwise be in standard form for the redirect to be `public`; a `/x/?utm_source=…` redirect is `no-store`, or every junk query would be a stored redirect.
-- [ ] T019 [P] [US5] Change the site's two slashed URLs to the unslashed form: `/search/fireworks/` in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~276), and `/interactors/psicquic/resources/` (find where it is built). Update the e2e HARs that hold them by re-recording only those specs; follow the e2e port rule.
+- [x] T018 [US1] Implement the redirect in `tools/content-node/service.mjs`. It goes in the `/ContentService` middleware, after the path checks and before routing; only for GET and HEAD, and only when the path without its slash matches a node endpoint. The `Location` is built from the raw path and query as sent. T017 passes. The redirect is labelled like an answer: a `token` keeps it private, and the slashed URL must otherwise be in standard form for the redirect to be `public`; a `/x/?utm_source=…` redirect is `no-store`, or every junk query would be a stored redirect.
+- [x] T019 [P] [US5] Change the site's two slashed URLs to the unslashed form: `/search/fireworks/` in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~276), and `/interactors/psicquic/resources/` (find where it is built). Update the e2e HARs that hold them by re-recording only those specs; follow the e2e port rule.
 - [ ] T020 Update `deploy/nginx/routes.spec.ts` and the dev proxy test, if any test asserts that node answers the slashed form with a 200. nginx still routes it to node (spec 006 T006), and node now redirects. Review, CI, merge, deploy. On beta, check that `/ContentService/data/diseases/` → `301` to `/ContentService/data/diseases`. Tick T017–T020.
 
 ---

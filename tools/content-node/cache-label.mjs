@@ -58,6 +58,20 @@ export function label({ method, endpoint, originalUrl, status }) {
     : { cacheControl: NOT_STORED, rule: form.rule };
 }
 
+/**
+ * The label of the redirect from a trailing slash to `location`, the URL
+ * without it (spec 011 FR-013): kept like an answer when that URL is in
+ * standard form, so a junk query does not become a stored redirect.
+ */
+export function redirectLabel(endpoint, location) {
+  if (carriesToken(location)) return { cacheControl: PRIVATE, rule: 'token' };
+  if (RECORD[endpoint]?.cache === 'private') return { cacheControl: PRIVATE, rule: 'endpoint' };
+  const form = standardForm(endpoint, location);
+  return form.ok
+    ? { cacheControl: CACHEABLE, rule: 'redirect' }
+    : { cacheControl: NOT_STORED, rule: form.rule };
+}
+
 /** Puts a label on a response. */
 export function setLabel(response, { cacheControl, rule }) {
   response.setHeader('Cache-Control', cacheControl);

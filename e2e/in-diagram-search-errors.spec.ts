@@ -14,7 +14,7 @@ const LOAD = 60_000;
 const DNA_DAMAGE_BYPASS = 'R-HSA-73893';
 
 const local = /\/ContentService\/search\/diagram\//;
-const global = /\/ContentService\/search\/fireworks\//;
+const global = /\/ContentService\/search\/fireworks(\?|$)/;
 
 /**
  * Fails the matching search requests until the returned function is called:

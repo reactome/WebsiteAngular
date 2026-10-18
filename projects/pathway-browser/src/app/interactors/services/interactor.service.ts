@@ -106,7 +106,7 @@ export class InteractorService {
   private readonly _PREFIX_DISEASE = `${OVERLAYS}/disgenet/`;
 
   private readonly _STATIC_URL = this._PREFIX_INTERACTOR + 'static/molecules/details';
-  private readonly _PSICQUIC_RESOURCE_URL = this._PREFIX_INTERACTOR + 'psicquic/resources/';
+  private readonly _PSICQUIC_RESOURCE_URL = this._PREFIX_INTERACTOR + 'psicquic/resources';
   private readonly _PSICQUIC_URL = this._PREFIX_INTERACTOR + 'psicquic/molecules/';
   public readonly UPLOAD_URL = this._PREFIX_INTERACTOR + 'upload/tuple/';
   public readonly UPLOAD_PSICQUIC_URL = this._PREFIX_INTERACTOR + 'upload/psicquic/url';
