@@ -246,12 +246,35 @@ The record takes a documented endpoint's query parameters from Java's descriptio
 
 ## R12. Invalid inputs against Java (run 18 Oct 2026)
 
-The corpus (`tools/content-node/invalid-inputs.mjs`) had 292 requests: every declared parameter of every GET endpoint that is not marked never stored, each given values Java would not take as written. It used real objects only. It ran against node on its own port and against Java, sequentially, in three batches of 100 with 30 seconds between.
+**The corpus** (`tools/content-node/invalid-inputs.mjs`) had 328 requests: every declared parameter of every GET endpoint not marked never stored.
+
+- **Values tried:** values Java would not take as written, plus an unknown species and integers past Java's `int` range.
+- **Required parameters:** every request carries the endpoint's other required parameters, so the parameter being tried is reached. A first run left them out, and 138 of its requests stopped at the missing `query` or `page` (review of #530).
+- **Objects:** real ones only.
+- **Run:** against node on its own port and against Java, sequentially, in three batches with 30 seconds between.
 
 | Verdict                              | Count |                                                                                                                                                                                                                                  |
 | ------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Byte-identical                       | 279   |                                                                                                                                                                                                                                  |
+| Byte-identical                       | 309   |                                                                                                                                                                                                                                  |
 | `query/enhanced/v2` in a nested view | 9     | The declared difference (routes-core.conf): identical as data, with getter-only keys in the JVM's order of the day. Jackson's `@id` numbers follow that order. The valid sample differs the same way, so no bad value causes it. |
-| A Solr failure's 500                 | 4     | Declared in `fromSolr`. Java's message repeats Solr's internals: its server address, and the parameters it was sent. Node's says only "Solr exception occurred". Same status, and never stored.                                  |
+| A Solr failure's 500                 | 10    | Declared in `fromSolr`. Java's message repeats Solr's internals: its server address, and the parameters it was sent. Node's says only "Solr exception occurred". Same status, and never stored.                                  |
 
 No fix was needed (T007).
+
+## R13. Where Java gives one answer to many spellings (review of #530)
+
+Standard form narrows these past their declared type, because each would otherwise be a stored copy of one answer:
+
+- **`species` taxId only:** on `/data/pathways/low/**`, `/data/mapping/**` and `/data/schema/{id}[/count|/min]`.
+  - Java reads `species` there through a lenient lookup: any case, `_` for a space, digits of any script.
+  - On `/pathways/low` an unknown species filters nothing, so measured on Java, `?species=nosuchspecies` is byte-identical to no species.
+- **The mapping resource:** an exact reference-database name, as the graph has it (`reference-databases.json`, from `snapshot-reference-databases.mjs`). Java finds it ignoring case.
+  - `/data/complexes` uses its resource as a case-sensitive pattern, so another case is another answer; it keeps the plain pattern-free form.
+- **GO ids:** `GO:\d{7}` for the GO resource on `/mapping/.../pathways`. Java cuts any identifier starting `go` to its digits.
+- **`maxDepth`:** `-1` or a positive number. Every negative means no limit, and 0 means 1.
+- **`attributes`:** letters only, no empty or repeated item. Java drops empty items.
+- **`types` on `/search/diagram/{d}/occurrences/{i}`:** refused. Java binds it and never reads it.
+- **Value encoding:** a value must be one encoding of what it decodes to, either strict or Angular's (which leaves `@ : $ , ; = ? /` bare). `%31` for `1`, or `+` for a space, is not standard.
+- **List items:** a list's item may not be given twice.
+
+`view` and `includeRef` stay standard where Java ignores them. The site sends them there (e.g. `ancestors`), and the set is bounded: 3 views × 2 values.

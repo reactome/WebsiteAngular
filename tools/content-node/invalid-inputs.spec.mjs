@@ -36,6 +36,18 @@ describe('invalidInputs', () => {
     }
   });
 
+  it('carries every required parameter but the one being tried, so that one is reached', () => {
+    for (const url of corpus) {
+      const [path, query] = url.split('?');
+      const endpoint = GETS.find((e) =>
+        new RegExp(`^${e.path.replace(/\{[^}]+\}/g, '[^/]+')}$`).test(path)
+      );
+      const given = new Set([...new URLSearchParams(query)].map(([name]) => name));
+      const missing = declaredQuery(endpoint.path).filter((p) => p.required && !given.has(p.name));
+      expect([url, missing.map((p) => p.name)]).toEqual([url, []]);
+    }
+  });
+
   it('asks only for real objects, not placeholders', () => {
     expect(corpus.filter((url) => /\/X1(\/|\?|$)/.test(url))).toEqual([]);
   });

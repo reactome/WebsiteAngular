@@ -228,3 +228,173 @@ describe('standardForm: query parameters', () => {
     });
   });
 });
+
+// Review of #530: aliases each found accepted, and the mutations that
+// survived the tests above.
+describe('standardForm: one spelling, where Java answers many', () => {
+  const no = (rule) => ({ ok: false, rule });
+  const cases = [
+    // species read leniently, or ignored when unknown on /pathways/low
+    [
+      '/ContentService/data/pathways/low/entity/{id}',
+      '/ContentService/data/pathways/low/entity/R-HSA-199420?species=9606',
+      ok,
+    ],
+    [
+      '/ContentService/data/pathways/low/entity/{id}',
+      '/ContentService/data/pathways/low/entity/R-HSA-199420?species=nosuchspecies',
+      no('parameter:species'),
+    ],
+    [
+      '/ContentService/data/pathways/low/entity/{id}',
+      '/ContentService/data/pathways/low/entity/R-HSA-199420?species=%D9%A9%D9%A6%D9%A0%D9%A6',
+      no('parameter:species'),
+    ],
+    [
+      '/ContentService/data/schema/{id}/count',
+      '/ContentService/data/schema/Pathway/count?species=HOMO__sapiens',
+      no('parameter:species'),
+    ],
+    // a value spelled twice
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?maxDepth=%31',
+      no('parameter:maxDepth'),
+    ],
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?includeRef=tru%65',
+      no('parameter:includeRef'),
+    ],
+    [
+      '/ContentService/search/query',
+      '/ContentService/search/query?query=p53&species=Homo+sapiens',
+      no('parameter:species'),
+    ],
+    [
+      '/ContentService/search/query',
+      '/ContentService/search/query?query=p53&species=Homo%20sapiens',
+      ok,
+    ],
+    ['/ContentService/search/query', '/ContentService/search/query?query=uniprot:P04637', ok],
+    // maxDepth: every negative is no limit, 0 is 1
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?maxDepth=-1',
+      ok,
+    ],
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?maxDepth=-7',
+      no('parameter:maxDepth'),
+    ],
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?maxDepth=0',
+      no('parameter:maxDepth'),
+    ],
+    // attributes: empty items dropped, repeats
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?attributes=species,compartment',
+      ok,
+    ],
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?attributes=species,compartment,,',
+      no('parameter:attributes'),
+    ],
+    [
+      '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/event/R-HSA-1/in-depth?attributes=species,species',
+      no('parameter:attributes'),
+    ],
+    // mapping finds the resource ignoring case; GO is cut to digits
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+      '/ContentService/data/mapping/UniProt/P01308/reactions',
+      ok,
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+      '/ContentService/data/mapping/uNiPrOt/P01308/reactions',
+      no('path:resource'),
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/reactions',
+      '/ContentService/data/mapping/ENSEMBL%20Fungi/X/reactions',
+      ok,
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/pathways',
+      '/ContentService/data/mapping/GO/GO:0006915/pathways',
+      ok,
+    ],
+    [
+      '/ContentService/data/mapping/{resource}/{identifier}/pathways',
+      '/ContentService/data/mapping/GO/goXYZ0006915/pathways',
+      no('path:identifier'),
+    ],
+    // declared, never read
+    [
+      '/ContentService/search/diagram/{diagram}/occurrences/{instance}',
+      '/ContentService/search/diagram/R-HSA-1/occurrences/R-HSA-2?types=x',
+      no('parameter:types'),
+    ],
+    // a list's item given twice
+    [
+      '/ContentService/search/query',
+      '/ContentService/search/query?query=p53&types=Protein&types=Protein',
+      no('parameter:types'),
+    ],
+    [
+      '/ContentService/search/pathways/of/{dbId}',
+      '/ContentService/search/pathways/of/50758?fields=BOGUS',
+      no('parameter:fields'),
+    ],
+    // survivors of the mutation run
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/R-HSA-1.0', no('path:id')],
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/R-HSA-1.01', no('path:id')],
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/REACT_0', no('path:id')],
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/REACT_01', no('path:id')],
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/uniprot:P04637', ok],
+    ['/ContentService/data/query/{id}', '/ContentService/data/query/uniprot:', no('path:id')],
+    [
+      '/ContentService/data/pathways/top/{id}',
+      '/ContentService/data/pathways/top/09606',
+      no('path:id'),
+    ],
+    [
+      '/ContentService/data/person/{id}',
+      '/ContentService/data/person/0000-0001-5807-006x',
+      no('path:id'),
+    ],
+    [
+      '/ContentService/references/mapping/{identifier}',
+      `/ContentService/references/mapping/${'A'.repeat(65)}`,
+      no('path:identifier'),
+    ],
+    [
+      '/ContentService/references/mapping/{identifier}',
+      '/ContentService/references/mapping/P04%20637',
+      no('path:identifier'),
+    ],
+    ['/ContentService/search/icon/query', '/ContentService/search/icon/query?page=2147483647', ok],
+    [
+      '/ContentService/search/icon/query',
+      '/ContentService/search/icon/query?page=2147483648',
+      no('parameter:page'),
+    ],
+    ['/ContentService/data/query/{id}', '/ContentService/data/QUERY/R-HSA-1', no('form')],
+    ['/ContentService/data/nothing', '/ContentService/data/nothing', no('form')],
+    [
+      '/ContentService/search/query',
+      '/ContentService/search/query?query=%E0%A4%A',
+      no('parameter:query'),
+    ],
+  ];
+  for (const [endpoint, url, expected] of cases)
+    it(url, () => {
+      expect(standardForm(endpoint, url)).toEqual(expected);
+    });
+});

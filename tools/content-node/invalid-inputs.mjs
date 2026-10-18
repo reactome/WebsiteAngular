@@ -15,12 +15,20 @@ import { URLSearchParams, fileURLToPath } from 'node:url';
 import { RECORD, declaredQuery } from './parameters.mjs';
 
 const VALUES = {
-  integer: ['abc', '-1', '0', '01', '+1', '99999999999', ''],
+  integer: ['abc', '-1', '0', '01', '+1', '2147483648', '99999999999', ''],
   boolean: ['on', 'TRUE', 'abc', ''],
   enum: ['xyz', ''],
   string: [''],
   array: [''],
 };
+// A species no lookup finds, where one is read.
+const UNKNOWN = { species: 'nosuchspecies' };
+/**
+ * A required parameter the sample does not carry, given a value Java takes,
+ * so the request reaches the parameter being tried rather than failing on
+ * the missing one first.
+ */
+const REQUIRED = { query: 'apoptosis', page: '1', offset: '25', rowCount: '10' };
 const SHARED = new Set(['view', 'includeRef']);
 const SHARED_ON = new Set([
   '/ContentService/data/query/{id}',
@@ -56,10 +64,20 @@ export function invalidInputs(endpoints) {
       // The sample's other parameters kept; this one given the bad value
       // alone, not repeated, so the value is what is tried.
       const others = [...sample].filter(([other]) => other !== parameter.name);
+      for (const required of declaredQuery(endpoint.path))
+        if (
+          required.required &&
+          required.name !== parameter.name &&
+          !others.some(([other]) => other === required.name)
+        )
+          others.push([required.name, REQUIRED[required.name] ?? '1']);
       const kept = others
         .map(([n, v]) => `${encodeURIComponent(n)}=${encodeURIComponent(v)}&`)
         .join('');
-      for (const value of VALUES[type] ?? [''])
+      for (const value of [
+        ...(VALUES[type] ?? ['']),
+        ...(parameter.name in UNKNOWN ? [UNKNOWN[parameter.name]] : []),
+      ])
         paths.push(`${path}?${kept}${name}=${encodeURIComponent(value)}`);
     }
   }

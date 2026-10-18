@@ -25,6 +25,13 @@ const OPENAPI = () =>
     readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
   ));
 
+let databases;
+/** The graph's reference databases, as written (snapshot-reference-databases.mjs). */
+const DATABASES = () =>
+  (databases ??= new Set(
+    JSON.parse(readFileSync(new URL('./reference-databases.json', import.meta.url), 'utf8'))
+  ));
+
 let attributes;
 /** Every getter's attribute name, as Java's getProperty is meant to be asked. */
 const ATTRIBUTES = () =>
@@ -62,12 +69,34 @@ export const PATH_KINDS = {
   person: (text) => dbId(text) || /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(text),
   className: (text) => Object.hasOwn(SCHEMA_CLASSES, text),
   attribute: (text) => ATTRIBUTES().has(text),
+  // /data/complexes matches it as a case-sensitive pattern: another case is
+  // another (empty) answer, not this one again. No pattern characters.
   resource: (text) => /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(text),
+  // /data/mapping finds it ignoring case: only the name as the graph has it.
+  database: (text) => [...DATABASES()].some((name) => encodeURIComponent(name) === text),
   identifier: (text) => /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(text),
   icon: (text) => /^R-ICO-[1-9]\d*$/.test(text),
   // Never stored whatever it is (`cache` below).
   any: () => true,
 };
+
+/**
+ * Values that standard form narrows past their declared type, where Java
+ * gives one answer to many: `species` read through a lenient lookup (a name
+ * in any case, `_` for a space, digits of any script; on /pathways/low an
+ * unknown one filters nothing), every negative `maxDepth` meaning no limit
+ * and 0 meaning 1, and `attributes` dropping empty items.
+ */
+const VALUE_KINDS = {
+  taxId: dbId,
+  depth: (text) => text === '-1' || (/^[1-9]\d*$/.test(text) && Number(text) < 2 ** 31),
+  names: (text) => {
+    const items = text.split(',');
+    return items.every((item) => /^[A-Za-z]+$/.test(item)) && new Set(items).size === items.length;
+  },
+};
+const TAX_ID = { species: 'taxId' };
+const IN_DEPTH = { maxDepth: 'depth', attributes: 'names' };
 
 const bool = (name, extra = {}) => ({
   name,
@@ -143,10 +172,12 @@ export const RECORD = {
   '/ContentService/data/entity/{id}/in-depth': {
     java: '/data/entity/{id}/in-depth',
     path: { id: 'oid' },
+    values: IN_DEPTH,
   },
   '/ContentService/data/event/{id}/in-depth': {
     java: '/data/event/{id}/in-depth',
     path: { id: 'oid' },
+    values: IN_DEPTH,
   },
   '/ContentService/data/query/{id}/normalPathway': {
     java: '/data/query/{id}/{attributeName}',
@@ -164,18 +195,22 @@ export const RECORD = {
   '/ContentService/data/pathways/low/entity/{id}': {
     java: '/data/pathways/low/entity/{id}',
     path: { id: 'oid' },
+    values: TAX_ID,
   },
   '/ContentService/data/pathways/low/entity/{id}/allForms': {
     java: '/data/pathways/low/entity/{id}/allForms',
     path: { id: 'oid' },
+    values: TAX_ID,
   },
   '/ContentService/data/pathways/low/diagram/entity/{id}': {
     java: '/data/pathways/low/diagram/entity/{id}',
     path: { id: 'oid' },
+    values: TAX_ID,
   },
   '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
     java: '/data/pathways/low/diagram/entity/{id}/allForms',
     path: { id: 'oid' },
+    values: TAX_ID,
   },
   '/ContentService/data/participants/{id}/referenceEntities': {
     java: '/data/participants/{id}/referenceEntities',
@@ -203,11 +238,16 @@ export const RECORD = {
   },
   '/ContentService/data/mapping/{resource}/{identifier}/reactions': {
     java: '/data/mapping/{resource}/{identifier}/reactions',
-    path: { resource: 'resource', identifier: 'identifier' },
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
   },
+  // GO is asked by its accession, cut to digits whatever letters lead it.
   '/ContentService/data/mapping/{resource}/{identifier}/pathways': {
     java: '/data/mapping/{resource}/{identifier}/pathways',
-    path: { resource: 'resource', identifier: 'identifier' },
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
+    check: ({ resource, identifier }) =>
+      resource === 'GO' && !/^GO:\d{7}$/.test(identifier) ? 'path:identifier' : undefined,
   },
   '/ContentService/references/mapping/{identifier}/xrefs': {
     java: '/references/mapping/{identifier}/xrefs',
@@ -242,15 +282,18 @@ export const RECORD = {
   '/ContentService/data/schema/{id}/count': {
     java: '/data/schema/{className}/count',
     path: { id: 'className' },
+    values: TAX_ID,
   },
   '/ContentService/data/schema/{id}/min': {
     java: '/data/schema/{className}/min',
     path: { id: 'className' },
+    values: TAX_ID,
   },
   '/ContentService/data/schema/model': { java: '/data/schema/model' },
   '/ContentService/data/schema/{id}': {
     java: '/data/schema/{className}',
     path: { id: 'className' },
+    values: TAX_ID,
   },
   '/ContentService/data/schema/{id}/reference': {
     java: '/data/schema/{className}/reference',
@@ -329,6 +372,8 @@ export const RECORD = {
   '/ContentService/search/diagram/{diagram}/occurrences/{instance}': {
     java: '/search/diagram/{diagram}/occurrences/{instance}',
     path: { diagram: 'stId', instance: 'stIdOrDbId' },
+    // Java binds it and never reads it: any value is the same answer.
+    ignored: ['types'],
   },
   '/ContentService/search/diagram/{diagram}': {
     java: '/search/diagram/{diagram}',
@@ -383,12 +428,15 @@ export function declaredQuery(endpoint) {
   const entry = RECORD[endpoint];
   if (!entry) return [];
   if (entry.java === null) return entry.query;
-  return (OPENAPI().paths[entry.java]?.get ?? []).filter((parameter) => parameter.in === 'query');
+  return (OPENAPI().paths[entry.java]?.get ?? []).filter(
+    (parameter) => parameter.in === 'query' && !entry.ignored?.includes(parameter.name)
+  );
 }
 
 const INT32 = 2 ** 31;
 /** One value, decoded, in the one spelling standard form takes for its type. */
-function valid(parameter, value) {
+function valid(parameter, value, kind) {
+  if (kind) return VALUE_KINDS[kind](value);
   if (parameter.type === 'array')
     return value
       .split(',')
@@ -405,6 +453,20 @@ function valid(parameter, value) {
   return plainText(value);
 }
 const plainText = (text) => text !== '' && text.trim() === text;
+
+/**
+ * A value as sent must be one encoding of what it decodes to: the strict
+ * one, or Angular's HttpParams, which the site uses and which leaves
+ * `@ : $ , ; = ? /` bare. Anything else -- `%31` for 1, `+` for a space --
+ * is the same value spelled again.
+ */
+function encodedOnce(raw, value) {
+  const strict = encodeURIComponent(value);
+  const angular = strict.replace(/%(40|3A|24|2C|3B|3D|3F|2F)/gi, (escape) =>
+    decodeURIComponent(escape)
+  );
+  return raw === strict || raw === angular;
+}
 
 function decode(text) {
   try {
@@ -438,10 +500,21 @@ export function standardForm(endpoint, originalUrl) {
       return { ok: false, rule: `path:${variable}` };
     }
   }
+  if (entry.check) {
+    const values = Object.fromEntries(
+      template.flatMap((part, index) => {
+        const variable = /^\{([^}]+)\}$/.exec(part)?.[1];
+        return variable === undefined ? [] : [[variable, segments[index]]];
+      })
+    );
+    const rule = entry.check(values);
+    if (rule) return { ok: false, rule };
+  }
 
   if (query === undefined) return { ok: true };
   const declared = new Map(declaredQuery(endpoint).map((parameter) => [parameter.name, parameter]));
   const seen = new Set();
+  const items = new Set();
   for (const pair of query.split('&')) {
     if (pair === '') return { ok: false, rule: 'form' };
     const equals = pair.indexOf('=');
@@ -455,9 +528,20 @@ export function standardForm(endpoint, originalUrl) {
     if (seen.has(name) && parameter.type !== 'array')
       return { ok: false, rule: `parameter:${name}` };
     seen.add(name);
-    const value = equals === -1 ? undefined : decode(pair.slice(equals + 1));
-    if (value === undefined || !valid(parameter, value))
+    const raw = equals === -1 ? undefined : pair.slice(equals + 1);
+    const value = raw === undefined ? undefined : decode(raw);
+    if (
+      value === undefined ||
+      !encodedOnce(raw, value) ||
+      !valid(parameter, value, entry.values?.[name])
+    )
       return { ok: false, rule: `parameter:${name}` };
+    // A list's item given twice is the list given once.
+    if (parameter.type === 'array')
+      for (const item of value.split(',')) {
+        if (items.has(`${name}=${item}`)) return { ok: false, rule: `parameter:${name}` };
+        items.add(`${name}=${item}`);
+      }
   }
   return { ok: true };
 }
