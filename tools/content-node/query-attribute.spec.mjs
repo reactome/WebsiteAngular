@@ -125,4 +125,100 @@ describe('attributeValue and attributeText', () => {
     const value = await attributeValue(pathway, attributeGetter('Pathway', 'hasEvent'), noLoads);
     expect(text(value ?? [])).toBe('');
   });
+
+  it('writes a Double as Double.toString does, and an object without a stable id by its dbId', () => {
+    expect(text(2, { returns: 'Double' })).toBe('2.0');
+    expect(text(0.00001, { returns: 'Double' })).toBe('1.0E-5');
+    expect(text(2, { returns: 'Integer' })).toBe('2');
+    const [unnamed] = mapNodes([
+      node(9, ['Taxon', 'Species'], { dbId: 9, stId: '', schemaClass: 'Species' }),
+    ]);
+    expect(text(unnamed)).toBe('9\tnull\tSpecies');
+  });
+
+  it('writes a relationship whose element has no stable id or name as Has.toString does', async () => {
+    const [complex] = mapNodes([
+      node(10, ['PhysicalEntity', 'Complex'], { dbId: 10, schemaClass: 'Complex' }),
+    ]);
+    const [part] = mapNodes([
+      node(11, ['PhysicalEntity', 'SimpleEntity'], { dbId: 11, schemaClass: 'SimpleEntity' }),
+    ]);
+    const value = await attributeValue(
+      complex,
+      attributeGetter('Complex', 'componentOfComplexes'),
+      async () => [part]
+    );
+    expect(text(value)).toBe(
+      "Has{type=componentOf, stoichiometry=1, order=0, element=SimpleEntity {dbId=11, displayName='null'}}\n"
+    );
+  });
+});
+
+describe('the getters graph-core computes', () => {
+  it("Person's created and modified are DatabaseObject's own", async () => {
+    const [person] = mapNodes([node(12, ['Person'], { dbId: 12, schemaClass: 'Person' })]);
+    const [created, modified] = mapNodes([
+      node(13, ['InstanceEdit'], { dbId: 13, displayName: 'c', schemaClass: 'InstanceEdit' }),
+      node(14, ['InstanceEdit'], { dbId: 14, displayName: 'm', schemaClass: 'InstanceEdit' }),
+    ]);
+    person.fields.created = created;
+    person.fields.modified = modified;
+    expect(text(await attributeValue(person, attributeGetter('Person', 'created'), noLoads))).toBe(
+      '13\tc\tInstanceEdit'
+    );
+    expect(text(await attributeValue(person, attributeGetter('Person', 'modified'), noLoads))).toBe(
+      '14\tm\tInstanceEdit'
+    );
+  });
+
+  it("a pathway's encapsulated events, each as often as its stoichiometry", async () => {
+    const [outer] = mapNodes([
+      node(15, ['Event', 'Pathway'], { dbId: 15, schemaClass: 'Pathway' }),
+    ]);
+    const [inner] = mapNodes([
+      node(16, ['Event', 'Pathway'], {
+        dbId: 16,
+        stId: 'R-HSA-16',
+        displayName: 'i',
+        schemaClass: 'Pathway',
+      }),
+    ]);
+    outer.fields.hasEncapsulatedEvent = [{ element: inner, stoichiometry: 2, order: 0 }];
+    const value = await attributeValue(
+      outer,
+      attributeGetter('Pathway', 'hasEncapsulatedEvent'),
+      noLoads
+    );
+    expect(text(value)).toBe('R-HSA-16\ti\tPathway\nR-HSA-16\ti\tPathway\n');
+  });
+
+  it("a reference entity's database name with its spaces as dashes; none at all is Java's NullPointerException", async () => {
+    const [entity] = mapNodes([
+      node(17, ['ReferenceEntity', 'ReferenceGeneProduct'], {
+        dbId: 17,
+        databaseName: 'ENSEMBL Fungi x',
+        schemaClass: 'ReferenceGeneProduct',
+      }),
+    ]);
+    expect(
+      await attributeValue(
+        entity,
+        attributeGetter('ReferenceGeneProduct', 'simplifiedDatabaseName'),
+        noLoads
+      )
+    ).toBe('ENSEMBL-Fungi-x');
+    const [none] = mapNodes([
+      node(18, ['ReferenceEntity', 'ReferenceGeneProduct'], {
+        dbId: 18,
+        schemaClass: 'ReferenceGeneProduct',
+      }),
+    ]);
+    await expect(
+      attributeValue(
+        none,
+        attributeGetter('ReferenceGeneProduct', 'simplifiedDatabaseName'),
+        noLoads
+      )
+    ).rejects.toThrow(/null/);
+  });
 });

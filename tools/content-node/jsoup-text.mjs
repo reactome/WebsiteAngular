@@ -23,8 +23,13 @@
  * from its jar into jsoup-tables.json by snapshot-jsoup/JsoupTables.java.
  *
  * Checked against Jsoup itself over every summation in the graph (21,634
- * texts), not against a reading of the HTML specification: where this
- * simplifies the tree builder, it is because no summation reaches the rest.
+ * texts) and the inputs in jsoup-text.spec.mjs, not against a reading of the
+ * HTML specification: where this simplifies the tree builder, it is because no
+ * summation reaches the rest. Known to differ from Jsoup, and in no summation:
+ * a formatting element left open across a table's boundary
+ * (`<table><b>x<tr>...z</b></table>`, `<b>1<table>2</b>3</table>`, where the
+ * full adoption agency and foster parenting move text), and the obsolete
+ * <frameset> and <isindex>.
  */
 import { readFileSync } from 'node:fs';
 
@@ -45,6 +50,9 @@ const WIN1252 = [
 
 const isLetter = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 const isDigit = (c) => c >= '0' && c <= '9';
+// Character.isLetter and Character.isDigit, which an entity's name is read by.
+const isAnyLetter = (c) => /\p{L}/u.test(c);
+const isAnyDigit = (c) => /\p{Nd}/u.test(c);
 const isHex = (c) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 
 /**
@@ -72,8 +80,8 @@ function characterReference(text, at) {
   }
   // consumeLetterThenDigitSequence: letters, then digits; never a prefix of it.
   let next = at;
-  while (next < text.length && isLetter(text[next])) next += 1;
-  while (next < text.length && isDigit(text[next])) next += 1;
+  while (next < text.length && isAnyLetter(text[next])) next += 1;
+  while (next < text.length && isAnyDigit(text[next])) next += 1;
   const name = text.slice(at, next);
   const entity = Object.hasOwn(ENTITIES, name) ? ENTITIES[name] : undefined;
   const legit = text[next] === ';';
@@ -82,7 +90,7 @@ function characterReference(text, at) {
   return [String.fromCodePoint(...entity.slice(1)), next];
 }
 
-/** The tokens of an HTML text: {text}, {start, name} and {end, name}. */
+/** The tokens of an HTML text: {text}, {cdata}, {start, name} and {end, name}. */
 function tokens(html) {
   const out = [];
   let text = '';
@@ -129,10 +137,14 @@ function tokens(html) {
       flush();
       out.push({ start: true, name: tag.name });
       if (['title', 'textarea'].includes(tag.name)) raw = { name: tag.name, references: true };
-      else if (['script', 'style', 'xmp', 'iframe', 'noembed', 'noframes'].includes(tag.name))
+      else if (
+        ['script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'noscript'].includes(tag.name)
+      )
         raw = { name: tag.name, references: false };
       else if (tag.name === 'plaintext') raw = { name: '\u0000plaintext', references: false };
       at = tag.end;
+      // A newline straight after <pre>, <listing> or <textarea> is dropped.
+      if (['pre', 'listing', 'textarea'].includes(tag.name) && html[at] === '\n') at += 1;
       continue;
     }
     if (next === '/') {
@@ -162,7 +174,21 @@ function tokens(html) {
     if (next === '!') {
       flush();
       if (html.startsWith('<!--', at)) {
-        const close = html.indexOf('-->', at + 4);
+        // <!--> and <!---> are whole comments; otherwise --> or --!> ends one.
+        if (html[at + 4] === '>') at += 5;
+        else if (html.startsWith('->', at + 4)) at += 6;
+        else {
+          const ends = [html.indexOf('-->', at + 4), html.indexOf('--!>', at + 4)].filter(
+            (found) => found !== -1
+          );
+          const close = ends.length ? Math.min(...ends) : -1;
+          at = close === -1 ? html.length : close + (html.startsWith('--!>', close) ? 4 : 3);
+        }
+      } else if (html.startsWith('<![CDATA[', at)) {
+        // A CDataNode: kept as written, whitespace and all.
+        const close = html.indexOf(']]>', at + 9);
+        const stop = close === -1 ? html.length : close;
+        out.push({ cdata: html.slice(at + 9, stop) });
         at = close === -1 ? html.length : close + 3;
       } else {
         const close = html.indexOf('>', at);
@@ -210,7 +236,11 @@ function decode(text) {
  */
 function readTag(html, at) {
   let end = at;
-  while (end < html.length && !'\t\n\f\r />'.includes(html[end])) end += 1;
+  while (end < html.length && !'\t\n\f\r />'.includes(html[end])) {
+    // A '<' in a tag's name ends the tag there, and starts the next.
+    if (html[end] === '<') return { name: html.slice(at, end).toLowerCase(), end };
+    end += 1;
+  }
   const name = html.slice(at, end).toLowerCase();
   let quote;
   while (end < html.length) {
@@ -372,6 +402,22 @@ const SPECIAL = new Set([
   'xmp',
 ]);
 const HEADINGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+const FORMATTING = new Set([
+  'a',
+  'b',
+  'big',
+  'code',
+  'em',
+  'font',
+  'i',
+  'nobr',
+  's',
+  'small',
+  'strike',
+  'strong',
+  'tt',
+  'u',
+]);
 const TABLE_SECTIONS = new Set(['tbody', 'thead', 'tfoot']);
 const SCOPE_LIMITS = new Set([
   'applet',
@@ -457,7 +503,7 @@ function build(html) {
     const siblings = host.children;
     const at = before ? siblings.indexOf(before) : siblings.length;
     const previous = siblings[at - 1];
-    if (previous && previous.text !== undefined) previous.text += text;
+    if (previous && previous.text !== undefined && !previous.cdata) previous.text += text;
     else siblings.splice(at, 0, { text, parent: host });
   };
   const insert = (name, push = true) => {
@@ -466,10 +512,50 @@ function build(html) {
     if (push) stack.push(node);
     return node;
   };
+  // The list of active formatting elements: a formatting element a block's
+  // end closed is opened again before the next text or inline element --
+  // <p><i>a</p>b</i> is "ab", the b inside a new <i>. MARKER scopes a cell.
+  const MARKER = {};
+  const active = [];
+  const reconstruct = () => {
+    if (!active.length) return;
+    let at = active.length - 1;
+    const open = (entry) => entry === MARKER || stack.includes(entry.node);
+    if (open(active[at])) return;
+    while (at > 0 && !open(active[at - 1])) at -= 1;
+    for (; at < active.length; at += 1) active[at].node = insert(active[at].name);
+  };
+  const lastActive = (name) => {
+    for (let at = active.length - 1; at >= 0 && active[at] !== MARKER; at -= 1)
+      if (active[at].name === name) return at;
+    return -1;
+  };
+  const clearToMarker = () => {
+    while (active.length && active.pop() !== MARKER);
+  };
+  // The adoption agency, as far as text needs it: the formatting element
+  // closed with everything open inside it, and taken off the list.
+  const closeFormatting = (name) => {
+    const at = lastActive(name);
+    if (at === -1) return false;
+    const { node } = active[at];
+    active.splice(at, 1);
+    const position = stack.indexOf(node);
+    if (position !== -1) stack.length = position;
+    return true;
+  };
+  const inFosterContext = () =>
+    inTable() && ['table', 'tbody', 'thead', 'tfoot', 'tr'].includes(current().name);
 
   for (const token of tokens(html)) {
     if (token.text !== undefined) {
+      if (!inFosterContext()) reconstruct();
       appendText(token.text);
+      continue;
+    }
+    if (token.cdata !== undefined) {
+      const node = { text: token.cdata, cdata: true, parent: current() };
+      current().children.push(node);
       continue;
     }
     const { name } = token;
@@ -530,11 +616,13 @@ function build(html) {
           if (current().name === 'table') insert('tbody');
           if (current().name !== 'tr') insert('tr');
           insert(name);
+          active.push(MARKER);
           continue;
         }
         if (name === 'caption') {
           while (current().name !== 'table' && stack.length > 2) stack.pop();
           insert('caption');
+          active.push(MARKER);
           continue;
         }
         if (name === 'colgroup' || name === 'col') {
@@ -578,11 +666,14 @@ function build(html) {
         else insert(name);
         continue;
       }
-      if (name === 'a') {
-        if (stack.some((node) => node.name === 'a')) popUntil('a');
-        insert('a');
+      if (FORMATTING.has(name)) {
+        // A second <a> first closes the one still open.
+        if (name === 'a') closeFormatting('a');
+        reconstruct();
+        active.push({ name, node: insert(name) });
         continue;
       }
+      reconstruct();
       if (isEmptyTag(name)) {
         insert(name, false);
         continue;
@@ -608,7 +699,10 @@ function build(html) {
       if (
         ['td', 'th', 'tr', 'tbody', 'thead', 'tfoot', 'table', 'caption', 'colgroup'].includes(name)
       ) {
-        if (has(name, name === 'table' ? tableScope : new Set(['html', 'table']))) popUntil(name);
+        if (has(name, name === 'table' ? tableScope : new Set(['html', 'table']))) {
+          popUntil(name);
+          if (['td', 'th', 'caption'].includes(name)) clearToMarker();
+        }
         continue;
       }
     }
@@ -629,6 +723,7 @@ function build(html) {
         }
       continue;
     }
+    if (FORMATTING.has(name) && closeFormatting(name)) continue;
     // Any other end tag: the nearest open element of that name, unless a
     // special element stands in the way.
     for (let at = stack.length - 1; at >= 2; at -= 1) {
@@ -659,7 +754,7 @@ function text(root) {
     return false;
   };
   const appendText = (node) => {
-    if (preserved(node.parent)) {
+    if (node.cdata || preserved(node.parent)) {
       accum += node.text;
       return;
     }

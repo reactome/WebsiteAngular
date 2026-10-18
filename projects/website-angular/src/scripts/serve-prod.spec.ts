@@ -315,6 +315,8 @@ describe('serve-prod and the API roots', () => {
     ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'content-node'],
     ['/ContentService/data/person/68285/displayName/x', 'backend'],
     ['/ContentService/data/query/70486/displayName', 'content-node'],
+    ['/ContentService/data/query/70486/more', 'backend'],
+    ['/ContentService/data/query/70486/moreover', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],
     ['/ContentService/data/query/enhanced/R-HSA-70486', 'content-node'],

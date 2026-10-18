@@ -932,10 +932,13 @@ function aggregate(relationClass, entities) {
  * The getter's value, as LazyFetchAspect leaves it. autoFetch: a getter that
  * returns DatabaseObjects, named after a relationship field, whose value is
  * empty, loads the relationship (lazyLoad) and sets it through the field's
- * setter, then is called again. An outgoing relationship of an object
- * findById loaded is never fetched again -- the load has it already -- so
- * only incoming ones are. aroundReactomeProjectedRelationship: a getter
- * whose value is empty first calls the getter it names, then is called again.
+ * setter, then is called again. Java fetches an empty outgoing relationship
+ * again too -- its `isLoaded && OUTGOING` guard compares the annotation with
+ * the Direction enum, which is never equal -- but findById already loaded
+ * every outgoing relationship, unfiltered, so that fetch finds nothing more
+ * and is skipped here; only incoming ones are fetched.
+ * aroundReactomeProjectedRelationship: a getter whose value is empty first
+ * calls the getter it names, then is called again.
  */
 export async function attributeValue(entity, getter, lazyLoad) {
   let value = getterResult(entity, getter);

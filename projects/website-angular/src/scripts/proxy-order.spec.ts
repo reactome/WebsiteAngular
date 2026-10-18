@@ -305,6 +305,9 @@ describe('the dev server proxy', () => {
     // is node's now: see above.)
     '/ContentService/data/query/abridged/stId',
     '/ContentService/data/query/abridged/70486',
+    // Java's own /query/{id}/more, not an attribute called more.
+    '/ContentService/data/query/70486/more',
+    '/ContentService/data/query/70486/more/',
     // Below an attribute: no mapping.
     '/ContentService/data/query/70486/displayName/x',
     '/ContentService/data/person/68285/firstname/x',

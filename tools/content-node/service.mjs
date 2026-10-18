@@ -1104,14 +1104,15 @@ export const endpoints = [
      *
      * No object is Java's 404 naming the id; no getter, or one returning
      * nothing, its 404 naming the attribute and the object's class. Not
-     * /query/abridged/{id} or /query/enhanced/{id}, Java's more specific
-     * mappings, which are no attribute: nginx and the dev proxy never send
-     * those here.
+     * /query/abridged/{id}, /query/enhanced/{id} or /query/{id}/more, Java's
+     * more specific mappings, which are no attribute: nginx and the dev proxy
+     * never send those here.
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const attribute = pathId(rawSegment(request, 5));
-      if (raw === 'abridged' || raw === 'enhanced') return springNotFound(request);
+      if (raw === 'abridged' || raw === 'enhanced' || attribute === 'more')
+        return springNotFound(request);
       const object = await findObject(raw);
       if (!object) return notFound(request, `Id: ${raw} has not been found in the System`);
       return attributeAnswer(request, object, attribute);
@@ -7943,6 +7944,10 @@ async function lazyRelationship(dbId, type, direction, getter, collection) {
   // findByRelationship gives its object only when there is exactly one: two
   // `modified` edits make a pathway's getModified null, and Java's 404.
   if (collection === '') return rows.length === 1 ? mapNodes([rows[0].m]) : [];
+  // A getter returning java.util.Set: findCollectionByRelationship collects
+  // the objects with Collectors.toSet -- one each, no stoichiometry, in a
+  // HashSet's order (DatabaseObject.hashCode). Event.getInferredFrom is one.
+  if (getter.returns === 'Set') return databaseObjectSet(mapNodes(rows.map((row) => row.m)));
   return mapNodes(rows.flatMap((row) => Array(row.n ?? 1).fill(row.m)));
 }
 
