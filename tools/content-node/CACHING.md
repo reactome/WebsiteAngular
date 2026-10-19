@@ -1,6 +1,6 @@
 # Caching and parameter conformance
 
-The design decision behind how the node content service will be cached, and the
+The design decision behind how the node content service is cached, and the
 measurements it rests on. Written down because the reasoning is not recoverable
 from the code: several of the choices below exist because a probe came back the
 opposite of what was expected.
@@ -188,8 +188,8 @@ one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
 2. ~~**Invalid inputs against Java**~~ — `invalid-inputs.mjs`; 309 of 328
    identical, the rest declared (#530).
 3. ~~**`Cache-Control` headers**~~ — `cache-label.mjs` (#531); one URL per answer
-   (#532); the site's own requests in standard form (#533); release day: purge,
-   then `warm.mjs`.
+   (#532); the site's own requests in standard form (#533; on beta at its next
+   site rebuild); release day: purge, then `warm.mjs` (#534).
 4. **Cloudflare**: the rate-limiting rule first (no origin change needed), then
    URL normalization, incoming and to origin (#527), then the Cache Rule once
    the origin emits headers.

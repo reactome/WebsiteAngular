@@ -153,7 +153,7 @@ The pull request that completes a task ticks it here, with its number.
 
 **Independent test**: after a test purge, the warm-up requests its list and every URL comes back `standard`.
 
-- [x] T027 [US4] Write `tools/content-node/warm.mjs <origin>`. It builds the list at run time from: — #534
+- [x] T027 [US4] Write `tools/content-node/warm.mjs <origin>`. It builds the list at run time from: The events hierarchy is left out: Java still answers it, unlabelled, so the edge never keeps it. The warm-up refuses to run unless the content API reports the release given, since node holds a few answers in memory until it restarts (review of #534). — #534
   - `/data/species/main`;
   - each species' `/data/pathways/top/{taxId}` and the events hierarchy, in the site's exact spelling;
   - the content lists (`toc`, `doi`, `contributors`), `database/version` and `schema/model`;

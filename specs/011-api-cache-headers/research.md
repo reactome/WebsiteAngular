@@ -208,6 +208,10 @@ The corpus is run sequentially and spaced, a few hundred requests at most per ru
   - the content lists;
   - per species, the top-level pathways and the events hierarchy;
   - per top-level human pathway, the site's own `enhanced/v2` and `ancestors` requests, in the site's exact spelling.
+- **Built (#534) with three refinements:**
+  - The events hierarchy is not warmed. Java still answers it, unlabelled, so the edge never keeps it.
+  - The warm-up takes the release just published, and refuses unless the content API reports it. Node holds the release number, the contents and DOIs, and each species' top pathways in memory until it restarts, so warming a node still on the last release would keep that release's answers at the edge until the next purge.
+  - It counts what the edge itself said (`cf-cache-status`), since node's label only says an answer may be kept.
 - Smart Tiered Cache, which is on Free ([tiered cache](https://developers.cloudflare.com/cache/how-to/tiered-cache/)), lets that one warm-up fill the shared upper tier for every data centre.
 - The step is written in `RELEASE-TESTING.md`'s "Post-release" section, as what to do, not how the release itself runs.
 
