@@ -22,6 +22,8 @@
  *   MAX_WAIT_MS         longest wait, default 60000 (wait + run inside the edge's 100 s)
  *   RETRY_AFTER         seconds a refused reader is told to wait, default 10
  *   WAITING_BYTES       bodies held while waiting, in all, default 268435456 (256 MB)
+ *   UPSTREAM_TIMEOUT_MS silence from the service before a call is given up, default
+ *                       300000 (nginx's own read timeout, after which the reader is gone)
  */
 import { createServer, request as httpRequest } from 'node:http';
 import { fileURLToPath } from 'node:url';
@@ -102,6 +104,7 @@ export function gateway({
   maxWaitMs = 60_000,
   retryAfter = 10,
   waitingBytes = 256 * 1024 * 1024,
+  upstreamTimeoutMs = 300_000,
 } = {}) {
   const target = new URL(upstream);
   const lanes = Object.fromEntries(
@@ -168,6 +171,16 @@ export function gateway({
         );
       } else res.destroy();
       finish();
+    });
+    // A service that says nothing for as long as nginx waits has lost the
+    // reader already; without this a hung call held its place until Tomcat
+    // restarted, and four of them closed the lane.
+    call.setTimeout(upstreamTimeoutMs, () => call.destroy(new Error('upstream timeout')));
+    // A reader who leaves mid-upload: the service would wait for the rest of
+    // the body until its own read timeout, holding the place for nothing.
+    // Once the upload is whole, leaving changes nothing (see above).
+    req.on('close', () => {
+      if (!req.complete) call.destroy();
     });
     if (body) {
       for (const chunk of body.chunks) call.write(chunk);
@@ -300,6 +313,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     maxWaitMs: number('MAX_WAIT_MS', 60_000),
     retryAfter: number('RETRY_AFTER', 10),
     waitingBytes: number('WAITING_BYTES', 256 * 1024 * 1024),
+    upstreamTimeoutMs: number('UPSTREAM_TIMEOUT_MS', 300_000),
   });
   // Analyses and their uploads are not quick: no idle timeout of our own.
   server.requestTimeout = 0;

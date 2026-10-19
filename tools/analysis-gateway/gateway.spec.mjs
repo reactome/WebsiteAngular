@@ -50,6 +50,8 @@ beforeAll(async () => {
           'a=1',
           'Set-Cookie',
           'b=2',
+          'Proxy-Connection',
+          'keep-alive',
         ]);
         res.end(JSON.stringify({ path: req.url, length: body.length }));
       };
@@ -499,6 +501,155 @@ describe('a reader who leaves mid-answer', () => {
       await until(() => held.length === 1);
       held.shift()();
       expect((await second).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+});
+
+/** A request whose body is written by hand, a part at a time. */
+function upload(base, path, headers) {
+  const url = new URL(base + path);
+  const call = httpRequest({ host: url.hostname, port: url.port, path, method: 'POST', headers });
+  const answered = new Promise((resolve) => {
+    call.on('response', (res) => {
+      let text = '';
+      res.on('data', (chunk) => (text += chunk));
+      res.on('end', () => resolve({ status: res.statusCode, text }));
+    });
+    call.on('error', () => resolve({ status: 'cut' }));
+  });
+  return { call, answered };
+}
+const health = async (base) => (await fetch(`${base}/health`)).json();
+
+describe('the second review of #539', () => {
+  it('gives the place back at once when a reader leaves mid-upload', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    try {
+      const { call } = upload(base, '/AnalysisService/identifiers/?n=1', {
+        'Content-Length': '1000',
+      });
+      call.write('x'.repeat(100));
+      await until(() => arrived.length === 1);
+      call.destroy();
+      const next = post(base, '/AnalysisService/identifiers/?n=2');
+      await until(() => held.length === 1);
+      expect(seen.map((s) => s.split(' ')[1])).toEqual(['/AnalysisService/identifiers/?n=2']);
+      held.shift()();
+      expect((await next).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it('sends the rest of a body still arriving when it is admitted from the waiting list', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    try {
+      const running = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      const { call, answered } = upload(base, '/AnalysisService/identifiers/?n=2', {
+        'Transfer-Encoding': 'chunked',
+      });
+      call.write('one,');
+      await new Promise((r) => setTimeout(r, 100));
+      held.shift()();
+      await until(() => arrived.length === 2);
+      call.end('two');
+      await until(() => held.length === 1);
+      expect(seen.at(-1)).toBe('POST /AnalysisService/identifiers/?n=2 7');
+      held.shift()();
+      expect((await answered).status).toBe(200);
+      await running;
+    } finally {
+      await close();
+    }
+  });
+
+  it('stops reading at its budget, sends the body whole, and holds nothing once admitted', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, waitingBytes: 1000 });
+    try {
+      const running = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      const big = 'P04637\n'.repeat(100_000);
+      const waited = post(base, '/AnalysisService/identifiers/?n=2', big);
+      await new Promise((r) => setTimeout(r, 200));
+      // Paused near the budget: at most a chunk or so past it, not the body.
+      expect((await health(base)).heldBytes).toBeLessThan(big.length / 2);
+      held.shift()();
+      await until(() => held.length === 1);
+      expect([seen.at(-1), (await health(base)).heldBytes]).toEqual([
+        `POST /AnalysisService/identifiers/?n=2 ${big.length}`,
+        0,
+      ]);
+      held.shift()();
+      await waited;
+      await running;
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives the place back when the service cannot be reached', async () => {
+    const { base, close } = await start({
+      upstream: 'http://127.0.0.1:9',
+      limits: { analysis: 1, report: 1 },
+      maxWaitMs: 500,
+    });
+    try {
+      for (const n of [1, 2])
+        expect((await post(base, `/AnalysisService/identifiers/?n=${n}`)).status).toBe(502);
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives the place back when the service fails mid-answer', async () => {
+    const { base, close } = await start({ maxWaitMs: 500 });
+    try {
+      for (const n of [1, 2]) {
+        const outcome = await fetch(`${base}/AnalysisService/report/T/x/broken${n}.pdf`)
+          .then((r) => r.text())
+          .then(
+            () => 'whole',
+            () => 'cut'
+          );
+        expect(outcome).toBe('cut');
+      }
+      expect(arrived.filter((url) => url.includes('broken')).length).toBe(2);
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives up a call the service has gone silent on, and frees its place', async () => {
+    const { base, close } = await start({ upstreamTimeoutMs: 200, maxWaitMs: 2000 });
+    try {
+      const hung = fetch(`${base}/AnalysisService/report/T/x/trickle.pdf`)
+        .then((r) => r.text())
+        .then(
+          () => 'whole',
+          () => 'cut'
+        );
+      expect(await hung).toBe('cut');
+      held.length = 0;
+      const next = fetch(`${base}/AnalysisService/report/T/x/next.pdf`);
+      await until(() => held.length === 1);
+      held.shift()();
+      expect((await next).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it('strips connection-scoped headers from the answer too', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = await fetch(`${base}/AnalysisService/token/T`);
+      await answer.text();
+      // The service's connection headers belong to its hop, not the reader's.
+      expect(answer.headers.get('x-odd-case')).toBe('One');
+      expect(answer.headers.get('proxy-connection')).toBe(null);
     } finally {
       await close();
     }

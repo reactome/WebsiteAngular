@@ -252,6 +252,7 @@ services:
       - QUEUE_LENGTH=${QUEUE_LENGTH:-40}
       - MAX_WAIT_MS=${MAX_WAIT_MS:-60000}
       - RETRY_AFTER=${RETRY_AFTER:-10}
+      - UPSTREAM_TIMEOUT_MS=${UPSTREAM_TIMEOUT_MS:-300000}
 
   content-node:
     build:
