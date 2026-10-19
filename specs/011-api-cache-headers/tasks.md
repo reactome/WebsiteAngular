@@ -143,7 +143,7 @@ The pull request that completes a task ticks it here, with its number.
 - [x] T023 [P] [US5] Make the `enhanced/v2/{id}` requests one spelling: the same parameter set and order in `projects/pathway-browser/src/app/services/data-state.service.ts` (~247–256) and `projects/pathway-browser/src/app/services/database-object.service.ts` (~31). Check that the answers the pages use are unchanged, with the existing specs and an e2e run. — #533
 - [x] T024 [P] [US5] Fix `' DB_ID'` (a leading space) in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~324) to `'DB_ID'`, with a test. — #533
 - [x] T025 [US5] For every other finding in the report: fix it in the site, or add it with its reason to a list in `specs/011-api-cache-headers/research.md` R8. `citation` requests are expected on the list (never cached by design). — #533
-- [ ] T026 Review, CI, merge, deploy. On beta, load a pathway page in Playwright with `beta.reactome.org` mapped to 127.0.0.1. Every `/ContentService` response it receives from node carries `x-cache-rule: standard`, apart from the listed ones. Tick T021–T026.
+- [ ] T026 Review, CI, merge, deploy. On beta, load a pathway page in Playwright with `beta.reactome.org` mapped to 127.0.0.1. Every `/ContentService` response it receives from node carries `x-cache-rule: standard`, apart from the listed ones. Tick T021–T026. (Waits on a rebuild of the beta site: its build is older than #532 and #533.)
 
 ---
 
@@ -153,7 +153,7 @@ The pull request that completes a task ticks it here, with its number.
 
 **Independent test**: after a test purge, the warm-up requests its list and every URL comes back `standard`.
 
-- [ ] T027 [US4] Write `tools/content-node/warm.mjs <origin>`. It builds the list at run time from:
+- [x] T027 [US4] Write `tools/content-node/warm.mjs <origin>`. It builds the list at run time from: The events hierarchy is left out: Java still answers it, unlabelled, so the edge never keeps it. The warm-up refuses to run unless the content API reports the release given, since node holds a few answers in memory until it restarts (review of #534). — #534
   - `/data/species/main`;
   - each species' `/data/pathways/top/{taxId}` and the events hierarchy, in the site's exact spelling;
   - the content lists (`toc`, `doi`, `contributors`), `database/version` and `schema/model`;
@@ -161,8 +161,8 @@ The pull request that completes a task ticks it here, with its number.
 
   It requests each URL once, sequentially, with a small pause, and fails if any answer is not 200 with `x-cache-rule: standard`. Add a test of the list builder with a stand-in fetch, shown failing first, in `tools/content-node/warm.spec.mjs`.
 
-- [ ] T028 [P] [US4] Add a row to `RELEASE-TESTING.md`'s "Post-release" table: "Content API edge cache cleared (purge by prefix `/ContentService/`), then `node tools/content-node/warm.mjs <site>` run". State only what to do, nothing about how the release itself runs. Add a matching line to the note on browser cache headers.
-- [ ] T029 [P] Update `tools/content-node/CACHING.md`: status "built (spec 011)", the work queue ticked, and a pointer to contracts/cache-labels.md.
+- [x] T028 [P] [US4] Add a row to `RELEASE-TESTING.md`'s "Post-release" table: "Content API edge cache cleared (purge by prefix `/ContentService/`), then `node tools/content-node/warm.mjs <site>` run". State only what to do, nothing about how the release itself runs. Add a matching line to the note on browser cache headers. — #534
+- [x] T029 [P] Update `tools/content-node/CACHING.md`: status "built (spec 011)", the work queue ticked, and a pointer to contracts/cache-labels.md. — #534
 - [ ] T030 **[dashboard]** People with Cloudflare dashboard access, issue #527:
   - URL normalization, incoming and to origin;
   - Smart Tiered Cache;

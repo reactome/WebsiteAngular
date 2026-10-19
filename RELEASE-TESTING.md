@@ -37,7 +37,7 @@ What the curators need to be **told** rather than tested lives next door in
 pass, what is waiting on a decision of theirs, and the limits worth stating out
 loud.
 
-**Where it stands: 47 automated, 8 that need a person, 1 still to write, 2 not built.** The third number is the one to drive down; the second is the honest
+**Where it stands: 47 automated, 9 that need a person, 1 still to write, 2 not built.** The third number is the one to drive down; the second is the honest
 floor -- each of those says why a machine cannot judge it; the fourth is a
 decision for the curators, not work for us.
 
@@ -47,6 +47,9 @@ rows, the rows are right: this line has drifted twice from being edited by hand.
 > Where the old document says "clear your browser cache before testing", note that
 > figures are served `private, no-cache` now and the app's own assets are
 > content-hashed, so a stale page is a bug rather than something to work around.
+> The content API's answers are kept at the edge until each release purges them
+> and an hour in a browser (spec 011), so for an hour after a release a browser
+> may still show the previous release's data: that is the setting, not a bug.
 
 ## Front page
 
@@ -197,12 +200,13 @@ offer it.
 
 ## Post-release
 
-| Item                               | Status                                                                                                                                                                                                                                                                                                                                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New EHLDs present on the live site | **human** — depends on the release                                                                                                                                                                                                                                                                                                                                                              |
-| Editorial calendar visible         | **human**                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/tag/release` page visible        | **auto** — `e2e/release/content-currency.spec.ts` covers the listing that replaced it. _Production's `/tag/release` is a tag page listing the 21 release announcements; ours lists all 39 of them at `/about/news`, so the content is not missing. What is missing is that one URL: an inbound link or bookmark to `/tag/release` 404s here, which a redirect would fix if anyone relies on it_ |
-| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report                                                                                                                                                                                                                                                                                                                                 |
+| Item                               | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| New EHLDs present on the live site | **human** — depends on the release                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Editorial calendar visible         | **human**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/tag/release` page visible        | **auto** — `e2e/release/content-currency.spec.ts` covers the listing that replaced it. _Production's `/tag/release` is a tag page listing the 21 release announcements; ours lists all 39 of them at `/about/news`, so the content is not missing. What is missing is that one URL: an inbound link or bookmark to `/tag/release` 404s here, which a redirect would fix if anyone relies on it_                                                                                                              |
+| ORCID claiming works               | **human** — blocked on a backend deploy; see the curator report                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Content API edge cache refreshed   | **human** — once the release is live and the content API reports the new release number (restart it on the new graph first: it holds a few answers in memory): purge the edge cache by prefix `/ContentService/`, then run `node tools/content-node/warm.mjs https://<site> <release>`. It refuses to run if the API reports another release, asks for the answers most pages start from, and names any that come back not cacheable. Until the purge, readers get the previous release's answers (spec 011) |
 
 ## What a test cannot do
 
