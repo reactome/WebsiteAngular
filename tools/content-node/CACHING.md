@@ -5,7 +5,7 @@ measurements it rests on. Written down because the reasoning is not recoverable
 from the code: several of the choices below exist because a probe came back the
 opposite of what was expected.
 
-Status: **built** (spec 011, `specs/011-api-cache-headers`), but caching nothing yet: the labels are on every answer node gives, and Cloudflare stores nothing until its Cache Rule is on (#527). What each answer carries, and why: [contracts/cache-labels.md](../../specs/011-api-cache-headers/contracts/cache-labels.md). The work queue is at the bottom.
+Status: **built** (spec 011, `specs/011-api-cache-headers`), but caching nothing yet: the labels are on every answer node gives, and Cloudflare stores nothing until its Cache Rule is on (#527). That rule, and the release-day purge and warm-up, belong to the day this site becomes production (awright, 19 Oct 2026): until then production's API is Java's, unlabelled, and caching beta's gains little. What each answer carries, and why: [contracts/cache-labels.md](../../specs/011-api-cache-headers/contracts/cache-labels.md). The work queue is at the bottom.
 
 ## The question
 

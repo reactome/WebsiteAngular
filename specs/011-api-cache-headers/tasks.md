@@ -163,12 +163,12 @@ The pull request that completes a task ticks it here, with its number.
 
 - [x] T028 [P] [US4] Add a row to `RELEASE-TESTING.md`'s "Post-release" table: "Content API edge cache cleared (purge by prefix `/ContentService/`), then `node tools/content-node/warm.mjs <site>` run". State only what to do, nothing about how the release itself runs. Add a matching line to the note on browser cache headers. — #534
 - [x] T029 [P] Update `tools/content-node/CACHING.md`: status "built (spec 011)", the work queue ticked, and a pointer to contracts/cache-labels.md. — #534
-- [ ] T030 **[dashboard]** People with Cloudflare dashboard access, issue #527:
+- [ ] T030 **[dashboard]** **[at the production launch]** People with Cloudflare dashboard access, issue #527:
   - URL normalization, incoming and to origin;
   - Smart Tiered Cache;
   - then the Cache Rule on `/ContentService/*`, leaving out the four roots: eligible for cache, Edge TTL "Use cache-control header if present, bypass cache if not" (not "…use default Cloudflare caching behavior if not", which would cache Java's unlabelled answers), Browser TTL "respect origin", no status-code TTL, query string sorted;
   - then the rate-limiting rule.
-- [ ] T031 After T030: request a standard URL twice through the public site and expect `cf-cache-status: HIT` the second time. Request one with `?utm_source=x` twice and expect it never to be a HIT. Then run a purge and the warm-up once, and check the second pass is HIT (SC-005). Tick T027–T031.
+- [ ] T031 **[at the production launch]** After T030: request a standard URL twice through the public site and expect `cf-cache-status: HIT` the second time. Request one with `?utm_source=x` twice and expect it never to be a HIT. Then run a purge and the warm-up once, and check the second pass is HIT (SC-005). Tick T027–T031.
 
 ---
 
