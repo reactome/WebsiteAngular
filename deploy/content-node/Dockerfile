@@ -12,6 +12,10 @@ WORKDIR /content-node
 RUN npm install --omit=dev --no-audit --no-fund neo4j-driver@^6.2.0 express@^4.22.2
 
 COPY tools/content-node/ ./tools/content-node/
+# The nearest package.json is what tells Node a .ts module is a module (spec
+# 013): without it Node warns on every start, loads each file twice and the
+# type checker reads them as CommonJS. The one npm writes above has no type.
+COPY tools/package.json ./tools/package.json
 
 # Loopback of whatever network namespace it lands in. With `network_mode: host`
 # in compose that is the host's loopback, which is the point: Neo4j binds to

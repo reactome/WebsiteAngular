@@ -237,5 +237,32 @@ module.exports = tseslint.config(
     // Same reason, everywhere: keep only the TypeScript-aware rule.
     files: ['**/*.ts'],
     rules: { 'no-unused-vars': 'off' },
+  },
+  {
+    // The server-side services run as written: Node 24 strips the types and
+    // runs what is left (spec 013). A type imported without `type` survives
+    // the stripping and fails the import; an enum, a namespace or a parameter
+    // property is code Node will not strip. Vitest accepts all four, so a
+    // service could pass its tests and not start. The type checker cannot hold
+    // tools/ to this alone: it would hold the site's model types to it too.
+    files: ['tools/**/*.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'TSEnumDeclaration', message: 'Node cannot strip an enum: use a union.' },
+        {
+          selector: 'TSModuleDeclaration[kind!="global"]',
+          message: 'Node cannot strip a namespace: use a module.',
+        },
+        {
+          selector: 'TSParameterProperty',
+          message: 'Node cannot strip a parameter property: assign it in the constructor.',
+        },
+      ],
+    },
   }
 );

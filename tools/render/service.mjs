@@ -53,7 +53,7 @@ import {
 } from './params.mjs';
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   mkdir,
@@ -441,7 +441,8 @@ function buildId() {
       // that changes when a test is edited reports a deployment difference that
       // is not one. Caught by this very endpoint: adding service.spec.mjs moved
       // the hash without changing a line the service runs.
-      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.spec.mjs'))
+      // `.mjs` or `.ts`: a module renamed (spec 013) still counts.
+      .filter((name) => /\.(mjs|ts)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name))
       .sort();
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));
@@ -654,7 +655,24 @@ app.get('/render/:name.:ext', async (req, res) => {
  */
 export { app, cacheKey };
 
-const started = process.argv[1]?.endsWith('service.mjs');
+/**
+ * Whether Node was started with this file, whatever it is called: the test
+ * was `endsWith('service.mjs')`, which a service renamed to `.ts` (spec 013)
+ * fails, so it would load, never listen, and exit 0 -- a restart loop in its
+ * container. Compared after symlinks are resolved, as Node resolves its own.
+ */
+function startedDirectly() {
+  try {
+    return (
+      Boolean(process.argv[1]) &&
+      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
+const started = startedDirectly();
 const server = started
   ? app.listen(PORT, HOST, () => {
       console.log(`render service on http://${HOST}:${PORT}`);

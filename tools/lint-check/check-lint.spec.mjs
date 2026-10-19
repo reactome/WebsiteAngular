@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compare, countWarnings } from '../../scripts/check-lint.mjs';
+import { compare, countLoose, countWarnings, looseIncreases } from '../../scripts/check-lint.mjs';
 
 // The shape of ESLint's JSON report, as much of it as the check reads.
 const report = (...rules) => [
@@ -34,5 +34,33 @@ describe('the lint ratchet', () => {
 
   it('passes counts that match', () => {
     expect(compare({ a: 3 }, { a: 3 })).toEqual({ increased: [], decreased: [], cleared: [] });
+  });
+});
+
+// The services' `any` and what it lets through are counted per module apart
+// (spec 013): converting a service adds thousands at once.
+describe('the services\u2019 loose values', () => {
+  const file = (filePath, ...rules) => ({
+    filePath,
+    messages: rules.map((ruleId) => ({ ruleId, severity: 1 })),
+  });
+  const unsafe = '@typescript-eslint/no-unsafe-member-access';
+  const any = '@typescript-eslint/no-explicit-any';
+  const sample = [
+    file('/r/tools/content-node/graph.ts', unsafe, unsafe, any, 'no-console'),
+    file('/r/projects/app/x.ts', unsafe),
+  ];
+
+  it('counts them per module, and keeps them out of the per-rule counts', () => {
+    expect(countLoose(sample, '/r')).toEqual({ 'tools/content-node/graph.ts': 3 });
+    expect(countWarnings(sample, '/r')).toEqual({ 'no-console': 1, [unsafe]: 1 });
+  });
+
+  it('fails a module whose count went up, and holds an unlisted one to none', () => {
+    expect(looseIncreases({ 'tools/a.ts': 3, 'tools/b.ts': 1 }, { 'tools/a.ts': 2 })).toEqual([
+      'tools/a.ts: 2 -> 3',
+      'tools/b.ts: 0 -> 1',
+    ]);
+    expect(looseIncreases({ 'tools/a.ts': 1 }, { 'tools/a.ts': 2 })).toEqual([]);
   });
 });

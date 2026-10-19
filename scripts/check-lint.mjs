@@ -27,13 +27,27 @@ import { tmpdir } from 'node:os';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = join(ROOT, 'lint-baseline.json');
+const LOOSE_BASELINE = join(ROOT, 'tools', 'loose-baseline.json');
 
-/** Warnings per rule in an ESLint JSON report. */
-export function countWarnings(report) {
+/**
+ * The services' loosely typed values (spec 013, research R5): `any` and what
+ * it lets through, in tools/. Converting a service adds thousands at once, all
+ * of them the work that spec does, so they are counted per module in
+ * tools/loose-baseline.json, which may only go down, and kept out of the
+ * per-rule counts here, which would otherwise have to rise.
+ */
+const LOOSE_RULE = /^@typescript-eslint\/(no-unsafe-[a-z-]+|no-explicit-any)$/;
+export const isLoose = (path, rule) => path.startsWith('tools/') && LOOSE_RULE.test(rule ?? '');
+
+const under = (file, root) => relative(root, file.filePath).split('\\').join('/');
+
+/** Warnings per rule in an ESLint JSON report, the services' loose values apart. */
+export function countWarnings(report, root = ROOT) {
   const rules = {};
   for (const file of report) {
+    const path = under(file, root);
     for (const m of file.messages) {
-      if (m.severity !== 1) continue;
+      if (m.severity !== 1 || isLoose(path, m.ruleId)) continue;
       const rule = m.ruleId ?? '(no rule)';
       rules[rule] = (rules[rule] ?? 0) + 1;
     }
@@ -64,6 +78,24 @@ export function compare(counts, baseline) {
   }
   return { increased, decreased, cleared };
 }
+
+/** The services' loose values per module. */
+export function countLoose(report, root = ROOT) {
+  const modules = {};
+  for (const file of report) {
+    const path = under(file, root);
+    const n = file.messages.filter((m) => m.severity === 1 && isLoose(path, m.ruleId)).length;
+    if (n > 0) modules[path] = n;
+  }
+  return modules;
+}
+
+/** Modules whose loose count went up; one the baseline does not list is held to none. */
+export const looseIncreases = (counts, baseline) =>
+  Object.entries(counts)
+    .filter(([module, n]) => n > (baseline[module] ?? 0))
+    .map(([module, n]) => `${module}: ${baseline[module] ?? 0} -> ${n}`)
+    .sort();
 
 const total = (rules) => Object.values(rules).reduce((a, b) => a + b, 0);
 
@@ -105,12 +137,14 @@ async function main() {
       )
   );
   const counts = countWarnings(report);
+  const loose = countLoose(report);
 
   if (process.argv.includes('--update')) {
     writeFileSync(
       BASELINE,
       `${JSON.stringify({ warnings: total(counts), rules: sorted(counts) }, null, 2)}\n`
     );
+    writeFileSync(LOOSE_BASELINE, `${JSON.stringify(sorted(loose), null, 2)}\n`);
     console.log(
       `Baseline set to ${total(counts)} warnings across ${Object.keys(counts).length} rules.`
     );
@@ -136,6 +170,20 @@ async function main() {
         'these is new:\n'
     );
     console.error(errors.join('\n'));
+    process.exit(1);
+  }
+
+  let looseBaseline = {};
+  try {
+    looseBaseline = JSON.parse(readFileSync(LOOSE_BASELINE, 'utf8'));
+  } catch {
+    // None yet: every module is held to none.
+  }
+  const looser = looseIncreases(loose, looseBaseline);
+  if (looser.length > 0) {
+    console.error('Loosely typed values in the services went up (tools/loose-baseline.json):\n');
+    for (const line of looser) console.error(`  ${line}`);
+    console.error('\nType them: `npx eslint <module>` lists them (spec 013).');
     process.exit(1);
   }
 
