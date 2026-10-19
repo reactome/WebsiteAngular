@@ -271,3 +271,14 @@ So a large enough burst would take every analysis in it past the edge's 100-seco
 
 - **nginx's own connection limits:** these refuse, they do not queue.
 - **A submit-then-poll API:** for analyses longer than the edge allows, but it changes the contract for outside clients, so it is kept apart.
+
+**Through the gateway** (T062, 19 Oct 2026). The same burst of twelve distinct tissue analyses, run on the host against this host's AnalysisService, with 4 at a time:
+
+| Analyses                | Answered in |
+| ----------------------- | ----------- |
+| 1–4                     | 2.4–3.0 s   |
+| 5–8                     | 5.2–6.3 s   |
+| 9–12                    | 8.4–9.4 s   |
+| a read during the burst | 4 ms        |
+
+Directly against Tomcat, every one of the twelve took 10.5–12.6 s. Through the gateway the first answers come four times sooner and the last sooner still, and a read is not held back. Byte for byte, a stored result, its not-found list, a CSV download, the version and an unknown token's 404 are each the same through the gateway as directly, headers included (apart from `Date` and connection headers).

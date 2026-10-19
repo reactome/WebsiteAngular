@@ -46,6 +46,9 @@ function describeAnalysisFailure(error: unknown): string {
     if (error.status === 0) {
       return 'Could not reach the analysis service. Check your connection and try again.';
     }
+    if (error.status === 503) {
+      return 'The analysis service is busy. Please try again in a minute.';
+    }
     if (error.status === 400) {
       return 'The analysis service could not read the submitted data. Check that the table has at least one column of identifiers.';
     }

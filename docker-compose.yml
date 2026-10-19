@@ -232,6 +232,27 @@ services:
       - NEO4J_dbms_memory_pagecache_size=2g
       - NEO4J_dbms_default__database=graph.db
 
+  # A bounded queue in front of the AnalysisService's computations (spec 010
+  # Story 6): a few analyses at once, the rest waiting their turn for at most
+  # a minute, then "busy, try again" -- instead of every analysis slowing down
+  # together until all of them pass the edge's 100 s. Everything else passes
+  # through unchanged. Host networking, as content-node: Tomcat's
+  # AnalysisService is on the host's loopback, and nginx reaches this on
+  # 127.0.0.1:4320. Stateless, so a restart costs only the requests in flight.
+  analysis-gateway:
+    build:
+      context: .
+      dockerfile: deploy/analysis-gateway/Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - ANALYSIS_UPSTREAM=${ANALYSIS_UPSTREAM:-http://127.0.0.1:8080}
+      - ANALYSIS_LIMIT=${ANALYSIS_LIMIT:-4}
+      - REPORT_LIMIT=${REPORT_LIMIT:-1}
+      - QUEUE_LENGTH=${QUEUE_LENGTH:-40}
+      - MAX_WAIT_MS=${MAX_WAIT_MS:-60000}
+      - RETRY_AFTER=${RETRY_AFTER:-10}
+
   content-node:
     build:
       context: .
