@@ -98,6 +98,22 @@ A developer changing the site's analysis views works against one definition of w
 1. **Given** a real analysis result, **When** it is checked against the shared definition, **Then** it passes; **Given** a result missing a field the site reads, **Then** the check fails.
 2. **Given** the site's analysis pages, **When** they are built, **Then** they use the shared definition, not their own copies.
 
+### User Story 6 - Analyses wait their turn instead of failing together (Priority: P3)
+
+A researcher submits an analysis while the service is busy. Their analysis waits its turn and then runs at full speed, rather than every analysis in progress slowing down together until all of them pass the edge's time limit and fail. If the wait would be too long, they are told the service is busy and when to try again, at once, rather than after a timeout.
+
+**Why this priority**: today nothing limits how many analyses run at once (measured 19 Oct 2026, research R12). Twelve at once took 10.5–12.6 s each against 2 s alone, so a large enough burst fails every analysis in it. The AnalysisService stays Java (decided 19 Oct 2026), so the limit goes in front of it, in this repository, without changing the Java service.
+
+**Independent Test**: send more analyses at once than may run. The first ones answer in their usual time, the next wait and then answer, and those beyond the waiting limit get a "busy, try again in N seconds" answer at once. Reading a stored result is never held back.
+
+**Acceptance Scenarios**:
+
+1. **Given** the service is running its limit of analyses, **When** another is submitted, **Then** it waits and is answered when one finishes, with the same answer it would have had alone.
+2. **Given** the waiting list is full, or an analysis has waited as long as it may, **When** it is waiting, **Then** it is answered at once with a busy status and when to retry.
+3. **Given** analyses are waiting, **When** a stored result is read, a download is fetched or the service's metadata is asked for, **Then** that answer is not held back.
+4. **Given** a waiting analysis whose reader gives up, **When** they go, **Then** their place is released and the analysis is never run.
+5. **Given** any answer the AnalysisService gives, **When** it passes through, **Then** it reaches the reader unchanged.
+
 ### Edge Cases
 
 - A library-bound endpoint is called while its Java service is restarting: the reader gets an error, not a stale or substitute answer.
@@ -148,6 +164,10 @@ A developer changing the site's analysis views works against one definition of w
 **The analysis result contract**
 
 - **FR-019**: The shape of an analysis result, as the site reads it, MUST be defined once in this repository and checked against real results by tests.
+- **FR-021**: Requests that start a computation (submitting identifiers, mapping, importing, a single identifier, a species comparison, and the PDF report) MUST be admitted a limited number at a time, set by configuration. Those beyond the limit MUST wait in arrival order on a waiting list of bounded length, for no longer than a bounded time.
+- **FR-022**: A request that cannot be admitted, because the waiting list is full or its wait ran out, MUST be answered at once with a "service unavailable" status, in the service's own error format, saying when to retry. It MUST NOT be run later.
+- **FR-023**: Every other request (stored results, downloads, metadata) MUST pass through without waiting. Every answer MUST reach the reader byte-identical to the AnalysisService's own, headers included.
+- **FR-024**: A waiting request whose reader disconnects MUST lose its place and never be run. The limit, the waiting list's length and the longest wait MUST be reported with the queue's current state on a health check.
 - **FR-020**: Before the shared application server is switched off, each of its other webapps MUST have a recorded home or retirement, decided on measured use. Besides ContentService and AnalysisService it hosts nine: the experiment digester, the search no-result report service, the old diagram and fireworks widgets, the old Pathway Browser, popular pathways, overlays, the old RESTful API and the root application (research R10).
 
 ### Key Entities
@@ -169,6 +189,7 @@ A developer changing the site's analysis views works against one definition of w
 - **SC-004**: With the old server stopped, the end-to-end suite, the release checks and a call to every published operation all pass.
 - **SC-005**: Reversing any single address takes one configuration change and under five minutes, without affecting any other address.
 - **SC-006**: Taking a new version of an upstream Java library is a change to a version number plus the parity run — no hand-translated code.
+- **SC-008**: In a burst of analyses larger than the limit, the first ones are answered in their usual time, the rest in arrival order, and none of them passes the edge's time limit: each is either answered or told to retry within the longest wait.
 - **SC-007**: Readers notice no change: analysis results, downloads, reports, exports and interactor overlays are the same as before, and response times are no worse than today's.
 
 ## Assumptions

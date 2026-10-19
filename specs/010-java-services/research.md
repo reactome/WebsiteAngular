@@ -235,3 +235,39 @@ The site's species overview is the Reacfoam map, a Voronoi treemap drawn with Fo
 - **Undeclared dependency:** the production site server relies on a proxy package it does not declare.
 - **The routing test** does not read `routes.conf` (fixed under R6).
 - **The measured host** was short of memory: swap was full, and a CI server believed stopped was running.
+
+## R12. Analyses at once: measured, and the queue in front (19 Oct 2026)
+
+**Decision** (awright, 19 Oct 2026): the AnalysisService stays Java. A small gateway in this repository, its own container, admits a few computations at a time in front of it.
+
+- **Not in Java:** that would be a fork of the upstream service, and Java releases are hard to make. The shared parent POM pins Spring Boot 2.7 and Java 11 for every Reactome project.
+- **Not inside the node content service:** restarting that would cut off long analyses.
+
+**Measured** against this host's AnalysisService, with the site's own example data. Nothing was sent to outside analysis services.
+
+| Request                                 | Alone  |
+| --------------------------------------- | ------ |
+| demo (77 lines)                         | 0.25 s |
+| microarray (1,204 lines)                | 0.37 s |
+| tissue expression (5,110 lines, 2.6 MB) | 2.0 s  |
+| tissue, with interactors                | 4.4 s  |
+| species comparison, human to mouse      | 2.3 s  |
+
+Twelve distinct tissue analyses at once (`identifiers/projection`):
+
+- **Every one answered 200, in 10.5–12.6 s each.** Nothing waits and nothing is refused: every analysis shares the CPUs and all finish late.
+- **Memory hardly moved:** the service's resident memory went from 8,069 to 8,148 MB, its heap being reserved up front. The pressure is the CPU, and the on-demand copies of the working data beyond the pool of 5 (`HierarchiesDataContainer.take()`, analysis-core).
+
+So a large enough burst would take every analysis in it past the edge's 100-second limit, and all of them would fail together.
+
+**Settings it suggests**, all configurable:
+
+- **4 at a time.** That is below the pool of 5, so no copies are built on demand, and it leaves CPUs for the rest of the site on an 8-CPU host.
+- **A waiting list of 40.**
+- **A longest wait of 60 s**, so waiting plus running stays inside 100 s.
+- **The PDF report on a lane of its own, 1 at a time**, as it draws figures and lays out a document.
+
+**Alternatives considered:**
+
+- **nginx's own connection limits:** these refuse, they do not queue.
+- **A submit-then-poll API:** for analyses longer than the edge allows, but it changes the contract for outside clients, so it is kept apart.
