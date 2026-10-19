@@ -1,8 +1,8 @@
+import { Search } from '../../../../model/search.model';
 import { Component, input, ViewEncapsulation } from '@angular/core';
 import { SafePipe } from '../../../../pipes/safe.pipe';
 import { CONTENT_DETAIL } from '../../../../../environments/environment';
 import { MatTooltip } from '@angular/material/tooltip';
-import { Search } from '../../../../viewport/search/search.component';
 
 @Component({
   selector: 'cr-icon',

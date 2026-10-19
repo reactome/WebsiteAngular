@@ -12,19 +12,12 @@ import { HttpClient } from '@angular/common/http';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import cytoscape from 'cytoscape';
 import { Diagram } from '../../../model/diagram.model';
-import { Graph } from '../../../model/graph.model';
 import { DiagramService } from '../../../services/diagram.service';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
+import { ReactionJson } from '../../../model/reaction-diagram.model';
 
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
-
-/** A reaction's own layout: a diagram without the lists it has no use for. */
-interface ReactionJson {
-  diagram: Omit<Diagram, 'links' | 'shadows' | 'compartments'> &
-    Partial<Pick<Diagram, 'links' | 'shadows' | 'compartments'>>;
-  graph: Graph.Data;
-}
 
 @Component({
   selector: 'cr-reaction-diagram',

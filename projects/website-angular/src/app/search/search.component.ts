@@ -1,4 +1,13 @@
 import {
+  SearchResult,
+  SearchEntry,
+  FacetResponse,
+  SearchFilters,
+  Facet,
+  FacetCount,
+  ResultGroup,
+} from '../../model/search.model';
+import {
   Component,
   inject,
   OnInit,
@@ -19,16 +28,7 @@ import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { SearchBarComponent } from './search-bar/search-bar.component';
-import {
-  SearchService,
-  SearchResult,
-  SearchEntry,
-  FacetResponse,
-  SearchFilters,
-  Facet,
-  FacetCount,
-  ResultGroup,
-} from '../../services/search.service';
+import { SearchService } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';

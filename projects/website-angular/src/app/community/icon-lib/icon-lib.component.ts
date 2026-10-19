@@ -1,9 +1,10 @@
+import { IconCategory, IconEntry } from '../../../model/icon.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
+import { IconService } from '../../../services/icon.service';
 
 const ICONS_PER_PAGE = 28;
 

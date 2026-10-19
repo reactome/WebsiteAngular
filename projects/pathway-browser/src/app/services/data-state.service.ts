@@ -10,6 +10,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
 import { SpeciesService } from './species.service';
+import { DiagramFlagResult, SpeciesOverviewFlagResult } from '../model/flag.model';
 
 /** ContentService's flag search answers 404 for a term with no match. */
 const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
@@ -18,18 +19,6 @@ type SelectionData = {
   selectedElement: SelectableObject | undefined;
   selectedElementLoading: boolean;
   currentPathway: string | undefined;
-};
-
-type DiagramFlagResult = {
-  diagramEntity?: string;
-  inDiagram?: boolean;
-  occurrences?: string[];
-  interactsWith?: string[];
-};
-
-type SpeciesOverviewFlagResult = {
-  llps?: string[];
-  interactsWith?: string[];
 };
 
 type FlaggingResult = {

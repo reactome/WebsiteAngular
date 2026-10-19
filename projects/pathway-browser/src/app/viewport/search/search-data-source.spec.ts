@@ -1,7 +1,8 @@
+import { Search } from '../../model/search.model';
 import { describe, expect, it } from 'vitest';
 import { CollectionViewer, ListRange } from '@angular/cdk/collections';
 import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
-import { Search, SearchDataSource } from './search.component';
+import { SearchDataSource } from './search.component';
 
 const entry = (n: number) => ({ dbId: n, stId: `R-HSA-${n}` }) as unknown as Search.Entry;
 const page = (from: number, found: number) => ({
