@@ -54,7 +54,14 @@ import {
   type TestInfo,
 } from '@playwright/test';
 import path from 'node:path';
-import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { createHash } from 'node:crypto';
 import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
 import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
@@ -640,6 +647,21 @@ export const test = base.extend({
       if (BACKEND.test(request.url())) return;
       if (!undeclared.has(url.host)) undeclared.set(url.host, request.url());
     });
+
+    // Spec 011: with E2E_CACHE_AUDIT naming a file, each content API request
+    // the site makes is written there, to be classified afterwards
+    // (`node tools/content-node/classify.mjs <file>`): one not in standard
+    // form is never kept at the edge, so the site would take the slow path
+    // without anyone seeing it. Recorded only: it fails nothing.
+    const audit = process.env['E2E_CACHE_AUDIT'];
+    if (audit)
+      context.on('request', (request) => {
+        if (!request.url().includes('/ContentService/')) return;
+        appendFileSync(
+          audit,
+          `${JSON.stringify({ test: testInfo.titlePath.join(' > '), method: request.method(), url: request.url() })}\n`
+        );
+      });
 
     await context.route(BACKEND, async (route) => {
       const method = route.request().method();

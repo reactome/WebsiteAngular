@@ -75,6 +75,14 @@ describe('SearchService', () => {
       expect(req.request.params.getAll('species')).toEqual(['Homo sapiens']);
       req.flush({});
     });
+
+    it('sends only what /facet_query takes: no cluster, which would keep it out of the edge cache', () => {
+      service.getFacets('TP53').subscribe();
+
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/facet_query`);
+      expect(req.request.params.keys()).toEqual(['query']);
+      req.flush({});
+    });
   });
 
   describe('getSpellCheckTerms()', () => {

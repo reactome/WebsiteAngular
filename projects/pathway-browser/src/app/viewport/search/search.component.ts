@@ -251,8 +251,11 @@ export class SearchComponent {
       }
       return this.http
         .get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
+          // The diagram is the path; neither it nor the species is a parameter
+          // here, and either would keep the answer out of the edge cache
+          // (spec 011).
           params: {
-            ...params,
+            ...withoutKeys(params, 'diagram', 'species'),
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
@@ -276,7 +279,7 @@ export class SearchComponent {
       return this.http
         .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks`, {
           params: {
-            ...params,
+            ...withoutKeys(params, 'diagram'),
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
@@ -321,7 +324,7 @@ export class SearchComponent {
           includeInteractors: false,
           directlyInDiagram: true,
           species: this.species.currentSpecies().displayName,
-          fields: [' DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD'],
+          fields: ['DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD'],
         },
       }),
   });
@@ -500,6 +503,13 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         },
       });
   }
+}
+
+/** `params` without the named keys. */
+function withoutKeys<T extends object>(params: T, ...keys: string[]): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([key]) => !keys.includes(key))
+  ) as Partial<T>;
 }
 
 export namespace Search {
