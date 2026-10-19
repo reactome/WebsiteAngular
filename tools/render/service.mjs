@@ -42,6 +42,7 @@
  */
 import express from 'express';
 import {
+  speciesProblem,
   ACCEPTED,
   BOUNDS,
   REACTION_CLASSES,
@@ -194,6 +195,7 @@ function cacheKey({
   select,
   layout,
   highlight = '',
+  species = '',
 }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
@@ -216,6 +218,8 @@ function cacheKey({
         select,
         layout,
         highlight,
+        // Only when set, so every figure cached before it keeps its key.
+        ...(species ? [species] : []),
       ])
     )
     .digest('hex');
@@ -502,6 +506,25 @@ app.get('/render/:name.:ext', async (req, res) => {
     });
   }
 
+  const species = speciesProblem(name, req.query);
+  if (species) {
+    return res.status(400).json({
+      error: species,
+      // Without the species is the right URL for a pathway, which is its own
+      // species. For the overview it would be the default species' -- a
+      // figure of the wrong species, which is no suggestion at all.
+      ...(name === 'genome-wide'
+        ? {}
+        : {
+            canonical: canonicalUrl(
+              name,
+              format,
+              Object.fromEntries(Object.entries(req.query).filter(([key]) => key !== 'species'))
+            ),
+          }),
+    });
+  }
+
   // select frames the figure on one event; highlight marks events on the whole
   // diagram. Together they would draw a crop with some of it marked, which
   // neither caller asked for.
@@ -556,6 +579,8 @@ app.get('/render/:name.:ext', async (req, res) => {
     // `view` on one side only (#277), it never reached the page, and every
     // reaction figure came out as the whole pathway diagram around it.
     layout: req.query.layout === 'reaction' ? 'reaction' : '',
+    // Whose overview the genome-wide view draws (speciesProblem has checked it).
+    species: typeof req.query.species === 'string' ? req.query.species : '',
     delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
     maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),

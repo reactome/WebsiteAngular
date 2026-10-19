@@ -97,7 +97,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T090 `GET /exporter/diagram/{identifier}.{ext}`, for the formats the render page draws — implemented in #479, not yet routed: Java still answers it until the log scan (#273)
 - [ ] T091 `GET /exporter/diagram/{identifier}.{ext}`, the remaining formats and options (#273, after the log scan)
 - [ ] T092 `GET /exporter/reaction/{identifier}.{ext}`, `GET /exporter/reaction/{identifier}/diagram`
-- [ ] T093 `GET /exporter/fireworks/{species}.{ext}`: the species overview image at its old URL, drawn as the overview is now, the Reacfoam (Voronoi) map, not the retired Fireworks layout
+- [ ] T093 `GET /exporter/fireworks/{species}.{ext}`: the species overview image at its old URL, drawn as the overview is now, the Reacfoam (Voronoi) map, not the retired Fireworks layout — implemented (render page and service take `species`; node answers the old URL), not yet routed: held back with T090 until the exporter log scan (#273)
 
 ## Phase 9: Homed in Java — not ported ([spec 010](../010-java-services/spec.md))
 

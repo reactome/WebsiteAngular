@@ -66,6 +66,12 @@ describe('the cache key', () => {
       cacheKey({ ...figure, layout: 'a', highlight: 'b' })
     );
   });
+
+  it("tells species' overviews apart, and leaves every figure without one where it was", () => {
+    const overview = { ...figure, pathway: '' };
+    expect(cacheKey({ ...overview, species: '10090' })).not.toBe(cacheKey(overview));
+    expect(cacheKey({ ...overview, species: '' })).toBe(cacheKey(overview));
+  });
 });
 
 describe('the request handler runs at all', () => {
@@ -99,6 +105,24 @@ describe('the request handler runs at all', () => {
     expect((await response.json()).error).toContain(
       '"select" and "highlight" cannot be used together'
     );
+  });
+
+  it('refuses a species anywhere but the genome-wide view, and one that is not a taxId', async () => {
+    const onPathway = await fetch(`${base}/render/R-HSA-69620.svg?species=10090`);
+    expect([onPathway.status, (await onPathway.json()).error]).toEqual([
+      400,
+      '"species" applies only to genome-wide; a pathway is its own species',
+    ]);
+    const byName = await fetch(`${base}/render/genome-wide.svg?species=Mus%20musculus`);
+    const refused = await byName.json();
+    expect([byName.status, refused.error]).toEqual([400, '"species" must be a taxId, e.g. 9606']);
+    // No suggestion: without the species it would be the default species'
+    // overview, a figure of the wrong species.
+    expect(refused.canonical).toBe(undefined);
+    for (const species of ['abc9606', '9606x', '09606']) {
+      const response = await fetch(`${base}/render/genome-wide.svg?species=${species}`);
+      expect([species, response.status]).toEqual([species, 400]);
+    }
   });
 
   it('refuses a format it cannot draw', async () => {

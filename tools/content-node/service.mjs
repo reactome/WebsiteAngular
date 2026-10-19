@@ -2426,6 +2426,53 @@ export const endpoints = [
       return renderFigure(request, figure, ext);
     },
   },
+  {
+    path: '/ContentService/exporter/fireworks/{id}',
+    // The error path only, as for the diagram: the picture is another
+    // renderer's, and this box's Java has no overview data to draw from.
+    sample: 'Nosuchspecies.svg',
+    samplesOnly: true,
+    differs: [/: \.url: /],
+    /**
+     * A species' overview, at the old fireworks exporter's URL (spec 006
+     * T093): the overview the site shows now -- the Reacfoam (Voronoi) map,
+     * drawn by the render service's genome-wide view -- not the retired
+     * Fireworks layout Java's fireworks-exporter draws. The species is read
+     * as Java reads it: a taxId, a dbId, or a name in any case with '_' for a
+     * space ('Homo_sapiens', 'homo_sapiens' and 9606 are all human).
+     *
+     * Not routed yet (#273), with the diagram exporter. Every parameter Java
+     * takes is converted as Spring converts it, and one this does not draw is
+     * refused by name at a value other than its default: an overview that
+     * leaves out a flag or a profile asked for is a 200 no caller can detect.
+     */
+    handler: async (request) => {
+      const name = splitExportName(pathId(rawSegment(request, 4)));
+      if (!name) return springNotFound(request);
+      const asked = exporterParameters(request, OVERVIEW_EXPORT);
+      if (asked.answer) return asked.answer;
+      const unsupported = overviewNotDrawnYet(asked.values);
+      if (unsupported.length)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          `Not drawn by this service yet: ${unsupported.join(', ')}. Ask without them, or at their defaults.`
+        );
+      const taxId = await speciesTaxId(speciesFilter(name.identifier));
+      if (!taxId)
+        return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not a species`);
+      const ext = name.ext.toLowerCase();
+      const problem = figureProblem(asked.values, ext);
+      if (problem === 'unexpected') return unexpected(request);
+      if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      return renderFigure(
+        request,
+        overviewExportRequest(taxId, { ext, token: asked.values.token }),
+        ext
+      );
+    },
+  },
   ...['suggest', 'spellcheck'].map((handler) => ({
     path: `/ContentService/search/${handler}`,
     // Search-core's getAutocompleteSuggestions / getSpellcheckSuggestions:
@@ -3290,7 +3337,7 @@ export function splitExportName(segment) {
  * springBoolean read them, `sel` a List<String> -- one value split on commas
  * and trimmed, several taken as they are.
  */
-function exporterParameters(request) {
+function exporterParameters(request, fields = DIAGRAM_EXPORT) {
   const values = {};
   const integer = (name, fallback) => {
     const read = springIntegerWithDefault(queryValues(request, name), fallback);
@@ -3321,28 +3368,104 @@ function exporterParameters(request) {
           ? fallback
           : given[0];
   };
-  const answer =
-    integer('quality', 5) ||
-    (text('flg', null), undefined) ||
-    boolean('flgInteractors', true) ||
-    (() => {
-      const given = queryValues(request, 'sel');
-      values.sel =
-        given.length === 1
-          ? given[0].split(',').map((part) => part.trim())
-          : given.filter((value) => value !== '');
-      values.sel = values.sel.filter((value) => value !== '');
-      return undefined;
-    })() ||
-    boolean('title', true) ||
-    integer('margin', 15) ||
-    boolean('ehld', true) ||
-    (text('diagramProfile', 'Modern'), undefined) ||
-    (text('token', null), undefined) ||
-    (text('resource', 'TOTAL'), undefined) ||
-    (text('analysisProfile', 'Standard'), undefined) ||
-    integer('expColumn', null);
-  return answer ? { answer } : { values };
+  const list = (name) => {
+    const given = queryValues(request, name);
+    values[name] = (
+      given.length === 1
+        ? given[0].split(',').map((part) => part.trim())
+        : given.filter((value) => value !== '')
+    ).filter((value) => value !== '');
+    return undefined;
+  };
+  const read = {
+    integer,
+    boolean,
+    text: (name, fallback) => (text(name, fallback), undefined),
+    list,
+  };
+  for (const [kind, name, fallback] of fields) {
+    const answer = read[kind](name, fallback);
+    if (answer) return { answer };
+  }
+  return { values };
+}
+
+/** diagramImage's parameters, in its order, with their defaults. */
+const DIAGRAM_EXPORT = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['boolean', 'ehld', true],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['text', 'analysisProfile', 'Standard'],
+  ['integer', 'expColumn', null],
+];
+
+/**
+ * fireworksImage's parameters, in its order, with their defaults. Its
+ * profile has no default in Java's description: any one given is refused.
+ */
+const OVERVIEW_EXPORT = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['text', 'diagramProfile', null],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['integer', 'expColumn', null],
+  ['boolean', 'coverage', false],
+];
+
+/**
+ * The overview's parameters given at something other than their default that
+ * the render service does not draw for it yet, as `name=value`: the species
+ * overview draws an analysis (`token`) and nothing else asked of it.
+ */
+function overviewNotDrawnYet(values) {
+  const defaults = {
+    flgInteractors: true,
+    title: true,
+    margin: 15,
+    resource: 'TOTAL',
+    coverage: false,
+  };
+  const named = Object.entries(defaults)
+    .filter(
+      ([name, fallback]) =>
+        values[name] !== fallback && !(name === 'margin' && values.margin === null)
+    )
+    .map(([name]) => `${name}=${values[name] ?? ''}`);
+  if (
+    values.quality !== null &&
+    values.quality !== 5 &&
+    values.quality >= 1 &&
+    values.quality <= 10
+  )
+    named.push(`quality=${values.quality}`);
+  for (const name of ['flg', 'diagramProfile', 'expColumn'])
+    if (values[name] !== null && values[name] !== undefined) named.push(`${name}=${values[name]}`);
+  if (values.sel.length) named.push(`sel=${values.sel.join(',')}`);
+  return named;
+}
+
+/**
+ * The render service's request for a species' overview: its genome-wide
+ * view, the species by taxId, with an analysis when one is asked for.
+ */
+export function overviewExportRequest(taxId, { ext, token }) {
+  const format = ext === 'jpg' ? 'jpeg' : ext;
+  const url = new URL(`${RENDER_SERVICE}/render/genome-wide.${format}`);
+  url.searchParams.set('species', String(taxId));
+  if (token) url.searchParams.set('token', token);
+  return url;
 }
 
 /**

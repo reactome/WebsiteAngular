@@ -67,6 +67,7 @@ describe('the record', () => {
       ['/ContentService/citation/pathway/{id}', 'never'],
       ['/ContentService/citation/static/{id}', 'never'],
       ['/ContentService/exporter/diagram/{id}', 'private'],
+      ['/ContentService/exporter/fireworks/{id}', 'private'],
       ['/ContentService/interactors/psicquic/resources', 'never'],
     ]);
   });

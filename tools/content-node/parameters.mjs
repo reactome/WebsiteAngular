@@ -350,6 +350,14 @@ export const RECORD = {
     query: [],
     cache: 'private',
   },
+  // Takes an analysis token: one person's result.
+  '/ContentService/exporter/fireworks/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/fireworks/{species}.{ext}; never stored at the edge anyway.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'private',
+  },
   '/ContentService/search/suggest': { java: '/search/suggest' },
   '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
   '/ContentService/search/facet': { java: '/search/facet' },

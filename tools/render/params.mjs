@@ -36,6 +36,7 @@ export const ACCEPTED = [
   'delay',
   'maxSize',
   'token',
+  'species',
 ];
 
 /** Bounds for the parameters that take a number, so a value can be refused too. */
@@ -113,6 +114,20 @@ export function badEnums(query) {
   return Object.keys(ENUMS)
     .filter((key) => key in query && !ENUMS[key].includes(String(query[key])))
     .map((key) => `"${key}" must be ${ENUMS[key].map((v) => `"${v}"`).join(' or ')}`);
+}
+
+/**
+ * `species` picks whose overview the genome-wide view draws, by taxId (spec
+ * 006 T093: the old fireworks exporter's URL names one). A pathway decides
+ * its own species, so naming one there is a question with two answers.
+ */
+export function speciesProblem(name, query) {
+  if (!('species' in query)) return undefined;
+  if (name !== 'genome-wide')
+    return '"species" applies only to genome-wide; a pathway is its own species';
+  return /^[1-9]\d*$/.test(String(query.species))
+    ? undefined
+    : '"species" must be a taxId, e.g. 9606';
 }
 
 /**

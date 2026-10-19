@@ -51,6 +51,7 @@ function renderUrl({
   select = '',
   layout = '',
   highlight = '',
+  species = '',
 }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
@@ -70,6 +71,9 @@ function renderUrl({
   // reaction page shows -- so its downloads are that picture rather than the
   // pathway diagram the reaction sits in.
   if (layout) url.searchParams.set('layout', layout);
+  // Whose overview the genome-wide view draws, by taxId; the site's default
+  // species when unset.
+  if (species) url.searchParams.set('species', species);
   return url.toString();
 }
 
@@ -93,6 +97,7 @@ export async function render(
     select = '',
     layout = '',
     highlight = '',
+    species = '',
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
@@ -112,7 +117,7 @@ export async function render(
 
   try {
     await page.goto(
-      renderUrl({ base, pathway, token, subpathways, dark, select, layout, highlight }),
+      renderUrl({ base, pathway, token, subpathways, dark, select, layout, highlight, species }),
       {
         waitUntil: 'load',
         timeout,
@@ -132,6 +137,14 @@ export async function render(
 
     const state = await page.evaluate(() => window.__renderState);
     if (state?.error) throw new Error(state.error);
+    // A page that does not know `species` draws the site's default species
+    // and reports none: a figure of the wrong species, with every sign of
+    // success. Refused unless the page says it drew the one asked for.
+    if (species && state?.species !== species) {
+      throw new Error(
+        `asked for species ${species}, the page drew ${state?.species ?? 'one it did not name'}`
+      );
+    }
 
     let bytes;
     const detail = {};

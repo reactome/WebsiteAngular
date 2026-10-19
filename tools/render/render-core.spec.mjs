@@ -41,4 +41,33 @@ describe('the render page address', () => {
     expect(url.searchParams.has('layout')).toBe(false);
     expect(url.pathname).toBe('/PathwayBrowser/render/R-HSA-6805479');
   });
+
+  it("names the overview's species, and leaves it out when none is asked for", async () => {
+    const overview = await addressFor({ pathway: '', species: '10090' });
+    expect(overview.pathname).toBe('/PathwayBrowser/render');
+    expect(overview.searchParams.get('species')).toBe('10090');
+    expect((await addressFor({ pathway: '' })).searchParams.has('species')).toBe(false);
+  });
+});
+
+describe('a figure of another species', () => {
+  it('is refused, not handed back as the one asked for', async () => {
+    // What a site too old to know `species` does: it draws the default
+    // species and reports none, with every sign of success.
+    const page = (drew) => ({
+      on() {},
+      off() {},
+      async goto() {},
+      async waitForSelector() {},
+      async evaluate() {
+        return { ready: true, view: 'reacfoam', ...(drew ? { species: drew } : {}) };
+      },
+    });
+    await expect(
+      render(page(undefined), { base: 'http://site', species: '10090' })
+    ).rejects.toThrow('asked for species 10090, the page drew one it did not name');
+    await expect(render(page('9606'), { base: 'http://site', species: '10090' })).rejects.toThrow(
+      'asked for species 10090, the page drew 9606'
+    );
+  });
 });

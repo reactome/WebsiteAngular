@@ -20,6 +20,7 @@
  *   --no-subpathways  leave out sub-pathway tints and labels
  *   --dark      render the dark theme (light by default, whatever the host prefers)
  *   --select    frame the figure on one event, e.g. a reaction's stable id
+ *   --species   genome-wide only: whose overview, by taxId (default: the site's)
  *   --layout    reaction, to draw a reaction's own layout rather than a diagram
  *   --highlight comma-separated events to mark on the whole diagram, nothing framed
  *
@@ -30,6 +31,7 @@
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { FORMATS, render } from './render-core.mjs';
+import { speciesProblem } from './params.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -59,6 +61,7 @@ const KNOWN = [
   'select',
   'layout',
   'highlight',
+  'species',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
@@ -75,6 +78,16 @@ if (flag('select', '') && flag('highlight', '')) {
 }
 
 const pathway = flag('pathway', '');
+{
+  // As the service checks it, before a browser is started for nothing.
+  const problem = flag('species', '')
+    ? speciesProblem(pathway ? pathway : 'genome-wide', { species: flag('species', '') })
+    : undefined;
+  if (problem) {
+    console.error(problem.replaceAll('"species"', '--species'));
+    process.exit(2);
+  }
+}
 const format = (flag('format', 'svg') || '').toLowerCase();
 const out = flag('out', `${pathway || 'genome-wide'}.${format}`);
 
@@ -104,6 +117,7 @@ try {
     select: flag('select', ''),
     layout: flag('layout', ''),
     highlight: flag('highlight', ''),
+    species: flag('species', ''),
   });
 
   await writeFile(out, bytes);
