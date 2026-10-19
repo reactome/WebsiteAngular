@@ -9,7 +9,18 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
-import { catchError, Observable, of, switchMap, tap, throwError } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  MonoTypeOperatorFunction,
+  Observable,
+  of,
+  retry,
+  switchMap,
+  tap,
+  throwError,
+  timer,
+} from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import type { Analysis } from '../model/analysis.model';
@@ -609,6 +620,12 @@ export class AnalysisService {
     this.clearFilters();
   }
 
+  /**
+   * Seconds until a busy analysis service is asked again, while waiting to;
+   * undefined otherwise. Set by retryWhenBusy, for the form to say so.
+   */
+  readonly busyRetry = signal<number | undefined>(undefined);
+
   analyse(
     data: string,
     params?: Analysis.RequestParameters,
@@ -622,6 +639,7 @@ export class AnalysisService {
         { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -641,6 +659,7 @@ export class AnalysisService {
         { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -661,6 +680,7 @@ export class AnalysisService {
         { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -771,4 +791,34 @@ export function decodedToken(token: string | null | undefined): string | null {
     // Not percent-encoded after all: a lone "%" in it.
   }
   return decoded.replace(/=+$/, '');
+}
+
+/**
+ * Waits as long as a busy analysis service asks -- a 503 with Retry-After,
+ * which the analysis gateway answers when its queue is full (spec 010 Story
+ * 6) -- and asks once more, telling `onWait` how long so the reader can be
+ * told. Anything else, a wait it does not name or that is unreasonably long,
+ * or a second 503, is the caller's failure to report.
+ */
+export function retryWhenBusy<T>(
+  onWait: (seconds: number | undefined) => void
+): MonoTypeOperatorFunction<T> {
+  return (source) =>
+    source.pipe(
+      retry({
+        count: 1,
+        delay: (error: unknown) => {
+          const named =
+            error instanceof HttpErrorResponse && error.status === 503
+              ? error.headers.get('Retry-After')
+              : null;
+          const seconds = named === null || named.trim() === '' ? NaN : Number(named);
+          if (!Number.isInteger(seconds) || seconds < 0 || seconds > 120)
+            return throwError(() => error);
+          onWait(seconds);
+          return timer(seconds * 1000).pipe(tap(() => onWait(undefined)));
+        },
+      }),
+      finalize(() => onWait(undefined))
+    );
 }

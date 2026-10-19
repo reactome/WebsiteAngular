@@ -268,3 +268,24 @@
 .tissue-box.no-animate {
   animation: none;
 }
+
+.analysis-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 42ch;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-medium);
+    color: var(--on-surface);
+  }
+
+  mat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
+  }
+}

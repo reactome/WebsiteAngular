@@ -209,17 +209,17 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
 **Independent test**: a burst larger than the limit: the first answered in their usual time, the rest in order, none past the edge's limit.
 **Depends on**: nothing. It fronts Tomcat's AnalysisService now and its container (Phase 5) later, by changing one upstream address.
 
-- [ ] T059 [US6] Write `tools/analysis-gateway/gateway.spec.mjs` against a stand-in AnalysisService, and show it failing first. It covers:
+- [x] T059 [US6] Write `tools/analysis-gateway/gateway.spec.mjs` against a stand-in AnalysisService, and show it failing first. It covers: — #539
   - a computation beyond the limit waits and is answered in arrival order;
   - one beyond the waiting list, or past the longest wait, gets 503 with Retry-After in the service's error format and is never run;
   - stored results, downloads and metadata never wait;
   - a waiting request whose reader leaves is never run;
   - every passed-through answer is byte-identical, status and headers included;
   - large uploads and downloads stream through.
-- [ ] T060 [US6] Write `tools/analysis-gateway/gateway.mjs`. Which requests compute is decided by method and path (FR-021), each lane with its own limit (analyses 4; reports 1), and every setting comes from configuration. It has a `/health` with the queue's state. Make T059 pass, and catch a mutation of each rule.
-- [ ] T061 [US6] Add the gateway to `docker-compose.yml`: loopback only, its upstream the AnalysisService address. Route `/AnalysisService/` in `deploy/nginx/common/routes-core.conf`, and the dev proxy, to it. Make the routing test (`deploy/nginx/routes.spec.ts`) know the new upstream, failing first. Run `deploy/nginx/test-config.sh`.
-- [ ] T062 [US6] Measure on this host, with the site's example data and nothing sent outside: the burst of research R12 through the gateway, and a stored result read during it. Record the timings in R12.
-- [ ] T063 [US6] Have the site say "the service is busy, trying again" on a 503 with Retry-After, and retry once after the time it names. Test it in the site's analysis service, failing first.
+- [x] T060 [US6] Write `tools/analysis-gateway/gateway.mjs`. Which requests compute is decided by method and path (FR-021), each lane with its own limit (analyses 4; reports 1), and every setting comes from configuration. It has a `/health` with the queue's state. Make T059 pass, and catch a mutation of each rule. — #539
+- [x] T061 [US6] Add the gateway to `docker-compose.yml`: loopback only, its upstream the AnalysisService address. Route `/AnalysisService/` in `deploy/nginx/common/routes-core.conf`, and the dev proxy, to it. Make the routing test (`deploy/nginx/routes.spec.ts`) know the new upstream, failing first. Run `deploy/nginx/test-config.sh`. The `analysis` upstream keeps its name, so the routes and the routing test are unchanged. Only beta's `dev.conf` points it at the gateway (127.0.0.1:4350); the other environments follow when the gateway runs there. — #539
+- [x] T062 [US6] Measure on this host, with the site's example data and nothing sent outside: the burst of research R12 through the gateway, and a stored result read during it. Record the timings in R12. — #539
+- [x] T063 [US6] Have the site say "the service is busy, trying again" on a 503 with Retry-After, and retry once after the time it names. Test it in the site's analysis service, failing first. — #539
 - [ ] T064 [US6] Review, CI, merge, deploy to beta. Check with `curl --resolve` that an analysis, a stored result and a download pass through unchanged, and that `/health` shows the queue.
 
 ---

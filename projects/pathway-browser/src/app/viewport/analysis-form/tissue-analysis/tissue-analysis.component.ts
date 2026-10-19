@@ -32,6 +32,7 @@ import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angula
 import { FormBuilder, FormControl } from '@angular/forms';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DarkService } from '../../../services/dark.service';
+import { describeAnalysisFailure } from '../analysis-failure';
 
 @Component({
   selector: 'cr-tissue-analysis',
@@ -57,7 +58,7 @@ import { DarkService } from '../../../services/dark.service';
 })
 export class TissueAnalysisComponent {
   tissue = inject(TissueExperimentService);
-  private analysis = inject(AnalysisService);
+  protected readonly analysis = inject(AnalysisService);
   private state = inject(UrlStateService);
   private lottieService = inject(LottieService);
   private fb = inject(FormBuilder);
@@ -237,10 +238,12 @@ export class TissueAnalysisComponent {
 
   readonly analysisLaunched = signal(false);
   readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
 
   analyse() {
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
+    this.analysisError.set(null);
     this.analysis
       .analyseFromUrl(
         this.tissue.getSampleURL(this.experiment()!.id, {
@@ -248,10 +251,17 @@ export class TissueAnalysisComponent {
           columns: this.selectedTissues().flatMap((tissue) => this.tissuesMap()[tissue] ?? []),
         })
       )
-      .subscribe((result) => {
-        this.analysisAvailable.set(true);
-        this.token = result.summary.token;
-        this.close.emit({ status: 'finished' });
+      .subscribe({
+        next: (result) => {
+          this.analysisAvailable.set(true);
+          this.token = result.summary.token;
+          this.close.emit({ status: 'finished' });
+        },
+        // Without this the loader spins forever and the reader is never told.
+        error: (error: unknown) => {
+          this.analysisLaunched.set(false);
+          this.analysisError.set(describeAnalysisFailure(error));
+        },
       });
   }
 

@@ -122,6 +122,15 @@
     <div class="loader-container">
       @if (analysisLaunched()) {
         <canvas #lottie class="loader"></canvas>
+        @if (analysis.busyRetry(); as seconds) {
+          <p role="status">The analysis service is busy; trying again in {{ seconds }} seconds.</p>
+        }
+      } @else if (analysisError(); as message) {
+        <div class="analysis-error" role="alert">
+          <mat-icon class="red">error_outline</mat-icon>
+          <p>{{ message }}</p>
+          <button mat-stroked-button type="button" (click)="analyse()">Try again</button>
+        </div>
       }
     </div>
 

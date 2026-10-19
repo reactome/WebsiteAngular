@@ -23,6 +23,7 @@ import { MatRipple } from '@angular/material/core';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DarkService } from '../../../services/dark.service';
 import { IconService } from '../../../services/icon.service';
+import { describeAnalysisFailure } from '../analysis-failure';
 
 @Component({
   selector: 'cr-species-analysis',
@@ -40,7 +41,7 @@ import { IconService } from '../../../services/icon.service';
   styleUrl: './species-analysis.component.scss',
 })
 export class SpeciesAnalysisComponent {
-  private analysis = inject(AnalysisService);
+  protected readonly analysis = inject(AnalysisService);
   private state = inject(UrlStateService);
   private speciesService = inject(SpeciesService);
   private lottieService = inject(LottieService);
@@ -118,15 +119,24 @@ export class SpeciesAnalysisComponent {
 
   readonly analysisLaunched = signal(false);
   readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
 
   analyse() {
     if (this.selectedSpecies() === null) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
-    this.analysis.analyseSpecies(this.selectedSpecies()!).subscribe((result) => {
-      this.analysisAvailable.set(true);
-      this.token = result.summary.token;
-      this.close.emit({ status: 'finished' });
+    this.analysisError.set(null);
+    this.analysis.analyseSpecies(this.selectedSpecies()!).subscribe({
+      next: (result) => {
+        this.analysisAvailable.set(true);
+        this.token = result.summary.token;
+        this.close.emit({ status: 'finished' });
+      },
+      // Without this the loader spins forever and the reader is never told.
+      error: (error: unknown) => {
+        this.analysisLaunched.set(false);
+        this.analysisError.set(describeAnalysisFailure(error));
+      },
     });
   }
 

@@ -271,3 +271,28 @@ So a large enough burst would take every analysis in it past the edge's 100-seco
 
 - **nginx's own connection limits:** these refuse, they do not queue.
 - **A submit-then-poll API:** for analyses longer than the edge allows, but it changes the contract for outside clients, so it is kept apart.
+
+**Through the gateway** (T062, 19 Oct 2026). The same burst of twelve distinct tissue analyses, run on the host against this host's AnalysisService, with 4 at a time:
+
+| Analyses                | Answered in |
+| ----------------------- | ----------- |
+| 1–4                     | 2.4–3.0 s   |
+| 5–8                     | 5.2–6.3 s   |
+| 9–12                    | 8.4–9.4 s   |
+| a read during the burst | 4 ms        |
+
+Directly against Tomcat, every one of the twelve took 10.5–12.6 s. Through the gateway the first answers come four times sooner and the last sooner still, and a read is not held back. Byte for byte, a stored result, its not-found list, a CSV download, the version and an unknown token's 404 are each the same through the gateway as directly, headers included (apart from `Date` and connection headers).
+
+**Review of #539, and what changed with it:**
+
+- **Port:** the gateway listens on 127.0.0.1:4350. It was first given 4320, the MCP server's port. A routing test now fails when two upstreams share an address, except Tomcat's own.
+- **A slot is held until the service has finished,** even when the reader has left. A Java handler does not stop when its connection drops, so the limit counts computations, not connections.
+- **Bodies are read while waiting,** up to 256 MB held in all, so a reader who leaves after a large upload is seen leaving and their analysis is never run.
+- **Requests are classified on the path as Tomcat routes it:** decoded, `;` parameters cut, slashes merged. HEAD counts as GET. Spelled `identifiers;x/projection` or `%69dentifier/…`, a computation had run past the queue.
+- **ReactomeGSA's own requests** (the `dev.reactome.org` server block) go straight to Tomcat through `analysis_direct`. Decided with awright, 19 Oct 2026: GSA runs its own queue on its Google Cloud cluster, so its calls back into this AnalysisService already arrive paced. Putting them behind this queue as well would gain little, and its workers are not known to honour a 503's `Retry-After`.
+
+**Second review of #539:**
+
+- **A reader who leaves mid-upload** gives the place back at once. Tomcat would otherwise wait for the rest of a body that never comes until its own read timeout, holding the place with nothing computing.
+- **A call the service goes silent on** is given up after 300 s (`UPSTREAM_TIMEOUT_MS`), nginx's own read timeout, after which the reader has gone. Without it four hung calls closed the lane until Tomcat restarted.
+- **Tests now cover** a body still arriving at admission, the waiting budget, slot release after an unreachable or failing service, and connection headers stripped from the answer. Each was shown failing on the mutation it guards.
