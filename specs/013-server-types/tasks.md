@@ -14,13 +14,15 @@
 
 **Goal**: everything a rename needs, and the checks that will hold it, in place first.
 
-- [ ] T001 [US1] Make the entry guards extension-agnostic: `tools/content-node/service.mjs` and `tools/render/service.mjs` start when `process.argv[1]` is this file (`fileURLToPath(import.meta.url)`), not when it ends in `service.mjs` (research R3). Test: started under another file name, each service listens.
-- [ ] T002 [US1] Make the build fingerprints take `.ts` and `.mjs` alike (content service `/health`, render service `/health`), and extend the content service's fingerprint test to fail when a module file is left out.
-- [ ] T003 [US1] Add `tools/package.json` (`{"type": "module"}`) and `tools/tsconfig.json` (R4), the type packages as direct dev dependencies (`@types/node` 24, `@types/express`; a local declaration for the `jsdom` parts used), and have `scripts/check-types.mjs` check it beside `tsconfig.app.json`. While no file is `.ts`, it checks the `.mjs` files with `checkJs` off: zero errors, so the gate is live from the first pull request.
-- [ ] T004 [US1] Add a type-check step to `.github/workflows/tests.yml` beside the lint step.
-- [ ] T005 [US1] Add the per-module loose baseline (`tools/loose-baseline.json`, R5) to `scripts/check-lint.mjs`, and exclude `tools/**` from the global baseline's `no-unsafe-*`/`no-explicit-any` counts; lint `tools/**/*.ts` with `consistent-type-imports` and a ban on enums, namespaces and parameter properties. Show the baseline failing on an added `any`.
-- [ ] T006 [US1] Add `tools/load.spec.mjs`: imports every service and CLI entry point in a child Node process (not vitest), failing on any load error. Show it failing on a type import written without `type`.
-- [ ] T007 [US1] Write the content service image's own `package.json` with `"type": "module"` (`deploy/content-node/Dockerfile`), ready for its `.ts` files.
+- [x] T001 [US1] Make the entry guards extension-agnostic: `tools/content-node/service.mjs` and `tools/render/service.mjs` start when `process.argv[1]` is this file (`fileURLToPath(import.meta.url)`), not when it ends in `service.mjs` (research R3). Test: started under another file name, each service listens. — #544
+- [x] T002 [US1] Make the build fingerprints take `.ts` and `.mjs` alike (content service `/health`, render service `/health`), and extend the content service's fingerprint test to fail when a module file is left out. — #544
+- [x] T003 [US1] Add `tools/package.json` (`{"type": "module"}`) and `tools/tsconfig.json` (R4), the type packages as direct dev dependencies (`@types/node` 24, `@types/express`; a local declaration for the `jsdom` parts used), and have `scripts/check-types.mjs` check it beside `tsconfig.app.json`. While no file is `.ts`, it checks the `.mjs` files with `checkJs` off: zero errors, so the gate is live from the first pull request. — #544
+  - The local `jsdom` declaration moves to T010: its only user is a render spec, which converts there. `@types/node` is 24.19.2, the runtime's major (review of #544; the lockfile bump is that and its own `undici-types`).
+- [x] T004 [US1] Add a type-check step to `.github/workflows/tests.yml` beside the lint step. — #544
+- [x] T005 [US1] Add the per-module loose baseline (`tools/loose-baseline.json`, R5) to `scripts/check-lint.mjs`, and exclude `tools/**` from the global baseline's `no-unsafe-*`/`no-explicit-any` counts; lint `tools/**/*.ts` with `consistent-type-imports` and a ban on enums, namespaces and parameter properties. Show the baseline failing on an added `any`. — #544
+- [x] T006 [US1] Add `tools/load.spec.mjs`: imports every service and CLI entry point in a child Node process (not vitest), failing on any load error. Show it failing on a type import written without `type`. — #544
+  - Review of #544: the eight scripts that run when loaded are checked as Node would treat them, without running them: types stripped by Node's own `stripTypeScriptTypes`, the rest parsed, and each imported name looked for among its module's exports. `node --check` alone passed an enum and a type imported as a value. The start test now fails on any request leaving the machine (the content service fetched the PSICQUIC registry from EBI as it started).
+- [x] T007 [US1] Write the content service image's own `package.json` with `"type": "module"` (`deploy/content-node/Dockerfile`), ready for its `.ts` files. — #544
 
 **Checkpoint**: the gate runs in CI; nothing is renamed; every service deployed unchanged.
 

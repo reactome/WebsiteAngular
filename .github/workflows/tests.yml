@@ -84,6 +84,11 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      # The site and the server-side services (tools/tsconfig.json, spec 013).
+      # The build checks the site's types; only this checks the services'.
+      - name: Type check
+        run: npm run check:types
+
       - name: Lint
         run: npm run check:lint
 

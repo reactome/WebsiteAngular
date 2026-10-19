@@ -2014,6 +2014,12 @@ describe('fingerprintFiles, what /health hashes', () => {
       ])
     ).toEqual(['graph.mjs', 'schema-snapshot.json', 'service.mjs']);
   });
+
+  it('takes a module renamed to .ts, and leaves its spec out (spec 013)', () => {
+    expect(
+      fingerprintFiles(['graph.ts', 'graph.spec.ts', 'service.mjs', 'domain-snapshot.json'])
+    ).toEqual(['domain-snapshot.json', 'graph.ts', 'service.mjs']);
+  });
 });
 
 describe('writeResult, how a handler answer goes on the wire', () => {

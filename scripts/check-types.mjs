@@ -27,16 +27,20 @@
  */
 import { spawnSync } from 'node:child_process';
 
-const project = 'tsconfig.app.json';
-const result = spawnSync('npx', ['tsc', '--noEmit', '-p', project], { encoding: 'utf8' });
-const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
-
-if (result.status === 0) {
-  console.log(`  ${project} ok`);
-  process.exit(0);
+// The site, and the server-side services (spec 013).
+const projects = ['tsconfig.app.json', 'tools/tsconfig.json'];
+let failed = false;
+for (const project of projects) {
+  const result = spawnSync('npx', ['tsc', '--noEmit', '-p', project], { encoding: 'utf8' });
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
+  if (result.status === 0) {
+    console.log(`  ${project} ok`);
+    continue;
+  }
+  failed = true;
+  console.log(`  ${project} FAILED (exit ${result.status})`);
+  for (const line of output.split('\n')) console.log(`    ${line}`);
 }
-
-console.log(`  ${project} FAILED (exit ${result.status})`);
-for (const line of output.split('\n')) console.log(`    ${line}`);
-console.log('\n  The build would fail on these.');
+if (!failed) process.exit(0);
+console.log('\n  The build, or the services, would fail on these.');
 process.exit(1);

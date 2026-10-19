@@ -20,7 +20,7 @@ import express from 'express';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { setInterval } from 'node:timers';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.mjs';
@@ -7995,7 +7995,9 @@ async function speciesTaxId(filter) {
 
 /**
  * The files /health's build fingerprint hashes: the service's modules and the
- * data it answers with (schema-snapshot.json), sorted by name. Specs excluded.
+ * data it answers with (schema-snapshot.json), sorted by name, whether a module
+ * is `.mjs` or `.ts` (spec 013: renamed, it would drop out of the hash unseen).
+ * Specs excluded.
  * They ship in the image -- the Dockerfile copies the directory -- but they are
  * not what the service does, and a fingerprint that changes when a test is
  * edited reports a deployment difference that is not one. Caught by this very
@@ -8003,7 +8005,9 @@ async function speciesTaxId(filter) {
  * service runs.
  */
 export function fingerprintFiles(names) {
-  return names.filter((name) => /\.(mjs|json)$/.test(name) && !name.endsWith('.spec.mjs')).sort();
+  return names
+    .filter((name) => /\.(mjs|ts|json)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name))
+    .sort();
 }
 
 /**
@@ -8442,8 +8446,27 @@ export async function answer(endpoint, request, response) {
   }
 }
 
+/**
+ * Whether Node was started with this file, whatever it is called: the test
+ * was `endsWith('service.mjs')`, which a service renamed to `.ts` (spec 013)
+ * fails, so it would load, never listen, and exit 0 -- a restart loop in its
+ * container. Compared after symlinks are resolved, as Node resolves its own.
+ * scripts/is-entry.mjs does the same for the scripts, but the service images
+ * ship only this directory.
+ */
+function startedDirectly() {
+  try {
+    return (
+      Boolean(process.argv[1]) &&
+      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Started directly rather than imported by a test.
-if (process.argv[1] && process.argv[1].endsWith('service.mjs')) {
+if (startedDirectly()) {
   const server = app().listen(PORT, HOST, () => {
     console.log(`content-node listening on http://${HOST}:${PORT}`);
     // Warm the cached endpoints the way Java's @PostConstruct does, so the

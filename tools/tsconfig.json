@@ -1,0 +1,40 @@
+// The server-side services' type check (spec 013, research R4). Node 24 runs
+// these files as they are, stripping the types, so nothing is emitted; the
+// strictness is the site's. Plain .mjs modules are loaded but not checked
+// (checkJs off) until each is converted to .ts.
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    // DOM: the render service's code that runs in the page.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": false,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // Off for the mechanical conversion (research R4: 1,180 errors to clear,
+    // 3,373 with it on); turned on module by module (tasks T021).
+    "noImplicitAny": false
+    // verbatimModuleSyntax and erasableSyntaxOnly are not set: the services
+    // import the site's model types, which a whole-program option would hold
+    // to them too. Lint enforces both for tools/, and tools/load.spec.mjs loads
+    // every entry point under Node, which fails on what they would catch.
+  },
+  "include": ["**/*.ts", "**/*.mjs"],
+  "exclude": ["**/node_modules", "svg-export-harness/harness.bundle.js"]
+}
