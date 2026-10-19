@@ -97,20 +97,31 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T090 `GET /exporter/diagram/{identifier}.{ext}`, for the formats the render page draws — implemented in #479, not yet routed: Java still answers it until the log scan (#273)
 - [ ] T091 `GET /exporter/diagram/{identifier}.{ext}`, the remaining formats and options (#273, after the log scan)
 - [ ] T092 `GET /exporter/reaction/{identifier}.{ext}`, `GET /exporter/reaction/{identifier}/diagram`
-- [ ] T093 `GET /exporter/fireworks/{species}.{ext}`: the species overview image at its old URL, drawn as the overview is now, the Reacfoam (Voronoi) map, not the retired Fireworks layout — implemented (render page and service take `species`; node answers the old URL), not yet routed: held back with T090 until the exporter log scan (#273)
+- [ ] T093 The species overview image (the Reacfoam Voronoi map; there are no Fireworks images any more), answered at the old URL `GET /exporter/fireworks/{species}.{ext}`, whose name is fixed on the wire — implemented (render page and service take `species`; node answers the old URL), not yet routed: held back with T090 until the exporter log scan (#273)
 
-## Phase 9: Homed in Java — not ported ([spec 010](../010-java-services/spec.md))
+## Phase 9: Homed in Java for now ([spec 010](../010-java-services/spec.md))
 
-These stay in Java because their substance is a Java library or Java numerical work. They move with the Java side, not here.
+These were held in Java because their substance is a Java library or Java numerical work. awright, 19 Oct 2026: the held exports could be made, and the events hierarchy has no reason to need Java; each is reconsidered after spec 013 (types in the services) is done.
 
 - [ ] T100 `GET /exporter/event/{identifier}.sbml`, `GET /exporter/event/{identifier}.sbgn`, `GET /exporter/document/event/{identifier}.pdf`
 - [ ] T101 `GET /interactors/psicquic/molecule/{resource}/{acc}/details` and `/summary`, `POST /interactors/psicquic/molecules/{resource}/details` and `/summary`
 - [ ] T102 `POST /interactors/upload/tuple/content`, `/tuple/form`, `/tuple/url`, `POST /interactors/upload/psicquic/url`, `POST /interactors/token/{token}`
-- [ ] T103 `GET /data/eventsHierarchy/{species}` — needs the analysis data's pathway sizes
+- [ ] T103 `GET /data/eventsHierarchy/{species}` — portable. Java reads two things from analysis-core (EventsController): every node's `totalEntity`/`totalEntityAndInteractors`, from the in-memory pathway hierarchy the AnalysisService's data file holds, on every request; and, with a `token`, the stored analysis result it overlays. Node can read the result through the AnalysisService's own `token` API (behind the gateway). The research question is the sizes: computed from the graph as analysis-core counts them, byte for byte, or read from the AnalysisService.
+
+## Phase 9b: Endpoints Java does not publish
+
+Found 19 Oct 2026 by comparing every mapping in the Java source with the published description (which the phases above follow). The site calls none of them; outside users of the API may. Each still answered by Java.
+
+- [ ] T104 Graph reads: `GET /data/query/abridged/{id}`, `/data/query/abridged/{id}/{attributeName}`, `/data/query/{id}/more`
+- [ ] T105 `GET /data/referenceMolecules`, `/data/referenceMolecules/identifiers`, `/data/referenceSequences`, `/data/referenceSequences/identifiers`
+- [ ] T106 `GET /data/pathways/top/{species}/curated`, `/data/pathways/low/diagram/identifier/{id}/allForms`, `/data/diagram/{id}/entities/{instance}`, `/data/database/info`
+- [ ] T107 `GET /data/detail/{id}/direction/…` (four forms), `/data/detail/{id}/getSubGraph`, `/data/detail/{id}/getReverseGraph`
+- [ ] T108 `GET /citation/download`, `POST /download/{format}`
+- [ ] T109 Exporters: `/exporter/diagram/{id}.pptx`, `/exporter/reaction/{id}.pptx`, `/exporter/sbml/{id}.xml` (with Phase 9's exporters)
 
 ## Phase 10: Last
 
-- [ ] T110 The ORCID endpoints (not in the published description) — ported last, decided 15 Oct 2026
+- [ ] T110 The ORCID endpoints, `/ContentService/orcid/**` ("Claim your work", #114): about eleven (OAuth login, callback, token, sign-out, authenticated; five claims; `{orcid}/works`; `let-us-know-your-orcid`). Not in the deployed service at all: their source is `org.reactome.server.orcid` in reactome/data-content. They need ORCID OAuth credentials and the report application. Ported last (awright, 15 and 19 Oct 2026), after reviewing ORCID's requirements with awright.
 
 ## Notes
 
