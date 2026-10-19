@@ -150,10 +150,14 @@ describe('standardForm: paths', () => {
       ],
       [
         '/ContentService/search/icon/{identifier}',
-        '/ContentService/search/icon/R-ICO-012345',
+        '/ContentService/search/icon/R-ICO-13748',
         false,
       ],
-      ['/ContentService/search/icon/{identifier}', '/ContentService/search/icon/R-ICO-12345', true],
+      [
+        '/ContentService/search/icon/{identifier}',
+        '/ContentService/search/icon/R-ICO-013748',
+        true,
+      ],
       ['/ContentService/data/person/{id}', '/ContentService/data/person/0000-0001-5807-0069', true],
       ['/ContentService/data/person/{id}', '/ContentService/data/person/x@y.org', false],
       [

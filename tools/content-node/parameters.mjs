@@ -74,7 +74,9 @@ export const PATH_KINDS = {
   // /data/mapping finds it ignoring case: only the name as the graph has it.
   database: (text) => DATABASES().some((name) => encodeURIComponent(name) === text),
   identifier: (text) => /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(text),
-  icon: (text) => /^R-ICO-[1-9]\d*$/.test(text),
+  // As the icons are numbered: six digits, zero-padded. Solr is asked for
+  // the id as it came, so R-ICO-13748 finds nothing where R-ICO-013748 does.
+  icon: (text) => /^R-ICO-\d{6}$/.test(text),
   // Never stored whatever it is (`cache` below).
   any: () => true,
 };
