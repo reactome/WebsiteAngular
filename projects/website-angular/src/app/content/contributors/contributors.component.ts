@@ -1,12 +1,9 @@
+import { Contributor, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import {
-  ContentDataService,
-  Contributor,
-  SimplePerson,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
 type SortKey =
   | 'displayName'

@@ -18,7 +18,7 @@ import { ReferenceMolecule } from '../model/graph/reference-entity/reference-mol
 import { Publication } from '../model/graph/publication/publication.model';
 import { Book } from '../model/graph/publication/book.model';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { Molecule } from './participant.service';
+import { Molecule } from '../model/participant.model';
 import { SimpleEntity } from '../model/graph/physical-entity/simple-entity.model';
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 import { ReferenceSequence } from '../model/graph/reference-entity/reference-sequence.model';

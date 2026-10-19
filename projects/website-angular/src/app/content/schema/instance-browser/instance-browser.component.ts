@@ -1,3 +1,4 @@
+import { InstanceReferrals, SchemaAttribute } from '../../../../model/content.model';
 import {
   Component,
   input,
@@ -11,11 +12,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import {
-  ContentDataService,
-  InstanceReferrals,
-  SchemaAttribute,
-} from '../../../../services/content-data.service';
+import { ContentDataService } from '../../../../services/content-data.service';
 
 interface AttributeRow {
   name: string;

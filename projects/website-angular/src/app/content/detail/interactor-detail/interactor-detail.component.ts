@@ -1,3 +1,4 @@
+import { SearchResult } from '../../../../model/search.model';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -8,9 +9,9 @@ import { catchError } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import { TileComponent } from '../../../reactome-components/tile/tile.component';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
+import { InteractionWithEntities } from '../../../../model/interactor.model';
 // The search's own types: its type filter is not applied, so the first hit can
 // be an Icon, which has no reference identifier, URL or database.
-import { SearchResult } from '../../../../services/search.service';
 
 export interface CustomInteraction {
   identifier: string;
@@ -24,19 +25,6 @@ export interface CustomInteraction {
 export interface ReactomeEntity {
   stId: string;
   displayName: string;
-}
-
-// Shape returned by /interactors/static/molecule/{acc}/withEntities --
-// each row is one interactor partner with its Reactome PhysicalEntities
-// pre-joined (no client-side fan-out to /references/mapping/{id}/xrefs).
-interface InteractionWithEntities {
-  score: number;
-  accession: string;
-  accessionURL: string;
-  // Never empty: the endpoint returns only the interactors that have entities.
-  physicalEntity: { dbId: number; stId: string; displayName: string; schemaClass: string }[];
-  evidences: number;
-  url: string;
 }
 
 interface UniProtResponse {

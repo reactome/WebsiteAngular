@@ -10,38 +10,11 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import chroma from 'chroma-js';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
-import type { Analysis } from '../model/analysis.model';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { httpParams } from '../utils/http-params';
+import { EventsHierarchy } from '../model/events-hierarchy.model';
 
 const LAYOUT_URL = 'assets/reacfoam/layout.tsv';
-export namespace EventsHierarchy {
-  export interface Data {
-    diagram: boolean;
-    name: string;
-    stId: string;
-    type: 'TopLevelPathway' | 'Pathway' | 'CellLineagePath';
-    species: string;
-    llp?: boolean;
-    totalEntity: number;
-    totalEntityAndInteractors: number;
-    /** Left out on a pathway with no sub-pathways (2,143 of 3,018 human ones). */
-    children?: Data[];
-    reactions?: Analysis.Pathway['reactions'];
-    entities?: Analysis.Pathway['entities'];
-  }
-
-  /** One left undefined is not sent: there may be no analysis to colour by. */
-  export interface QueryParams {
-    pathwaysOnly?: boolean;
-    token?: string | undefined;
-    resource?: string | undefined;
-    interactors?: boolean | undefined;
-    importableOnly?: boolean;
-    view?: 'flatten' | 'nested' | 'nested-aggregated';
-  }
-}
-
 export namespace Layout {
   export interface Data {
     stId: string;
@@ -292,25 +265,19 @@ export class ReacfoamService {
           return [];
         if (
           this.filters().minExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MIN_VALUE) <
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MIN_VALUE) <
             this.mergedFilters().minExpression!
         )
           return [];
         if (
           this.filters().maxExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
-            this.mergedFilters().maxExpression!
-        )
-          return [];
-        if (
-          this.filters().maxExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
             this.mergedFilters().maxExpression!
         )
           return [];
         if (
           this.filters().gsa?.size !== 0 &&
-          !this.filters().gsa?.has(event.entities?.exp[this.analysis.sampleIndex()] || 0)
+          !this.filters().gsa?.has(event.entities?.exp?.[this.analysis.sampleIndex()] || 0)
         )
           return [];
       }

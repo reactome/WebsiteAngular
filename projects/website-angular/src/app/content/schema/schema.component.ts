@@ -1,15 +1,11 @@
+import { SchemaNode, SchemaAttribute, SimpleDatabaseObject } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { InstanceBrowserComponent } from './instance-browser/instance-browser.component';
-import {
-  ContentDataService,
-  SchemaNode,
-  SchemaAttribute,
-  SimpleDatabaseObject,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
 interface FlatTreeNode {
   className: string;

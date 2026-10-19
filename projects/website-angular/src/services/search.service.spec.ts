@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { SearchService, SearchFilters, usableSpellCheckTerms } from './search.service';
+import { SearchService, usableSpellCheckTerms } from './search.service';
+import { SearchFilters } from '../model/search.model';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 describe('SearchService', () => {

@@ -1,3 +1,4 @@
+import { SearchEntry } from '../../model/search.model';
 import { TestBed } from '@angular/core/testing';
 import { ChangeDetectorRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
@@ -6,7 +7,6 @@ import { provideRouter } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { SearchComponent } from './search.component';
-import { SearchEntry } from '../../services/search.service';
 
 function makeEntry(overrides: Partial<SearchEntry> = {}): SearchEntry {
   return {

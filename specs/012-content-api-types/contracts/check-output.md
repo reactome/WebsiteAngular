@@ -17,15 +17,15 @@ read as anything: projects/pathway-browser/src/app/diagram/entity-popup/entity-p
 Per route group, fails with one line per problem, sorted:
 
 ```text
-GET /data/pathways/top/{id} [e2e/har/<file>.har]: $[3].species[0]: Type 'number' is not assignable to type 'Species'.
-GET /search/query [e2e/har/<file>.har]: $.results[0].entries[2].dbId: Type 'string' is not assignable to type 'number'.
+GET /data/pathways/top/{taxId} as TopLevelPathway[] [<file>.har]: $[3].species[0]: Type 'number' is not assignable to type 'Species'.
+GET /data/species/main as Species[] [<file>.har]: $[0]: Property 'shortName' is missing in type 'Species'.
 ```
 
 and, for the ratchet:
 
 ```text
-GET /data/species/main: 12 problems, known-problems.json allows 9 (more than before)
-GET /data/species/main: 0 problems, known-problems.json still allows 9 (lower it)
+GET /data/species/main as Species[]: 12 problems, known-problems.json allows 9 (more than before)
+GET /data/species/main as Species[]: 0 problems, known-problems.json still allows 9 (lower it)
 ```
 
 It also reports, without failing:

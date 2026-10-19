@@ -1,3 +1,4 @@
+import { Search } from '../model/search.model';
 import { computed, Injectable, signal, inject } from '@angular/core';
 import { map, Observable, of, switchMap } from 'rxjs';
 import { CONTENT_SERVICE, ICON_BASE, environment } from '../../environments/environment';
@@ -6,7 +7,6 @@ import { HttpClient } from '@angular/common/http';
 import { isExactlyCellLineagePath, isRLE } from './utils';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { SchemaClasses } from '../constants/constants';
-import { Search } from '../viewport/search/search.component';
 
 /**
  * Where an icon's artwork comes from, given the release the site is serving.
