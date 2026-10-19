@@ -188,7 +188,8 @@ export namespace Analysis {
     summary: {
       token: string;
       type: Type | string;
-      sampleName: string;
+      /** Absent from a species comparison, which has no sample. */
+      sampleName?: string;
       text: boolean;
       projection: boolean;
       interactors: boolean;

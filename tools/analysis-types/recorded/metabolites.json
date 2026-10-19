@@ -1,0 +1,1869 @@
+[
+  {
+    "route": "POST /AnalysisService/identifiers/?pageSize=20&page=1",
+    "answer": {
+      "summary": {
+        "token": "MjAyNjEwMTkxOTUzMDRfMzU%3D",
+        "projection": false,
+        "interactors": false,
+        "type": "EXPRESSION",
+        "sampleName": "Molecules",
+        "text": true,
+        "includeDisease": true
+      },
+      "expression": {
+        "columnNames": ["Sample 1", "Sample 2", "Sample 3", "Sample 4"],
+        "min": 2.9,
+        "max": 13.2
+      },
+      "identifiersNotFound": 577,
+      "pathwaysFound": 18829,
+      "pathways": [
+        {
+          "stId": "R-MTU-870392",
+          "dbId": 870392,
+          "name": "Mycobacterium tuberculosis biological processes",
+          "species": {
+            "dbId": 176806,
+            "taxId": "1773",
+            "name": "Mycobacterium tuberculosis"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 122,
+            "found": 43,
+            "ratio": 1,
+            "pValue": 0,
+            "fdr": 0,
+            "exp": [9.362790697674416, 9.367441860465117, 8.911627906976742, 9.241860465116277]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 44,
+            "found": 39,
+            "ratio": 1
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-GGA-419470",
+          "dbId": 419470,
+          "name": "Nucleotide metabolism",
+          "species": {
+            "dbId": 49591,
+            "taxId": "9031",
+            "name": "Gallus gallus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 62,
+            "found": 39,
+            "ratio": 0.006969424460431655,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6637359812630166e-14,
+            "exp": [8.702564102564102, 8.776923076923076, 8.410256410256409, 8.658974358974357]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 26,
+            "found": 26,
+            "ratio": 0.003541751804931208
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-71336",
+          "dbId": 71336,
+          "name": "Pentose phosphate pathway",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 46,
+            "found": 28,
+            "ratio": 0.002830595040305212,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.689285714285715, 8.689285714285713, 8.396428571428572, 8.664285714285713]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 20,
+            "found": 20,
+            "ratio": 0.0012430853378084406
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-70921",
+          "dbId": 70921,
+          "name": "Histidine catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 40,
+            "found": 24,
+            "ratio": 0.0024613869915697494,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.670833333333333, 9.654166666666667, 9.316666666666668, 9.512499999999998]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 10,
+            "found": 10,
+            "ratio": 0.0006215426689042203
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8963691",
+          "dbId": 8963691,
+          "name": "Phenylalanine and tyrosine metabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 45,
+            "found": 26,
+            "ratio": 0.0027690603655159685,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [10.034615384615384, 10.003846153846155, 9.811538461538461, 9.969230769230771]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 13,
+            "found": 13,
+            "ratio": 0.0008080054695754863
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-73621",
+          "dbId": 73621,
+          "name": "Pyrimidine catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 51,
+            "found": 28,
+            "ratio": 0.0031382684142514305,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.635714285714284, 8.667857142857143, 8.389285714285716, 8.625]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 17,
+            "found": 17,
+            "ratio": 0.0010566225371371745
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8956321",
+          "dbId": 8956321,
+          "name": "Nucleotide salvage",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 69,
+            "found": 34,
+            "ratio": 0.0042458925604578176,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.294117647058826, 8.382352941176473, 8.15, 8.285294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 22,
+            "found": 22,
+            "ratio": 0.0013673938715892846
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-70895",
+          "dbId": 70895,
+          "name": "Branched-chain amino acid catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 65,
+            "found": 31,
+            "ratio": 0.003999753861300843,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.329032258064519, 9.35161290322581, 8.951612903225806, 9.18709677419355]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 27,
+            "found": 27,
+            "ratio": 0.0016781652060413948
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-DRE-8956319",
+          "dbId": 10654804,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 68323,
+            "taxId": "7955",
+            "name": "Danio rerio"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 125,
+            "found": 57,
+            "ratio": 0.015499070055796652,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 5.495603971894525e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 49,
+            "found": 49,
+            "ratio": 0.007876547178910143
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-GGA-8956319",
+          "dbId": 10832982,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49591,
+            "taxId": "9031",
+            "name": "Gallus gallus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 125,
+            "found": 57,
+            "ratio": 0.014051258992805755,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6637359812630166e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 49,
+            "found": 49,
+            "ratio": 0.0066748399400626615
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-499943",
+          "dbId": 499943,
+          "name": "Interconversion of nucleotide di- and triphosphates",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 80,
+            "found": 36,
+            "ratio": 0.004922773983139499,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.305555555555555, 9.341666666666667, 9.025, 9.238888888888887]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 34,
+            "found": 34,
+            "ratio": 0.002113245074274349
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-CFA-8956319",
+          "dbId": 10335217,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49646,
+            "taxId": "9615",
+            "name": "Canis familiaris"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 134,
+            "found": 57,
+            "ratio": 0.013375923337991615,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.440892098500626e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.00726634928589326
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-SSC-8956319",
+          "dbId": 10562695,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49633,
+            "taxId": "9823",
+            "name": "Sus scrofa"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 135,
+            "found": 57,
+            "ratio": 0.013009540329575022,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.474198789239381e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.0070679990251035826
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-BTA-8956319",
+          "dbId": 10449697,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48898,
+            "taxId": "9913",
+            "name": "Bos taurus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 135,
+            "found": 57,
+            "ratio": 0.012555803571428572,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6193270602780103e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.006782832417261139
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-RNO-8956319",
+          "dbId": 10228384,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48895,
+            "taxId": "10116",
+            "name": "Rattus norvegicus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 136,
+            "found": 57,
+            "ratio": 0.012725741555160475,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.596323321948148e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 59,
+            "found": 59,
+            "ratio": 0.006798801567181378
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-MMU-8956319",
+          "dbId": 10104608,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48892,
+            "taxId": "10090",
+            "name": "Mus musculus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 137,
+            "found": 57,
+            "ratio": 0.012245262781551662,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.697042672001771e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 59,
+            "found": 59,
+            "ratio": 0.006618801884675791
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8956319",
+          "dbId": 8956319,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 144,
+            "found": 59,
+            "ratio": 0.008860993169651098,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.615254237288136, 8.652542372881358, 8.391525423728812, 8.5864406779661]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 63,
+            "found": 63,
+            "ratio": 0.003915718814096587
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-15869",
+          "dbId": 15869,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 257,
+            "found": 87,
+            "ratio": 0.01581441142083564,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.600000000000001, 8.642528735632181, 8.329885057471262, 8.552873563218395]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 143,
+            "found": 142,
+            "ratio": 0.00888806016533035
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-MMU-15869",
+          "dbId": 10104564,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48892,
+            "taxId": "10090",
+            "name": "Mus musculus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 247,
+            "found": 85,
+            "ratio": 0.02207722559885592,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.697042672001771e-14,
+            "exp": [8.643529411764709, 8.692941176470587, 8.375294117647057, 8.59294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 138,
+            "found": 137,
+            "ratio": 0.015481265425173883
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-BTA-15869",
+          "dbId": 10449653,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48898,
+            "taxId": "9913",
+            "name": "Bos taurus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 244,
+            "found": 85,
+            "ratio": 0.02269345238095238,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6193270602780103e-14,
+            "exp": [8.643529411764709, 8.692941176470587, 8.375294117647057, 8.59294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 136,
+            "found": 135,
+            "ratio": 0.015904572564612324
+          },
+          "inDisease": false
+        }
+      ],
+      "resourceSummary": [
+        {
+          "resource": "TOTAL",
+          "pathways": 18829,
+          "filtered": 18829
+        },
+        {
+          "resource": "CHEBI",
+          "pathways": 18829,
+          "filtered": 18829
+        }
+      ],
+      "speciesSummary": [
+        {
+          "dbId": 48887,
+          "taxId": "9606",
+          "name": "Homo sapiens",
+          "pathways": 2202,
+          "filtered": 2202
+        },
+        {
+          "dbId": 48892,
+          "taxId": "10090",
+          "name": "Mus musculus",
+          "pathways": 1500,
+          "filtered": 1500
+        },
+        {
+          "dbId": 48895,
+          "taxId": "10116",
+          "name": "Rattus norvegicus",
+          "pathways": 1491,
+          "filtered": 1491
+        },
+        {
+          "dbId": 48898,
+          "taxId": "9913",
+          "name": "Bos taurus",
+          "pathways": 1464,
+          "filtered": 1464
+        },
+        {
+          "dbId": 49591,
+          "taxId": "9031",
+          "name": "Gallus gallus",
+          "pathways": 1461,
+          "filtered": 1461
+        },
+        {
+          "dbId": 49633,
+          "taxId": "9823",
+          "name": "Sus scrofa",
+          "pathways": 1450,
+          "filtered": 1450
+        },
+        {
+          "dbId": 49646,
+          "taxId": "9615",
+          "name": "Canis familiaris",
+          "pathways": 1450,
+          "filtered": 1450
+        },
+        {
+          "dbId": 68323,
+          "taxId": "7955",
+          "name": "Danio rerio",
+          "pathways": 1342,
+          "filtered": 1342
+        },
+        {
+          "dbId": 205621,
+          "taxId": "8364",
+          "name": "Xenopus tropicalis",
+          "pathways": 1271,
+          "filtered": 1271
+        },
+        {
+          "dbId": 56210,
+          "taxId": "7227",
+          "name": "Drosophila melanogaster",
+          "pathways": 1240,
+          "filtered": 1240
+        },
+        {
+          "dbId": 68320,
+          "taxId": "6239",
+          "name": "Caenorhabditis elegans",
+          "pathways": 1125,
+          "filtered": 1125
+        },
+        {
+          "dbId": 170941,
+          "taxId": "44689",
+          "name": "Dictyostelium discoideum",
+          "pathways": 900,
+          "filtered": 900
+        },
+        {
+          "dbId": 68324,
+          "taxId": "4896",
+          "name": "Schizosaccharomyces pombe",
+          "pathways": 702,
+          "filtered": 702
+        },
+        {
+          "dbId": 68322,
+          "taxId": "4932",
+          "name": "Saccharomyces cerevisiae",
+          "pathways": 694,
+          "filtered": 694
+        },
+        {
+          "dbId": 170928,
+          "taxId": "5833",
+          "name": "Plasmodium falciparum",
+          "pathways": 524,
+          "filtered": 524
+        },
+        {
+          "dbId": 176806,
+          "taxId": "1773",
+          "name": "Mycobacterium tuberculosis",
+          "pathways": 13,
+          "filtered": 13
+        }
+      ],
+      "warnings": []
+    }
+  },
+  {
+    "route": "GET /AnalysisService/token/T",
+    "answer": {
+      "summary": {
+        "token": "MjAyNjEwMTkxOTUzMDRfMzU%3D",
+        "projection": false,
+        "interactors": false,
+        "type": "EXPRESSION",
+        "sampleName": "Molecules",
+        "text": true,
+        "includeDisease": true
+      },
+      "expression": {
+        "columnNames": ["Sample 1", "Sample 2", "Sample 3", "Sample 4"],
+        "min": 2.9,
+        "max": 13.2
+      },
+      "identifiersNotFound": 577,
+      "pathwaysFound": 18829,
+      "pathways": [
+        {
+          "stId": "R-MTU-870392",
+          "dbId": 870392,
+          "name": "Mycobacterium tuberculosis biological processes",
+          "species": {
+            "dbId": 176806,
+            "taxId": "1773",
+            "name": "Mycobacterium tuberculosis"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 122,
+            "found": 43,
+            "ratio": 1,
+            "pValue": 0,
+            "fdr": 0,
+            "exp": [9.362790697674416, 9.367441860465117, 8.911627906976742, 9.241860465116277]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 44,
+            "found": 39,
+            "ratio": 1
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-GGA-419470",
+          "dbId": 419470,
+          "name": "Nucleotide metabolism",
+          "species": {
+            "dbId": 49591,
+            "taxId": "9031",
+            "name": "Gallus gallus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 62,
+            "found": 39,
+            "ratio": 0.006969424460431655,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6637359812630166e-14,
+            "exp": [8.702564102564102, 8.776923076923076, 8.410256410256409, 8.658974358974357]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 26,
+            "found": 26,
+            "ratio": 0.003541751804931208
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-71336",
+          "dbId": 71336,
+          "name": "Pentose phosphate pathway",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 46,
+            "found": 28,
+            "ratio": 0.002830595040305212,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.689285714285715, 8.689285714285713, 8.396428571428572, 8.664285714285713]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 20,
+            "found": 20,
+            "ratio": 0.0012430853378084406
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-70921",
+          "dbId": 70921,
+          "name": "Histidine catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 40,
+            "found": 24,
+            "ratio": 0.0024613869915697494,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.670833333333333, 9.654166666666667, 9.316666666666668, 9.512499999999998]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 10,
+            "found": 10,
+            "ratio": 0.0006215426689042203
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8963691",
+          "dbId": 8963691,
+          "name": "Phenylalanine and tyrosine metabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 45,
+            "found": 26,
+            "ratio": 0.0027690603655159685,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [10.034615384615384, 10.003846153846155, 9.811538461538461, 9.969230769230771]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 13,
+            "found": 13,
+            "ratio": 0.0008080054695754863
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-73621",
+          "dbId": 73621,
+          "name": "Pyrimidine catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 51,
+            "found": 28,
+            "ratio": 0.0031382684142514305,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.635714285714284, 8.667857142857143, 8.389285714285716, 8.625]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 17,
+            "found": 17,
+            "ratio": 0.0010566225371371745
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8956321",
+          "dbId": 8956321,
+          "name": "Nucleotide salvage",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 69,
+            "found": 34,
+            "ratio": 0.0042458925604578176,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.294117647058826, 8.382352941176473, 8.15, 8.285294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 22,
+            "found": 22,
+            "ratio": 0.0013673938715892846
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-70895",
+          "dbId": 70895,
+          "name": "Branched-chain amino acid catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 65,
+            "found": 31,
+            "ratio": 0.003999753861300843,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.329032258064519, 9.35161290322581, 8.951612903225806, 9.18709677419355]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 27,
+            "found": 27,
+            "ratio": 0.0016781652060413948
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-DRE-8956319",
+          "dbId": 10654804,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 68323,
+            "taxId": "7955",
+            "name": "Danio rerio"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 125,
+            "found": 57,
+            "ratio": 0.015499070055796652,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 5.495603971894525e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 49,
+            "found": 49,
+            "ratio": 0.007876547178910143
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-GGA-8956319",
+          "dbId": 10832982,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49591,
+            "taxId": "9031",
+            "name": "Gallus gallus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 125,
+            "found": 57,
+            "ratio": 0.014051258992805755,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6637359812630166e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 49,
+            "found": 49,
+            "ratio": 0.0066748399400626615
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-499943",
+          "dbId": 499943,
+          "name": "Interconversion of nucleotide di- and triphosphates",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 80,
+            "found": 36,
+            "ratio": 0.004922773983139499,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [9.305555555555555, 9.341666666666667, 9.025, 9.238888888888887]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 34,
+            "found": 34,
+            "ratio": 0.002113245074274349
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-CFA-8956319",
+          "dbId": 10335217,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49646,
+            "taxId": "9615",
+            "name": "Canis familiaris"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 134,
+            "found": 57,
+            "ratio": 0.013375923337991615,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.440892098500626e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.00726634928589326
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-SSC-8956319",
+          "dbId": 10562695,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 49633,
+            "taxId": "9823",
+            "name": "Sus scrofa"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 135,
+            "found": 57,
+            "ratio": 0.013009540329575022,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.474198789239381e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.0070679990251035826
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-BTA-8956319",
+          "dbId": 10449697,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48898,
+            "taxId": "9913",
+            "name": "Bos taurus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 135,
+            "found": 57,
+            "ratio": 0.012555803571428572,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6193270602780103e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 58,
+            "found": 58,
+            "ratio": 0.006782832417261139
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-RNO-8956319",
+          "dbId": 10228384,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48895,
+            "taxId": "10116",
+            "name": "Rattus norvegicus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 136,
+            "found": 57,
+            "ratio": 0.012725741555160475,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 4.596323321948148e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 59,
+            "found": 59,
+            "ratio": 0.006798801567181378
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-MMU-8956319",
+          "dbId": 10104608,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48892,
+            "taxId": "10090",
+            "name": "Mus musculus"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 137,
+            "found": 57,
+            "ratio": 0.012245262781551662,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.697042672001771e-14,
+            "exp": [8.680701754385966, 8.7280701754386, 8.461403508771928, 8.64736842105263]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 59,
+            "found": 59,
+            "ratio": 0.006618801884675791
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-8956319",
+          "dbId": 8956319,
+          "name": "Nucleotide catabolism",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": true,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 144,
+            "found": 59,
+            "ratio": 0.008860993169651098,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.615254237288136, 8.652542372881358, 8.391525423728812, 8.5864406779661]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 63,
+            "found": 63,
+            "ratio": 0.003915718814096587
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-HSA-15869",
+          "dbId": 15869,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48887,
+            "taxId": "9606",
+            "name": "Homo sapiens"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 257,
+            "found": 87,
+            "ratio": 0.01581441142083564,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 1.0103029524088925e-14,
+            "exp": [8.600000000000001, 8.642528735632181, 8.329885057471262, 8.552873563218395]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 143,
+            "found": 142,
+            "ratio": 0.00888806016533035
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-MMU-15869",
+          "dbId": 10104564,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48892,
+            "taxId": "10090",
+            "name": "Mus musculus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 247,
+            "found": 85,
+            "ratio": 0.02207722559885592,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.697042672001771e-14,
+            "exp": [8.643529411764709, 8.692941176470587, 8.375294117647057, 8.59294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 138,
+            "found": 137,
+            "ratio": 0.015481265425173883
+          },
+          "inDisease": false
+        },
+        {
+          "stId": "R-BTA-15869",
+          "dbId": 10449653,
+          "name": "Metabolism of nucleotides",
+          "species": {
+            "dbId": 48898,
+            "taxId": "9913",
+            "name": "Bos taurus"
+          },
+          "llp": false,
+          "entities": {
+            "resource": "TOTAL",
+            "total": 244,
+            "found": 85,
+            "ratio": 0.02269345238095238,
+            "pValue": 1.1102230246251565e-16,
+            "fdr": 3.6193270602780103e-14,
+            "exp": [8.643529411764709, 8.692941176470587, 8.375294117647057, 8.59294117647059]
+          },
+          "reactions": {
+            "resource": "TOTAL",
+            "total": 136,
+            "found": 135,
+            "ratio": 0.015904572564612324
+          },
+          "inDisease": false
+        }
+      ],
+      "resourceSummary": [
+        {
+          "resource": "TOTAL",
+          "pathways": 18829,
+          "filtered": 18829
+        },
+        {
+          "resource": "CHEBI",
+          "pathways": 18829,
+          "filtered": 18829
+        }
+      ],
+      "speciesSummary": [
+        {
+          "dbId": 48887,
+          "taxId": "9606",
+          "name": "Homo sapiens",
+          "pathways": 2202,
+          "filtered": 2202
+        },
+        {
+          "dbId": 48892,
+          "taxId": "10090",
+          "name": "Mus musculus",
+          "pathways": 1500,
+          "filtered": 1500
+        },
+        {
+          "dbId": 48895,
+          "taxId": "10116",
+          "name": "Rattus norvegicus",
+          "pathways": 1491,
+          "filtered": 1491
+        },
+        {
+          "dbId": 48898,
+          "taxId": "9913",
+          "name": "Bos taurus",
+          "pathways": 1464,
+          "filtered": 1464
+        },
+        {
+          "dbId": 49591,
+          "taxId": "9031",
+          "name": "Gallus gallus",
+          "pathways": 1461,
+          "filtered": 1461
+        },
+        {
+          "dbId": 49633,
+          "taxId": "9823",
+          "name": "Sus scrofa",
+          "pathways": 1450,
+          "filtered": 1450
+        },
+        {
+          "dbId": 49646,
+          "taxId": "9615",
+          "name": "Canis familiaris",
+          "pathways": 1450,
+          "filtered": 1450
+        },
+        {
+          "dbId": 68323,
+          "taxId": "7955",
+          "name": "Danio rerio",
+          "pathways": 1342,
+          "filtered": 1342
+        },
+        {
+          "dbId": 205621,
+          "taxId": "8364",
+          "name": "Xenopus tropicalis",
+          "pathways": 1271,
+          "filtered": 1271
+        },
+        {
+          "dbId": 56210,
+          "taxId": "7227",
+          "name": "Drosophila melanogaster",
+          "pathways": 1240,
+          "filtered": 1240
+        },
+        {
+          "dbId": 68320,
+          "taxId": "6239",
+          "name": "Caenorhabditis elegans",
+          "pathways": 1125,
+          "filtered": 1125
+        },
+        {
+          "dbId": 170941,
+          "taxId": "44689",
+          "name": "Dictyostelium discoideum",
+          "pathways": 900,
+          "filtered": 900
+        },
+        {
+          "dbId": 68324,
+          "taxId": "4896",
+          "name": "Schizosaccharomyces pombe",
+          "pathways": 702,
+          "filtered": 702
+        },
+        {
+          "dbId": 68322,
+          "taxId": "4932",
+          "name": "Saccharomyces cerevisiae",
+          "pathways": 694,
+          "filtered": 694
+        },
+        {
+          "dbId": 170928,
+          "taxId": "5833",
+          "name": "Plasmodium falciparum",
+          "pathways": 524,
+          "filtered": 524
+        },
+        {
+          "dbId": 176806,
+          "taxId": "1773",
+          "name": "Mycobacterium tuberculosis",
+          "pathways": 13,
+          "filtered": 13
+        }
+      ],
+      "warnings": []
+    }
+  },
+  {
+    "route": "GET /AnalysisService/token/T/found/all/R-HSA-71336",
+    "answer": {
+      "pathway": "R-HSA-71336",
+      "entities": [
+        {
+          "id": "C00080",
+          "exp": [12.2, 12.2, 12, 12.2],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["15378"]
+            }
+          ]
+        },
+        {
+          "id": "C00360",
+          "exp": [7.4, 7.8, 7.2, 7.6],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58245"]
+            }
+          ]
+        },
+        {
+          "id": "C00085",
+          "exp": [8.8, 8.8, 8.3, 8.7],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57634"]
+            }
+          ]
+        },
+        {
+          "id": "C00281",
+          "exp": [6.8, 6.7, 6.5, 6.9],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57483"]
+            }
+          ]
+        },
+        {
+          "id": "C00118",
+          "exp": [5.5, 5.7, 4.9, 5.7],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["59776"]
+            }
+          ]
+        },
+        {
+          "id": "C00119",
+          "exp": [8.1, 8.4, 7.7, 8.1],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58017"]
+            }
+          ]
+        },
+        {
+          "id": "C00117",
+          "exp": [8.3, 8.1, 7.9, 8.1],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["78346"]
+            }
+          ]
+        },
+        {
+          "id": "C00231",
+          "exp": [7.4, 7.6, 6.3, 7.2],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57737"]
+            }
+          ]
+        },
+        {
+          "id": "C00011",
+          "exp": [12.1, 12, 11.9, 11.9],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["16526"]
+            }
+          ]
+        },
+        {
+          "id": "C00199",
+          "exp": [9.9, 9.9, 9.4, 9.8],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58121"]
+            }
+          ]
+        },
+        {
+          "id": "C00131",
+          "exp": [5.9, 6.2, 7.2, 6.2],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["61404"]
+            }
+          ]
+        },
+        {
+          "id": "C00279",
+          "exp": [7.4, 7.2, 6.9, 7.5],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["16897"]
+            }
+          ]
+        },
+        {
+          "id": "C00668",
+          "exp": [7.5, 7.7, 6.9, 7.3],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58225"]
+            }
+          ]
+        },
+        {
+          "id": "C00305",
+          "exp": [8, 7.9, 7.6, 7.9],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["18420"]
+            }
+          ]
+        },
+        {
+          "id": "C00008",
+          "exp": [12.3, 12.3, 12.3, 12.4],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["456216"]
+            }
+          ]
+        },
+        {
+          "id": "C00009",
+          "exp": [10, 9.9, 8.8, 9.5],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["43474"]
+            }
+          ]
+        },
+        {
+          "id": "C00006",
+          "exp": [12.3, 12.2, 12, 12.1],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58349"]
+            }
+          ]
+        },
+        {
+          "id": "C00121",
+          "exp": [7.9, 7.2, 6.9, 8],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["47013"]
+            }
+          ]
+        },
+        {
+          "id": "C00023",
+          "exp": [11.5, 11.4, 11.2, 11.4],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["29033"]
+            }
+          ]
+        },
+        {
+          "id": "C00001",
+          "exp": [6.7, 6.8, 7.5, 7.1],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["15377"]
+            }
+          ]
+        },
+        {
+          "id": "C00020",
+          "exp": [8.8, 9.1, 8.3, 9.2],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["456215"]
+            }
+          ]
+        },
+        {
+          "id": "C01236",
+          "exp": [7.5, 7.5, 7.1, 7.1],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57955"]
+            }
+          ]
+        },
+        {
+          "id": "C00620",
+          "exp": [7.1, 7.2, 7.3, 7.4],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57259", "57720"]
+            }
+          ]
+        },
+        {
+          "id": "C00345",
+          "exp": [7.3, 7.3, 7.3, 7],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58759"]
+            }
+          ]
+        },
+        {
+          "id": "C00005",
+          "exp": [12.6, 12.5, 12.4, 12.5],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["57783"]
+            }
+          ]
+        },
+        {
+          "id": "C00068",
+          "exp": [9.8, 9.4, 9, 9.4],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["58937"]
+            }
+          ]
+        },
+        {
+          "id": "C00002",
+          "exp": [7.1, 7.1, 7, 7],
+          "mapsTo": [
+            {
+              "resource": "CHEBI",
+              "ids": ["30616"]
+            }
+          ]
+        }
+      ],
+      "interactors": [],
+      "resources": ["CHEBI"],
+      "expNames": ["Sample 1", "Sample 2", "Sample 3", "Sample 4"],
+      "foundEntities": 27,
+      "foundInteractors": 0
+    }
+  },
+  {
+    "route": "POST /AnalysisService/token/T/filter/pathways",
+    "answer": [
+      {
+        "stId": "R-HSA-71336",
+        "dbId": 71336,
+        "name": "Pentose phosphate pathway",
+        "species": {
+          "dbId": 48887,
+          "taxId": "9606",
+          "name": "Homo sapiens"
+        },
+        "llp": true,
+        "entities": {
+          "resource": "TOTAL",
+          "total": 46,
+          "found": 28,
+          "ratio": 0.002830595040305212,
+          "pValue": 1.1102230246251565e-16,
+          "fdr": 1.0103029524088925e-14,
+          "exp": [8.689285714285715, 8.689285714285713, 8.396428571428572, 8.664285714285713]
+        },
+        "reactions": {
+          "resource": "TOTAL",
+          "total": 20,
+          "found": 20,
+          "ratio": 0.0012430853378084406
+        },
+        "inDisease": false
+      }
+    ]
+  },
+  {
+    "route": "GET /AnalysisService/token/T/reactions/R-HSA-71336",
+    "answer": [
+      71296, 71299, 8982667, 163751, 71303, 71335, 6787329, 71334, 70377, 71306, 8955844, 73580,
+      111215, 8959719, 163764, 199803, 177784, 71324, 6787321, 163741
+    ]
+  },
+  {
+    "route": "GET /AnalysisService/token/T/notFound",
+    "answer": [
+      {
+        "id": "C00420",
+        "exp": [4, 3.8, 4, 3.9]
+      },
+      {
+        "id": "C00783",
+        "exp": [6.1, 5.8, 6.3, 6.1]
+      },
+      {
+        "id": "C02720",
+        "exp": [8.8, 8.6, 8.3, 8.5]
+      },
+      {
+        "id": "C01996",
+        "exp": [7, 7.5, 7.6, 7]
+      },
+      {
+        "id": "C01997",
+        "exp": [3.9, 3.9, 3.6, 4]
+      },
+      {
+        "id": "C02603",
+        "exp": [8.9, 9, 8.4, 8.6]
+      },
+      {
+        "id": "C01636",
+        "exp": [3.4, 3.4, 3.4, 3.4]
+      },
+      {
+        "id": "C02967",
+        "exp": [6.2, 6.6, 7.3, 6.5]
+      },
+      {
+        "id": "C01637",
+        "exp": [6.8, 6.2, 7.1, 6.5]
+      },
+      {
+        "id": "C01638",
+        "exp": [4.3, 4.2, 4, 3.9]
+      },
+      {
+        "id": "C02848",
+        "exp": [4.7, 4.5, 4.5, 4.8]
+      },
+      {
+        "id": "C02607",
+        "exp": [6, 6.1, 6.1, 6.2]
+      },
+      {
+        "id": "C00306",
+        "exp": [8.1, 8, 8.5, 7.6]
+      },
+      {
+        "id": "C00669",
+        "exp": [6.5, 6.8, 6.5, 6.8]
+      },
+      {
+        "id": "C00424",
+        "exp": [8.1, 8.7, 7.4, 8.3]
+      },
+      {
+        "id": "C00666",
+        "exp": [6.9, 6.4, 5.7, 6.6]
+      },
+      {
+        "id": "C00302",
+        "exp": [9.8, 9.9, 9.5, 9.7]
+      },
+      {
+        "id": "C00543",
+        "exp": [7.3, 7.7, 7.4, 7.2]
+      },
+      {
+        "id": "C00421",
+        "exp": [7, 7.3, 7, 7.2]
+      },
+      {
+        "id": "C01872",
+        "exp": [5.1, 5, 6, 4.8]
+      },
+      {
+        "id": "C00673",
+        "exp": [8.5, 8.3, 7.8, 8.6]
+      },
+      {
+        "id": "C01642",
+        "exp": [6.6, 6.5, 6.5, 6.8]
+      },
+      {
+        "id": "C00430",
+        "exp": [7.9, 8, 7.1, 7.3]
+      },
+      {
+        "id": "C00551",
+        "exp": [6, 5.6, 5.9, 6.2]
+      },
+      {
+        "id": "C01644",
+        "exp": [6.5, 6.1, 7.4, 6]
+      },
+      {
+        "id": "C02613",
+        "exp": [5.6, 5.9, 5.1, 6.3]
+      },
+      {
+        "id": "C02734",
+        "exp": [8.6, 8.3, 7.4, 8.2]
+      },
+      {
+        "id": "C01646",
+        "exp": [6.1, 6.3, 7.1, 6.2]
+      },
+      {
+        "id": "C01768",
+        "exp": [6.9, 7, 7.2, 6.8]
+      },
+      {
+        "id": "C01889",
+        "exp": [6.6, 6.4, 6.3, 6.5]
+      },
+      {
+        "id": "C01406",
+        "exp": [6.2, 5.7, 6.4, 6.3]
+      },
+      {
+        "id": "C01769",
+        "exp": [6.1, 6.1, 7.1, 6.2]
+      },
+      {
+        "id": "C01649",
+        "exp": [5, 4.9, 5.3, 5.3]
+      },
+      {
+        "id": "C01529",
+        "exp": [4.3, 4.1, 4.1, 4.1]
+      },
+      {
+        "id": "C00317",
+        "exp": [4.2, 3.6, 4.4, 3.6]
+      },
+      {
+        "id": "C00679",
+        "exp": [6.6, 7, 5.7, 6.5]
+      },
+      {
+        "id": "C00677",
+        "exp": [7.7, 7.6, 7.2, 7.6]
+      },
+      {
+        "id": "C00434",
+        "exp": [8.2, 8.5, 8.1, 8.1]
+      },
+      {
+        "id": "C00555",
+        "exp": [4.6, 4.6, 5.5, 5.2]
+      },
+      {
+        "id": "C00676",
+        "exp": [5.9, 6.4, 6.2, 6.1]
+      }
+    ]
+  }
+]
