@@ -12,11 +12,16 @@
  *   http             GET, POST, or FETCH
  *   route            under /ContentService; {x} matches one path segment; a
  *                    list where one call chooses between routes
- *   query            query values that pick this reader over another of the
- *                    same route (the pathway browser's icon search)
+ *   query            query values that pick this reader over others of the
+ *                    same route that name none (the pathway browser's icon
+ *                    search); null for a parameter the call never sends
  *   type             the type the answer is compiled as, written as in
  *                    TypeScript, with its names from TYPES; 'text' and 'blob'
  *                    answers are listed and not compiled
+ *   reads            what the source reads the answer as, where that is a
+ *                    type parameter the caller chooses (`T`, `E`): `type` is
+ *                    then the most the source promises for every caller, and
+ *                    the call table check compares `reads` with the source
  *   gap              why no recorded answer covers it; the check fails if one
  *                    does, so the table cannot fall behind the recordings
  *   indirect         the URL comes from outside the file (a profile setting,
@@ -88,17 +93,17 @@ export const CALLS = [
   { file: `${PB}/services/citation.service.ts`, method: 'getCitation', n: 2, http: 'GET', route: '/citation/pathway/{id}', type: 'PathwayCitation', gap: 'the recordings never cite a pathway' },
   { file: `${PB}/services/data-state.service.ts`, method: 'getReacfoamFlagging', http: 'GET', route: '/search/fireworks/flag', type: 'SpeciesOverviewFlagResult', gap: 'recorded only as aborted requests' },
   { file: `${PB}/services/data-state.service.ts`, method: 'getDiagramFlagging', http: 'GET', route: '/search/diagram/{id}/flag', type: 'DiagramFlagResult' },
-  { file: `${PB}/services/data-state.service.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject' },
-  { file: `${PB}/services/data-state.service.ts`, method: 'fetchAncestors', http: 'GET', route: '/data/event/{id}/ancestors', type: 'Pathway[][]' },
-  { file: `${PB}/services/database-object.service.ts`, method: 'fetchSimpleData', http: 'GET', route: '/data/query/{id}', type: 'DatabaseObject' },
-  { file: `${PB}/services/database-object.service.ts`, method: 'fetchEnhancedEntry', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject' },
+  { file: `${PB}/services/data-state.service.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject', reads: 'T' },
+  { file: `${PB}/services/data-state.service.ts`, method: 'fetchAncestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: 'true' }, type: 'Pathway[][]' },
+  { file: `${PB}/services/database-object.service.ts`, method: 'fetchSimpleData', http: 'GET', route: '/data/query/{id}', type: 'DatabaseObject', reads: 'T' },
+  { file: `${PB}/services/database-object.service.ts`, method: 'fetchEnhancedEntry', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject', reads: 'T' },
   { file: `${PB}/services/diagram.service.ts`, method: 'getNormalPathway', http: 'GET', route: '/data/query/{id}/normalPathway', type: 'text' },
   { file: `${PB}/services/entity.service.ts`, method: 'getOtherForms', http: 'GET', route: '/data/entity/{id}/otherForms', type: 'PhysicalEntity[]' },
   { file: `${PB}/services/entity.service.ts`, method: 'getParticipatingPathways', http: 'GET', route: '/data/pathways/low/entity/{id}', type: 'Pathway[]' },
-  { file: `${PB}/services/entity.service.ts`, method: 'getEntityInDepth', http: 'GET', route: '/data/entity/{id}/in-depth', type: 'DatabaseObject | null', gap: 'never recorded' },
-  { file: `${PB}/services/entity.service.ts`, method: 'getEventInDepth', http: 'GET', route: '/data/event/{id}/in-depth', type: 'DatabaseObject', gap: 'never recorded' },
+  { file: `${PB}/services/entity.service.ts`, method: 'getEntityInDepth', http: 'GET', route: '/data/entity/{id}/in-depth', type: 'DatabaseObject | null', reads: 'E | null', gap: 'never recorded' },
+  { file: `${PB}/services/entity.service.ts`, method: 'getEventInDepth', http: 'GET', route: '/data/event/{id}/in-depth', type: 'DatabaseObject', reads: 'E', gap: 'never recorded' },
   { file: `${PB}/services/event.service.ts`, method: 'fetchTlpsBySpecies', http: 'GET', route: '/data/pathways/top/{taxId}', type: 'TopLevelPathway[]' },
-  { file: `${PB}/services/event.service.ts`, method: 'fetchEventAncestors', http: 'GET', route: '/data/event/{id}/ancestors', type: 'Pathway[][]' },
+  { file: `${PB}/services/event.service.ts`, method: 'fetchEventAncestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: null }, type: 'Pathway[][]' },
   { file: `${PB}/services/general.service.ts`, method: 'version', http: 'GET', route: '/data/database/version', type: 'number' },
   { file: `${PB}/services/general.service.ts`, method: 'version', n: 2, http: 'GET', route: '/data/database/version', type: 'number', indirect: 'another deployment, named by the profile' },
   { file: `${PB}/services/icon.service.ts`, method: 'fetchIcon', http: 'GET', route: '/search/query', query: { types: 'Icon' }, type: 'Search.Icon.Result' },
@@ -122,15 +127,15 @@ export const CALLS = [
   { file: `${WEB}/app/content/detail/locations-tree/locations-tree.component.ts`, method: 'fetchLocations', http: 'GET', route: '/data/detail/{id}/locationsInPWB', type: 'PathwayBrowserNode[]' },
   { file: `${WEB}/app/content/detail/person-detail/person-detail.component.ts`, method: 'person', http: 'GET', route: '/data/person/{id}', type: 'Person' },
   { file: `${WEB}/app/content/detail/person-detail/person-detail.component.ts`, method: 'fetchEvents', http: 'GET', route: '/data/person/{id}/{list}', type: 'SimpleEvent[] | null' },
-  { file: `${WEB}/app/content/detail/providers/detail-data-state.provider.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject' },
+  { file: `${WEB}/app/content/detail/providers/detail-data-state.provider.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject', reads: 'T' },
   { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getOtherForms', http: 'GET', route: '/data/entity/{id}/otherForms', type: 'PhysicalEntity[]' },
   { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getParticipatingPathways', http: 'GET', route: '/data/pathways/low/entity/{id}', type: 'Pathway[]' },
-  { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEntityInDepth', http: 'GET', route: '/data/entity/{id}/in-depth', type: 'DatabaseObject | null', gap: 'never recorded' },
-  { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEventInDepth', http: 'GET', route: '/data/event/{id}/in-depth', type: 'DatabaseObject', gap: 'never recorded' },
+  { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEntityInDepth', http: 'GET', route: '/data/entity/{id}/in-depth', type: 'DatabaseObject | null', reads: 'E | null', gap: 'never recorded' },
+  { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEventInDepth', http: 'GET', route: '/data/event/{id}/in-depth', type: 'DatabaseObject', reads: 'E', gap: 'never recorded' },
   { file: `${WEB}/app/content/detail/providers/detail-interactor.provider.ts`, method: 'getCustomInteractorsByAcc', http: 'GET', route: '/interactors/static/molecule/enhanced/{acc}/details', type: 'CustomInteraction[]' },
   { file: `${WEB}/app/idg/idg.service.ts`, method: 'detail', http: 'GET', route: '/data/query/enhanced/{id}', type: '{ summation?: { text?: string }[] }' },
-  { file: `${WEB}/app/idg/idg.service.ts`, method: 'ancestors', http: 'GET', route: '/data/event/{id}/ancestors', type: '{ stId: string; displayName: string }[][]' },
-  { file: `${WEB}/services/content-data.service.ts`, method: 'fetchModel', http: 'GET', route: '/data/schema/model', type: 'SchemaNode' },
+  { file: `${WEB}/app/idg/idg.service.ts`, method: 'ancestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: null }, type: '{ stId: string; displayName: string }[][]' },
+  { file: `${WEB}/services/content-data.service.ts`, method: 'fetchModel', http: 'GET', route: '/data/schema/model', type: 'SchemaNode', reads: 'T' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getTocPathways', http: 'GET', route: '/data/content/toc', type: 'TocPathway[]' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getDoiPathways', http: 'GET', route: '/data/content/doi', type: 'DoiPathway[]' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getContributors', http: 'GET', route: '/data/content/contributors', type: 'Contributor[]' },
@@ -140,7 +145,7 @@ export const CALLS = [
   { file: `${WEB}/services/content-data.service.ts`, method: 'getSchemaCount', http: 'GET', route: '/data/schema/{class}/count', type: 'number' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getInstance', http: 'GET', route: '/data/query/enhanced/{id}', type: 'any' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getInstanceReferrers', http: 'GET', route: '/data/instance/{id}/referrers', type: 'InstanceReferrals[]', gap: 'the recordings never open an instance’s referrers' },
-  { file: `${WEB}/services/detail-data.service.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject' },
+  { file: `${WEB}/services/detail-data.service.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject', reads: 'T' },
   { file: `${WEB}/services/icon.service.ts`, method: 'getFacets', http: 'GET', route: '/search/icon/facet', type: 'IconFacetResponse' },
   { file: `${WEB}/services/icon.service.ts`, method: 'queryIcons', http: 'GET', route: '/search/icon/query', type: 'IconResult' },
   { file: `${WEB}/services/icon.service.ts`, method: 'getIcon', http: 'GET', route: '/search/icon/{id}', type: 'IconEntry', gap: 'the recordings never open one icon' },

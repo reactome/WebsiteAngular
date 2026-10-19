@@ -38,8 +38,8 @@ const leaf: EventsHierarchy.Data = {
 };
 
 describe('the species overview filters', () => {
-  it('exclude a pathway without expression values from an expression filter, not throw', () => {
-    for (const filter of [{ minExpression: 1 }, { maxExpression: 1 }]) {
+  it('exclude a pathway without expression values from an expression or GSA filter, not throw', () => {
+    for (const filter of [{ minExpression: 1 }, { maxExpression: 1 }, { gsa: new Set([1]) }]) {
       expect(service(filter).event2group(leaf, new Map(), new Map())).toEqual([]);
     }
   });

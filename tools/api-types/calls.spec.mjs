@@ -33,13 +33,27 @@ const READ_AS_ANYTHING = [
   'projects/website-angular/src/services/content-data.service.ts › getInstance',
 ];
 
-export function differences(calls, scanned) {
-  const table = new Set(calls.filter((c) => !c.indirect).map(where));
-  const source = new Set(numbered(scanned).map(where));
-  return [
-    ...[...source].filter((w) => !table.has(w)).map((w) => `not in the table: ${w}`),
-    ...[...table].filter((w) => !source.has(w)).map((w) => `no longer in the source: ${w}`),
-  ];
+const flat = (type) => type.replace(/\s+/g, ' ').replace(/;\s*}/g, ' }');
+
+/**
+ * Where the table and the source disagree: a call only one of them has, or
+ * one whose method or answer type differs. Matching by place alone let a call
+ * change its type, or two calls in one method swap, unseen (review of #542).
+ */
+function differences(calls, scanned) {
+  const table = new Map(calls.filter((c) => !c.indirect).map((c) => [where(c), c]));
+  const source = new Map(numbered(scanned).map((c) => [where(c), c]));
+  const found = [];
+  for (const [w, c] of source) {
+    const entry = table.get(w);
+    if (!entry) found.push(`not in the table: ${w}`);
+    else if (entry.http !== c.http || flat(entry.reads ?? entry.type) !== flat(c.readAs))
+      found.push(
+        `differs from the source: ${w}: the table says ${entry.http} ${entry.reads ?? entry.type}, the source ${c.http} ${c.readAs}`
+      );
+  }
+  for (const w of table.keys()) if (!source.has(w)) found.push(`no longer in the source: ${w}`);
+  return found;
 }
 
 describe('the call table', () => {
@@ -58,6 +72,25 @@ describe('the call table', () => {
     expect(differences(CALLS, scanned.slice(1))).toEqual([
       `no longer in the source: ${where(numbered(scanned)[0])}`,
     ]);
+  });
+
+  it('notices a call whose answer type or method changed, or two calls that swapped', () => {
+    const first = numbered(scanned)[0];
+    const retyped = scanned.map((c, i) => (i === 0 ? { ...c, readAs: 'Other[]' } : c));
+    expect(differences(CALLS, retyped)).toEqual([
+      expect.stringMatching(
+        new RegExp(
+          `^differs from the source: .*${first.method}.*the source ${first.http} Other\\[\\]$`
+        )
+      ),
+    ]);
+    const posted = scanned.map((c, i) => (i === 0 ? { ...c, http: 'POST' } : c));
+    expect(differences(CALLS, posted)).toHaveLength(1);
+    // breadcrumb's two calls read different types: in the other order, both differ.
+    const i = scanned.findIndex((c) => c.file.endsWith('breadcrumb.component.ts'));
+    const swapped = [...scanned];
+    [swapped[i], swapped[i + 1]] = [swapped[i + 1], swapped[i]];
+    expect(differences(CALLS, swapped)).toHaveLength(2);
   });
 
   it('finds, by name, the calls whose URL comes from outside their file', () => {

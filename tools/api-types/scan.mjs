@@ -6,6 +6,13 @@
  *
  * A call is an `HttpClient` get/post/put/delete/request, or a `fetch()`, whose
  * URL depends on `CONTENT_SERVICE` or a literal `/ContentService`.
+ *
+ * It follows a URL through a variable, a class property, or a `this.x = …`
+ * set in the file. It does not follow a URL a method of the class builds
+ * (`this.url(p)`), one from a helper in another file, or a client called
+ * through another name (`const c = this.http`): none of these is in the
+ * source today (checked independently in the review of #542). A call written
+ * that way is not seen, so write content API calls plainly.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -72,7 +79,7 @@ function reachesContent(expression, sourceFile, seen = new Set()) {
   return reaches;
 }
 
-/** The initializer of a variable, property or parameter default named `name`, if any. */
+/** The value given a variable, property or parameter default named `name`, or a `this.name = …`, if any. */
 function findDeclaration(sourceFile, name) {
   let found;
   const visit = (node) => {
@@ -83,6 +90,14 @@ function findDeclaration(sourceFile, name) {
       node.initializer
     )
       found = node.initializer;
+    else if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(node.left) &&
+      node.left.expression.kind === ts.SyntaxKind.ThisKeyword &&
+      node.left.name.text === name
+    )
+      found = node.right;
     else ts.forEachChild(node, visit);
   };
   visit(sourceFile);

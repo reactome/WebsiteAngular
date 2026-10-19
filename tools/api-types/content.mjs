@@ -25,6 +25,7 @@ const placeholders = (route) => route.match(/\{\w+\}/g)?.length ?? 0;
 /** The route of `call` that `answer` was asked on, if it is one this call reads. */
 function routeOf(call, answer) {
   if (call.http !== answer.method || NOT_JSON.has(call.type)) return undefined;
+  // A value is the one the call sends; null, a parameter it never sends.
   if (call.query && Object.entries(call.query).some(([k, v]) => answer.query.get(k) !== v))
     return undefined;
   return routes(call).find((r) => pattern(r).test(answer.path));
@@ -51,11 +52,15 @@ export function matchAnswers(recorded = recordedAnswers()) {
   for (const answer of recorded.answers) {
     // A route written out wins over one with a placeholder that also fits:
     // /search/icon/query is not an icon called "query".
-    const readers = CALLS.map((call) => [call, routeOf(call, answer)]).filter(([, r]) => r);
+    let readers = CALLS.map((call) => [call, routeOf(call, answer)]).filter(([, r]) => r);
     const fewest = Math.min(...readers.map(([, r]) => placeholders(r)));
+    readers = readers.filter(([, r]) => placeholders(r) === fewest);
+    // A reader that names the query it sends is the one reading this answer:
+    // the website's search never asks for icons, so an icon search's answer is
+    // the pathway browser's alone.
+    if (readers.some(([call]) => call.query)) readers = readers.filter(([call]) => call.query);
     const read = readers.length > 0;
     for (const [call, route] of readers) {
-      if (placeholders(route) > fewest) continue;
       coverage.set(call, coverage.get(call) + 1);
       const key = createHash('sha1')
         .update(call.type)
@@ -65,7 +70,9 @@ export function matchAnswers(recorded = recordedAnswers()) {
       if (!checks.has(key))
         checks.set(key, {
           key,
-          route: `${answer.method} ${route}`,
+          // Per route and type read: two readers of one route are counted
+          // apart, so one's progress cannot hide the other's regression.
+          route: `${answer.method} ${route} as ${call.type}`,
           source: answer.source,
           type: call.type,
           body: answer.body,

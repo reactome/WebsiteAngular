@@ -50,6 +50,36 @@ group('compileAnswers', () => {
     );
   }, 60_000);
 
+  // The compiler names only the first extra field of an object, and an extra
+  // field hides a missing one: counted that way, a type could fit worse and
+  // the count stay the same (review of #542).
+  it('names every extra field of an object, not only the first', () => {
+    const problems = check('Thing', { id: 1, name: 'a', x: 1, y: 2 });
+    expect(problems).toHaveLength(2);
+    expect(problems.join('\n')).toMatch(/\$\.x: .*'x' does not exist/);
+    expect(problems.join('\n')).toMatch(/\$\.y: .*'y' does not exist/);
+  }, 60_000);
+
+  it('names a missing field beside an extra one, and an extra beside a wrong kind', () => {
+    expect(check('Thing', { id: 1, extra: 1 })).toEqual([
+      expect.stringMatching(/: \$: .*'name' is missing/),
+      expect.stringMatching(/: \$\.extra: .*'extra' does not exist/),
+    ]);
+    const problems = check('Thing', { id: '1', name: 'a', z: 1 });
+    expect(problems).toHaveLength(2);
+    expect(problems.join('\n')).toMatch(/\$\.z: .*'z' does not exist/);
+    expect(problems.join('\n')).toMatch(/\$\.id: Type 'string' is not assignable to type 'number'/);
+  }, 60_000);
+
+  it('allows any field where the type does, but still requires the ones it names', () => {
+    expect(check('Record<string, number>', { a: 1, b: 2 })).toEqual([]);
+    const open = 'Thing & { [key: string]: unknown }';
+    expect(check(open, { id: 1, name: 'a', extra: 1 })).toEqual([]);
+    expect(check(open, { id: 1, extra: 1 })).toEqual([
+      expect.stringMatching(/: \$: .*'name' is missing/),
+    ]);
+  }, 60_000);
+
   it('fails every answer when its type cannot be found, never passes them', () => {
     const missing = `import type { Thing } from ${JSON.stringify(path.join(import.meta.dirname, 'fixtures/absent.model'))};`;
     expect(check('Thing', { id: 1, name: 'a' }, missing).join('\n')).toMatch(/Cannot find module/);
