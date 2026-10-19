@@ -284,3 +284,25 @@ Standard form narrows these past their declared type, because each would otherwi
 - `view` and `includeRef` where Java ignores them: the site sends them there (e.g. `ancestors`), and there are 3 × 2 spellings.
 - A default given explicitly (`includeRef=false`).
 - A list given as one value or repeated (`types=A,B`, `types=A&types=B`), and its order.
+
+## R14. The site's own requests, audited (run 19 Oct 2026)
+
+**The audit:** the whole e2e suite was run with `E2E_CACHE_AUDIT` set. Each content API request the site made was recorded, then classified with `node tools/content-node/classify.mjs <file>`. The fixture only records: Playwright compiles test code to CommonJS, where the record's modules cannot load.
+
+**First run:** 401 of 433 distinct requests answered by node were in standard form. The 32 others were the site sending parameters an endpoint does not take. Java ignores those, so removing them changes no answer:
+
+| Was                                                                                              | Count | Fix                                                                     |
+| ------------------------------------------------------------------------------------------------ | ----- | ----------------------------------------------------------------------- |
+| `cluster=true` on `/search/facet_query`                                                          | 8     | `search.service.ts`: removed for facets (only `/search/query` takes it) |
+| `diagram`, `species` on `/search/diagram/{d}`; `diagram` on `/search/fireworks`                  | 9     | `search.component.ts`: not spread into those requests                   |
+| `scope` on `/search/diagram/{d}/flag`; `scope`, `includeInteractors` on `/search/fireworks/flag` | 7     | `data-state.service.ts`: only the parameters each takes                 |
+| `fields=%20DB_ID`                                                                                | 2     | `search.component.ts`: `'DB_ID'`                                        |
+
+The callers of `/data/query/enhanced/v2/{id}` now send the same parameter set. `database-object.service.ts` adds the default `fetchIncomingRelationships=true`, which the Pathway Browser's data state and the website's two callers already sent, so one object is one cache entry (order aside, which the Cache Rule's sorted query string removes).
+
+**The recordings:** the 191 e2e recordings holding the old URLs were renamed in place. Only those URL strings changed, which a script checked file by file.
+
+**Second run:** 413 tests passed (6 skipped), and 420 of 426 distinct node requests are standard. The six left are reviewed and stay:
+
+- `citation/pathway/{id}?dateAccessed=…`: never cached by design (R5).
+- `R-HSA-0000001` (4 requests) and `P04637%2F1`: tests that ask for a missing or malformed id on purpose.

@@ -124,7 +124,9 @@ export class SearchService {
   }
 
   getFacets(query: string, filters: SearchFilters = {}): Observable<FacetResponse> {
-    const params = this.buildParams(query, filters);
+    // facet_query takes no `cluster` (only /query does): sent, it changes
+    // nothing, and the URL is not the one the edge cache keeps (spec 011).
+    const params = this.buildParams(query, filters).delete('cluster');
     return this.http.get<FacetResponse>(`${this.baseUrl}/facet_query`, {
       params,
     });

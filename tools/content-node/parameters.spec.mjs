@@ -18,8 +18,10 @@ const variables = (path) => [...path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 const shape = (path) => path.replace(/\{[^}]+\}/g, '{}');
 
 describe('the record', () => {
-  it('has one entry for each GET endpoint node answers, and no other', () => {
-    expect(Object.keys(RECORD).sort()).toEqual([...GETS].sort());
+  it('has one entry for each GET endpoint node answers, and no other, in the order Express routes them', () => {
+    // The order is what classify.mjs relies on to find the endpoint a URL
+    // reaches, a literal route before the template that would also match it.
+    expect(Object.keys(RECORD)).toEqual(GETS);
   });
 
   it("names a GET operation in Java's published description, of the same shape, or says why not", () => {

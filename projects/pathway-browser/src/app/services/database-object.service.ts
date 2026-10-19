@@ -33,6 +33,9 @@ export class DatabaseObjectService {
           view: 'nested-aggregated',
           summariseReferenceEntity,
           includeDisease: true,
+          // As the data state asks for it, so the two share an edge cache
+          // entry (spec 011); true is the endpoint's default.
+          fetchIncomingRelationships: true,
         },
       })
       .pipe(

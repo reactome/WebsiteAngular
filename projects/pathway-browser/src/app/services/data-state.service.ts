@@ -182,7 +182,9 @@ export class DataStateService {
   getReacfoamFlagging(query: string, species: string): Observable<FlaggingResult> {
     return this.http
       .get<SpeciesOverviewFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
-        params: { query, species, scope: 'REFERENCE_ENTITY', includeInteractors: false },
+        // Only what the endpoint takes: anything more changes nothing, and
+        // keeps the answer out of the edge cache (spec 011).
+        params: { query, species },
       })
       .pipe(
         // 404 is ContentService's "no match"; anything else is a failure.
@@ -199,7 +201,8 @@ export class DataStateService {
   getDiagramFlagging(diagram: string, query: string): Observable<FlaggingResult> {
     return this.http
       .get<DiagramFlagResult>(`${CONTENT_SERVICE}/search/diagram/${diagram}/flag`, {
-        params: { query, scope: 'REFERENCE_ENTITY', includeInteractors: false },
+        // Only what the endpoint takes (no `scope`): spec 011.
+        params: { query, includeInteractors: false },
       })
       .pipe(
         // 404 is ContentService's "no match"; anything else is a failure,
