@@ -5,7 +5,7 @@ measurements it rests on. Written down because the reasoning is not recoverable
 from the code: several of the choices below exist because a probe came back the
 opposite of what was expected.
 
-Status: **decided, not yet built.** The work queue is at the bottom.
+Status: **built** (spec 011, `specs/011-api-cache-headers`), but caching nothing yet: the labels are on every answer node gives, and Cloudflare stores nothing until its Cache Rule is on (#527). What each answer carries, and why: [contracts/cache-labels.md](../../specs/011-api-cache-headers/contracts/cache-labels.md). The work queue is at the bottom.
 
 ## The question
 
@@ -183,13 +183,13 @@ one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
 
 ## Work queue
 
-1. **Parameter schema** per endpoint — name, type, range, default — seeded from
-   the OpenAPI spec.
-2. **Extend `diff.mjs` to invalid inputs** (`page=abc`, `page=-1`,
-   `offset=99999999`, `species=abc`). Parity on the error paths has to be proven
-   before the conformance decision can be trusted.
-3. **`Cache-Control` headers** driven by the schema, with the `token`
-   exclusion, and the release question in constraint 2 settled.
+1. ~~**Parameter schema** per endpoint~~ — `parameters.mjs`, held to Java's
+   published description (#530).
+2. ~~**Invalid inputs against Java**~~ — `invalid-inputs.mjs`; 309 of 328
+   identical, the rest declared (#530).
+3. ~~**`Cache-Control` headers**~~ — `cache-label.mjs` (#531); one URL per answer
+   (#532); the site's own requests in standard form (#533); release day: purge,
+   then `warm.mjs`.
 4. **Cloudflare**: the rate-limiting rule first (no origin change needed), then
    URL normalization, incoming and to origin (#527), then the Cache Rule once
    the origin emits headers.
