@@ -15,54 +15,13 @@ import {
   CONTENT_SERVICE,
   CONTENT_DETAIL_PATH,
 } from '../../../../../../pathway-browser/src/environments/environment';
-
-interface Affiliation {
-  dbId: number;
-  displayName: string;
-  address?: string;
-  name?: string[];
-}
-
-interface Publication {
-  dbId: number;
-  title?: string;
-  displayName?: string;
-  author?: number[];
-  journal?: string;
-  pages?: string;
-  pubMedIdentifier?: number;
-  url?: string;
-  volume?: number;
-  year?: number;
-}
-
-interface Person {
-  dbId: number;
-  displayName: string;
-  firstname?: string;
-  surname?: string;
-  initial?: string;
-  orcidId?: string;
-  project?: string;
-  affiliation?: Affiliation[];
-  publications?: Publication[];
-}
+import { Person, SimpleEvent } from '../../../../model/person.model';
 
 type SectionKey =
   'authoredPathways' | 'authoredReactions' | 'reviewedPathways' | 'reviewedReactions';
 
 /** Only a 404 means "there is none"; anything else is a failure to say so. */
 const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
-
-// Returned by /data/person/{id}/{authored,reviewed}{Pathways,Reactions}.
-// Matches Reactome's SimpleEventProjection DTO.
-interface SimpleEvent {
-  dbId: number;
-  stId: string;
-  displayName: string;
-  speciesName?: string;
-  schemaClass?: string;
-}
 
 @Component({
   selector: 'app-person-detail',

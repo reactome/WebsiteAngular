@@ -15,15 +15,15 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Create `tools/api-types/compile.mjs` from #540's `typeProblems` (`tools/analysis-types/analysis-model.spec.mjs`): answers → virtual files → diagnostics, with the project's tsconfig, `types: []`, `noUnusedLocals: false`; each diagnostic mapped from its position back to the JSON path of the value it points at (research R3). Test in `tools/api-types/compile.spec.mjs`: a missing field, an undeclared field and a wrong kind each report the right path; a missing import fails every answer ("Cannot find"), not a silent pass.
-- [ ] T002 Move `tools/analysis-types/analysis-model.spec.mjs` onto `compile.mjs`, unchanged in what it checks; its mutation tests still fail as before.
+- [x] T001 Create `tools/api-types/compile.mjs` from #540's `typeProblems` (`tools/analysis-types/analysis-model.spec.mjs`): answers → virtual files → diagnostics, with the project's tsconfig, `types: []`, `noUnusedLocals: false`; each diagnostic mapped from its position back to the JSON path of the value it points at (research R3). Test in `tools/api-types/compile.spec.mjs`: a missing field, an undeclared field and a wrong kind each report the right path; a missing import fails every answer ("Cannot find"), not a silent pass. — #542
+- [x] T002 Move `tools/analysis-types/analysis-model.spec.mjs` onto `compile.mjs`, unchanged in what it checks; its mutation tests still fail as before. — #542
 
 ---
 
 ## Phase 2: Foundational
 
-- [ ] T003 Create `tools/api-types/answers.mjs`: read `e2e/har/*.har` (bodies via `response.content._file`) and `tools/api-types/recorded/*.json`; keep 200 JSON answers with a body; normalise routes (stIds, dbIds, accessions, tokens, classes, research R2); count what is skipped (not 200, no body, not JSON). Test against a small fixture directory.
-- [ ] T004 [P] Move the types the check imports out of component and service files into model files, unchanged: `Search` (from `projects/pathway-browser/src/app/viewport/search/search.component.ts`) to `model/search.model.ts`; `EventsHierarchy` (from `reacfoam/reacfoam.service.ts`) to `model/events-hierarchy.model.ts`; the website's search, icon and content shapes to `projects/website-angular/src/model/`. Imports updated; type check, lint and dead-code counts unchanged.
+- [x] T003 Create `tools/api-types/answers.mjs`: read `e2e/har/*.har` (bodies via `response.content._file`) and `tools/api-types/recorded/*.json`; keep 200 JSON answers with a body; normalise routes (stIds, dbIds, accessions, tokens, classes, research R2); count what is skipped (not 200, no body, not JSON). Test against a small fixture directory. — #542
+- [x] T004 [P] Move the types the check imports out of component and service files into model files, unchanged: `Search` (from `projects/pathway-browser/src/app/viewport/search/search.component.ts`) to `model/search.model.ts`; `EventsHierarchy` (from `reacfoam/reacfoam.service.ts`) to `model/events-hierarchy.model.ts`; the website's search, icon and content shapes to `projects/website-angular/src/model/`. Imports updated; type check, lint and dead-code counts unchanged. — #542
 
 ---
 
@@ -31,10 +31,11 @@
 
 **Goal**: the instrument. **Independent test**: [quickstart](quickstart.md) steps 1–6.
 
-- [ ] T005 [US2] Write `tools/api-types/calls.mjs`: the 75 calls of research R1 (file, method, http, route, params, type, coverage), with `text`/`blob` for the four non-JSON reads and `gap: …` for the routes in R2's gap list.
-- [ ] T006 [US2] Write `tools/api-types/calls.spec.mjs`: the source scan (compiler API over `projects/**/src`, specs excluded) finds every `HttpClient` call and `fetch()` whose URL uses `CONTENT_SERVICE` or a literal `/ContentService`, and fails on one not in the table, an entry with no call, or a call read as `any`/`unknown` (listed until US2's typing tasks clear them, then failing). Show it failing by adding a call and by deleting an entry.
-- [ ] T007 [US1] Write `tools/api-types/content.spec.mjs`: match each answer to its call (route pattern and shape-changing params), compile each route group as its own program (eventsHierarchy; `query/enhanced/v2`; the rest in two), report problems in the contract's format, and list answers no call reads. Show it failing with quickstart steps 1–4.
-- [ ] T008 [US1] Add `tools/api-types/known-problems.json` and the ratchet (data-model): seed it with today's counts per route; fail when a count rises, and when a count falls without the file being lowered. Show both failing (quickstart step 5).
+- [x] T005 [US2] Write `tools/api-types/calls.mjs`: the 75 calls of research R1 (file, method, http, route, params, type, coverage), with `text`/`blob` for the four non-JSON reads and `gap: …` for the routes in R2's gap list. — #542
+- [x] T006 [US2] Write `tools/api-types/calls.spec.mjs`: the source scan (compiler API over `projects/**/src`, specs excluded) finds every `HttpClient` call and `fetch()` whose URL uses `CONTENT_SERVICE` or a literal `/ContentService`, and fails on one not in the table, an entry with no call, or a call read as `any`/`unknown` (listed until US2's typing tasks clear them, then failing). Show it failing by adding a call and by deleting an entry. — #542
+- [x] T007 [US1] Write `tools/api-types/content.spec.mjs`: match each answer to its call (route pattern and shape-changing params), compile each route group as its own program (eventsHierarchy; `query/enhanced/v2`; the rest in two), report problems in the contract's format, and list answers no call reads. Show it failing with quickstart steps 1–4. — #542
+- [x] T008 [US1] Add `tools/api-types/known-problems.json` and the ratchet (data-model): seed it with today's counts per route; fail when a count rises, and when a count falls without the file being lowered. Show both failing (quickstart step 5). — #542
+  - The first run found, and #542 fixed: `/data/eventsHierarchy` leaves `entities.exp` out for an analysis without expression values, and the species overview's expression filters indexed it (`exp[sample]`), which throws; now `exp?.[sample]`, with a test that throws on the old code. The other 27 route-and-type pairs are counted in `known-problems.json` (24,847 problems). Review of #542: problems are counted per field, not per compiler message (which hid each other), and per route and type read; the call table is compared with the source by method and type as well as place; a reader's query values pick it over others of the route.
 - [ ] T009 [US2] Remove the two reads with no callers (`DatabaseObjectService.fetchSimpleData`, `SpeciesService.getOrtholog`) and their table entries; dead-code count goes down.
 - [ ] T010 [US2] Type the four `any` reads (`entity-popup.component.ts` `/data/query/enhanced/{id}`, `/data/query/{id}`, `/interactors/static/molecule/{acc}/details`; `content-data.service.ts` `getInstance`) with named types from their recorded answers (or `gap` until the corpus, T030); the call table's "read as anything" list is empty.
 

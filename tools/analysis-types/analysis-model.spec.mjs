@@ -8,10 +8,9 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { compileAnswers, describe as describeProblem, ROOT } from '../api-types/compile.mjs';
 
-const ROOT = path.join(import.meta.dirname, '..', '..');
 const HARS = path.join(ROOT, 'e2e', 'har');
 const RECORDED = path.join(import.meta.dirname, 'recorded');
 const MODEL = path.join(ROOT, 'projects/pathway-browser/src/app/model/analysis.model');
@@ -45,7 +44,13 @@ function recordedAnswers(dir = HARS) {
       if (!kind) continue;
       const body = readFileSync(path.join(dir, file), 'utf8');
       const key = createHash('sha1').update(kind[2]).update(body).digest('hex').slice(0, 10);
-      answers.set(key, { key, route: `${request.method} ${route}`, type: kind[2], body });
+      answers.set(key, {
+        key,
+        route: `${request.method} ${route}`,
+        source: name,
+        type: kind[2],
+        body,
+      });
     }
   }
   // The kinds of analysis the recordings never run, recorded by record.mjs.
@@ -57,59 +62,17 @@ function recordedAnswers(dir = HARS) {
       if (!kind) throw new Error(`${name}: nothing reads ${route}`);
       const body = JSON.stringify(answer);
       const key = createHash('sha1').update(kind[2]).update(body).digest('hex').slice(0, 10);
-      answers.set(key, { key, route: `${method} ${pathname} [${name}]`, type: kind[2], body });
+      answers.set(key, { key, route: `${method} ${pathname}`, source: name, type: kind[2], body });
     }
   }
   return [...answers.values()];
 }
 
-/**
- * Compile each answer as `const answer: <type> = <body>` with the project's own
- * compiler options; the problems found, one line per answer and message.
- */
-function typeProblems(answers) {
-  const config = ts.getParsedCommandLineOfConfigFile(
-    path.join(ROOT, 'tsconfig.json'),
-    {},
-    { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} }
+/** The problems found compiling `answers`, one line each, with where. */
+const typeProblems = (answers) =>
+  compileAnswers(answers, `import type { Analysis } from ${JSON.stringify(MODEL)};`).map(
+    describeProblem
   );
-  // An answer read as `number[]` leaves the import unused, which says nothing
-  // about the answer.
-  const options = {
-    ...config.options,
-    noEmit: true,
-    allowJs: false,
-    skipLibCheck: true,
-    noUnusedLocals: false,
-    // The model needs no ambient types; loading them all only slows each program.
-    types: [],
-  };
-  const files = new Map(
-    answers.map((a) => [
-      path.join(ROOT, `recorded-${a.key}.ts`),
-      `import type { Analysis } from ${JSON.stringify(MODEL)};\n` +
-        `export const answer: ${a.type} = ${a.body};\n`,
-    ])
-  );
-  const host = ts.createCompilerHost(options);
-  const read = host.readFile.bind(host);
-  const exists = host.fileExists.bind(host);
-  const source = host.getSourceFile.bind(host);
-  host.readFile = (f) => files.get(f) ?? read(f);
-  host.fileExists = (f) => files.has(f) || exists(f);
-  host.getSourceFile = (f, language, ...rest) =>
-    files.has(f) ? ts.createSourceFile(f, files.get(f), language) : source(f, language, ...rest);
-  const program = ts.createProgram([...files.keys()], options, host);
-  const byFile = new Map(answers.map((a) => [path.join(ROOT, `recorded-${a.key}.ts`), a]));
-  return ts
-    .getPreEmitDiagnostics(program)
-    .map((d) => {
-      const answer = d.file && byFile.get(d.file.fileName);
-      const message = ts.flattenDiagnosticMessageText(d.messageText, ' ');
-      return answer ? `${answer.route} (${answer.key}): ${message}` : `elsewhere: ${message}`;
-    })
-    .sort();
-}
 
 describe('the analysis model against recorded answers', () => {
   const answers = recordedAnswers();

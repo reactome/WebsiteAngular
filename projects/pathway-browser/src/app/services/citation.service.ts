@@ -6,11 +6,7 @@ import { isPathway } from './utils';
 import { DataStateService } from './data-state.service';
 import { AnalysisService } from './analysis.service';
 import { rxResource } from '@angular/core/rxjs-interop';
-
-interface PathwayCitation {
-  imageCitation: string;
-  pathwayCitation: string;
-}
+import { PathwayCitation } from '../model/citation.model';
 
 export enum StaticCitation {
   PATHWAY_ANALYSIS_CITATION_ID = '28249561',

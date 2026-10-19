@@ -8,7 +8,8 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { Molecule, Participant, ParticipantService } from '../../../services/participant.service';
+import { ParticipantService } from '../../../services/participant.service';
+import { Molecule, Participant } from '../../../model/participant.model';
 import { EntityService } from '../../../services/entity.service';
 import { SelectableObject } from '../../../services/event.service';
 import { rxResource } from '@angular/core/rxjs-interop';

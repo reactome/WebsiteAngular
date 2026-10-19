@@ -1,3 +1,4 @@
+import { Facet, FacetCount, FacetResponse, SearchFilters } from '../../../model/search.model';
 import {
   AfterViewInit,
   Component,
@@ -14,13 +15,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import {
-  Facet,
-  FacetCount,
-  FacetResponse,
-  SearchFilters,
-  SearchService,
-} from 'projects/website-angular/src/services/search.service';
+import { SearchService } from 'projects/website-angular/src/services/search.service';
 import { DropdownToggleComponent } from '../../reactome-components/dropdown-toggle/dropdown-toggle.component';
 
 /**

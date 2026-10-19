@@ -21,6 +21,7 @@ import { SchemaClasses } from '../../constants/constants';
 import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
+import { ReferenceEntityIds } from '../../model/popup.model';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
 
@@ -38,12 +39,6 @@ export interface EntityPopupTarget {
 }
 
 /** One row of any of the three lists, normalised so the template stays simple. */
-/** The parts of a reference entity this popup reads: what an analysis could
- *  have matched it by. */
-interface ReferenceEntityIds {
-  identifier?: string;
-  geneName?: string[];
-}
 
 /** What the second lookup tells us about a component: its reference class, and
  *  the identifiers an analysis might have matched it by. */

@@ -4,16 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { MatIcon } from '@angular/material/icon';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
 import { IconService } from '../../../../../../pathway-browser/src/app/services/icon.service';
-
-export interface PathwayBrowserNode {
-  stId: string;
-  name: string;
-  species: string;
-  url: string;
-  type: string;
-  diagram: boolean;
-  children?: PathwayBrowserNode[];
-}
+import { PathwayBrowserNode } from '../../../../model/locations.model';
 
 @Component({
   selector: 'app-locations-tree',
