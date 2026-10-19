@@ -20,6 +20,7 @@
  *   --no-subpathways  leave out sub-pathway tints and labels
  *   --dark      render the dark theme (light by default, whatever the host prefers)
  *   --select    frame the figure on one event, e.g. a reaction's stable id
+ *   --species   genome-wide only: whose overview, by taxId (default: the site's)
  *   --layout    reaction, to draw a reaction's own layout rather than a diagram
  *   --highlight comma-separated events to mark on the whole diagram, nothing framed
  *
@@ -59,6 +60,7 @@ const KNOWN = [
   'select',
   'layout',
   'highlight',
+  'species',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
@@ -104,6 +106,7 @@ try {
     select: flag('select', ''),
     layout: flag('layout', ''),
     highlight: flag('highlight', ''),
+    species: flag('species', ''),
   });
 
   await writeFile(out, bytes);

@@ -20,6 +20,7 @@ import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { AnalysisService } from '../services/analysis.service';
 import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
+import { SpeciesService } from '../services/species.service';
 import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
 import type {
@@ -80,6 +81,7 @@ export class RenderComponent {
   private ehldService = inject(EhldService);
   private dark = inject(DarkService);
   private route = inject(ActivatedRoute);
+  private speciesService = inject(SpeciesService);
 
   /**
    * ?subpathways=false leaves the sub-pathway tints and labels out, matching
@@ -100,6 +102,21 @@ export class RenderComponent {
    * anything" is a bad afternoon.
    */
   private readonly wantsDark = this.route.snapshot.queryParamMap.get('dark') === 'true';
+
+  /**
+   * The species whose overview the genome-wide view draws, by taxId -- the old
+   * fireworks exporter's URL names one (spec 006 T093). Unset, it is the
+   * site's default species.
+   *
+   * The overview is not created until this species is the current one. Its
+   * tree takes the data of whatever species is current when it loads, so
+   * creating it first would draw the default species and then redraw this
+   * one -- and the wait below could take the first as finished.
+   */
+  private readonly wantedSpecies = this.route.snapshot.queryParamMap.get('species');
+  readonly speciesReady = computed(
+    () => !this.wantedSpecies || this.speciesService.currentSpecies().taxId === this.wantedSpecies
+  );
 
   /**
    * ?select=<stId> frames the figure on one event rather than the whole diagram.
@@ -165,6 +182,19 @@ export class RenderComponent {
     effect(() => {
       const pathway = this.dataState.currentPathway();
       if (pathway) this.eventService.setDiagramPathway(pathway);
+    });
+
+    effect(() => {
+      if (!this.wantedSpecies) return;
+      const all = this.speciesService.allShortenSpecies();
+      if (!all) return;
+      const wanted = all.find((species) => species.taxId === this.wantedSpecies);
+      if (wanted) {
+        untracked(() => this.speciesService.currentSpecies.set(wanted));
+      } else {
+        this.error.set(`no species with taxId ${this.wantedSpecies}`);
+        this.publish();
+      }
     });
 
     effect(() => {
@@ -328,6 +358,9 @@ export class RenderComponent {
         view: 'reacfoam',
         groups: groups.length,
         box: [geometry.boxWidth, geometry.boxHeight],
+        // Whose overview this is, so a caller that asked for one species can
+        // tell it was not handed another's.
+        species: this.speciesService.currentSpecies().taxId,
       };
     }
 

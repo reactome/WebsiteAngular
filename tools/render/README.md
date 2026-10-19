@@ -23,6 +23,7 @@ node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 | `--no-subpathways` | leave out sub-pathway tints and labels                   |
 | `--select`         | frame the figure on one event                            |
 | `--highlight`      | events to mark on the whole diagram, comma-separated     |
+| `--species`        | genome-wide only: whose overview, by taxId               |
 | `--out`            | output path                                              |
 
 ## Framing one event, or marking several
@@ -35,6 +36,17 @@ selected on the whole diagram and frames nothing: what ContentService's
 parent's diagram, its reactions selected) or a reaction (the diagram that holds
 it). content-node resolves those ids (graph-core's DiagramRepository) and asks
 for the diagram with `highlight` (#273).
+
+## Whose overview
+
+The genome-wide view is the species overview, the Reacfoam (Voronoi) map, of
+the site's default species unless `species` names another by taxId
+(`/render/genome-wide.svg?species=10090`). It is refused with a pathway, which is
+its own species. The page reports which species it drew, and a render is
+refused unless that is the one asked for: a site too old to know `species`
+draws the default one, which would otherwise come back as a success.
+content-node answers the old `/exporter/fireworks/<species>.<ext>` with it
+(spec 006 T093).
 
 ## The theme is an explicit choice
 

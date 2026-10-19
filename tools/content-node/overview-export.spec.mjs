@@ -1,0 +1,103 @@
+// @vitest-environment node
+//
+// /exporter/fireworks/{species}.{ext}: a species' overview at the old fireworks
+// exporter's URL, drawn as the overview is now -- the Reacfoam (Voronoi) map,
+// the render service's genome-wide view (spec 006 T093). A stand-in graph
+// answers the species lookup, and a stand-in render service records what it
+// is asked for. Java's answers measured on production, 19 Oct 2026.
+import { createServer } from 'node:http';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+const SPECIES = { 9606: '9606', 'Homo sapiens': '9606', 48887: '9606', 'Mus musculus': '10090' };
+vi.mock('./graph.mjs', () => ({
+  read: async (cypher, params) => {
+    const taxId = SPECIES[params?.value];
+    if (cypher.includes('{taxId: $value}'))
+      return taxId && params.value === taxId ? [{ taxId }] : [];
+    if (cypher.includes('{dbId: toInteger($value)}'))
+      return params.value === '48887' ? [{ taxId: '9606' }] : [];
+    if (cypher.includes('$value IN s.name')) return taxId ? [{ taxId }] : [];
+    return [];
+  },
+  configured: () => true,
+  close: async () => {},
+  envSetting: () => '',
+}));
+
+const asked = [];
+let renderer;
+let base;
+let server;
+beforeAll(async () => {
+  renderer = createServer((request, response) => {
+    asked.push(request.url);
+    response.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    response.end('<svg/>');
+  });
+  await new Promise((resolve) => renderer.listen(0, '127.0.0.1', resolve));
+  process.env.RENDER_SERVICE_URL = `http://127.0.0.1:${renderer.address().port}`;
+  const { app } = await import('./service.mjs');
+  await new Promise((resolve) => {
+    server = app().listen(0, '127.0.0.1', resolve);
+  });
+  base = `http://127.0.0.1:${server.address().port}`;
+});
+afterAll(async () => {
+  await new Promise((resolve) => server.close(resolve));
+  await new Promise((resolve) => renderer.close(resolve));
+});
+
+const at = (path) => fetch(`${base}/ContentService/exporter/fireworks/${path}`);
+const envelope = async (response) => {
+  const body = await response.json();
+  return [response.status, body.reason, body.messages];
+};
+
+describe('the species overview at the old fireworks URL', () => {
+  it('reads the species as Java does, and asks for that species’ genome-wide view', async () => {
+    asked.length = 0;
+    for (const species of ['Homo_sapiens', 'homo_sapiens', '9606', '48887', 'Homo%20sapiens'])
+      expect([species, (await at(`${species}.svg`)).status]).toEqual([species, 200]);
+    expect(new Set(asked)).toEqual(new Set(['/render/genome-wide.svg?species=9606']));
+    const mouse = await at('Mus_musculus.png');
+    expect([mouse.status, mouse.headers.get('content-type')]).toEqual([
+      200,
+      'image/png;charset=UTF-8',
+    ]);
+    expect(asked.at(-1)).toBe('/render/genome-wide.png?species=10090');
+  });
+
+  it('passes an analysis on, and draws jpg as jpeg', async () => {
+    await (await at('Mus_musculus.jpg?token=MjAyNjEw')).arrayBuffer();
+    expect(asked.at(-1)).toBe('/render/genome-wide.jpeg?species=10090&token=MjAyNjEw');
+  });
+
+  it('is Java’s 400 for a species it does not know', async () => {
+    expect(await envelope(await at('Nosuchspecies.svg'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      ["'Nosuchspecies' is not a species"],
+    ]);
+  });
+
+  it('refuses, by name, what the overview does not draw yet, rather than leave it out', async () => {
+    const [status, , [message]] = await envelope(
+      await at('Homo_sapiens.svg?flg=TP53&coverage=true&sel=R-HSA-1640170&quality=8')
+    );
+    expect(status).toBe(400);
+    for (const name of ['flg=TP53', 'coverage=true', 'sel=R-HSA-1640170', 'quality=8'])
+      expect(message).toContain(name);
+    expect((await envelope(await at('Homo_sapiens.gif')))[2][0]).toContain('gif');
+  });
+
+  it('takes a parameter at its default, which is what every caller gets', async () => {
+    const response = await at('Homo_sapiens.svg?quality=5&title=true&margin=15&coverage=false');
+    expect(response.status).toBe(200);
+  });
+
+  it('names a value Spring cannot read, before anything else', async () => {
+    expect((await envelope(await at('Homo_sapiens.svg?coverage=maybe')))[2][0]).toContain(
+      'Invalid boolean value [maybe]'
+    );
+  });
+});
