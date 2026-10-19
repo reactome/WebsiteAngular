@@ -11,6 +11,7 @@ import { classify, gateway } from './gateway.mjs';
 const seen = [];
 /** Every request the service was sent, recorded as it arrives, body or not. */
 const arrived = [];
+const headersSeen = [];
 const held = [];
 let upstream;
 let upstreamUrl;
@@ -18,6 +19,21 @@ let upstreamUrl;
 beforeAll(async () => {
   upstream = createServer((req, res) => {
     arrived.push(req.url);
+    headersSeen.push(req.rawHeaders);
+    // A service that answers slowly: headers now, the rest when let go.
+    if (req.url.includes('trickle')) {
+      res.writeHead(200, { 'Content-Type': 'application/pdf' });
+      res.write('%PDF-');
+      held.push(() => res.end('rest'));
+      return;
+    }
+    // A service that fails mid-answer: half a body, then the connection gone.
+    if (req.url.includes('broken')) {
+      res.writeHead(200, { 'Content-Length': '1000' });
+      res.write('x'.repeat(100));
+      setTimeout(() => res.socket.destroy(), 20);
+      return;
+    }
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
@@ -49,6 +65,7 @@ afterAll(() => new Promise((resolve) => upstream.close(resolve)));
 beforeEach(() => {
   seen.length = 0;
   arrived.length = 0;
+  headersSeen.length = 0;
   held.length = 0;
 });
 
@@ -295,6 +312,193 @@ describe('passing through', () => {
         queueLength: 2,
         maxWaitMs: 2000,
       });
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('the review of #539', () => {
+  it('admits those waiting in the order they came', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, queueLength: 5 });
+    try {
+      const answers = [1, 2, 3, 4].map((n) => post(base, `/AnalysisService/identifiers/?n=${n}`));
+      for (let turn = 1; turn <= 4; turn++) {
+        await until(() => held.length === 1);
+        expect(seen.at(-1)).toContain(`n=${turn}`);
+        held.shift()();
+      }
+      await Promise.all(answers);
+    } finally {
+      await close();
+    }
+  });
+
+  it('closes the reader’s connection at once when the service fails mid-answer', async () => {
+    const { base, close } = await start();
+    try {
+      const started = Date.now();
+      const outcome = await fetch(`${base}/AnalysisService/token/broken`)
+        .then((r) => r.text())
+        .then(
+          () => 'whole',
+          () => 'cut'
+        );
+      expect([outcome, Date.now() - started < 2000]).toEqual(['cut', true]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('holds a place until the service finishes, even when the reader left mid-analysis', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    try {
+      const gone = new AbortController();
+      const leaver = fetch(`${base}/AnalysisService/identifiers/?n=1`, {
+        method: 'POST',
+        body: 'X',
+        signal: gone.signal,
+      }).catch(() => 'left');
+      await until(() => held.length === 1);
+      gone.abort();
+      await leaver;
+      const next = post(base, '/AnalysisService/identifiers/?n=2');
+      await new Promise((r) => setTimeout(r, 100));
+      // Still computing for the reader who left: the next waits.
+      expect(arrived.some((url) => url.includes('n=2'))).toBe(false);
+      held.shift()();
+      await until(() => held.length === 1);
+      held.shift()();
+      expect((await next).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it('sees a reader with a large upload leave while waiting, and never runs it', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    try {
+      const running = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      const gone = new AbortController();
+      const leaver = fetch(`${base}/AnalysisService/identifiers/?n=2`, {
+        method: 'POST',
+        body: 'P04637\n'.repeat(500_000),
+        signal: gone.signal,
+      }).catch(() => 'left');
+      await new Promise((r) => setTimeout(r, 200));
+      gone.abort();
+      await leaver;
+      await new Promise((r) => setTimeout(r, 100));
+      const health = await (await fetch(`${base}/health`)).json();
+      expect([health.lanes.analysis.waiting, health.left, health.heldBytes]).toEqual([0, 1, 0]);
+      held.shift()();
+      await running;
+      expect(arrived.some((url) => url.includes('n=2'))).toBe(false);
+    } finally {
+      await close();
+    }
+  });
+
+  it('sends a large upload whole once it is admitted from the waiting list', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    try {
+      const running = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      const big = 'P04637\n'.repeat(500_000);
+      const waited = post(base, '/AnalysisService/identifiers/?n=2', big);
+      await new Promise((r) => setTimeout(r, 200));
+      held.shift()();
+      await until(() => held.length === 1);
+      held.shift()();
+      expect(await (await waited).json()).toEqual({
+        path: '/AnalysisService/identifiers/?n=2',
+        length: big.length,
+      });
+      await running;
+    } finally {
+      await close();
+    }
+  });
+
+  it('queues what Tomcat would route to a computation, however it is spelled', () => {
+    for (const [method, url] of [
+      ['HEAD', '/AnalysisService/identifier/PTEN'],
+      ['HEAD', '/AnalysisService/report/T/Homo%20sapiens/r.pdf'],
+      ['POST', '/AnalysisService/identifiers;x/projection'],
+      ['POST', '/AnalysisService/%69dentifiers/projection'],
+      ['GET', '/AnalysisService/%69dentifier/PTEN'],
+      ['POST', '/AnalysisService//identifiers/'],
+    ])
+      expect([method, url, classify(method, url) !== undefined]).toEqual([method, url, true]);
+    expect(classify('POST', '/AnalysisService/report/T/x.pdf')).toBe(undefined);
+  });
+
+  it('is the 502 a reader can act on when the service cannot be reached', async () => {
+    const { base, close } = await start({ upstream: 'http://127.0.0.1:9' });
+    try {
+      const answer = await fetch(`${base}/AnalysisService/token/T`);
+      expect([
+        answer.status,
+        answer.headers.get('cache-control'),
+        (await answer.json()).reason,
+      ]).toEqual([502, 'no-store', 'Bad Gateway']);
+    } finally {
+      await close();
+    }
+  });
+
+  it('does not pass connection-scoped headers on, and keeps a refusal out of every cache', async () => {
+    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, queueLength: 0 });
+    try {
+      await new Promise((resolve, reject) => {
+        const url = new URL(`${base}/AnalysisService/token/T`);
+        const call = httpRequest(
+          {
+            host: url.hostname,
+            port: url.port,
+            path: url.pathname,
+            headers: { 'Keep-Alive': 'timeout=5', 'X-Kept': 'yes' },
+          },
+          (res) => res.resume().on('end', resolve)
+        );
+        call.on('error', reject);
+        call.end();
+      });
+      const names = headersSeen
+        .at(-1)
+        .filter((_, i) => i % 2 === 0)
+        .map((n) => n.toLowerCase());
+      expect([names.includes('keep-alive'), names.includes('x-kept')]).toEqual([false, true]);
+      const running = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      const refused = await post(base, '/AnalysisService/identifiers/?n=2');
+      expect(refused.headers.get('cache-control')).toBe('no-store');
+      held.shift()();
+      await running;
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('a reader who leaves mid-answer', () => {
+  it('keeps the place until the service has finished the answer', async () => {
+    const { base, close } = await start();
+    try {
+      const gone = new AbortController();
+      const first = await fetch(`${base}/AnalysisService/report/T/x/trickle.pdf`, {
+        signal: gone.signal,
+      });
+      expect(first.status).toBe(200);
+      gone.abort();
+      const second = fetch(`${base}/AnalysisService/report/T/x/second.pdf`);
+      await new Promise((r) => setTimeout(r, 100));
+      expect(arrived.some((url) => url.includes('second'))).toBe(false);
+      held.shift()();
+      await until(() => held.length === 1);
+      held.shift()();
+      expect((await second).status).toBe(200);
     } finally {
       await close();
     }

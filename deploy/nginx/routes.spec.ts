@@ -296,3 +296,30 @@ describe('a matrix parameter', () => {
       expect([url, nginxTarget(url), await proxySendsToNode(url)]).toEqual([url, 'tomcat', false]);
   });
 });
+
+/**
+ * Each upstream at an address of its own. The analysis gateway was first
+ * given 127.0.0.1:4320, the MCP server's: deployed, every analysis on beta
+ * would have gone to MCP, and the gateway would have failed to start.
+ */
+describe('the upstreams of each deployment', () => {
+  for (const file of ['dev.conf', 'release.conf', 'production.conf', 'local.conf'])
+    it(`each has its own address in ${file}`, () => {
+      const text = readFileSync(join(__dirname, file), 'utf8');
+      const addresses = [...text.matchAll(/^upstream\s+([\w-]+)\s*\{([^}]*)\}/gm)].flatMap(
+        ([, name, body]) =>
+          [...body.matchAll(/^\s*server\s+([^\s;]+)/gm)].map((m) => [m[1], name] as const)
+      );
+      const byAddress = new Map<string, string[]>();
+      for (const [address, name] of addresses)
+        byAddress.set(address, [...(byAddress.get(address) ?? []), name]);
+      // Tomcat hosts both Java webapps, so `content`, `analysis` where it goes
+      // to Tomcat directly, and `analysis_direct` share its address; nothing
+      // else may share one.
+      const TOMCAT = new Set(['content', 'analysis', 'analysis_direct']);
+      const shared = [...byAddress].filter(
+        ([, names]) => names.length > 1 && !names.every((name) => TOMCAT.has(name))
+      );
+      expect(shared).toEqual([]);
+    });
+});

@@ -15,40 +15,73 @@
  * came: status, headers in their order and case, and body.
  *
  *   ANALYSIS_UPSTREAM   the AnalysisService's origin, default http://127.0.0.1:8080
- *   GATEWAY_PORT        default 4320; GATEWAY_HOST default 127.0.0.1
+ *   GATEWAY_PORT        default 4350; GATEWAY_HOST default 127.0.0.1
  *   ANALYSIS_LIMIT      analyses at once, default 4 (below analysis-core's pool of 5)
  *   REPORT_LIMIT        PDF reports at once, default 1
  *   QUEUE_LENGTH        waiting per lane before refusing, default 40
  *   MAX_WAIT_MS         longest wait, default 60000 (wait + run inside the edge's 100 s)
  *   RETRY_AFTER         seconds a refused reader is told to wait, default 10
+ *   WAITING_BYTES       bodies held while waiting, in all, default 268435456 (256 MB)
  */
 import { createServer, request as httpRequest } from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 /**
+ * The path as Tomcat routes it: each segment's `;` parameters cut, percent-
+ * escapes decoded, runs of slashes made one. Classified as written, a request
+ * spelled `identifiers;x/projection` or `%69dentifier/PTEN` ran a computation
+ * past the queue, since Tomcat reads it as the plain path.
+ */
+function routedPath(url) {
+  return String(url)
+    .split('?')[0]
+    .split('/')
+    .map((segment) => {
+      const kept = segment.split(';')[0];
+      try {
+        return decodeURIComponent(kept);
+      } catch {
+        return kept;
+      }
+    })
+    .join('/')
+    .replace(/\/{2,}/g, '/');
+}
+
+/**
  * Which lane a request takes, or undefined for one that passes straight
- * through: by method and path, as the AnalysisService's own operations are.
+ * through: by method and the path Tomcat routes, as the AnalysisService's own
+ * operations are. A HEAD runs its GET's handler, so it is classed as one.
  */
 export function classify(method, url) {
-  const path = String(url).split('?')[0];
-  if (method === 'POST' && /^\/AnalysisService\/(identifiers|mapping|import)\//.test(path))
+  const verb = method === 'HEAD' ? 'GET' : method;
+  const path = routedPath(url);
+  if (verb === 'POST' && /^\/AnalysisService\/(identifiers|mapping|import)\//.test(path))
     return 'analysis';
   if (
-    method === 'GET' &&
+    verb === 'GET' &&
     /^\/AnalysisService\/(identifier\/[^/]+(\/projection)?|species\/homoSapiens\/[^/]+)\/?$/.test(
       path
     )
   )
     return 'analysis';
-  if (method === 'GET' && /^\/AnalysisService\/report\//.test(path)) return 'report';
+  if (verb === 'GET' && /^\/AnalysisService\/report\//.test(path)) return 'report';
   return undefined;
 }
 
 /** Connection-scoped headers, which describe one hop and are not passed on. */
 const HOP = new Set(['connection', 'keep-alive', 'proxy-connection', 'te', 'trailer', 'upgrade']);
 
+const without = (raw) => {
+  const kept = [];
+  for (let i = 0; i < raw.length; i += 2)
+    if (!HOP.has(raw[i].toLowerCase())) kept.push(raw[i], raw[i + 1]);
+  return kept;
+};
+
 /** The service's own error envelope, as it writes a 404 or a 410. */
 function busy(res, retryAfter) {
+  if (res.headersSent || res.destroyed) return;
   const body = JSON.stringify({
     code: 503,
     reason: 'Service Unavailable',
@@ -68,42 +101,64 @@ export function gateway({
   queueLength = 40,
   maxWaitMs = 60_000,
   retryAfter = 10,
+  waitingBytes = 256 * 1024 * 1024,
 } = {}) {
   const target = new URL(upstream);
   const lanes = Object.fromEntries(
     Object.entries(limits).map(([name, limit]) => [name, { limit, active: 0, waiting: [] }])
   );
   const counts = { passed: 0, admitted: 0, waited: 0, refused: 0, left: 0, failed: 0 };
+  let held = 0;
 
-  /** Send the request on, and its answer back as it came. `done` once it is over. */
-  function pass(req, res, done = () => {}) {
-    const headers = [];
-    for (let i = 0; i < req.rawHeaders.length; i += 2)
-      if (!HOP.has(req.rawHeaders[i].toLowerCase()))
-        headers.push(req.rawHeaders[i], req.rawHeaders[i + 1]);
-    let finished = false;
+  /**
+   * Send the request on, and its answer back as it came; `done` once the
+   * service has finished with it. `body` is what was read while it waited,
+   * if anything: the rest still comes from `req`.
+   */
+  function pass(req, res, { done = () => {}, body } = {}) {
+    let over = false;
     const finish = () => {
-      if (finished) return;
-      finished = true;
+      if (over) return;
+      over = true;
       done();
     };
     const call = httpRequest(
-      { host: target.hostname, port: target.port, method: req.method, path: req.url, headers },
+      {
+        host: target.hostname,
+        port: target.port,
+        method: req.method,
+        path: req.url,
+        headers: without(req.rawHeaders),
+      },
       (answer) => {
-        const back = [];
-        for (let i = 0; i < answer.rawHeaders.length; i += 2)
-          if (!HOP.has(answer.rawHeaders[i].toLowerCase()))
-            back.push(answer.rawHeaders[i], answer.rawHeaders[i + 1]);
-        res.writeHead(answer.statusCode, answer.statusMessage, back);
-        answer.pipe(res);
+        // Over only when the service is: a reader who left mid-answer does not
+        // stop a computation already under way, so its place is held until
+        // the service has finished and the rest of the answer is discarded.
         answer.on('end', finish);
-        answer.on('error', finish);
+        answer.on('error', () => {
+          // The service failed mid-answer: say so to the reader at once,
+          // rather than leave them waiting on a body that will not come.
+          res.destroy();
+          finish();
+        });
+        if (res.destroyed) {
+          answer.resume();
+          return;
+        }
+        res.writeHead(answer.statusCode, answer.statusMessage, without(answer.rawHeaders));
+        answer.pipe(res);
+        res.on('close', () => {
+          if (!res.writableFinished) {
+            answer.unpipe(res);
+            answer.resume();
+          }
+        });
       }
     );
     call.on('error', () => {
       counts.failed++;
-      if (!res.headersSent) {
-        res.writeHead(502, { 'Content-Type': 'application/json' });
+      if (!res.headersSent && !res.destroyed) {
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(
           JSON.stringify({
             code: 502,
@@ -114,35 +169,81 @@ export function gateway({
       } else res.destroy();
       finish();
     });
-    // The reader gone mid-answer: stop asking the service for it.
-    res.on('close', () => {
-      if (!res.writableFinished) call.destroy();
-      finish();
-    });
-    req.pipe(call);
+    if (body) {
+      for (const chunk of body.chunks) call.write(chunk);
+      if (body.ended) call.end();
+      else req.pipe(call);
+    } else req.pipe(call);
   }
 
-  function admit(lane, req, res) {
-    // Never for a reader already gone: their request could not be sent, and
-    // its place would never be given back.
-    if (res.destroyed || req.destroyed) {
-      counts.left++;
-      return;
-    }
+  function admit(lane, req, res, body) {
     lane.active++;
     counts.admitted++;
-    pass(req, res, () => {
-      lane.active--;
-      next(lane);
+    pass(req, res, {
+      body,
+      done: () => {
+        lane.active--;
+        next(lane);
+      },
     });
   }
 
   function next(lane) {
     while (lane.active < lane.limit && lane.waiting.length) {
       const entry = lane.waiting.shift();
-      clearTimeout(entry.timer);
-      admit(lane, entry.req, entry.res);
+      entry.settle();
+      admit(lane, entry.req, entry.res, entry.body);
     }
+  }
+
+  function wait(lane, req, res) {
+    counts.waited++;
+    // Read while waiting, so a reader who leaves is seen leaving: with the
+    // body unread, a closed connection goes unnoticed and the analysis runs
+    // in full for nobody. Held in memory up to a budget for all who wait;
+    // beyond it a body is left unread, and only its leaving goes unseen.
+    const body = { chunks: [], bytes: 0, ended: false };
+    const onData = (chunk) => {
+      body.chunks.push(chunk);
+      body.bytes += chunk.length;
+      held += chunk.length;
+      if (held > waitingBytes) req.pause();
+    };
+    const onEnd = () => {
+      body.ended = true;
+    };
+    req.on('data', onData);
+    req.on('end', onEnd);
+    const entry = { req, res, body };
+    const release = () => {
+      req.off('data', onData);
+      req.off('end', onEnd);
+      held -= body.bytes;
+      clearTimeout(entry.timer);
+    };
+    const leave = () => {
+      const at = lane.waiting.indexOf(entry);
+      if (at === -1) return false;
+      lane.waiting.splice(at, 1);
+      release();
+      return true;
+    };
+    // What was read is sent from `body`; the rest comes by pipe, which
+    // resumes the request itself.
+    entry.settle = release;
+    entry.timer = setTimeout(() => {
+      if (leave()) {
+        counts.refused++;
+        busy(res, retryAfter);
+      }
+    }, maxWaitMs);
+    // A reader who gives up while waiting loses their place; nothing is run.
+    const gone = () => {
+      if (!res.writableFinished && leave()) counts.left++;
+    };
+    res.on('close', gone);
+    req.on('aborted', gone);
+    lane.waiting.push(entry);
   }
 
   const server = createServer((req, res) => {
@@ -160,6 +261,7 @@ export function gateway({
           ),
           queueLength,
           maxWaitMs,
+          heldBytes: held,
           ...counts,
         })
       );
@@ -181,26 +283,7 @@ export function gateway({
       busy(res, retryAfter);
       return;
     }
-    counts.waited++;
-    const entry = { req, res };
-    const leave = () => {
-      const at = lane.waiting.indexOf(entry);
-      if (at === -1) return false;
-      lane.waiting.splice(at, 1);
-      clearTimeout(entry.timer);
-      return true;
-    };
-    entry.timer = setTimeout(() => {
-      if (leave()) {
-        counts.refused++;
-        busy(res, retryAfter);
-      }
-    }, maxWaitMs);
-    // A reader who gives up while waiting loses their place; nothing is run.
-    res.on('close', () => {
-      if (!res.writableFinished && leave()) counts.left++;
-    });
-    lane.waiting.push(entry);
+    wait(lane, req, res);
   });
   return server;
 }
@@ -208,7 +291,7 @@ export function gateway({
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const env = process.env;
   const number = (name, fallback) => (env[name] ? Number(env[name]) : fallback);
-  const port = number('GATEWAY_PORT', 4320);
+  const port = number('GATEWAY_PORT', 4350);
   const host = env.GATEWAY_HOST || '127.0.0.1';
   const server = gateway({
     upstream: env.ANALYSIS_UPSTREAM || 'http://127.0.0.1:8080',
@@ -216,6 +299,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     queueLength: number('QUEUE_LENGTH', 40),
     maxWaitMs: number('MAX_WAIT_MS', 60_000),
     retryAfter: number('RETRY_AFTER', 10),
+    waitingBytes: number('WAITING_BYTES', 256 * 1024 * 1024),
   });
   // Analyses and their uploads are not quick: no idle timeout of our own.
   server.requestTimeout = 0;

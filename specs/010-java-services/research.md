@@ -282,3 +282,11 @@ So a large enough burst would take every analysis in it past the edge's 100-seco
 | a read during the burst | 4 ms        |
 
 Directly against Tomcat, every one of the twelve took 10.5–12.6 s. Through the gateway the first answers come four times sooner and the last sooner still, and a read is not held back. Byte for byte, a stored result, its not-found list, a CSV download, the version and an unknown token's 404 are each the same through the gateway as directly, headers included (apart from `Date` and connection headers).
+
+**Review of #539, and what changed with it:**
+
+- **Port:** the gateway listens on 127.0.0.1:4350. It was first given 4320, the MCP server's port. A routing test now fails when two upstreams share an address, except Tomcat's own.
+- **A slot is held until the service has finished,** even when the reader has left. A Java handler does not stop when its connection drops, so the limit counts computations, not connections.
+- **Bodies are read while waiting,** up to 256 MB held in all, so a reader who leaves after a large upload is seen leaving and their analysis is never run.
+- **Requests are classified on the path as Tomcat routes it:** decoded, `;` parameters cut, slashes merged. HEAD counts as GET. Spelled `identifiers;x/projection` or `%69dentifier/…`, a computation had run past the queue.
+- **ReactomeGSA's own requests** (the `dev.reactome.org` server block) go straight to Tomcat through `analysis_direct`. GSA's worker is not known to honour a 503's `Retry-After`, so queueing it could fail a GSA analysis under load. **Open decision:** whether, and how, GSA's submissions join the queue.
