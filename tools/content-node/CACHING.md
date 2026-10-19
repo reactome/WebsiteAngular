@@ -5,7 +5,7 @@ measurements it rests on. Written down because the reasoning is not recoverable
 from the code: several of the choices below exist because a probe came back the
 opposite of what was expected.
 
-Status: **built** (spec 011, `specs/011-api-cache-headers`), but caching nothing yet: the labels are on every answer node gives, and Cloudflare stores nothing until its Cache Rule is on (#527). Until this site becomes production, the rule is limited to the beta hostname, so it cannot touch production: production's Java sends no `Cache-Control` on most of its API, but `max-age=86400` on its exporters (measured 19 Oct 2026). It is widened to the production hostname at the launch, from when the release-day purge and warm-up matter (awright, 19 Oct 2026). What each answer carries, and why: [contracts/cache-labels.md](../../specs/011-api-cache-headers/contracts/cache-labels.md). The work queue is at the bottom.
+Status: **built** (spec 011, `specs/011-api-cache-headers`), but caching nothing yet: the labels are on every answer node gives, and Cloudflare stores nothing until its Cache Rule is on (#527). Cloudflare is left as it is for now (awright, 19 Oct 2026). If the rule goes on before this site becomes production, it is limited to the beta hostname, so it cannot touch production: production's Java sends no `Cache-Control` on most of its API, but `max-age=86400` on its exporters (measured 19 Oct 2026). It is widened to the production hostname at the launch, from when the release-day purge and warm-up matter. What each answer carries, and why: [contracts/cache-labels.md](../../specs/011-api-cache-headers/contracts/cache-labels.md). The work queue is at the bottom.
 
 ## The question
 
