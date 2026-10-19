@@ -49,7 +49,7 @@ function recordedAnswers(dir = HARS) {
     }
   }
   // The kinds of analysis the recordings never run, recorded by record.mjs.
-  for (const name of readdirSync(RECORDED)) {
+  for (const name of readdirSync(RECORDED).filter((f) => f.endsWith('.json'))) {
     for (const { route, answer } of JSON.parse(readFileSync(path.join(RECORDED, name), 'utf8'))) {
       const [method, url] = route.split(' ');
       const pathname = new URL(url, 'http://x').pathname;
@@ -81,6 +81,8 @@ function typeProblems(answers) {
     allowJs: false,
     skipLibCheck: true,
     noUnusedLocals: false,
+    // The model needs no ambient types; loading them all only slows each program.
+    types: [],
   };
   const files = new Map(
     answers.map((a) => [
@@ -121,6 +123,19 @@ describe('the analysis model against recorded answers', () => {
         .map((a) => JSON.parse(a.body).summary.type)
     );
     expect([...kinds].sort()).toEqual(['EXPRESSION', 'OVERREPRESENTATION', 'SPECIES_COMPARISON']);
+  });
+
+  it('names only analysis types the site knows', async () => {
+    // `summary.type` is typed `Type | string` on purpose, so an unknown type
+    // degrades rather than breaks; the compile check cannot see it, so this does.
+    const { Analysis } =
+      await import('../../projects/pathway-browser/src/app/model/analysis.model.ts');
+    const TYPES = Analysis.TYPES;
+    const unknown = answers
+      .filter((a) => a.type === 'Analysis.Result')
+      .map((a) => JSON.parse(a.body).summary.type)
+      .filter((type) => !TYPES.includes(type));
+    expect(unknown).toEqual([]);
   });
 
   it('describes every recorded answer exactly', () => {

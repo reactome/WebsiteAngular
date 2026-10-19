@@ -2,8 +2,8 @@
  * Record real AnalysisService answers for the kinds of analysis the end-to-end
  * recordings never run (spec 010 Story 5): an expression analysis with
  * interactors, gene names with identifiers not found, and metabolites. Each
- * is run once with one of the site's own example files, and then read the
- * ways the site reads a result.
+ * is run once with an example file from the site's assets, projected to human
+ * as the site always asks, and then read the ways the site reads a result.
  *
  *     node tools/analysis-types/record.mjs [origin]    default http://127.0.0.1:8080
  *
@@ -28,7 +28,11 @@ const RUNS = [
     path: 'identifiers/projection?interactors=true&pageSize=20&page=1',
   },
   { name: 'gene-names', file: 'gene-name.tsv', path: 'identifiers/projection?pageSize=20&page=1' },
-  { name: 'metabolites', file: 'metabolomics.tsv', path: 'identifiers/?pageSize=20&page=1' },
+  {
+    name: 'metabolites',
+    file: 'metabolomics.tsv',
+    path: 'identifiers/projection?pageSize=20&page=1',
+  },
 ];
 
 async function call(origin, method, route, body) {
@@ -49,7 +53,8 @@ async function main([origin = 'http://127.0.0.1:8080'] = []) {
     const data = readFileSync(path.join(EXAMPLES, run.file), 'utf8');
     const result = await call(origin, 'POST', run.path, data);
     const { summary, pathways } = JSON.parse(result);
-    const token = encodeURIComponent(summary.token);
+    // Sent as the service gives it, already escaped, as the site sends it.
+    const token = summary.token;
     // One with interactors found, where there is one, so their shape is seen too.
     const pathway = (
       pathways.find((p) => p.entities.interactorsFound > 0) ??
