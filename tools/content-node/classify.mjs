@@ -40,12 +40,11 @@ export function classify(method, url) {
   const path = sent.split('?')[0];
   const found = PATTERNS().find(([, pattern]) => pattern.test(path));
   if (!found) return undefined;
-  // Java's own under node's /query/{id}/{attribute}, which nginx keeps from
-  // it (deploy/nginx/common/routes-core.conf).
-  if (
-    found[0] === '/ContentService/data/query/{id}/{attribute}' &&
-    /^\/ContentService\/data\/query\/((abridged|enhanced)\/|[^/]+\/more\/?$)/.test(path)
-  )
+  // Java's own, which nginx keeps from node's /query/{id}/{attribute},
+  // /query/{id}/stId and /query/{id}/normalPathway
+  // (deploy/nginx/common/routes-core.conf): /query/abridged/{id} and
+  // /query/{id}/more. No node route matches the rest of Java's /query.
+  if (/^\/ContentService\/data\/query\/(abridged\/[^/]+|[^/]+\/more)\/?$/.test(path))
     return undefined;
   const form = standardForm(found[0], sent);
   return { endpoint: found[0], ok: form.ok, rule: form.ok ? 'standard' : form.rule };

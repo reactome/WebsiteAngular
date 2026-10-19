@@ -298,7 +298,7 @@ Standard form narrows these past their declared type, because each would otherwi
 | `scope` on `/search/diagram/{d}/flag`; `scope`, `includeInteractors` on `/search/fireworks/flag` | 7     | `data-state.service.ts`: only the parameters each takes                 |
 | `fields=%20DB_ID`                                                                                | 2     | `search.component.ts`: `'DB_ID'`                                        |
 
-The two callers of `/data/query/enhanced/v2/{id}` now send the same parameter set (`database-object.service.ts` adds the default `fetchIncomingRelationships=true`), so one object is one cache entry.
+The callers of `/data/query/enhanced/v2/{id}` now send the same parameter set. `database-object.service.ts` adds the default `fetchIncomingRelationships=true`, which the Pathway Browser's data state and the website's two callers already sent, so one object is one cache entry (order aside, which the Cache Rule's sorted query string removes).
 
 **The recordings:** the 191 e2e recordings holding the old URLs were renamed in place. Only those URL strings changed, which a script checked file by file.
 

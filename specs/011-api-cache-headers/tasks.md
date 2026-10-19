@@ -138,11 +138,11 @@ The pull request that completes a task ticks it here, with its number.
 
 **Independent test**: the e2e run's classifier report lists no non-standard request except the reviewed ones.
 
-- [x] T021 [US5] Add a passive classifier to `e2e/support/backend.ts`: a `context.on('request')` listener that runs `standardForm` on every `/ContentService` request (stubbed ones included). It writes a report, and never fails the run, like the `undeclared` check (~690–701). Leave out the `.api.json` probes. A unit test feeds it one standard URL and one non-standard URL, and is shown failing first.
-- [x] T022 [US5] Run `E2E_PORT=4330 npm run e2e` once, and record the report in `specs/011-api-cache-headers/research.md` R8.
-- [x] T023 [P] [US5] Make the `enhanced/v2/{id}` requests one spelling: the same parameter set and order in `projects/pathway-browser/src/app/services/data-state.service.ts` (~247–256) and `projects/pathway-browser/src/app/services/database-object.service.ts` (~31). Check that the answers the pages use are unchanged, with the existing specs and an e2e run.
-- [x] T024 [P] [US5] Fix `' DB_ID'` (a leading space) in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~324) to `'DB_ID'`, with a test.
-- [x] T025 [US5] For every other finding in the report: fix it in the site, or add it with its reason to a list in `specs/011-api-cache-headers/research.md` R8. `citation` requests are expected on the list (never cached by design).
+- [x] T021 [US5] Add a passive classifier to `e2e/support/backend.ts`: a `context.on('request')` listener that runs `standardForm` on every `/ContentService` request (stubbed ones included). It writes a report, and never fails the run, like the `undeclared` check (~690–701). Leave out the `.api.json` probes. A unit test feeds it one standard URL and one non-standard URL, and is shown failing first. — #533
+- [x] T022 [US5] Run `E2E_PORT=4330 npm run e2e` once, and record the report in `specs/011-api-cache-headers/research.md` R8. — #533
+- [x] T023 [P] [US5] Make the `enhanced/v2/{id}` requests one spelling: the same parameter set and order in `projects/pathway-browser/src/app/services/data-state.service.ts` (~247–256) and `projects/pathway-browser/src/app/services/database-object.service.ts` (~31). Check that the answers the pages use are unchanged, with the existing specs and an e2e run. — #533
+- [x] T024 [P] [US5] Fix `' DB_ID'` (a leading space) in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~324) to `'DB_ID'`, with a test. — #533
+- [x] T025 [US5] For every other finding in the report: fix it in the site, or add it with its reason to a list in `specs/011-api-cache-headers/research.md` R8. `citation` requests are expected on the list (never cached by design). — #533
 - [ ] T026 Review, CI, merge, deploy. On beta, load a pathway page in Playwright with `beta.reactome.org` mapped to 127.0.0.1. Every `/ContentService` response it receives from node carries `x-cache-rule: standard`, apart from the listed ones. Tick T021–T026.
 
 ---
