@@ -242,7 +242,7 @@ module.exports = tseslint.config(
     // The server-side services run as written: Node 24 strips the types and
     // runs what is left (spec 013). A type imported without `type` survives
     // the stripping and fails the import; an enum, a namespace or a parameter
-    // property is code Node will not strip. Vitest accepts all four, so a
+    // property is code Node will not strip, nor is `import x = require()`. Vitest accepts all four, so a
     // service could pass its tests and not start. The type checker cannot hold
     // tools/ to this alone: it would hold the site's model types to it too.
     files: ['tools/**/*.ts'],
@@ -255,8 +255,13 @@ module.exports = tseslint.config(
         'error',
         { selector: 'TSEnumDeclaration', message: 'Node cannot strip an enum: use a union.' },
         {
-          selector: 'TSModuleDeclaration[kind!="global"]',
+          // An ambient `declare module`/`declare namespace` is stripped whole.
+          selector: 'TSModuleDeclaration[declare!=true][kind!="global"]',
           message: 'Node cannot strip a namespace: use a module.',
+        },
+        {
+          selector: 'TSImportEqualsDeclaration',
+          message: 'Node cannot strip `import x = require()`: use an import.',
         },
         {
           selector: 'TSParameterProperty',

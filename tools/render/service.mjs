@@ -441,8 +441,7 @@ function buildId() {
       // that changes when a test is edited reports a deployment difference that
       // is not one. Caught by this very endpoint: adding service.spec.mjs moved
       // the hash without changing a line the service runs.
-      // `.mjs` or `.ts`: a module renamed (spec 013) still counts.
-      .filter((name) => /\.(mjs|ts)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name))
+      .filter(isModule)
       .sort();
     const hash = createHash('sha256');
     for (const name of names) hash.update(readFileSync(path.join(here, name)));
@@ -653,6 +652,15 @@ app.get('/render/:name.:ext', async (req, res) => {
  * content-node has been guarded this way all along; this brings the render
  * service into line.
  */
+/**
+ * Whether /health's build fingerprint hashes a file: a module, `.mjs` or `.ts`
+ * (spec 013: a module renamed would drop out of the hash unseen), not a spec.
+ * A declaration, so it is there however early the fingerprint is taken.
+ */
+export function isModule(name) {
+  return /\.(mjs|ts)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name);
+}
+
 export { app, cacheKey };
 
 /**
@@ -660,6 +668,8 @@ export { app, cacheKey };
  * was `endsWith('service.mjs')`, which a service renamed to `.ts` (spec 013)
  * fails, so it would load, never listen, and exit 0 -- a restart loop in its
  * container. Compared after symlinks are resolved, as Node resolves its own.
+ * scripts/is-entry.mjs does the same for the scripts, but the service images
+ * ship only this directory.
  */
 function startedDirectly() {
   try {

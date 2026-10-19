@@ -4,9 +4,10 @@
 // (spec 013). The test was `endsWith('service.mjs')`: renamed to `.ts`, the
 // content service loaded, never listened and exited 0. Each is started here
 // through a link of another name, with nothing it could reach: a credentials
-// file that does not exist and closed ports for the graph and the index.
+// file that does not exist, closed ports for everything it calls, and a spy
+// that fails the test on any request leaving this machine.
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -16,13 +17,34 @@ const ROOT = path.join(import.meta.dirname, '..');
 const dir = mkdtempSync(path.join(tmpdir(), 'started-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
+// Loaded into each service before it starts: a request to anywhere but this
+// machine is said on stderr and refused. The content service fetched the
+// PSICQUIC registry from EBI as it started listening (review of #544).
+const SPY = path.join(dir, 'no-outside.mjs');
+writeFileSync(
+  SPY,
+  `const real = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const url = new URL(typeof input === 'string' ? input : input.url);
+  if (!['127.0.0.1', 'localhost'].includes(url.hostname)) {
+    process.stderr.write('OUTSIDE ' + url.href + '\\n');
+    return Promise.reject(new Error('refused by the test'));
+  }
+  return real(input, init);
+};
+`
+);
+
 /** The first line the service prints within the time, or what it said on stopping. */
 function start(file, env) {
   const link = path.join(dir, `renamed-${path.basename(path.dirname(file))}.mjs`);
   symlinkSync(path.join(ROOT, file), link);
-  const child = spawn(process.execPath, [link], { env: { ...process.env, ...env } });
+  const child = spawn(process.execPath, ['--import', SPY, link], {
+    env: { ...process.env, ...env },
+  });
   return new Promise((resolve) => {
     let out = '';
+    let waiting = false;
     const done = (said) => {
       clearTimeout(timer);
       child.kill();
@@ -31,7 +53,11 @@ function start(file, env) {
     const timer = setTimeout(() => done(`nothing after 15 s: ${out}`), 15_000);
     child.stdout.on('data', (chunk) => {
       out += chunk;
-      if (/listening|render service on/.test(out)) done(out.split('\n')[0]);
+      // A moment after starting, for what it does once it listens.
+      if (/listening|render service on/.test(out) && !waiting) {
+        waiting = true;
+        setTimeout(() => done(out), 1500);
+      }
     });
     child.stderr.on('data', (chunk) => (out += chunk));
     child.on('exit', (code) => done(`exited ${code}: ${out}`));
@@ -55,6 +81,8 @@ const NOWHERE = {
   NEO4J_URI: 'bolt://127.0.0.1:9',
   SOLR_URL: 'http://127.0.0.1:9',
   REPORT_URL: 'http://127.0.0.1:9',
+  PSICQUIC_REGISTRY_URL: 'http://127.0.0.1:9/',
+  EUROPE_PMC_URL: 'http://127.0.0.1:9/',
   RENDER_SERVICE_URL: 'http://127.0.0.1:9',
 };
 
@@ -65,6 +93,7 @@ it('starts the content service under another file name', async () => {
     CONTENT_NODE_PORT: await freePort(),
   });
   expect(said).toMatch(/^content-node listening on/);
+  expect(said).not.toMatch(/OUTSIDE/);
 }, 30_000);
 
 it('starts the render service under another file name', async () => {
@@ -75,4 +104,5 @@ it('starts the render service under another file name', async () => {
     RENDER_BASE: 'http://127.0.0.1:9',
   });
   expect(said).toMatch(/^render service on/);
+  expect(said).not.toMatch(/OUTSIDE/);
 }, 30_000);

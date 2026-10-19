@@ -42,5 +42,5 @@ for (const project of projects) {
   for (const line of output.split('\n')) console.log(`    ${line}`);
 }
 if (!failed) process.exit(0);
-console.log('\n  The build would fail on these.');
+console.log('\n  The build, or the services, would fail on these.');
 process.exit(1);

@@ -176,8 +176,13 @@ async function main() {
   let looseBaseline = {};
   try {
     looseBaseline = JSON.parse(readFileSync(LOOSE_BASELINE, 'utf8'));
-  } catch {
-    // None yet: every module is held to none.
+  } catch (cause) {
+    // None yet holds every module to none; one that cannot be read is a
+    // mistake to say, not a baseline of nothing.
+    if (cause.code !== 'ENOENT') {
+      console.error(`${LOOSE_BASELINE} cannot be read: ${cause.message}`);
+      process.exit(1);
+    }
   }
   const looser = looseIncreases(loose, looseBaseline);
   if (looser.length > 0) {
@@ -204,7 +209,14 @@ async function main() {
         'Lock that in with: npm run check:lint -- --update'
     );
     for (const rule of cleared) {
-      console.log(`  ${rule} has none left: promote it to "error" in eslint.config.js.`);
+      // The services' own count of it is apart (tools/loose-baseline.json):
+      // promoted while that has any, they would all become errors.
+      const services = Object.values(loose).reduce((a, b) => a + b, 0);
+      if (LOOSE_RULE.test(rule) && services > 0)
+        console.log(
+          `  ${rule} has none left in the site; tools/ still has loose values, so leave it a warning until tools/loose-baseline.json is empty.`
+        );
+      else console.log(`  ${rule} has none left: promote it to "error" in eslint.config.js.`);
     }
     process.exit(0);
   }

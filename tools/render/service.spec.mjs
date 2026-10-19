@@ -12,7 +12,7 @@
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, cacheKey } from './service.mjs';
+import { app, cacheKey, isModule } from './service.mjs';
 
 let base;
 let server;
@@ -129,5 +129,15 @@ describe('the request handler runs at all', () => {
     const response = await fetch(`${base}/render/R-HSA-109606.tiff`);
     expect(response.status).toBe(400);
     expect((await response.json()).formats).toContain('jpeg');
+  });
+});
+
+describe('isModule, what /health hashes', () => {
+  it('takes modules, .mjs or .ts, and no specs or notes (spec 013)', () => {
+    expect(
+      ['service.mjs', 'params.ts', 'service.spec.mjs', 'params.spec.ts', 'README.md'].filter(
+        isModule
+      )
+    ).toEqual(['service.mjs', 'params.ts']);
   });
 });

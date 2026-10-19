@@ -8451,6 +8451,8 @@ export async function answer(endpoint, request, response) {
  * was `endsWith('service.mjs')`, which a service renamed to `.ts` (spec 013)
  * fails, so it would load, never listen, and exit 0 -- a restart loop in its
  * container. Compared after symlinks are resolved, as Node resolves its own.
+ * scripts/is-entry.mjs does the same for the scripts, but the service images
+ * ship only this directory.
  */
 function startedDirectly() {
   try {
