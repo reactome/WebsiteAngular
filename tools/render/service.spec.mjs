@@ -114,10 +114,15 @@ describe('the request handler runs at all', () => {
       '"species" applies only to genome-wide; a pathway is its own species',
     ]);
     const byName = await fetch(`${base}/render/genome-wide.svg?species=Mus%20musculus`);
-    expect([byName.status, (await byName.json()).error]).toEqual([
-      400,
-      '"species" must be a taxId, e.g. 9606',
-    ]);
+    const refused = await byName.json();
+    expect([byName.status, refused.error]).toEqual([400, '"species" must be a taxId, e.g. 9606']);
+    // No suggestion: without the species it would be the default species'
+    // overview, a figure of the wrong species.
+    expect(refused.canonical).toBe(undefined);
+    for (const species of ['abc9606', '9606x', '09606']) {
+      const response = await fetch(`${base}/render/genome-wide.svg?species=${species}`);
+      expect([species, response.status]).toEqual([species, 400]);
+    }
   });
 
   it('refuses a format it cannot draw', async () => {

@@ -2463,7 +2463,7 @@ export const endpoints = [
       if (!taxId)
         return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not a species`);
       const ext = name.ext.toLowerCase();
-      const problem = figureProblem({ ...asked.values, ehld: true }, ext);
+      const problem = figureProblem(asked.values, ext);
       if (problem === 'unexpected') return unexpected(request);
       if (problem) return javaError(request, problem.status, problem.reason, problem.message);
       return renderFigure(

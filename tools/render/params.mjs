@@ -117,17 +117,6 @@ export function badEnums(query) {
 }
 
 /**
- * Parameters given more than once, which express hands over as an array.
- *
- * Refused rather than resolved to a first or last value, because "which one did
- * it take" is not a question a caller should have to ask. It was also a real
- * hole: `token` was read as `typeof … === 'string' ? … : ''`, so
- * `?token=a&token=b` rendered with **no token at all** — an analysis overlay
- * silently not applied, with a 200. The others were refused already, but only
- * as a side effect of their value checks failing on `"a,b"`; this makes it the
- * rule rather than an accident.
- */
-/**
  * `species` picks whose overview the genome-wide view draws, by taxId (spec
  * 006 T093: the old fireworks exporter's URL names one). A pathway decides
  * its own species, so naming one there is a question with two answers.
@@ -141,6 +130,17 @@ export function speciesProblem(name, query) {
     : '"species" must be a taxId, e.g. 9606';
 }
 
+/**
+ * Parameters given more than once, which express hands over as an array.
+ *
+ * Refused rather than resolved to a first or last value, because "which one did
+ * it take" is not a question a caller should have to ask. It was also a real
+ * hole: `token` was read as `typeof … === 'string' ? … : ''`, so
+ * `?token=a&token=b` rendered with **no token at all** — an analysis overlay
+ * silently not applied, with a 200. The others were refused already, but only
+ * as a side effect of their value checks failing on `"a,b"`; this makes it the
+ * rule rather than an accident.
+ */
 export function repeated(query) {
   return Object.keys(query).filter((key) => Array.isArray(query[key]));
 }

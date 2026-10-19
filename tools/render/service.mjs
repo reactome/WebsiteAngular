@@ -510,11 +510,18 @@ app.get('/render/:name.:ext', async (req, res) => {
   if (species) {
     return res.status(400).json({
       error: species,
-      canonical: canonicalUrl(
-        name,
-        format,
-        Object.fromEntries(Object.entries(req.query).filter(([key]) => key !== 'species'))
-      ),
+      // Without the species is the right URL for a pathway, which is its own
+      // species. For the overview it would be the default species' -- a
+      // figure of the wrong species, which is no suggestion at all.
+      ...(name === 'genome-wide'
+        ? {}
+        : {
+            canonical: canonicalUrl(
+              name,
+              format,
+              Object.fromEntries(Object.entries(req.query).filter(([key]) => key !== 'species'))
+            ),
+          }),
     });
   }
 

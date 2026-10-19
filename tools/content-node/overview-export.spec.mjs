@@ -100,4 +100,38 @@ describe('the species overview at the old fireworks URL', () => {
       'Invalid boolean value [maybe]'
     );
   });
+
+  it('converts the parameters in Java’s order: expColumn before coverage', async () => {
+    // Measured on production: the Integer's error, not the Boolean's.
+    expect(
+      (await envelope(await at('Nosuchspecies.svg?coverage=maybe&expColumn=x')))[2][0]
+    ).toContain("to required type 'java.lang.Integer'");
+  });
+
+  it('leaves a quality outside 1-10 to Java’s own 500, after the species', async () => {
+    expect(await envelope(await at('Nosuchspecies.svg?quality=11'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      ["'Nosuchspecies' is not a species"],
+    ]);
+    expect(await envelope(await at('Homo_sapiens.svg?quality=11'))).toEqual([
+      500,
+      'INTERNAL_SERVER_ERROR',
+      ['quality must be in the range [1-10]'],
+    ]);
+  });
+
+  it('takes a blank margin as its default, and refuses a title or a profile', async () => {
+    expect((await at('Homo_sapiens.svg?margin=')).status).toBe(200);
+    for (const asked of ['title=false', 'diagramProfile=Copper'])
+      expect([asked, (await envelope(await at(`Homo_sapiens.svg?${asked}`)))[2][0]]).toEqual([
+        asked,
+        expect.stringContaining(asked),
+      ]);
+  });
+
+  it('reads an empty selection as none, and drops empty items from one', async () => {
+    expect((await at('Homo_sapiens.svg?sel=,')).status).toBe(200);
+    expect((await envelope(await at('Homo_sapiens.svg?sel=a,,b')))[2][0]).toContain('sel=a,b');
+  });
 });

@@ -85,6 +85,24 @@ describe('the parameters, converted before anything is resolved', () => {
   });
 });
 
+describe('the diagram’s parameters, in diagramImage’s order', () => {
+  it('converts title before margin', async () => {
+    expect((await envelope(await at('XYZ.svg?margin=x&title=maybe')))[2][0]).toContain(
+      "to required type 'java.lang.Boolean'"
+    );
+  });
+
+  it('drops empty selections, which select nothing', async () => {
+    expect(
+      diagramExportRequest(
+        { diagramStId: 'R-HSA-1', events: [] },
+        { ext: 'svg', sel: [] }
+      ).searchParams.has('highlight')
+    ).toBe(false);
+    expect((await envelope(await at('XYZ.svg?sel=,')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+});
+
 describe('repeated and blank values, as Spring binds them', () => {
   it('joins a repeated String with commas, so flg=&flg=TP53 is not an empty flg', async () => {
     // Spring joins a String[] for a String parameter: Java flags ",TP53".

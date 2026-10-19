@@ -31,6 +31,7 @@
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { FORMATS, render } from './render-core.mjs';
+import { speciesProblem } from './params.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -77,6 +78,16 @@ if (flag('select', '') && flag('highlight', '')) {
 }
 
 const pathway = flag('pathway', '');
+{
+  // As the service checks it, before a browser is started for nothing.
+  const problem = flag('species', '')
+    ? speciesProblem(pathway ? pathway : 'genome-wide', { species: flag('species', '') })
+    : undefined;
+  if (problem) {
+    console.error(problem.replaceAll('"species"', '--species'));
+    process.exit(2);
+  }
+}
 const format = (flag('format', 'svg') || '').toLowerCase();
 const out = flag('out', `${pathway || 'genome-wide'}.${format}`);
 

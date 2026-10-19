@@ -185,16 +185,29 @@ export class RenderComponent {
     });
 
     effect(() => {
-      if (!this.wantedSpecies) return;
-      const all = this.speciesService.allShortenSpecies();
+      // A pathway is its own species; `species` is the overview's.
+      if (!this.wantedSpecies || this.pathwayId()) return;
+      let all;
+      try {
+        all = this.speciesService.allShortenSpecies();
+      } catch {
+        // A list that failed to load throws when read: say so now, rather
+        // than leave the caller to a minute's wait for "nothing drawn".
+        this.error.set('the species list could not be read');
+        this.publish();
+        return;
+      }
       if (!all) return;
       const wanted = all.find((species) => species.taxId === this.wantedSpecies);
-      if (wanted) {
-        untracked(() => this.speciesService.currentSpecies.set(wanted));
-      } else {
+      if (!wanted) {
         this.error.set(`no species with taxId ${this.wantedSpecies}`);
         this.publish();
+        return;
       }
+      // The same species as another object would still change the data's
+      // parameters, and load the overview's data a second time.
+      if (untracked(this.speciesService.currentSpecies).taxId !== wanted.taxId)
+        untracked(() => this.speciesService.currentSpecies.set(wanted));
     });
 
     effect(() => {
