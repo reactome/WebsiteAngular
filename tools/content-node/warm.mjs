@@ -91,7 +91,7 @@ export async function warm(origin, paths, { fetch = globalThis.fetch, pause = 25
 }
 
 /** A content API answer's body, or an error that says which and why. */
-export function jsonFrom(origin, fetch = globalThis.fetch) {
+function jsonFrom(origin, fetch = globalThis.fetch) {
   return async (path) => {
     const response = await fetch(origin + path, { signal: AbortSignal.timeout(LIMIT_MS) });
     const text = await response.text();
