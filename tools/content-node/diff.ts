@@ -20,25 +20,45 @@ import { endpointFor, endpoints } from './service.ts';
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const NODE = process.env['NODE_CONTENT_SERVICE'] || 'http://127.0.0.1:4400';
 
-function flag(name, fallback = '') {
+/** One side's answer: status, content type without parameters, and body. */
+interface Side {
+  status: number;
+  type: string;
+  body: string;
+}
+/** What the harness reads of an endpoint (service.ts lists them). */
+interface DiffEndpoint {
+  path: string;
+  method?: string;
+  sampleBody?: string;
+  samplePath?: Record<string, string>;
+  unordered?: (item: unknown) => unknown;
+  normalise?: (json: unknown) => unknown;
+  differs?: RegExp[];
+  sample?: string;
+  samplesOnly?: boolean;
+}
+
+function flag(name: string, fallback = '') {
   const at = process.argv.indexOf(`--${name}`);
   return at > -1 ? (process.argv[at + 1] ?? fallback) : fallback;
 }
 
 /** Fetch one path from both, as text plus content type. */
-async function fetchBoth(path) {
+async function fetchBoth(path: string) {
   // A POST endpoint is sent its sample body, or the --ids given, as text.
-  const endpoint = endpointFor(path);
+  const endpoint = endpointFor(path) as DiffEndpoint | undefined;
   const post = endpoint?.method === 'post';
   const ids = flag('ids');
   const init = post
     ? {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: ids || endpoint.sampleBody,
+        // No body for an endpoint with no sample: fetch reads null as none.
+        body: (ids || endpoint.sampleBody) ?? null,
       }
     : {};
-  const get = async (base) => {
+  const get = async (base: string): Promise<Side> => {
     const response = await fetch(base + path, { redirect: 'follow', ...init });
     return {
       status: response.status,
@@ -71,7 +91,7 @@ async function fetchBoth(path) {
  * shuffled one, and turn the safety net into a green light. Sorting instead
  * keeps all 999 entries compared field by field.
  */
-function differences(path, java, node, endpoint) {
+function differences(path: string, java: Side, node: Side, endpoint: DiffEndpoint | undefined) {
   const problems: string[] = [];
   if (java.status !== node.status) {
     problems.push(`status ${node.status}, java says ${java.status}`);
@@ -80,7 +100,7 @@ function differences(path, java, node, endpoint) {
     problems.push(`content-type "${node.type}", java says "${java.type}"`);
   }
 
-  const asJson = (side) => {
+  const asJson = (side: Side): unknown => {
     try {
       return JSON.parse(side.body);
     } catch {
@@ -108,7 +128,8 @@ function differences(path, java, node, endpoint) {
 
     if (endpoint?.unordered && Array.isArray(javaJson) && Array.isArray(nodeJson)) {
       const by = endpoint.unordered;
-      const keyed = (list) => list.map((item) => [JSON.stringify(by(item)), item]);
+      const keyed = (list: unknown[]) =>
+        list.map((item): [string, unknown] => [JSON.stringify(by(item)), item]);
       const javaKeyed = keyed(javaJson);
       const nodeKeyed = keyed(nodeJson);
 
@@ -132,7 +153,8 @@ function differences(path, java, node, endpoint) {
         // `localeCompare` is wrong for this and `<` alone is worse: a comparator
         // that never returns 0 is inconsistent, and V8 is entitled to order
         // equal elements however it likes -- differently on each side.
-        const byKey = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0);
+        const byKey = ([a]: [string, unknown], [b]: [string, unknown]) =>
+          a < b ? -1 : a > b ? 1 : 0;
         problems.push(
           ...compare(
             [...javaKeyed].sort(byKey).map(([, item]) => item),
@@ -162,7 +184,7 @@ function differences(path, java, node, endpoint) {
  * not be able to crowd out undeclared ones.
  */
 const CEILING = 2000;
-function compare(expected, actual, at, found: string[] = []) {
+function compare(expected: unknown, actual: unknown, at: string, found: string[] = []) {
   if (found.length > CEILING) return found;
   const where = at || '(root)';
 
@@ -185,7 +207,13 @@ function compare(expected, actual, at, found: string[] = []) {
     for (const key of keys) {
       if (!(key in actual)) found.push(`${at}.${key}: missing (java has it)`);
       else if (!(key in expected)) found.push(`${at}.${key}: extra (java does not have it)`);
-      else compare(expected[key], actual[key], `${at}.${key}`, found);
+      else
+        compare(
+          (expected as Record<string, unknown>)[key],
+          (actual as Record<string, unknown>)[key],
+          `${at}.${key}`,
+          found
+        );
     }
     return found;
   }
@@ -203,7 +231,8 @@ function paths() {
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
-  const chosen = only ? endpoints.filter((e) => e.path === only) : endpoints;
+  const all = endpoints as DiffEndpoint[];
+  const chosen = only ? all.filter((e) => e.path === only) : all;
 
   const skipped: string[] = [];
   const expanded = chosen.flatMap((endpoint) => {
@@ -248,7 +277,7 @@ async function main() {
   for (const path of list) {
     try {
       const { java, node } = await fetchBoth(path);
-      const endpoint = endpointFor(path);
+      const endpoint = endpointFor(path) as DiffEndpoint | undefined;
       const found = differences(path, java, node, endpoint);
       const declared = endpoint?.differs ?? [];
       const expected = found.filter((problem) => declared.some((rule) => rule.test(problem)));

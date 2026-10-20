@@ -53,9 +53,9 @@ function TABLES(): JsoupTables {
   return tables;
 }
 
-const isBlock = (name) => TABLES().tags[name]?.[0] === 1;
-const preservesWhitespace = (name) => TABLES().tags[name]?.[1] === 1;
-const isEmptyTag = (name) => TABLES().tags[name]?.[2] === 1;
+const isBlock = (name: string) => TABLES().tags[name]?.[0] === 1;
+const preservesWhitespace = (name: string) => TABLES().tags[name]?.[1] === 1;
+const isEmptyTag = (name: string) => TABLES().tags[name]?.[2] === 1;
 
 /** Windows-1252's characters for 0x80-0x9F, which Jsoup gives numeric references in that range. */
 const WIN1252 = [
@@ -64,26 +64,27 @@ const WIN1252 = [
   0x2122, 0x0161, 0x203a, 0x0153, 0x9d, 0x017e, 0x0178,
 ];
 
-const isLetter = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-const isDigit = (c) => c >= '0' && c <= '9';
+const isLetter = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+const isDigit = (c: string) => c >= '0' && c <= '9';
 // Character.isLetter and Character.isDigit, which an entity's name is read by.
-const isAnyLetter = (c) => /\p{L}/u.test(c);
-const isAnyDigit = (c) => /\p{Nd}/u.test(c);
-const isHex = (c) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+const isAnyLetter = (c: string) => /\p{L}/u.test(c);
+const isAnyDigit = (c: string) => /\p{Nd}/u.test(c);
+const isHex = (c: string) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 
 /**
  * A character reference starting at text[at] (just past the '&'), as
  * Tokeniser.consumeCharacterReference reads one: [the characters, where
  * reading resumes], or undefined for none -- the '&' is then itself.
  */
-function characterReference(text, at) {
-  if (at >= text.length || '\t\n\r\f <&'.includes(text[at])) return undefined;
+function characterReference(text: string, at: number): [text: string, next: number] | undefined {
+  if (at >= text.length || '\t\n\r\f <&'.includes(text.charAt(at))) return undefined;
   if (text[at] === '#') {
     let next = at + 1;
     const hex = text[next] === 'x' || text[next] === 'X';
     if (hex) next += 1;
     const start = next;
-    while (next < text.length && (hex ? isHex(text[next]) : isDigit(text[next]))) next += 1;
+    while (next < text.length && (hex ? isHex(text.charAt(next)) : isDigit(text.charAt(next))))
+      next += 1;
     if (next === start) return undefined;
     let value = Number.parseInt(text.slice(start, next), hex ? 16 : 10);
     // Integer.valueOf: past an int is NumberFormatException, read as -1.
@@ -96,8 +97,8 @@ function characterReference(text, at) {
   }
   // consumeLetterThenDigitSequence: letters, then digits; never a prefix of it.
   let next = at;
-  while (next < text.length && isAnyLetter(text[next])) next += 1;
-  while (next < text.length && isAnyDigit(text[next])) next += 1;
+  while (next < text.length && isAnyLetter(text.charAt(next))) next += 1;
+  while (next < text.length && isAnyDigit(text.charAt(next))) next += 1;
   const name = text.slice(at, next);
   const entities = TABLES().entities;
   const entity = Object.hasOwn(entities, name) ? entities[name] : undefined;
@@ -227,7 +228,7 @@ function tokens(html: string): Token[] {
 }
 
 /** Character references decoded through a whole text (RCDATA). */
-function decode(text) {
+function decode(text: string) {
   let out = '';
   let at = 0;
   while (at < text.length) {
@@ -251,9 +252,9 @@ function decode(text) {
  * self-closing '/' changes nothing the text depends on; or
  * undefined when the text ends first.
  */
-function readTag(html, at) {
+function readTag(html: string, at: number) {
   let end = at;
-  while (end < html.length && !'\t\n\f\r />'.includes(html[end])) {
+  while (end < html.length && !'\t\n\f\r />'.includes(html.charAt(end))) {
     // A '<' in a tag's name ends the tag there, and starts the next.
     if (html[end] === '<') return { name: html.slice(at, end).toLowerCase(), end };
     end += 1;
@@ -267,7 +268,7 @@ function readTag(html, at) {
     } else if (c === '"' || c === "'") {
       // Only an attribute's value opens a quote: after '=' and any spaces.
       let back = end - 1;
-      while (back > at && '\t\n\f\r '.includes(html[back])) back -= 1;
+      while (back > at && '\t\n\f\r '.includes(html.charAt(back))) back -= 1;
       if (html[back] === '=') quote = c;
     } else if (c === '>') {
       return { name, end: end + 1 };
@@ -475,7 +476,7 @@ const SCOPE_LIMITS = new Set([
 ]);
 
 /** A simplified HtmlTreeBuilder: the document's tree, as Jsoup builds it. */
-function build(html) {
+function build(html: string) {
   const documentNode = new Node('#document');
   const htmlNode = new Node('html', documentNode);
   const head = new Node('head', htmlNode);
@@ -491,7 +492,7 @@ function build(html) {
   };
   /** The name of the open element at `at`; within the stack's bounds, always one. */
   const nameAt = (at: number): string => stack[at]?.name ?? '';
-  const has = (name, limits = SCOPE_LIMITS) => {
+  const has = (name: string, limits = SCOPE_LIMITS) => {
     for (let at = stack.length - 1; at >= 0; at -= 1) {
       if (nameAt(at) === name) return true;
       if (limits.has(nameAt(at))) return false;
@@ -501,7 +502,7 @@ function build(html) {
   const buttonScope = new Set([...SCOPE_LIMITS, 'button']);
   const listScope = new Set([...SCOPE_LIMITS, 'ol', 'ul']);
   const tableScope = new Set(['html', 'table']);
-  const popUntil = (name) => {
+  const popUntil = (name: string) => {
     while (stack.length > 2) {
       const popped = stack.pop();
       if (popped?.name === name) return;
@@ -560,7 +561,7 @@ function build(html) {
     if (previous?.text !== undefined && !previous.cdata) previous.text += text;
     else siblings.splice(at, 0, { text, parent: host });
   };
-  const insert = (name, push = true) => {
+  const insert = (name: string, push = true) => {
     const node = new Node(name, current());
     append(node);
     if (push) stack.push(node);
@@ -584,7 +585,7 @@ function build(html) {
       if (entry) entry.node = insert(entry.name);
     }
   };
-  const lastActive = (name) => {
+  const lastActive = (name: string) => {
     for (let at = active.length - 1; at >= 0 && active[at] !== MARKER; at -= 1)
       if (active[at]?.name === name) return at;
     return -1;
@@ -594,7 +595,7 @@ function build(html) {
   };
   // The adoption agency, as far as text needs it: the formatting element
   // closed with everything open inside it, and taken off the list.
-  const closeFormatting = (name) => {
+  const closeFormatting = (name: string) => {
     const at = lastActive(name);
     const entry = active[at];
     if (at === -1 || !entry) return false;
@@ -802,10 +803,10 @@ const WHITESPACE = new Set([' ', '\t', '\n', '\f', '\r', ' ']);
 const INVISIBLE = new Set(['​', '­']);
 
 /** Element.text() over a built tree. */
-function text(root) {
+function text(root: Node) {
   let accum = '';
   const lastIsSpace = () => accum.length > 0 && accum[accum.length - 1] === ' ';
-  const preserved = (node) => {
+  const preserved = (node: Node | undefined) => {
     let at = node;
     for (let depth = 0; at && depth < 6; depth += 1) {
       if (at.name && preservesWhitespace(at.name)) return true;
@@ -813,7 +814,7 @@ function text(root) {
     }
     return false;
   };
-  const appendText = (node) => {
+  const appendText = (node: TextNode) => {
     if (node.cdata || preserved(node.parent)) {
       accum += node.text;
       return;
@@ -833,7 +834,7 @@ function text(root) {
       }
     }
   };
-  const visit = (node) => {
+  const visit = (node: Node | TextNode) => {
     if (node.text !== undefined) {
       appendText(node);
       return;
@@ -857,7 +858,7 @@ function text(root) {
 }
 
 /** String.trim: every character at or below U+0020 off both ends. */
-function javaTrim(value) {
+function javaTrim(value: string) {
   let start = 0;
   let end = value.length;
   while (start < end && value.charCodeAt(start) <= 0x20) start += 1;
@@ -866,6 +867,6 @@ function javaTrim(value) {
 }
 
 /** Jsoup.parse(html).text(). */
-export function jsoupText(html) {
+export function jsoupText(html: string) {
   return text(build(html));
 }
