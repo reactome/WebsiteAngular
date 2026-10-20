@@ -85,7 +85,7 @@ It must not mix in logic edits.
 
 ### Shared modules, bottom layer first (each its own PR; `service.ts` imports from them)
 
-- [ ] T008 [US1] Move `tools/content-node/java-text.ts` (R1 layer 1): the case table and `caseInsensitive`, `javaTrim`/`javaTrimAll`, `JAVA_WHITESPACE`, `javaNumeric`, `asciiDigits`, `javaParseInteger`/`javaParseInt`/`javaDecode`/`javaDigit`, `JavaNumberFormat`, `javaSplit`, `hashSetOf`, `longHash`, `databaseObjectHash`/`databaseObjectSet`, `present`, `javaUtf8`.
+- [x] T008 [US1] Move `tools/content-node/java-text.ts` (R1 layer 1): the case table and `caseInsensitive`, `javaTrim`/`javaTrimAll`, `JAVA_WHITESPACE`, `javaNumeric`, `asciiDigits`, `javaParseInteger`/`javaParseInt`/`javaDecode`/`javaDigit`, `JavaNumberFormat`, `javaSplit`, `hashSetOf`, `longHash`, `databaseObjectHash`/`databaseObjectSet`, `present`, `javaUtf8`. With it, `javaCase` and `CaseSnapshot`, which `caseInsensitive` reads. — #578
 - [ ] T009 [US1] Move `tools/content-node/body.ts` (layer 2): `plainText` and its charset table, `decoderFor`, `utf16`, `utf32`, `knownCharset`, `plainTextProblem`, `plainIds`.
 - [ ] T010 [US1] Move `tools/content-node/spring.ts` (layer 3): `Bound`, `booleanEditor`, the `spring*` binders, `servletParameter`/`servletDecode`, `queryValues`, `pathId`/`javaPathDecode`/`rawSegment`, `requiredString`, `writerFor`.
 - [ ] T011 [US1] Move `tools/content-node/answers.ts` (layer 4): `javaJson`, `javaError`, `notFound`, `unexpected`/`unexpectedFailure`, `springNotFound`, `compact` and its types, `only`, `nonEmptyJson`/`RawJson`, `Failure`, `neo4jFailureMessage`, `timedOut`, `cached`.
