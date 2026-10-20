@@ -3440,7 +3440,9 @@ export const endpoints = [
         return {
           status: 200,
           type: 'application/json',
-          // numFound > 0 but no entries would be Java's NullPointerException too.
+          // numFound > 0 with no documents cannot happen at Solr's default rows.
+          // If it did, this throws and fromSolr answers its Solr failure -- not
+          // Java's NullPointerException answer, as it did before it was typed.
           body: present(searchResult(answer, false).entries)[0],
         };
       });
