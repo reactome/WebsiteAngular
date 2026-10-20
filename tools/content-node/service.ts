@@ -6701,7 +6701,7 @@ function solrStrings(doc: SolrDoc, field: string) {
 }
 
 /** String.split on a literal or a pattern, as Java's: trailing empty strings removed. */
-function javaSplit(text, separator) {
+function javaSplit(text: string, separator: string | RegExp): string[] {
   const parts = text.split(separator);
   // No separator at all is the text itself, even empty; otherwise every
   // trailing empty string goes, so "," is nothing at all.
@@ -6728,9 +6728,7 @@ function iconPhysicalEntities(doc) {
   // what is written, but the TreeSet still orders by it.
   const names: string[] = [];
   for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
-    const split = javaSplit(packed, '#');
-    const [stId, type, name, compartments] = split;
-    if (compartments === undefined) throw outOfBounds(split.length, [0, 1, 2, 3], packed);
+    const [stId, type, name, compartments] = fourParts(packed, '#', [0, 1, 2, 3]);
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
     const at = names.findIndex((other) => caseInsensitive(displayName, other) <= 0);
     if (at > -1 && caseInsensitive(displayName, names[at]) === 0) continue;
@@ -7116,6 +7114,22 @@ function outOfBounds(length: number, reads: number[], raw: string): Error {
   });
 }
 
+/**
+ * The first four parts of `raw` split as Java splits it, or, for fewer,
+ * Java's failure reading them in the order `reads` (outOfBounds).
+ */
+function fourParts(
+  raw: string,
+  separator: string,
+  reads: number[]
+): [string, string, string, string] {
+  const parts = javaSplit(raw, separator);
+  const [a, b, c, d] = parts;
+  if (a === undefined || b === undefined || c === undefined || d === undefined)
+    throw outOfBounds(parts.length, reads, raw);
+  return [a, b, c, d];
+}
+
 /** The parts extractRawOccurrence reads, in its order: [0], [2], [3], then [1]. */
 const OCCURRENCE_READS = [0, 2, 3, 1];
 
@@ -7125,9 +7139,8 @@ const OCCURRENCE_READS = [0, 2, 3, 1];
  * HashSet, so written in a java.util.HashMap's order, and left out empty.
  * Fewer than four parts is Java's ArrayIndexOutOfBoundsException.
  */
-function rawOccurrence(raw) {
-  const line = javaSplit(raw, ':');
-  if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS, raw);
+function rawOccurrence(raw: string) {
+  const line = fourParts(raw, ':', OCCURRENCE_READS);
   const set = (text) => {
     if (text === '#') return undefined;
     const map = new JavaHashMap<string, boolean>();
@@ -7191,8 +7204,7 @@ function diagramFlags(answer, pathway, field) {
   for (const doc of answer?.response?.docs ?? []) {
     for (const raw of solrStrings(doc, field)) {
       if (!raw.startsWith(pathway)) continue;
-      const line = javaSplit(raw, ':');
-      if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS, raw);
+      const line = fourParts(raw, ':', OCCURRENCE_READS);
       // extractRawOccurrence with the document: the entity is its stId
       // when it is in the diagram, and in the diagram if that is non-empty.
       const entity = line[1].toLowerCase() === 'true' ? solrValue(doc, 'stId') : null;
@@ -7230,9 +7242,8 @@ function speciesWideFlags(answer, abbreviation) {
   for (const doc of answer?.response?.docs ?? []) {
     for (const id of solrStrings(doc, 'llps')) llps.set(id, true);
     for (const raw of solrStrings(doc, 'occurrences')) {
-      const line = javaSplit(raw, ':');
       // fireworksFlagging reads [0], then [3].
-      if (line.length < 4) throw outOfBounds(line.length, [0, 3], raw);
+      const line = fourParts(raw, ':', [0, 3]);
       if (line[3] !== '#') interactsWith.set(line[0], true);
     }
   }
