@@ -288,6 +288,25 @@ describe('a matrix parameter', () => {
         ]);
     });
 
+  it('reaches Java encoded, as sent, so Java cannot drop it as one', () => {
+    // A proxy_pass with a URI part sends nginx's decoded path: %3B arrives at
+    // Tomcat as ';', which it drops as a matrix parameter, and
+    // /data/query%3Bx/{id} -- no node location's -- is answered by Java as
+    // node's /data/query/{id}. Without one, Tomcat gets the path as sent;
+    // the AnalysisService's too.
+    const core = readFileSync(join(__dirname, 'common', 'routes-core.conf'), 'utf8');
+    for (const [service, upstream] of [
+      ['ContentService', 'content'],
+      ['AnalysisService', 'analysis'],
+    ]) {
+      const block = new RegExp(`^location /${service}/ \\{([^}]*)\\}`, 'm').exec(core)?.[1] ?? '';
+      expect([service, block.match(/^\s*proxy_pass\s+[^;]*;/gm)]).toEqual([
+        service,
+        [`    proxy_pass http://${upstream};`],
+      ]);
+    }
+  });
+
   it('is not an encoded one, nor one in the query string', async () => {
     for (const url of [
       '/ContentService/data/query/abridged/R-HSA-109581%3Bx',

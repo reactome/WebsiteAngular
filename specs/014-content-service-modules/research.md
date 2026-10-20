@@ -124,7 +124,7 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
 
 Eight handlers carry `warms`. The parameter record (`parameters.ts` `RECORD`) is keyed by path and stays separate. It is shared with the cache labels and the invalid-input corpus, and folding it into the endpoint would tie three modules to one shape.
 
-**Decision.** One `Endpoint` type in `registry.ts` with exactly these fields (see data-model.md). Each family declares its list as `Endpoint[]`. The casts in `diff.ts`, `invalid-inputs.ts`/`.spec.ts` and `parameters.spec.ts` go.
+**Decision.** One `Endpoint` type in `endpoint.ts` (types only, a leaf: families and `answers` use it, and none may import the registry) with exactly these fields (see data-model.md). Each family declares its list as `Endpoint[]`. The casts in `diff.ts`, `invalid-inputs.ts`/`.spec.ts` and `parameters.spec.ts` go.
 
 ## R5. Ratchets across a move
 

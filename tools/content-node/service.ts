@@ -27,7 +27,7 @@ import { read, configured, close } from './graph.ts';
 import { settings } from './settings.ts';
 import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
-import type { Answer, Endpoint, Handler, Request } from './registry.ts';
+import type { Answer, Endpoint, Handler, Request } from './endpoint.ts';
 import type {
   Contributor,
   DoiPathway,

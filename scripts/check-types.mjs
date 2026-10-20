@@ -111,6 +111,11 @@ if (up.length) {
 }
 const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 console.log(`  tools/ with noImplicitAny: ${total} left, none new`);
-if (down.length)
+// A fall not locked in is room a later change could fill unseen: the
+// baseline would not move, and nothing would say the count rose again.
+if (down.length) {
   console.log(`  ${down.length} module(s) went down; lock it in: npm run check:types -- --update`);
+  for (const [file, n] of down) console.log(`    ${file}: ${n} -> ${counts[file] ?? 0}`);
+  process.exit(1);
+}
 process.exit(0);
