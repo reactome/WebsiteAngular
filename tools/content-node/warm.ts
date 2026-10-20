@@ -46,12 +46,13 @@ export const FIXED = [
 ];
 const LIMIT_MS = 60_000;
 
+/** A content API path's parsed body. */
+type GetJson = (path: string) => Promise<unknown>;
+
 /**
  * The URLs to warm, in order. `getJson(path)` answers a content API path
  * with its parsed body: the species list, and human's top pathways.
  */
-/** A content API path's parsed body. */
-type GetJson = (path: string) => Promise<unknown>;
 
 export async function warmList(getJson: GetJson) {
   const paths = FIXED.map((path) => CS + path);

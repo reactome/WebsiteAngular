@@ -60,10 +60,36 @@ const strict = spawnSync(
     encoding: 'utf8',
   }
 );
+// tsc exits 2 when it found errors and 0 when it found none; anything else
+// -- a crash, a signal, npx failing -- is no reading at all, and nor is an
+// exit 2 with no error lines to count. Either would read as "none left" and
+// invite --update to write an empty baseline, so it fails here instead.
+const strictOutput = `${strict.stdout ?? ''}`;
+const errorLines = strictOutput
+  .split('\n')
+  .filter((line) => /^\S.*\(\d+,\d+\): error TS\d+/.test(line));
+if (
+  strict.error ||
+  ![0, 2].includes(strict.status) ||
+  (strict.status === 2) !== errorLines.length > 0
+) {
+  console.log(`  tools/ with noImplicitAny: no reading (exit ${strict.status ?? strict.error})`);
+  for (const line of `${strictOutput}${strict.stderr ?? ''}`.trim().split('\n'))
+    console.log(`    ${line}`);
+  process.exit(1);
+}
+// An error outside tools/ (a site model the services import) is the site's
+// compile's to catch; one here means that did not, so say so.
+const elsewhere = errorLines.filter((line) => !line.startsWith('tools/'));
+if (elsewhere.length) {
+  console.log('  noImplicitAny errors outside tools/, which nothing counts:\n');
+  for (const line of elsewhere) console.log(`    ${line}`);
+  process.exit(1);
+}
 const counts = {};
-for (const line of `${strict.stdout ?? ''}`.split('\n')) {
-  const match = /^(tools\/[^(]+)\(\d+,\d+\): error TS\d+/.exec(line);
-  if (match) counts[match[1]] = (counts[match[1]] ?? 0) + 1;
+for (const line of errorLines) {
+  const file = line.slice(0, line.indexOf('('));
+  counts[file] = (counts[file] ?? 0) + 1;
 }
 const sorted = Object.fromEntries(Object.entries(counts).sort(([a], [b]) => (a < b ? -1 : 1)));
 if (process.argv.includes('--update')) {

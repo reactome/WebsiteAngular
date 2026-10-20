@@ -38,7 +38,10 @@ const flag = (name: string, fallback: string): string => {
   const i = args.indexOf(`--${name}`);
   if (i === -1) return fallback;
   const value = args[i + 1];
-  if (value === undefined) throw new Error(`--${name} needs a value`);
+  if (value === undefined) {
+    console.error(`--${name} needs a value`);
+    process.exit(2);
+  }
   return value;
 };
 
