@@ -14,7 +14,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { app, cacheKey, isModule } from './service.ts';
+import { app, cacheKey, httpError, isModule, statusOf } from './service.ts';
 
 let base: string;
 let server: Server;
@@ -146,5 +146,23 @@ describe('isModule, what /health hashes', () => {
         'README.md',
       ].filter(isModule)
     ).toEqual(['service.mjs', 'params.ts']);
+  });
+});
+
+// What replaced `error.status || 500` (spec 013): the status a failed render
+// answers with (review of #552).
+describe('statusOf, what a failed render answers with', () => {
+  it('answers with the status the failure was given, and 500 for any other', () => {
+    expect(
+      [
+        httpError(404, 'no such pathway'),
+        httpError(400, 'bad layout'),
+        httpError(503, 'saturated'),
+        new Error('the browser crashed'),
+        Object.assign(new Error('odd'), { status: '404' }),
+        null,
+        'a string thrown',
+      ].map(statusOf)
+    ).toEqual([404, 400, 503, 500, 500, 500, 500]);
   });
 });

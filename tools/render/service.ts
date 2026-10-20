@@ -153,12 +153,12 @@ async function getBrowser() {
 }
 
 /** An error with the HTTP status it answers with. */
-function httpError(status: number, message: string): Error & { status: number } {
+export function httpError(status: number, message: string): Error & { status: number } {
   return Object.assign(new Error(message), { status });
 }
 
 /** The status an error answers with: its own, or 500. */
-const statusOf = (error: unknown): number =>
+export const statusOf = (error: unknown): number =>
   error instanceof Error && 'status' in error && typeof error.status === 'number'
     ? error.status
     : 500;

@@ -190,7 +190,13 @@ export async function gifFromPage(
       let binary = '';
       const chunk = 0x8000;
       for (let at = 0; at < bytes.length; at += chunk) {
-        binary += String.fromCharCode(...bytes.subarray(at, at + chunk));
+        // apply, not a spread: the same characters, several times faster in
+        // Chromium on a multi-megabyte animation (review of #552). It takes a
+        // typed array as it is; only its type says otherwise.
+        binary += String.fromCharCode.apply(
+          null,
+          bytes.subarray(at, at + chunk) as unknown as number[]
+        );
       }
 
       return {

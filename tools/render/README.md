@@ -100,7 +100,7 @@ sub-pathway tint, editable the moment the file opens. Curators reported that
 holding one picture is, however good the picture.
 
 The page decides every position, colour, opacity, dash and font from the live
-style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+style and hands them over as `RenderShapes`; `pptx.ts` is the OOXML spelling of
 a rectangle and nothing more, so it is not a second opinion about what the
 diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
 976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
@@ -142,7 +142,7 @@ Two things are easy to miss, and both leave the site serving the old artefact
 while the code and its tests say otherwise:
 
 - **The service holds the code in memory.** It is a long-running node process,
-  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  so editing `pptx.ts` changes nothing until it is restarted. A download taken
   from the site is the only check that says whether the running service has your
   change — the CLI reads the files from disk and will happily agree with you.
 - **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
