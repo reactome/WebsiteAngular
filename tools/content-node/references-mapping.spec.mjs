@@ -3,9 +3,9 @@
 // /references/mapping/{identifier}, /references/mapping/{identifier}/xrefs and
 // POST /references/mapping/xrefs -- the reference entities an identifier
 // names, and their cross references and physical entities -- with a stand-in
-// graph. ReferenceEntityController, which builds its cross-reference query by
-// writing the identifier and filter into the text, and graph-core's
-// ReferenceEntityRepository. The entities here are invented; Java's answers
+// graph. ReferenceEntityController's cross-reference query, with the
+// identifier and filter passed as parameters where Java writes them into the
+// text, and graph-core's ReferenceEntityRepository. The entities here are invented; Java's answers
 // were measured 17 Oct 2026.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -44,12 +44,12 @@ const messages = async (response) => [response.status, (await response.json()).m
 const last = () => asked[asked.length - 1];
 
 describe('crossReferenceQuery', () => {
-  it("is the controller's text, the identifier and filter written into it as given", () => {
-    expect(crossReferenceQuery('P1', undefined)).toBe(
-      'MATCH (n{identifier:"P1"})<-[:crossReference]-(re:ReferenceEntity)-[:crossReference]->(xf) OPTIONAL MATCH (re)<-[:referenceEntity]-(pe:PhysicalEntity) RETURN re.identifier as reference, [ x in collect(distinct xf) | {identifier:x.identifier, databaseName:x.databaseName, url:x.url}] as crossReferences, collect(distinct pe.stId) as physicalEntities'
+  it("is the controller's text, the identifier and filter as parameters", () => {
+    expect(crossReferenceQuery(undefined)).toBe(
+      'MATCH (n{identifier:$identifier})<-[:crossReference]-(re:ReferenceEntity)-[:crossReference]->(xf) OPTIONAL MATCH (re)<-[:referenceEntity]-(pe:PhysicalEntity) RETURN re.identifier as reference, [ x in collect(distinct xf) | {identifier:x.identifier, databaseName:x.databaseName, url:x.url}] as crossReferences, collect(distinct pe.stId) as physicalEntities'
     );
-    expect(crossReferenceQuery('P1', 'Ensembl')).toMatch(
-      /\(xf\) WHERE xf\.databaseName="Ensembl" OPTIONAL MATCH/
+    expect(crossReferenceQuery('Ensembl')).toMatch(
+      /\(xf\) WHERE xf\.databaseName=\$dbFilter OPTIONAL MATCH/
     );
   });
 });
@@ -112,7 +112,7 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     expect(await response.text()).toBe(
       '[{"reference":"P1","physicalEntities":["R-HSA-2"],"crossReferences":[{"identifier":"X","databaseName":"D","url":"null"}]}]'
     );
-    expect(last()[0]).toBe(crossReferenceQuery('P1', 'D'));
+    expect(last()).toEqual([crossReferenceQuery('D'), { identifier: 'P1', dbFilter: 'D' }]);
   });
 
   it('leaves out what NON_EMPTY leaves out: no entities, an empty text', async () => {
@@ -153,7 +153,7 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     answer = () => [];
     asked.length = 0;
     await get('P1/xrefs?dbFilter=A&dbFilter=B');
-    expect(last()[0]).toBe(crossReferenceQuery('P1', 'A,B'));
+    expect(last()).toEqual([crossReferenceQuery('A,B'), { identifier: 'P1', dbFilter: 'A,B' }]);
   });
 
   it('is a 404 when nothing matches', async () => {
@@ -164,24 +164,32 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     ]);
   });
 
-  it("is Java's 500 with Neo4j's message when the identifier breaks the query", async () => {
+  it('looks up an identifier or filter with a quote in it as written, as a value', async () => {
+    // Java writes both into its query, where a quote ends the string (its
+    // 500); here each is only ever a parameter, and matches nothing.
+    answer = () => [];
+    asked.length = 0;
+    const response = await get('P36%22897/xrefs?dbFilter=D%22');
+    expect(response.status).toBe(404);
+    expect(asked).toEqual([[crossReferenceQuery('D"'), { identifier: 'P36"897', dbFilter: 'D"' }]]);
+    expect(asked[0][0]).not.toContain('P36');
+  });
+
+  it("is the service's 503 when the database ends the query, as everywhere", async () => {
     answer = () => {
-      throw Object.assign(new Error("Invalid input '8': expected ..."), {
-        code: 'Neo.ClientError.Statement.SyntaxError',
+      throw Object.assign(new Error('timed out'), {
+        code: 'Neo.ClientError.Transaction.TransactionTimedOut',
       });
     };
-    expect(await messages(await get('P36%22897/xrefs'))).toEqual([
-      500,
-      [
-        "Invalid input '8': expected ...; Error code 'Neo.ClientError.Statement.SyntaxError'; nested exception is org.neo4j.driver.exceptions.ClientException: Invalid input '8': expected ...",
-      ],
-    ]);
+    const response = await get('P1/xrefs');
+    expect(response.status).toBe(503);
+    expect((await response.json()).reason).toBe('SERVICE_UNAVAILABLE');
   });
 });
 
 describe('POST /references/mapping/xrefs', () => {
   it('pages the identifiers, each to its results or NO MATCH', async () => {
-    answer = (cypher) => (cypher.includes('"P1"') ? [XREF_ROW] : []);
+    answer = (cypher, params) => (params.identifier === 'P1' ? [XREF_ROW] : []);
     const response = await post('?page=0&pageSize=2', 'P1, xyz;Q2');
     const json = await response.json();
     expect(json.content).toEqual([
@@ -199,7 +207,7 @@ describe('POST /references/mapping/xrefs', () => {
     answer = () => [];
     asked.length = 0;
     await post('?dbFilter=A&dbFilter=B', 'P1');
-    expect(last()[0]).toBe(crossReferenceQuery('P1', 'A,B'));
+    expect(last()).toEqual([crossReferenceQuery('A,B'), { identifier: 'P1', dbFilter: 'A,B' }]);
   });
 
   it('splits on newline and tab too, and trims as String.trim does', async () => {
@@ -227,13 +235,67 @@ describe('POST /references/mapping/xrefs', () => {
   });
 
   it("is the first failure's answer when one identifier breaks the query", async () => {
-    answer = (cypher) => {
-      if (cypher.includes('"B"'))
+    answer = (cypher, params) => {
+      if (params.identifier === 'B')
         throw Object.assign(new Error('bad'), { code: 'Neo.ClientError.Statement.SyntaxError' });
       return [];
     };
     const [status, [message]] = await messages(await post('', 'A,B,C'));
     expect([status, message.startsWith('bad; Error code')]).toEqual([500, true]);
+  });
+
+  it('starts no lookup after one throws', async () => {
+    asked.length = 0;
+    // The first lookup fails; the others would each take 5ms.
+    answer = (cypher, params) => {
+      if (params.identifier === 'I0') throw new Error('the database is gone');
+      return new Promise((resolve) => setTimeout(() => resolve([]), 5));
+    };
+    const ids = Array.from({ length: 50 }, (_, at) => `I${at}`).join(',');
+    expect((await post('?pageSize=50', ids)).status).toBe(500);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    // The four workers' first lookups, and nothing after.
+    expect(asked.length).toBe(4);
+  });
+
+  it('starts no lookup once the client has gone', async () => {
+    asked.length = 0;
+    let started;
+    const first = new Promise((resolve) => (started = resolve));
+    answer = () => {
+      started();
+      return new Promise((resolve) => setTimeout(() => resolve([]), 20));
+    };
+    const ids = Array.from({ length: 100 }, (_, at) => `I${at}`).join(',');
+    const gone = new AbortController();
+    const sent = fetch(`${base}/ContentService/references/mapping/xrefs?pageSize=100`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: ids,
+      signal: gone.signal,
+    }).catch(() => undefined);
+    await first;
+    gone.abort();
+    await sent;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    // The lookups under way when the client left, four at a time, and at
+    // most one more round as the close arrives; never the hundred.
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.length).toBeLessThanOrEqual(8);
+  });
+
+  it('runs two batches at once and answers a third 503, Retry-After', async () => {
+    let release;
+    const held = new Promise((resolve) => (release = resolve));
+    answer = () => held.then(() => []);
+    const two = [post('', 'A'), post('', 'B')];
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const third = await post('', 'C');
+    expect([third.status, third.headers.get('retry-after')]).toEqual([503, '5']);
+    release();
+    expect((await Promise.all(two)).map((response) => response.status)).toEqual([200, 200]);
+    // Their places given back.
+    expect((await post('', 'D')).status).toBe(200);
   });
 
   it("answers Java's errors: 415, 422, 400 and the paging 500s", async () => {
