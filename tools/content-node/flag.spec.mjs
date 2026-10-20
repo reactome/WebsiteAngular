@@ -20,8 +20,15 @@ const species = {
 
 vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
-    if (cypher.includes(':Species')) return [species[params.name] ?? []].flat();
-    return objects[params.id] ? [objects[params.id]] : [];
+    // Only the queries as the service writes them: the species by exact
+    // name among its names, and the object check reading hasDiagram.
+    if (cypher.includes(':Species'))
+      return cypher.includes('MATCH (n:Species) WHERE $name IN n.name RETURN')
+        ? [species[params.name] ?? []].flat()
+        : [];
+    return cypher.includes('n.hasDiagram AS hasDiagram') && objects[params.id]
+      ? [objects[params.id]]
+      : [];
   },
   configured: () => true,
   close: async () => {},
@@ -147,6 +154,9 @@ describe('/diagram/{pathwayId}/flag', () => {
     expect([bad.status, (await bad.json()).messages]).toEqual([400, ["'xyz' cannot be found"]]);
     const blank = await get('diagram/R-HSA-446203/flag?query=CTSA&includeInteractors=%20');
     expect(blank.status).toBe(500);
+    expect((await blank.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
     expect(asked).toHaveLength(0);
   });
 });
@@ -218,6 +228,9 @@ describe('/fireworks/flag', () => {
     asked = [];
     const response = await get('fireworks/flag?query=x&species=Twice');
     expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
     expect(asked).toHaveLength(0);
   });
 });

@@ -84,7 +84,7 @@ describe('/references/mapping/{identifier}', () => {
     const response = await get('P1');
     expect((await response.json()).map((e) => e.dbId)).toEqual([1]);
     expect(last()[0].replace(/\s+/g, ' ').trim()).toMatch(
-      /^MATCH \(rd:ReferenceDatabase\)<--\(n\{identifier:\$identifier\}\)<-\[:referenceEntity\|referenceSequence\|crossReference\|referenceGene\*\]-\(pe:PhysicalEntity\) WITH DISTINCT pe MATCH \(pe\)-\[:referenceEntity\]->\(n:ReferenceEntity\) ?RETURN DISTINCT n/
+      /^MATCH \(rd:ReferenceDatabase\)<--\(n\{identifier:\$identifier\}\)<-\[:referenceEntity\|referenceSequence\|crossReference\|referenceGene\*\]-\(pe:PhysicalEntity\) WITH DISTINCT pe MATCH \(pe\)-\[:referenceEntity\]->\(n:ReferenceEntity\) ?RETURN DISTINCT n, labels\(n\) AS labels$/
     );
     expect(last()[1]).toEqual({ identifier: 'P1' });
   });

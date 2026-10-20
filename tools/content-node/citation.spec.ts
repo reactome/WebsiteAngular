@@ -285,7 +285,9 @@ describe('StaticCitation', () => {
 
 vi.mock('./graph.ts', async () => ({
   read: async (cypher, params) => {
-    if (cypher.includes('DBInfo')) return [{ version: 97 }];
+    // The release as the service reads it: releaseNumber, not another property.
+    if (cypher === 'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1')
+      return [{ version: 97 }];
     globalThis.graphAsked = params;
     return globalThis.graphRows ?? [];
   },
@@ -356,6 +358,73 @@ describe('the citation endpoints', () => {
       '',
       null,
     ]);
+  });
+
+  // An event as graph-core's enhanced query loads it, with nothing related.
+  const eventRow = (schemaClass: string, labels: string[]) => ({
+    root: {
+      id: 1,
+      labels: ['DatabaseObject', 'Event', ...labels],
+      props: {
+        dbId: 9,
+        stId: 'R-HSA-9',
+        displayName: 'An event',
+        releaseDate: '2020-06-15',
+        doi: '10.3180/R-HSA-9.1',
+        schemaClass,
+      },
+    },
+    order: [],
+    nodes: [],
+    relationships: [],
+  });
+
+  it("/pathway/{id} cites the event by the id as given; only a pathway's by its DOI", async () => {
+    try {
+      globalThis.graphRows = [eventRow('Pathway', ['Pathway'])];
+      const pathway = await (
+        await fetch(`${base}/ContentService/citation/pathway/9?dateAccessed=d`)
+      ).json();
+      // Asked by its stable id: the link names the id as given, not its dbId.
+      globalThis.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
+      const reaction = await (
+        await fetch(`${base}/ContentService/citation/pathway/R-HSA-9?dateAccessed=d`)
+      ).json();
+      expect([pathway, reaction]).toEqual([
+        {
+          imageCitation:
+            'Image Citation for An event. Reactome, 97, https://doi.org/10.3180/R-HSA-9.1 (d)',
+          pathwayCitation:
+            'The Reactome Consortium (2020). An event. Reactome, 97, https://doi.org/10.3180/R-HSA-9.1 (d)',
+        },
+        {
+          imageCitation:
+            'Image Citation for An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9 (d)',
+          pathwayCitation:
+            'The Reactome Consortium (2020). An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9 (d)',
+        },
+      ]);
+    } finally {
+      globalThis.graphRows = [];
+    }
+  });
+
+  it('export writes each format as its own type and extension', async () => {
+    for (const [ext, type, extension] of [
+      ['bib', 'application/x-bibtex; charset=utf-8', 'bib'],
+      ['ris', 'application/x-research-info-systems; charset=utf-8', 'ris'],
+      ['txt', 'text/plain; charset=utf-8', 'txt'],
+    ]) {
+      const response = await fetch(
+        `${base}/ContentService/citation/export?isPathway=false&id=12345&ext=${ext}&dateAccessed=d`
+      );
+      expect([
+        ext,
+        response.status,
+        response.headers.get('content-type'),
+        response.headers.get('content-disposition'),
+      ]).toEqual([ext, 200, type, `attachment; filename="reactome_citation_12345.${extension}"`]);
+    }
   });
 
   it('/static/{id} is "unable to fetch" for an answer Java cannot read', async () => {

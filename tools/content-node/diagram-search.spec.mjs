@@ -15,7 +15,13 @@ const objects = {
 };
 
 vi.mock('./graph.ts', () => ({
-  read: async (_cypher, params) => (objects[params.id] ? [objects[params.id]] : []),
+  // Only the object check as the service writes it: a wrong property (a
+  // diagram flag read from hasEHLD, say) finds nothing.
+  read: async (cypher, params) =>
+    cypher.includes('RETURN labels(n) AS labels, n.hasDiagram AS hasDiagram LIMIT 1') &&
+    objects[params.id]
+      ? [objects[params.id]]
+      : [],
   configured: () => true,
   close: async () => {},
   envSetting: (key, fallback = '') => process.env[key] || fallback,
@@ -257,6 +263,9 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
     answer = () => ({ response: { numFound: 1, docs: [{ occurrences: ['R-HSA-68886:true:x'] }] } });
     const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
     expect(short.status).toBe(500);
+    expect((await short.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
   });
 
   it('asks again in every scope, then is the 404', async () => {

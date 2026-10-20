@@ -277,6 +277,9 @@ describe('/query', () => {
     answer = (handler) => (handler.endsWith('/facet') ? facets(8) : grouped([]));
     const blank = await get('query?query=TP53&scope=%20');
     expect(blank.status).toBe(500);
+    expect((await blank.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
     answer = () => ({ response: { numFound: 0, docs: [] } });
     const empty = await get('query?query=&scope=%20');
     expect(empty.status).toBe(404);
@@ -332,12 +335,11 @@ describe('/query', () => {
     const body = await (
       await get('query?query=%20P04637&cluster=false&Start%20row=900&scope=BOTH')
     ).json();
-    expect(body.targetResults).toEqual(
-      expect.arrayContaining([
-        { resource: 'UNIPROT', target: false },
-        { term: 'P04637', resource: 'UNIPROT', target: true },
-      ])
-    );
+    // In the order Java's HashSet writes them, not merely both present.
+    expect(body.targetResults).toEqual([
+      { term: 'P04637', resource: 'UNIPROT', target: true },
+      { resource: 'UNIPROT', target: false },
+    ]);
   });
 
   it("is Java's 500 when Solr's grouped answer has no grouping", async () => {
@@ -345,6 +347,9 @@ describe('/query', () => {
       handler.endsWith('/facet') ? facets(8) : { response: { numFound: 0, docs: [] } };
     const response = await get('query?query=TP53');
     expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
   });
 
   it('leaves out the type of a group with none', async () => {
@@ -405,6 +410,9 @@ describe('/query/paginated', () => {
     };
     const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
     expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
     // This search's own report, not a late one from the test before.
     await until(() => reports.some((report) => report.body === '{"term":"TP53","resource":""}'));
   });
@@ -421,6 +429,9 @@ describe('/query/paginated', () => {
         : grouped([['Protein', [doc('1', 'TP53')]]]);
     const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
     expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
   });
 
   it("is Java's 400 for a page or row count that is not positive, and Spring's when absent", async () => {

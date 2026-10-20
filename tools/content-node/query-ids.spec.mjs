@@ -1,15 +1,41 @@
 // @vitest-environment node
 //
 // POST /data/query/ids and /data/query/ids/map -- a batch of objects by id --
-// with a stand-in graph that finds nothing, for Java's errors, and the two
+// with a stand-in graph, for Java's errors and its answers, and the two
 // orders Java writes in: a HashSet of DatabaseObjects and a HashMap of ids.
 // The expected orders are the JDK's own (11, the version the service runs),
 // computed with graph-core's DatabaseObject.hashCode -- dbId, then stId,
 // then displayName, 31 apart. Java's answers measured 17 Oct 2026.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+// Three objects the stand-in graph finds, by the id each is asked by.
+const FOUND = {
+  'R-HSA-109581': [109581, 'Apoptosis'],
+  'R-HSA-1640170': [1640170, 'Cell Cycle'],
+  199420: [199420, 'PTEN [cytosol]'],
+};
+let finds = false;
 vi.mock('./graph.ts', () => ({
-  read: async () => [],
+  read: async (cypher, params) => {
+    const known = finds ? FOUND[params?.id] : undefined;
+    if (!known) return [];
+    const [dbId, displayName] = known;
+    const labels = ['DatabaseObject', 'Event', 'Pathway'];
+    if (/AS root/.test(cypher))
+      return [
+        {
+          root: {
+            id: dbId,
+            labels,
+            props: { dbId, stId: `R-HSA-${dbId}`, displayName, schemaClass: 'Pathway' },
+          },
+          order: [],
+          nodes: [],
+          relationships: [],
+        },
+      ];
+    return [{ labels }];
+  },
   configured: () => true,
   close: async () => {},
   envSetting: () => '',
@@ -73,6 +99,35 @@ const post = (path, body, type = 'text/plain') =>
     headers: type ? { 'content-type': type } : {},
     body,
   });
+
+describe("Java's answers", () => {
+  it('writes /ids in the HashSet order, not the order sent; the ids not found left out', async () => {
+    finds = true;
+    try {
+      const response = await post('ids', 'R-HSA-109581, R-HSA-1640170, 199420, xyz');
+      expect((await response.json()).map((o) => o.dbId)).toEqual([1640170, 109581, 199420]);
+    } finally {
+      finds = false;
+    }
+  });
+
+  it('writes /ids/map keyed by each id as sent, in the HashMap order', async () => {
+    finds = true;
+    try {
+      const response = await post('ids/map', 'R-HSA-109581, R-HSA-1640170, 199420, xyz');
+      // Read from the text: JSON.parse would put "199420", a key that looks
+      // like an index, first whatever order the answer wrote.
+      const text = await response.text();
+      expect([...text.matchAll(/"([^"]+)":\{"dbId":(\d+)/g)].map((m) => [m[1], m[2]])).toEqual([
+        ['R-HSA-1640170', '1640170'],
+        ['R-HSA-109581', '109581'],
+        ['199420', '199420'],
+      ]);
+    } finally {
+      finds = false;
+    }
+  });
+});
 
 describe("Java's errors", () => {
   it('refuses a body that is not text/plain, before anything else', async () => {
