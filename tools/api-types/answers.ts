@@ -1,6 +1,6 @@
 /**
  * The content API's real answers on record (spec 012, research R2): the
- * end-to-end recordings, and the corpus record.mjs makes for what they miss.
+ * end-to-end recordings, and the corpus record.ts makes for what they miss.
  *
  * Only a successful answer with a JSON body can be checked against a type.
  * The rest are counted, not dropped silently: an aborted request, an answer

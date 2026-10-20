@@ -1,4 +1,4 @@
-// The call table's scan follows a URL set in the constructor (scan.spec.mjs).
+// The call table's scan follows a URL set in the constructor (scan.spec.ts).
 declare const CONTENT_SERVICE: string;
 declare const http: { get<T>(url: string): T };
 

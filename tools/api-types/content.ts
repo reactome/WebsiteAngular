@@ -3,7 +3,7 @@
  * as (spec 012, User Story 1).
  *
  * An answer is matched to the calls that read it by method, route and any
- * query values a call needs (calls.mjs). Each distinct answer is compiled once
+ * query values a call needs (calls.ts). Each distinct answer is compiled once
  * per distinct type its readers use. The routes are checked in groups, one
  * program each: a failing answer costs the compiler about 7 s per megabyte,
  * and the largest routes are tens of megabytes (research R3).
@@ -33,9 +33,11 @@ function routeOf(call: Call, answer: RecordedAnswer): string | undefined {
 
 /** The groups the routes are compiled in, each its own program. */
 export function groupOf(route: string | undefined): string {
+  // Every route label is "<method> <path>"; one without a path is a mistake.
+  if (route === undefined) throw new Error('a route label without its path');
   if (route === '/data/eventsHierarchy/{taxId}') return 'events hierarchy';
   if (route === '/data/query/enhanced/v2/{id}') return 'enhanced v2';
-  return route?.startsWith('/search') || route?.startsWith('/interactors')
+  return route.startsWith('/search') || route.startsWith('/interactors')
     ? 'search and interactors'
     : 'data';
 }

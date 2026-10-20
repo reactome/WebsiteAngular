@@ -2,9 +2,9 @@
  * Every place the site asks the content API for something, the route it
  * calls, and the type it reads the answer as (spec 012, research R1).
  *
- * calls.spec.mjs keeps this table and the source in step: a call the source
+ * calls.spec.ts keeps this table and the source in step: a call the source
  * makes that is not here fails, as does an entry the source no longer has.
- * content.spec.mjs compiles every recorded answer of each route as the type
+ * content.spec.ts compiles every recorded answer of each route as the type
  * here, so this is also where a type is chosen for an answer.
  *
  *   file, method, n  where: the method or property the call is in, and which
@@ -33,7 +33,7 @@ export interface Call {
   file: string;
   method: string;
   n?: number;
-  http: 'GET' | 'POST';
+  http: 'GET' | 'POST' | 'FETCH';
   route: string | string[];
   query?: Record<string, string | null>;
   type: string;

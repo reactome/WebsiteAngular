@@ -1,6 +1,6 @@
 // @vitest-environment node
 //
-// The table of the site's content API calls (calls.mjs) and the source agree:
+// The table of the site's content API calls (calls.ts) and the source agree:
 // a call the source makes that the table does not name is a call whose answer
 // nothing checks.
 import { readFileSync } from 'node:fs';
