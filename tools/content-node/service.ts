@@ -1692,9 +1692,6 @@ export const endpoints: Endpoint[] = [
     path: '/ContentService/references/mapping/xrefs',
     method: 'post',
     sampleBody: 'P36897, Q5S007',
-    // A page is one scan of every node per identifier (the query names no
-    // label), and a 10MB body holds millions: it takes a share of the pool.
-    deep: true,
     differs: [/^\/ContentService\/references\/mapping\/xrefs: \.url: /],
     /**
      * The cross references of a batch of identifiers, a page at a time:
@@ -1746,12 +1743,30 @@ export const endpoints: Endpoint[] = [
       request.res?.on('close', () => {
         if (!request.res?.writableFinished) gone.abort();
       });
-      const answers = await inOrderPool(
-        trimmed,
-        4,
-        (identifier) => crossReferenceResults(request, identifier, dbFilter),
-        gone.signal
-      );
+      // A page is one scan of every node per identifier (the query names no
+      // label), four at a time, and a 10MB body holds millions: batches have
+      // a share of their own, apart from the deep routes the site reads.
+      if (!BATCHES.enter())
+        return {
+          ...javaError(
+            request,
+            503,
+            'SERVICE_UNAVAILABLE',
+            'The service is busy; try again shortly'
+          ),
+          headers: { 'Retry-After': '5' },
+        };
+      let answers;
+      try {
+        answers = await inOrderPool(
+          trimmed,
+          4,
+          (identifier) => crossReferenceResults(request, identifier, dbFilter),
+          gone.signal
+        );
+      } finally {
+        BATCHES.leave();
+      }
       // Nobody to answer: whatever is written goes nowhere.
       if (gone.signal.aborted) return { status: 500 };
       const failed = answers.find((results) => results?.status);
@@ -8061,11 +8076,10 @@ async function mappingAnswer(request, kind) {
 /**
  * ReferenceEntityController's cross-reference query, with the identifier and
  * the database filter passed as parameters. Java writes them into the text
- * between double quotes, so a quote in either breaks the query -- or
- * rewrites it into one the caller chose. Here they are only ever values: an
- * identifier with a quote in it is looked up as written and matches nothing,
- * where Java answers 500 or whatever the rewritten query returns. For every
- * identifier without one, the query and its answer are Java's.
+ * between double quotes, where a quote or a backslash is not itself: a quote
+ * breaks Java's query (its 500), and a backslash begins an escape. Here they
+ * are only ever values, looked up as written. For every identifier and
+ * filter with neither, the query and its answer are Java's.
  */
 export function crossReferenceQuery(dbFilter: string | undefined): string {
   const filter = dbFilter === undefined ? '' : 'WHERE xf.databaseName=$dbFilter ';
@@ -8190,6 +8204,9 @@ export function pageText(page) {
   });
   return text.replace(/"\\u0000long:(-?\d+)"/, '$1');
 }
+
+/** Batches of cross-reference lookups running at once (POST /references/mapping/xrefs). */
+const BATCHES = deepShare(2);
 
 /**
  * Each of `items` through `work`, at most `width` at a time, the answers in

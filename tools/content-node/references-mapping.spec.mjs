@@ -164,16 +164,14 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     ]);
   });
 
-  it('looks up an identifier or filter with a quote in it as written, never as query text', async () => {
-    // Java writes both into the query, so a quote breaks it (a 500) or makes
-    // it another query; here each is only ever a value, and matches nothing.
+  it('looks up an identifier or filter with a quote in it as written, as a value', async () => {
+    // Java writes both into its query, where a quote ends the string (its
+    // 500); here each is only ever a parameter, and matches nothing.
     answer = () => [];
     asked.length = 0;
-    const response = await get('P36%22897/xrefs?dbFilter=D%22%20OR%20true%20%2F%2F');
+    const response = await get('P36%22897/xrefs?dbFilter=D%22');
     expect(response.status).toBe(404);
-    expect(asked).toEqual([
-      [crossReferenceQuery('D" OR true //'), { identifier: 'P36"897', dbFilter: 'D" OR true //' }],
-    ]);
+    expect(asked).toEqual([[crossReferenceQuery('D"'), { identifier: 'P36"897', dbFilter: 'D"' }]]);
     expect(asked[0][0]).not.toContain('P36');
   });
 
@@ -262,7 +260,12 @@ describe('POST /references/mapping/xrefs', () => {
 
   it('starts no lookup once the client has gone', async () => {
     asked.length = 0;
-    answer = () => new Promise((resolve) => setTimeout(() => resolve([]), 20));
+    let started;
+    const first = new Promise((resolve) => (started = resolve));
+    answer = () => {
+      started();
+      return new Promise((resolve) => setTimeout(() => resolve([]), 20));
+    };
     const ids = Array.from({ length: 100 }, (_, at) => `I${at}`).join(',');
     const gone = new AbortController();
     const sent = fetch(`${base}/ContentService/references/mapping/xrefs?pageSize=100`, {
@@ -271,12 +274,28 @@ describe('POST /references/mapping/xrefs', () => {
       body: ids,
       signal: gone.signal,
     }).catch(() => undefined);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await first;
     gone.abort();
     await sent;
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    // Four at a time, 20ms each: about a dozen by the abort, far short of 100.
-    expect(asked.length).toBeLessThan(40);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    // The lookups under way when the client left, four at a time, and at
+    // most one more round as the close arrives; never the hundred.
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.length).toBeLessThanOrEqual(8);
+  });
+
+  it('runs two batches at once and answers a third 503, Retry-After', async () => {
+    let release;
+    const held = new Promise((resolve) => (release = resolve));
+    answer = () => held.then(() => []);
+    const two = [post('', 'A'), post('', 'B')];
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const third = await post('', 'C');
+    expect([third.status, third.headers.get('retry-after')]).toEqual([503, '5']);
+    release();
+    expect((await Promise.all(two)).map((response) => response.status)).toEqual([200, 200]);
+    // Their places given back.
+    expect((await post('', 'D')).status).toBe(200);
   });
 
   it("answers Java's errors: 415, 422, 400 and the paging 500s", async () => {

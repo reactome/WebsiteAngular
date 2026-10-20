@@ -294,15 +294,13 @@ describe('/pathways/low/entity reads its species as the servlet does', () => {
 describe('the deep queries, held to their own share of the graph', () => {
   // The pool grew from 8 to 32 so that a few slow requests cannot hold every
   // connection; these routes -- a whole tree below an object, or every route
-  // up to a diagram, a scan of every node per identifier in a batch -- are
-  // the ones that can run for the full read timeout, so they keep a smaller
-  // share of their own.
-  it('marks the in-depth, locationsInPWB and batch xrefs routes as deep', () => {
+  // up to a diagram -- are the ones that can run for the full read timeout,
+  // so they keep a smaller share of their own.
+  it('marks the in-depth and locationsInPWB routes as deep', () => {
     const deep = endpoints.filter((endpoint) => endpoint.deep).map((endpoint) => endpoint.path);
     expect(deep).toEqual([
       '/ContentService/data/entity/{id}/in-depth',
       '/ContentService/data/event/{id}/in-depth',
-      '/ContentService/references/mapping/xrefs',
       '/ContentService/data/detail/{id}/locationsInPWB',
     ]);
   });
