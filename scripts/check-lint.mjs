@@ -90,6 +90,13 @@ export function countLoose(report, root = ROOT) {
   return modules;
 }
 
+/** Modules whose loose count went down, not yet locked in. */
+export const looseDecreases = (counts, baseline) =>
+  Object.entries(baseline)
+    .filter(([module, n]) => (counts[module] ?? 0) < n)
+    .map(([module, n]) => `${module}: ${n} -> ${counts[module] ?? 0}`)
+    .sort();
+
 /** Modules whose loose count went up; one the baseline does not list is held to none. */
 export const looseIncreases = (counts, baseline) =>
   Object.entries(counts)
@@ -189,6 +196,14 @@ async function main() {
     console.error('Loosely typed values in the services went up (tools/loose-baseline.json):\n');
     for (const line of looser) console.error(`  ${line}`);
     console.error('\nType them: `npx eslint <module>` lists them (spec 013).');
+    process.exit(1);
+  }
+  // A fall not locked in is room a later change could fill unseen.
+  const tighter = looseDecreases(loose, looseBaseline);
+  if (tighter.length > 0) {
+    console.error('Loosely typed values in the services went down; lock it in:\n');
+    for (const line of tighter) console.error(`  ${line}`);
+    console.error('\nnpm run check:lint -- --update');
     process.exit(1);
   }
 

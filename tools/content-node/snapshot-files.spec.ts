@@ -56,8 +56,11 @@ const kinds = (tuple: unknown[]) =>
 
 describe('the snapshot files, against their types', () => {
   it("domain-snapshot.json's tuples have their types' lengths and kinds", () => {
-    for (const property of files.domain.properties)
+    for (const property of files.domain.properties) {
       expect(kinds(property).join()).toMatch(/^string,string,number(,string)?$/);
+      // The flag, when there, is the one value the type allows.
+      if (property.length > 3) expect([property, property[3]]).toEqual([property, 'D']);
+    }
     for (const field of files.domain.fields)
       expect(kinds(field).join()).toMatch(
         /^string,string$|^string,string,string,string,string,(string|null)$/

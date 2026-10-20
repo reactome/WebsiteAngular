@@ -8,8 +8,10 @@
  * reaches goes up, and the per-module checks read the baseline in the tree.
  * So a move could carry a rise inside it unseen. This compares each
  * baseline's total with the base branch's: a move keeps the totals, typing
- * lowers them, nothing may raise them. lint-baseline.json's total and the
- * dead-code total are compared too.
+ * lowers them, nothing may raise them. A module the base already counts may
+ * not rise either (moves create their modules), so a rise cannot hide behind
+ * a fall elsewhere. lint-baseline.json's total and the dead-code total are
+ * compared too.
  *
  *   node scripts/check-baseline-totals.mjs [base]    # base defaults to origin/main
  */
@@ -61,6 +63,22 @@ for (const [name, file, total] of BASELINES) {
     throw new Error(`${file}: no total to read`);
   read.push(`${name} ${now} (base ${before ?? 'none'})`);
   if (before !== undefined && now > before) rose.push(`${name} rose: ${now}, base ${before}`);
+}
+
+// A module the base already counts may not rise, unless it is one the split
+// creates to receive moved code (spec 014: the shared modules, the families,
+// the registry and the server), which a later move may add to. Code is moved
+// out of service.ts into those, never into the services' other modules, so
+// a rise in any other is new code, whatever fell elsewhere to keep the
+// total. The split's modules are held by the total.
+const RECEIVES_MOVES =
+  /^tools\/content-node\/(java-text|body|spring|answers|objects|reference-entities|search-params|release|registry|server|[\w-]+-endpoints)\.ts$/;
+for (const [name, file] of BASELINES.slice(0, 2)) {
+  const now = JSON.parse(readFileSync(file, 'utf8'));
+  const was = atBase(file) ?? {};
+  for (const [module, count] of Object.entries(now))
+    if (module in was && count > was[module] && !RECEIVES_MOVES.test(module))
+      rose.push(`${name} in ${module} rose: ${count}, base ${was[module]}`);
 }
 
 // Lint's counts are per rule and global, so no move changes them; a rise in
