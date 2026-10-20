@@ -27,6 +27,7 @@ import { read, configured, close } from './graph.ts';
 import { settings } from './settings.ts';
 import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
+import type { Answer, Endpoint, Handler, Request } from './registry.ts';
 import type {
   Contributor,
   DoiPathway,
@@ -186,12 +187,28 @@ const PORT = settings.port();
 const HOST = settings.host();
 
 /**
+ * The release the database holds, as /data/database/version answers it: the
+ * endpoint's handler, and what search's report, the event citation and
+ * /health ask for the release. Named, so they call it rather than look the
+ * endpoint up in the list (spec 014, research R2): once the endpoints are in
+ * modules, a module that read the list would import the registry that
+ * imports it.
+ */
+const databaseVersion = cached('database/version', async () => {
+  const [row] = await read<{ version: number | null }>(
+    'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1'
+  );
+  if (!row) return { status: 404, body: 'no DBInfo node' };
+  return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
+});
+
+/**
  * The endpoints implemented so far, in the order they were ported.
  *
  * Each entry is the path the Java service uses, so the diff harness and the
  * proxy table can both address them by that one string.
  */
-export const endpoints = [
+export const endpoints: Endpoint[] = [
   {
     path: '/ContentService/data/database/version',
     // The release the database holds. One row, one value: the smallest possible
@@ -221,13 +238,7 @@ export const endpoints = [
      * `cached` handler at startup, so the scan is paid once, off the request
      * path, and never by a reader.
      */
-    handler: cached('database/version', async () => {
-      const [row] = await read<{ version: number | null }>(
-        'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1'
-      );
-      if (!row) return { status: 404, body: 'no DBInfo node' };
-      return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
-    }),
+    handler: databaseVersion,
   },
   {
     path: '/ContentService/data/database/name',
@@ -534,7 +545,7 @@ export const endpoints = [
      * pattern matching element-level differences, would have hidden a wrong
      * count just as happily as a shuffled list.
      */
-    unordered: (entry) => entry.person.dbId,
+    unordered: (entry: { person: { dbId: number } }) => entry.person.dbId,
     differs: [/^\/ContentService\/data\/content\/contributors: order differs from java's$/],
   },
   {
@@ -581,7 +592,8 @@ export const endpoints = [
      * An id that is none of the three is Java's bare empty 200; this answers
      * `[]`, as the person's four event lists do (see them, below).
      */
-    unordered: (entry) => (typeof entry === 'number' ? entry : entry.dbId),
+    unordered: (entry: number | { dbId: number }) =>
+      typeof entry === 'number' ? entry : entry.dbId,
     differs: [
       /^\/ContentService\/data\/person\/[^/]+\/publications: order differs from java's$/,
       // An unreadable id: `[]` here, Java's empty 200 (see above).
@@ -608,7 +620,7 @@ export const endpoints = [
     [
       ['Pathways', 'Pathway'],
       ['Reactions', 'ReactionLikeEvent'],
-    ].map(([suffix, label]) => ({
+    ].map(([suffix, label]): Endpoint => ({
       path: `/ContentService/data/person/{id}/${role}${suffix}`,
       // A curator with enough of everything to be worth comparing: 450 authored
       // pathways, 3,309 authored reactions, one reviewed pathway, no reviewed
@@ -733,7 +745,7 @@ export const endpoints = [
        * genuinely wrong row just as well. The harness applies this to Java's
        * answer and then compares exactly.
        */
-      normalise: (javaBody) => {
+      normalise: (javaBody: { dbId?: number; dateTime?: string | null }[]) => {
         const seen = new Set();
         return (
           javaBody
@@ -808,7 +820,7 @@ export const endpoints = [
       match: '(s:Species)<-[:species]-(:TopLevelPathway)',
     },
     { suffix: 'all', match: '(s:Species)' },
-  ].map(({ suffix, match }) => ({
+  ].map(({ suffix, match }): Endpoint => ({
     path: `/ContentService/data/species/${suffix}`,
     /**
      * The species lists, which differ in their order as well as their contents.
@@ -1034,7 +1046,7 @@ export const endpoints = [
       // Jackson's identity is per instance.
       answer: (found) => new JsonMap(idKeyedMap(found)),
     },
-  ].map(({ path, signature, answer }) => ({
+  ].map(({ path, signature, answer }): Endpoint => ({
     path,
     method: 'post',
     sampleBody: 'R-HSA-1640170, R-HSA-109581, 199420\nREACT_578;xyz',
@@ -1131,7 +1143,7 @@ export const endpoints = [
       follow: 'hasEvent',
       sample: 'R-HSA-69620?includeRef=true&view=nested-aggregated',
     },
-  ].map(({ kind, label, follow, sample }) => ({
+  ].map(({ kind, label, follow, sample }): Endpoint => ({
     path: `/ContentService/data/${kind}/{id}/in-depth`,
     // A whole tree below an object: may run for the full read timeout.
     deep: true,
@@ -2638,7 +2650,7 @@ export const endpoints = [
       );
     },
   },
-  ...['suggest', 'spellcheck'].map((handler) => ({
+  ...['suggest', 'spellcheck'].map((handler): Endpoint => ({
     path: `/ContentService/search/${handler}`,
     // Search-core's getAutocompleteSuggestions / getSpellcheckSuggestions:
     // the collations Solr's own /suggest or /spellcheck handler offers for
@@ -4413,9 +4425,12 @@ function endpointPattern(template, tail) {
 
 /** The GET endpoint Express would route `path` (no query) to, if any. */
 function getEndpointFor(path) {
-  return endpoints
-    .filter((e) => !e.method || e.method === 'GET')
-    .find((e) => endpointPattern(e.path, '$').test(path));
+  return (
+    endpoints
+      // GET endpoints declare no method; the only one declared is 'post'.
+      .filter((e) => !e.method)
+      .find((e) => endpointPattern(e.path, '$').test(path))
+  );
 }
 
 /** graph-core SchemaRepository.getSchemaClassCounts, as written. */
@@ -4677,9 +4692,9 @@ export function locationsQuery(byDbId, directParticipants) {
  * process is holding for exactly that reason -- a missed restart is then one
  * curl away from being obvious instead of invisible.
  */
-function cached(name, build) {
-  let ready;
-  const handler = async (request) => {
+function cached(name: string, build: (request: Request) => Promise<Answer>): Handler {
+  let ready: Promise<Answer> | undefined;
+  const handler = async (request: Request) => {
     ready ??= build(request).catch((error) => {
       ready = undefined;
       throw error;
@@ -7295,9 +7310,8 @@ async function reportInformation(request) {
   // asked only when a search found nothing, and never its failure.
   let release: string | null = null;
   try {
-    const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-    const answer = await version?.handler({ params: {}, query: {} });
-    if (answer?.status === 200) release = String(answer.body);
+    const answer = await databaseVersion({ params: {}, query: {} });
+    if (answer.status === 200) release = String(answer.body);
   } catch {
     release = null;
   }
@@ -7664,8 +7678,7 @@ async function eventCitationFor(raw) {
   if (!row) return undefined;
   const event = mapResult(row);
   if (!isA(event.schemaClass, 'Event')) return undefined;
-  const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-  const release = String((await version.handler({ params: {}, query: {} })).body);
+  const release = String((await databaseVersion({ params: {}, query: {} })).body);
   return citationOfEvent(event, raw, release, isA(event.schemaClass, 'Pathway'));
 }
 
@@ -8757,11 +8770,11 @@ export function app() {
       // being *served* rather than what the graph currently says. A health check
       // that went straight to the database would answer correctly while every
       // other response was stale, which is the opposite of useful.
-      let release: string | null = null;
+      // Whatever the version endpoint's body is, written as it is.
+      let release: unknown = null;
       try {
-        const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-        const answer = await version?.handler({ params: {}, query: {} });
-        release = answer?.body ?? null;
+        const answer = await databaseVersion({ params: {}, query: {} });
+        release = answer.body ?? null;
       } catch {
         // A health check that fails because the graph is down is reporting the
         // wrong thing: the process is up, and that is what this answers.
@@ -8784,9 +8797,10 @@ export function app() {
     const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
     // A POST's body arrives as bytes; its handler decodes them as Java would.
     const body = endpoint.method === 'post' ? [readBody] : [];
-    server[endpoint.method ?? 'get'](route, ...body, (request, response) =>
-      answerWith(endpoint, request, response)
-    );
+    // Express 4 does not wait on a handler's promise; answerWith answers itself.
+    server[endpoint.method ?? 'get'](route, ...body, (request, response) => {
+      void answerWith(endpoint, request, response);
+    });
   }
 
   // Any other method on these paths is Java's 405: nginx sends every method
@@ -8960,9 +8974,10 @@ if (startedDirectly()) {
     setInterval(refresh, 5 * 60 * 1000).unref();
     for (const endpoint of endpoints) {
       if (!endpoint.handler.warms) continue;
-      endpoint
-        .handler({ params: {} })
-        .catch((error) => console.error(`warming ${endpoint.path}: ${error.message}`));
+      // A warmed handler is a cached one, which reads nothing of its request.
+      Promise.resolve(endpoint.handler({ params: {} } as unknown as Request)).catch((error) =>
+        console.error(`warming ${endpoint.path}: ${error.message}`)
+      );
     }
     console.log(
       `  graph credentials: ${configured() ? 'present' : 'MISSING (set NEO4J_USER/PASSWORD)'}`
