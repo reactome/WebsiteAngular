@@ -62,7 +62,7 @@ describe('classify', () => {
     const dir = mkdtempSync(join(tmpdir(), 'classify-'));
     try {
       const file = join(dir, 'audit.jsonl');
-      const line = (url, method = 'GET') => JSON.stringify({ test: 't', method, url });
+      const line = (url: string, method = 'GET') => JSON.stringify({ test: 't', method, url });
       writeFileSync(
         file,
         [

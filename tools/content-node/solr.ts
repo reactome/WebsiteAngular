@@ -26,7 +26,7 @@ const SOLR_TIMEOUT_MS = 30_000;
  * host. The search box asks on every keystroke, and each ask is one request
  * plus one per collation. SOLR_CONCURRENCY, 1-16, read once, at first use.
  */
-let limit;
+let limit: number | undefined;
 function solrConcurrency() {
   if (limit === undefined) {
     const given = Number(settings.solrConcurrency());

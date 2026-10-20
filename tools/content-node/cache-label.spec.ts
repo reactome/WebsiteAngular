@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { CACHEABLE, defaultLabel, label } from './cache-label.ts';
 
 const attributes = '/ContentService/data/schema/{id}/attributes';
-const of = (overrides) =>
+const of = (overrides: Record<string, unknown> = {}) =>
   label({
     method: 'GET',
     endpoint: attributes,

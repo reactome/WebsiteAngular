@@ -63,6 +63,8 @@ describe('snapshotOf', () => {
       readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
     );
     expect(Object.keys(snapshot.paths).length).toBeGreaterThan(90);
-    expect(snapshot.paths['/search/query'].get.map((p) => p.name)).toContain('Start row');
+    expect(snapshot.paths['/search/query'].get.map((p: { name: string }) => p.name)).toContain(
+      'Start row'
+    );
   });
 });

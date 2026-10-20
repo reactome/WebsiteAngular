@@ -50,11 +50,15 @@ const LIMIT_MS = 60_000;
  * The URLs to warm, in order. `getJson(path)` answers a content API path
  * with its parsed body: the species list, and human's top pathways.
  */
-export async function warmList(getJson) {
+/** A content API path's parsed body. */
+type GetJson = (path: string) => Promise<unknown>;
+
+export async function warmList(getJson: GetJson) {
   const paths = FIXED.map((path) => CS + path);
-  const species = await getJson(`${CS}/data/species/main`);
+  // As the content API writes them: species with a taxId, pathways a stId.
+  const species = (await getJson(`${CS}/data/species/main`)) as { taxId: string }[];
   for (const { taxId } of species) paths.push(`${CS}/data/pathways/top/${taxId}`);
-  const human = await getJson(`${CS}/data/pathways/top/9606`);
+  const human = (await getJson(`${CS}/data/pathways/top/9606`)) as { stId: string }[];
   for (const { stId } of human) {
     for (const query of ENHANCED) paths.push(`${CS}/data/query/enhanced/v2/${stId}?${query}`);
     paths.push(`${CS}/data/event/${stId}/ancestors?${ANCESTORS}`);
@@ -96,7 +100,7 @@ export async function warm(
 
 /** A content API answer's body, or an error that says which and why. */
 function jsonFrom(origin: string, fetch: WarmFetch = globalThis.fetch) {
-  return async (path) => {
+  return async (path: string) => {
     const response = await fetch(origin + path, { signal: AbortSignal.timeout(LIMIT_MS) });
     const text = await response.text();
     if (response.status !== 200) throw new Error(`${path}: ${response.status}`);

@@ -55,7 +55,8 @@ const SAFE_EXTENSIONS = [
   'bmp',
 ];
 
-const entry = (jar, name) => execFileSync('unzip', ['-p', jar, name], { encoding: 'utf8' });
+const entry = (jar: string, name: string) =>
+  execFileSync('unzip', ['-p', jar, name], { encoding: 'utf8' });
 const springWeb = readdirSync(LIB).find((name) => /^spring-web-\d.*\.jar$/.test(name));
 if (!springWeb) throw new Error(`no spring-web jar in ${LIB}`);
 
@@ -80,8 +81,8 @@ for (const line of entry(path.join(LIB, springWeb), 'org/springframework/http/mi
     if (!spring.has(extension.toLowerCase())) spring.set(extension.toLowerCase(), type);
 }
 
-const safeType = (type) => {
-  const [base, subtype = ''] = type.toLowerCase().split('/');
+const safeType = (type: string) => {
+  const [base = '', subtype = ''] = type.toLowerCase().split('/');
   return ['audio', 'image', 'video'].includes(base) || subtype.endsWith('+xml');
 };
 const safe = new Set(SAFE_EXTENSIONS);

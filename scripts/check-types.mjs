@@ -26,6 +26,7 @@
  *     than saying it is not checked.
  */
 import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 // The site, and the server-side services (spec 013).
 const projects = ['tsconfig.app.json', 'tools/tsconfig.json'];
@@ -41,6 +42,49 @@ for (const project of projects) {
   console.log(`  ${project} FAILED (exit ${result.status})`);
   for (const line of output.split('\n')) console.log(`    ${line}`);
 }
-if (!failed) process.exit(0);
-console.log('\n  The build, or the services, would fail on these.');
-process.exit(1);
+if (failed) {
+  console.log('\n  The build, or the services, would fail on these.');
+  process.exit(1);
+}
+
+// The services with noImplicitAny on (spec 013, T021): a compiler option
+// cannot be set per file, so the whole of tools/ is compiled with it and the
+// errors -- every one of them the option's, the plain compile being clean --
+// counted per module. A count may only go down; a module at none stays so.
+// `--update` writes the counts as they are, to lock in a module typed.
+const BASELINE = 'tools/implicit-any-baseline.json';
+const strict = spawnSync(
+  'npx',
+  ['tsc', '--noEmit', '--noImplicitAny', '-p', 'tools/tsconfig.json'],
+  {
+    encoding: 'utf8',
+  }
+);
+const counts = {};
+for (const line of `${strict.stdout ?? ''}`.split('\n')) {
+  const match = /^(tools\/[^(]+)\(\d+,\d+\): error TS\d+/.exec(line);
+  if (match) counts[match[1]] = (counts[match[1]] ?? 0) + 1;
+}
+const sorted = Object.fromEntries(Object.entries(counts).sort(([a], [b]) => (a < b ? -1 : 1)));
+if (process.argv.includes('--update')) {
+  writeFileSync(BASELINE, `${JSON.stringify(sorted, null, 2)}\n`);
+  const total = Object.values(sorted).reduce((sum, n) => sum + n, 0);
+  console.log(`  ${BASELINE}: ${total} in ${Object.keys(sorted).length} modules`);
+  process.exit(0);
+}
+const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+const up = Object.entries(counts).filter(([file, n]) => n > (baseline[file] ?? 0));
+const down = Object.entries(baseline).filter(([file, n]) => (counts[file] ?? 0) < n);
+if (up.length) {
+  console.log('  Implicit any in the services went up (noImplicitAny, ' + BASELINE + '):\n');
+  for (const [file, n] of up) console.log(`    ${file}: ${baseline[file] ?? 0} -> ${n}`);
+  console.log(
+    '\n  Type them: `npx tsc --noEmit --noImplicitAny -p tools/tsconfig.json` lists them.'
+  );
+  process.exit(1);
+}
+const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+console.log(`  tools/ with noImplicitAny: ${total} left, none new`);
+if (down.length)
+  console.log(`  ${down.length} module(s) went down; lock it in: npm run check:types -- --update`);
+process.exit(0);
