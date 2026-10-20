@@ -317,7 +317,7 @@ export interface SchemaTables {
 }
 export interface SchemaSnapshot extends SchemaTables {
   release: number;
-  model?: SchemaModelNode;
+  model: SchemaModelNode;
 }
 
 let snapshot: SchemaSnapshot | undefined;
