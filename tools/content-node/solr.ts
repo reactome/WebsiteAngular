@@ -191,7 +191,7 @@ export async function solr(
     if (!response.ok) {
       // Its body unread holds the connection until collected: one request
       // that Solr refuses (a query it cannot parse) is enough to ask it.
-      await response.body?.cancel();
+      await response.body?.cancel().catch(() => {});
       throw Object.assign(new Error(`Solr answered ${response.status}`), { solr: true });
     }
     // What the handler sent (JSON's null too); the readers check each part they use.

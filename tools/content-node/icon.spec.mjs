@@ -253,7 +253,7 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     ]);
   });
 
-  it('/icon/{id} found but sent no document is a failure, never an empty 200 to cache', async () => {
+  it("/icon/{id} found but sent no document is Solr's failure, never an empty 200 to cache", async () => {
     answer = found([], 1);
     const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428`);
     expect([response.status, (await response.json()).messages]).toEqual([

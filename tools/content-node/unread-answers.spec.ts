@@ -63,4 +63,30 @@ describe('an answer nothing reads', () => {
       await vi.waitFor(() => expect(body.cancelled).toBe(true));
     }
   });
+
+  it('still says what the report service answered when its body is already broken', async () => {
+    process.env['REPORT_URL'] = 'http://127.0.0.1:1';
+    const broken = new ReadableStream({
+      start(controller) {
+        controller.error(new Error('terminated'));
+      },
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(broken, { status: 500 }))
+    );
+    const logged: string[] = [];
+    vi.spyOn(console, 'error').mockImplementation((line: string) => logged.push(line));
+    sendReport(
+      'notfound',
+      { agent: null, ip: '203.0.113.1', release: '97' },
+      {
+        term: 'XYZ',
+        resource: '',
+      }
+    );
+    await vi.waitFor(() => expect(logged).toHaveLength(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(logged).toEqual(['[REP001] The report service answered 500; no report made']);
+  });
 });

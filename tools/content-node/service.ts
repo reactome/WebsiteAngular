@@ -3497,9 +3497,10 @@ export const endpoints: Endpoint[] = [
           status: 200,
           type: 'application/json',
           // numFound > 0 with no documents cannot happen at Solr's default rows.
-          // If it did, this throws and fromSolr answers its Solr failure -- not
-          // Java's NullPointerException answer, and never a 200 with no body.
-          body: present(present(searchResult(answer, false).entries)[0]),
+          // If it did, searchResult leaves `entries` out, this throws, and
+          // fromSolr answers its Solr failure -- not Java's NullPointerException
+          // answer, as it did before it was typed.
+          body: present(searchResult(answer, false).entries)[0],
         };
       });
     },
