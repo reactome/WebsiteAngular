@@ -385,10 +385,11 @@ describe('the citation endpoints', () => {
       const pathway = await (
         await fetch(`${base}/ContentService/citation/pathway/9?dateAccessed=d`)
       ).json();
-      // Asked by its stable id: the link names the id as given, not its dbId.
+      // Asked by a versioned stable id, neither its stId nor its dbId: the
+      // link names the id as given.
       globalThis.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
       const reaction = await (
-        await fetch(`${base}/ContentService/citation/pathway/R-HSA-9?dateAccessed=d`)
+        await fetch(`${base}/ContentService/citation/pathway/R-HSA-9.1?dateAccessed=d`)
       ).json();
       expect([pathway, reaction]).toEqual([
         {
@@ -399,9 +400,9 @@ describe('the citation endpoints', () => {
         },
         {
           imageCitation:
-            'Image Citation for An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9 (d)',
+            'Image Citation for An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9.1 (d)',
           pathwayCitation:
-            'The Reactome Consortium (2020). An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9 (d)',
+            'The Reactome Consortium (2020). An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9.1 (d)',
         },
       ]);
     } finally {

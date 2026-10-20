@@ -134,6 +134,18 @@ describe('/diagram/{pathwayId}/flag', () => {
     ]);
   });
 
+  it("is Java's index failure for an occurrence of fewer than four parts", async () => {
+    // extractRawOccurrence reads [0], [2], [3], then [1]: two parts fail at 2.
+    answer = () => ({
+      response: { numFound: 1, docs: [{ stId: 'R-HSA-9', occurrences: ['R-HSA-446203:true'] }] },
+    });
+    const response = await get('diagram/R-HSA-446203/flag?query=CTSA');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Index 2 out of bounds for length 2'],
+    ]);
+  });
+
   it('flags through interactors when asked, and is the 404 for nothing', async () => {
     asked = [];
     answer = () => ({ response: { numFound: 0, docs: [] } });
@@ -224,13 +236,24 @@ describe('/fireworks/flag', () => {
     ]);
   });
 
-  it("is Java's failure, not a guess, when two Species share the name", async () => {
+  it('is a failure, before Solr is asked, when two Species share the name', async () => {
     asked = [];
     const response = await get('fireworks/flag?query=x&species=Twice');
+    // Status only: Java's message here is Spring Data's
+    // IncorrectResultSizeDataAccessException, which has not been measured.
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual([
-      'Something unexpected happened and the error has been reported.',
-    ]);
     expect(asked).toHaveLength(0);
+  });
+
+  it("is Java's index failure for an occurrence of fewer than four parts", async () => {
+    // fireworksFlagging reads [0], then [3]: one part fails at 3, not 1.
+    answer = () => ({
+      response: { numFound: 1, docs: [{ llps: ['R-HSA-1'], occurrences: ['R-HSA-1'] }] },
+    });
+    const response = await get('fireworks/flag?query=x&species=Mus%20musculus');
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Index 3 out of bounds for length 1'],
+    ]);
   });
 });

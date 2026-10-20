@@ -260,12 +260,21 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
     });
     const none = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
     expect(await none.text()).toBe('{"diagramEntity":"R-HSA-68886","inDiagram":false}');
-    answer = () => ({ response: { numFound: 1, docs: [{ occurrences: ['R-HSA-68886:true:x'] }] } });
-    const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
-    expect(short.status).toBe(500);
-    expect((await short.json()).messages).toEqual([
-      'Something unexpected happened and the error has been reported.',
-    ]);
+    // Java's ArrayIndexOutOfBoundsException, with its own message
+    // (GlobalExceptionHandler.handleUnclassified): extractRawOccurrence reads
+    // [0], [2], [3], then [1], so three parts fail at 3, two at 2.
+    for (const [occurrence, message] of [
+      ['R-HSA-68886:true:x', 'Index 3 out of bounds for length 3'],
+      ['R-HSA-68886:true', 'Index 2 out of bounds for length 2'],
+    ]) {
+      answer = () => ({ response: { numFound: 1, docs: [{ occurrences: [occurrence] }] } });
+      const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
+      expect([occurrence, short.status, (await short.json()).messages]).toEqual([
+        occurrence,
+        500,
+        [message],
+      ]);
+    }
   });
 
   it('asks again in every scope, then is the 404', async () => {

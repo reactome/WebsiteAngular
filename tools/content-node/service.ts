@@ -6464,8 +6464,11 @@ async function fromSolr(request, path, work) {
         headers: { 'Retry-After': '5' },
       };
     console.error(`${path}: ${failure.message}`);
-    // What Java answers when its own code fails, not Solr: a
-    // NullPointerException, through GlobalExceptionHandler.
+    // What Java answers when its own code fails, not Solr: any exception
+    // but a NullPointerException with its own message (handleUnclassified),
+    // a NullPointerException with its fixed one, through GlobalExceptionHandler.
+    if (failure.javaMessage)
+      return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);
     if (failure.unexpected)
       return javaError(
         request,
@@ -6725,11 +6728,9 @@ function iconPhysicalEntities(doc) {
   // what is written, but the TreeSet still orders by it.
   const names: string[] = [];
   for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
-    const [stId, type, name, compartments] = javaSplit(packed, '#');
-    if (compartments === undefined)
-      throw Object.assign(new Error('an icon physical entity with fewer than four parts'), {
-        unexpected: true,
-      });
+    const split = javaSplit(packed, '#');
+    const [stId, type, name, compartments] = split;
+    if (compartments === undefined) throw outOfBounds(split.length, [0, 1, 2, 3]);
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
     const at = names.findIndex((other) => caseInsensitive(displayName, other) <= 0);
     if (at > -1 && caseInsensitive(displayName, names[at]) === 0) continue;
@@ -7103,6 +7104,22 @@ function speciesWideParams(query): SolrParams {
 }
 
 /**
+ * Java's ArrayIndexOutOfBoundsException for an array of `length` read at
+ * `reads`, in the order Java reads them (search-core's bytecode): the first
+ * index past the end is the one named. GlobalExceptionHandler answers it
+ * with that message (handleUnclassified), not the NullPointerException's.
+ */
+function outOfBounds(length: number, reads: number[]): Error {
+  const index = reads.find((at) => at >= length) ?? length;
+  return Object.assign(new Error(`a split with ${length} parts, read at ${index}`), {
+    javaMessage: `Index ${index} out of bounds for length ${length}`,
+  });
+}
+
+/** The parts extractRawOccurrence reads, in its order: [0], [2], [3], then [1]. */
+const OCCURRENCE_READS = [0, 2, 3, 1];
+
+/**
  * SolrConverter's extractRawOccurrence: "diagram:inDiagram:occurrences:
  * interactsWith", '#' for none, as a DiagramOccurrencesResult -- each list a
  * HashSet, so written in a java.util.HashMap's order, and left out empty.
@@ -7110,10 +7127,7 @@ function speciesWideParams(query): SolrParams {
  */
 function rawOccurrence(raw) {
   const line = javaSplit(raw, ':');
-  if (line.length < 4)
-    throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
-      unexpected: true,
-    });
+  if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS);
   const set = (text) => {
     if (text === '#') return undefined;
     const map = new JavaHashMap<string, boolean>();
@@ -7178,10 +7192,7 @@ function diagramFlags(answer, pathway, field) {
     for (const raw of solrStrings(doc, field)) {
       if (!raw.startsWith(pathway)) continue;
       const line = javaSplit(raw, ':');
-      if (line.length < 4)
-        throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
-          unexpected: true,
-        });
+      if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS);
       // extractRawOccurrence with the document: the entity is its stId
       // when it is in the diagram, and in the diagram if that is non-empty.
       const entity = line[1].toLowerCase() === 'true' ? solrValue(doc, 'stId') : null;
@@ -7220,10 +7231,8 @@ function speciesWideFlags(answer, abbreviation) {
     for (const id of solrStrings(doc, 'llps')) llps.set(id, true);
     for (const raw of solrStrings(doc, 'occurrences')) {
       const line = javaSplit(raw, ':');
-      if (line.length < 4)
-        throw Object.assign(new Error(`an occurrence with fewer than four parts: ${raw}`), {
-          unexpected: true,
-        });
+      // fireworksFlagging reads [0], then [3].
+      if (line.length < 4) throw outOfBounds(line.length, [0, 3]);
       if (line[3] !== '#') interactsWith.set(line[0], true);
     }
   }
