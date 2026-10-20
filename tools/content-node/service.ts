@@ -30,6 +30,8 @@ import type { MappedRow } from './domain.ts';
 import type {
   Contributor,
   DoiPathway,
+  InstanceReferrals,
+  SimpleDatabaseObject,
   SimplePerson,
   TocPathway,
   TocSubpathway,
@@ -3356,18 +3358,21 @@ export const endpoints = [
       return {
         status: 200,
         type: 'application/json',
-        body: rows.map((row) => ({
+        body: rows.map((row): InstanceReferrals => ({
           referral: row.referral,
           // SimpleDatabaseObject.build(Value): on a collected node, its
           // schemaClass property, not its labels as from a Record.
           objects: row.objects.map((ref) => {
-            const out: SimpleObject = { dbId: ref.dbId };
-            if (ref.stId !== null && ref.stId !== '') out.stId = ref.stId;
             const displayName = ref.displayName ?? 'null';
-            if (displayName !== '') out.displayName = displayName;
             const schemaClass = ref.schemaClass ?? 'null';
-            if (schemaClass !== '') out.schemaClass = schemaClass;
-            return out;
+            const out: JsonWritten<SimpleDatabaseObject> = {
+              dbId: ref.dbId,
+              stId: ref.stId !== null && ref.stId !== '' ? ref.stId : undefined,
+              displayName: displayName !== '' ? displayName : undefined,
+              schemaClass: schemaClass !== '' ? schemaClass : undefined,
+            };
+            // javaJson leaves the undefined ones out, as non_empty does.
+            return out as SimpleDatabaseObject;
           }),
         })),
       };
@@ -4545,13 +4550,24 @@ export function schemaWindow(page, offset, cap = 20000) {
  * which writes a missing one as the text "null". The class is the one the
  * labels name (schemaClassOf), not the schemaClass property.
  */
-export function simpleObjectJson(row) {
-  const out: SimpleObject = { dbId: row.dbId };
-  if (row.stId !== null && row.stId !== undefined && row.stId !== '') out.stId = row.stId;
+/** A row of the schema queries: the object's dbId, stId, displayName and labels. */
+type SimpleObjectRow = {
+  dbId: number;
+  stId: string | null;
+  displayName: string | null;
+  labels: string[];
+};
+
+export function simpleObjectJson(row: SimpleObjectRow): SimpleDatabaseObject {
   const displayName = row.displayName ?? 'null';
-  if (displayName !== '') out.displayName = displayName;
-  out.schemaClass = schemaClassOf(row.labels);
-  return out;
+  const out: JsonWritten<SimpleDatabaseObject> = {
+    dbId: row.dbId,
+    stId: row.stId !== null && row.stId !== '' ? row.stId : undefined,
+    displayName: displayName !== '' ? displayName : undefined,
+    schemaClass: schemaClassOf(row.labels),
+  };
+  // javaJson leaves the undefined ones out, as non_empty does.
+  return out as SimpleDatabaseObject;
 }
 
 /**
@@ -5009,8 +5025,6 @@ export function notFound(request, message) {
 
 /** An object written as JSON, built a property at a time. */
 type Written = { [property: string]: unknown };
-/** SimpleDatabaseObject: a dbId, and what of the rest is not empty. */
-type SimpleObject = { dbId: unknown; stId?: unknown; displayName?: string; schemaClass?: string };
 
 /** The named properties that are actually present. Absent means omitted, not null. */
 function only(source, keys: string[]): Written {
