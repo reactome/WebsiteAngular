@@ -1692,6 +1692,9 @@ export const endpoints: Endpoint[] = [
     path: '/ContentService/references/mapping/xrefs',
     method: 'post',
     sampleBody: 'P36897, Q5S007',
+    // A page is one scan of every node per identifier (the query names no
+    // label), and a 10MB body holds millions: it takes a share of the pool.
+    deep: true,
     differs: [/^\/ContentService\/references\/mapping\/xrefs: \.url: /],
     /**
      * The cross references of a batch of identifiers, a page at a time:
@@ -1739,9 +1742,18 @@ export const endpoints: Endpoint[] = [
       // every node (the query names no label), so one at a time a full page
       // outlasts the proxy. Four at once, answers kept in order.
       const trimmed = slice.map(javaTrim);
-      const answers = await inOrderPool(trimmed, 4, (identifier) =>
-        crossReferenceResults(request, identifier, dbFilter)
+      const gone = new AbortController();
+      request.res?.on('close', () => {
+        if (!request.res?.writableFinished) gone.abort();
+      });
+      const answers = await inOrderPool(
+        trimmed,
+        4,
+        (identifier) => crossReferenceResults(request, identifier, dbFilter),
+        gone.signal
       );
+      // Nobody to answer: whatever is written goes nowhere.
+      if (gone.signal.aborted) return { status: 500 };
       const failed = answers.find((results) => results?.status);
       if (failed) return failed;
       const content = trimmed.map((identifier, at) => ({ [identifier]: answers[at] }));
@@ -8047,16 +8059,17 @@ async function mappingAnswer(request, kind) {
 }
 
 /**
- * ReferenceEntityController's cross-reference query. The identifier and the
- * database filter are written into the text between double quotes, not
- * passed as parameters -- so one with a quote in it breaks or rewrites the
- * query, and Java's 500 is the answer (crossReferenceResults). Node reads with
- * read-only sessions, so text written in can only ever read. Kept character
- * for character, since Neo4j's message quotes it.
+ * ReferenceEntityController's cross-reference query, with the identifier and
+ * the database filter passed as parameters. Java writes them into the text
+ * between double quotes, so a quote in either breaks the query -- or
+ * rewrites it into one the caller chose. Here they are only ever values: an
+ * identifier with a quote in it is looked up as written and matches nothing,
+ * where Java answers 500 or whatever the rewritten query returns. For every
+ * identifier without one, the query and its answer are Java's.
  */
-export function crossReferenceQuery(identifier, dbFilter) {
-  const filter = dbFilter === undefined ? '' : `WHERE xf.databaseName="${dbFilter}" `;
-  return `MATCH (n{identifier:"${identifier}"})<-[:crossReference]-(re:ReferenceEntity)-[:crossReference]->(xf) ${filter}OPTIONAL MATCH (re)<-[:referenceEntity]-(pe:PhysicalEntity) RETURN re.identifier as reference, [ x in collect(distinct xf) | {identifier:x.identifier, databaseName:x.databaseName, url:x.url}] as crossReferences, collect(distinct pe.stId) as physicalEntities`;
+export function crossReferenceQuery(dbFilter: string | undefined): string {
+  const filter = dbFilter === undefined ? '' : 'WHERE xf.databaseName=$dbFilter ';
+  return `MATCH (n{identifier:$identifier})<-[:crossReference]-(re:ReferenceEntity)-[:crossReference]->(xf) ${filter}OPTIONAL MATCH (re)<-[:referenceEntity]-(pe:PhysicalEntity) RETURN re.identifier as reference, [ x in collect(distinct xf) | {identifier:x.identifier, databaseName:x.databaseName, url:x.url}] as crossReferences, collect(distinct pe.stId) as physicalEntities`;
 }
 
 /** CrossReferenceResult.EMPTY: what an identifier that matches nothing is given. */
@@ -8084,9 +8097,10 @@ function javaAsString(value) {
  * them (every text through Value.asString), written with NON_EMPTY -- no
  * empty list or "" -- or [NO_CROSS_REFERENCES] when there are none.
  *
- * A query the identifier or filter has broken or rewritten is Java's 500,
- * returned here as the answer to give: a Neo4j client error as Spring
- * translates it, or the driver's Uncoercible for a value that is not text.
+ * A query the database ended (its time limit, memory) is the service's 503,
+ * as everywhere (timedOut). Any other Neo4j client error is Java's 500 as
+ * Spring translates it, and a value that is not text the driver's
+ * Uncoercible; both returned here as the answer to give.
  */
 async function crossReferenceResults(request, identifier, dbFilter) {
   try {
@@ -8098,7 +8112,10 @@ async function crossReferenceResults(request, identifier, dbFilter) {
         databaseName: string | null;
         url: string | null;
       }[];
-    }>(crossReferenceQuery(identifier, dbFilter));
+    }>(crossReferenceQuery(dbFilter), {
+      identifier,
+      ...(dbFilter === undefined ? {} : { dbFilter }),
+    });
     if (rows.length === 0) return [NO_CROSS_REFERENCES];
     return rows.map((row) =>
       compact<Written>({
@@ -8122,6 +8139,8 @@ async function crossReferenceResults(request, identifier, dbFilter) {
         'INTERNAL_SERVER_ERROR',
         `${failure.message}; Error code 'N/A'; nested exception is org.neo4j.driver.exceptions.value.Uncoercible: ${failure.message}`
       );
+    const ended = timedOut(request, failure);
+    if (ended) return ended;
     const code = String(failure?.code ?? '');
     const message = code.startsWith('Neo.ClientError.')
       ? neo4jFailureMessage(failure, [code])
@@ -8175,16 +8194,23 @@ export function pageText(page) {
 /**
  * Each of `items` through `work`, at most `width` at a time, the answers in
  * the items' order -- or the first failure in that order, as a sequential
- * walk would meet it, the rest abandoned.
+ * walk would meet it, the rest abandoned. A throw abandons the rest too, as
+ * does `signal` (the client gone): no lookup starts once nobody will read
+ * the answer.
  */
-async function inOrderPool(items, width, work) {
+async function inOrderPool(items, width, work, signal?: AbortSignal) {
   const answers = new Array(items.length);
   let next = 0;
   let stopped = false;
   const worker = async () => {
-    while (!stopped && next < items.length) {
+    while (!stopped && !signal?.aborted && next < items.length) {
       const at = next++;
-      answers[at] = await work(items[at]);
+      try {
+        answers[at] = await work(items[at]);
+      } catch (caught) {
+        stopped = true;
+        throw caught;
+      }
       if (answers[at]?.status) stopped = true;
     }
   };
