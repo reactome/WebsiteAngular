@@ -42,7 +42,8 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } from './schema.ts';
-import type { AttributeRow, SchemaTables } from './schema.ts';
+import type { SchemaTables } from './schema.ts';
+import type { SchemaAttribute } from '../../projects/website-angular/src/model/content.model.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');
@@ -63,10 +64,10 @@ async function get(pathname) {
 }
 
 const classes = Object.keys(SCHEMA_CLASSES).sort();
-const attributes: Record<string, AttributeRow[]> = {};
-const referrals: Record<string, AttributeRow[]> = {};
+const attributes: Record<string, SchemaAttribute[]> = {};
+const referrals: Record<string, SchemaAttribute[]> = {};
 /** A class's answer, fetched above for every class. */
-const answered = (map: Record<string, AttributeRow[]>, name: string) => {
+const answered = (map: Record<string, SchemaAttribute[]>, name: string) => {
   const rows = map[name];
   if (!rows) throw new Error(`${name}: not fetched`);
   return rows;
@@ -91,11 +92,11 @@ for (const name of AJC_CLOSURE_NAMES) {
 const model = await get('/schema/model');
 const release = await get('/database/version');
 
-const declared: Record<string, AttributeRow[]> = {};
+const declared: Record<string, SchemaAttribute[]> = {};
 for (const name of classes) {
   declared[name] = answered(attributes, name).filter((row) => row.origin === name);
 }
-const referralRows: AttributeRow[] = [];
+const referralRows: SchemaAttribute[] = [];
 const rowIndex = new Map<string, number>();
 const referralIndexes: Record<string, number[]> = {};
 for (const name of classes) {

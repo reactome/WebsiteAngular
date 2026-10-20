@@ -27,6 +27,13 @@ import { read, configured, close } from './graph.ts';
 import { settings } from './settings.ts';
 import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
+import type {
+  Contributor,
+  DoiPathway,
+  SimplePerson,
+  TocPathway,
+  TocSubpathway,
+} from '../../projects/website-angular/src/model/content.model.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solr, solrConfigured } from './solr.ts';
 import type { SolrAnswer, SolrDoc, SolrGrouping, SolrValue } from './solr.ts';
@@ -361,7 +368,7 @@ export const endpoints = [
       });
 
       const body = pathways.map((row) =>
-        compact({
+        compact<TocPathway>({
           stId: row.stId,
           displayName: row.displayName,
           doi: row.doi,
@@ -373,7 +380,7 @@ export const endpoints = [
           reviewers: simplePeople(people.reviewers.get(row.stId)),
           editors: simplePeople(people.editors.get(row.stId)),
           subpathways: row.children.map((child) =>
-            compact({
+            compact<TocSubpathway>({
               stId: child.stId,
               displayName: child.displayName,
               // Java passes `null` here -- `new TocSubpathway(stId, displayName,
@@ -426,7 +433,7 @@ export const endpoints = [
       });
 
       const body = pathways.map((row) =>
-        compact({
+        compact<DoiPathway>({
           stId: row.stId,
           displayName: row.displayName,
           doi: row.doi,
@@ -485,7 +492,7 @@ export const endpoints = [
       );
 
       const body = rows.map((row) =>
-        compact({
+        compact<Contributor>({
           person: simplePeople([row.person])[0],
           // Counts, not lists: `non_empty` has no notion of an empty number, so
           // a zero is serialised rather than omitted.
@@ -686,7 +693,7 @@ export const endpoints = [
           if (seen.has(row.dbId)) continue;
           seen.add(row.dbId);
           body.push(
-            compact({
+            compact<Written>({
               dbId: row.dbId,
               stId: row.stId,
               displayName: row.displayName,
@@ -4722,14 +4729,25 @@ export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
 }
 
 /** The five fields Java's SimplePerson carries, in its order. */
-function simplePeople(persons) {
-  return (persons ?? []).map((person) => ({
-    dbId: person.dbId,
-    displayName: person.displayName,
-    surname: person.surname,
-    firstname: person.firstname,
-    orcidId: person.orcidId,
-  }));
+/** As JSON writes T: every field named, and one that is undefined left out. */
+type JsonWritten<T> = { [K in keyof T]-?: T[K] | undefined };
+
+/**
+ * SimplePerson, from each person's properties. A field the person lacks is
+ * undefined and JSON leaves it out, as Java's non_empty does: written, it is
+ * the site's SimplePerson, which is what the cast says.
+ */
+function simplePeople(persons: Props[] | undefined): SimplePerson[] {
+  return (persons ?? []).map((person) => {
+    const written: JsonWritten<SimplePerson> = {
+      dbId: person.dbId,
+      displayName: person.displayName,
+      surname: person.surname,
+      firstname: person.firstname,
+      orcidId: person.orcidId,
+    };
+    return written as SimplePerson;
+  });
 }
 
 /**
@@ -4744,15 +4762,24 @@ function simplePeople(persons) {
  * Numbers and booleans are left alone: NON_EMPTY has no notion of an empty
  * number, so `0` and `false` are serialised.
  */
-function compact(fields) {
-  const out = {};
+/**
+ * An answer object before Java's non_empty: every field of T named, any of
+ * them null or empty -- compact leaves those out. A required field of T may
+ * be null here too, and is then left out, as Java leaves it out: the type
+ * checks each field's name and kind, not that a required one has a value.
+ */
+type BeforeNonEmpty<T> = { [K in keyof T]-?: T[K] | null | undefined };
+
+function compact<T extends object = Written>(fields: BeforeNonEmpty<T>): T {
+  const out: Written = {};
   for (const [key, value] of Object.entries(fields)) {
     if (value === undefined || value === null) continue;
     if (value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
     out[key] = value;
   }
-  return out;
+  // Every field left is a value of T's, as fields declared it.
+  return out as T;
 }
 
 /**
@@ -8010,11 +8037,11 @@ async function crossReferenceResults(request, identifier, dbFilter) {
     }>(crossReferenceQuery(identifier, dbFilter));
     if (rows.length === 0) return [NO_CROSS_REFERENCES];
     return rows.map((row) =>
-      compact({
+      compact<Written>({
         reference: javaAsString(row.reference),
         physicalEntities: row.physicalEntities.map(javaAsString),
         crossReferences: row.crossReferences.map((reference) =>
-          compact({
+          compact<Written>({
             identifier: javaAsString(reference.identifier),
             databaseName: javaAsString(reference.databaseName),
             url: javaAsString(reference.url),
