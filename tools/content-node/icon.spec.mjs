@@ -253,6 +253,15 @@ describe('the icon endpoints, against a stand-in Solr', () => {
     ]);
   });
 
+  it('/icon/{id} found but sent no document is a failure, never an empty 200 to cache', async () => {
+    answer = found([], 1);
+    const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428`);
+    expect([response.status, (await response.json()).messages]).toEqual([
+      500,
+      ['Solr exception occurred'],
+    ]);
+  });
+
   it("/icon/{id} found nowhere is Java's 404, naming the id as given", async () => {
     answer = found([]);
     const response = await fetch(`${base}/ContentService/search/icon/R-ICO-013428.json`);

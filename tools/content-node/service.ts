@@ -1625,6 +1625,19 @@ export const endpoints: Endpoint[] = [
       const missing = () => notFound(request, `${raw} not found`);
       const { where, params } = resolveId(raw);
       if (where === 'false') return missing();
+      // What Java decides from the load below -- found, an event -- asked
+      // first, alone. The load gathers every relationship of the object, and
+      // for a species or a database that is hundreds of thousands, to answer
+      // a 422; only an event is loaded.
+      const [kind] = await read<{ labels: string[]; related: boolean }>(
+        `MATCH (n:DatabaseObject) WHERE ${where}
+         WITH n LIMIT 1
+         RETURN labels(n) AS labels, EXISTS((n)--()) AS related`,
+        params
+      );
+      if (!kind?.related) return missing();
+      if (!isA(schemaClassOf(kind.labels), 'Event'))
+        return javaError(request, 422, 'UNPROCESSABLE_ENTITY', null);
       // graph-core's findByStId / findByDbId, as written but for the id's
       // test: every relationship, both ways, in the order the store gives.
       const [row] = await read<MappedRow>(
@@ -3485,8 +3498,8 @@ export const endpoints: Endpoint[] = [
           type: 'application/json',
           // numFound > 0 with no documents cannot happen at Solr's default rows.
           // If it did, this throws and fromSolr answers its Solr failure -- not
-          // Java's NullPointerException answer, as it did before it was typed.
-          body: present(searchResult(answer, false).entries)[0],
+          // Java's NullPointerException answer, and never a 200 with no body.
+          body: present(present(searchResult(answer, false).entries)[0]),
         };
       });
     },

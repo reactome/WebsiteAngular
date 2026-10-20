@@ -143,7 +143,8 @@ export async function main(
   const serving = String(await getJson(`${CS}/data/database/version`));
   if (serving !== release) {
     log(
-      `the content API reports release ${serving}, not ${release}: restart it on the new release first`
+      `the content API reports release ${serving}, not ${release}: restart it on the new release, ` +
+        'or, if it already is, purge the edge again -- it may hold the old number'
     );
     return 2;
   }

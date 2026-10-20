@@ -114,6 +114,8 @@ describe('main', () => {
     const [code, output] = await run(['https://site', '99'], { fetch });
     expect(code).toBe(2);
     expect(output).toContain('reports release 98, not 99');
+    // A restart cannot help an edge still holding the old number; a purge can.
+    expect(output).toContain('purge the edge again');
     expect(asked).toEqual(['https://site/ContentService/data/database/version']);
   });
 
