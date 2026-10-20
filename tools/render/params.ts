@@ -46,15 +46,15 @@ export const BOUNDS: Record<string, [low: number, high: number]> = {
   maxSize: [0, 8000],
 };
 
+/** A request's query, as express parses it. */
+type Query = Record<string, unknown>;
+
 /**
  * The URL this request should have used, for the error body to quote.
  *
  * Only the parameters that were understood, in ACCEPTED's order, so following
  * it lands on one cache entry rather than on a permutation of one.
  */
-/** A request's query, as express parses it. */
-type Query = Record<string, unknown>;
-
 export function canonicalUrl(name: string, format: string, query: Query) {
   const kept = ACCEPTED.filter(
     (key) =>
