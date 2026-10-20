@@ -55,7 +55,7 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 
 ## Phase 4: The answers the services write (US3)
 
-- [ ] T019 [US3] Where the site reads the same answer (spec 012's call table), the content service writes it through the site's model type, one definition; show a field renamed in the shared type failing in both.
+- [ ] T019 [US3] Where the site reads the same answer (spec 012's call table), the content service writes it through the site's model type, one definition; show a field renamed in the shared type failing in both. Done for the contents lists (toc, doi, contributors) and the schema answers (#561); left: facets, icon facets, PSICQUIC resources, diagram flag, interactors, spellcheck, suggest.
 - [ ] T020 [US3] Answers only the services write: types beside the service.
 
 ---
