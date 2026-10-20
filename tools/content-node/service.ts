@@ -27,6 +27,13 @@ import { read, configured, close } from './graph.ts';
 import { settings } from './settings.ts';
 import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
+import type {
+  Contributor,
+  DoiPathway,
+  SimplePerson,
+  TocPathway,
+  TocSubpathway,
+} from '../../projects/website-angular/src/model/content.model.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solr, solrConfigured } from './solr.ts';
 import type { SolrAnswer, SolrDoc, SolrGrouping, SolrValue } from './solr.ts';
@@ -361,7 +368,7 @@ export const endpoints = [
       });
 
       const body = pathways.map((row) =>
-        compact({
+        compact<TocPathway>({
           stId: row.stId,
           displayName: row.displayName,
           doi: row.doi,
@@ -373,7 +380,7 @@ export const endpoints = [
           reviewers: simplePeople(people.reviewers.get(row.stId)),
           editors: simplePeople(people.editors.get(row.stId)),
           subpathways: row.children.map((child) =>
-            compact({
+            compact<TocSubpathway>({
               stId: child.stId,
               displayName: child.displayName,
               // Java passes `null` here -- `new TocSubpathway(stId, displayName,
@@ -426,7 +433,7 @@ export const endpoints = [
       });
 
       const body = pathways.map((row) =>
-        compact({
+        compact<DoiPathway>({
           stId: row.stId,
           displayName: row.displayName,
           doi: row.doi,
@@ -485,7 +492,7 @@ export const endpoints = [
       );
 
       const body = rows.map((row) =>
-        compact({
+        compact<Contributor>({
           person: simplePeople([row.person])[0],
           // Counts, not lists: `non_empty` has no notion of an empty number, so
           // a zero is serialised rather than omitted.
@@ -4722,7 +4729,9 @@ export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
 }
 
 /** The five fields Java's SimplePerson carries, in its order. */
-function simplePeople(persons) {
+// A field the person lacks is undefined here and left out when written, as
+// Java's non_empty leaves it out: written, this is the site's SimplePerson.
+function simplePeople(persons): SimplePerson[] {
   return (persons ?? []).map((person) => ({
     dbId: person.dbId,
     displayName: person.displayName,
@@ -4744,15 +4753,22 @@ function simplePeople(persons) {
  * Numbers and booleans are left alone: NON_EMPTY has no notion of an empty
  * number, so `0` and `false` are serialised.
  */
-function compact(fields) {
-  const out = {};
+/**
+ * An answer object before Java's non_empty: every field of T named, any of
+ * them null or empty -- compact leaves those out.
+ */
+type BeforeNonEmpty<T> = { [K in keyof T]-?: T[K] | null | undefined };
+
+function compact<T extends object = Written>(fields: BeforeNonEmpty<T>): T {
+  const out: Written = {};
   for (const [key, value] of Object.entries(fields)) {
     if (value === undefined || value === null) continue;
     if (value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
     out[key] = value;
   }
-  return out;
+  // Every field left is a value of T's, as fields declared it.
+  return out as T;
 }
 
 /**

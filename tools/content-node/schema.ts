@@ -52,6 +52,10 @@
  *     reflection too, and refuses to write if its classes are not these.
  */
 import { readFileSync } from 'node:fs';
+import type {
+  SchemaAttribute,
+  SchemaNode,
+} from '../../projects/website-angular/src/model/content.model.ts';
 
 /**
  * Every class in graph-core's domain.model package, and the model classes it
@@ -295,29 +299,18 @@ export function superclassOf(name) {
   return SCHEMA_CLASSES[name][0];
 }
 
-/** One row of an attribute or referrals table, as Java's answer writes it. */
-export interface AttributeRow {
-  name: string;
-  cardinality: string;
-  valueTypes: { name: string; databaseObject: boolean }[];
-  origin: string;
-}
-/** Java's /schema/model: a class, its count, its subclasses. */
-interface SchemaModelNode {
-  className: string;
-  count: number;
-  children?: SchemaModelNode[];
-}
+// A row of an attribute or referrals table is the site's SchemaAttribute,
+// and /schema/model's tree its SchemaNode: one definition (spec 013, T019).
 /** What the tables are composed from (snapshot-schema.ts checks them before writing). */
 export interface SchemaTables {
-  declared: Record<string, AttributeRow[]>;
-  referralRows: AttributeRow[];
+  declared: Record<string, SchemaAttribute[]>;
+  referralRows: SchemaAttribute[];
   referrals: Record<string, number[]>;
-  closure: { attributes: AttributeRow[]; referrals: AttributeRow[] };
+  closure: { attributes: SchemaAttribute[]; referrals: SchemaAttribute[] };
 }
 export interface SchemaSnapshot extends SchemaTables {
   release: number;
-  model: SchemaModelNode;
+  model: SchemaNode;
 }
 
 let snapshot: SchemaSnapshot | undefined;
@@ -386,9 +379,14 @@ export function referralsTable(name: string, data: SchemaTables = schemaSnapshot
  * the graph has a class this table does not, so schema.ts is out of date,
  * and an empty answer would hide that.
  */
-export function schemaModelTree(rows) {
-  const nodes = new Map();
-  const link = (name, below, count) => {
+/** A class while the tree is built: its own count, then its subclasses. */
+type Building = { className: string; count: number; children: Building[] };
+
+export function schemaModelTree(
+  rows: { labels: string[]; count: number }[]
+): SchemaNode | undefined {
+  const nodes = new Map<string, Building>();
+  const link = (name: string | undefined, below: Building | undefined, count: number) => {
     if (name === undefined) return; // Object
     const existing = nodes.get(name);
     if (existing) {
@@ -396,7 +394,7 @@ export function schemaModelTree(rows) {
       else existing.count += count;
       return;
     }
-    const node = { className: name, count, children: below ? [below] : [] };
+    const node: Building = { className: name, count, children: below ? [below] : [] };
     nodes.set(name, node);
     if (INTERFACES.has(name)) {
       // Java's recursion reaches getSuperclass() == null and fails there.
@@ -412,7 +410,7 @@ export function schemaModelTree(rows) {
     const lowest = schemaClassOf(row.labels);
     link(lowest === 'Object' ? undefined : lowest, undefined, row.count);
   }
-  const shape = (node) => {
+  const shape = (node: Building): SchemaNode => {
     const children = node.children.sort((a, b) => byCodeUnits(a.className, b.className)).map(shape);
     const count = children.reduce((sum, child) => (sum + child.count) | 0, node.count);
     return children.length
