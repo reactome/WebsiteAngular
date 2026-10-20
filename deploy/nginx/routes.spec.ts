@@ -175,9 +175,7 @@ const NOT_YET_ROUTED: Record<string, string> = {
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
 // the species lists, in-depth, suggest and spellcheck).
-const { endpoints } = (await import('../../tools/content-node/service.ts')) as {
-  endpoints: { path: string; sample?: string }[];
-};
+const { endpoints } = await import('../../tools/content-node/service.ts');
 const nodeEndpoints = endpoints.map((e) => e.path);
 /** An endpoint as a URL: its own sample id where it has one. */
 const sample = (path: string) => {

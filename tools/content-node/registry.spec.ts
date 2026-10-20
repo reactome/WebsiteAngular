@@ -11,9 +11,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-const { endpoints } = (await import('./service.ts')) as {
-  endpoints: { path: string; method?: string }[];
-};
+const { endpoints } = await import('./service.ts');
 const RECORDED = JSON.parse(
   readFileSync(new URL('./fixtures/route-order.json', import.meta.url), 'utf8')
 ) as string[];

@@ -10,9 +10,8 @@ import { invalidInputs } from './invalid-inputs.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
 const { endpoints } = await import('./service.ts');
-const GETS = (endpoints as { path: string; sample?: string; method?: string }[]).filter(
-  (e) => !e.method || e.method === 'GET'
-);
+// The GETs: an endpoint with no method (Endpoint's only method is 'post').
+const GETS = endpoints.filter((e) => !e.method);
 const corpus = invalidInputs(GETS);
 
 describe('invalidInputs', () => {
