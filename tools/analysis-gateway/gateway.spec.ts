@@ -7,7 +7,7 @@
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { classify, gateway, type GatewaySettings, type Health } from './gateway.ts';
+import { classify, clientOf, gateway, type GatewaySettings, type Health } from './gateway.ts';
 
 const seen: string[] = [];
 /** Every request the service was sent, recorded as it arrives, body or not. */
@@ -663,6 +663,140 @@ describe('the second review of #539', () => {
       // The service's connection headers belong to its hop, not the reader's.
       expect(answer.headers.get('x-odd-case')).toBe('One');
       expect(answer.headers.get('proxy-connection')).toBe(null);
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('the review of 20 Oct', () => {
+  const from = (address: string, header?: string) =>
+    clientOf({
+      headers: header === undefined ? {} : { 'x-real-ip': header },
+      socket: { remoteAddress: address },
+    } as unknown as Parameters<typeof clientOf>[0]);
+
+  it("knows a client by nginx's X-Real-IP, an IPv6 one by its /64", () => {
+    expect(from('127.0.0.1', '203.0.113.9')).toBe('203.0.113.9');
+    expect(from('127.0.0.1')).toBe('127.0.0.1');
+    expect(from('::ffff:127.0.0.1')).toBe('::ffff:127.0.0.1');
+    // One /64, however written: every address in it is one client's.
+    expect(
+      new Set([
+        from('127.0.0.1', '2001:db8:0:1::1'),
+        from('127.0.0.1', '2001:DB8:0000:0001:ffff:1:2:3'),
+        from('127.0.0.1', '2001:db8:0:1:0:0:0:9'),
+      ])
+    ).toEqual(new Set(['2001:db8:0:1::/64']));
+    expect(from('127.0.0.1', '2001:db8:0:2::1')).toBe('2001:db8:0:2::/64');
+    expect(from('127.0.0.1', '2001:db8::')).toBe('2001:db8:0:0::/64');
+  });
+
+  const as = (base: string, who: string, n: number, signal?: AbortSignal) =>
+    fetch(`${base}/AnalysisService/identifiers/?n=${n}`, {
+      method: 'POST',
+      body: 'P04637',
+      headers: { 'Content-Type': 'text/plain', 'X-Real-IP': who },
+      ...(signal && { signal }),
+    });
+
+  it('refuses a client beyond its share when it would wait, while others still get in', async () => {
+    const { base, close } = await start({
+      limits: { analysis: 2, report: 1 },
+      queueLength: 10,
+      perClient: 2,
+      // Long enough that only the share can refuse the third, never its wait.
+      maxWaitMs: 30_000,
+    });
+    try {
+      const first = [as(base, '203.0.113.1', 1), as(base, '203.0.113.1', 2)];
+      await until(() => held.length === 2);
+      // A third from the same client, with the lane full: refused at once,
+      // though the waiting list has room.
+      const started = Date.now();
+      const third = await as(base, '203.0.113.1', 3);
+      expect(Date.now() - started).toBeLessThan(1000);
+      expect([third.status, third.headers.get('retry-after')]).toEqual([503, '7']);
+      // Another client waits its turn as before.
+      const other = as(base, '203.0.113.2', 4);
+      for (let i = 0; i < 200 && (await health(base)).lanes.analysis.waiting < 1; i++)
+        await new Promise((r) => setTimeout(r, 10));
+      expect((await health(base)).clients).toBe(2);
+      letGo();
+      await until(() => held.length === 2);
+      // One of the first client's done: it has a place again.
+      const again = as(base, '203.0.113.1', 5);
+      letGo();
+      letGo();
+      await until(() => held.length === 1);
+      letGo();
+      expect((await Promise.all([...first, other, again])).map((r) => r.status)).toEqual([
+        200, 200, 200, 200,
+      ]);
+      expect(arrived).not.toContain('/AnalysisService/identifiers/?n=3');
+    } finally {
+      await close();
+    }
+  });
+
+  it('runs a client beyond its share while places are free: the share is for scarce places', async () => {
+    const { base, close } = await start({
+      limits: { analysis: 3, report: 1 },
+      perClient: 1,
+    });
+    try {
+      const two = [as(base, '203.0.113.1', 1), as(base, '203.0.113.1', 2)];
+      await until(() => held.length === 2);
+      letGo();
+      letGo();
+      expect((await Promise.all(two)).map((r) => r.status)).toEqual([200, 200]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives a waiting client its place back when it times out', async () => {
+    const { base, close } = await start({
+      limits: { analysis: 1, report: 1 },
+      queueLength: 10,
+      perClient: 2,
+      maxWaitMs: 200,
+    });
+    try {
+      const running = as(base, '203.0.113.1', 1);
+      await until(() => held.length === 1);
+      expect((await as(base, '203.0.113.1', 2)).status).toBe(503);
+      expect((await health(base)).clients).toBe(1);
+      letGo();
+      expect((await running).status).toBe(200);
+      expect((await health(base)).clients).toBe(0);
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives a waiting client its place back when it leaves', async () => {
+    const { base, close } = await start({
+      limits: { analysis: 1, report: 1 },
+      queueLength: 10,
+      perClient: 2,
+      maxWaitMs: 30_000,
+    });
+    try {
+      const running = as(base, '203.0.113.1', 1);
+      await until(() => held.length === 1);
+      const leaving = new AbortController();
+      const waited = as(base, '203.0.113.1', 2, leaving.signal).catch(() => undefined);
+      for (let i = 0; i < 200 && (await health(base)).lanes.analysis.waiting < 1; i++)
+        await new Promise((r) => setTimeout(r, 10));
+      leaving.abort();
+      await waited;
+      for (let i = 0; i < 200 && (await health(base)).lanes.analysis.waiting > 0; i++)
+        await new Promise((r) => setTimeout(r, 10));
+      expect((await health(base)).clients).toBe(1);
+      letGo();
+      expect((await running).status).toBe(200);
+      expect((await health(base)).clients).toBe(0);
     } finally {
       await close();
     }
