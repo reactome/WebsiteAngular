@@ -28,6 +28,7 @@ import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solr, solrConfigured } from './solr.ts';
+import type { SolrAnswer, SolrDoc, SolrGrouping, SolrValue } from './solr.ts';
 import { jsoupText } from './jsoup-text.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
@@ -3439,7 +3440,10 @@ export const endpoints = [
         return {
           status: 200,
           type: 'application/json',
-          body: searchResult(answer, false).entries[0],
+          // numFound > 0 with no documents cannot happen at Solr's default rows.
+          // If it did, this throws and fromSolr answers its Solr failure -- not
+          // Java's NullPointerException answer, as it did before it was typed.
+          body: present(searchResult(answer, false).entries)[0],
         };
       });
     },
@@ -6268,15 +6272,15 @@ export function failureAnswer(request, path, failure) {
  * and a value is the collation itself or, when extended, an object carrying
  * it as collationQuery.
  */
-export function collations(answer) {
+export function collations(answer: SolrAnswer | null | undefined) {
   const flat = answer?.spellcheck?.collations ?? [];
-  const found: string[] = [];
+  const found: (string | undefined)[] = [];
   for (let at = 0; at + 1 < flat.length; at += 2) {
     if (flat[at] !== 'collation') continue;
     const value = flat[at + 1];
     found.push(typeof value === 'string' ? value : value?.collationQuery);
   }
-  return found.filter((value) => typeof value === 'string');
+  return found.filter((value): value is string => typeof value === 'string');
 }
 
 /**
@@ -6348,7 +6352,7 @@ const FACET_FIELDS = new Map([
  * envelope where Java's is Spring's own error page -- only a change to
  * solrconfig.xml could reach it.
  */
-export function facetMapping(answer) {
+export function facetMapping(answer: SolrAnswer | null | undefined) {
   const fields: Record<string, unknown[] | null> = answer?.facet_counts?.facet_fields ?? {};
   if (Object.keys(fields).length === 0) return undefined;
   const lists: Written = {};
@@ -6482,7 +6486,7 @@ type FacetMapping = {
  * into the names the query selected and the rest, as FacetList(selected,
  * available) -- a facet Solr did not count is left out, empty lists too.
  */
-function facetMappingFor(answer, query) {
+function facetMappingFor(answer: SolrAnswer | null | undefined, query) {
   const fields = answer?.facet_counts?.facet_fields ?? {};
   const mapping: FacetMapping = {
     totalNumFount: answer?.response?.numFound ?? 0,
@@ -6535,13 +6539,13 @@ async function facetsOf(query, forceFilters, signal) {
 }
 
 /** SolrDocument.getFieldValue: a multi-valued field's first value. */
-function solrValue(doc, field) {
+function solrValue(doc: SolrDoc, field: string) {
   const value = doc[field];
   return Array.isArray(value) ? value[0] : value;
 }
 
 /** SolrConverter.getStringListField: every value as a string; none, the empty list. */
-function solrStrings(doc, field) {
+function solrStrings(doc: SolrDoc, field: string) {
   const value = doc[field];
   if (value === undefined || value === null) return [];
   return (Array.isArray(value) ? value : [value]).map((item) => String(item));
@@ -6651,7 +6655,7 @@ const ENTRY_FIELDS = [
 /** An Entry being built: the fields set after the document's own. */
 type DraftEntry = {
   [field: string]: unknown;
-  dbId: string;
+  dbId: SolrValue | undefined;
   isDisease: unknown;
   referenceIdentifier?: unknown;
   name?: unknown;
@@ -6683,7 +6687,11 @@ type DraftEntry = {
  * with no snippet is none; otherwise the summation is the document's own,
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
  */
-export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
+export function searchEntry(
+  doc: SolrDoc,
+  highlighting: SolrAnswer['highlighting'] | null,
+  { speciesWide = false } = {}
+) {
   const entry: DraftEntry = {
     dbId: solrValue(doc, 'dbId'),
     stId: solrValue(doc, 'stId'),
@@ -6707,9 +6715,10 @@ export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
     compartmentNames: solrStrings(doc, 'compartmentName'),
     compartmentAccession: solrStrings(doc, 'compartmentAccession'),
   };
-  const snippets = highlighting?.[entry.dbId];
+  // An object's key is the dbId as text, whatever its type.
+  const snippets = highlighting?.[String(entry.dbId)];
   if (snippets) {
-    const identifiers = snippets.referenceIdentifiers;
+    const identifiers = snippets['referenceIdentifiers'];
     entry.referenceIdentifier = identifiers?.length
       ? (identifiers.find((snippet) => snippet.includes('highlighting')) ?? identifiers[0])
       : referenceIdentifier(doc);
@@ -6751,11 +6760,11 @@ export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
   entry.reason = solrValue(doc, 'deletedReason');
   entry.explanation = solrValue(doc, 'explanation');
   const date = solrValue(doc, 'date');
-  entry.date = date === undefined || date === null ? date : Date.parse(date);
+  entry.date = date === undefined || date === null ? date : Date.parse(String(date));
   // getLongListField: each value cast to String -- anything else is Java's
   // ClassCastException -- and read by Long.parseLong, digits of any script
   // and nothing else; written as the long it is, exactly.
-  const replaced = doc.replacementDbIds;
+  const replaced = doc['replacementDbIds'];
   entry.replacementDbIds = (
     replaced === undefined || replaced === null
       ? []
@@ -6793,7 +6802,7 @@ export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
  * "Results", with Solr's count and how many came -- NON_EMPTY leaving out no
  * entries. `highlight` is false where Java ignores the highlighting.
  */
-function searchResult(answer, highlight) {
+function searchResult(answer: SolrAnswer | null | undefined, highlight: boolean) {
   const docs = answer?.response?.docs ?? [];
   const highlighting = highlight ? (answer?.highlighting ?? {}) : {};
   const entries = docs.map((doc) => searchEntry(doc, highlighting));
@@ -6867,8 +6876,8 @@ function compareJavaStrings(a, b) {
 }
 
 /** The FacetContainers of Solr's type facet, as search-core's diagram and species-wide results keep them. */
-function typeFacets(answer) {
-  const flat = answer?.facet_counts?.facet_fields?.type_facet ?? [];
+function typeFacets(answer: SolrAnswer | null | undefined) {
+  const flat = answer?.facet_counts?.facet_fields?.['type_facet'] ?? [];
   const facets: FacetContainer[] = [];
   for (let at = 0; at + 1 < flat.length; at += 2)
     facets.push(facetContainer(flat[at], flat[at + 1]));
@@ -6882,7 +6891,7 @@ function typeFacets(answer) {
  */
 type EntriesResult = ReturnType<typeof entriesResult>;
 
-function entriesResult(answer, options = {}) {
+function entriesResult(answer: SolrAnswer | null | undefined, options = {}) {
   const entries = (answer?.response?.docs ?? []).map((doc) => searchEntry(doc, null, options));
   const facets = typeFacets(answer);
   return {
@@ -7030,7 +7039,9 @@ function diagramFlags(answer, pathway, field) {
       // extractRawOccurrence with the document: the entity is its stId
       // when it is in the diagram, and in the diagram if that is non-empty.
       const entity = line[1].toLowerCase() === 'true' ? solrValue(doc, 'stId') : null;
-      if (entity !== null && entity !== undefined && entity !== '') occurrences.set(entity, true);
+      // stId is a string field.
+      if (entity !== null && entity !== undefined && entity !== '')
+        occurrences.set(entity as string, true);
       // Each list is first the occurrence's own HashSet, then added to the
       // whole one in that set's order.
       if (line[2] !== '#')
@@ -7220,7 +7231,7 @@ function javaWords(text) {
 /** search-core's TargetResult: a term, where it was looked for, and whether it is a target. */
 interface TargetResult {
   term: string;
-  resource: string | null;
+  resource: SolrValue;
   target: boolean;
 }
 
@@ -7253,7 +7264,7 @@ async function targetsOf(query, scope, signal) {
   const targets = new JavaHashMap<string, TargetResult>({ hash: targetHash });
   for (const term of javaWords(query)) {
     let target = false;
-    let resource = null;
+    let resource: SolrValue = null;
     for (const doc of docs) {
       resource = solrValue(doc, 'resource') ?? null;
       // getFieldValues(accessions).stream() and identifier.equalsIgnoreCase:
@@ -7360,15 +7371,6 @@ function searchParams(query): SolrParams {
   ];
 }
 
-/** One grouping of a grouped Solr answer, as read here. */
-interface SolrGrouping {
-  ngroups?: number | null;
-  matches?: number;
-  groups?: {
-    groupValue?: string | null;
-    doclist?: { docs?: unknown[]; numFound?: number };
-  }[];
-}
 /** search-core's GroupedResult: the results, rows written, groups, matches; targets for none. */
 interface SearchResult {
   results: unknown[];
@@ -7383,7 +7385,7 @@ interface SearchResult {
  * with entries a Result named by its group, the rows written, the groups and
  * matches -- a missing group count is Java's unboxing failure.
  */
-function groupedEntries(answer): SearchResult | null {
+function groupedEntries(answer: SolrAnswer | null | undefined): SearchResult | null {
   const grouped: Record<string, SolrGrouping> = answer?.grouped ?? {};
   const grouping = Object.values(grouped)[0];
   if (!grouping) return null;
@@ -7414,7 +7416,7 @@ function groupedEntries(answer): SearchResult | null {
 }
 
 /** SolrConverter.parseResponse with highlighting: one Result of everything. */
-function plainEntries(answer): SearchResult {
+function plainEntries(answer: SolrAnswer | null | undefined): SearchResult {
   const result = searchResult(answer, true);
   return {
     results: [result],
