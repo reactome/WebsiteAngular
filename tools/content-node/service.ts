@@ -30,6 +30,8 @@ import type { MappedRow } from './domain.ts';
 import type {
   Contributor,
   DoiPathway,
+  InstanceReferrals,
+  SimpleDatabaseObject,
   SimplePerson,
   TocPathway,
   TocSubpathway,
@@ -83,6 +85,12 @@ import {
 
 /** A node's or map's properties, as read gives them. */
 type Props = Properties;
+/**
+ * A Person's properties: dbId, displayName and surname always there --
+ * measured over all 9,503 people the content endpoints return (content.model's
+ * SimplePerson) -- firstname and orcidId often not.
+ */
+type PersonProps = Props & { dbId: number; displayName: string; surname: string };
 /** A pathway in the contents lists: /content/toc and the DOI list. */
 type PathwayListRow = {
   stId: string;
@@ -472,7 +480,7 @@ export const endpoints = [
      */
     handler: cached('content/contributors', async () => {
       const rows = await read<{
-        person: Props;
+        person: PersonProps;
         authoredPathways: number;
         authoredReactions: number;
         reviewedPathways: number;
@@ -943,7 +951,7 @@ export const endpoints = [
      *
      * The id is resolved as Java resolves it (see resolveId): a stable id, a
      * pre-2016 REACT_ id or a dbId, with any version suffix ignored. An object
-     * that has no stable id -- a Species, a ReferenceEntity -- is Java's 404 with
+     * that has no stable id -- a Species, an InstanceEdit -- is Java's 404 with
      * its own message, not an empty 200.
      */
     handler: async (request) => {
@@ -3356,18 +3364,21 @@ export const endpoints = [
       return {
         status: 200,
         type: 'application/json',
-        body: rows.map((row) => ({
+        body: rows.map((row): InstanceReferrals => ({
           referral: row.referral,
           // SimpleDatabaseObject.build(Value): on a collected node, its
           // schemaClass property, not its labels as from a Record.
           objects: row.objects.map((ref) => {
-            const out: SimpleObject = { dbId: ref.dbId };
-            if (ref.stId !== null && ref.stId !== '') out.stId = ref.stId;
             const displayName = ref.displayName ?? 'null';
-            if (displayName !== '') out.displayName = displayName;
             const schemaClass = ref.schemaClass ?? 'null';
-            if (schemaClass !== '') out.schemaClass = schemaClass;
-            return out;
+            const out: JsonWritten<SimpleDatabaseObject> = {
+              dbId: ref.dbId,
+              stId: ref.stId !== null && ref.stId !== '' ? ref.stId : undefined,
+              displayName: displayName !== '' ? displayName : undefined,
+              schemaClass: schemaClass !== '' ? schemaClass : undefined,
+            };
+            // javaJson leaves the undefined ones out, as non_empty does.
+            return out as SimpleDatabaseObject;
           }),
         })),
       };
@@ -4539,19 +4550,31 @@ export function schemaWindow(page, offset, cap = 20000) {
   return { skip: Math.imul((page - 1) | 0, limit), limit };
 }
 
+/** A row of the schema queries: the object's dbId, stId, displayName and labels. */
+type SimpleObjectRow = {
+  dbId: number;
+  stId: string | null;
+  displayName: string | null;
+  labels: string[];
+};
+
 /**
  * graph-core's SimpleDatabaseObject as Jackson writes it. stId is read with
  * asString(null), so a missing one is left out; displayName with asString(),
  * which writes a missing one as the text "null". The class is the one the
  * labels name (schemaClassOf), not the schemaClass property.
  */
-export function simpleObjectJson(row) {
-  const out: SimpleObject = { dbId: row.dbId };
-  if (row.stId !== null && row.stId !== undefined && row.stId !== '') out.stId = row.stId;
+
+export function simpleObjectJson(row: SimpleObjectRow): SimpleDatabaseObject {
   const displayName = row.displayName ?? 'null';
-  if (displayName !== '') out.displayName = displayName;
-  out.schemaClass = schemaClassOf(row.labels);
-  return out;
+  const out: JsonWritten<SimpleDatabaseObject> = {
+    dbId: row.dbId,
+    stId: row.stId !== null && row.stId !== '' ? row.stId : undefined,
+    displayName: displayName !== '' ? displayName : undefined,
+    schemaClass: schemaClassOf(row.labels),
+  };
+  // javaJson leaves the undefined ones out, as non_empty does.
+  return out as SimpleDatabaseObject;
 }
 
 /**
@@ -4697,7 +4720,7 @@ async function peopleByPathway(pattern, overrides = {}) {
   const out = { authors: new Map(), reviewers: new Map(), editors: new Map() };
 
   for (const [role, relationship] of Object.entries(roles)) {
-    const rows = await read<{ stId: string; own: Props[]; sub: Props[] }>(
+    const rows = await read<{ stId: string; own: PersonProps[]; sub: PersonProps[] }>(
       `MATCH ${pattern}
        OPTIONAL MATCH (p)<-[${relationship.own}]-(:InstanceEdit)<-[:author]-(own:Person)
        WITH p, COLLECT(DISTINCT own) AS own
@@ -4729,15 +4752,24 @@ export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
 }
 
 /** The five fields Java's SimplePerson carries, in its order. */
-/** As JSON writes T: every field named, and one that is undefined left out. */
-type JsonWritten<T> = { [K in keyof T]-?: T[K] | undefined };
+/** The keys T may leave out. */
+type OptionalKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? K : never }[keyof T];
+/**
+ * T as built to be written as JSON: every field named, and one that T may
+ * leave out allowed to be undefined, which JSON leaves out. A field T
+ * requires must have its value -- the cast to T after is then only the
+ * undefined-to-absent step JSON takes.
+ */
+type JsonWritten<T> = { [K in OptionalKeys<T>]-?: T[K] | undefined } & {
+  [K in Exclude<keyof T, OptionalKeys<T>>]-?: T[K];
+};
 
 /**
  * SimplePerson, from each person's properties. A field the person lacks is
  * undefined and JSON leaves it out, as Java's non_empty does: written, it is
  * the site's SimplePerson, which is what the cast says.
  */
-function simplePeople(persons: Props[] | undefined): SimplePerson[] {
+function simplePeople(persons: PersonProps[] | undefined): SimplePerson[] {
   return (persons ?? []).map((person) => {
     const written: JsonWritten<SimplePerson> = {
       dbId: person.dbId,
@@ -5009,8 +5041,6 @@ export function notFound(request, message) {
 
 /** An object written as JSON, built a property at a time. */
 type Written = { [property: string]: unknown };
-/** SimpleDatabaseObject: a dbId, and what of the rest is not empty. */
-type SimpleObject = { dbId: unknown; stId?: unknown; displayName?: string; schemaClass?: string };
 
 /** The named properties that are actually present. Absent means omitted, not null. */
 function only(source, keys: string[]): Written {

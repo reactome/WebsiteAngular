@@ -21,7 +21,7 @@
   "tools/content-node/report.ts": 21,
   "tools/content-node/schema.spec.ts": 16,
   "tools/content-node/schema.ts": 13,
-  "tools/content-node/service.ts": 1717,
+  "tools/content-node/service.ts": 1708,
   "tools/content-node/snapshot-domain.ts": 75,
   "tools/content-node/snapshot-graph-names.ts": 13,
   "tools/content-node/snapshot-openapi.spec.ts": 7,
